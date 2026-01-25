@@ -1,0 +1,825 @@
+// Prisma Schema for WindparkManager
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================================
+// ENUMS
+// ===========================================
+
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum ContractType {
+  LEASE
+  SERVICE
+  INSURANCE
+  GRID_CONNECTION
+  MARKETING
+  OTHER
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRING
+  EXPIRED
+  TERMINATED
+}
+
+enum InvoiceType {
+  INVOICE
+  CREDIT_NOTE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  CANCELLED
+}
+
+enum VoteStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum DocumentCategory {
+  CONTRACT
+  PROTOCOL
+  REPORT
+  INVOICE
+  PERMIT
+  CORRESPONDENCE
+  OTHER
+}
+
+enum NotificationType {
+  DOCUMENT
+  VOTE
+  CONTRACT
+  INVOICE
+  SYSTEM
+}
+
+// ===========================================
+// CORE: Multi-Tenancy
+// ===========================================
+
+model Tenant {
+  id             String       @id @default(uuid())
+  name           String
+  slug           String       @unique
+  logoUrl        String?
+  primaryColor   String       @default("#3b82f6")
+  secondaryColor String       @default("#1e40af")
+  settings       Json         @default("{}")
+  contactEmail   String?
+  contactPhone   String?
+  address        String?
+  status         EntityStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  users        User[]
+  parks        Park[]
+  funds        Fund[]
+  persons      Person[]
+  contracts    Contract[]
+  documents    Document[]
+  invoices     Invoice[]
+  votes        Vote[]
+  news         News[]
+  auditLogs    AuditLog[]
+  notifications Notification[]
+
+  @@map("tenants")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  firstName     String?
+  lastName      String?
+  phone         String?
+  avatarUrl     String?
+  role          UserRole  @default(VIEWER)
+  emailVerified DateTime?
+  lastLoginAt   DateTime?
+  status        EntityStatus @default(ACTIVE)
+  settings      Json      @default("{}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Multi-Tenancy
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Relations
+  createdDocuments Document[]     @relation("DocumentCreatedBy")
+  createdInvoices  Invoice[]      @relation("InvoiceCreatedBy")
+  createdVotes     Vote[]         @relation("VoteCreatedBy")
+  createdNews      News[]         @relation("NewsCreatedBy")
+  serviceEvents    ServiceEvent[] @relation("ServiceEventCreatedBy")
+  auditLogs        AuditLog[]     @relation("AuditLogUser")
+  impersonatedLogs AuditLog[]     @relation("AuditLogImpersonatedBy")
+  notifications    Notification[]
+  sessions         Session[]
+  accounts         Account[]
+
+  // Shareholder link (for Kommanditisten-Portal)
+  shareholder Shareholder?
+
+  @@index([tenantId])
+  @@index([email])
+  @@map("users")
+}
+
+// NextAuth.js Models
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ===========================================
+// PARKS & TURBINES
+// ===========================================
+
+model Park {
+  id                String       @id @default(uuid())
+  name              String
+  shortName         String?
+  description       String?
+  address           String?
+  city              String?
+  postalCode        String?
+  country           String       @default("Deutschland")
+  latitude          Decimal?     @db.Decimal(10, 8)
+  longitude         Decimal?     @db.Decimal(11, 8)
+  commissioningDate DateTime?
+  totalCapacityKw   Decimal?     @db.Decimal(12, 2)
+  operator          String?
+  owner             String?
+  status            EntityStatus @default(ACTIVE)
+  metadata          Json         @default("{}")
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  // Multi-Tenancy
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Relations
+  turbines    Turbine[]
+  plots       Plot[]
+  contracts   Contract[]
+  documents   Document[]
+  fundParks   FundPark[]
+  weatherData WeatherData[]
+
+  @@index([tenantId])
+  @@map("parks")
+}
+
+model Turbine {
+  id                String       @id @default(uuid())
+  designation       String
+  serialNumber      String?
+  manufacturer      String?
+  model             String?
+  ratedPowerKw      Decimal?     @db.Decimal(10, 2)
+  hubHeightM        Decimal?     @db.Decimal(6, 2)
+  rotorDiameterM    Decimal?     @db.Decimal(6, 2)
+  commissioningDate DateTime?
+  warrantyEndDate   DateTime?
+  latitude          Decimal?     @db.Decimal(10, 8)
+  longitude         Decimal?     @db.Decimal(11, 8)
+  status            EntityStatus @default(ACTIVE)
+  technicalData     Json         @default("{}")
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  // Relations
+  parkId String
+  park   Park   @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  serviceEvents ServiceEvent[]
+  contracts     Contract[]
+  documents     Document[]
+
+  @@index([parkId])
+  @@map("turbines")
+}
+
+model ServiceEvent {
+  id           String   @id @default(uuid())
+  eventDate    DateTime
+  eventType    String
+  description  String?
+  durationHours Decimal? @db.Decimal(6, 2)
+  cost         Decimal? @db.Decimal(12, 2)
+  performedBy  String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  turbineId String
+  turbine   Turbine @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  createdById String?
+  createdBy   User?   @relation("ServiceEventCreatedBy", fields: [createdById], references: [id])
+
+  @@index([turbineId])
+  @@index([eventDate])
+  @@map("service_events")
+}
+
+// ===========================================
+// FUNDS & SHAREHOLDERS (Beteiligungen)
+// ===========================================
+
+model Fund {
+  id                String       @id @default(uuid())
+  name              String
+  legalForm         String?
+  registrationNumber String?
+  registrationCourt String?
+  foundingDate      DateTime?
+  fiscalYearEnd     String       @default("12-31")
+  totalCapital      Decimal?     @db.Decimal(15, 2)
+  managingDirector  String?
+  address           String?
+  bankDetails       Json         @default("{}")
+  status            EntityStatus @default(ACTIVE)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  // Multi-Tenancy
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Relations
+  shareholders Shareholder[]
+  fundParks    FundPark[]
+  votes        Vote[]
+  contracts    Contract[]
+  documents    Document[]
+  invoices     Invoice[]
+  news         News[]
+
+  @@index([tenantId])
+  @@map("funds")
+}
+
+model FundPark {
+  id                  String   @id @default(uuid())
+  ownershipPercentage Decimal? @db.Decimal(5, 2)
+  createdAt           DateTime @default(now())
+
+  fundId String
+  fund   Fund   @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  parkId String
+  park   Park   @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@unique([fundId, parkId])
+  @@map("fund_parks")
+}
+
+model Person {
+  id            String       @id @default(uuid())
+  personType    String       @default("natural") // natural, legal
+  salutation    String?
+  firstName     String?
+  lastName      String?
+  companyName   String?
+  email         String?
+  phone         String?
+  mobile        String?
+  street        String?
+  postalCode    String?
+  city          String?
+  country       String       @default("Deutschland")
+  taxId         String?
+  bankIban      String?
+  bankBic       String?
+  bankName      String?
+  notes         String?
+  status        EntityStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Multi-Tenancy
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Relations
+  shareholders Shareholder[]
+  leases       Lease[]       @relation("LeaseLessor")
+  contracts    Contract[]    @relation("ContractPartner")
+
+  @@index([tenantId])
+  @@index([lastName, firstName])
+  @@map("persons")
+}
+
+model Shareholder {
+  id                     String       @id @default(uuid())
+  shareholderNumber      String?
+  entryDate              DateTime?
+  exitDate               DateTime?
+  capitalContribution    Decimal?     @db.Decimal(15, 2)
+  liabilityAmount        Decimal?     @db.Decimal(15, 2)
+  ownershipPercentage    Decimal?     @db.Decimal(8, 5)
+  votingRightsPercentage Decimal?     @db.Decimal(8, 5)
+  distributionPercentage Decimal?     @db.Decimal(8, 5)
+  status                 EntityStatus @default(ACTIVE)
+  notes                  String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  // Relations
+  fundId String
+  fund   Fund   @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  personId String
+  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  // Portal access
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+
+  voteResponses VoteResponse[]
+  voteProxiesGiven    VoteProxy[] @relation("ProxyGrantor")
+  voteProxiesReceived VoteProxy[] @relation("ProxyGrantee")
+  invoices      Invoice[]
+  documents     Document[]
+
+  @@index([fundId])
+  @@index([personId])
+  @@map("shareholders")
+}
+
+// ===========================================
+// LEASES & PLOTS (Pacht)
+// ===========================================
+
+model Plot {
+  id               String       @id @default(uuid())
+  cadastralDistrict String?     // Gemarkung
+  fieldNumber      String?      // Flur
+  plotNumber       String?      // Flurstück
+  areaSqm          Decimal?     @db.Decimal(12, 2)
+  usageType        String?
+  latitude         Decimal?     @db.Decimal(10, 8)
+  longitude        Decimal?     @db.Decimal(11, 8)
+  notes            String?
+  status           EntityStatus @default(ACTIVE)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  parkId String?
+  park   Park?   @relation(fields: [parkId], references: [id])
+
+  leases Lease[]
+
+  @@index([parkId])
+  @@map("plots")
+}
+
+model Lease {
+  id                       String         @id @default(uuid())
+  contractNumber           String?
+  startDate                DateTime
+  endDate                  DateTime?
+  noticePeriodMonths       Int            @default(12)
+  annualRent               Decimal?       @db.Decimal(12, 2)
+  rentIncreaseType         String?        // fixed, index
+  rentIncreasePercentage   Decimal?       @db.Decimal(5, 2)
+  rentIncreaseIntervalYears Int?
+  paymentSchedule          String         @default("yearly")
+  status                   ContractStatus @default(ACTIVE)
+  documentUrl              String?
+  notes                    String?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+
+  // Relations
+  plotId String
+  plot   Plot   @relation(fields: [plotId], references: [id], onDelete: Cascade)
+
+  lessorId String
+  lessor   Person @relation("LeaseLessor", fields: [lessorId], references: [id])
+
+  @@index([plotId])
+  @@index([endDate])
+  @@map("leases")
+}
+
+// ===========================================
+// CONTRACTS
+// ===========================================
+
+model Contract {
+  id                  String         @id @default(uuid())
+  contractType        ContractType
+  contractNumber      String?
+  title               String
+  startDate           DateTime
+  endDate             DateTime?
+  noticePeriodMonths  Int?
+  noticeDeadline      DateTime?
+  autoRenewal         Boolean        @default(false)
+  renewalPeriodMonths Int?
+  annualValue         Decimal?       @db.Decimal(15, 2)
+  paymentTerms        String?
+  status              ContractStatus @default(ACTIVE)
+  documentUrl         String?
+  reminderDays        Int[]          @default([90, 30])
+  notes               String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  // Multi-Tenancy
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Optional relations
+  parkId String?
+  park   Park?   @relation(fields: [parkId], references: [id])
+
+  turbineId String?
+  turbine   Turbine? @relation(fields: [turbineId], references: [id])
+
+  fundId String?
+  fund   Fund?   @relation(fields: [fundId], references: [id])
+
+  partnerId String?
+  partner   Person? @relation("ContractPartner", fields: [partnerId], references: [id])
+
+  documents Document[]
+
+  @@index([tenantId])
+  @@index([contractType])
+  @@index([endDate])
+  @@index([noticeDeadline])
+  @@map("contracts")
+}
+
+// ===========================================
+// DOCUMENTS
+// ===========================================
+
+model Document {
+  id           String           @id @default(uuid())
+  category     DocumentCategory
+  title        String
+  description  String?
+  fileName     String
+  fileUrl      String
+  fileSizeBytes BigInt?
+  mimeType     String?
+  version      Int              @default(1)
+  tags         String[]
+  isArchived   Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  // Multi-Tenancy
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Versioning
+  parentId String?
+  parent   Document?  @relation("DocumentVersions", fields: [parentId], references: [id])
+  versions Document[] @relation("DocumentVersions")
+
+  // Created by
+  uploadedById String?
+  uploadedBy   User?   @relation("DocumentCreatedBy", fields: [uploadedById], references: [id])
+
+  // Optional relations
+  parkId String?
+  park   Park?   @relation(fields: [parkId], references: [id])
+
+  turbineId String?
+  turbine   Turbine? @relation(fields: [turbineId], references: [id])
+
+  fundId String?
+  fund   Fund?   @relation(fields: [fundId], references: [id])
+
+  contractId String?
+  contract   Contract? @relation(fields: [contractId], references: [id])
+
+  shareholderId String?
+  shareholder   Shareholder? @relation(fields: [shareholderId], references: [id])
+
+  @@index([tenantId])
+  @@index([category])
+  @@index([parkId])
+  @@index([fundId])
+  @@index([parentId])
+  @@map("documents")
+}
+
+// ===========================================
+// VOTING
+// ===========================================
+
+model Vote {
+  id                     String     @id @default(uuid())
+  title                  String
+  description            String?
+  voteType               String     @default("simple")
+  options                Json       @default("[\"Ja\", \"Nein\", \"Enthaltung\"]")
+  startDate              DateTime
+  endDate                DateTime
+  quorumPercentage       Decimal?   @db.Decimal(5, 2)
+  requiresCapitalMajority Boolean   @default(false)
+  status                 VoteStatus @default(DRAFT)
+  results                Json?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  // Multi-Tenancy
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Fund
+  fundId String
+  fund   Fund   @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  // Created by
+  createdById String?
+  createdBy   User?   @relation("VoteCreatedBy", fields: [createdById], references: [id])
+
+  responses VoteResponse[]
+  proxies   VoteProxy[]
+
+  @@index([tenantId])
+  @@index([fundId])
+  @@index([status])
+  @@map("votes")
+}
+
+model VoteResponse {
+  id             String   @id @default(uuid())
+  selectedOption String
+  votedAt        DateTime @default(now())
+  ipAddress      String?
+
+  voteId String
+  vote   Vote   @relation(fields: [voteId], references: [id], onDelete: Cascade)
+
+  shareholderId String
+  shareholder   Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+
+  // If voted by proxy
+  votedById String?
+  proxyId   String?
+
+  @@unique([voteId, shareholderId])
+  @@index([voteId])
+  @@map("vote_responses")
+}
+
+model VoteProxy {
+  id         String    @id @default(uuid())
+  validFrom  DateTime
+  validUntil DateTime?
+  isActive   Boolean   @default(true)
+  documentUrl String?
+  createdAt  DateTime  @default(now())
+
+  // Grantor (Vollmachtgeber)
+  grantorId String
+  grantor   Shareholder @relation("ProxyGrantor", fields: [grantorId], references: [id], onDelete: Cascade)
+
+  // Grantee (Vollmachtnehmer)
+  granteeId String
+  grantee   Shareholder @relation("ProxyGrantee", fields: [granteeId], references: [id], onDelete: Cascade)
+
+  // Optional: specific vote (null = Generalvollmacht)
+  voteId String?
+  vote   Vote?   @relation(fields: [voteId], references: [id])
+
+  @@index([granteeId])
+  @@map("vote_proxies")
+}
+
+// ===========================================
+// INVOICES
+// ===========================================
+
+model Invoice {
+  id              String        @id @default(uuid())
+  invoiceType     InvoiceType
+  invoiceNumber   String
+  invoiceDate     DateTime
+  dueDate         DateTime?
+  recipientType   String?       // shareholder, lessor, vendor
+  recipientName   String?
+  recipientAddress String?
+  netAmount       Decimal       @db.Decimal(15, 2)
+  taxRate         Decimal       @default(19.00) @db.Decimal(5, 2)
+  taxAmount       Decimal?      @db.Decimal(15, 2)
+  grossAmount     Decimal       @db.Decimal(15, 2)
+  currency        String        @default("EUR")
+  status          InvoiceStatus @default(DRAFT)
+  sentAt          DateTime?
+  paidAt          DateTime?
+  pdfUrl          String?
+  notes           String?
+  lineItems       Json          @default("[]")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Multi-Tenancy
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Optional relations
+  fundId String?
+  fund   Fund?   @relation(fields: [fundId], references: [id])
+
+  shareholderId String?
+  shareholder   Shareholder? @relation(fields: [shareholderId], references: [id])
+
+  // Created by
+  createdById String?
+  createdBy   User?   @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+
+  @@index([tenantId])
+  @@index([invoiceNumber])
+  @@index([invoiceDate])
+  @@index([status])
+  @@map("invoices")
+}
+
+// ===========================================
+// NOTIFICATIONS & NEWS
+// ===========================================
+
+model Notification {
+  id               String           @id @default(uuid())
+  type             NotificationType
+  title            String
+  message          String?
+  referenceType    String?
+  referenceId      String?
+  isRead           Boolean          @default(false)
+  emailSent        Boolean          @default(false)
+  emailSentAt      DateTime?
+  createdAt        DateTime         @default(now())
+
+  // Multi-Tenancy
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model News {
+  id          String    @id @default(uuid())
+  title       String
+  content     String
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Multi-Tenancy
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Optional: for specific fund
+  fundId String?
+  fund   Fund?   @relation(fields: [fundId], references: [id])
+
+  // Created by
+  createdById String?
+  createdBy   User?   @relation("NewsCreatedBy", fields: [createdById], references: [id])
+
+  @@index([tenantId])
+  @@index([isPublished, publishedAt])
+  @@map("news")
+}
+
+// ===========================================
+// WEATHER DATA
+// ===========================================
+
+model WeatherData {
+  id               String   @id @default(uuid())
+  recordedAt       DateTime
+  windSpeedMs      Decimal? @db.Decimal(6, 2)
+  windDirectionDeg Int?
+  temperatureC     Decimal? @db.Decimal(5, 2)
+  humidityPercent  Int?
+  pressureHpa      Decimal? @db.Decimal(7, 2)
+  weatherCondition String?
+  source           String   @default("openweathermap")
+  rawData          Json?
+  createdAt        DateTime @default(now())
+
+  parkId String
+  park   Park   @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([recordedAt])
+  @@map("weather_data")
+}
+
+// ===========================================
+// AUDIT LOG
+// ===========================================
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  action       String   // CREATE, UPDATE, DELETE, VIEW, EXPORT, LOGIN, IMPERSONATE
+  entityType   String
+  entityId     String?
+  oldValues    Json?
+  newValues    Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  // Multi-Tenancy
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+
+  userId String?
+  user   User?   @relation("AuditLogUser", fields: [userId], references: [id])
+
+  impersonatedById String?
+  impersonatedBy   User?   @relation("AuditLogImpersonatedBy", fields: [impersonatedById], references: [id])
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
