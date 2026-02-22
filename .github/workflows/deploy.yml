@@ -1,0 +1,201 @@
+# =============================================================================
+# WindparkManager - Deployment Pipeline
+# Baut Docker Image und pusht es zur Container Registry
+# =============================================================================
+#
+# Wird ausgeloest durch:
+#   - Push auf main Branch (automatisch nach erfolgreichem CI)
+#   - Manueller Trigger via GitHub UI (workflow_dispatch)
+#
+# Voraussetzungen (GitHub Repository Secrets):
+#   - DOCKER_REGISTRY   : Registry URL (z.B. ghcr.io oder registry.example.com)
+#   - DOCKER_USERNAME   : Registry Benutzername
+#   - DOCKER_PASSWORD   : Registry Passwort / Token
+#
+# Optional (fuer Server-Deployment):
+#   - DEPLOY_HOST       : Server IP/Hostname
+#   - DEPLOY_USER       : SSH Benutzername
+#   - DEPLOY_SSH_KEY    : Privater SSH Key fuer den Server
+# =============================================================================
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  # Manueller Trigger - ermoeglicht Deployment ueber die GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Ziel-Umgebung (production / staging)"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+
+# Nur ein Deployment gleichzeitig - neue Deployments warten auf das aktuelle
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Standard-Registry: GitHub Container Registry (kann ueber Secrets ueberschrieben werden)
+  REGISTRY: ${{ secrets.DOCKER_REGISTRY || 'ghcr.io' }}
+  # Image-Name: repository-owner/repository-name
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ===========================================================================
+  # Job 1: Docker Image bauen und pushen
+  # Nutzt Multi-Stage Build aus dem vorhandenen Dockerfile
+  # ===========================================================================
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Berechtigungen fuer GitHub Container Registry (ghcr.io)
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # Schritt 1: Repository auschecken
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Schritt 2: Docker Buildx einrichten (fuer Multi-Platform und besseres Caching)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Schritt 3: Bei Container Registry anmelden
+      # Unterstuetzt sowohl ghcr.io (GitHub) als auch private Registries
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME || github.actor }}
+          password: ${{ secrets.DOCKER_PASSWORD || secrets.GITHUB_TOKEN }}
+
+      # Schritt 4: Docker Image Metadaten generieren (Tags und Labels)
+      # Erzeugt automatisch sinnvolle Tags basierend auf Git-Referenz
+      - name: Extract Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Tag "latest" fuer den main Branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Tag mit kurzem SHA (z.B. "abc1234")
+            type=sha,prefix=,format=short
+            # Tag mit vollem SHA
+            type=sha,prefix=,format=long
+            # Datum-basierter Tag (z.B. "2026-02-12")
+            type=raw,value={{date 'YYYY-MM-DD'}},enable={{is_default_branch}}
+
+      # Schritt 5: Docker Image bauen und pushen
+      # Nutzt den vorhandenen Multi-Stage Dockerfile
+      # Layer-Caching via GitHub Actions Cache fuer schnellere Builds
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Build-Cache fuer schnellere wiederholte Builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Build Arguments (oeffentliche URL fuer NEXT_PUBLIC_ Variablen)
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL || 'https://wpm.example.com' }}
+
+      # Schritt 6: Build-Zusammenfassung in der GitHub Actions UI anzeigen
+      - name: Build Summary
+        run: |
+          echo "## Docker Image Build erfolgreich" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tags:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Zeitpunkt:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Job 2: Server Deployment (auskommentiert - als Vorlage)
+  # Verbindet sich per SSH mit dem Produktionsserver und aktualisiert den Container
+  #
+  # HINWEIS: Erst aktivieren wenn der Server eingerichtet ist!
+  # Voraussetzungen:
+  #   - docker-compose.prod.yml auf dem Server vorhanden
+  #   - SSH-Key als GitHub Secret hinterlegt (DEPLOY_SSH_KEY)
+  #   - Server-Adresse als Secret hinterlegt (DEPLOY_HOST)
+  # ===========================================================================
+  # deploy-to-server:
+  #   name: Deploy to Server
+  #   runs-on: ubuntu-latest
+  #   needs: build-and-push
+  #   # Nur auf main Branch deployen, nicht bei PRs
+  #   if: github.ref == 'refs/heads/main'
+  #   environment:
+  #     name: production
+  #     url: https://wpm.example.com
+  #
+  #   steps:
+  #     # SSH-Key einrichten fuer Server-Verbindung
+  #     - name: Setup SSH Key
+  #       uses: webfactory/ssh-agent@v0.9.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+  #
+  #     # Auf dem Server: Neues Image pullen und Container neu starten
+  #     - name: Deploy to Production Server
+  #       run: |
+  #         ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'DEPLOY_SCRIPT'
+  #           set -e
+  #           echo "=== WindparkManager Deployment ==="
+  #           echo "Zeitpunkt: $(date)"
+  #           echo ""
+  #
+  #           # Ins Projektverzeichnis wechseln
+  #           cd /opt/windparkmanager
+  #
+  #           # Neues Image pullen
+  #           echo "[1/3] Pulling latest Docker Image..."
+  #           docker compose -f docker-compose.prod.yml pull app worker
+  #
+  #           # Container mit neuem Image neu starten (Zero-Downtime mit health checks)
+  #           echo "[2/3] Restarting containers..."
+  #           docker compose -f docker-compose.prod.yml up -d --no-deps app worker
+  #
+  #           # Alte Images aufraeumen (um Speicherplatz zu sparen)
+  #           echo "[3/3] Cleaning up old images..."
+  #           docker image prune -f
+  #
+  #           echo ""
+  #           echo "=== Deployment erfolgreich abgeschlossen ==="
+  #         DEPLOY_SCRIPT
+  #
+  #     # Healthcheck nach dem Deployment
+  #     - name: Verify Deployment
+  #       run: |
+  #         echo "Warte 30 Sekunden bis die Anwendung gestartet ist..."
+  #         sleep 30
+  #
+  #         # Healthcheck-Endpunkt pruefen
+  #         HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://wpm.example.com/api/health || true)
+  #
+  #         if [ "$HTTP_STATUS" = "200" ]; then
+  #           echo "Healthcheck erfolgreich (HTTP $HTTP_STATUS)"
+  #         else
+  #           echo "WARNUNG: Healthcheck fehlgeschlagen (HTTP $HTTP_STATUS)"
+  #           echo "Bitte Vercel/Server Logs pruefen!"
+  #           exit 1
+  #         fi

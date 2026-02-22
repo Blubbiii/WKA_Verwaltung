@@ -1,6 +1,3 @@
-// Prisma Schema for WindparkManager
-// Database: PostgreSQL
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,9 +7,2259 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ===========================================
-// ENUMS
-// ===========================================
+model Tenant {
+  id                        String                      @id @default(uuid())
+  name                      String
+  slug                      String                      @unique
+  logoUrl                   String?
+  primaryColor              String                      @default("#3b82f6")
+  secondaryColor            String                      @default("#1e40af")
+  settings                  Json                        @default("{}")
+  contactEmail              String?
+  contactPhone              String?
+  address                   String?
+  bankName                  String?
+  iban                      String?
+  bic                       String?
+  taxId                     String?
+  vatId                     String?
+  status                    EntityStatus                @default(ACTIVE)
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+  emailProvider             String?
+  emailConfig               Json?
+  emailFromAddress          String?
+  emailFromName             String?
+  storageUsedBytes          BigInt                      @default(0)
+  storageLimit              BigInt                      @default(5368709120)
+  city                      String?
+  houseNumber               String?
+  postalCode                String?
+  street                    String?
+  archiveVerificationLogs   ArchiveVerificationLog[]
+  archivedDocuments         ArchivedDocument[]
+  auditLogs                 AuditLog[]
+  billingRules              BillingRule[]
+  contracts                 Contract[]
+  distributions             Distribution[]
+  documentTemplates         DocumentTemplate[]
+  documents                 Document[]
+  emailTemplates            EmailTemplate[]
+  energyReportConfigs       EnergyReportConfig[]
+  fundCategories            FundCategory[]
+  funds                     Fund[]
+  generatedReports          GeneratedReport[]
+  invoiceItemTemplates      InvoiceItemTemplate[]
+  invoiceNumberSequences    InvoiceNumberSequence[]
+  invoiceTemplates          InvoiceTemplate[]
+  invoices                  Invoice[]
+  leaseRevenueSettlements   LeaseRevenueSettlement[]
+  leaseSettlementPeriods    LeaseSettlementPeriod[]
+  leases                    Lease[]
+  letterheads               Letterhead[]
+  massCommunications        MassCommunication[]
+  networkConnections        NetworkConnection[]
+  networkNodes              NetworkNode[]
+  news                      News[]
+  notifications             Notification[]
+  parkCostAllocations       ParkCostAllocation[]
+  parkStakeholders          ParkStakeholder[]
+  parks                     Park[]
+  persons                   Person[]
+  plots                     Plot[]
+  recurringInvoices         RecurringInvoice[]
+  reminderLogs              ReminderLog[]
+  roles                     Role[]
+  scadaAnomalies            ScadaAnomaly[]
+  scadaAnomalyConfigs       ScadaAnomalyConfig?
+  scadaAutoImportLogs       ScadaAutoImportLog[]
+  scadaAvailability         ScadaAvailability[]
+  scadaImportLogs           ScadaImportLog[]
+  scadaMeasurements         ScadaMeasurement[]
+  scadaStateEvents          ScadaStateEvent[]
+  scadaStateSummaries       ScadaStateSummary[]
+  scadaTextEvents           ScadaTextEvent[]
+  scadaTurbineMappings      ScadaTurbineMapping[]
+  scadaWarningEvents        ScadaWarningEvent[]
+  scadaWarningSummaries     ScadaWarningSummary[]
+  scadaWindSummaries        ScadaWindSummary[]
+  scheduledReports          ScheduledReport[]
+  systemConfigs             SystemConfig[]
+  users                     User[]
+  votes                     Vote[]
+
+  @@map("tenants")
+}
+
+model User {
+  id                                                                      String                      @id @default(uuid())
+  email                                                                   String                      @unique
+  passwordHash                                                            String
+  firstName                                                               String?
+  lastName                                                                String?
+  phone                                                                   String?
+  avatarUrl                                                               String?
+  role                                                                    UserRole                    @default(VIEWER)
+  emailVerified                                                           DateTime?
+  lastLoginAt                                                             DateTime?
+  status                                                                  EntityStatus                @default(ACTIVE)
+  settings                                                                Json                        @default("{}")
+  emailPreferences                                                        Json                        @default("{\"votes\": true, \"system\": true, \"invoices\": true, \"contracts\": true, \"documents\": true}")
+  createdAt                                                               DateTime                    @default(now())
+  updatedAt                                                               DateTime                    @updatedAt
+  tenantId                                                                String
+  accounts                                                                Account[]
+  archiveVerificationLogs                                                 ArchiveVerificationLog[]
+  archivedDocuments                                                       ArchivedDocument[]
+  impersonatedLogs                                                        AuditLog[]                  @relation("AuditLogImpersonatedBy")
+  auditLogs                                                               AuditLog[]                  @relation("AuditLogUser")
+  distributions                                                           Distribution[]
+  reviewedDocuments                                 Document[]                  @relation("DocumentReviewedBy")
+  createdDocuments                                                        Document[]                  @relation("DocumentCreatedBy")
+  energyReportConfigs                                                     EnergyReportConfig[]
+  generatedReports                                                        GeneratedReport[]
+  createdInvoices                                                         Invoice[]                   @relation("InvoiceCreatedBy")
+  emailedInvoices                                    Invoice[]                   @relation("InvoiceEmailedBy")
+  printedInvoices                                    Invoice[]                   @relation("InvoicePrintedBy")
+  createdLeaseRevenueSettlements  LeaseRevenueSettlement[] @relation("LeaseRevenueSettlementCreatedBy")
+  reviewedLeaseRevenueSettlements LeaseRevenueSettlement[] @relation("LeaseRevenueSettlementReviewedBy")
+  createdLeaseSettlementPeriods    LeaseSettlementPeriod[]  @relation("LeaseSettlementPeriodCreatedBy")
+  reviewedLeaseSettlementPeriods   LeaseSettlementPeriod[]  @relation("LeaseSettlementPeriodReviewedBy")
+  massCommunications                                                      MassCommunication[]
+  createdNews                                                             News[]                      @relation("NewsCreatedBy")
+  notifications                                                           Notification[]
+  passwordResetTokens                                                     PasswordResetToken[]
+  recurringInvoices                                                       RecurringInvoice[]
+  resourceAccess                                                          ResourceAccess[]
+  scadaAnomalies                                                          ScadaAnomaly[]
+  scheduledReports                                                        ScheduledReport[]
+  serviceEvents                                                           ServiceEvent[]              @relation("ServiceEventCreatedBy")
+  sessions                                                                Session[]
+  shareholder                                                             Shareholder?
+  userRoleAssignments                                                     UserRoleAssignment[]
+  tenant                                                                  Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdVotes                                                            Vote[]                      @relation("VoteCreatedBy")
+
+  @@index([tenantId])
+  @@index([email])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Park {
+  id                                     String                      @id @default(uuid())
+  name                                   String
+  shortName                              String?
+  description                            String?
+  address                                String?
+  city                                   String?
+  postalCode                             String?
+  country                                String                      @default("Deutschland")
+  latitude                               Decimal?                    @db.Decimal(10, 8)
+  longitude                              Decimal?                    @db.Decimal(11, 8)
+  commissioningDate                      DateTime?
+  totalCapacityKw                        Decimal?                    @db.Decimal(12, 2)
+  status                                 EntityStatus                @default(ACTIVE)
+  operatorFundId                         String?
+  technischeBetriebsfuehrung             String?
+  kaufmaennischeBetriebsfuehrung         String?
+  metadata                               Json                        @default("{}")
+  createdAt                              DateTime                    @default(now())
+  updatedAt                              DateTime                    @updatedAt
+  minimumRentPerTurbine                  Decimal?                    @db.Decimal(15, 2)
+  weaSharePercentage                     Decimal?                    @db.Decimal(5, 2)
+  poolSharePercentage                    Decimal?                    @db.Decimal(5, 2)
+  wegCompensationPerSqm                  Decimal?                    @db.Decimal(10, 2)
+  ausgleichCompensationPerSqm            Decimal?                    @db.Decimal(10, 2)
+  kabelCompensationPerM                  Decimal?                    @db.Decimal(10, 2)
+  defaultDistributionMode                DistributionMode            @default(SMOOTHED)
+  defaultTolerancePercent                Decimal?                    @db.Decimal(5, 2)
+  billingEntityFundId                    String?
+  leaseSettlementMode                    LeaseSettlementMode         @default(NETWORK_COMPANY)
+  settlementArticles                     Json?
+  defaultPaymentDay                      Int?
+  tenantId                               String
+  houseNumber                            String?
+  street                                 String?
+  contracts                              Contract[]
+  documentTemplates                      DocumentTemplate[]
+  documents                              Document[]
+  energyReportConfigs                    EnergyReportConfig[]
+  energySettlements                      EnergySettlement[]
+  fundParks                              FundPark[]
+  invoices                               Invoice[]
+  leaseRevenueSettlements                LeaseRevenueSettlement[]
+  leaseSettlementPeriods                 LeaseSettlementPeriod[]
+  letterheads                            Letterhead[]
+  networkNodes                           NetworkNode[]
+  revenuePhases                          ParkRevenuePhase[]
+  billingEntityFund Fund?                       @relation("ParkBillingEntity", fields: [billingEntityFundId], references: [id])
+  operatorFund      Fund?                       @relation("ParkOperator", fields: [operatorFundId], references: [id])
+  tenant                                 Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plots                                  Plot[]
+  scadaTurbineMappings                   ScadaTurbineMapping[]
+  turbines                               Turbine[]
+  weatherData                            WeatherData[]
+
+  @@index([tenantId])
+  @@map("parks")
+}
+
+model Turbine {
+  id                             String                    @id @default(uuid())
+  designation                    String
+  serialNumber                   String?
+  manufacturer                   String?
+  model                          String?
+  deviceType                     String                    @default("WEA")
+  ratedPowerKw                   Decimal?                  @db.Decimal(10, 2)
+  hubHeightM                     Decimal?                  @db.Decimal(6, 2)
+  rotorDiameterM                 Decimal?                  @db.Decimal(6, 2)
+  commissioningDate              DateTime?
+  warrantyEndDate                DateTime?
+  latitude                       Decimal?                  @db.Decimal(10, 8)
+  longitude                      Decimal?                  @db.Decimal(11, 8)
+  mastrNumber                    String?
+  status                         EntityStatus              @default(ACTIVE)
+  technicalData                  Json                      @default("{}")
+  createdAt                      DateTime                  @default(now())
+  updatedAt                      DateTime                  @updatedAt
+  parkId                         String
+  technischeBetriebsfuehrung     String?
+  kaufmaennischeBetriebsfuehrung String?
+  netzgesellschaftFundId         String?
+  contracts                      Contract[]
+  documents                      Document[]
+  energyReportConfigs            EnergyReportConfig[]
+  energySettlementItems          EnergySettlementItem[]
+  networkNodes                   NetworkNode[]
+  scadaAnomalies                 ScadaAnomaly[]
+  scadaAvailability              ScadaAvailability[]
+  scadaMeasurements              ScadaMeasurement[]
+  scadaStateEvents               ScadaStateEvent[]
+  scadaStateSummaries            ScadaStateSummary[]
+  scadaTextEvents                ScadaTextEvent[]
+  scadaTurbineMappings           ScadaTurbineMapping[]
+  scadaWarningEvents             ScadaWarningEvent[]
+  scadaWarningSummaries          ScadaWarningSummary[]
+  scadaWindSummaries             ScadaWindSummary[]
+  serviceEvents                  ServiceEvent[]
+  operatorHistory                TurbineOperator[]
+  turbineProductions             TurbineProduction[]
+  netzgesellschaftFund           Fund?                     @relation(fields: [netzgesellschaftFundId], references: [id])
+  park                           Park                      @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([netzgesellschaftFundId])
+  @@map("turbines")
+}
+
+model ServiceEvent {
+  id            String     @id @default(uuid())
+  eventDate     DateTime
+  eventType     String
+  description   String?
+  durationHours Decimal?   @db.Decimal(6, 2)
+  cost          Decimal?   @db.Decimal(12, 2)
+  performedBy   String?
+  notes         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  turbineId     String
+  createdById   String?
+  documents     Document[]
+  createdBy     User?      @relation("ServiceEventCreatedBy", fields: [createdById], references: [id])
+  turbine       Turbine    @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@index([turbineId])
+  @@index([eventDate])
+  @@map("service_events")
+}
+
+model Fund {
+  id                                                    String                           @id @default(uuid())
+  name                                                  String
+  legalForm                                             String?
+  registrationNumber                                    String?
+  registrationCourt                                     String?
+  foundingDate                                          DateTime?
+  fiscalYearEnd                                         String                           @default("12-31")
+  totalCapital                                          Decimal?                         @db.Decimal(15, 2)
+  managingDirector                                      String?
+  address                                               String?
+  bankDetails                                           Json                             @default("{}")
+  status                                                EntityStatus                     @default(ACTIVE)
+  createdAt                                             DateTime                         @default(now())
+  updatedAt                                             DateTime                         @updatedAt
+  fundCategoryId                                        String?
+  tenantId                                              String
+  city                                                  String?
+  houseNumber                                           String?
+  postalCode                                            String?
+  street                                                String?
+  contracts                                             Contract[]
+  distributions                                         Distribution[]
+  documents                                             Document[]
+  energySettlementItems                                 EnergySettlementItem[]
+  parentHierarchies  FundHierarchy[]               @relation("ChildHierarchy")
+  childHierarchies FundHierarchy[]               @relation("ParentHierarchy")
+  fundParks                                             FundPark[]
+  fundCategory                                          FundCategory?                 @relation(fields: [fundCategoryId], references: [id])
+  tenant                                                Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices                                              Invoice[]
+  leaseRevenueSettlementItems                           LeaseRevenueSettlementItem[]
+  contractPartnerLeases            Lease[]                          @relation("LeaseContractPartner")
+  directBillingLeases              Lease[]                          @relation("LeaseDirectBilling")
+  news                                                  News[]
+  parkCostAllocationItems                               ParkCostAllocationItem[]
+  billingEntityParks                Park[]                           @relation("ParkBillingEntity")
+  operatorParks                     Park[]                           @relation("ParkOperator")
+  shareholders                                          Shareholder[]
+  operatedTurbines                                      TurbineOperator[]
+  turbines                                              Turbine[]
+  votes                                                 Vote[]
+
+  @@index([tenantId])
+  @@index([fundCategoryId])
+  @@map("funds")
+}
+
+model FundPark {
+  id                  String   @id @default(uuid())
+  ownershipPercentage Decimal? @db.Decimal(5, 2)
+  createdAt           DateTime @default(now())
+  fundId              String
+  parkId              String
+  fund                Fund     @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  park                Park     @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@unique([fundId, parkId])
+  @@index([fundId])
+  @@index([parkId])
+  @@map("fund_parks")
+}
+
+model Person {
+  id                             String                           @id @default(uuid())
+  personType                     String                           @default("natural")
+  salutation                     String?
+  firstName                      String?
+  lastName                       String?
+  companyName                    String?
+  email                          String?
+  phone                          String?
+  mobile                         String?
+  street                         String?
+  postalCode                     String?
+  city                           String?
+  country                        String                           @default("Deutschland")
+  taxId                          String?
+  bankIban                       String?
+  bankBic                        String?
+  bankName                       String?
+  notes                          String?
+  status                         EntityStatus                     @default(ACTIVE)
+  createdAt                      DateTime                         @default(now())
+  updatedAt                      DateTime                         @updatedAt
+  tenantId                       String
+  houseNumber                    String?
+  contracts                      Contract[]                       @relation("ContractPartner")
+  leaseRevenueSettlementItems    LeaseRevenueSettlementItem[]
+  leases                         Lease[]                          @relation("LeaseLessor")
+  tenant                         Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shareholders                   Shareholder[]
+
+  @@index([tenantId])
+  @@index([lastName, firstName])
+  @@map("persons")
+}
+
+model Shareholder {
+  id                     String               @id @default(uuid())
+  shareholderNumber      String?
+  entryDate              DateTime?
+  exitDate               DateTime?
+  capitalContribution    Decimal?             @db.Decimal(15, 2)
+  liabilityAmount        Decimal?             @db.Decimal(15, 2)
+  ownershipPercentage    Decimal?             @db.Decimal(8, 5)
+  votingRightsPercentage Decimal?             @db.Decimal(8, 5)
+  distributionPercentage Decimal?             @db.Decimal(8, 5)
+  status                 EntityStatus         @default(ACTIVE)
+  notes                  String?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  fundId                 String
+  personId               String
+  userId                 String?              @unique
+  distributionItems      DistributionItem[]
+  documents              Document[]
+  invoices               Invoice[]
+  fund                   Fund                 @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  person                 Person               @relation(fields: [personId], references: [id], onDelete: Cascade)
+  user                   User?                @relation(fields: [userId], references: [id])
+  voteProxiesReceived    VoteProxy[]          @relation("ProxyGrantee")
+  voteProxiesGiven       VoteProxy[]          @relation("ProxyGrantor")
+  voteResponses          VoteResponse[]
+
+  @@index([fundId])
+  @@index([personId])
+  @@index([fundId, status])
+  @@index([status])
+  @@map("shareholders")
+}
+
+model Plot {
+  id                String        @id @default(uuid())
+  county            String?
+  municipality      String?
+  cadastralDistrict String
+  fieldNumber       String        @default("0")
+  plotNumber        String
+  areaSqm           Decimal?      @db.Decimal(12, 2)
+  usageType         String?
+  latitude          Decimal?      @db.Decimal(10, 8)
+  longitude         Decimal?      @db.Decimal(11, 8)
+  mapImageUrl       String?
+  mapDocumentUrl    String?
+  notes             String?
+  status            EntityStatus  @default(ACTIVE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  parkId            String?
+  tenantId          String
+  geometry          Json?
+  leasePlots        LeasePlot[]
+  plotAreas         PlotArea[]
+  park              Park?         @relation(fields: [parkId], references: [id])
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, cadastralDistrict, fieldNumber, plotNumber])
+  @@index([parkId])
+  @@index([county, municipality])
+  @@index([tenantId])
+  @@index([tenantId, parkId, status])
+  @@map("plots")
+}
+
+model Lease {
+  id                                        String                           @id @default(uuid())
+  signedDate                                DateTime?
+  startDate                                 DateTime
+  endDate                                   DateTime?
+  status                                    ContractStatus                   @default(ACTIVE)
+  hasExtensionOption                        Boolean                          @default(false)
+  extensionDetails                          String?
+  hasWaitingMoney                           Boolean                          @default(false)
+  waitingMoneyAmount                        Decimal?                         @db.Decimal(12, 2)
+  waitingMoneyUnit                          String?
+  waitingMoneySchedule                      String?
+  usageTypes                                String[]                         @default([])
+  usageTypesWithSize                        Json?
+  contractDocumentUrl                       String?
+  billingInterval                           BillingRuleFrequency             @default(ANNUAL)
+  linkedTurbineId                           String?
+  paymentDay                                Int?
+  directBillingFundId                       String?
+  notes                                     String?
+  createdAt                                 DateTime                         @default(now())
+  updatedAt                                 DateTime                         @updatedAt
+  tenantId                                  String
+  lessorId                                  String
+  contractPartnerFundId                     String?
+  invoices                                  Invoice[]
+  leasePlots                                LeasePlot[]
+  leaseRevenueSettlementItems               LeaseRevenueSettlementItem[]
+  contractPartnerFund Fund?                            @relation("LeaseContractPartner", fields: [contractPartnerFundId], references: [id])
+  directBillingFund   Fund?                            @relation("LeaseDirectBilling", fields: [directBillingFundId], references: [id])
+  lessor                                    Person                           @relation("LeaseLessor", fields: [lessorId], references: [id])
+  tenant                                   Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([endDate])
+  @@index([billingInterval])
+  @@index([lessorId])
+  @@index([status])
+  @@index([tenantId])
+  @@map("leases")
+}
+
+model Contract {
+  id                  String         @id @default(uuid())
+  contractType        ContractType
+  contractNumber      String?
+  title               String
+  startDate           DateTime
+  endDate             DateTime?
+  noticePeriodMonths  Int?
+  noticeDeadline      DateTime?
+  autoRenewal         Boolean        @default(false)
+  renewalPeriodMonths Int?
+  annualValue         Decimal?       @db.Decimal(15, 2)
+  paymentTerms        String?
+  status              ContractStatus @default(ACTIVE)
+  documentUrl         String?
+  reminderDays        Int[]          @default([90, 30])
+  notes               String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  tenantId            String
+  parkId              String?
+  turbineId           String?
+  fundId              String?
+  partnerId           String?
+  fund                Fund?          @relation(fields: [fundId], references: [id])
+  park                Park?          @relation(fields: [parkId], references: [id])
+  partner             Person?        @relation("ContractPartner", fields: [partnerId], references: [id])
+  tenant              Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine             Turbine?       @relation(fields: [turbineId], references: [id])
+  documents           Document[]
+
+  @@index([tenantId])
+  @@index([contractType])
+  @@index([endDate])
+  @@index([noticeDeadline])
+  @@index([fundId])
+  @@index([parkId])
+  @@index([partnerId])
+  @@index([status])
+  @@map("contracts")
+}
+
+model Document {
+  id                                  String                 @id @default(uuid())
+  category                            DocumentCategory
+  title                               String
+  description                         String?
+  fileName                            String
+  fileUrl                             String
+  fileSizeBytes                       BigInt?
+  mimeType                            String?
+  version                             Int                    @default(1)
+  tags                                String[]
+  isArchived                          Boolean                @default(false)
+  createdAt                           DateTime               @default(now())
+  updatedAt                           DateTime               @updatedAt
+  tenantId                            String
+  parentId                            String?
+  approvalStatus                      DocumentApprovalStatus @default(PUBLISHED)
+  reviewedById                        String?
+  reviewedAt                          DateTime?
+  reviewNotes                         String?
+  publishedAt                         DateTime?
+  uploadedById                        String?
+  parkId                              String?
+  turbineId                           String?
+  fundId                              String?
+  contractId                          String?
+  shareholderId                       String?
+  serviceEventId                      String?
+  contract                            Contract?              @relation(fields: [contractId], references: [id])
+  fund                                Fund?                  @relation(fields: [fundId], references: [id])
+  parent                              Document?              @relation("DocumentVersions", fields: [parentId], references: [id])
+  versions                            Document[]             @relation("DocumentVersions")
+  park                                Park?                  @relation(fields: [parkId], references: [id])
+  reviewedBy User?                  @relation("DocumentReviewedBy", fields: [reviewedById], references: [id])
+  serviceEvent                        ServiceEvent?          @relation(fields: [serviceEventId], references: [id])
+  shareholder                         Shareholder?           @relation(fields: [shareholderId], references: [id])
+  tenant                              Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine                             Turbine?               @relation(fields: [turbineId], references: [id])
+  uploadedBy                          User?                  @relation("DocumentCreatedBy", fields: [uploadedById], references: [id])
+
+  @@index([tenantId])
+  @@index([category])
+  @@index([parkId])
+  @@index([fundId])
+  @@index([parentId])
+  @@index([approvalStatus])
+  @@index([contractId])
+  @@index([reviewedById])
+  @@index([serviceEventId])
+  @@index([shareholderId])
+  @@index([turbineId])
+  @@map("documents")
+}
+
+model Vote {
+  id                      String         @id @default(uuid())
+  title                   String
+  description             String?
+  voteType                String         @default("simple")
+  options                 Json           @default("[\"Ja\", \"Nein\", \"Enthaltung\"]")
+  startDate               DateTime
+  endDate                 DateTime
+  quorumPercentage        Decimal?       @db.Decimal(5, 2)
+  requiresCapitalMajority Boolean        @default(false)
+  status                  VoteStatus     @default(DRAFT)
+  results                 Json?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  tenantId                String
+  fundId                  String
+  createdById             String?
+  proxies                 VoteProxy[]
+  responses               VoteResponse[]
+  createdBy               User?          @relation("VoteCreatedBy", fields: [createdById], references: [id])
+  fund                    Fund           @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  tenant                  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([fundId])
+  @@index([status])
+  @@map("votes")
+}
+
+model VoteResponse {
+  id             String      @id @default(uuid())
+  selectedOption String
+  votedAt        DateTime    @default(now())
+  ipAddress      String?
+  voteId         String
+  shareholderId  String
+  votedById      String?
+  proxyId        String?
+  shareholder    Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+  vote           Vote        @relation(fields: [voteId], references: [id], onDelete: Cascade)
+
+  @@unique([voteId, shareholderId])
+  @@index([voteId])
+  @@map("vote_responses")
+}
+
+model VoteProxy {
+  id          String      @id @default(uuid())
+  validFrom   DateTime
+  validUntil  DateTime?
+  isActive    Boolean     @default(true)
+  documentUrl String?
+  createdAt   DateTime    @default(now())
+  grantorId   String
+  granteeId   String
+  voteId      String?
+  grantee     Shareholder @relation("ProxyGrantee", fields: [granteeId], references: [id], onDelete: Cascade)
+  grantor     Shareholder @relation("ProxyGrantor", fields: [grantorId], references: [id], onDelete: Cascade)
+  vote        Vote?       @relation(fields: [voteId], references: [id])
+
+  @@index([granteeId])
+  @@index([grantorId])
+  @@map("vote_proxies")
+}
+
+model Invoice {
+  id                                                                                          String                          @id @default(uuid())
+  invoiceType                                                                                 InvoiceType
+  invoiceNumber                                                                               String
+  invoiceDate                                                                                 DateTime
+  dueDate                                                                                     DateTime?
+  recipientType                                                                               String?
+  recipientName                                                                               String?
+  recipientAddress                                                                            String?
+  netAmount                                                                                   Decimal                         @db.Decimal(15, 2)
+  taxRate                                                                                     Decimal                         @default(19.00) @db.Decimal(5, 2)
+  taxAmount                                                                                   Decimal?                        @db.Decimal(15, 2)
+  grossAmount                                                                                 Decimal                         @db.Decimal(15, 2)
+  currency                                                                                    String                          @default("EUR")
+  status                                                                                      InvoiceStatus                   @default(DRAFT)
+  sentAt                                                                                      DateTime?
+  paidAt                                                                                      DateTime?
+  pdfUrl                                                                                      String?
+  notes                                                                                       String?
+  lineItems                                                                                   Json                            @default("[]")
+  calculationDetails                                                                          Json?
+  createdAt                                                                                   DateTime                        @default(now())
+  updatedAt                                                                                   DateTime                        @updatedAt
+  internalReference                                                                           String?
+  serviceStartDate                                                                            DateTime?
+  serviceEndDate                                                                              DateTime?
+  paymentReference                                                                            String?
+  cancelledAt                                                                                 DateTime?
+  cancelReason                                                                                String?
+  deletedAt                                                                                   DateTime?
+  datevExportedAt                                                                             DateTime?
+  datevBuchungsschluessel                                                                     String?
+  tenantId                                                                                    String
+  fundId                                                                                      String?
+  shareholderId                                                                               String?
+  createdById                                                                                 String?
+  cancelledInvoiceId                                                                          String?
+  correctionOf                                                                                String?
+  correctionType                                                                              String?
+  correctedPositions                                                                          Json?
+  leaseId                                                                                     String?
+  parkId                                                                                      String?
+  settlementPeriodId                                                                          String?
+  templateId                                                                                  String?
+  letterheadId                                                                                String?
+  einvoiceXml                                                                                 String?
+  einvoiceFormat                                                                              String?
+  leitwegId                                                                                   String?
+  einvoiceGeneratedAt                                                                         DateTime?
+  skontoPercent                                                                               Decimal?                        @db.Decimal(5, 2)
+  skontoDays                                                                                  Int?
+  skontoDeadline                                                                              DateTime?
+  skontoAmount                                                                                Decimal?                        @db.Decimal(12, 2)
+  skontoPaid                                                                                  Boolean                         @default(false)
+  printedAt                                                                                   DateTime?
+  printedById                                                                                 String?
+  emailedAt                                                                                   DateTime?
+  emailedById                                                                                 String?
+  emailedTo                                                                                   String?
+  distributionItems                                                                           DistributionItem?
+  energySettlementItems                                                                       EnergySettlementItem[]
+  items                                                                                       InvoiceItem[]
+  cancelledInvoice                                              Invoice?                        @relation("InvoiceCancellation", fields: [cancelledInvoiceId], references: [id])
+  cancellationInvoices                                        Invoice[]                       @relation("InvoiceCancellation")
+  correctedInvoice                                                    Invoice?                        @relation("InvoiceCorrection", fields: [correctionOf], references: [id])
+  correctionInvoices                                              Invoice[]                       @relation("InvoiceCorrection")
+  createdBy                                                                                   User?                           @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+  emailedBy                                                           User?                           @relation("InvoiceEmailedBy", fields: [emailedById], references: [id])
+  fund                                                                                        Fund?                           @relation(fields: [fundId], references: [id])
+  lease                                                                                       Lease?                          @relation(fields: [leaseId], references: [id])
+  letterhead                                                                                  Letterhead?                    @relation(fields: [letterheadId], references: [id])
+  park                                                                                       Park?                           @relation(fields: [parkId], references: [id])
+  printedBy                                                           User?                           @relation("InvoicePrintedBy", fields: [printedById], references: [id])
+  settlementPeriod                                                                            LeaseSettlementPeriod?       @relation(fields: [settlementPeriodId], references: [id])
+  shareholder                                                                                 Shareholder?                    @relation(fields: [shareholderId], references: [id])
+  template                                                                                    DocumentTemplate?             @relation(fields: [templateId], references: [id])
+  tenant                                                                                      Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  advanceSettlementItem    LeaseRevenueSettlementItem? @relation("AdvanceInvoice")
+  settlementSettlementItem LeaseRevenueSettlementItem? @relation("SettlementInvoice")
+  exemptAllocationItem             ParkCostAllocationItem?     @relation("ExemptInvoice")
+  vatAllocationItem                ParkCostAllocationItem?     @relation("VatInvoice")
+
+  @@index([tenantId])
+  @@index([invoiceNumber])
+  @@index([invoiceDate])
+  @@index([status])
+  @@index([correctionOf])
+  @@index([deletedAt])
+  @@index([fundId])
+  @@index([leaseId])
+  @@index([parkId])
+  @@index([settlementPeriodId])
+  @@index([shareholderId])
+  @@map("invoices")
+}
+
+model Notification {
+  id            String           @id @default(uuid())
+  type          NotificationType
+  title         String
+  message       String?
+  link          String?
+  referenceType String?
+  referenceId   String?
+  isRead        Boolean          @default(false)
+  emailSent     Boolean          @default(false)
+  emailSentAt   DateTime?
+  createdAt     DateTime         @default(now())
+  tenantId      String
+  userId        String
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model News {
+  id          String       @id @default(uuid())
+  title       String
+  content     String
+  category    NewsCategory @default(GENERAL)
+  isPublished Boolean      @default(false)
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tenantId    String
+  fundId      String?
+  createdById String?
+  createdBy   User?        @relation("NewsCreatedBy", fields: [createdById], references: [id])
+  fund        Fund?        @relation(fields: [fundId], references: [id])
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([isPublished, publishedAt])
+  @@index([category])
+  @@index([fundId])
+  @@map("news")
+}
+
+model WeatherData {
+  id               String   @id @default(uuid())
+  recordedAt       DateTime
+  windSpeedMs      Decimal? @db.Decimal(6, 2)
+  windDirectionDeg Int?
+  temperatureC     Decimal? @db.Decimal(5, 2)
+  humidityPercent  Int?
+  pressureHpa      Decimal? @db.Decimal(7, 2)
+  weatherCondition String?
+  source           String   @default("openweathermap")
+  rawData          Json?
+  createdAt        DateTime @default(now())
+  parkId           String
+  park             Park     @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@index([parkId])
+  @@index([recordedAt])
+  @@map("weather_data")
+}
+
+model AuditLog {
+  id               String   @id @default(uuid())
+  action           String
+  entityType       String
+  entityId         String?
+  oldValues        Json?
+  newValues        Json?
+  ipAddress        String?
+  userAgent        String?
+  createdAt        DateTime @default(now())
+  tenantId         String?
+  userId           String?
+  impersonatedById String?
+  impersonatedBy   User?    @relation("AuditLogImpersonatedBy", fields: [impersonatedById], references: [id])
+  tenant           Tenant?  @relation(fields: [tenantId], references: [id])
+  user             User?    @relation("AuditLogUser", fields: [userId], references: [id])
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model ArchiveVerificationLog {
+  id           String   @id @default(uuid())
+  tenantId     String
+  verifiedAt   DateTime @default(now())
+  verifiedById String
+  scope        String
+  result       String
+  totalDocs    Int
+  validDocs    Int
+  invalidDocs  Int
+  details      Json?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  verifiedBy        User     @relation(fields: [verifiedById], references: [id])
+
+  @@index([tenantId, verifiedAt(sort: Desc)])
+  @@map("archive_verification_logs")
+}
+
+model ArchivedDocument {
+  id                       String               @id @default(uuid())
+  tenantId                 String
+  documentType             String
+  referenceId              String
+  referenceNumber          String
+  fileName                 String
+  fileSize                 Int
+  mimeType                 String               @default("application/pdf")
+  storageKey               String
+  contentHash              String
+  chainHash                String
+  previousArchiveId        String?
+  metadata                 Json?
+  archivedAt               DateTime             @default(now())
+  archivedById             String
+  retentionUntil           DateTime
+  lastAccessedAt           DateTime?
+  accessCount              Int                  @default(0)
+  archivedBy                    User                 @relation(fields: [archivedById], references: [id])
+  previousArchive          ArchivedDocument?  @relation("ArchiveChain", fields: [previousArchiveId], references: [id])
+  subsequentArchives       ArchivedDocument[] @relation("ArchiveChain")
+  tenant                  Tenant               @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, referenceId, documentType])
+  @@index([tenantId, chainHash])
+  @@index([tenantId, documentType, archivedAt(sort: Desc)])
+  @@index([tenantId, referenceNumber])
+  @@index([tenantId, retentionUntil])
+  @@map("archived_documents")
+}
+
+model BillingRuleExecution {
+  id              String        @id @default(uuid())
+  status          String
+  startedAt       DateTime      @default(now())
+  completedAt     DateTime?
+  invoicesCreated Int           @default(0)
+  totalAmount     Decimal?      @db.Decimal(15, 2)
+  errorMessage    String?
+  details         Json?
+  ruleId          String
+  rule            BillingRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+  @@index([startedAt])
+  @@index([status])
+  @@map("billing_rule_executions")
+}
+
+model BillingRule {
+  id                      String                    @id @default(uuid())
+  name                    String
+  description             String?
+  ruleType                BillingRuleType
+  frequency               BillingRuleFrequency
+  cronPattern             String?
+  dayOfMonth              Int?
+  parameters              Json
+  isActive                Boolean                   @default(true)
+  lastRunAt               DateTime?
+  nextRunAt               DateTime?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime
+  tenantId                String
+  executions              BillingRuleExecution[]
+  tenant                 Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([isActive, nextRunAt])
+  @@index([nextRunAt])
+  @@index([tenantId])
+  @@map("billing_rules")
+}
+
+model DistributionItem {
+  id             String        @id @default(uuid())
+  percentage     Decimal       @db.Decimal(8, 5)
+  amount         Decimal       @db.Decimal(15, 2)
+  createdAt      DateTime      @default(now())
+  distributionId String
+  shareholderId  String
+  invoiceId      String?       @unique
+  distribution   Distribution @relation(fields: [distributionId], references: [id], onDelete: Cascade)
+  invoice        Invoice?      @relation(fields: [invoiceId], references: [id])
+  shareholder    Shareholder   @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+
+  @@index([distributionId])
+  @@index([shareholderId])
+  @@map("distribution_items")
+}
+
+model Distribution {
+  id                 String               @id @default(uuid())
+  distributionNumber String               @unique
+  description        String?
+  totalAmount        Decimal              @db.Decimal(15, 2)
+  distributionDate   DateTime
+  status             DistributionStatus   @default(DRAFT)
+  executedAt         DateTime?
+  notes              String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  fundId             String
+  tenantId           String
+  createdById        String?
+  items              DistributionItem[]
+  createdBy              User?                @relation(fields: [createdById], references: [id])
+  fund               Fund                 @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  tenant            Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([distributionDate])
+  @@index([fundId])
+  @@index([tenantId])
+  @@map("distributions")
+}
+
+model DocumentTemplate {
+  id           String       @id @default(uuid())
+  name         String
+  documentType DocumentType
+  isDefault    Boolean      @default(false)
+  layout       Json
+  customCss    String?
+  footerText   String?
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime
+  tenantId     String
+  parkId       String?
+  park        Park?        @relation(fields: [parkId], references: [id])
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices     Invoice[]
+
+  @@unique([tenantId, documentType, parkId])
+  @@index([documentType])
+  @@index([parkId])
+  @@index([tenantId])
+  @@map("document_templates")
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  subject     String
+  htmlContent String
+  textContent String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  tenantId    String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("email_templates")
+}
+
+model EnergyMonthlyRate {
+  id                   String               @id @default(uuid())
+  year                 Int
+  month                Int
+  ratePerKwh           Decimal              @db.Decimal(10, 4)
+  marketValue          Decimal?             @db.Decimal(10, 4)
+  managementFee        Decimal?             @db.Decimal(10, 4)
+  notes                String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime
+  revenueTypeId        String
+  tenantId             String
+  revenueType          EnergyRevenueType @relation(fields: [revenueTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([revenueTypeId, year, month, tenantId])
+  @@index([tenantId])
+  @@index([year, month])
+  @@map("energy_monthly_rates")
+}
+
+model EnergyReportConfig {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  modules       String[]
+  parkId        String?
+  turbineId     String?
+  interval      String   @default("month")
+  portalVisible Boolean  @default(false)
+  portalLabel   String?
+  isTemplate    Boolean  @default(false)
+  tenantId      String
+  createdById   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  createdBy         User     @relation(fields: [createdById], references: [id])
+  park         Park?    @relation(fields: [parkId], references: [id])
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine      Turbine? @relation(fields: [turbineId], references: [id])
+
+  @@index([portalVisible])
+  @@index([tenantId])
+  @@map("energy_report_configs")
+}
+
+model EnergyRevenueType {
+  id                   String                 @id @default(uuid())
+  name                 String
+  code                 String
+  description          String?
+  calculationType      EnergyCalculationType  @default(FIXED_RATE)
+  hasTax               Boolean                @default(true)
+  taxRate              Decimal?               @default(19.0) @db.Decimal(5, 2)
+  isActive             Boolean                @default(true)
+  sortOrder            Int                    @default(0)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  tenantId             String
+  energyMonthlyRates   EnergyMonthlyRate[]
+
+  @@unique([code, tenantId])
+  @@index([tenantId])
+  @@map("energy_revenue_types")
+}
+
+model EnergySettlementItem {
+  id                   String             @id @default(uuid())
+  productionShareKwh   Decimal            @db.Decimal(15, 3)
+  productionSharePct   Decimal            @db.Decimal(8, 5)
+  revenueShareEur      Decimal            @db.Decimal(15, 2)
+  distributionKey      String?
+  averageProductionKwh Decimal?           @db.Decimal(15, 3)
+  deviationKwh         Decimal?           @db.Decimal(15, 3)
+  toleranceAdjustment  Decimal?           @db.Decimal(15, 2)
+  createdAt            DateTime           @default(now())
+  energySettlementId   String
+  recipientFundId      String
+  invoiceId            String?
+  turbineId            String?
+  energySettlement     EnergySettlement @relation(fields: [energySettlementId], references: [id], onDelete: Cascade)
+  invoice              Invoice?           @relation(fields: [invoiceId], references: [id])
+  recipientFund        Fund               @relation(fields: [recipientFundId], references: [id])
+  turbine              Turbine?           @relation(fields: [turbineId], references: [id])
+
+  @@index([energySettlementId])
+  @@index([energySettlementId, recipientFundId])
+  @@index([invoiceId])
+  @@index([recipientFundId])
+  @@index([turbineId])
+  @@map("energy_settlement_items")
+}
+
+model EnergySettlement {
+  id                        String                      @id @default(uuid())
+  year                      Int
+  month                     Int?
+  netOperatorRevenueEur     Decimal                     @db.Decimal(15, 2)
+  netOperatorReference      String?
+  totalProductionKwh        Decimal                     @db.Decimal(15, 3)
+  distributionMode          DistributionMode            @default(SMOOTHED)
+  smoothingFactor           Decimal?                    @db.Decimal(5, 4)
+  tolerancePercentage       Decimal?                    @db.Decimal(5, 2)
+  status                    EnergySettlementStatus      @default(DRAFT)
+  calculationDetails        Json?
+  notes                     String?
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime
+  parkId                    String
+  tenantId                  String
+  dvProductionKwh           Decimal?                    @db.Decimal(15, 3)
+  dvRevenueEur              Decimal?                    @db.Decimal(15, 2)
+  eegProductionKwh          Decimal?                    @db.Decimal(15, 3)
+  eegRevenueEur             Decimal?                    @db.Decimal(15, 2)
+  items                     EnergySettlementItem[]
+  park                     Park                        @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  leaseRevenueSettlements   LeaseRevenueSettlement[]
+  leaseSettlementPeriods    LeaseSettlementPeriod[]
+
+  @@unique([parkId, year, month, tenantId])
+  @@index([parkId])
+  @@index([status])
+  @@index([tenantId])
+  @@index([year, month])
+  @@map("energy_settlements")
+}
+
+model FundCategory {
+  id          String   @id @default(uuid())
+  name        String
+  code        String
+  description String?
+  color       String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  tenantId    String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  funds       Fund[]
+
+  @@unique([code, tenantId])
+  @@index([tenantId])
+  @@map("fund_categories")
+}
+
+model FundHierarchy {
+  id                                         String    @id @default(uuid())
+  ownershipPercentage                        Decimal   @db.Decimal(8, 5)
+  validFrom                                  DateTime
+  validTo                                    DateTime?
+  notes                                      String?
+  createdAt                                  DateTime  @default(now())
+  parentFundId                               String
+  childFundId                                String
+  childFund  Fund      @relation("ChildHierarchy", fields: [childFundId], references: [id])
+  parentFund Fund      @relation("ParentHierarchy", fields: [parentFundId], references: [id])
+
+  @@unique([parentFundId, childFundId, validFrom])
+  @@index([childFundId])
+  @@index([parentFundId])
+  @@map("fund_hierarchies")
+}
+
+model GeneratedReport {
+  id            String       @id @default(uuid())
+  title         String
+  reportType    ReportType
+  format        ReportFormat
+  fileUrl       String
+  fileSize      Int
+  parameters    Json?
+  generatedAt   DateTime     @default(now())
+  tenantId      String
+  generatedById String
+  generatedBy         User         @relation(fields: [generatedById], references: [id])
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([generatedAt])
+  @@index([reportType])
+  @@index([tenantId])
+  @@map("generated_reports")
+}
+
+model InvoiceItemTemplate {
+  id           String   @id @default(uuid())
+  name         String
+  description  String
+  category     String?
+  unit         String   @default("pauschal")
+  taxType      TaxType  @default(EXEMPT)
+  defaultPrice Decimal? @db.Decimal(15, 2)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  tenantId     String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, category])
+  @@index([tenantId])
+  @@map("invoice_item_templates")
+}
+
+model InvoiceItem {
+  id                String        @id @default(uuid())
+  position          Int
+  description       String
+  quantity          Decimal       @default(1) @db.Decimal(12, 4)
+  unit              String?
+  unitPrice         Decimal       @db.Decimal(15, 2)
+  netAmount         Decimal       @db.Decimal(15, 2)
+  taxType           TaxType       @default(STANDARD)
+  taxRate           Decimal       @db.Decimal(5, 2)
+  taxAmount         Decimal       @db.Decimal(15, 2)
+  grossAmount       Decimal       @db.Decimal(15, 2)
+  referenceType     String?
+  referenceId       String?
+  plotAreaType      PlotAreaType?
+  plotId            String?
+  datevKonto        String?
+  datevGegenkonto   String?
+  datevKostenstelle String?
+  createdAt         DateTime      @default(now())
+  invoiceId         String
+  invoice           Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([plotAreaType])
+  @@map("invoice_items")
+}
+
+model InvoiceNumberSequence {
+  id          String      @id @default(uuid())
+  type        InvoiceType
+  format      String      @default("RG-{YEAR}-{NUMBER}")
+  currentYear Int         @default(2026)
+  nextNumber  Int         @default(1)
+  digitCount  Int         @default(4)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime
+  tenantId    String
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, type])
+  @@index([tenantId])
+  @@map("invoice_number_sequences")
+}
+
+model InvoiceTemplate {
+  id         String   @id @default(uuid())
+  tenantId   String
+  name       String
+  isDefault  Boolean  @default(false)
+  layout     Json
+  headerHtml String?
+  footerHtml String?
+  styles     Json?
+  variables  Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("invoice_templates")
+}
+
+model LeasePlot {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  leaseId   String
+  plotId    String
+  lease    Lease    @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  plot      Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
+
+  @@unique([leaseId, plotId])
+  @@index([leaseId])
+  @@index([plotId])
+  @@map("lease_plots")
+}
+
+model LeaseRevenueSettlementItem {
+  id                                                                    String                    @id @default(uuid())
+  settlementId                                                          String
+  leaseId                                                               String
+  lessorPersonId                                                        String
+  plotSummary                                                           Json                      @default("[]")
+  poolAreaSqm                                                           Decimal                   @default(0) @db.Decimal(15, 2)
+  poolAreaSharePercent                                                  Decimal                   @default(0) @db.Decimal(8, 4)
+  poolFeeEur                                                            Decimal                   @default(0) @db.Decimal(15, 2)
+  turbineCount                                                          Int                       @default(0)
+  standortFeeEur                                                        Decimal                   @default(0) @db.Decimal(15, 2)
+  sealedAreaSqm                                                         Decimal                   @default(0) @db.Decimal(15, 2)
+  sealedAreaRate                                                        Decimal                   @default(0) @db.Decimal(8, 2)
+  sealedAreaFeeEur                                                      Decimal                   @default(0) @db.Decimal(15, 2)
+  roadUsageFeeEur                                                       Decimal                   @default(0) @db.Decimal(15, 2)
+  cableFeeEur                                                           Decimal                   @default(0) @db.Decimal(15, 2)
+  subtotalEur                                                           Decimal                   @default(0) @db.Decimal(15, 2)
+  taxableAmountEur                                                      Decimal                   @default(0) @db.Decimal(15, 2)
+  exemptAmountEur                                                       Decimal                   @default(0) @db.Decimal(15, 2)
+  advancePaidEur                                                        Decimal                   @default(0) @db.Decimal(15, 2)
+  remainderEur                                                          Decimal                   @default(0) @db.Decimal(15, 2)
+  directBillingFundId                                                   String?
+  advanceInvoiceId                                                      String?                   @unique
+  settlementInvoiceId                                                   String?                   @unique
+  advanceInvoice    Invoice?                  @relation("AdvanceInvoice", fields: [advanceInvoiceId], references: [id])
+  directBillingFund                                                     Fund?                     @relation(fields: [directBillingFundId], references: [id])
+  lease                                                                 Lease                     @relation(fields: [leaseId], references: [id])
+  lessorPerson                                                          Person                    @relation(fields: [lessorPersonId], references: [id])
+  settlement                                                            LeaseRevenueSettlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  settlementInvoice Invoice?                  @relation("SettlementInvoice", fields: [settlementInvoiceId], references: [id])
+
+  @@index([leaseId])
+  @@index([lessorPersonId])
+  @@index([settlementId])
+  @@map("lease_revenue_settlement_items")
+}
+
+model LeaseRevenueSettlement {
+  id                                                  String                           @id @default(uuid())
+  tenantId                                            String
+  parkId                                              String
+  year                                                Int
+  status                                              LeaseRevenueSettlementStatus     @default(OPEN)
+  totalParkRevenueEur                                 Decimal                          @default(0) @db.Decimal(15, 2)
+  revenueSharePercent                                 Decimal                          @default(0) @db.Decimal(5, 2)
+  calculatedFeeEur                                    Decimal                          @default(0) @db.Decimal(15, 2)
+  minimumGuaranteeEur                                 Decimal                          @default(0) @db.Decimal(15, 2)
+  actualFeeEur                                        Decimal                          @default(0) @db.Decimal(15, 2)
+  usedMinimum                                         Boolean                          @default(false)
+  weaStandortTotalEur                                 Decimal                          @default(0) @db.Decimal(15, 2)
+  poolAreaTotalEur                                    Decimal                          @default(0) @db.Decimal(15, 2)
+  totalWEACount                                       Int                              @default(0)
+  totalPoolAreaSqm                                    Decimal                          @default(0) @db.Decimal(15, 2)
+  advanceDueDate                                      DateTime?
+  settlementDueDate                                   DateTime?
+  advanceCreatedAt                                    DateTime?
+  settlementCreatedAt                                 DateTime?
+  calculationDetails                                  Json?
+  createdAt                                           DateTime                         @default(now())
+  updatedAt                                           DateTime
+  createdById                                         String?
+  periodType                                          String                           @default("FINAL")
+  advanceInterval                                     String?
+  month                                               Int?
+  linkedEnergySettlementId                            String?
+  reviewedById                                        String?
+  reviewedAt                                          DateTime?
+  reviewNotes                                         String?
+  notes                                               String?
+  items                                               LeaseRevenueSettlementItem[]
+  createdBy  User?                            @relation("LeaseRevenueSettlementCreatedBy", fields: [createdById], references: [id])
+  linkedEnergySettlement                              EnergySettlement?              @relation(fields: [linkedEnergySettlementId], references: [id])
+  park                                               Park                             @relation(fields: [parkId], references: [id])
+  reviewedBy User?                            @relation("LeaseRevenueSettlementReviewedBy", fields: [reviewedById], references: [id])
+  tenant                                             Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  costAllocations                                     ParkCostAllocation[]
+
+  @@unique([tenantId, parkId, year, periodType, month])
+  @@index([parkId, year])
+  @@index([periodType])
+  @@index([tenantId])
+  @@index([tenantId, parkId, year])
+  @@map("lease_revenue_settlements")
+}
+
+model LeaseSettlementPeriod {
+  id                                                 String                 @id @default(uuid())
+  year                                               Int
+  status                                             SettlementPeriodStatus @default(OPEN)
+  advanceInvoiceDate                                 DateTime?
+  settlementDate                                     DateTime?
+  totalRevenue                                       Decimal?               @db.Decimal(15, 2)
+  totalMinimumRent                                   Decimal?               @db.Decimal(15, 2)
+  totalActualRent                                    Decimal?               @db.Decimal(15, 2)
+  notes                                              String?
+  createdAt                                          DateTime               @default(now())
+  updatedAt                                          DateTime
+  month                                              Int?
+  periodType                                         String                 @default("FINAL")
+  advanceInterval                                    String?
+  linkedEnergySettlementId                           String?
+  tenantId                                           String
+  parkId                                             String
+  createdById                                        String?
+  reviewedById                                       String?
+  reviewedAt                                         DateTime?
+  reviewNotes                                        String?
+  invoices                                           Invoice[]
+  createdBy  User?                  @relation("LeaseSettlementPeriodCreatedBy", fields: [createdById], references: [id])
+  linkedEnergySettlement                             EnergySettlement?    @relation(fields: [linkedEnergySettlementId], references: [id])
+  park                                              Park                   @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  reviewedBy User?                  @relation("LeaseSettlementPeriodReviewedBy", fields: [reviewedById], references: [id])
+  tenant                                            Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, parkId, year, month, periodType])
+  @@index([parkId])
+  @@index([parkId, year])
+  @@index([periodType])
+  @@index([status])
+  @@index([tenantId])
+  @@index([tenantId, parkId, year])
+  @@index([year])
+  @@index([year, month])
+  @@map("lease_settlement_periods")
+}
+
+model Letterhead {
+  id                String    @id @default(uuid())
+  name              String
+  isDefault         Boolean   @default(false)
+  headerImageUrl    String?
+  headerHeight      Int?      @default(100)
+  logoPosition      String    @default("top-left")
+  logoWidth         Int?      @default(50)
+  logoMarginTop     Int?      @default(10)
+  logoMarginLeft    Int?      @default(10)
+  senderAddress     String?
+  companyInfo       Json?
+  footerImageUrl    String?
+  footerHeight      Int?      @default(25)
+  footerText        String?
+  marginTop         Int       @default(45)
+  marginBottom      Int       @default(30)
+  marginLeft        Int       @default(25)
+  marginRight       Int       @default(20)
+  primaryColor      String?
+  secondaryColor    String?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+  tenantId          String
+  parkId            String?
+  backgroundPdfKey  String?
+  backgroundPdfName String?
+  invoices          Invoice[]
+  park             Park?     @relation(fields: [parkId], references: [id])
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, parkId, isDefault])
+  @@index([parkId])
+  @@index([tenantId])
+  @@map("letterheads")
+}
+
+model ManagementBilling {
+  id                 String                  @id @default(uuid())
+  stakeholderId      String
+  year               Int
+  month              Int?
+  baseRevenueEur     Decimal                 @db.Decimal(15, 2)
+  feePercentageUsed  Decimal                 @db.Decimal(8, 4)
+  feeAmountNetEur    Decimal                 @db.Decimal(15, 2)
+  taxRate            Decimal                 @db.Decimal(5, 2)
+  taxAmountEur       Decimal                 @db.Decimal(15, 2)
+  feeAmountGrossEur  Decimal                 @db.Decimal(15, 2)
+  calculationDetails Json?
+  status             ManagementBillingStatus @default(DRAFT)
+  invoiceId          String?                 @unique
+  notes              String?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime
+  stakeholder        ParkStakeholder       @relation(fields: [stakeholderId], references: [id], onDelete: Cascade)
+
+  @@unique([stakeholderId, year, month])
+  @@index([status])
+  @@map("management_billings")
+}
+
+model MassCommunication {
+  id              String    @id @default(uuid())
+  subject         String
+  body            String
+  recipientFilter String
+  recipientCount  Int
+  status          String    @default("QUEUED")
+  sentAt          DateTime?
+  errorMessage    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  tenantId        String
+  createdById     String
+  createdBy           User      @relation(fields: [createdById], references: [id])
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId])
+  @@map("mass_communications")
+}
+
+model NetworkConnection {
+  id                                                          String        @id @default(uuid())
+  tenantId                                                    String
+  fromNodeId                                                  String
+  toNodeId                                                    String
+  cableType                                                   String?
+  lengthM                                                     Float?
+  metadata                                                    Json?
+  createdAt                                                   DateTime      @default(now())
+  updatedAt                                                   DateTime
+  fromNode NetworkNode @relation("NetworkConnectionFrom", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  tenant                                                     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  toNode   NetworkNode @relation("NetworkConnectionTo", fields: [toNodeId], references: [id], onDelete: Cascade)
+
+  @@index([fromNodeId])
+  @@index([tenantId])
+  @@index([toNodeId])
+  @@map("network_connections")
+}
+
+model NetworkNode {
+  id                                                                String                @id @default(uuid())
+  tenantId                                                          String
+  parkId                                                            String
+  name                                                              String
+  type                                                              String
+  posX                                                              Float
+  posY                                                              Float
+  turbineId                                                         String?
+  metadata                                                          Json?
+  createdAt                                                         DateTime              @default(now())
+  updatedAt                                                         DateTime
+  fromConnections NetworkConnection[] @relation("NetworkConnectionFrom")
+  toConnections   NetworkConnection[] @relation("NetworkConnectionTo")
+  park                                                             Park                  @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  tenant                                                           Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine                                                          Turbine?              @relation(fields: [turbineId], references: [id])
+
+  @@index([tenantId, parkId])
+  @@map("network_nodes")
+}
+
+model ParkCostAllocationItem {
+  id                                                            String                @id @default(uuid())
+  allocationId                                                  String
+  operatorFundId                                                String
+  allocationBasis                                               String
+  allocationSharePercent                                        Decimal               @default(0) @db.Decimal(8, 4)
+  totalAllocatedEur                                             Decimal               @default(0) @db.Decimal(15, 2)
+  directSettlementEur                                           Decimal               @default(0) @db.Decimal(15, 2)
+  taxableAmountEur                                              Decimal               @default(0) @db.Decimal(15, 2)
+  taxableVatEur                                                 Decimal               @default(0) @db.Decimal(15, 2)
+  exemptAmountEur                                               Decimal               @default(0) @db.Decimal(15, 2)
+  netPayableEur                                                 Decimal               @default(0) @db.Decimal(15, 2)
+  vatInvoiceId                                                  String?               @unique
+  exemptInvoiceId                                               String?               @unique
+  allocation                                                     ParkCostAllocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+  exemptInvoice                                                  Invoice?              @relation("ExemptInvoice", fields: [exemptInvoiceId], references: [id])
+  operatorFund                                                   Fund                  @relation(fields: [operatorFundId], references: [id])
+  vatInvoice                                                     Invoice?              @relation("VatInvoice", fields: [vatInvoiceId], references: [id])
+
+  @@index([allocationId])
+  @@index([operatorFundId])
+  @@map("park_cost_allocation_items")
+}
+
+model ParkCostAllocation {
+  id                         String                       @id @default(uuid())
+  tenantId                   String
+  leaseRevenueSettlementId   String
+  status                     ParkCostAllocationStatus     @default(DRAFT)
+  totalUsageFeeEur           Decimal                      @default(0) @db.Decimal(15, 2)
+  totalTaxableEur            Decimal                      @default(0) @db.Decimal(15, 2)
+  totalExemptEur             Decimal                      @default(0) @db.Decimal(15, 2)
+  periodLabel                String?
+  notes                      String?
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime
+  items                      ParkCostAllocationItem[]
+  leaseRevenueSettlement     LeaseRevenueSettlement    @relation(fields: [leaseRevenueSettlementId], references: [id])
+  tenant                    Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([leaseRevenueSettlementId])
+  @@index([tenantId])
+  @@map("park_cost_allocations")
+}
+
+model ParkRevenuePhase {
+  id                     String   @id @default(uuid())
+  phaseNumber            Int
+  startYear              Int
+  endYear                Int?
+  revenueSharePercentage Decimal  @db.Decimal(5, 2)
+  description            String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime
+  parkId                 String
+  park                  Park     @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  @@unique([parkId, phaseNumber])
+  @@index([parkId])
+  @@map("park_revenue_phases")
+}
+
+model ParkStakeholder {
+  id                      String                    @id @default(uuid())
+  stakeholderTenantId     String
+  parkTenantId            String
+  parkId                  String
+  role                    ParkStakeholderRole
+  visibleFundIds          String[]                  @default([])
+  billingEnabled          Boolean                   @default(false)
+  feePercentage           Decimal?                  @db.Decimal(8, 4)
+  taxType                 TaxType?                  @default(STANDARD)
+  sepaMandate             String?
+  creditorId              String?
+  validFrom               DateTime
+  validTo                 DateTime?
+  isActive                Boolean                   @default(true)
+  notes                   String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime
+  managementBillings      ManagementBilling[]
+  stakeholderTenant      Tenant                    @relation(fields: [stakeholderTenantId], references: [id])
+  stakeholderFeeHistory   StakeholderFeeHistory[]
+
+  @@unique([stakeholderTenantId, parkId, role])
+  @@index([parkTenantId, parkId])
+  @@index([stakeholderTenantId])
+  @@map("park_stakeholders")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([token])
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model Permission {
+  id               String             @id @default(uuid())
+  name             String             @unique
+  displayName      String
+  description      String?
+  module           String
+  action           String
+  sortOrder        Int                @default(0)
+  createdAt        DateTime           @default(now())
+  rolePermissions  RolePermission[]
+
+  @@index([action])
+  @@index([module])
+  @@map("permissions")
+}
+
+model PlotArea {
+  id                      String           @id @default(uuid())
+  areaType                PlotAreaType
+  areaSqm                 Decimal?         @db.Decimal(12, 2)
+  lengthM                 Decimal?         @db.Decimal(10, 2)
+  compensationType        CompensationType @default(ANNUAL)
+  compensationFixedAmount Decimal?         @db.Decimal(12, 2)
+  compensationPercentage  Decimal?         @db.Decimal(5, 2)
+  notes                   String?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime
+  plotId                  String
+  plot                    Plot             @relation(fields: [plotId], references: [id], onDelete: Cascade)
+
+  @@index([areaType])
+  @@index([plotId])
+  @@map("plot_areas")
+}
+
+model RecurringInvoice {
+  id               String    @id @default(uuid())
+  name             String
+  recipientType    String
+  recipientId      String?
+  recipientName    String
+  recipientAddress String?
+  invoiceType      String    @default("INVOICE")
+  positions        Json
+  frequency        String
+  dayOfMonth       Int?
+  startDate        DateTime
+  endDate          DateTime?
+  nextRunAt        DateTime
+  lastRunAt        DateTime?
+  enabled          Boolean   @default(true)
+  notes            String?
+  totalGenerated   Int       @default(0)
+  lastInvoiceId    String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  tenantId         String
+  createdById      String
+  fundId           String?
+  parkId           String?
+  createdBy            User      @relation(fields: [createdById], references: [id])
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([nextRunAt])
+  @@index([tenantId, enabled])
+  @@index([tenantId, nextRunAt])
+  @@map("recurring_invoices")
+}
+
+model ReminderLog {
+  id         String           @id @default(uuid())
+  category   ReminderCategory
+  entityId   String
+  entityType String
+  title      String
+  urgency    String
+  emailSent  Boolean          @default(false)
+  sentTo     String?
+  createdAt  DateTime         @default(now())
+  tenantId   String
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([tenantId, category])
+  @@index([tenantId, entityId, category])
+  @@index([tenantId])
+  @@map("reminder_logs")
+}
+
+model ResourceAccess {
+  id           String    @id @default(uuid())
+  userId       String
+  resourceType String
+  resourceId   String
+  accessLevel  String
+  createdAt    DateTime  @default(now())
+  createdBy    String?
+  expiresAt    DateTime?
+  notes        String?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceType, resourceId])
+  @@index([expiresAt])
+  @@index([resourceType, resourceId])
+  @@index([userId])
+  @@map("resource_access")
+}
+
+model RolePermission {
+  id           String      @id @default(uuid())
+  createdAt    DateTime    @default(now())
+  roleId       String
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+  @@index([roleId])
+  @@map("role_permissions")
+}
+
+model Role {
+  id                    String                  @id @default(uuid())
+  name                  String
+  description           String?
+  isSystem              Boolean                 @default(false)
+  hierarchy             Int                     @default(0)
+  color                 String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  tenantId              String?
+  permissions           RolePermission[]
+  tenant               Tenant?                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userAssignments       UserRoleAssignment[]
+
+  @@unique([name, tenantId])
+  @@index([hierarchy])
+  @@index([isSystem])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model ScadaAnomaly {
+  id               String    @id @default(uuid())
+  tenantId         String
+  turbineId        String
+  type             String
+  severity         String
+  message          String
+  details          Json
+  detectedAt       DateTime  @default(now())
+  resolvedAt       DateTime?
+  acknowledged     Boolean   @default(false)
+  acknowledgedById String?
+  acknowledgedAt   DateTime?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  acknowledgedBy            User?     @relation(fields: [acknowledgedById], references: [id])
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine         Turbine   @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, detectedAt])
+  @@index([tenantId, type, severity])
+  @@index([turbineId, type])
+  @@map("scada_anomalies")
+}
+
+model ScadaAnomalyConfig {
+  id                      String   @id @default(uuid())
+  tenantId                String   @unique
+  enabled                 Boolean  @default(true)
+  performanceThreshold    Decimal  @default(15) @db.Decimal(5, 2)
+  availabilityThreshold   Decimal  @default(90) @db.Decimal(5, 2)
+  downtimeHoursThreshold  Int      @default(24)
+  curveDeviationThreshold Decimal  @default(20) @db.Decimal(5, 2)
+  dataQualityThreshold    Decimal  @default(80) @db.Decimal(5, 2)
+  notifyByEmail           Boolean  @default(true)
+  notifyInApp             Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime
+  tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@map("scada_anomaly_configs")
+}
+
+model ScadaAutoImportLog {
+  id            String    @id @default(uuid())
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  status        String    @default("RUNNING")
+  locationId    String?
+  filesFound    Int       @default(0)
+  filesImported Int       @default(0)
+  filesSkipped  Int       @default(0)
+  errors        Json?
+  summary       String?
+  tenantId      String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, startedAt])
+  @@map("scada_auto_import_logs")
+}
+
+model ScadaAvailability {
+  id              String   @id @default(uuid())
+  date            DateTime
+  periodType      String
+  plantNo         Int
+  t1              Int
+  t2              Int
+  t3              Int
+  t4              Int
+  t5              Int
+  t6              Int
+  t5_1            Int      @default(0)
+  t5_2            Int      @default(0)
+  t5_3            Int      @default(0)
+  availabilityPct Decimal? @db.Decimal(6, 3)
+  sourceFile      String
+  createdAt       DateTime @default(now())
+  turbineId       String
+  tenantId        String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine        Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, date, periodType])
+  @@index([tenantId])
+  @@index([turbineId, date])
+  @@map("scada_availability")
+}
+
+model ScadaImportLog {
+  id                String    @id @default(uuid())
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+  status            String    @default("RUNNING")
+  locationCode      String?
+  fileType          String?
+  filesTotal        Int       @default(0)
+  filesProcessed    Int       @default(0)
+  recordsImported   Int       @default(0)
+  recordsSkipped    Int       @default(0)
+  recordsFailed     Int       @default(0)
+  errorDetails      Json?
+  lastProcessedDate DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+  tenantId          String
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, startedAt])
+  @@map("scada_import_logs")
+}
+
+model ScadaMeasurement {
+  id              String   @id @default(uuid())
+  timestamp       DateTime
+  createdAt       DateTime @default(now())
+  windSpeedMs     Decimal? @db.Decimal(6, 2)
+  rotorRpm        Decimal? @db.Decimal(7, 2)
+  powerW          Decimal? @db.Decimal(12, 2)
+  operatingHours  Decimal? @db.Decimal(10, 2)
+  windDirection   Decimal? @db.Decimal(5, 1)
+  voltageV        Decimal? @db.Decimal(8, 2)
+  currentA        Decimal? @db.Decimal(8, 2)
+  powerFactor     Decimal? @db.Decimal(4, 3)
+  frequencyHz     Decimal? @db.Decimal(5, 2)
+  meterReadingKwh Decimal? @db.Decimal(15, 3)
+  sourceFile      String
+  turbineId       String
+  tenantId        String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine        Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, timestamp, sourceFile])
+  @@index([tenantId])
+  @@index([tenantId, turbineId])
+  @@index([turbineId, timestamp])
+  @@map("scada_measurements")
+}
+
+model ScadaStateEvent {
+  id               String   @id @default(uuid())
+  timestamp        DateTime
+  plantNo          Int
+  state            Int
+  subState         Int
+  isService        Boolean  @default(false)
+  isFault          Boolean  @default(false)
+  windSpeedAtEvent Decimal? @db.Decimal(6, 1)
+  sourceFile       String
+  createdAt        DateTime @default(now())
+  turbineId        String
+  tenantId         String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine         Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, timestamp, state, subState])
+  @@index([tenantId])
+  @@index([turbineId, timestamp])
+  @@map("scada_state_events")
+}
+
+model ScadaStateSummary {
+  id         String   @id @default(uuid())
+  date       DateTime
+  plantNo    Int
+  state      Int
+  subState   Int
+  isFault    Boolean  @default(false)
+  frequency  Int
+  duration   Int
+  sourceFile String
+  createdAt  DateTime @default(now())
+  turbineId  String
+  tenantId   String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine   Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, date, state, subState])
+  @@index([tenantId])
+  @@index([turbineId, date])
+  @@map("scada_state_summaries")
+}
+
+model ScadaTextEvent {
+  id         String   @id @default(uuid())
+  timestamp  DateTime
+  plantNo    Int
+  info       String
+  sourceFile String
+  createdAt  DateTime @default(now())
+  turbineId  String
+  tenantId   String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine   Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, timestamp])
+  @@index([tenantId])
+  @@index([turbineId, timestamp])
+  @@map("scada_text_events")
+}
+
+model ScadaTurbineMapping {
+  id                 String    @id @default(uuid())
+  locationCode       String
+  plantNo            Int
+  description        String?
+  status             String    @default("ACTIVE")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime
+  autoImportEnabled  Boolean   @default(false)
+  autoImportPath     String?
+  lastAutoImport     DateTime?
+  autoImportInterval String    @default("DAILY")
+  parkId             String
+  turbineId          String
+  tenantId           String
+  park              Park      @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine           Turbine   @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, locationCode, plantNo])
+  @@index([parkId])
+  @@index([tenantId])
+  @@index([turbineId])
+  @@map("scada_turbine_mappings")
+}
+
+model ScadaWarningEvent {
+  id         String   @id @default(uuid())
+  timestamp  DateTime
+  plantNo    Int
+  warn       Int
+  subWarn    Int
+  isWarnMsg  Boolean  @default(false)
+  sourceFile String
+  createdAt  DateTime @default(now())
+  turbineId  String
+  tenantId   String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine   Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, timestamp, warn, subWarn])
+  @@index([tenantId])
+  @@index([turbineId, timestamp])
+  @@map("scada_warning_events")
+}
+
+model ScadaWarningSummary {
+  id         String   @id @default(uuid())
+  date       DateTime
+  plantNo    Int
+  warn       Int
+  subWarn    Int
+  isWarnMsg  Boolean  @default(false)
+  frequency  Int
+  duration   Int
+  sourceFile String
+  createdAt  DateTime @default(now())
+  turbineId  String
+  tenantId   String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine   Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, date, warn, subWarn])
+  @@index([tenantId])
+  @@index([turbineId, date])
+  @@map("scada_warning_summaries")
+}
+
+model ScadaWindSummary {
+  id                       String   @id @default(uuid())
+  date                     DateTime
+  periodType               String
+  plantNo                  Int
+  sampleCount              Int?
+  meanWindSpeed            Decimal? @db.Decimal(7, 2)
+  peakWindSpeed            Decimal? @db.Decimal(7, 2)
+  lowWindSpeed             Decimal? @db.Decimal(7, 2)
+  meanRotorRpm             Decimal? @db.Decimal(8, 2)
+  peakRotorRpm             Decimal? @db.Decimal(8, 2)
+  lowRotorRpm              Decimal? @db.Decimal(8, 2)
+  meanPowerKw              Decimal? @db.Decimal(10, 2)
+  peakPowerKw              Decimal? @db.Decimal(10, 2)
+  lowPowerKw               Decimal? @db.Decimal(10, 2)
+  meanReactivePower        Decimal? @db.Decimal(10, 2)
+  peakReactivePower        Decimal? @db.Decimal(10, 2)
+  lowReactivePower         Decimal? @db.Decimal(10, 2)
+  meanWindDirection        Decimal? @db.Decimal(5, 1)
+  cumulativeOperatingHours Decimal? @db.Decimal(12, 2)
+  cumulativeEnergyKwh      Decimal? @db.Decimal(15, 2)
+  workMinutes              Int?
+  meanWindPower            Decimal? @db.Decimal(10, 2)
+  meanTechPower            Decimal? @db.Decimal(10, 2)
+  meanFeedMgmtPower        Decimal? @db.Decimal(10, 2)
+  meanExternalPower        Decimal? @db.Decimal(10, 2)
+  meanBladeAngle           Decimal? @db.Decimal(7, 2)
+  meanRain                 Decimal? @db.Decimal(7, 3)
+  peakRain                 Decimal? @db.Decimal(7, 3)
+  lowRain                  Decimal? @db.Decimal(7, 3)
+  meanVisibility           Decimal? @db.Decimal(8, 2)
+  peakVisibility           Decimal? @db.Decimal(8, 2)
+  lowVisibility            Decimal? @db.Decimal(8, 2)
+  meanBrightness           Decimal? @db.Decimal(8, 2)
+  meanLightningIce         Decimal? @db.Decimal(8, 2)
+  meanIceDetection         Decimal? @db.Decimal(8, 2)
+  meanAirPressure          Decimal? @db.Decimal(8, 2)
+  meanAirHumidity          Decimal? @db.Decimal(8, 2)
+  peakTimestamps           Json?
+  sourceFile               String
+  createdAt                DateTime @default(now())
+  turbineId                String
+  tenantId                 String
+  tenant                  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine                 Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, date, periodType])
+  @@index([tenantId])
+  @@index([turbineId, date])
+  @@map("scada_wind_summaries")
+}
+
+model ScheduledReport {
+  id          String                  @id @default(uuid())
+  name        String
+  reportType  ScheduledReportType
+  schedule    ScheduledReportSchedule
+  recipients  String[]
+  config      Json
+  enabled     Boolean                 @default(true)
+  nextRunAt   DateTime
+  lastRunAt   DateTime?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime
+  tenantId    String
+  createdById String
+  createdBy       User                    @relation(fields: [createdById], references: [id])
+  tenant     Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([enabled, nextRunAt])
+  @@index([reportType])
+  @@index([tenantId])
+  @@map("scheduled_reports")
+}
+
+model StakeholderFeeHistory {
+  id                String            @id @default(uuid())
+  stakeholderId     String
+  feePercentage     Decimal           @db.Decimal(8, 4)
+  validFrom         DateTime
+  validUntil        DateTime?
+  reason            String?
+  createdAt         DateTime          @default(now())
+  stakeholder       ParkStakeholder @relation(fields: [stakeholderId], references: [id], onDelete: Cascade)
+
+  @@index([stakeholderId, validFrom])
+  @@map("stakeholder_fee_history")
+}
+
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String
+  value     String
+  encrypted Boolean  @default(false)
+  category  String
+  label     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  tenantId  String?
+  tenant   Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+  @@index([category])
+  @@index([key])
+  @@index([tenantId])
+  @@map("system_configs")
+}
+
+model TurbineOperator {
+  id                  String    @id @default(uuid())
+  ownershipPercentage Decimal   @default(100.00) @db.Decimal(5, 2)
+  validFrom           DateTime
+  validTo             DateTime?
+  status              String    @default("ACTIVE")
+  notes               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime
+  turbineId           String
+  operatorFundId      String
+  operatorFund        Fund      @relation(fields: [operatorFundId], references: [id])
+  turbine             Turbine   @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@index([operatorFundId])
+  @@index([turbineId])
+  @@index([validFrom, validTo])
+  @@map("turbine_operators")
+}
+
+model TurbineProduction {
+  id              String               @id @default(uuid())
+  year            Int
+  month           Int
+  productionKwh   Decimal              @db.Decimal(15, 3)
+  operatingHours  Decimal?             @db.Decimal(10, 2)
+  availabilityPct Decimal?             @db.Decimal(5, 2)
+  source          ProductionDataSource @default(MANUAL)
+  status          ProductionStatus     @default(DRAFT)
+  notes           String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime
+  turbineId       String
+  tenantId        String
+  turbine        Turbine              @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, year, month, tenantId])
+  @@index([status])
+  @@index([tenantId])
+  @@index([turbineId])
+  @@index([turbineId, year, month])
+  @@index([year, month])
+  @@map("turbine_productions")
+}
+
+model UserRoleAssignment {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  createdBy    String?
+  userId       String
+  roleId       String
+  resourceType String   @default("__global__")
+  resourceIds  String[]
+  role         Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId, resourceType])
+  @@index([roleId])
+  @@index([userId])
+  @@map("user_role_assignments")
+}
 
 enum UserRole {
   SUPERADMIN
@@ -80,746 +2327,183 @@ enum NotificationType {
   SYSTEM
 }
 
-// ===========================================
-// CORE: Multi-Tenancy
-// ===========================================
-
-model Tenant {
-  id             String       @id @default(uuid())
-  name           String
-  slug           String       @unique
-  logoUrl        String?
-  primaryColor   String       @default("#3b82f6")
-  secondaryColor String       @default("#1e40af")
-  settings       Json         @default("{}")
-  contactEmail   String?
-  contactPhone   String?
-  address        String?
-  status         EntityStatus @default(ACTIVE)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  // Relations
-  users        User[]
-  parks        Park[]
-  funds        Fund[]
-  persons      Person[]
-  contracts    Contract[]
-  documents    Document[]
-  invoices     Invoice[]
-  votes        Vote[]
-  news         News[]
-  auditLogs    AuditLog[]
-  notifications Notification[]
-
-  @@map("tenants")
+enum BillingRuleFrequency {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+  CUSTOM_CRON
 }
 
-model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  passwordHash  String
-  firstName     String?
-  lastName      String?
-  phone         String?
-  avatarUrl     String?
-  role          UserRole  @default(VIEWER)
-  emailVerified DateTime?
-  lastLoginAt   DateTime?
-  status        EntityStatus @default(ACTIVE)
-  settings      Json      @default("{}")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Multi-Tenancy
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Relations
-  createdDocuments Document[]     @relation("DocumentCreatedBy")
-  createdInvoices  Invoice[]      @relation("InvoiceCreatedBy")
-  createdVotes     Vote[]         @relation("VoteCreatedBy")
-  createdNews      News[]         @relation("NewsCreatedBy")
-  serviceEvents    ServiceEvent[] @relation("ServiceEventCreatedBy")
-  auditLogs        AuditLog[]     @relation("AuditLogUser")
-  impersonatedLogs AuditLog[]     @relation("AuditLogImpersonatedBy")
-  notifications    Notification[]
-  sessions         Session[]
-  accounts         Account[]
-
-  // Shareholder link (for Kommanditisten-Portal)
-  shareholder Shareholder?
-
-  @@index([tenantId])
-  @@index([email])
-  @@map("users")
+enum BillingRuleType {
+  LEASE_PAYMENT
+  LEASE_ADVANCE
+  DISTRIBUTION
+  MANAGEMENT_FEE
+  CUSTOM
 }
 
-// NextAuth.js Models
-model Account {
-  id                String  @id @default(uuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
+enum CompensationType {
+  ANNUAL
+  ONE_TIME
 }
 
-model Session {
-  id           String   @id @default(uuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
+enum DistributionMode {
+  PROPORTIONAL
+  SMOOTHED
+  TOLERATED
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
+enum DistributionStatus {
+  DRAFT
+  EXECUTED
+  CANCELLED
 }
 
-// ===========================================
-// PARKS & TURBINES
-// ===========================================
-
-model Park {
-  id                String       @id @default(uuid())
-  name              String
-  shortName         String?
-  description       String?
-  address           String?
-  city              String?
-  postalCode        String?
-  country           String       @default("Deutschland")
-  latitude          Decimal?     @db.Decimal(10, 8)
-  longitude         Decimal?     @db.Decimal(11, 8)
-  commissioningDate DateTime?
-  totalCapacityKw   Decimal?     @db.Decimal(12, 2)
-  operator          String?
-  owner             String?
-  status            EntityStatus @default(ACTIVE)
-  metadata          Json         @default("{}")
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-
-  // Multi-Tenancy
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Relations
-  turbines    Turbine[]
-  plots       Plot[]
-  contracts   Contract[]
-  documents   Document[]
-  fundParks   FundPark[]
-  weatherData WeatherData[]
-
-  @@index([tenantId])
-  @@map("parks")
+enum DocumentApprovalStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  PUBLISHED
+  REJECTED
 }
 
-model Turbine {
-  id                String       @id @default(uuid())
-  designation       String
-  serialNumber      String?
-  manufacturer      String?
-  model             String?
-  ratedPowerKw      Decimal?     @db.Decimal(10, 2)
-  hubHeightM        Decimal?     @db.Decimal(6, 2)
-  rotorDiameterM    Decimal?     @db.Decimal(6, 2)
-  commissioningDate DateTime?
-  warrantyEndDate   DateTime?
-  latitude          Decimal?     @db.Decimal(10, 8)
-  longitude         Decimal?     @db.Decimal(11, 8)
-  status            EntityStatus @default(ACTIVE)
-  technicalData     Json         @default("{}")
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-
-  // Relations
-  parkId String
-  park   Park   @relation(fields: [parkId], references: [id], onDelete: Cascade)
-
-  serviceEvents ServiceEvent[]
-  contracts     Contract[]
-  documents     Document[]
-
-  @@index([parkId])
-  @@map("turbines")
+enum DocumentType {
+  INVOICE
+  CREDIT_NOTE
+  CONTRACT
+  SETTLEMENT_REPORT
 }
 
-model ServiceEvent {
-  id           String   @id @default(uuid())
-  eventDate    DateTime
-  eventType    String
-  description  String?
-  durationHours Decimal? @db.Decimal(6, 2)
-  cost         Decimal? @db.Decimal(12, 2)
-  performedBy  String?
-  notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  turbineId String
-  turbine   Turbine @relation(fields: [turbineId], references: [id], onDelete: Cascade)
-
-  createdById String?
-  createdBy   User?   @relation("ServiceEventCreatedBy", fields: [createdById], references: [id])
-
-  @@index([turbineId])
-  @@index([eventDate])
-  @@map("service_events")
+enum EnergyCalculationType {
+  FIXED_RATE
+  MARKET_PRICE
+  MANUAL
 }
 
-// ===========================================
-// FUNDS & SHAREHOLDERS (Beteiligungen)
-// ===========================================
-
-model Fund {
-  id                String       @id @default(uuid())
-  name              String
-  legalForm         String?
-  registrationNumber String?
-  registrationCourt String?
-  foundingDate      DateTime?
-  fiscalYearEnd     String       @default("12-31")
-  totalCapital      Decimal?     @db.Decimal(15, 2)
-  managingDirector  String?
-  address           String?
-  bankDetails       Json         @default("{}")
-  status            EntityStatus @default(ACTIVE)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-
-  // Multi-Tenancy
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Relations
-  shareholders Shareholder[]
-  fundParks    FundPark[]
-  votes        Vote[]
-  contracts    Contract[]
-  documents    Document[]
-  invoices     Invoice[]
-  news         News[]
-
-  @@index([tenantId])
-  @@map("funds")
+enum EnergySettlementStatus {
+  DRAFT
+  CALCULATED
+  INVOICED
+  CLOSED
 }
 
-model FundPark {
-  id                  String   @id @default(uuid())
-  ownershipPercentage Decimal? @db.Decimal(5, 2)
-  createdAt           DateTime @default(now())
-
-  fundId String
-  fund   Fund   @relation(fields: [fundId], references: [id], onDelete: Cascade)
-
-  parkId String
-  park   Park   @relation(fields: [parkId], references: [id], onDelete: Cascade)
-
-  @@unique([fundId, parkId])
-  @@map("fund_parks")
+enum LeaseRevenueSettlementStatus {
+  OPEN
+  ADVANCE_CREATED
+  CALCULATED
+  SETTLED
+  CLOSED
+  CANCELLED
+  PENDING_REVIEW
+  APPROVED
 }
 
-model Person {
-  id            String       @id @default(uuid())
-  personType    String       @default("natural") // natural, legal
-  salutation    String?
-  firstName     String?
-  lastName      String?
-  companyName   String?
-  email         String?
-  phone         String?
-  mobile        String?
-  street        String?
-  postalCode    String?
-  city          String?
-  country       String       @default("Deutschland")
-  taxId         String?
-  bankIban      String?
-  bankBic       String?
-  bankName      String?
-  notes         String?
-  status        EntityStatus @default(ACTIVE)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  // Multi-Tenancy
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Relations
-  shareholders Shareholder[]
-  leases       Lease[]       @relation("LeaseLessor")
-  contracts    Contract[]    @relation("ContractPartner")
-
-  @@index([tenantId])
-  @@index([lastName, firstName])
-  @@map("persons")
+enum LeaseSettlementMode {
+  NETWORK_COMPANY
+  OPERATOR_DIRECT
 }
 
-model Shareholder {
-  id                     String       @id @default(uuid())
-  shareholderNumber      String?
-  entryDate              DateTime?
-  exitDate               DateTime?
-  capitalContribution    Decimal?     @db.Decimal(15, 2)
-  liabilityAmount        Decimal?     @db.Decimal(15, 2)
-  ownershipPercentage    Decimal?     @db.Decimal(8, 5)
-  votingRightsPercentage Decimal?     @db.Decimal(8, 5)
-  distributionPercentage Decimal?     @db.Decimal(8, 5)
-  status                 EntityStatus @default(ACTIVE)
-  notes                  String?
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
-
-  // Relations
-  fundId String
-  fund   Fund   @relation(fields: [fundId], references: [id], onDelete: Cascade)
-
-  personId String
-  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
-
-  // Portal access
-  userId String? @unique
-  user   User?   @relation(fields: [userId], references: [id])
-
-  voteResponses VoteResponse[]
-  voteProxiesGiven    VoteProxy[] @relation("ProxyGrantor")
-  voteProxiesReceived VoteProxy[] @relation("ProxyGrantee")
-  invoices      Invoice[]
-  documents     Document[]
-
-  @@index([fundId])
-  @@index([personId])
-  @@map("shareholders")
+enum ManagementBillingStatus {
+  DRAFT
+  CALCULATED
+  INVOICED
+  CANCELLED
 }
 
-// ===========================================
-// LEASES & PLOTS (Pacht)
-// ===========================================
-
-model Plot {
-  id               String       @id @default(uuid())
-  cadastralDistrict String?     // Gemarkung
-  fieldNumber      String?      // Flur
-  plotNumber       String?      // Flurstück
-  areaSqm          Decimal?     @db.Decimal(12, 2)
-  usageType        String?
-  latitude         Decimal?     @db.Decimal(10, 8)
-  longitude        Decimal?     @db.Decimal(11, 8)
-  notes            String?
-  status           EntityStatus @default(ACTIVE)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-
-  // Relations
-  parkId String?
-  park   Park?   @relation(fields: [parkId], references: [id])
-
-  leases Lease[]
-
-  @@index([parkId])
-  @@map("plots")
+enum NewsCategory {
+  GENERAL
+  FINANCIAL
+  TECHNICAL
+  LEGAL
 }
 
-model Lease {
-  id                       String         @id @default(uuid())
-  contractNumber           String?
-  startDate                DateTime
-  endDate                  DateTime?
-  noticePeriodMonths       Int            @default(12)
-  annualRent               Decimal?       @db.Decimal(12, 2)
-  rentIncreaseType         String?        // fixed, index
-  rentIncreasePercentage   Decimal?       @db.Decimal(5, 2)
-  rentIncreaseIntervalYears Int?
-  paymentSchedule          String         @default("yearly")
-  status                   ContractStatus @default(ACTIVE)
-  documentUrl              String?
-  notes                    String?
-  createdAt                DateTime       @default(now())
-  updatedAt                DateTime       @updatedAt
-
-  // Relations
-  plotId String
-  plot   Plot   @relation(fields: [plotId], references: [id], onDelete: Cascade)
-
-  lessorId String
-  lessor   Person @relation("LeaseLessor", fields: [lessorId], references: [id])
-
-  @@index([plotId])
-  @@index([endDate])
-  @@map("leases")
+enum ParkCostAllocationStatus {
+  DRAFT
+  INVOICED
+  CLOSED
 }
 
-// ===========================================
-// CONTRACTS
-// ===========================================
-
-model Contract {
-  id                  String         @id @default(uuid())
-  contractType        ContractType
-  contractNumber      String?
-  title               String
-  startDate           DateTime
-  endDate             DateTime?
-  noticePeriodMonths  Int?
-  noticeDeadline      DateTime?
-  autoRenewal         Boolean        @default(false)
-  renewalPeriodMonths Int?
-  annualValue         Decimal?       @db.Decimal(15, 2)
-  paymentTerms        String?
-  status              ContractStatus @default(ACTIVE)
-  documentUrl         String?
-  reminderDays        Int[]          @default([90, 30])
-  notes               String?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-
-  // Multi-Tenancy
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Optional relations
-  parkId String?
-  park   Park?   @relation(fields: [parkId], references: [id])
-
-  turbineId String?
-  turbine   Turbine? @relation(fields: [turbineId], references: [id])
-
-  fundId String?
-  fund   Fund?   @relation(fields: [fundId], references: [id])
-
-  partnerId String?
-  partner   Person? @relation("ContractPartner", fields: [partnerId], references: [id])
-
-  documents Document[]
-
-  @@index([tenantId])
-  @@index([contractType])
-  @@index([endDate])
-  @@index([noticeDeadline])
-  @@map("contracts")
+enum ParkStakeholderRole {
+  DEVELOPER
+  GRID_OPERATOR
+  TECHNICAL_BF
+  COMMERCIAL_BF
+  OPERATOR
 }
 
-// ===========================================
-// DOCUMENTS
-// ===========================================
-
-model Document {
-  id           String           @id @default(uuid())
-  category     DocumentCategory
-  title        String
-  description  String?
-  fileName     String
-  fileUrl      String
-  fileSizeBytes BigInt?
-  mimeType     String?
-  version      Int              @default(1)
-  tags         String[]
-  isArchived   Boolean          @default(false)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-
-  // Multi-Tenancy
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Versioning
-  parentId String?
-  parent   Document?  @relation("DocumentVersions", fields: [parentId], references: [id])
-  versions Document[] @relation("DocumentVersions")
-
-  // Created by
-  uploadedById String?
-  uploadedBy   User?   @relation("DocumentCreatedBy", fields: [uploadedById], references: [id])
-
-  // Optional relations
-  parkId String?
-  park   Park?   @relation(fields: [parkId], references: [id])
-
-  turbineId String?
-  turbine   Turbine? @relation(fields: [turbineId], references: [id])
-
-  fundId String?
-  fund   Fund?   @relation(fields: [fundId], references: [id])
-
-  contractId String?
-  contract   Contract? @relation(fields: [contractId], references: [id])
-
-  shareholderId String?
-  shareholder   Shareholder? @relation(fields: [shareholderId], references: [id])
-
-  @@index([tenantId])
-  @@index([category])
-  @@index([parkId])
-  @@index([fundId])
-  @@index([parentId])
-  @@map("documents")
+enum PlotAreaType {
+  WEA_STANDORT
+  POOL
+  WEG
+  AUSGLEICH
+  KABEL
 }
 
-// ===========================================
-// VOTING
-// ===========================================
-
-model Vote {
-  id                     String     @id @default(uuid())
-  title                  String
-  description            String?
-  voteType               String     @default("simple")
-  options                Json       @default("[\"Ja\", \"Nein\", \"Enthaltung\"]")
-  startDate              DateTime
-  endDate                DateTime
-  quorumPercentage       Decimal?   @db.Decimal(5, 2)
-  requiresCapitalMajority Boolean   @default(false)
-  status                 VoteStatus @default(DRAFT)
-  results                Json?
-  createdAt              DateTime   @default(now())
-  updatedAt              DateTime   @updatedAt
-
-  // Multi-Tenancy
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Fund
-  fundId String
-  fund   Fund   @relation(fields: [fundId], references: [id], onDelete: Cascade)
-
-  // Created by
-  createdById String?
-  createdBy   User?   @relation("VoteCreatedBy", fields: [createdById], references: [id])
-
-  responses VoteResponse[]
-  proxies   VoteProxy[]
-
-  @@index([tenantId])
-  @@index([fundId])
-  @@index([status])
-  @@map("votes")
+enum ProductionDataSource {
+  MANUAL
+  CSV_IMPORT
+  EXCEL_IMPORT
+  SCADA
 }
 
-model VoteResponse {
-  id             String   @id @default(uuid())
-  selectedOption String
-  votedAt        DateTime @default(now())
-  ipAddress      String?
-
-  voteId String
-  vote   Vote   @relation(fields: [voteId], references: [id], onDelete: Cascade)
-
-  shareholderId String
-  shareholder   Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
-
-  // If voted by proxy
-  votedById String?
-  proxyId   String?
-
-  @@unique([voteId, shareholderId])
-  @@index([voteId])
-  @@map("vote_responses")
+enum ProductionStatus {
+  DRAFT
+  CONFIRMED
+  INVOICED
 }
 
-model VoteProxy {
-  id         String    @id @default(uuid())
-  validFrom  DateTime
-  validUntil DateTime?
-  isActive   Boolean   @default(true)
-  documentUrl String?
-  createdAt  DateTime  @default(now())
-
-  // Grantor (Vollmachtgeber)
-  grantorId String
-  grantor   Shareholder @relation("ProxyGrantor", fields: [grantorId], references: [id], onDelete: Cascade)
-
-  // Grantee (Vollmachtnehmer)
-  granteeId String
-  grantee   Shareholder @relation("ProxyGrantee", fields: [granteeId], references: [id], onDelete: Cascade)
-
-  // Optional: specific vote (null = Generalvollmacht)
-  voteId String?
-  vote   Vote?   @relation(fields: [voteId], references: [id])
-
-  @@index([granteeId])
-  @@map("vote_proxies")
+enum ReminderCategory {
+  OVERDUE_INVOICE
+  EXPIRING_CONTRACT
+  OPEN_SETTLEMENT
+  EXPIRING_DOCUMENT
 }
 
-// ===========================================
-// INVOICES
-// ===========================================
-
-model Invoice {
-  id              String        @id @default(uuid())
-  invoiceType     InvoiceType
-  invoiceNumber   String
-  invoiceDate     DateTime
-  dueDate         DateTime?
-  recipientType   String?       // shareholder, lessor, vendor
-  recipientName   String?
-  recipientAddress String?
-  netAmount       Decimal       @db.Decimal(15, 2)
-  taxRate         Decimal       @default(19.00) @db.Decimal(5, 2)
-  taxAmount       Decimal?      @db.Decimal(15, 2)
-  grossAmount     Decimal       @db.Decimal(15, 2)
-  currency        String        @default("EUR")
-  status          InvoiceStatus @default(DRAFT)
-  sentAt          DateTime?
-  paidAt          DateTime?
-  pdfUrl          String?
-  notes           String?
-  lineItems       Json          @default("[]")
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  // Multi-Tenancy
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Optional relations
-  fundId String?
-  fund   Fund?   @relation(fields: [fundId], references: [id])
-
-  shareholderId String?
-  shareholder   Shareholder? @relation(fields: [shareholderId], references: [id])
-
-  // Created by
-  createdById String?
-  createdBy   User?   @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
-
-  @@index([tenantId])
-  @@index([invoiceNumber])
-  @@index([invoiceDate])
-  @@index([status])
-  @@map("invoices")
+enum ReportFormat {
+  PDF
+  XLSX
+  CSV
 }
 
-// ===========================================
-// NOTIFICATIONS & NEWS
-// ===========================================
-
-model Notification {
-  id               String           @id @default(uuid())
-  type             NotificationType
-  title            String
-  message          String?
-  referenceType    String?
-  referenceId      String?
-  isRead           Boolean          @default(false)
-  emailSent        Boolean          @default(false)
-  emailSentAt      DateTime?
-  createdAt        DateTime         @default(now())
-
-  // Multi-Tenancy
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([userId, isRead])
-  @@map("notifications")
+enum ReportType {
+  MONTHLY
+  ANNUAL
+  SHAREHOLDERS
+  SETTLEMENT
+  CONTRACTS
+  INVOICES
+  PARKS_OVERVIEW
+  TURBINES_OVERVIEW
+  FUND_PERFORMANCE
+  VOTES_RESULTS
+  CUSTOM
 }
 
-model News {
-  id          String    @id @default(uuid())
-  title       String
-  content     String
-  isPublished Boolean   @default(false)
-  publishedAt DateTime?
-  expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Multi-Tenancy
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Optional: for specific fund
-  fundId String?
-  fund   Fund?   @relation(fields: [fundId], references: [id])
-
-  // Created by
-  createdById String?
-  createdBy   User?   @relation("NewsCreatedBy", fields: [createdById], references: [id])
-
-  @@index([tenantId])
-  @@index([isPublished, publishedAt])
-  @@map("news")
+enum ScheduledReportSchedule {
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
 }
 
-// ===========================================
-// WEATHER DATA
-// ===========================================
-
-model WeatherData {
-  id               String   @id @default(uuid())
-  recordedAt       DateTime
-  windSpeedMs      Decimal? @db.Decimal(6, 2)
-  windDirectionDeg Int?
-  temperatureC     Decimal? @db.Decimal(5, 2)
-  humidityPercent  Int?
-  pressureHpa      Decimal? @db.Decimal(7, 2)
-  weatherCondition String?
-  source           String   @default("openweathermap")
-  rawData          Json?
-  createdAt        DateTime @default(now())
-
-  parkId String
-  park   Park   @relation(fields: [parkId], references: [id], onDelete: Cascade)
-
-  @@index([parkId])
-  @@index([recordedAt])
-  @@map("weather_data")
+enum ScheduledReportType {
+  MONTHLY_PRODUCTION
+  QUARTERLY_FINANCIAL
+  ANNUAL_SUMMARY
+  CUSTOM
 }
 
-// ===========================================
-// AUDIT LOG
-// ===========================================
+enum SettlementPeriodStatus {
+  OPEN
+  IN_PROGRESS
+  PENDING_REVIEW
+  APPROVED
+  CLOSED
+  CANCELLED
+}
 
-model AuditLog {
-  id           String   @id @default(uuid())
-  action       String   // CREATE, UPDATE, DELETE, VIEW, EXPORT, LOGIN, IMPERSONATE
-  entityType   String
-  entityId     String?
-  oldValues    Json?
-  newValues    Json?
-  ipAddress    String?
-  userAgent    String?
-  createdAt    DateTime @default(now())
-
-  // Multi-Tenancy
-  tenantId String?
-  tenant   Tenant? @relation(fields: [tenantId], references: [id])
-
-  userId String?
-  user   User?   @relation("AuditLogUser", fields: [userId], references: [id])
-
-  impersonatedById String?
-  impersonatedBy   User?   @relation("AuditLogImpersonatedBy", fields: [impersonatedById], references: [id])
-
-  @@index([tenantId])
-  @@index([userId])
-  @@index([entityType, entityId])
-  @@index([createdAt])
-  @@map("audit_logs")
+enum TaxType {
+  STANDARD
+  REDUCED
+  EXEMPT
 }

@@ -1,81 +1,109 @@
-# =====================================================
+# =============================================================================
 # WindparkManager - Production Dockerfile
-# Multi-stage build for optimized image size
-# =====================================================
+# Multi-Stage Build fuer optimale Image-Groesse
+# =============================================================================
 
+# -----------------------------------------------------------------------------
 # Stage 1: Dependencies
+# Installiert alle Dependencies (inklusive devDependencies fuer Build)
+# -----------------------------------------------------------------------------
 FROM node:20-alpine AS deps
+
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine
+# to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat
+
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
+# Package files kopieren
+COPY package.json package-lock.json ./
 
-# Install dependencies based on lockfile
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else echo "No lockfile found." && exit 1; \
-  fi
+# Dependencies installieren (mit devDependencies fuer Prisma und Build)
+RUN npm ci
 
+# -----------------------------------------------------------------------------
 # Stage 2: Builder
+# Baut die Next.js Anwendung
+# -----------------------------------------------------------------------------
 FROM node:20-alpine AS builder
+
 WORKDIR /app
 
-# Copy dependencies from deps stage
+# Dependencies aus vorheriger Stage kopieren
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set environment variables for build
+# Prisma Client generieren
+RUN npx prisma generate
+
+# Environment fuer Build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Build the application
-RUN \
-  if [ -f yarn.lock ]; then yarn build; \
-  elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm build; \
-  else npm run build; \
-  fi
+# Next.js bauen (mit Dummy-Werten fuer Build-Zeit ENV vars)
+# Diese werden zur Laufzeit durch echte Werte ersetzt
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
-# Stage 3: Runner
+RUN npm run build
+
+# -----------------------------------------------------------------------------
+# Stage 3: Runner (Production)
+# Minimales Production Image
+# -----------------------------------------------------------------------------
 FROM node:20-alpine AS runner
+
 WORKDIR /app
 
-# Set environment
+# Production Environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create non-root user
+# Sicherheit: Non-root User erstellen
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files
+# Notwendige Pakete fuer Healthchecks und Prisma
+RUN apk add --no-cache curl openssl
+
+# Statische Assets kopieren
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
 
-# Set correct permissions for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Copy build output
+# Standalone Output kopieren (inkl. Server)
+# Nutzt Next.js standalone output mode fuer minimale Groesse
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Switch to non-root user
+# Prisma Schema und Client kopieren (fuer Migrations)
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+
+# Entrypoint Script kopieren
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
+# Verzeichnis-Berechtigungen setzen
+RUN mkdir -p .next
+RUN chown -R nextjs:nodejs /app
+
+# Non-root User aktivieren
 USER nextjs
 
-# Expose port
+# Port exponieren
 EXPOSE 3000
 
-# Set hostname
-ENV HOSTNAME="0.0.0.0"
+# Environment Variable fuer Port
 ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
 
-# Start the application
+# Entrypoint (fuehrt Migrations aus, dann startet App)
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
+# Start Command
 CMD ["node", "server.js"]

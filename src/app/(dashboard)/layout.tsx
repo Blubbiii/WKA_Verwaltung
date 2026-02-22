@@ -1,5 +1,8 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { Breadcrumb } from "@/components/layout/breadcrumb";
+import { MaintenanceBanner } from "@/components/layout/maintenance-banner";
+import { KeyboardProvider } from "@/components/providers/keyboard-provider";
 
 export default function DashboardLayout({
   children,
@@ -7,14 +10,20 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-y-auto bg-muted/30 p-6">
-          {children}
-        </main>
+    <KeyboardProvider>
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <MaintenanceBanner />
+          <Header />
+          <main className="flex-1 overflow-y-auto overscroll-contain bg-muted/30 p-6">
+            <Breadcrumb />
+            <div className="animate-fade-in">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </KeyboardProvider>
   );
 }

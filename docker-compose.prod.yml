@@ -1,0 +1,398 @@
+# =============================================================================
+# WindparkManager - Production Docker Compose
+#
+# Start mit: docker compose -f docker-compose.prod.yml up -d
+# Logs:      docker compose -f docker-compose.prod.yml logs -f
+# Stop:      docker compose -f docker-compose.prod.yml down
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Traefik - Reverse Proxy & SSL Termination
+  # ---------------------------------------------------------------------------
+  traefik:
+    image: traefik:v3.0
+    container_name: wpm-traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/traefik.yml:ro
+      - ./traefik/dynamic.yml:/dynamic.yml:ro
+      - traefik_certs:/letsencrypt
+    networks:
+      - wpm-network
+    labels:
+      - "traefik.enable=true"
+      # Dashboard (optional, nur fuer Debugging)
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH:-}"
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Next.js Application
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wpm-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-wpm}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-windparkmanager}?schema=public
+
+      # NextAuth
+      NEXTAUTH_URL: https://${DOMAIN:-localhost}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # S3/MinIO
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-wpm-documents}
+      S3_REGION: ${S3_REGION:-eu-central-1}
+      S3_PUBLIC_URL: https://${DOMAIN:-localhost}/storage
+
+      # SMTP (optional)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@example.com}
+
+      # App Settings
+      NODE_ENV: production
+      APP_URL: https://${DOMAIN:-localhost}
+    networks:
+      - wpm-network
+    labels:
+      - "traefik.enable=true"
+      # HTTP Router
+      - "traefik.http.routers.app.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls=true"
+      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+      # Service
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
+      # Middlewares
+      - "traefik.http.routers.app.middlewares=security-headers@file,compress@file"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: wpm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wpm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-windparkmanager}
+      # Performance Tuning
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=de_DE.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wpm-network
+    # Nicht nach aussen exponieren in Production!
+    # ports:
+    #   - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wpm} -d ${POSTGRES_DB:-windparkmanager}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Resource Limits (anpassen je nach Server)
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # Redis - Caching & Sessions
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: wpm-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - wpm-network
+    # Nicht nach aussen exponieren in Production!
+    # ports:
+    #   - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  # ---------------------------------------------------------------------------
+  # MinIO - S3-Compatible Object Storage
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: wpm-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BROWSER_REDIRECT_URL: https://minio.${DOMAIN:-localhost}
+    volumes:
+      - minio_data:/data
+    networks:
+      - wpm-network
+    labels:
+      - "traefik.enable=true"
+      # MinIO API (fuer S3-Zugriff)
+      - "traefik.http.routers.minio-api.rule=Host(`storage.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.minio-api.entrypoints=websecure"
+      - "traefik.http.routers.minio-api.tls=true"
+      - "traefik.http.routers.minio-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.minio-api.service=minio-api"
+      - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
+      # MinIO Console (Admin UI)
+      - "traefik.http.routers.minio-console.rule=Host(`minio.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.minio-console.entrypoints=websecure"
+      - "traefik.http.routers.minio-console.tls=true"
+      - "traefik.http.routers.minio-console.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.minio-console.service=minio-console"
+      - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # MinIO Client - Initialisiert Buckets beim Start
+  # ---------------------------------------------------------------------------
+  minio-init:
+    image: minio/mc:latest
+    container_name: wpm-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set wpm http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      mc mb --ignore-existing wpm/$${S3_BUCKET:-wpm-documents};
+      mc anonymous set download wpm/$${S3_BUCKET:-wpm-documents}/public;
+      echo 'MinIO initialized successfully';
+      exit 0;
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-wpm-documents}
+    networks:
+      - wpm-network
+
+  # ---------------------------------------------------------------------------
+  # Worker Service (Background Jobs)
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wpm-worker
+    restart: unless-stopped
+    entrypoint: ["/app/docker-entrypoint.sh"]
+    command: ["npm", "run", "worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Start Mode
+      START_MODE: worker
+
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-wpm}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-windparkmanager}?schema=public
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # Worker Settings
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+
+      # App Settings
+      NODE_ENV: production
+    networks:
+      - wpm-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "const Redis = require('ioredis'); const r = new Redis(process.env.REDIS_URL); r.ping().then(() => { r.quit(); process.exit(0); }).catch(() => process.exit(1));"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    deploy:
+      mode: replicated
+      replicas: ${WORKER_REPLICAS:-2}
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    # Graceful shutdown
+    stop_grace_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Backup Service - Automated Cron with Retention Policy
+  # ---------------------------------------------------------------------------
+  backup:
+    image: postgres:16-alpine
+    container_name: wpm-backup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-wpm}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-windparkmanager}
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION_DAILY: ${BACKUP_RETENTION_DAILY:-7}
+      BACKUP_RETENTION_WEEKLY: ${BACKUP_RETENTION_WEEKLY:-4}
+      BACKUP_RETENTION_MONTHLY: ${BACKUP_RETENTION_MONTHLY:-3}
+      BACKUP_S3_ENABLED: ${BACKUP_S3_ENABLED:-false}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-wpm-backups}
+      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:-http://minio:9000}
+      BACKUP_S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      BACKUP_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-}
+    volumes:
+      - ./scripts/backup-db.sh:/scripts/backup-db.sh:ro
+      - ./scripts/restore-db.sh:/scripts/restore-db.sh:ro
+      - backup_data:/backups
+    networks:
+      - wpm-network
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        chmod +x /scripts/backup-db.sh /scripts/restore-db.sh
+        echo "0 2 * * * /scripts/backup-db.sh daily >> /var/log/backup.log 2>&1" > /etc/crontabs/root
+        echo "0 3 * * 0 /scripts/backup-db.sh weekly >> /var/log/backup.log 2>&1" >> /etc/crontabs/root
+        echo "0 4 1 * * /scripts/backup-db.sh monthly >> /var/log/backup.log 2>&1" >> /etc/crontabs/root
+        touch /var/log/backup.log
+        echo "[$(date)] Backup cron scheduler started"
+        echo "[$(date)] Schedule: daily@02:00, weekly@Sun/03:00, monthly@1st/04:00"
+        crond -f -l 2
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep crond || exit 1"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 64M
+
+  # ---------------------------------------------------------------------------
+  # Backup Runner - On-demand manual backup (use with: docker compose run backup-manual daily)
+  # ---------------------------------------------------------------------------
+  backup-manual:
+    image: postgres:16-alpine
+    container_name: wpm-backup-manual
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-wpm}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-windparkmanager}
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION_DAILY: ${BACKUP_RETENTION_DAILY:-7}
+      BACKUP_RETENTION_WEEKLY: ${BACKUP_RETENTION_WEEKLY:-4}
+      BACKUP_RETENTION_MONTHLY: ${BACKUP_RETENTION_MONTHLY:-3}
+      BACKUP_S3_ENABLED: ${BACKUP_S3_ENABLED:-false}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-wpm-backups}
+      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:-http://minio:9000}
+      BACKUP_S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      BACKUP_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-}
+    volumes:
+      - ./scripts/backup-db.sh:/scripts/backup-db.sh:ro
+      - ./scripts/restore-db.sh:/scripts/restore-db.sh:ro
+      - backup_data:/backups
+    networks:
+      - wpm-network
+    entrypoint: /bin/sh
+    command: ["-c", "chmod +x /scripts/backup-db.sh && /scripts/backup-db.sh daily"]
+    profiles:
+      - tools
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  traefik_certs:
+    driver: local
+  backup_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  wpm-network:
+    driver: bridge
+    name: wpm-network

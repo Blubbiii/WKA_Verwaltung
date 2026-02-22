@@ -79,7 +79,53 @@
   * {
     @apply border-border;
   }
+  html {
+    @apply h-full;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply h-full bg-background text-foreground;
+  }
+
+  /* Smooth transitions on interactive elements - keep minimal for performance */
+  button,
+  a,
+  [role="button"] {
+    @apply transition-colors duration-150;
+  }
+}
+
+@layer utilities {
+  /* Shimmer / skeleton loader effect */
+  .animate-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: hsl(var(--muted));
+  }
+  .animate-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--background) / 0.4) 50%,
+      transparent 100%
+    );
+    animation: shimmer 2s infinite;
+  }
+
+  /* Interactive card with hover enhancement */
+  .card-interactive {
+    @apply rounded-lg border border-border bg-card shadow-sm;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  .card-interactive:hover {
+    @apply shadow-md border-border/80;
+    transform: translateY(-1px);
+  }
+
+  /* Glassmorphism utility */
+  .glass {
+    @apply bg-background/60 backdrop-blur-md border border-border/50;
   }
 }

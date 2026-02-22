@@ -1,0 +1,115 @@
+# =============================================================================
+# WindparkManager - Traefik Static Configuration
+# =============================================================================
+
+# API & Dashboard
+api:
+  dashboard: true
+  insecure: false
+
+# Ping endpoint fuer Health Checks
+ping:
+  entryPoint: traefik
+
+# =============================================================================
+# Entry Points
+# =============================================================================
+entryPoints:
+  # HTTP (Port 80) - Redirect zu HTTPS
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+
+  # HTTPS (Port 443)
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+    # HTTP/2 aktivieren
+    http2:
+      maxConcurrentStreams: 250
+
+  # Traefik Dashboard (intern)
+  traefik:
+    address: ":8080"
+
+# =============================================================================
+# Certificate Resolvers (Let's Encrypt)
+# =============================================================================
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      # Email fuer Let's Encrypt Benachrichtigungen
+      email: "${ACME_EMAIL:-admin@example.com}"
+      # Speicherort fuer Zertifikate
+      storage: /letsencrypt/acme.json
+      # HTTP Challenge (einfachste Methode)
+      httpChallenge:
+        entryPoint: web
+      # Alternativ: DNS Challenge (fuer Wildcard-Zertifikate)
+      # dnsChallenge:
+      #   provider: cloudflare
+      #   delayBeforeCheck: 0
+
+# =============================================================================
+# Providers
+# =============================================================================
+providers:
+  # Docker Provider
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: wpm-network
+    watch: true
+
+  # File Provider (fuer zusaetzliche Konfiguration)
+  file:
+    filename: /dynamic.yml
+    watch: true
+
+# =============================================================================
+# Logging
+# =============================================================================
+log:
+  level: INFO
+  format: json
+
+# Access Logs (fuer Debugging)
+accessLog:
+  format: json
+  fields:
+    defaultMode: keep
+    names:
+      ClientUsername: drop
+    headers:
+      defaultMode: keep
+      names:
+        User-Agent: keep
+        Authorization: drop
+        Content-Type: keep
+  filters:
+    statusCodes:
+      - "200-299"
+      - "400-599"
+
+# =============================================================================
+# Metrics (optional, fuer Monitoring)
+# =============================================================================
+# metrics:
+#   prometheus:
+#     entryPoint: traefik
+#     addEntryPointsLabels: true
+#     addServicesLabels: true
+
+# =============================================================================
+# Global Settings
+# =============================================================================
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false

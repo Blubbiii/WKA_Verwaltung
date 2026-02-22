@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 const config: Config = {
   darkMode: ["class"],
@@ -66,9 +67,41 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      keyframes: {
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
+        "shimmer-bg": {
+          "0%": { backgroundPosition: "200% 0" },
+          "100%": { backgroundPosition: "-200% 0" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(4px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-in-right": {
+          "0%": { transform: "translateX(100%)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        "scale-in": {
+          "0%": { transform: "scale(0.95)", opacity: "0" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+      },
+      animation: {
+        shimmer: "shimmer 2s infinite",
+        "shimmer-bg": "shimmer-bg 2.5s ease-in-out infinite",
+        "fade-in": "fade-in 0.15s ease-out forwards",
+        "slide-in-right": "slide-in-right 0.3s ease-out forwards",
+        "scale-in": "scale-in 0.2s ease-out forwards",
+      },
+      transitionTimingFunction: {
+        "ease-out-expo": "cubic-bezier(0.16, 1, 0.3, 1)",
+      },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 };
 
 export default config;

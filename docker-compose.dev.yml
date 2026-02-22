@@ -1,0 +1,81 @@
+# Docker Compose for local development
+# Start with: docker compose -f docker-compose.dev.yml up -d
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: wpm-dev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wpm
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: windparkmanager
+    ports:
+      - "5432:5432"
+    volumes:
+      - wpm_dev_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wpm -d windparkmanager"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for sessions/cache)
+  redis:
+    image: redis:7-alpine
+    container_name: wpm-dev-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - wpm_dev_redis:/data
+
+  # MinIO (S3-compatible storage for documents)
+  minio:
+    image: minio/minio:latest
+    container_name: wpm-dev-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - wpm_dev_minio:/data
+
+  # Mailhog (Email testing)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: wpm-dev-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+
+  # Worker Service (Background Jobs)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wpm-dev-worker
+    command: npm run worker:dev
+    depends_on:
+      - db
+      - redis
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://wpm:devpassword@db:5432/windparkmanager
+      - REDIS_URL=redis://redis:6379
+      - WORKER_CONCURRENCY=5
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+    restart: unless-stopped
+
+volumes:
+  wpm_dev_postgres:
+  wpm_dev_redis:
+  wpm_dev_minio:

@@ -1,0 +1,213 @@
+# =============================================================================
+# WindparkManager - CI Pipeline
+# Continuous Integration: Lint, Type-Check, Build, Tests
+# =============================================================================
+#
+# Diese Pipeline laeuft bei jedem Push auf main und bei Pull Requests.
+# Sie stellt sicher, dass der Code fehlerfrei ist, bevor er gemerged wird.
+#
+# Jobs:
+#   1. lint        - ESLint Pruefung + TypeScript Type-Check
+#   2. build       - Next.js Production Build (mit Prisma Client)
+#   3. test        - Tests ausfuehren (optional, laeuft nur wenn Tests existieren)
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Verhindert doppelte Runs: Wenn ein neuer Push kommt, wird der alte Run abgebrochen
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Gemeinsame Environment Variables fuer alle Jobs
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  # ===========================================================================
+  # Job 1: Lint & Type-Check
+  # Prueft Code-Qualitaet mit ESLint und TypeScript Compiler
+  # ===========================================================================
+  lint:
+    name: Lint & Type-Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Schritt 1: Repository auschecken
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Schritt 2: Node.js einrichten mit npm-Cache fuer schnellere Builds
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      # Schritt 3: Dependencies installieren (npm ci = saubere Installation aus lockfile)
+      - name: Install Dependencies
+        run: npm ci
+
+      # Schritt 4: Prisma Client generieren (wird von einigen Imports benoetigt)
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Schritt 5: ESLint ausfuehren
+      # Nutzt "next lint" aus package.json, das die eslint.config.mjs konfiguration verwendet.
+      # --max-warnings 0 stellt sicher, dass auch Warnungen den Build fehlschlagen lassen.
+      # HINWEIS: Aktuell sind viele Regeln als "warn" konfiguriert (eslint.config.mjs).
+      # Wenn zu viele Warnungen existieren, temporaer --max-warnings erhoehen.
+      - name: Run ESLint
+        run: npm run lint
+
+      # Schritt 6: TypeScript Type-Check (ohne Output zu generieren)
+      # Prueft ob alle Typen korrekt sind, ohne tatsaechlich zu kompilieren
+      - name: TypeScript Type-Check
+        run: npx tsc --noEmit
+
+  # ===========================================================================
+  # Job 2: Build
+  # Erstellt einen vollstaendigen Next.js Production Build
+  # Haengt von "lint" ab - Build startet nur wenn Lint erfolgreich war
+  # ===========================================================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # Schritt: .env Datei mit Dummy-Werten erstellen
+      # Der Build braucht bestimmte Environment Variables, auch wenn sie nur Platzhalter sind.
+      # Prisma braucht DATABASE_URL, NextAuth braucht NEXTAUTH_SECRET und NEXTAUTH_URL.
+      # Sentry-Variablen werden bewusst NICHT gesetzt, damit kein Source-Map-Upload stattfindet.
+      - name: Create .env for Build
+        run: |
+          cat << 'EOF' > .env
+          DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+          NEXTAUTH_SECRET=ci-test-secret-key-minimum-32-characters-long
+          NEXTAUTH_URL=http://localhost:3000
+          REDIS_URL=redis://localhost:6379
+          S3_ENDPOINT=http://localhost:9000
+          S3_ACCESS_KEY=minioadmin
+          S3_SECRET_KEY=minioadmin
+          S3_BUCKET=wpm-documents
+          S3_REGION=us-east-1
+          EOF
+
+      # Schritt: Prisma Client generieren (benoetigt fuer den Build)
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Schritt: Next.js Production Build ausfuehren
+      # Setzt NEXT_TELEMETRY_DISABLED um keine Telemetrie an Vercel zu senden
+      - name: Build Next.js Application
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+      # Schritt: Build-Artefakte als Artifact hochladen (fuer spaetere Jobs oder Debugging)
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: nextjs-build
+          path: |
+            .next/standalone
+            .next/static
+            public
+          retention-days: 3
+
+  # ===========================================================================
+  # Job 3: Tests (optional)
+  # Fuehrt Tests aus, sofern vorhanden. Blockiert die Pipeline NICHT wenn
+  # keine Tests existieren oder Tests fehlschlagen (continue-on-error).
+  #
+  # Sobald Tests geschrieben werden, sollte continue-on-error entfernt werden!
+  # ===========================================================================
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: lint
+    # Tests sind optional - Pipeline schlaegt nicht fehl wenn dieser Job scheitert
+    continue-on-error: true
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Pruefe ob Test-Dateien vorhanden sind, bevor Tests gestartet werden.
+      # Vermeidet unnoetige Fehlermeldungen wenn noch keine Tests geschrieben wurden.
+      - name: Check for Test Files
+        id: check-tests
+        run: |
+          # Suche nach Test-Dateien im src/ Verzeichnis (ignoriere node_modules)
+          TEST_FILES=$(find src -name "*.test.ts" -o -name "*.test.tsx" -o -name "*.spec.ts" -o -name "*.spec.tsx" 2>/dev/null | head -5)
+          if [ -n "$TEST_FILES" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "Gefundene Test-Dateien:"
+            echo "$TEST_FILES"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "Keine Test-Dateien gefunden in src/. Tests werden uebersprungen."
+          fi
+
+      # Tests nur ausfuehren wenn Test-Dateien gefunden wurden
+      # Nutzt vitest (oder jest) - muss ggf. angepasst werden wenn Test-Framework gewaehlt wird
+      - name: Run Tests
+        if: steps.check-tests.outputs.found == 'true'
+        run: |
+          # Pruefe ob ein test-Script in package.json existiert
+          if npm run test --if-present 2>/dev/null; then
+            echo "Tests erfolgreich!"
+          else
+            echo "Test-Script fehlgeschlagen. Pruefe die Konfiguration."
+            exit 1
+          fi
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          NEXTAUTH_SECRET: ci-test-secret-key-minimum-32-characters-long
+          NEXTAUTH_URL: http://localhost:3000
+
+      - name: No Tests Found
+        if: steps.check-tests.outputs.found == 'false'
+        run: |
+          echo "========================================="
+          echo "HINWEIS: Keine Tests vorhanden."
+          echo "Empfehlung: Vitest einrichten und Tests schreiben!"
+          echo ""
+          echo "  npm install -D vitest @vitejs/plugin-react"
+          echo "  # Dann Test-Dateien in src/ erstellen"
+          echo "========================================="
