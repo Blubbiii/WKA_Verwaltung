@@ -128,4 +128,33 @@
   .glass {
     @apply bg-background/60 backdrop-blur-md border border-border/50;
   }
+
+  /* Gradient text (blue → cyan → emerald, energy theme) */
+  .gradient-text {
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #10b981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Dot pattern for dark hero backgrounds */
+  .dot-pattern {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Gradient border wrapper trick */
+  .gradient-border {
+    position: relative;
+    background: hsl(var(--card));
+    border-radius: 1rem;
+  }
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, #3b82f6, #06b6d4, #10b981);
+    z-index: -1;
+  }
 }

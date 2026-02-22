@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
@@ -46,9 +45,9 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
   const monthlyCost = isAnnual ? monthlyBase * ANNUAL_DISCOUNT : monthlyBase;
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg">
+    <Card className="w-full max-w-lg mx-auto shadow-xl border-border/50 rounded-2xl">
       <CardHeader>
-        <CardTitle>Preis-Rechner</CardTitle>
+        <CardTitle className="text-xl">Preis-Rechner</CardTitle>
         <CardDescription>
           Berechnen Sie Ihre individuellen monatlichen Kosten.
         </CardDescription>
@@ -123,7 +122,7 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
           <Label htmlFor="annual">Jaehrliche Zahlung (-{ANNUAL_DISCOUNT_PERCENT}%)</Label>
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col gap-4 bg-muted/50 p-6">
+      <CardFooter className="flex flex-col gap-4 bg-muted/50 p-6 rounded-b-2xl">
         <div
           className="flex w-full items-center justify-between"
           role="status"
@@ -132,7 +131,7 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
         >
           <span className="text-muted-foreground">Geschaetzter Preis</span>
           <div className="text-right">
-            <span className="text-3xl font-bold">
+            <span className="text-4xl font-bold gradient-text">
               {monthlyCost.toFixed(2)} €
             </span>
             <span className="text-sm font-medium text-muted-foreground">
@@ -141,9 +140,12 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
             </span>
           </div>
         </div>
-        <Button className="w-full" size="lg" asChild>
-          <Link href="/register">Jetzt Angebot anfordern</Link>
-        </Button>
+        <Link
+          href="/register"
+          className="w-full inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-3 text-base font-semibold text-white hover:brightness-110 transition-all"
+        >
+          Jetzt Angebot anfordern
+        </Link>
       </CardFooter>
     </Card>
   );
