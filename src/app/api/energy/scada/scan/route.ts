@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { scanAllLocations } from "@/lib/scada/dbf-reader";
 import { scanAllFileTypes } from "@/lib/scada/import-service";
 import { apiLogger as logger } from "@/lib/logger";
+import * as path from "path";
 
 // =============================================================================
 // POST /api/energy/scada/scan - SCADA-Quellordner scannen
@@ -38,6 +39,19 @@ export async function POST(request: NextRequest) {
         { error: "Ungueltiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
         { status: 400 }
       );
+    }
+
+    // Security: Restrict scanning to SCADA_BASE_PATH if configured
+    const scadaBasePath = process.env.SCADA_BASE_PATH;
+    if (scadaBasePath) {
+      const allowedBase = path.resolve(scadaBasePath);
+      const normalizedInput = path.resolve(basePath);
+      if (!normalizedInput.startsWith(allowedBase + path.sep) && normalizedInput !== allowedBase) {
+        return NextResponse.json(
+          { error: "Zugriff verweigert: Pfad liegt ausserhalb des erlaubten Verzeichnisses" },
+          { status: 403 }
+        );
+      }
     }
 
     // Detail-Scan fuer einen spezifischen Standort (alle Dateitypen)

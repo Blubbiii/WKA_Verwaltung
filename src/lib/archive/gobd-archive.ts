@@ -675,14 +675,24 @@ export async function getArchiveExportData(
     "Aufbewahrung bis",
   ].join(";");
 
+  // Sanitize CSV values to prevent formula injection in spreadsheet applications
+  const sanitizeCsvValue = (value: string | number): string => {
+    const str = String(value);
+    const FORMULA_CHARS = ["=", "+", "-", "@", "\t", "\r"];
+    if (FORMULA_CHARS.some((c) => str.startsWith(c))) {
+      return "'" + str;
+    }
+    return str;
+  };
+
   const csvRows = documents.map((doc, index) =>
     [
       index + 1,
-      doc.documentType,
-      doc.referenceNumber,
-      doc.fileName,
+      sanitizeCsvValue(doc.documentType),
+      sanitizeCsvValue(doc.referenceNumber),
+      sanitizeCsvValue(doc.fileName),
       doc.fileSize,
-      doc.mimeType,
+      sanitizeCsvValue(doc.mimeType),
       doc.contentHash,
       doc.chainHash,
       doc.archivedAt.toISOString(),

@@ -276,16 +276,18 @@ describe("validateFileContent - Textdateien", () => {
 // =============================================================================
 
 describe("validateFileContent - unbekannte MIME-Types", () => {
-  it("laesst unbekannte MIME-Types durch (kein Signature-Check)", () => {
+  it("weist unbekannte MIME-Types ab (Security)", () => {
     const buffer = bufferFrom([0x00, 0x01, 0x02, 0x03]);
     const result = validateFileContent(buffer, "application/octet-stream");
-    expect(result.valid).toBe(true);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain("Nicht unterstuetzter Dateityp");
   });
 
-  it("laesst benutzerdefinierte MIME-Types durch", () => {
+  it("weist benutzerdefinierte MIME-Types ab (Security)", () => {
     const buffer = bufferFrom([0x00, 0x01, 0x02, 0x03]);
     const result = validateFileContent(buffer, "application/x-custom-format");
-    expect(result.valid).toBe(true);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain("Nicht unterstuetzter Dateityp");
   });
 });
 

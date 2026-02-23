@@ -102,11 +102,17 @@ export async function POST(request: Request) {
     // Hash new password
     const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
-    // Update password
-    await prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash: newPasswordHash },
-    });
+    // Update password and invalidate all existing sessions
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash: newPasswordHash },
+      }),
+      // Invalidate all sessions for this user to force re-login
+      prisma.session.deleteMany({
+        where: { userId: userId! },
+      }),
+    ]);
 
     // Create audit log for password change
     try {

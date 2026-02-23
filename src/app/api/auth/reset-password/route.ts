@@ -3,6 +3,7 @@ import { z } from "zod";
 import * as bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { rateLimit, getClientIp, getRateLimitResponse, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 
 // Password requirements
 const PASSWORD_MIN_LENGTH = 8;
@@ -21,6 +22,13 @@ const resetPasswordSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting: prevent brute-force token guessing
+    const ip = getClientIp(request);
+    const rateLimitResult = rateLimit(`reset-password:${ip}`, AUTH_RATE_LIMIT);
+    if (!rateLimitResult.success) {
+      return getRateLimitResponse(rateLimitResult, AUTH_RATE_LIMIT);
+    }
+
     const body = await request.json();
 
     // Validate input

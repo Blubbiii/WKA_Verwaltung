@@ -17,6 +17,7 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { uploadFile, deleteFile, getSignedUrl } from "@/lib/storage";
+import { validateFileContent } from "@/lib/file-validation";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
@@ -73,6 +74,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate file content (magic number check)
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const contentValidation = validateFileContent(fileBuffer, file.type);
+    if (!contentValidation.valid) {
+      return NextResponse.json(
+        {
+          error: `Dateiinhalt ungueltig: ${contentValidation.reason || "Dateityp stimmt nicht mit dem Inhalt ueberein"}`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Get current user to check for existing avatar
     const currentUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -92,9 +105,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // Convert File to Buffer for upload
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Use the already-read buffer for upload
+    const buffer = fileBuffer;
 
     // Generate a specific path for avatars
     const extension = file.name.split(".").pop() || "jpg";

@@ -16,23 +16,29 @@ import { apiLogger as logger } from "@/lib/logger";
  */
 
 export async function GET() {
-  const health = {
+  const isProduction = process.env.NODE_ENV === "production";
+
+  const health: Record<string, unknown> = {
     status: "ok",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: process.env.npm_package_version || "unknown",
-    environment: process.env.NODE_ENV || "unknown",
     checks: {
       database: "unknown" as "ok" | "error" | "unknown",
     },
   };
 
+  // Only expose detailed info in non-production environments
+  if (!isProduction) {
+    health.uptime = process.uptime();
+    health.version = process.env.npm_package_version || "unknown";
+    health.environment = process.env.NODE_ENV || "unknown";
+  }
+
   try {
     // Datenbank-Check (einfache Query)
     await prisma.$queryRaw`SELECT 1`;
-    health.checks.database = "ok";
+    (health.checks as Record<string, string>).database = "ok";
   } catch (error) {
-    health.checks.database = "error";
+    (health.checks as Record<string, string>).database = "error";
     health.status = "degraded";
 
     // In Production nicht den vollen Error zurueckgeben

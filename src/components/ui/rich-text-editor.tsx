@@ -117,10 +117,16 @@ function EditorToolbar({ editor }: EditorToolbarProps) {
       return;
     }
 
-    // Ensure URL has protocol
-    const finalUrl = url.startsWith("http://") || url.startsWith("https://")
-      ? url
-      : `https://${url}`;
+    // Ensure URL has a safe protocol (prevent javascript: etc.)
+    let finalUrl: string;
+    if (/^https?:\/\//i.test(url)) {
+      finalUrl = url;
+    } else if (/^[a-z][a-z0-9+.-]*:/i.test(url)) {
+      // Has a non-http(s) protocol (e.g., javascript:, data:) — reject
+      return;
+    } else {
+      finalUrl = `https://${url}`;
+    }
 
     editor
       .chain()
@@ -136,7 +142,14 @@ function EditorToolbar({ editor }: EditorToolbarProps) {
     const url = window.prompt("Bild-URL eingeben:");
 
     if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
+      // Only allow http(s) URLs for images
+      if (/^https?:\/\//i.test(url)) {
+        editor.chain().focus().setImage({ src: url }).run();
+      } else if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) {
+        // No protocol — assume https
+        editor.chain().focus().setImage({ src: `https://${url}` }).run();
+      }
+      // Silently ignore dangerous protocols (javascript:, data:, etc.)
     }
   }, [editor]);
 

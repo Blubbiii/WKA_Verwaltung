@@ -152,10 +152,14 @@ export function validateFileContent(
     (entry) => entry.mimeType === declaredMimeType
   );
 
-  // If we don't have a signature for this MIME type, allow it through
-  // (we only block files where we can definitively detect a mismatch)
+  // If we don't have a signature for this MIME type, reject it
+  // Unknown/unsupported MIME types are not allowed for security reasons
   if (!signatureEntry) {
-    return { valid: true };
+    return {
+      valid: false,
+      detectedType: 'unknown',
+      reason: `Nicht unterstuetzter Dateityp: "${declaredMimeType}". Erlaubte Typen: PDF, PNG, JPEG, GIF, WebP, SVG, Office-Dokumente, Text, CSV.`,
+    };
   }
 
   // Text-based formats: no magic number, check for printable ASCII instead
