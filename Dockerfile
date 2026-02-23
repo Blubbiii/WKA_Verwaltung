@@ -58,15 +58,20 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
 
 # -----------------------------------------------------------------------------
-# Stage 2b: Prisma CLI (saubere Installation mit allen transitiven Deps)
-# Separate Stage, weil Next.js standalone Output ein eigenes node_modules
-# mitbringt, das @prisma/config ohne dessen Dep 'effect' enthaelt.
-# npm install im Runner wuerde 'effect' ueberspringen, da @prisma/config
-# bereits existiert. Deshalb: saubere Installation in isolierter Stage.
+# Stage 2b: Prisma CLI (komplett isolierte Installation)
+# Prisma CLI wird in /prisma-cli installiert - NICHT in /app/node_modules.
+# Next.js standalone Output bringt ein eigenes node_modules mit, das
+# @prisma/config OHNE transitive Dep 'effect' enthaelt.
+# Jeder Versuch, prisma in /app/node_modules zu installieren oder mergen
+# scheitert, da npm/Docker die bereits vorhandenen Pakete nicht nachinstalliert.
+# Loesung: Komplett separates Verzeichnis /prisma-cli mit eigenem node_modules.
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS prisma-cli
-WORKDIR /prisma
+WORKDIR /prisma-cli
 RUN npm init -y > /dev/null 2>&1 && npm install prisma
+# Verifiziere dass effect installiert wurde
+RUN node -e "require('effect'); console.log('effect OK')"
+RUN node -e "require('@prisma/config'); console.log('@prisma/config OK')"
 
 # -----------------------------------------------------------------------------
 # Stage 3: Runner (Production)
@@ -94,10 +99,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Prisma CLI mit ALLEN transitiven Dependencies aus sauberer Installation kopieren
-# Docker COPY merged Verzeichnisse: existierende Dateien aus standalone bleiben,
-# neue Dateien (prisma, effect, @prisma/config etc.) werden hinzugefuegt
-COPY --from=prisma-cli /prisma/node_modules ./node_modules
+# Prisma CLI in separates Verzeichnis kopieren (NICHT in /app/node_modules!)
+# So gibt es null Interferenz mit dem standalone node_modules
+COPY --from=prisma-cli /prisma-cli /prisma-cli
 
 # Prisma Schema und generierter Client kopieren
 COPY --from=builder /app/prisma ./prisma

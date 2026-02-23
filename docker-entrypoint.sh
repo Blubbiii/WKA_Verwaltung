@@ -111,8 +111,9 @@ run_migrations() {
 
     # Prisma Deploy (wendet ausstehende Migrations an)
     # Nutzt 'deploy' statt 'migrate dev' fuer Production
-    # Direkter Node-Aufruf statt npx (npx ist im Standalone-Image nicht verfuegbar)
-    node node_modules/prisma/build/index.js migrate deploy
+    # Prisma CLI liegt in /prisma-cli/ (separates Verzeichnis mit allen Deps)
+    # NICHT in /app/node_modules/ - das wuerde mit Next.js standalone kollidieren
+    node /prisma-cli/node_modules/prisma/build/index.js migrate deploy
 
     if [ $? -eq 0 ]; then
         echo "   Migrations completed successfully!"
@@ -130,7 +131,7 @@ generate_client() {
     echo "   Ensuring Prisma client is up to date..."
 
     # Nur generieren wenn noetig
-    node node_modules/prisma/build/index.js generate
+    node /prisma-cli/node_modules/prisma/build/index.js generate
 }
 
 # -----------------------------------------------------------------------------
