@@ -58,6 +58,17 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
 
 # -----------------------------------------------------------------------------
+# Stage 2b: Prisma CLI (saubere Installation mit allen transitiven Deps)
+# Separate Stage, weil Next.js standalone Output ein eigenes node_modules
+# mitbringt, das @prisma/config ohne dessen Dep 'effect' enthaelt.
+# npm install im Runner wuerde 'effect' ueberspringen, da @prisma/config
+# bereits existiert. Deshalb: saubere Installation in isolierter Stage.
+# -----------------------------------------------------------------------------
+FROM node:20-alpine AS prisma-cli
+WORKDIR /prisma
+RUN npm init -y > /dev/null 2>&1 && npm install prisma
+
+# -----------------------------------------------------------------------------
 # Stage 3: Runner (Production)
 # Minimales Production Image
 # -----------------------------------------------------------------------------
@@ -79,20 +90,18 @@ RUN apk add --no-cache curl openssl
 # Statische Assets kopieren
 COPY --from=builder /app/public ./public
 
-# Standalone Output kopieren (inkl. Server)
-# Nutzt Next.js standalone output mode fuer minimale Groesse
+# Standalone Output kopieren (inkl. Server und App-Runtime node_modules)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Prisma CLI mit ALLEN transitiven Dependencies aus sauberer Installation kopieren
+# Docker COPY merged Verzeichnisse: existierende Dateien aus standalone bleiben,
+# neue Dateien (prisma, effect, @prisma/config etc.) werden hinzugefuegt
+COPY --from=prisma-cli /prisma/node_modules ./node_modules
 
 # Prisma Schema und generierter Client kopieren
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-
-# Prisma CLI + Runtime mit allen transitiven Dependencies installieren
-# WICHTIG: @prisma NICHT vorher per COPY kopieren, da npm install sonst
-# vorhandene Pakete ueberspringt und transitive Deps (effect) fehlen.
-# @prisma/client ist bereits im standalone Output enthalten (Next.js tracing).
-RUN echo '{}' > package.json && npm install prisma @prisma/client && rm -f package.json package-lock.json
 
 # Entrypoint Script kopieren
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
