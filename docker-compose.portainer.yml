@@ -1,0 +1,191 @@
+# =============================================================================
+# WindparkManager - Portainer Stack
+#
+# Diese Datei ist fuer den Einsatz in Portainer optimiert.
+# Kopiere den gesamten Inhalt in Portainer > Stacks > Add Stack > Web Editor
+#
+# WICHTIG: Unter "Environment variables" die Werte anpassen!
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Next.js Application
+  # ---------------------------------------------------------------------------
+  app:
+    image: ghcr.io/blubbiii/wka_verwaltung:latest
+    container_name: wpm-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      # Database (intern im Docker-Netzwerk)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-wpm}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-windparkmanager}?schema=public
+
+      # NextAuth
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://192.168.178.101:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+
+      # App URL (fuer CORS, Links in Emails etc.)
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://192.168.178.101:3000}
+      APP_URL: ${NEXT_PUBLIC_APP_URL:-http://192.168.178.101:3000}
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # S3/MinIO (intern im Docker-Netzwerk)
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-wpm-documents}
+      S3_REGION: ${S3_REGION:-eu-central-1}
+      S3_PUBLIC_URL: ${NEXT_PUBLIC_APP_URL:-http://192.168.178.101:3000}/api/documents
+
+      # SMTP (optional)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@windparkmanager.local}
+
+      # Email Encryption
+      EMAIL_ENCRYPTION_KEY: ${EMAIL_ENCRYPTION_KEY:-}
+
+      # App Settings
+      NODE_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - wpm-network
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: wpm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wpm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-windparkmanager}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Datenbank NICHT nach aussen exponieren (nur intern im Docker-Netzwerk)
+    # Zum Debuggen temporaer einkommentieren:
+    # ports:
+    #   - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wpm} -d ${POSTGRES_DB:-windparkmanager}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wpm-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ---------------------------------------------------------------------------
+  # Redis - Sessions & Cache
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: wpm-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wpm-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # MinIO - S3-Kompatibler Objektspeicher (Dokumente, Avatare etc.)
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: wpm-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    ports:
+      # MinIO Console (Admin-UI) - erreichbar unter http://192.168.178.101:9001
+      - "9001:9001"
+      # MinIO API - nur exponieren wenn externer S3-Zugriff benoetigt wird
+      # - "9002:9000"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - wpm-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ---------------------------------------------------------------------------
+  # MinIO Init - Erstellt den Storage-Bucket beim ersten Start
+  # ---------------------------------------------------------------------------
+  minio-init:
+    image: minio/mc:latest
+    container_name: wpm-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set wpm http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      mc mb --ignore-existing wpm/$${S3_BUCKET:-wpm-documents};
+      echo 'MinIO Bucket erstellt: $${S3_BUCKET:-wpm-documents}';
+      exit 0;
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-wpm-documents}
+    networks:
+      - wpm-network
+
+# =============================================================================
+# Volumes (persistente Daten)
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+
+# =============================================================================
+# Netzwerk
+# =============================================================================
+networks:
+  wpm-network:
+    driver: bridge
+    name: wpm-network
