@@ -68,7 +68,7 @@ RUN npm run build
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS prisma-cli
 WORKDIR /prisma-cli
-RUN npm init -y > /dev/null 2>&1 && npm install prisma@6
+RUN npm init -y > /dev/null 2>&1 && npm install prisma@6 tsx typescript bcryptjs @prisma/client@6
 # Verifiziere dass effect installiert wurde
 RUN node -e "require('effect'); console.log('effect OK')"
 RUN node -e "require('@prisma/config'); console.log('@prisma/config OK')"
@@ -102,6 +102,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Prisma CLI in separates Verzeichnis kopieren (NICHT in /app/node_modules!)
 # So gibt es null Interferenz mit dem standalone node_modules
 COPY --from=prisma-cli /prisma-cli /prisma-cli
+
+# /prisma-cli/node_modules/.bin in PATH (fuer tsx, prisma etc.)
+ENV PATH="/prisma-cli/node_modules/.bin:$PATH"
 
 # Prisma Schema und generierter Client kopieren
 COPY --from=builder /app/prisma ./prisma
