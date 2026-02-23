@@ -53,7 +53,7 @@ jobs:
 
       # Schritt 3: Dependencies installieren (npm ci = saubere Installation aus lockfile)
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       # Schritt 4: Prisma Client generieren (wird von einigen Imports benoetigt)
       - name: Generate Prisma Client
@@ -94,7 +94,7 @@ jobs:
           cache: "npm"
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       # Schritt: .env Datei mit Dummy-Werten erstellen
       # Der Build braucht bestimmte Environment Variables, auch wenn sie nur Platzhalter sind.
@@ -163,7 +163,7 @@ jobs:
           cache: "npm"
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Generate Prisma Client
         run: npx prisma generate
