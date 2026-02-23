@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSuperadmin } from "@/lib/auth/withPermission";
+import { requireSuperadmin, requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { apiLogger as logger } from "@/lib/logger";
@@ -156,6 +156,10 @@ const check = await requireSuperadmin();
 // DELETE /api/admin/impersonate - Stop impersonating
 export async function DELETE(request: NextRequest) {
   try {
+    // Security: Require authentication to stop impersonation
+    const check = await requireAuth();
+    if (!check.authorized) return check.error!;
+
     const cookieStore = await cookies();
     const impersonationCookie = cookieStore.get("impersonation");
 
@@ -182,6 +186,10 @@ export async function DELETE(request: NextRequest) {
 // GET /api/admin/impersonate - Get current impersonation status
 export async function GET(request: NextRequest) {
   try {
+    // Security: Require authentication to check impersonation status
+    const check = await requireAuth();
+    if (!check.authorized) return check.error!;
+
     const cookieStore = await cookies();
     const impersonationCookie = cookieStore.get("impersonation");
 

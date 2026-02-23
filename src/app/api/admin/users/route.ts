@@ -5,6 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { apiLogger as logger } from "@/lib/logger";
+import { auth } from "@/lib/auth";
+
+/** Quick helper to check if current user is SUPERADMIN (without throwing) */
+async function requireSuperadminCheck(): Promise<boolean> {
+  const session = await auth();
+  return session?.user?.role === "SUPERADMIN";
+}
 
 const userCreateSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse"),
@@ -16,10 +23,10 @@ const userCreateSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
 });
 
-// GET /api/admin/users - Liste aller Benutzer (nur für SUPERADMIN)
+// GET /api/admin/users - Liste aller Benutzer
 export async function GET(request: NextRequest) {
   try {
-const check = await requirePermission(PERMISSIONS.USERS_READ);
+    const check = await requirePermission(PERMISSIONS.USERS_READ);
     if (!check.authorized) return check.error!;
 
     const { searchParams } = new URL(request.url);
@@ -28,7 +35,13 @@ const check = await requirePermission(PERMISSIONS.USERS_READ);
     const role = searchParams.get("role");
     const status = searchParams.get("status");
 
+    // Tenant isolation: non-SUPERADMIN users can only see their own tenant's users
+    const isSuperadmin = check.tenantId === undefined || (await requireSuperadminCheck());
+    const effectiveTenantId = isSuperadmin ? tenantId : check.tenantId;
+
     const where = {
+      ...(effectiveTenantId && { tenantId: effectiveTenantId }),
+      ...(!isSuperadmin && !effectiveTenantId && { tenantId: check.tenantId }),
       ...(search && {
         OR: [
           { email: { contains: search, mode: "insensitive" as const } },
@@ -36,7 +49,6 @@ const check = await requirePermission(PERMISSIONS.USERS_READ);
           { lastName: { contains: search, mode: "insensitive" as const } },
         ],
       }),
-      ...(tenantId && { tenantId }),
       ...(role && { role: role as "SUPERADMIN" | "ADMIN" | "MANAGER" | "VIEWER" }),
       ...(status && { status: status as "ACTIVE" | "INACTIVE" }),
     };
@@ -76,7 +88,7 @@ const check = await requirePermission(PERMISSIONS.USERS_READ);
 // POST /api/admin/users - Neuen Benutzer erstellen
 export async function POST(request: NextRequest) {
   try {
-const check = await requirePermission(PERMISSIONS.USERS_READ);
+    const check = await requirePermission(PERMISSIONS.USERS_CREATE);
     if (!check.authorized) return check.error!;
 
     const body = await request.json();

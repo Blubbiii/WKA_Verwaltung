@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { apiLogger as logger } from "@/lib/logger";
+import { auth } from "@/lib/auth";
 
 const userUpdateSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse").optional(),
@@ -16,13 +17,19 @@ const userUpdateSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
 
+/** Quick helper to check if current user is SUPERADMIN (without throwing) */
+async function isSuperadmin(): Promise<boolean> {
+  const session = await auth();
+  return session?.user?.role === "SUPERADMIN";
+}
+
 // GET /api/admin/users/[id]
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const check = await requirePermission(PERMISSIONS.USERS_READ);
+    const check = await requirePermission(PERMISSIONS.USERS_READ);
     if (!check.authorized) return check.error!;
 
     const { id } = await params;
@@ -65,6 +72,14 @@ const check = await requirePermission(PERMISSIONS.USERS_READ);
       );
     }
 
+    // Tenant isolation: non-SUPERADMIN can only view users from their own tenant
+    if (!(await isSuperadmin()) && user.tenantId !== check.tenantId) {
+      return NextResponse.json(
+        { error: "Benutzer nicht gefunden" },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json(user);
   } catch (error) {
     logger.error({ err: error }, "Error fetching user");
@@ -81,7 +96,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const check = await requirePermission(PERMISSIONS.USERS_READ);
+    const check = await requirePermission(PERMISSIONS.USERS_UPDATE);
     if (!check.authorized) return check.error!;
 
     const { id } = await params;
@@ -91,6 +106,14 @@ const check = await requirePermission(PERMISSIONS.USERS_READ);
     });
 
     if (!existingUser) {
+      return NextResponse.json(
+        { error: "Benutzer nicht gefunden" },
+        { status: 404 }
+      );
+    }
+
+    // Tenant isolation: non-SUPERADMIN can only modify users from their own tenant
+    if (!(await isSuperadmin()) && existingUser.tenantId !== check.tenantId) {
       return NextResponse.json(
         { error: "Benutzer nicht gefunden" },
         { status: 404 }
@@ -181,7 +204,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const check = await requirePermission(PERMISSIONS.USERS_READ);
+    const check = await requirePermission(PERMISSIONS.USERS_DELETE);
     if (!check.authorized) return check.error!;
 
     const { id } = await params;
@@ -199,6 +222,14 @@ const check = await requirePermission(PERMISSIONS.USERS_READ);
     });
 
     if (!existingUser) {
+      return NextResponse.json(
+        { error: "Benutzer nicht gefunden" },
+        { status: 404 }
+      );
+    }
+
+    // Tenant isolation: non-SUPERADMIN can only deactivate users from their own tenant
+    if (!(await isSuperadmin()) && existingUser.tenantId !== check.tenantId) {
       return NextResponse.json(
         { error: "Benutzer nicht gefunden" },
         { status: 404 }

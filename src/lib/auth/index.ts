@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { authConfig } from "./config";
 import { prisma } from "@/lib/prisma";
 import { authLogger } from "@/lib/logger";
+import { rateLimit, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 
 const loginSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse"),
@@ -25,7 +26,7 @@ export const {
         email: { label: "E-Mail", type: "email" },
         password: { label: "Passwort", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const parsed = loginSchema.safeParse(credentials);
 
         if (!parsed.success) {
@@ -33,6 +34,13 @@ export const {
         }
 
         const { email, password } = parsed.data;
+
+        // Rate limiting: max 5 login attempts per 15 minutes per email
+        const loginRateCheck = rateLimit(`login:${email.toLowerCase()}`, AUTH_RATE_LIMIT);
+        if (!loginRateCheck.success) {
+          authLogger.warn({ email }, "Login rate limit exceeded");
+          throw new Error("Zu viele Anmeldeversuche. Bitte warten Sie 15 Minuten.");
+        }
 
         try {
           const user = await prisma.user.findUnique({

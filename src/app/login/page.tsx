@@ -21,7 +21,11 @@ import { Wind, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const rawCallbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  // Security: Only allow relative URLs to prevent open redirect attacks
+  const callbackUrl = rawCallbackUrl.startsWith("/") && !rawCallbackUrl.startsWith("//")
+    ? rawCallbackUrl
+    : "/dashboard";
   const error = searchParams.get("error");
 
   const [isLoading, setIsLoading] = useState(false);

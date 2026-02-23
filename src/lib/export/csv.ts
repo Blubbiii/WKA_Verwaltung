@@ -48,12 +48,22 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
  * @param value - The value to escape
  * @returns Escaped string ready for CSV
  */
+/**
+ * Characters that could trigger formula execution in spreadsheet applications
+ */
+const FORMULA_CHARS = ['=', '+', '-', '@', '\t', '\r'];
+
 function escapeField(value: string): string {
   if (value === null || value === undefined) {
     return '';
   }
 
   const stringValue = String(value);
+
+  // Prevent CSV formula injection by prefixing dangerous characters with a single quote
+  if (FORMULA_CHARS.some(c => stringValue.startsWith(c))) {
+    return "'" + stringValue;
+  }
 
   // Check if escaping is needed
   const needsEscaping =

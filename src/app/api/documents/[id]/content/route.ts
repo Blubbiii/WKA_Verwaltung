@@ -90,7 +90,26 @@ export async function GET(
       !document.fileUrl.startsWith("https://");
 
     if (!isS3Key) {
-      // Externe URL - Redirect
+      // Security: Only redirect to known/trusted hosts
+      try {
+        const externalUrl = new URL(document.fileUrl);
+        const allowedHosts = [
+          new URL(S3_ENDPOINT).hostname,
+          process.env.NEXT_PUBLIC_APP_URL ? new URL(process.env.NEXT_PUBLIC_APP_URL).hostname : null,
+        ].filter(Boolean);
+        if (!allowedHosts.includes(externalUrl.hostname)) {
+          logger.warn(`Blocked redirect to untrusted host: ${externalUrl.hostname}`);
+          return NextResponse.json(
+            { error: "Externer Link nicht vertrauenswuerdig" },
+            { status: 403 }
+          );
+        }
+      } catch {
+        return NextResponse.json(
+          { error: "Ungueltige Datei-URL" },
+          { status: 400 }
+        );
+      }
       return NextResponse.redirect(document.fileUrl);
     }
 
@@ -133,7 +152,7 @@ export async function GET(
       headers.set("Content-Length", buffer.length.toString());
       headers.set("Content-Disposition", `inline; filename="${encodeURIComponent(document.fileName)}"`);
       headers.set("Cache-Control", "private, max-age=3600");
-      headers.set("Access-Control-Allow-Origin", "*");
+      headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "");
       headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
       headers.set("Access-Control-Allow-Headers", "Content-Type");
 
@@ -158,7 +177,16 @@ export async function GET(
       // Bei NoSuchKey: Versuche lokalen Fallback (alte Uploads)
       if (errorName === "NoSuchKey" || errorMessage.includes("NoSuchKey")) {
         // Versuche Datei lokal zu laden (Fallback fuer alte Uploads)
-        const localPath = path.join(process.cwd(), "public", document.fileUrl);
+        const publicDir = path.resolve(process.cwd(), "public");
+        const localPath = path.resolve(publicDir, document.fileUrl);
+
+        // Security: Prevent path traversal outside public/ directory
+        if (!localPath.startsWith(publicDir + path.sep)) {
+          return NextResponse.json(
+            { error: "Ungueltiger Dateipfad" },
+            { status: 400 }
+          );
+        }
 
         if (existsSync(localPath)) {
           logger.info(`Fallback: Lade Datei lokal von: ${localPath}`);
@@ -170,7 +198,7 @@ export async function GET(
             headers.set("Content-Length", fileBuffer.length.toString());
             headers.set("Content-Disposition", `inline; filename="${encodeURIComponent(document.fileName)}"`);
             headers.set("Cache-Control", "private, max-age=3600");
-            headers.set("Access-Control-Allow-Origin", "*");
+            headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "");
 
             return new NextResponse(fileBuffer, { status: 200, headers });
           } catch (localError) {

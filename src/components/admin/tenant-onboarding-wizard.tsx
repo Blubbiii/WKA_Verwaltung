@@ -388,15 +388,13 @@ export function TenantOnboardingWizard() {
     );
   }
 
-  // Generate a random temporary password
+  // Generate a cryptographically secure random password
   function generatePassword(): string {
     const chars =
       "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
-    let password = "";
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
+    const array = new Uint32Array(12);
+    crypto.getRandomValues(array);
+    return Array.from(array, (n) => chars[n % chars.length]).join("");
   }
 
   async function handleInviteUsers() {

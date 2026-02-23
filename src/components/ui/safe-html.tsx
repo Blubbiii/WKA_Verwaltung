@@ -29,7 +29,7 @@ export function SafeHtml({ html, className }: SafeHtmlProps) {
     ],
     ALLOWED_ATTR: [
       "href", "target", "rel", "src", "alt", "title", "class",
-      "width", "height", "style",
+      "width", "height",
     ],
     // Force all links to open in new tab with security attributes
     ADD_ATTR: ["target", "rel"],

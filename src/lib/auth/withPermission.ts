@@ -153,19 +153,9 @@ export async function requireSuperadmin(): Promise<PermissionCheckResult> {
     };
   }
 
-  // Final fallback: check admin:* permissions
-  const hasAdminPermission = await hasAnyPermission(session.user.id, [
-    "admin:tenants",
-    "admin:system",
-  ]);
-
-  if (hasAdminPermission) {
-    return {
-      authorized: true,
-      userId: session.user.id,
-      tenantId: session.user.tenantId,
-    };
-  }
+  // Note: Removed overly permissive fallback that granted superadmin access
+  // based on individual admin:tenants or admin:system permissions.
+  // Only hierarchy-based check and legacy enum are trusted for superadmin access.
 
   return {
     authorized: false,
@@ -213,20 +203,9 @@ export async function requireAdmin(): Promise<PermissionCheckResult> {
     };
   }
 
-  // Final fallback: check users/roles permissions
-  const hasAdminPermission = await hasAnyPermission(session.user.id, [
-    "users:read",
-    "users:create",
-    "roles:read",
-  ]);
-
-  if (hasAdminPermission) {
-    return {
-      authorized: true,
-      userId: session.user.id,
-      tenantId: session.user.tenantId,
-    };
-  }
+  // Note: Removed overly permissive fallback that granted admin access
+  // based on individual users:read or roles:read permissions.
+  // Only hierarchy-based check and legacy enum are trusted for admin access.
 
   return {
     authorized: false,

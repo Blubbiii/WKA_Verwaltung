@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { LegalPages } from "@/lib/marketing/types";
 import type { Metadata } from "next";
+import { SafeHtml } from "@/components/ui/safe-html";
 
 export const metadata: Metadata = {
   title: "Datenschutz -- WindparkManager",
@@ -25,9 +26,9 @@ export default async function DatenschutzPage() {
         </h1>
 
         {datenschutzContent ? (
-          <div
+          <SafeHtml
+            html={datenschutzContent}
             className="prose prose-gray dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: datenschutzContent }}
           />
         ) : (
           <div className="rounded-lg border bg-card p-8 text-center">

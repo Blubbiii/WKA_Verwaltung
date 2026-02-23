@@ -43,6 +43,18 @@ export async function POST(request: NextRequest) {
     // Absoluten Pfad normalisieren
     const normalizedPath = path.resolve(currentPath);
 
+    // Security: Restrict browsing to SCADA_BASE_PATH if configured
+    const scadaBasePath = process.env.SCADA_BASE_PATH;
+    if (scadaBasePath) {
+      const allowedBase = path.resolve(scadaBasePath);
+      if (!normalizedPath.startsWith(allowedBase + path.sep) && normalizedPath !== allowedBase) {
+        return NextResponse.json(
+          { error: "Zugriff verweigert: Pfad liegt ausserhalb des erlaubten Verzeichnisses" },
+          { status: 403 }
+        );
+      }
+    }
+
     try {
       const stats = await fs.stat(normalizedPath);
       if (!stats.isDirectory()) {
