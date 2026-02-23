@@ -1,0 +1,59 @@
+# Dependencies (werden im Container frisch installiert)
+node_modules
+.pnp
+.pnp.js
+
+# Build-Output
+.next
+out
+dist
+build
+
+# Environment Files (Secrets!)
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Docker (nicht sich selbst kopieren)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Traefik Config (nur fuer docker-compose.prod.yml relevant)
+traefik/
+
+# Tests & Docs
+tests/
+docs/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+vitest.config.ts
+playwright.config.ts
+
+# CI/CD
+.github/
+
+# Claude / Dev Tools
+.claude/
+
+# Misc
+README.md
+LICENSE
+*.md
