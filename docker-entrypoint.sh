@@ -107,18 +107,17 @@ wait_for_redis() {
 # -----------------------------------------------------------------------------
 run_migrations() {
     echo ""
-    echo "[3/4] Running database migrations..."
+    echo "[3/4] Setting up database schema..."
 
-    # Prisma Deploy (wendet ausstehende Migrations an)
-    # Nutzt 'deploy' statt 'migrate dev' fuer Production
+    # Prisma db push: Synchronisiert das Schema direkt mit der Datenbank.
+    # Besser als 'migrate deploy' weil keine lueckenlose Migrations-Historie noetig.
     # Prisma CLI liegt in /prisma-cli/ (separates Verzeichnis mit allen Deps)
-    # NICHT in /app/node_modules/ - das wuerde mit Next.js standalone kollidieren
-    node /prisma-cli/node_modules/prisma/build/index.js migrate deploy
+    node /prisma-cli/node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss 2>&1
 
     if [ $? -eq 0 ]; then
-        echo "   Migrations completed successfully!"
+        echo "   Database schema is up to date!"
     else
-        echo "ERROR: Migration failed!"
+        echo "ERROR: Schema sync failed!"
         exit 1
     fi
 }

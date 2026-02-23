@@ -1,18 +1,8 @@
 # =============================================================================
 # WindparkManager - Portainer Stack
 #
-# Diese Datei ist fuer den Einsatz in Portainer optimiert.
-# Kopiere den gesamten Inhalt in Portainer > Stacks > Add Stack > Web Editor
-#
-# WICHTIG: Unter "Environment variables" folgende Werte setzen:
-#
-#   DATABASE_URL          = postgresql://wpm:DEIN_PASSWORT@postgres:5432/windparkmanager?schema=public
-#   POSTGRES_USER         = wpm
-#   POSTGRES_PASSWORD     = DEIN_PASSWORT        (MUSS identisch sein wie in DATABASE_URL!)
-#   POSTGRES_DB           = windparkmanager
-#   NEXTAUTH_SECRET       = ein-langer-geheimer-string-min-32-zeichen
-#   MINIO_ROOT_PASSWORD   = ein-minio-passwort
-#
+# Alle Werte sind direkt eingetragen (keine Variablen-Substitution).
+# Passwoerter VOR dem Deployment anpassen!
 # =============================================================================
 
 services:
@@ -31,41 +21,20 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Database - DIREKT setzen (keine Variablen-Interpolation!)
-      DATABASE_URL: ${DATABASE_URL}
-
-      # NextAuth
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://192.168.178.101:3000}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-
-      # App URL (fuer CORS, Links in Emails etc.)
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://192.168.178.101:3000}
-      APP_URL: ${NEXT_PUBLIC_APP_URL:-http://192.168.178.101:3000}
-
-      # Redis
+      DATABASE_URL: postgresql://wpm:WpmSicher2026@postgres:5432/windparkmanager?schema=public
+      NEXTAUTH_URL: http://192.168.178.101:3000
+      NEXTAUTH_SECRET: WindparkManager-Secret-Key-Mindestens-32-Zeichen-Lang
+      NEXT_PUBLIC_APP_URL: http://192.168.178.101:3000
+      APP_URL: http://192.168.178.101:3000
       REDIS_URL: redis://redis:6379
-
-      # S3/MinIO (intern im Docker-Netzwerk)
       S3_ENDPOINT: http://minio:9000
-      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
-      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-      S3_BUCKET: ${S3_BUCKET:-wpm-documents}
-      S3_REGION: ${S3_REGION:-eu-central-1}
-      S3_PUBLIC_URL: ${NEXT_PUBLIC_APP_URL:-http://192.168.178.101:3000}/api/documents
-
-      # SMTP (optional)
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM: ${SMTP_FROM:-noreply@windparkmanager.local}
-
-      # Email Encryption
-      EMAIL_ENCRYPTION_KEY: ${EMAIL_ENCRYPTION_KEY:-}
-
-      # App Settings
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: MinioSicher2026
+      S3_BUCKET: wpm-documents
+      S3_REGION: eu-central-1
+      S3_PUBLIC_URL: http://192.168.178.101:3000/api/documents
       NODE_ENV: production
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_LEVEL: info
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
@@ -83,13 +52,13 @@ services:
     container_name: wpm-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-wpm}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-windparkmanager}
+      POSTGRES_USER: wpm
+      POSTGRES_PASSWORD: WpmSicher2026
+      POSTGRES_DB: windparkmanager
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata_fresh:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wpm} -d ${POSTGRES_DB:-windparkmanager}"]
+      test: ["CMD-SHELL", "pg_isready -U wpm -d windparkmanager"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -123,7 +92,7 @@ services:
           memory: 512M
 
   # ---------------------------------------------------------------------------
-  # MinIO - S3-Kompatibler Objektspeicher (Dokumente, Avatare etc.)
+  # MinIO - S3-Kompatibler Objektspeicher
   # ---------------------------------------------------------------------------
   minio:
     image: minio/minio:latest
@@ -131,15 +100,12 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: MinioSicher2026
     volumes:
       - minio_data:/data
     ports:
-      # MinIO Console (Admin-UI) - erreichbar unter http://192.168.178.101:9001
       - "9001:9001"
-      # MinIO API - nur exponieren wenn externer S3-Zugriff benoetigt wird
-      # - "9002:9000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -164,23 +130,19 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set wpm http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
-      mc mb --ignore-existing wpm/$${S3_BUCKET:-wpm-documents};
-      echo 'MinIO Bucket erstellt: $${S3_BUCKET:-wpm-documents}';
+      mc alias set wpm http://minio:9000 minioadmin MinioSicher2026;
+      mc mb --ignore-existing wpm/wpm-documents;
+      echo 'MinIO Bucket erstellt: wpm-documents';
       exit 0;
       "
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      S3_BUCKET: ${S3_BUCKET:-wpm-documents}
     networks:
       - wpm-network
 
 # =============================================================================
-# Volumes (persistente Daten)
+# Volumes
 # =============================================================================
 volumes:
-  postgres_data:
+  pgdata_fresh:
     driver: local
   redis_data:
     driver: local
