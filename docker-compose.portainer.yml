@@ -137,10 +137,11 @@ services:
       # MinIO API - nur exponieren wenn externer S3-Zugriff benoetigt wird
       # - "9002:9000"
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
     networks:
       - wpm-network
     deploy:
