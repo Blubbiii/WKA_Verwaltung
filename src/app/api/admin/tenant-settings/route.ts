@@ -38,6 +38,16 @@ export interface TenantSettings {
   companyPhone: string;
   companyEmail: string;
   companyWebsite: string;
+
+  // DATEV Export
+  datevRevenueAccount: string;
+  datevExpenseAccount: string;
+  datevDebtorStart: number;
+  datevCreditorStart: number;
+
+  // GoBD Aufbewahrung
+  gobdRetentionYearsInvoice: number;
+  gobdRetentionYearsContract: number;
 }
 
 const DEFAULT_TENANT_SETTINGS: TenantSettings = {
@@ -76,6 +86,16 @@ const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   companyPhone: "",
   companyEmail: "",
   companyWebsite: "",
+
+  // DATEV Export (SKR04 defaults)
+  datevRevenueAccount: "8400",
+  datevExpenseAccount: "8000",
+  datevDebtorStart: 10000,
+  datevCreditorStart: 70000,
+
+  // GoBD Aufbewahrung (§147 AO)
+  gobdRetentionYearsInvoice: 10,
+  gobdRetentionYearsContract: 10,
 };
 
 // =============================================================================
@@ -180,6 +200,44 @@ const tenantSettingsSchema = z.object({
   companyWebsite: z
     .string()
     .max(200, "Website darf maximal 200 Zeichen haben")
+    .optional(),
+
+  // DATEV Export
+  datevRevenueAccount: z
+    .string()
+    .max(10, "Sachkonto darf maximal 10 Zeichen haben")
+    .regex(/^\d{4,10}$/, "Sachkonto muss 4-10 Ziffern enthalten")
+    .optional(),
+  datevExpenseAccount: z
+    .string()
+    .max(10, "Sachkonto darf maximal 10 Zeichen haben")
+    .regex(/^\d{4,10}$/, "Sachkonto muss 4-10 Ziffern enthalten")
+    .optional(),
+  datevDebtorStart: z
+    .number()
+    .int()
+    .min(1000, "Debitorennummernkreis muss mindestens 1000 sein")
+    .max(99999999, "Debitorennummernkreis darf maximal 99999999 sein")
+    .optional(),
+  datevCreditorStart: z
+    .number()
+    .int()
+    .min(1000, "Kreditorennummernkreis muss mindestens 1000 sein")
+    .max(99999999, "Kreditorennummernkreis darf maximal 99999999 sein")
+    .optional(),
+
+  // GoBD Aufbewahrung
+  gobdRetentionYearsInvoice: z
+    .number()
+    .int()
+    .min(1, "Aufbewahrungsfrist muss mindestens 1 Jahr sein")
+    .max(30, "Aufbewahrungsfrist darf maximal 30 Jahre sein")
+    .optional(),
+  gobdRetentionYearsContract: z
+    .number()
+    .int()
+    .min(1, "Aufbewahrungsfrist muss mindestens 1 Jahr sein")
+    .max(30, "Aufbewahrungsfrist darf maximal 30 Jahre sein")
     .optional(),
 });
 

@@ -309,7 +309,7 @@ export interface EnergyDistributionSummary {
 export interface FeePositionEntry {
   description: string;
   netAmount: number;        // positive for fees, negative for advance deductions
-  taxType: "STANDARD" | "EXEMPT";
+  taxType: "STANDARD" | "REDUCED" | "EXEMPT";
 }
 
 /** Full settlement details stored on Invoice.calculationDetails */

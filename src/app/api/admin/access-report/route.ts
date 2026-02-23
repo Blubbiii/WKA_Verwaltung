@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
         firstName: true,
         lastName: true,
         status: true,
-        roleAssignments: {
+        userRoleAssignments: {
           include: {
             role: {
               include: {
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
         { name: string; displayName: string; module: string; action: string }
       >();
 
-      const roles = user.roleAssignments.map((assignment) => {
+      const roles = user.userRoleAssignments.map((assignment) => {
         // Add permissions from this role
         for (const rp of assignment.role.permissions) {
           if (!permissionsSet.has(rp.permission.name)) {

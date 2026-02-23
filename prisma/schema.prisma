@@ -85,6 +85,8 @@ model Tenant {
   scadaWindSummaries        ScadaWindSummary[]
   scheduledReports          ScheduledReport[]
   systemConfigs             SystemConfig[]
+  taxRateConfigs            TaxRateConfig[]
+  positionTaxMappings       PositionTaxMapping[]
   users                     User[]
   votes                     Vote[]
 
@@ -1096,6 +1098,7 @@ model EnergyRevenueType {
   calculationType      EnergyCalculationType  @default(FIXED_RATE)
   hasTax               Boolean                @default(true)
   taxRate              Decimal?               @default(19.0) @db.Decimal(5, 2)
+  taxType              TaxType                @default(STANDARD)
   isActive             Boolean                @default(true)
   sortOrder            Int                    @default(0)
   createdAt            DateTime               @default(now())
@@ -2510,4 +2513,36 @@ enum TaxType {
   STANDARD
   REDUCED
   EXEMPT
+}
+
+model TaxRateConfig {
+  id        String    @id @default(uuid())
+  taxType   TaxType
+  rate      Decimal   @db.Decimal(5, 2)
+  validFrom DateTime  @db.Date
+  validTo   DateTime? @db.Date
+  label     String?
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([tenantId, taxType, validFrom])
+  @@map("tax_rate_configs")
+}
+
+model PositionTaxMapping {
+  id        String   @id @default(uuid())
+  category  String
+  label     String
+  taxType   TaxType  @default(STANDARD)
+  module    String   @default("lease")
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, category])
+  @@index([tenantId, module])
+  @@map("position_tax_mappings")
 }

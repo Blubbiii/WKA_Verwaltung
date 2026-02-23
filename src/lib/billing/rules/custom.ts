@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { InvoiceType, TaxType } from "@prisma/client";
 import { getNextInvoiceNumber, calculateTaxAmounts, getTaxRateByType } from "@/lib/invoices/numberGenerator";
 import { BillingRuleType } from "../types";
+import { getTenantSettings } from "@/lib/tenant-settings";
 import {
   RuleHandler,
   CustomRuleParameters,
@@ -157,6 +158,10 @@ export class CustomRuleHandler implements RuleHandler {
       };
     }
 
+    // Load tenant settings for payment term
+    const tenantSettings = await getTenantSettings(tenantId);
+    const paymentTermDays = tenantSettings.paymentTermDays;
+
     try {
       const invoiceType = params.invoiceType as InvoiceType;
       const defaultTaxType = params.taxType || "STANDARD";
@@ -225,7 +230,7 @@ export class CustomRuleHandler implements RuleHandler {
           invoiceDate: new Date(),
           dueDate:
             invoiceType === "INVOICE"
-              ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+              ? new Date(Date.now() + paymentTermDays * 24 * 60 * 60 * 1000)
               : null,
           recipientType: params.recipientType,
           recipientName: params.recipientName,

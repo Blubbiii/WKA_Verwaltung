@@ -14,6 +14,7 @@ import {
   getTaxRateByType,
 } from "@/lib/invoices/numberGenerator";
 import { invalidate } from "@/lib/cache/invalidation";
+import { getTenantSettings } from "@/lib/tenant-settings";
 import { apiLogger } from "@/lib/logger";
 
 const logger = apiLogger.child({ component: "recurring-invoice-service" });
@@ -185,9 +186,11 @@ async function generateInvoiceFromRecurring(
     invoiceTypeEnum
   );
 
-  // Calculate due date (14 days from now)
+  // Calculate due date from tenant settings
+  const tenantSettings = await getTenantSettings(recurringInvoice.tenantId);
+  const paymentTermDays = tenantSettings.paymentTermDays;
   const invoiceDate = new Date();
-  const dueDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  const dueDate = new Date(Date.now() + paymentTermDays * 24 * 60 * 60 * 1000);
 
   // Determine service period (current month)
   const serviceStartDate = new Date(invoiceDate.getFullYear(), invoiceDate.getMonth(), 1);

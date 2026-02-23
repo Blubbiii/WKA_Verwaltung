@@ -69,6 +69,11 @@ export interface ManagementBillingResult {
   details: ManagementBillingDetail[];
 }
 
+/**
+ * @deprecated Use `getTaxRate()` from `@/lib/tax/tax-rates` instead.
+ * This constant will be removed once all synchronous callers have been
+ * migrated to the async, DB-backed tax rate lookup.
+ */
 export const TAX_RATES: Record<string, number> = {
   STANDARD: 19,
   REDUCED: 7,

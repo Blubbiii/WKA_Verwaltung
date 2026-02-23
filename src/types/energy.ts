@@ -414,23 +414,29 @@ export function calculateToleranceAdjustment(
 // ===========================================
 
 /**
- * Steuerliche Behandlung nach Kostenart
- * (aus Praxis-PDFs verifiziert)
+ * @deprecated Use PositionTaxMapping (DB-backed, configurable per tenant) instead.
+ * Tax treatment is now managed via:
+ * - PositionTaxMapping (lease fee categories -> TaxType)
+ * - EnergyRevenueType.taxType (energy revenue -> TaxType)
+ * - TaxRateConfig (TaxType -> actual percentage with date validity)
+ *
+ * This constant is kept only as reference documentation.
  */
 export const TAX_TREATMENT = {
-  // MIT 19% MwSt
+  // MIT MwSt (-> TaxType.STANDARD, resolved via TaxRateConfig)
   STROMERLOES_EEG: { taxRate: 19, exempt: false, reason: "Lieferung" },
   STROMERLOES_DV: { taxRate: 19, exempt: false, reason: "Lieferung" },
   PACHT_WINDHOEFIG: { taxRate: 19, exempt: false, reason: "Sonstige Leistung" },
   PACHT_AE_MASSNAHMEN: { taxRate: 19, exempt: false, reason: "Sonstige Leistung" },
 
-  // OHNE MwSt (steuerfrei)
+  // OHNE MwSt (-> TaxType.EXEMPT, resolved via TaxRateConfig)
   MARKTPRAEMIE: { taxRate: 0, exempt: true, reason: "Durchlaufposten" },
-  PACHT_WKA_STANDORT: { taxRate: 0, exempt: true, reason: "§4 Nr.12 UStG (Grundstück)" },
-  PACHT_VERSIEGELT: { taxRate: 0, exempt: true, reason: "§4 Nr.12 UStG (Grundstück)" },
-  WEGENUTZUNG: { taxRate: 0, exempt: true, reason: "§4 Nr.12 UStG (Grundstück)" },
+  PACHT_WKA_STANDORT: { taxRate: 0, exempt: true, reason: "\u00a74 Nr.12 UStG (Grundstueck)" },
+  PACHT_VERSIEGELT: { taxRate: 0, exempt: true, reason: "\u00a74 Nr.12 UStG (Grundstueck)" },
+  WEGENUTZUNG: { taxRate: 0, exempt: true, reason: "\u00a74 Nr.12 UStG (Grundstueck)" },
 } as const;
 
+/** @deprecated Use TaxType from Prisma instead */
 export type TaxTreatmentType = keyof typeof TAX_TREATMENT;
 
 // ===========================================

@@ -118,8 +118,9 @@ export function generateZugferdXml(data: XRechnungInvoiceData): string {
   for (const [, group] of taxGroups) {
     let exemptionXml = "";
     if (group.categoryCode === "E") {
+      const exemptNote = data.taxExemptNote || "Steuerfrei gem. \u00a74 Nr.12 UStG";
       exemptionXml = `
-            <ram:ExemptionReason>Steuerfrei gem. §4 Nr.12 UStG</ram:ExemptionReason>`;
+            <ram:ExemptionReason>${escapeXml(exemptNote)}</ram:ExemptionReason>`;
     }
     tradeTaxEntries += `
           <ram:ApplicableTradeTax>

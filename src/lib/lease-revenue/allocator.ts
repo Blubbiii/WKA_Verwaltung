@@ -13,14 +13,15 @@
  * 4. For each operator, calculate:
  *    - totalAllocatedEur = sum of all cost types x their respective share
  *    - directSettlementEur = sum of items where directBillingFundId matches this operator
- *    - taxableAmountEur = pool share portion (19% MwSt)
- *    - taxableVatEur = taxableAmountEur x 0.19
+ *    - taxableAmountEur = pool share portion (MwSt)
+ *    - taxableVatEur = taxableAmountEur x vatRatePercent/100 (from TaxRateConfig)
  *    - exemptAmountEur = standort + sealed + road + cable portion (par.4 Nr.12 UStG)
  *    - netPayableEur = taxableAmountEur + exemptAmountEur - directSettlementEur
  */
 
 import { Decimal } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
+import { getTaxRate } from "@/lib/tax/tax-rates";
 
 // ============================================================
 // Types
@@ -69,7 +70,7 @@ export interface AllocationItemResult {
  * Pure function - no DB dependency.
  */
 export function calculateCostAllocation(params: {
-  /** Pool share portion subject to 19% MwSt */
+  /** Pool share portion subject to MwSt */
   totalTaxableEur: number;
   /** Standort + sealed + road + cable (par.4 Nr.12 UStG exempt) */
   totalExemptEur: number;
@@ -81,6 +82,8 @@ export function calculateCostAllocation(params: {
   operators: OperatorShare[];
   /** Park distribution mode: SMOOTHED/TOLERATED use DULDUNG share, PROPORTIONAL uses total share */
   distributionMode: string;
+  /** VAT rate in percent (e.g. 19 for 19%). Loaded from TaxRateConfig. */
+  vatRatePercent: number;
 }): AllocationResult {
   const {
     totalTaxableEur,
@@ -89,6 +92,7 @@ export function calculateCostAllocation(params: {
     directBillingByFund,
     operators,
     distributionMode,
+    vatRatePercent,
   } = params;
 
   const items = operators.map((op) => {
@@ -104,7 +108,7 @@ export function calculateCostAllocation(params: {
     const directSettlementEur = round2(
       directBillingByFund.get(op.operatorFundId) ?? 0
     );
-    const taxableVatEur = round2(taxableAmountEur * 0.19);
+    const taxableVatEur = round2(taxableAmountEur * (vatRatePercent / 100));
     const netPayableEur = round2(totalAllocatedEur - directSettlementEur);
 
     return {
@@ -289,6 +293,10 @@ export async function executeCostAllocation(
   if (operators.length === 0)
     throw new Error("Keine Betreibergesellschaften gefunden");
 
+  // Load VAT rate from centralized tax config
+  const referenceDate = new Date(`${settlement.year}-01-01`);
+  const vatRatePercent = await getTaxRate(tenantId, "STANDARD", referenceDate);
+
   // Calculate allocation
   const result = calculateCostAllocation({
     totalTaxableEur: round2(totalTaxableEur),
@@ -297,6 +305,7 @@ export async function executeCostAllocation(
     directBillingByFund,
     operators,
     distributionMode: settlement.park.defaultDistributionMode,
+    vatRatePercent,
   });
 
   // Save in transaction for atomicity

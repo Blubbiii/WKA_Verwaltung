@@ -19,6 +19,7 @@
 import { Worker, Job } from "bullmq";
 import { getRedisConnection } from "../connection";
 import { billingLogger } from "@/lib/logger";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 // =============================================================================
 // Types
@@ -321,10 +322,12 @@ async function processGenerateInvoice(data: GenerateInvoiceJobData): Promise<Bil
     InvoiceType.INVOICE
   );
 
-  // 4. Calculate due date
+  // 4. Calculate due date from tenant settings
+  const tenantSettings = await getTenantSettings(data.tenantId);
+  const paymentTermDays = tenantSettings.paymentTermDays;
   const dueDate = data.dueDate
     ? new Date(data.dueDate)
-    : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // +14 days default
+    : new Date(Date.now() + paymentTermDays * 24 * 60 * 60 * 1000);
 
   // 5. Create Invoice with items in database
   const invoice = await prisma.invoice.create({

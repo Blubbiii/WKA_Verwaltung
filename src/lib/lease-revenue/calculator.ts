@@ -12,7 +12,7 @@
  * 5. Split into WEA-Standort share (e.g. 10%) and Pool/Flaechen share (e.g. 90%)
  * 6. Distribute to individual landowners based on their plot areas and turbine counts
  * 7. Add surcharges (sealed area, road usage, cable)
- * 8. Split into taxable (pool share -> 19% MwSt) and exempt (standort + sealed + road + cable -> §4 Nr.12 UStG)
+ * 8. Split into taxable (pool share -> MwSt via TaxRateConfig) and exempt (standort + sealed + road + cable -> §4 Nr.12 UStG)
  */
 
 import { Prisma } from "@prisma/client";
@@ -63,7 +63,7 @@ export function getActiveRevenuePhase(
  * 4. Split into WEA-Standort and Pool shares
  * 5. Distribute to individual leases (pool: proportional to area, standort: proportional to turbines)
  * 6. Add surcharges (sealed area, road, cable)
- * 7. Tax split: pool share is taxable (19% MwSt), everything else is exempt (§4 Nr.12 UStG)
+ * 7. Tax split: pool share is taxable (MwSt), everything else is exempt (§4 Nr.12 UStG)
  */
 export function calculateSettlementFees(
   input: SettlementCalculationInput
@@ -132,7 +132,7 @@ export function calculateSettlementFees(
         cableFeeEur
     );
 
-    // Tax split: Pool share is taxable (19% MwSt), everything else is exempt (§4 Nr.12 UStG)
+    // Tax split: Pool share is taxable (MwSt via TaxRateConfig), everything else is exempt (§4 Nr.12 UStG)
     const taxableAmountEur = round2(poolFeeEur);
     const exemptAmountEur = round2(
       standortFeeEur + sealedAreaFeeEur + roadUsageFeeEur + cableFeeEur

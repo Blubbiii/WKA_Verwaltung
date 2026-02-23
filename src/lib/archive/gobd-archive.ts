@@ -19,6 +19,7 @@ import { prisma } from "@/lib/prisma";
 import { s3Client, S3_BUCKET } from "@/lib/storage";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { logger } from "@/lib/logger";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 const archiveLogger = logger.child({ module: "gobd-archive" });
 
@@ -29,8 +30,12 @@ const archiveLogger = logger.child({ module: "gobd-archive" });
 /** S3 prefix for archived documents (separate from regular storage) */
 const ARCHIVE_PREFIX = "gobd-archive";
 
-/** Retention periods in years per document type (GoBD / §147 AO) */
-const RETENTION_YEARS: Record<string, number> = {
+/**
+ * Default retention periods in years per document type (GoBD / §147 AO).
+ * Can be overridden per tenant via tenant settings
+ * (gobdRetentionYearsInvoice, gobdRetentionYearsContract).
+ */
+const DEFAULT_RETENTION_YEARS_MAP: Record<string, number> = {
   INVOICE: 10,
   CREDIT_NOTE: 10,
   RECEIPT: 10,
@@ -232,9 +237,17 @@ export async function archiveDocument(
   const previousChainHash = lastInChain?.chainHash ?? GENESIS_HASH;
   const chainHash = createChainHash(contentHash, previousChainHash);
 
-  // Calculate retention period
+  // Calculate retention period from tenant settings (with fallback to defaults)
+  const tenantSettings = await getTenantSettings(tenantId);
+  const tenantRetentionMap: Record<string, number> = {
+    INVOICE: tenantSettings.gobdRetentionYearsInvoice,
+    CREDIT_NOTE: tenantSettings.gobdRetentionYearsInvoice,
+    RECEIPT: tenantSettings.gobdRetentionYearsInvoice,
+    CONTRACT: tenantSettings.gobdRetentionYearsContract,
+    SETTLEMENT: tenantSettings.gobdRetentionYearsInvoice,
+  };
   const retentionYears =
-    RETENTION_YEARS[documentType] ?? DEFAULT_RETENTION_YEARS;
+    tenantRetentionMap[documentType] ?? DEFAULT_RETENTION_YEARS_MAP[documentType] ?? DEFAULT_RETENTION_YEARS;
   const retentionUntil = new Date();
   retentionUntil.setFullYear(retentionUntil.getFullYear() + retentionYears);
 

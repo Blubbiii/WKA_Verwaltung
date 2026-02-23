@@ -32,6 +32,7 @@ import {
   InvoiceCreationResult,
 } from "../types";
 import { calculateProrationFactor, calculateLeaseAmount } from "./monthly-lease";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 /** German month names for invoice descriptions */
 const MONTH_NAMES = [
@@ -391,7 +392,8 @@ export class LeaseAdvanceHandler implements RuleHandler {
     const year = params.year || now.getFullYear();
     const month = params.month || now.getMonth() + 1;
     const taxType = params.taxType || "EXEMPT"; // Pacht is typically tax-exempt
-    const dueDays = params.dueDays || 14;
+    const tenantSettings = await getTenantSettings(tenantId);
+    const dueDays = params.dueDays || tenantSettings.paymentTermDays;
 
     // Dry-Run: Only preview
     if (options.dryRun) {

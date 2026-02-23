@@ -10,7 +10,7 @@ import type {
   ManagementBillingResult,
   ManagementBillingDetail,
 } from "./types";
-import { TAX_RATES } from "./types";
+import { getTaxRate } from "@/lib/tax/tax-rates";
 
 /**
  * Round a number to 2 decimal places (cents).
@@ -34,6 +34,12 @@ export async function calculateManagementBilling(
   // 1. Load stakeholder to get tax type and billing configuration
   const stakeholder = await prisma.parkStakeholder.findUnique({
     where: { id: stakeholderId },
+    select: {
+      id: true,
+      billingEnabled: true,
+      taxType: true,
+      stakeholderTenantId: true,
+    },
   });
 
   if (!stakeholder) {
@@ -80,7 +86,13 @@ export async function calculateManagementBilling(
   const feeAmountNet = roundToCents(
     (totalBaseRevenue * feePercentage) / 100
   );
-  const taxRate = TAX_RATES[stakeholder.taxType || "STANDARD"] ?? 19;
+  // Use DB-backed tax rate lookup with reference date from billing period
+  const referenceDate = new Date(year, month ? month - 1 : 0, 1);
+  const taxRate = await getTaxRate(
+    stakeholder.stakeholderTenantId,
+    stakeholder.taxType || "STANDARD",
+    referenceDate
+  );
   const taxAmount = roundToCents((feeAmountNet * taxRate) / 100);
   const feeAmountGross = roundToCents(feeAmountNet + taxAmount);
 

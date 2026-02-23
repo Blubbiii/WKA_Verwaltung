@@ -8,6 +8,7 @@ import { InvoiceType, TaxType, EntityStatus } from "@prisma/client";
 import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { BillingRuleType } from "../types";
 import { billingLogger as logger } from "@/lib/logger";
+import { getTenantSettings } from "@/lib/tenant-settings";
 import {
   RuleHandler,
   ManagementFeeParameters,
@@ -270,6 +271,10 @@ export class ManagementFeeHandler implements RuleHandler {
       };
     }
 
+    // Load tenant settings for payment term
+    const tenantSettings = await getTenantSettings(tenantId);
+    const paymentTermDays = tenantSettings.paymentTermDays;
+
     try {
       let amount: number;
       let calculationDetails: string;
@@ -342,7 +347,7 @@ export class ManagementFeeHandler implements RuleHandler {
           invoiceType: InvoiceType.INVOICE,
           invoiceNumber,
           invoiceDate: now,
-          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // +14 Tage
+          dueDate: new Date(Date.now() + paymentTermDays * 24 * 60 * 60 * 1000),
           recipientType: "vendor",
           recipientName: params.recipientName || "Verwaltungsgesellschaft",
           recipientAddress: params.recipientAddress,

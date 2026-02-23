@@ -28,6 +28,18 @@ export interface BasePageProps {
     iban?: string;
     bic?: string;
   };
+  companyInfo?: {
+    name?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+    taxId?: string;
+    vatId?: string;
+    registrationCourt?: string;
+    registrationNumber?: string;
+    managingDirector?: string;
+  };
   customFooterText?: string | null;
   showTaxExempt?: boolean;
   /** Watermark configuration */
@@ -44,6 +56,7 @@ export function BasePage({
   layout,
   companyName,
   bankDetails,
+  companyInfo,
   customFooterText,
   showTaxExempt,
   watermark,
@@ -93,6 +106,7 @@ export function BasePage({
           letterhead={letterhead}
           layout={layout}
           bankDetails={bankDetails}
+          companyInfo={companyInfo}
           customText={customFooterText}
           showTaxExempt={showTaxExempt}
         />

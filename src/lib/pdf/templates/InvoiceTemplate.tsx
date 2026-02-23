@@ -1,6 +1,6 @@
 import { Document, View, Text, StyleSheet } from "@react-pdf/renderer";
 import type { ResolvedLetterhead, ResolvedTemplate } from "../utils/templateResolver";
-import type { InvoicePdfData } from "@/types/pdf";
+import type { InvoicePdfData, LetterheadCompanyInfo } from "@/types/pdf";
 import { BasePage } from "./BaseDocument";
 import { RecipientBlock } from "./components/RecipientBlock";
 import { ItemsTable, type InvoiceItem } from "./components/ItemsTable";
@@ -113,9 +113,11 @@ interface InvoiceTemplateProps {
   letterhead: ResolvedLetterhead;
   /** Watermark configuration (optional) */
   watermark?: WatermarkProps;
+  /** Auto-generated or manual company info for header/footer */
+  companyInfo?: LetterheadCompanyInfo;
 }
 
-export function InvoiceTemplate({ invoice, template, letterhead, watermark }: InvoiceTemplateProps) {
+export function InvoiceTemplate({ invoice, template, letterhead, watermark, companyInfo }: InvoiceTemplateProps) {
   const layout = template.layout;
 
   // Dokumenttyp-Titel (with correction type prefix)
@@ -174,12 +176,44 @@ export function InvoiceTemplate({ invoice, template, letterhead, watermark }: In
     country: addressLines[2] || undefined,
   };
 
-  // Bankdaten aus Tenant
-  const bankDetails = invoice.tenant
+  // Bank details: prioritize Fund (companyInfo) > Tenant
+  const bankDetails = companyInfo?.bankDetails
     ? {
-        bankName: invoice.tenant.bankName ?? undefined,
-        iban: invoice.tenant.iban ?? undefined,
-        bic: invoice.tenant.bic ?? undefined,
+        bankName: companyInfo.bankDetails.bankName ?? undefined,
+        iban: companyInfo.bankDetails.iban ?? undefined,
+        bic: companyInfo.bankDetails.bic ?? undefined,
+      }
+    : invoice.tenant
+      ? {
+          bankName: invoice.tenant.bankName ?? undefined,
+          iban: invoice.tenant.iban ?? undefined,
+          bic: invoice.tenant.bic ?? undefined,
+        }
+      : undefined;
+
+  // Company name: prioritize Fund name > Tenant name
+  const companyName = companyInfo?.name || invoice.tenant?.name || undefined;
+
+  // Flatten companyInfo for Footer component
+  const footerCompanyInfo = companyInfo
+    ? {
+        name: companyInfo.name,
+        address: companyInfo.address
+          ? [
+              companyInfo.address.street,
+              `${companyInfo.address.postalCode} ${companyInfo.address.city}`.trim(),
+            ]
+              .filter(Boolean)
+              .join(", ")
+          : undefined,
+        phone: companyInfo.contact?.phone,
+        email: companyInfo.contact?.email,
+        website: companyInfo.contact?.website,
+        taxId: companyInfo.taxInfo?.taxId,
+        vatId: companyInfo.taxInfo?.vatId,
+        registrationCourt: companyInfo.registration?.court,
+        registrationNumber: companyInfo.registration?.registerNumber,
+        managingDirector: companyInfo.management?.join(", "),
       }
     : undefined;
 
@@ -192,12 +226,25 @@ export function InvoiceTemplate({ invoice, template, letterhead, watermark }: In
     (sd.turbineProductions && sd.turbineProductions.length > 0)
   );
 
+  // Auto-generate sender line from companyInfo if letterhead has none
+  const senderAddress = letterhead.senderAddress
+    || (companyInfo
+      ? [
+          companyInfo.name,
+          companyInfo.address?.street,
+          `${companyInfo.address?.postalCode ?? ""} ${companyInfo.address?.city ?? ""}`.trim(),
+        ]
+          .filter(Boolean)
+          .join(" \u00B7 ")
+      : undefined);
+
   // Shared page props
   const pageProps = {
-    letterhead,
+    letterhead: { ...letterhead, senderAddress: senderAddress ?? null },
     layout,
-    companyName: invoice.tenant?.name ?? undefined,
+    companyName,
     bankDetails,
+    companyInfo: footerCompanyInfo,
     customFooterText: template.footerText,
     showTaxExempt: isTaxExempt,
     watermark,

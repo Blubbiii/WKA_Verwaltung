@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { InvoiceType, TaxType, ContractStatus } from "@prisma/client";
 import { getNextInvoiceNumber, calculateTaxAmounts, getTaxRateByType } from "@/lib/invoices/numberGenerator";
 import { BillingRuleType } from "../types";
+import { getTenantSettings } from "@/lib/tenant-settings";
 import {
   RuleHandler,
   LeasePaymentParameters,
@@ -432,6 +433,10 @@ export class MonthlyLeaseHandler implements RuleHandler {
       };
     }
 
+    // Load tenant settings for payment term
+    const tenantSettings = await getTenantSettings(tenantId);
+    const paymentTermDays = tenantSettings.paymentTermDays;
+
     // Lade alle aktiven Pachtvertraege
     const leases = await prisma.lease.findMany({
       where: {
@@ -634,7 +639,7 @@ export class MonthlyLeaseHandler implements RuleHandler {
             invoiceType: InvoiceType.INVOICE,
             invoiceNumber,
             invoiceDate: new Date(),
-            dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // +14 Tage
+            dueDate: new Date(Date.now() + paymentTermDays * 24 * 60 * 60 * 1000),
             recipientType: "lessor",
             recipientName,
             recipientAddress,

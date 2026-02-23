@@ -9,6 +9,7 @@ const createSchema = z.object({
   code: z.string().min(1, "Code erforderlich").max(20),
   description: z.string().max(500).optional().nullable(),
   calculationType: z.enum(["FIXED_RATE", "MARKET_PRICE", "MANUAL"]).default("FIXED_RATE"),
+  taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]).default("STANDARD"),
   hasTax: z.boolean().default(true),
   taxRate: z.number().min(0).max(100).optional().nullable(),
   sortOrder: z.number().int().default(0),

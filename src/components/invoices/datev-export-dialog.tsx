@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { CalendarIcon, Download, Loader2, Settings2 } from "lucide-react";
@@ -66,12 +67,23 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
   // Export type filter
   const [exportType, setExportType] = useState<ExportType>("all");
 
-  // Advanced settings
+  // Load defaults from tenant settings
+  const { settings: tenantSettings } = useTenantSettings();
+
+  // Advanced settings - defaults from tenant settings
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [consultantNumber, setConsultantNumber] = useState("");
   const [clientNumber, setClientNumber] = useState("");
   const [revenueAccount, setRevenueAccount] = useState("8400");
   const [debtorStart, setDebtorStart] = useState("10000");
+
+  // Update defaults when tenant settings load
+  useEffect(() => {
+    if (tenantSettings) {
+      if (tenantSettings.datevRevenueAccount) setRevenueAccount(tenantSettings.datevRevenueAccount);
+      if (tenantSettings.datevDebtorStart) setDebtorStart(String(tenantSettings.datevDebtorStart));
+    }
+  }, [tenantSettings]);
 
   // Loading state
   const [isExporting, setIsExporting] = useState(false);

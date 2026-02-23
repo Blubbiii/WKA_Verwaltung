@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 
 import { getNextInvoiceNumbers } from "@/lib/invoices/numberGenerator";
+import { getTenantSettings } from "@/lib/tenant-settings";
 import { apiLogger as logger } from "@/lib/logger";
 
 // Hilfsfunktion: Formatiere Empfaengername
@@ -79,6 +80,10 @@ export async function POST(
       );
     }
 
+    // Load tenant settings for payment term
+    const tenantSettings = await getTenantSettings(check.tenantId!);
+    const paymentTermDays = tenantSettings.paymentTermDays;
+
     // Pre-generate all credit note numbers in a single atomic operation (avoids N+1)
     const { numbers: creditNoteNumbers } = await getNextInvoiceNumbers(
       check.tenantId!,
@@ -102,8 +107,8 @@ export async function POST(
             invoiceNumber,
             invoiceDate: distribution.distributionDate,
             dueDate: new Date(
-              distribution.distributionDate.getTime() + 14 * 24 * 60 * 60 * 1000
-            ), // +14 Tage
+              distribution.distributionDate.getTime() + paymentTermDays * 24 * 60 * 60 * 1000
+            ),
             recipientType: "shareholder",
             recipientName: formatRecipientName(item.shareholder.person),
             recipientAddress: formatAddress(item.shareholder.person),

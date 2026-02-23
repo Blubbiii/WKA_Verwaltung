@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
           select: { id: true, name: true, slug: true, logoUrl: true },
         },
         _count: {
-          select: { billings: true },
+          select: { managementBillings: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
           feePercentage: s.feePercentage ? Number(s.feePercentage) : null,
           parkName: park?.name || "Unbekannt",
           parkTenantName: parkTenant?.name || "Unbekannt",
-          billingsCount: s._count.billings,
+          billingsCount: s._count.managementBillings,
         };
       })
     );

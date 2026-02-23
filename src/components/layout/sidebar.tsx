@@ -53,6 +53,7 @@ import {
   Coins,
   Upload,
   Briefcase,
+  Percent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback } from "react";
@@ -392,6 +393,13 @@ const navGroups: NavGroup[] = [
         href: "/admin/revenue-types",
         icon: Coins,
         permission: "system:revenue-types",
+      },
+      {
+        title: "Steuersaetze",
+        titleKey: "taxRates",
+        href: "/admin/tax-rates",
+        icon: Percent,
+        permission: "system:settings",
       },
       {
         title: "Gesellschaftstypen",

@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, EntityStatus, EnergyCalculationType } from "@prisma/client";
+import { PrismaClient, UserRole, EntityStatus, EnergyCalculationType, TaxType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -298,6 +298,7 @@ const energyRevenueTypesData = [
     calculationType: EnergyCalculationType.FIXED_RATE,
     hasTax: true,
     taxRate: 19.0,
+    taxType: TaxType.STANDARD,
     sortOrder: 1,
   },
   {
@@ -307,6 +308,7 @@ const energyRevenueTypesData = [
     calculationType: EnergyCalculationType.MARKET_PRICE,
     hasTax: true,
     taxRate: 19.0,
+    taxType: TaxType.STANDARD,
     sortOrder: 2,
   },
   {
@@ -316,6 +318,7 @@ const energyRevenueTypesData = [
     calculationType: EnergyCalculationType.MARKET_PRICE,
     hasTax: false,
     taxRate: 0,
+    taxType: TaxType.EXEMPT,
     sortOrder: 3,
   },
   {
@@ -325,6 +328,7 @@ const energyRevenueTypesData = [
     calculationType: EnergyCalculationType.MANUAL,
     hasTax: true,
     taxRate: 19.0,
+    taxType: TaxType.STANDARD,
     sortOrder: 4,
   },
 ];
@@ -410,6 +414,7 @@ async function seedEnergyRevenueTypes(tenantId: string) {
             calculationType: revenueType.calculationType,
             hasTax: revenueType.hasTax,
             taxRate: revenueType.taxRate,
+            taxType: revenueType.taxType,
             sortOrder: revenueType.sortOrder,
             isActive: true,
           },
@@ -426,6 +431,7 @@ async function seedEnergyRevenueTypes(tenantId: string) {
             calculationType: revenueType.calculationType,
             hasTax: revenueType.hasTax,
             taxRate: revenueType.taxRate,
+            taxType: revenueType.taxType,
             sortOrder: revenueType.sortOrder,
             isActive: true,
             tenantId: tenantId,
@@ -441,6 +447,88 @@ async function seedEnergyRevenueTypes(tenantId: string) {
   }
 
   console.log(`Energy revenue types: ${createdCount} created, ${updatedCount} updated`);
+}
+
+// ============================================================================
+// TAX RATE CONFIGS DEFINITION
+// ============================================================================
+const defaultTaxRateConfigs = [
+  { taxType: "STANDARD" as const, rate: 19, label: "Regelsteuersatz" },
+  { taxType: "REDUCED" as const, rate: 7, label: "Ermaessigter Steuersatz" },
+  { taxType: "EXEMPT" as const, rate: 0, label: "Steuerbefreit" },
+];
+
+async function seedTaxRateConfigs(tenantId: string) {
+  console.log("Seeding tax rate configs...");
+
+  let createdCount = 0;
+
+  for (const config of defaultTaxRateConfigs) {
+    const existing = await prisma.taxRateConfig.findFirst({
+      where: { tenantId, taxType: config.taxType },
+    });
+
+    if (!existing) {
+      await prisma.taxRateConfig.create({
+        data: {
+          taxType: config.taxType,
+          rate: config.rate,
+          label: config.label,
+          validFrom: new Date("1970-01-01"),
+          validTo: null,
+          tenantId,
+        },
+      });
+      createdCount++;
+      console.log(`  Created: ${config.taxType} = ${config.rate}%`);
+    } else {
+      console.log(`  Exists: ${config.taxType} = ${Number(existing.rate)}%`);
+    }
+  }
+
+  console.log(`Tax rate configs: ${createdCount} created`);
+}
+
+// ============================================================================
+// POSITION TAX MAPPINGS DEFINITION
+// ============================================================================
+const defaultPositionTaxMappings = [
+  { category: "POOL_AREA", label: "Poolflaeche", taxType: "STANDARD" as const, module: "lease" },
+  { category: "TURBINE_SITE", label: "WEA-Standort", taxType: "EXEMPT" as const, module: "lease" },
+  { category: "SEALED_AREA", label: "Versiegelte Flaeche", taxType: "EXEMPT" as const, module: "lease" },
+  { category: "ROAD_USAGE", label: "Wegenutzung", taxType: "EXEMPT" as const, module: "lease" },
+  { category: "CABLE_ROUTE", label: "Kabeltrasse", taxType: "EXEMPT" as const, module: "lease" },
+  { category: "MGMT_FEE", label: "Betriebsfuehrungsverguetung", taxType: "STANDARD" as const, module: "management" },
+];
+
+async function seedPositionTaxMappings(tenantId: string) {
+  console.log("Seeding position tax mappings...");
+
+  let createdCount = 0;
+
+  for (const mapping of defaultPositionTaxMappings) {
+    const existing = await prisma.positionTaxMapping.findUnique({
+      where: { tenantId_category: { tenantId, category: mapping.category } },
+    });
+
+    if (!existing) {
+      await prisma.positionTaxMapping.create({
+        data: {
+          category: mapping.category,
+          label: mapping.label,
+          taxType: mapping.taxType,
+          module: mapping.module,
+          tenantId,
+        },
+      });
+      createdCount++;
+      console.log(`  Created: ${mapping.label} → ${mapping.taxType}`);
+    } else {
+      console.log(`  Exists: ${mapping.label} → ${existing.taxType}`);
+    }
+  }
+
+  console.log(`Position tax mappings: ${createdCount} created`);
 }
 
 async function seedSystemRoles() {
@@ -554,6 +642,14 @@ async function main() {
   // Seed Fund Categories for all tenants
   await seedFundCategories(systemTenant.id);
   await seedFundCategories(demoTenant.id);
+
+  // Seed Tax Rate Configs for all tenants
+  await seedTaxRateConfigs(systemTenant.id);
+  await seedTaxRateConfigs(demoTenant.id);
+
+  // Seed Position Tax Mappings for all tenants
+  await seedPositionTaxMappings(systemTenant.id);
+  await seedPositionTaxMappings(demoTenant.id);
 
   // Create Superadmin User
   const superadminPassword = await bcrypt.hash("admin123", 12);

@@ -9,6 +9,7 @@ const updateSchema = z.object({
   code: z.string().min(1).max(20).optional(),
   description: z.string().max(500).optional().nullable(),
   calculationType: z.enum(["FIXED_RATE", "MARKET_PRICE", "MANUAL"]).optional(),
+  taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]).optional(),
   hasTax: z.boolean().optional(),
   taxRate: z.number().min(0).max(100).optional().nullable(),
   isActive: z.boolean().optional(),

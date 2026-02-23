@@ -12,12 +12,15 @@
  */
 
 import { Decimal } from "@prisma/client/runtime/library";
-import { Prisma } from "@prisma/client";
+import { Prisma, TaxType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   getNextInvoiceNumbers,
   calculateTaxAmounts,
 } from "@/lib/invoices/numberGenerator";
+import { getTaxRate } from "@/lib/tax/tax-rates";
+import { getPositionTaxMap } from "@/lib/tax/position-tax-mapping";
+import { getTenantSettings } from "@/lib/tenant-settings";
 import { loadAdvanceComponentBreakdown } from "./calculator";
 import type {
   SettlementPdfDetails,
@@ -426,6 +429,11 @@ export async function generateAdvanceInvoices(
     serviceYear, settlement.periodType, settlement.advanceInterval, settlement.month
   );
 
+  // Load standard VAT rate from centralized tax config
+  const standardRate = await getTaxRate(tenantId, "STANDARD", periodDates.start);
+  // Load position-to-tax-type mappings from DB
+  const taxMap = await getPositionTaxMap(tenantId);
+
   await prisma.$transaction(async (tx) => {
     let numberIndex = 0;
 
@@ -474,7 +482,7 @@ export async function generateAdvanceInvoices(
       const advanceItems: {
         description: string;
         netAmount: number;
-        taxType: "STANDARD" | "EXEMPT";
+        taxType: TaxType;
       }[] = [];
 
       if (poolFeeEur > 0) {
@@ -482,7 +490,7 @@ export async function generateAdvanceInvoices(
         advanceItems.push({
           description: `Vorschuss Flaechenanteil Poolflaeche\n${periodLabel}`,
           netAmount: share,
-          taxType: "STANDARD",
+          taxType: taxMap.POOL_AREA ?? "STANDARD",
         });
       }
 
@@ -491,7 +499,7 @@ export async function generateAdvanceInvoices(
         advanceItems.push({
           description: `Vorschuss WEA-Standort\n${periodLabel}`,
           netAmount: share,
-          taxType: "EXEMPT",
+          taxType: taxMap.TURBINE_SITE ?? "EXEMPT",
         });
       }
 
@@ -500,7 +508,7 @@ export async function generateAdvanceInvoices(
         advanceItems.push({
           description: `Vorschuss versiegelte Flaeche\n${periodLabel}`,
           netAmount: share,
-          taxType: "EXEMPT",
+          taxType: taxMap.SEALED_AREA ?? "EXEMPT",
         });
       }
 
@@ -509,7 +517,7 @@ export async function generateAdvanceInvoices(
         advanceItems.push({
           description: `Vorschuss Wegenutzung\n${periodLabel}`,
           netAmount: share,
-          taxType: "EXEMPT",
+          taxType: taxMap.ROAD_USAGE ?? "EXEMPT",
         });
       }
 
@@ -518,7 +526,7 @@ export async function generateAdvanceInvoices(
         advanceItems.push({
           description: `Vorschuss Kabeltrasse\n${periodLabel}`,
           netAmount: share,
-          taxType: "EXEMPT",
+          taxType: taxMap.CABLE_ROUTE ?? "EXEMPT",
         });
       }
 
@@ -568,11 +576,11 @@ export async function generateAdvanceInvoices(
       totalGross = round2(totalGross);
 
       // Determine primary tax rate for the invoice header
-      // Use weighted average: if all items are EXEMPT -> 0%, otherwise 19%
+      // If any items are STANDARD -> use loaded rate, otherwise 0%
       const hasStandardTax = advanceItems.some(
         (ai) => ai.taxType === "STANDARD"
       );
-      const headerTaxRate = hasStandardTax ? 19 : 0;
+      const headerTaxRate = hasStandardTax ? standardRate : 0;
 
       // Create the invoice
       const invoice = await tx.invoice.create({
@@ -726,6 +734,12 @@ export async function generateSettlementInvoices(
   const serviceYear = settlement.year;
   const park = settlement.park;
 
+  // Load standard VAT rate from centralized tax config
+  const serviceStartDate = new Date(`${serviceYear}-01-01`);
+  const standardRate = await getTaxRate(tenantId, "STANDARD", serviceStartDate);
+  // Load position-to-tax-type mappings from DB
+  const taxMap = await getPositionTaxMap(tenantId);
+
   // Load advance component breakdown for negative deduction positions
   const advanceBreakdown = await loadAdvanceComponentBreakdown(
     tenantId,
@@ -865,35 +879,35 @@ export async function generateSettlementInvoices(
         feePositions.push({
           description: `Jahresnutzungsentgelt Flaechenanteil Poolflaeche${plotSuffix}\nJahr ${serviceYear}`,
           netAmount: poolFeeEur,
-          taxType: "STANDARD",
+          taxType: taxMap.POOL_AREA ?? "STANDARD",
         });
       }
       if (standortFeeEur > 0) {
         feePositions.push({
           description: `Jahresnutzungsentgelt WEA-Standort${plotSuffix}\nJahr ${serviceYear}`,
           netAmount: standortFeeEur,
-          taxType: "EXEMPT",
+          taxType: taxMap.TURBINE_SITE ?? "EXEMPT",
         });
       }
       if (sealedAreaFeeEur > 0) {
         feePositions.push({
           description: `Jahresnutzungsentgelt versiegelte Flaeche\nJahr ${serviceYear}`,
           netAmount: sealedAreaFeeEur,
-          taxType: "EXEMPT",
+          taxType: taxMap.SEALED_AREA ?? "EXEMPT",
         });
       }
       if (roadUsageFeeEur > 0) {
         feePositions.push({
           description: `Jahresnutzungsentgelt Wegenutzung\nJahr ${serviceYear}`,
           netAmount: roadUsageFeeEur,
-          taxType: "EXEMPT",
+          taxType: taxMap.ROAD_USAGE ?? "EXEMPT",
         });
       }
       if (cableFeeEur > 0) {
         feePositions.push({
           description: `Jahresnutzungsentgelt Kabeltrasse\nJahr ${serviceYear}`,
           netAmount: cableFeeEur,
-          taxType: "EXEMPT",
+          taxType: taxMap.CABLE_ROUTE ?? "EXEMPT",
         });
       }
 
@@ -903,35 +917,35 @@ export async function generateSettlementInvoices(
           feePositions.push({
             description: `Verrechnung Vorschuss Poolflaeche\nJahr ${serviceYear}`,
             netAmount: -advance.poolFeeEur,
-            taxType: "STANDARD",
+            taxType: taxMap.POOL_AREA ?? "STANDARD",
           });
         }
         if (advance.standortFeeEur > 0) {
           feePositions.push({
             description: `Verrechnung Vorschuss WEA-Standort\nJahr ${serviceYear}`,
             netAmount: -advance.standortFeeEur,
-            taxType: "EXEMPT",
+            taxType: taxMap.TURBINE_SITE ?? "EXEMPT",
           });
         }
         if (advance.sealedAreaFeeEur > 0) {
           feePositions.push({
             description: `Verrechnung Vorschuss versiegelte Flaeche\nJahr ${serviceYear}`,
             netAmount: -advance.sealedAreaFeeEur,
-            taxType: "EXEMPT",
+            taxType: taxMap.SEALED_AREA ?? "EXEMPT",
           });
         }
         if (advance.roadUsageFeeEur > 0) {
           feePositions.push({
             description: `Verrechnung Vorschuss Wegenutzung\nJahr ${serviceYear}`,
             netAmount: -advance.roadUsageFeeEur,
-            taxType: "EXEMPT",
+            taxType: taxMap.ROAD_USAGE ?? "EXEMPT",
           });
         }
         if (advance.cableFeeEur > 0) {
           feePositions.push({
             description: `Verrechnung Vorschuss Kabeltrasse\nJahr ${serviceYear}`,
             netAmount: -advance.cableFeeEur,
-            taxType: "EXEMPT",
+            taxType: taxMap.CABLE_ROUTE ?? "EXEMPT",
           });
         }
       }
@@ -943,7 +957,7 @@ export async function generateSettlementInvoices(
       const payoutItems: {
         description: string;
         netAmount: number;
-        taxType: "STANDARD" | "EXEMPT";
+        taxType: TaxType;
       }[] = [];
 
       const netPool = round2(poolFeeEur - (advance?.poolFeeEur ?? 0));
@@ -956,35 +970,35 @@ export async function generateSettlementInvoices(
         payoutItems.push({
           description: `Verguetung Endabrechnung Poolflaeche\nJahr ${serviceYear}`,
           netAmount: netPool,
-          taxType: "STANDARD",
+          taxType: taxMap.POOL_AREA ?? "STANDARD",
         });
       }
       if (netStandort > 0) {
         payoutItems.push({
           description: `Verguetung Endabrechnung WEA-Standort\nJahr ${serviceYear}`,
           netAmount: netStandort,
-          taxType: "EXEMPT",
+          taxType: taxMap.TURBINE_SITE ?? "EXEMPT",
         });
       }
       if (netSealed > 0) {
         payoutItems.push({
           description: `Verguetung Endabrechnung versiegelte Flaeche\nJahr ${serviceYear}`,
           netAmount: netSealed,
-          taxType: "EXEMPT",
+          taxType: taxMap.SEALED_AREA ?? "EXEMPT",
         });
       }
       if (netRoad > 0) {
         payoutItems.push({
           description: `Verguetung Endabrechnung Wegenutzung\nJahr ${serviceYear}`,
           netAmount: netRoad,
-          taxType: "EXEMPT",
+          taxType: taxMap.ROAD_USAGE ?? "EXEMPT",
         });
       }
       if (netCable > 0) {
         payoutItems.push({
           description: `Verguetung Endabrechnung Kabeltrasse\nJahr ${serviceYear}`,
           netAmount: netCable,
-          taxType: "EXEMPT",
+          taxType: taxMap.CABLE_ROUTE ?? "EXEMPT",
         });
       }
 
@@ -1036,7 +1050,7 @@ export async function generateSettlementInvoices(
       const hasStandardTax = payoutItems.some(
         (pi) => pi.taxType === "STANDARD"
       );
-      const headerTaxRate = hasStandardTax ? 19 : 0;
+      const headerTaxRate = hasStandardTax ? standardRate : 0;
 
       // Per-invoice calculationDetails: shared park data + lessor-specific feePositions
       const invoicePdfDetails: SettlementPdfDetails = {
@@ -1113,7 +1127,7 @@ export async function generateSettlementInvoices(
  * Creates invoices (Rechnungen) from Netzgesellschaft to operator companies.
  *
  * For each ParkCostAllocationItem, creates ONE invoice with up to 2 positions:
- * - Position 1 (if taxable > 0): VAT (19% MwSt) for taxableAmountEur (Pool/Flaechenanteil)
+ * - Position 1 (if taxable > 0): VAT (MwSt from TaxRateConfig) for taxableAmountEur (Pool/Flaechenanteil)
  * - Position 2 (if exempt > 0): Exempt (par.4 Nr.12 UStG) for exemptAmountEur (Standort + versiegelt + Weg + Kabel)
  *
  * Links via vatInvoiceId and exemptInvoiceId (both point to the same invoice).
@@ -1171,6 +1185,14 @@ export async function generateAllocationInvoices(
   );
   const isAdvance = settlement.periodType === "ADVANCE";
 
+  // Load standard VAT rate from centralized tax config
+  const standardRate = await getTaxRate(tenantId, "STANDARD", periodDates.start);
+  // Load position-to-tax-type mappings from DB
+  const taxMap = await getPositionTaxMap(tenantId);
+
+  // Load tenant settings for tax exempt note and payment terms
+  const tenantSettings = await getTenantSettings(tenantId);
+
   // Count invoices needed: 1 per operator item that has any amount > 0
   let invoiceCount = 0;
   for (const item of allocation.items) {
@@ -1222,7 +1244,7 @@ export async function generateAllocationInvoices(
       let totalGross = 0;
       let position = 1;
 
-      // Position 1: Taxable (Pool/Flaechenanteil) at 19% MwSt
+      // Position 1: Taxable (Pool/Flaechenanteil) at standard MwSt rate
       if (hasTaxable) {
         const grossAmount = round2(taxableAmountEur + taxableVatEur);
         totalNet += taxableAmountEur;
@@ -1238,8 +1260,8 @@ export async function generateAllocationInvoices(
           unit: "pauschal",
           unitPrice: new Decimal(taxableAmountEur),
           netAmount: new Decimal(taxableAmountEur),
-          taxType: "STANDARD",
-          taxRate: new Decimal(19),
+          taxType: taxMap.POOL_AREA ?? "STANDARD",
+          taxRate: new Decimal(standardRate),
           taxAmount: new Decimal(taxableVatEur),
           grossAmount: new Decimal(grossAmount),
           referenceType: "COST_ALLOCATION",
@@ -1261,7 +1283,7 @@ export async function generateAllocationInvoices(
           unit: "pauschal",
           unitPrice: new Decimal(exemptAmountEur),
           netAmount: new Decimal(exemptAmountEur),
-          taxType: "EXEMPT",
+          taxType: taxMap.TURBINE_SITE ?? "EXEMPT",
           taxRate: new Decimal(0),
           taxAmount: new Decimal(0),
           grossAmount: new Decimal(exemptAmountEur),
@@ -1274,7 +1296,7 @@ export async function generateAllocationInvoices(
       totalTax = round2(totalTax);
       totalGross = round2(totalGross);
 
-      const headerTaxRate = hasTaxable ? 19 : 0;
+      const headerTaxRate = hasTaxable ? standardRate : 0;
 
       const invoice = await tx.invoice.create({
         data: {
@@ -1298,7 +1320,7 @@ export async function generateAllocationInvoices(
           internalReference: `NE-KA-${serviceYear}-${fund.name}`,
           paymentReference: `${prefix} Nutzungsentgelt ${periodLabel} - ${park.name}`,
           notes: hasExempt
-            ? "Pos. Standort steuerfrei gem. par.4 Nr.12 UStG (Vermietung und Verpachtung von Grundstuecken)"
+            ? `Pos. Standort ${tenantSettings.taxExemptNote}`
             : undefined,
           items: {
             createMany: {

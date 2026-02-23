@@ -51,6 +51,9 @@ export interface XRechnungInvoiceData {
 
   // Notes
   notes: string | null;
+
+  // Tax exempt disclaimer text (loaded from tenant settings)
+  taxExemptNote?: string;
 }
 
 export interface XRechnungParty {
@@ -281,7 +284,7 @@ function groupByTaxCategory(lines: XRechnungLineItem[]): Map<string, { taxableAm
 /**
  * Generate the TaxTotal XML section
  */
-function generateTaxTotalXml(lines: XRechnungLineItem[], totalTaxAmount: number, currency: string): string {
+function generateTaxTotalXml(lines: XRechnungLineItem[], totalTaxAmount: number, currency: string, taxExemptNote?: string): string {
   const groups = groupByTaxCategory(lines);
   const subtotals: string[] = [];
 
@@ -289,9 +292,10 @@ function generateTaxTotalXml(lines: XRechnungLineItem[], totalTaxAmount: number,
     // Determine tax exemption reason for exempt categories
     let exemptReasonXml = "";
     if (group.categoryId === "E") {
+      const exemptNote = taxExemptNote || "Steuerfrei gem. \u00a74 Nr.12 UStG";
       exemptReasonXml = `
           <cbc:TaxExemptionReasonCode>vatex-eu-132-1f</cbc:TaxExemptionReasonCode>
-          <cbc:TaxExemptionReason>Steuerfrei gem. §4 Nr.12 UStG</cbc:TaxExemptionReason>`;
+          <cbc:TaxExemptionReason>${escapeXml(exemptNote)}</cbc:TaxExemptionReason>`;
     }
 
     subtotals.push(`
@@ -417,7 +421,7 @@ export function generateXRechnungXml(data: XRechnungInvoiceData): string {
   }
 
   // Tax total
-  const taxTotalXml = generateTaxTotalXml(data.lines, data.taxAmount, currency);
+  const taxTotalXml = generateTaxTotalXml(data.lines, data.taxAmount, currency, data.taxExemptNote);
 
   // Line items
   const lineItemsXml = data.lines.map((line) => generateLineItemXml(line, currency)).join("");

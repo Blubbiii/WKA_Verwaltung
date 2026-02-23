@@ -5,6 +5,8 @@ import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/number
 import { Decimal } from "@prisma/client/runtime/library";
 import { TaxType } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { getTaxRate } from "@/lib/tax/tax-rates";
+import { getTenantSettings } from "@/lib/tenant-settings";
 import type { SettlementPdfDetails, EnergyDistributionSummary, RevenueTableEntry, TurbineProductionEntry } from "@/types/pdf";
 
 // Matches the CalculationDetails stored by the calculate route
@@ -157,32 +159,38 @@ export async function POST(
     const dvProduction = settlement.dvProductionKwh ? Number(settlement.dvProductionKwh) : null;
     const hasEegDvSplit = eegRevenue !== null || dvRevenue !== null;
 
-    // MwSt-Saetze aus EnergyRevenueType laden
-    let eegTaxRate = 19; // Default: 19% MwSt fuer EEG
-    let dvTaxRate = 0;   // Default: 0% MwSt fuer DV/Marktpraemie
+    // Load tenant settings for payment terms
+    const tenantId = check.tenantId!;
+    const tenantSettings = await getTenantSettings(tenantId);
+    const paymentTermDays = tenantSettings.paymentTermDays;
+
+    // MwSt-Saetze aus EnergyRevenueType.taxType + zentraler TaxRateConfig laden
+    const referenceDate = serviceStartDate;
     let eegTaxType: TaxType = "STANDARD";
     let dvTaxType: TaxType = "EXEMPT";
 
     if (hasEegDvSplit) {
       const revenueTypes = await prisma.energyRevenueType.findMany({
         where: {
-          tenantId: check.tenantId!,
+          tenantId,
           isActive: true,
           code: { in: ["EEG", "MARKTPRAEMIE"] },
         },
-        select: { code: true, taxRate: true, hasTax: true },
+        select: { code: true, taxType: true },
       });
 
       for (const rt of revenueTypes) {
         if (rt.code === "EEG") {
-          eegTaxRate = rt.hasTax ? Number(rt.taxRate ?? 19) : 0;
-          eegTaxType = eegTaxRate === 0 ? "EXEMPT" : eegTaxRate === 7 ? "REDUCED" : "STANDARD";
+          eegTaxType = rt.taxType;
         } else if (rt.code === "MARKTPRAEMIE") {
-          dvTaxRate = rt.hasTax ? Number(rt.taxRate ?? 0) : 0;
-          dvTaxType = dvTaxRate === 0 ? "EXEMPT" : dvTaxRate === 7 ? "REDUCED" : "STANDARD";
+          dvTaxType = rt.taxType;
         }
       }
     }
+
+    // Resolve actual rates from central TaxRateConfig
+    const eegTaxRate = await getTaxRate(tenantId, eegTaxType, referenceDate);
+    const dvTaxRate = await getTaxRate(tenantId, dvTaxType, referenceDate);
 
     // Erstelle Gutschriften in einer Transaktion
     const createdInvoices: {
@@ -372,7 +380,7 @@ export async function POST(
             invoiceType: "CREDIT_NOTE",
             invoiceNumber,
             invoiceDate: new Date(),
-            dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 Tage Zahlungsziel
+            dueDate: new Date(Date.now() + paymentTermDays * 24 * 60 * 60 * 1000),
             recipientType: "fund",
             recipientName,
             recipientAddress,

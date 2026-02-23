@@ -138,7 +138,8 @@ function parseTenantAddress(address: string | null): {
  * XRechnung and ZUGFeRD XML generators.
  */
 export function buildXRechnungDataFromInvoice(
-  invoice: InvoiceWithRelations
+  invoice: InvoiceWithRelations,
+  options?: { taxExemptNote?: string }
 ): XRechnungInvoiceData {
   const tenant = invoice.tenant;
   const tenantAddress = parseTenantAddress(tenant.address);
@@ -223,5 +224,6 @@ export function buildXRechnungDataFromInvoice(
     grossAmount: toNumber(invoice.grossAmount),
 
     notes: invoice.notes,
+    taxExemptNote: options?.taxExemptNote,
   };
 }

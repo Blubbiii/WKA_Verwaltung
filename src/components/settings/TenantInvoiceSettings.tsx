@@ -11,21 +11,25 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Loader2, Save, Receipt, Percent, FileText } from "lucide-react";
+import { Loader2, Save, Receipt, FileText, Database, Archive } from "lucide-react";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 
 interface InvoiceFormData {
   paymentTermDays: number;
-  defaultTaxRate: number;
-  taxExempt: boolean;
-  taxExemptNote: string;
   invoicePaymentText: string;
   creditNotePaymentText: string;
+  // DATEV
+  datevRevenueAccount: string;
+  datevExpenseAccount: string;
+  datevDebtorStart: number;
+  datevCreditorStart: number;
+  // GoBD
+  gobdRetentionYearsInvoice: number;
+  gobdRetentionYearsContract: number;
 }
 
 function InvoiceSettingsSkeleton() {
@@ -57,11 +61,14 @@ export function TenantInvoiceSettings() {
     if (settings) {
       setFormData({
         paymentTermDays: settings.paymentTermDays,
-        defaultTaxRate: settings.defaultTaxRate,
-        taxExempt: settings.taxExempt,
-        taxExemptNote: settings.taxExemptNote,
         invoicePaymentText: settings.invoicePaymentText,
         creditNotePaymentText: settings.creditNotePaymentText,
+        datevRevenueAccount: settings.datevRevenueAccount ?? "8400",
+        datevExpenseAccount: settings.datevExpenseAccount ?? "8000",
+        datevDebtorStart: settings.datevDebtorStart ?? 10000,
+        datevCreditorStart: settings.datevCreditorStart ?? 70000,
+        gobdRetentionYearsInvoice: settings.gobdRetentionYearsInvoice ?? 10,
+        gobdRetentionYearsContract: settings.gobdRetentionYearsContract ?? 10,
       });
       setHasChanges(false);
     }
@@ -85,8 +92,23 @@ export function TenantInvoiceSettings() {
       return;
     }
 
-    if (formData.defaultTaxRate < 0 || formData.defaultTaxRate > 100) {
-      toast.error("Steuersatz muss zwischen 0% und 100% liegen");
+    if (formData.datevRevenueAccount && !/^\d{4,10}$/.test(formData.datevRevenueAccount)) {
+      toast.error("DATEV Erloeskonto muss 4-10 Ziffern enthalten");
+      return;
+    }
+
+    if (formData.datevExpenseAccount && !/^\d{4,10}$/.test(formData.datevExpenseAccount)) {
+      toast.error("DATEV Aufwandskonto muss 4-10 Ziffern enthalten");
+      return;
+    }
+
+    if (formData.gobdRetentionYearsInvoice < 1 || formData.gobdRetentionYearsInvoice > 30) {
+      toast.error("Aufbewahrungsfrist muss zwischen 1 und 30 Jahren liegen");
+      return;
+    }
+
+    if (formData.gobdRetentionYearsContract < 1 || formData.gobdRetentionYearsContract > 30) {
+      toast.error("Aufbewahrungsfrist muss zwischen 1 und 30 Jahren liegen");
       return;
     }
 
@@ -153,78 +175,6 @@ export function TenantInvoiceSettings() {
         </CardContent>
       </Card>
 
-      {/* Steuereinstellungen */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Percent className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg">Steuereinstellungen</CardTitle>
-          </div>
-          <CardDescription>
-            Mehrwertsteuer-Konfiguration fuer Rechnungen und Gutschriften
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Standard MwSt-Satz */}
-          <div className="space-y-2">
-            <Label htmlFor="defaultTaxRate">Standard-MwSt-Satz (%)</Label>
-            <Input
-              id="defaultTaxRate"
-              type="number"
-              min={0}
-              max={100}
-              step={0.5}
-              value={formData.defaultTaxRate}
-              onChange={(e) =>
-                handleChange(
-                  "defaultTaxRate",
-                  parseFloat(e.target.value) || 19
-                )
-              }
-            />
-            <p className="text-xs text-muted-foreground">
-              Wird als Standard bei neuen Rechnungen vorbelegt (z.B. 19 fuer 19%)
-            </p>
-          </div>
-
-          <Separator />
-
-          {/* Steuerbefreiung */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="taxExempt">Steuerbefreiung aktiv</Label>
-              <p className="text-sm text-muted-foreground">
-                Rechnungen werden standardmaessig ohne Mehrwertsteuer erstellt
-              </p>
-            </div>
-            <Switch
-              id="taxExempt"
-              checked={formData.taxExempt}
-              onCheckedChange={(checked) => handleChange("taxExempt", checked)}
-            />
-          </div>
-
-          {/* Steuerbefreiungshinweis */}
-          {formData.taxExempt && (
-            <div className="space-y-2">
-              <Label htmlFor="taxExemptNote">Steuerbefreiungshinweis</Label>
-              <Textarea
-                id="taxExemptNote"
-                value={formData.taxExemptNote}
-                onChange={(e) =>
-                  handleChange("taxExemptNote", e.target.value)
-                }
-                placeholder="Steuerfrei gem. &sect;4 Nr.12 UStG"
-                rows={2}
-              />
-              <p className="text-xs text-muted-foreground">
-                Dieser Hinweis wird auf steuerbefreiten Rechnungen angezeigt
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Dokumenttexte */}
       <Card>
         <CardHeader>
@@ -277,6 +227,153 @@ export function TenantInvoiceSettings() {
             <p className="text-xs text-muted-foreground">
               Dieser Text erscheint auf Gutschriften unter den Positionen
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* DATEV Export */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Database className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-lg">DATEV Export</CardTitle>
+          </div>
+          <CardDescription>
+            Standard-Kontenrahmen und Nummernkreise fuer den DATEV-Export
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="datevRevenueAccount">Erloeskonto</Label>
+              <Input
+                id="datevRevenueAccount"
+                value={formData.datevRevenueAccount}
+                onChange={(e) =>
+                  handleChange("datevRevenueAccount", e.target.value)
+                }
+                placeholder="8400"
+              />
+              <p className="text-xs text-muted-foreground">
+                Standard-Sachkonto fuer Erloese (z.B. 8400 bei SKR04)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="datevExpenseAccount">Aufwandskonto</Label>
+              <Input
+                id="datevExpenseAccount"
+                value={formData.datevExpenseAccount}
+                onChange={(e) =>
+                  handleChange("datevExpenseAccount", e.target.value)
+                }
+                placeholder="8000"
+              />
+              <p className="text-xs text-muted-foreground">
+                Standard-Sachkonto fuer Aufwendungen (z.B. 8000 bei SKR04)
+              </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="datevDebtorStart">Debitorennummernkreis ab</Label>
+              <Input
+                id="datevDebtorStart"
+                type="number"
+                min={1000}
+                max={99999999}
+                value={formData.datevDebtorStart}
+                onChange={(e) =>
+                  handleChange(
+                    "datevDebtorStart",
+                    parseInt(e.target.value, 10) || 10000
+                  )
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Startnummer fuer Debitorenkonten (Standard: 10000)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="datevCreditorStart">Kreditorennummernkreis ab</Label>
+              <Input
+                id="datevCreditorStart"
+                type="number"
+                min={1000}
+                max={99999999}
+                value={formData.datevCreditorStart}
+                onChange={(e) =>
+                  handleChange(
+                    "datevCreditorStart",
+                    parseInt(e.target.value, 10) || 70000
+                  )
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Startnummer fuer Kreditorenkonten (Standard: 70000)
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* GoBD Aufbewahrung */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Archive className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-lg">GoBD Aufbewahrungsfristen</CardTitle>
+          </div>
+          <CardDescription>
+            Gesetzliche Aufbewahrungsfristen gemaess §147 AO fuer die automatische Archivierung
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="gobdRetentionYearsInvoice">
+                Rechnungen & Buchungsbelege (Jahre)
+              </Label>
+              <Input
+                id="gobdRetentionYearsInvoice"
+                type="number"
+                min={1}
+                max={30}
+                value={formData.gobdRetentionYearsInvoice}
+                onChange={(e) =>
+                  handleChange(
+                    "gobdRetentionYearsInvoice",
+                    parseInt(e.target.value, 10) || 10
+                  )
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Gesetzl. Mindestfrist: 10 Jahre (§147 Abs. 3 AO)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gobdRetentionYearsContract">
+                Vertraege & Korrespondenz (Jahre)
+              </Label>
+              <Input
+                id="gobdRetentionYearsContract"
+                type="number"
+                min={1}
+                max={30}
+                value={formData.gobdRetentionYearsContract}
+                onChange={(e) =>
+                  handleChange(
+                    "gobdRetentionYearsContract",
+                    parseInt(e.target.value, 10) || 10
+                  )
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Gesetzl. Mindestfrist: 6 Jahre (Handels-/Geschaeftsbriefe)
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

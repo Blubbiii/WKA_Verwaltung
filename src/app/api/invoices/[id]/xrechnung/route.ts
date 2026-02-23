@@ -8,6 +8,7 @@ import {
   buildXRechnungDataFromInvoice,
 } from "@/lib/einvoice";
 import { apiLogger as logger } from "@/lib/logger";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 /**
  * GET /api/invoices/[id]/xrechnung
@@ -130,7 +131,10 @@ export async function GET(
     }
 
     // Build the invoice data structure for XML generation
-    const invoiceData = buildXRechnungDataFromInvoice(invoice as never);
+    const tenantSettings = await getTenantSettings(check.tenantId!);
+    const invoiceData = buildXRechnungDataFromInvoice(invoice as never, {
+      taxExemptNote: tenantSettings.taxExemptNote,
+    });
 
     // Generate XML based on requested format
     let xml: string;

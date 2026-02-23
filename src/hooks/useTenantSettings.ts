@@ -13,6 +13,10 @@ export interface TenantSettings {
   invoicePaymentText: string;
   creditNotePaymentText: string;
 
+  // Skonto defaults
+  defaultSkontoPercent: number;
+  defaultSkontoDays: number;
+
   // Portal
   portalEnabled: boolean;
   portalWelcomeText: string;
@@ -30,6 +34,16 @@ export interface TenantSettings {
   companyPhone: string;
   companyEmail: string;
   companyWebsite: string;
+
+  // DATEV Export
+  datevRevenueAccount: string;
+  datevExpenseAccount: string;
+  datevDebtorStart: number;
+  datevCreditorStart: number;
+
+  // GoBD Aufbewahrung
+  gobdRetentionYearsInvoice: number;
+  gobdRetentionYearsContract: number;
 }
 
 // =============================================================================

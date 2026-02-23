@@ -10,6 +10,7 @@ import {
 } from "@/lib/export";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -181,6 +182,9 @@ async function getHandler(request: NextRequest) {
     const fiscalYearStart = new Date(fromDate.getFullYear(), 0, 1); // Jan 1
     const fiscalYearEnd = new Date(fromDate.getFullYear(), 11, 31); // Dec 31
 
+    // Load tenant DATEV settings as defaults, allow per-request override
+    const tenantSettings = await getTenantSettings(check.tenantId!);
+
     // Build DATEV export options
     const datevOptions: DatevExportOptions = {
       consultantNumber: params.consultantNumber,
@@ -188,8 +192,9 @@ async function getHandler(request: NextRequest) {
       fiscalYearStart,
       fiscalYearEnd,
       companyName,
-      defaultRevenueAccount: params.revenueAccount,
-      defaultDebtorStart: params.debtorStart,
+      defaultRevenueAccount: params.revenueAccount || tenantSettings.datevRevenueAccount,
+      defaultDebtorStart: params.debtorStart || tenantSettings.datevDebtorStart,
+      defaultCreditorStart: tenantSettings.datevCreditorStart,
     };
 
     // Convert Prisma Decimal objects to plain numbers for the export

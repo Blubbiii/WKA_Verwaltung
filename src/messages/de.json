@@ -105,7 +105,8 @@
     "managementBilling": "Betriebsfuehrung",
     "managementBillingOverview": "Uebersicht",
     "managementStakeholders": "BF-Vertraege",
-    "managementBillings": "Abrechnungen"
+    "managementBillings": "Abrechnungen",
+    "taxRates": "Steuersaetze"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",

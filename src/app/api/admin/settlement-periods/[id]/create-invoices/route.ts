@@ -738,7 +738,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
           where: {
             tenantId,
             isActive: true,
-            monthlyRates: {
+            energyMonthlyRates: {
               some: {
                 year: period.year,
                 tenantId,
@@ -746,7 +746,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
             },
           },
           include: {
-            monthlyRates: {
+            energyMonthlyRates: {
               where: {
                 year: period.year,
                 tenantId,
@@ -762,14 +762,14 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
           revenueTableTotal = 0;
 
           for (const rt of revenueTypes) {
-            if (rt.monthlyRates.length === 0) continue;
+            if (rt.energyMonthlyRates.length === 0) continue;
 
             // Average rate across all months that have data
-            const rateSum = rt.monthlyRates.reduce(
+            const rateSum = rt.energyMonthlyRates.reduce(
               (sum, mr) => sum + Number(mr.ratePerKwh),
               0
             );
-            const avgRateCtPerKwh = rateSum / rt.monthlyRates.length;
+            const avgRateCtPerKwh = rateSum / rt.energyMonthlyRates.length;
 
             // Revenue = totalProd * avgRate / 100 (ct → EUR)
             const revenueEur = totalProdKwh * avgRateCtPerKwh / 100;

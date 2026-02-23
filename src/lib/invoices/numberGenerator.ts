@@ -196,9 +196,14 @@ export async function getNextInvoiceNumbers(
 }
 
 /**
- * Steuersatz basierend auf TaxType ermitteln
+ * Synchronous fallback: returns hardcoded default tax rates.
+ * These values are used as last-resort defaults when no DB config exists.
+ *
+ * Prefer the async `getTaxRate()` from `@/lib/tax/tax-rates` whenever
+ * a tenantId is available, as that version resolves rates from the
+ * database (TaxRateConfig) and respects date-specific overrides.
  */
-export function getTaxRateByType(taxType: "STANDARD" | "REDUCED" | "EXEMPT"): number {
+export function getDefaultTaxRateByType(taxType: "STANDARD" | "REDUCED" | "EXEMPT"): number {
   switch (taxType) {
     case "STANDARD":
       return 19.0;
@@ -212,17 +217,27 @@ export function getTaxRateByType(taxType: "STANDARD" | "REDUCED" | "EXEMPT"): nu
 }
 
 /**
- * Berechnet Steuer und Brutto aus Netto
+ * @deprecated Use `getDefaultTaxRateByType()` for synchronous fallback
+ * or `getTaxRate()` from `@/lib/tax/tax-rates` for DB-backed rates.
+ */
+export const getTaxRateByType = getDefaultTaxRateByType;
+
+/**
+ * Berechnet Steuer und Brutto aus Netto.
+ *
+ * Pass `taxRateOverride` (from DB via getTaxRate()) to avoid using the
+ * hardcoded fallback. When not provided, falls back to getDefaultTaxRateByType().
  */
 export function calculateTaxAmounts(
   netAmount: number,
-  taxType: "STANDARD" | "REDUCED" | "EXEMPT"
+  taxType: "STANDARD" | "REDUCED" | "EXEMPT",
+  taxRateOverride?: number
 ): {
   taxRate: number;
   taxAmount: number;
   grossAmount: number;
 } {
-  const taxRate = getTaxRateByType(taxType);
+  const taxRate = taxRateOverride ?? getDefaultTaxRateByType(taxType);
   const taxAmount = netAmount * (taxRate / 100);
   const grossAmount = netAmount + taxAmount;
 

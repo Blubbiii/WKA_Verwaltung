@@ -1,7 +1,7 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import { InvoiceTemplate } from "../templates/InvoiceTemplate";
 import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../utils/templateResolver";
-import type { InvoicePdfData, SettlementPdfDetails } from "@/types/pdf";
+import type { InvoicePdfData, SettlementPdfDetails, LetterheadCompanyInfo } from "@/types/pdf";
 import { prisma } from "@/lib/prisma";
 import type { DocumentType } from "@prisma/client";
 import {
@@ -48,6 +48,65 @@ function resolvePaymentText(
 }
 
 /**
+ * Builds LetterheadCompanyInfo from Fund data for auto-generated letterheads.
+ * Used when no manual companyInfo is set on the letterhead.
+ */
+function buildCompanyInfoFromFund(fund: {
+  name: string;
+  legalForm: string | null;
+  street: string | null;
+  houseNumber: string | null;
+  postalCode: string | null;
+  city: string | null;
+  address: string | null;
+  bankDetails: unknown;
+  registrationNumber: string | null;
+  registrationCourt: string | null;
+  managingDirector: string | null;
+}): LetterheadCompanyInfo {
+  const fullName = fund.legalForm
+    ? `${fund.name} ${fund.legalForm}`
+    : fund.name;
+
+  // Build street from components or fall back to address field
+  const streetLine = fund.street
+    ? `${fund.street}${fund.houseNumber ? ` ${fund.houseNumber}` : ""}`
+    : "";
+
+  // Parse bankDetails JSON
+  const bd = (fund.bankDetails && typeof fund.bankDetails === "object")
+    ? (fund.bankDetails as Record<string, unknown>)
+    : {};
+
+  return {
+    name: fullName,
+    legalForm: fund.legalForm ?? undefined,
+    address: {
+      street: streetLine,
+      postalCode: fund.postalCode ?? "",
+      city: fund.city ?? "",
+      country: "Deutschland",
+    },
+    contact: {},
+    bankDetails: bd.iban
+      ? {
+          bankName: (bd.bankName as string) ?? "",
+          iban: (bd.iban as string) ?? "",
+          bic: (bd.bic as string) ?? undefined,
+        }
+      : undefined,
+    registration:
+      fund.registrationCourt || fund.registrationNumber
+        ? {
+            court: fund.registrationCourt ?? undefined,
+            registerNumber: fund.registrationNumber ?? undefined,
+          }
+        : undefined,
+    management: fund.managingDirector ? [fund.managingDirector] : undefined,
+  };
+}
+
+/**
  * Generiert ein PDF fuer eine Rechnung
  * @param invoiceId - ID der Rechnung
  * @param options - Optionale Konfiguration (Wasserzeichen, Vorschau, etc.)
@@ -65,6 +124,7 @@ export async function generateInvoicePdf(
       },
       tenant: true,
       park: true,
+      fund: true,
       shareholder: true,
       correctedInvoice: {
         select: { id: true, invoiceNumber: true },
@@ -92,6 +152,16 @@ export async function generateInvoicePdf(
     invoice.parkId,
     invoice.fundId
   );
+
+  // Auto-generate companyInfo from Fund if not manually set on letterhead
+  const fundCompanyInfo = invoice.fund
+    ? buildCompanyInfoFromFund(invoice.fund)
+    : undefined;
+
+  // Priority: manual letterhead companyInfo > auto-generated from Fund
+  const effectiveCompanyInfo = letterhead.companyInfo
+    ? (letterhead.companyInfo as unknown as LetterheadCompanyInfo)
+    : fundCompanyInfo;
 
   // Daten fuer PDF aufbereiten
   const pdfData: InvoicePdfData = {
@@ -184,6 +254,7 @@ export async function generateInvoicePdf(
       template={template}
       letterhead={letterhead}
       watermark={watermarkConfig}
+      companyInfo={effectiveCompanyInfo}
     />
   );
 

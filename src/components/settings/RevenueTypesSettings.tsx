@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -41,6 +40,14 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, Zap } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
+type TaxType = "STANDARD" | "REDUCED" | "EXEMPT";
+
+const TAX_TYPE_LABELS: Record<TaxType, string> = {
+  STANDARD: "Standard",
+  REDUCED: "Ermaessigt",
+  EXEMPT: "Befreit",
+};
+
 interface RevenueType {
   id: string;
   name: string;
@@ -49,6 +56,7 @@ interface RevenueType {
   calculationType: string;
   hasTax: boolean;
   taxRate: number | null;
+  taxType: TaxType;
   isActive: boolean;
   sortOrder: number;
 }
@@ -64,8 +72,7 @@ interface FormData {
   code: string;
   description: string;
   calculationType: string;
-  hasTax: boolean;
-  taxRate: string;
+  taxType: TaxType;
   sortOrder: number;
 }
 
@@ -74,8 +81,7 @@ const EMPTY_FORM: FormData = {
   code: "",
   description: "",
   calculationType: "FIXED_RATE",
-  hasTax: true,
-  taxRate: "19",
+  taxType: "STANDARD",
   sortOrder: 0,
 };
 
@@ -130,8 +136,7 @@ export function RevenueTypesSettings() {
       code: item.code,
       description: item.description || "",
       calculationType: item.calculationType,
-      hasTax: item.hasTax,
-      taxRate: item.taxRate != null ? String(item.taxRate) : "19",
+      taxType: item.taxType || "STANDARD",
       sortOrder: item.sortOrder,
     });
     setDialogOpen(true);
@@ -181,10 +186,8 @@ export function RevenueTypesSettings() {
         code: formData.code.trim().toUpperCase(),
         description: formData.description.trim() || null,
         calculationType: formData.calculationType,
-        hasTax: formData.hasTax,
-        taxRate: formData.hasTax && formData.taxRate
-          ? parseFloat(formData.taxRate)
-          : null,
+        taxType: formData.taxType,
+        hasTax: formData.taxType !== "EXEMPT",
         sortOrder: formData.sortOrder,
       };
 
@@ -273,13 +276,9 @@ export function RevenueTypesSettings() {
                         rt.calculationType}
                     </TableCell>
                     <TableCell>
-                      {rt.hasTax ? (
-                        <Badge variant="secondary">
-                          {rt.taxRate != null ? `${rt.taxRate}%` : "Ja"}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">Steuerfrei</Badge>
-                      )}
+                      <Badge variant={rt.taxType === "EXEMPT" ? "outline" : "secondary"}>
+                        {TAX_TYPE_LABELS[rt.taxType] || (rt.hasTax ? `${rt.taxRate}%` : "Befreit")}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -413,37 +412,27 @@ export function RevenueTypesSettings() {
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="space-y-0.5">
-                <Label>Umsatzsteuerpflichtig</Label>
-                <p className="text-xs text-muted-foreground">
-                  Unterliegt diese Verguetungsart der Umsatzsteuer?
-                </p>
-              </div>
-              <Switch
-                checked={formData.hasTax}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, hasTax: checked })
+            <div className="space-y-2">
+              <Label htmlFor="rt-taxType">Steuersatz-Zuordnung</Label>
+              <Select
+                value={formData.taxType}
+                onValueChange={(v: string) =>
+                  setFormData({ ...formData, taxType: v as TaxType })
                 }
-              />
+              >
+                <SelectTrigger id="rt-taxType">
+                  <SelectValue placeholder="Steuersatz waehlen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="STANDARD">Standard (Regelsteuersatz)</SelectItem>
+                  <SelectItem value="REDUCED">Ermaessigt</SelectItem>
+                  <SelectItem value="EXEMPT">Steuerbefreit (0%)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Die konkreten Prozentsaetze werden zentral unter Steuersaetze verwaltet.
+              </p>
             </div>
-            {formData.hasTax && (
-              <div className="space-y-2">
-                <Label htmlFor="rt-taxRate">Steuersatz (%)</Label>
-                <Input
-                  id="rt-taxRate"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={formData.taxRate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, taxRate: e.target.value })
-                  }
-                  placeholder="19"
-                />
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>

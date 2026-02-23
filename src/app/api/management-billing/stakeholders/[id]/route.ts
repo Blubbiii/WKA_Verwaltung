@@ -46,10 +46,10 @@ export async function GET(
         stakeholderTenant: {
           select: { id: true, name: true, slug: true, logoUrl: true },
         },
-        feeHistory: {
+        stakeholderFeeHistory: {
           orderBy: { validFrom: "desc" },
         },
-        billings: {
+        managementBillings: {
           orderBy: { year: "desc" },
           take: 20,
         },
@@ -98,11 +98,11 @@ export async function GET(
         feePercentage: stakeholder.feePercentage
           ? Number(stakeholder.feePercentage)
           : null,
-        feeHistory: stakeholder.feeHistory.map((h) => ({
+        feeHistory: stakeholder.stakeholderFeeHistory.map((h) => ({
           ...h,
           feePercentage: Number(h.feePercentage),
         })),
-        billings: stakeholder.billings.map((b) => ({
+        billings: stakeholder.managementBillings.map((b) => ({
           ...b,
           baseRevenueEur: Number(b.baseRevenueEur),
           feePercentageUsed: Number(b.feePercentageUsed),
