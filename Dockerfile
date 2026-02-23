@@ -84,11 +84,15 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Prisma Schema und Client kopieren (fuer Migrations)
+# Prisma Schema und generierter Client kopieren
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+
+# Prisma CLI mit allen transitiven Dependencies installieren
+# Manuelles COPY einzelner Ordner reicht nicht, da prisma transitive Deps hat
+# (z.B. @prisma/config -> effect), die sonst fehlen und "Cannot find module" verursachen
+RUN echo '{}' > package.json && npm install prisma && rm -f package.json package-lock.json
 
 # Entrypoint Script kopieren
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
