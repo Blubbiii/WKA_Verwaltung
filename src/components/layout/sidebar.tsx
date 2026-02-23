@@ -147,6 +147,7 @@ const navGroups: NavGroup[] = [
         permission: "invoices:read",
         children: [
           { title: "Uebersicht", titleKey: "invoicesOverview", href: "/invoices", icon: Receipt },
+          { title: "Versanduebersicht", titleKey: "invoiceDispatch", href: "/invoices/dispatch", icon: Send },
           { title: "Zahlungs-Abgleich", titleKey: "reconciliation", href: "/invoices/reconciliation", icon: Scale },
         ],
       },
@@ -210,7 +211,6 @@ const navGroups: NavGroup[] = [
         permission: "leases:read",
         children: [
           { title: "Pachtvertraege", titleKey: "leaseContracts", href: "/leases", icon: ScrollText },
-          { title: "Kostenaufteilung", titleKey: "costAllocation", href: "/leases/cost-allocation", icon: GitCompare },
           { title: "Pachtabrechnung", titleKey: "leaseSettlement", href: "/leases/settlement", icon: Calculator },
           { title: "Vorschuesse", titleKey: "advances", href: "/leases/advances", icon: Banknote },
           { title: "Zahlungen", titleKey: "payments", href: "/leases/payments", icon: CreditCard },

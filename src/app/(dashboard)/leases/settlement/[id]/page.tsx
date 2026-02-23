@@ -671,29 +671,6 @@ export default function SettlementDetailPage({
         break;
 
       case "SETTLED":
-        if (isFinal) {
-          buttons.push(
-            <Button
-              key="allocation"
-              variant="outline"
-              onClick={() =>
-                handleAction(
-                  "allocation",
-                  `/api/leases/settlement/${id}/allocations`,
-                  "POST"
-                )
-              }
-              disabled={actionLoading === "allocation"}
-            >
-              {actionLoading === "allocation" ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Layers className="mr-2 h-4 w-4" />
-              )}
-              Kostenumlage erstellen
-            </Button>
-          );
-        }
         buttons.push(
           <Button
             key="submit-review"
@@ -1251,47 +1228,11 @@ export default function SettlementDetailPage({
       );
     }
 
-    if (status === "SETTLED") {
-      return (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="rounded-full bg-primary/10 p-5 mb-5">
-            <Layers className="h-10 w-10 text-primary/60" />
-          </div>
-          <h3 className="text-lg font-semibold">
-            Keine Kostenumlage vorhanden
-          </h3>
-          <p className="text-muted-foreground mt-2 max-w-sm">
-            Erstellen Sie eine Kostenumlage, um die Kosten auf die
-            Betreibergesellschaften aufzuteilen.
-          </p>
-          <Button
-            className="mt-6"
-            onClick={() =>
-              handleAction(
-                "allocation",
-                `/api/leases/settlement/${id}/allocations`,
-                "POST"
-              )
-            }
-            disabled={actionLoading === "allocation"}
-          >
-            {actionLoading === "allocation" ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Layers className="mr-2 h-4 w-4" />
-            )}
-            Kostenumlage erstellen
-          </Button>
-        </div>
-      );
-    }
-
     return (
       <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
         <Info className="h-5 w-5 text-muted-foreground shrink-0" />
         <p className="text-sm text-muted-foreground">
-          Die Kostenumlage kann erstellt werden, sobald die Abrechnung den
-          Status &quot;Abgerechnet&quot; hat.
+          Die Kostenaufteilung wird automatisch beim Erzeugen der Gutschriften erstellt.
         </p>
       </div>
     );

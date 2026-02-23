@@ -41,15 +41,23 @@ export interface Letterhead {
     id: string;
     name: string;
   } | null;
+  fundId: string | null;
+  fund: {
+    id: string;
+    name: string;
+    legalForm: string | null;
+  } | null;
 }
 
 interface UseLetterheadsOptions {
   parkId?: string;
+  fundId?: string;
 }
 
 export function useLetterheads(options: UseLetterheadsOptions = {}) {
   const params = new URLSearchParams();
   if (options.parkId) params.set("parkId", options.parkId);
+  if (options.fundId) params.set("fundId", options.fundId);
 
   const queryString = params.toString();
   const url = `/api/admin/letterheads${queryString ? `?${queryString}` : ""}`;
@@ -98,6 +106,7 @@ export async function createLetterhead(data: {
   primaryColor?: string | null;
   secondaryColor?: string | null;
   parkId?: string | null;
+  fundId?: string | null;
   isDefault?: boolean;
   backgroundPdfKey?: string | null;
   backgroundPdfName?: string | null;
@@ -118,7 +127,7 @@ export async function createLetterhead(data: {
 
 export async function updateLetterhead(
   id: string,
-  data: Partial<Omit<Letterhead, "id" | "createdAt" | "updatedAt" | "park">>
+  data: Partial<Omit<Letterhead, "id" | "createdAt" | "updatedAt" | "park" | "fund">>
 ) {
   const res = await fetch(`/api/admin/letterheads/${id}`, {
     method: "PATCH",

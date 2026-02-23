@@ -320,7 +320,7 @@ export async function createPartialCancellation(
     where: { id: result.id },
     include: {
       items: { orderBy: { position: "asc" } },
-      originalInvoice: {
+      correctedInvoice: {
         select: { id: true, invoiceNumber: true },
       },
     },
@@ -669,7 +669,7 @@ export async function createCorrectionInvoice(
       where: { id: result.creditNote.id },
       include: {
         items: { orderBy: { position: "asc" } },
-        originalInvoice: {
+        correctedInvoice: {
           select: { id: true, invoiceNumber: true },
         },
       },
@@ -678,7 +678,7 @@ export async function createCorrectionInvoice(
       where: { id: result.correctionInvoice.id },
       include: {
         items: { orderBy: { position: "asc" } },
-        originalInvoice: {
+        correctedInvoice: {
           select: { id: true, invoiceNumber: true },
         },
       },

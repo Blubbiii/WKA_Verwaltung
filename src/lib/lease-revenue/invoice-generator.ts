@@ -8,7 +8,7 @@
  *
  * 1. generateAdvanceInvoices - Credit notes for minimum guarantee advance payments to landowners
  * 2. generateSettlementInvoices - Credit notes for year-end settlement remainder to landowners
- * 3. generateAllocationInvoices - Invoices from Netzgesellschaft to operator companies (2 per operator)
+ * 3. generateAllocationInvoices - Invoices from Netzgesellschaft to operator companies (1 per operator, mixed tax types)
  */
 
 import { Decimal } from "@prisma/client/runtime/library";
@@ -101,6 +101,64 @@ function buildFundName(fund: {
 }
 
 /**
+ * Compute service period start/end dates based on settlement period type.
+ * ADVANCE+QUARTERLY: e.g. Q1 → Jan 1 - Mar 31
+ * ADVANCE+MONTHLY: e.g. month 3 → Mar 1 - Mar 31
+ * FINAL or ADVANCE+YEARLY: full year Jan 1 - Dec 31
+ */
+function getServicePeriodDates(
+  year: number,
+  periodType: string,
+  advanceInterval: string | null,
+  month: number | null
+): { start: Date; end: Date } {
+  if (periodType === "ADVANCE" && advanceInterval === "QUARTERLY" && month != null) {
+    const quarter = Math.ceil(month / 3);
+    const startMonth = (quarter - 1) * 3; // 0-indexed
+    return {
+      start: new Date(year, startMonth, 1),
+      end: new Date(year, startMonth + 3, 0), // last day of quarter
+    };
+  }
+  if (periodType === "ADVANCE" && advanceInterval === "MONTHLY" && month != null) {
+    return {
+      start: new Date(year, month - 1, 1),
+      end: new Date(year, month, 0), // last day of month
+    };
+  }
+  return {
+    start: new Date(year, 0, 1),
+    end: new Date(year, 11, 31),
+  };
+}
+
+/**
+ * Build a human-readable period label for invoice descriptions.
+ * ADVANCE+QUARTERLY: "Quartal 1 - 2025"
+ * ADVANCE+MONTHLY: "Januar 2025"
+ * FINAL or ADVANCE+YEARLY: "Jahr 2025"
+ */
+function getServicePeriodLabel(
+  year: number,
+  periodType: string,
+  advanceInterval: string | null,
+  month: number | null
+): string {
+  if (periodType === "ADVANCE" && advanceInterval === "QUARTERLY" && month != null) {
+    const quarter = Math.ceil(month / 3);
+    return `Quartal ${quarter} - ${year}`;
+  }
+  if (periodType === "ADVANCE" && advanceInterval === "MONTHLY" && month != null) {
+    const monthNames = [
+      "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
+      "Juli", "August", "September", "Oktober", "November", "Dezember",
+    ];
+    return `${monthNames[month - 1]} ${year}`;
+  }
+  return `Jahr ${year}`;
+}
+
+/**
  * Build Flurstück reference from plotSummary JSON for invoice line descriptions.
  * Returns e.g. "Flst. 7, Flur 2, Gem. Barenburg" or "Flst. 7 / Flst. 9" for multiple plots.
  */
@@ -130,12 +188,14 @@ function buildPlotDescription(plotSummary: unknown): string {
 
 /**
  * Load revenue table entries from EnergySettlement for the Anlage (page 2).
- * Returns one entry per EnergySettlement (monthly or yearly) with average ct/kWh.
+ * Always splits into EEG and Direktvermarktung rows.
+ * Supports monthly (per-settlement) or yearly (aggregated) display mode.
  */
 async function loadRevenueTableEntries(
   tenantId: string,
   parkId: string,
-  year: number
+  year: number,
+  displayMode: "MONTHLY" | "YEARLY" = "YEARLY"
 ): Promise<RevenueTableEntry[]> {
   const settlements = await prisma.energySettlement.findMany({
     where: {
@@ -147,27 +207,68 @@ async function loadRevenueTableEntries(
     select: {
       netOperatorRevenueEur: true,
       totalProductionKwh: true,
+      eegProductionKwh: true,
+      eegRevenueEur: true,
+      dvProductionKwh: true,
+      dvRevenueEur: true,
       month: true,
     },
     orderBy: { month: "asc" },
   });
 
-  return settlements
-    .filter((s) => Number(s.netOperatorRevenueEur) > 0)
-    .map((s) => {
-      const revenue = Number(s.netOperatorRevenueEur);
-      const production = Number(s.totalProductionKwh);
-      const rateCtPerKwh =
-        production > 0 ? round2((revenue / production) * 10000) / 100 : 0;
-      return {
-        category: s.month
-          ? `${String(s.month).padStart(2, "0")}/${year}`
-          : `Jahresabrechnung ${year}`,
-        rateCtPerKwh,
-        productionKwh: production,
-        revenueEur: revenue,
-      };
-    });
+  const makeEntry = (category: string, productionKwh: number, revenueEur: number): RevenueTableEntry => ({
+    category,
+    rateCtPerKwh: productionKwh > 0 ? round2((revenueEur / productionKwh) * 10000) / 100 : 0,
+    productionKwh,
+    revenueEur,
+  });
+
+  if (displayMode === "MONTHLY") {
+    // One EEG + one DV row per month
+    const entries: RevenueTableEntry[] = [];
+    for (const s of settlements) {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const label = s.month ? `${pad(s.month)}/${year}` : String(year);
+      const eegKwh = Number(s.eegProductionKwh || 0);
+      const eegEur = Number(s.eegRevenueEur || 0);
+      const dvKwh = Number(s.dvProductionKwh || 0);
+      const dvEur = Number(s.dvRevenueEur || 0);
+
+      if (eegEur > 0) entries.push(makeEntry(`EEG ${label}`, eegKwh, eegEur));
+      if (dvEur > 0) entries.push(makeEntry(`DV ${label}`, dvKwh, dvEur));
+
+      // Fallback: if no EEG/DV split, use total
+      if (eegEur === 0 && dvEur === 0) {
+        const totalEur = Number(s.netOperatorRevenueEur);
+        const totalKwh = Number(s.totalProductionKwh);
+        if (totalEur > 0) entries.push(makeEntry(label, totalKwh, totalEur));
+      }
+    }
+    return entries;
+  }
+
+  // YEARLY: aggregate all months into EEG total + DV total
+  let eegKwh = 0, eegEur = 0, dvKwh = 0, dvEur = 0;
+  let totalKwh = 0, totalEur = 0;
+  for (const s of settlements) {
+    eegKwh += Number(s.eegProductionKwh || 0);
+    eegEur += Number(s.eegRevenueEur || 0);
+    dvKwh += Number(s.dvProductionKwh || 0);
+    dvEur += Number(s.dvRevenueEur || 0);
+    totalKwh += Number(s.totalProductionKwh || 0);
+    totalEur += Number(s.netOperatorRevenueEur || 0);
+  }
+
+  const entries: RevenueTableEntry[] = [];
+  if (eegEur > 0) entries.push(makeEntry(`EEG ${year}`, eegKwh, eegEur));
+  if (dvEur > 0) entries.push(makeEntry(`Direktvermarktung ${year}`, dvKwh, dvEur));
+
+  // Fallback: if no EEG/DV data at all, use total
+  if (entries.length === 0 && totalEur > 0) {
+    entries.push(makeEntry(`Jahresabrechnung ${year}`, totalKwh, totalEur));
+  }
+
+  return entries;
 }
 
 /**
@@ -252,7 +353,8 @@ async function loadTurbineProductions(
 export async function generateAdvanceInvoices(
   tenantId: string,
   settlementId: string,
-  createdById?: string
+  createdById?: string,
+  options?: { initialStatus?: "DRAFT" | "SENT" }
 ): Promise<GenerateInvoiceResult> {
   const result: GenerateInvoiceResult = {
     created: 0,
@@ -316,6 +418,14 @@ export async function generateAdvanceInvoices(
   const dueDate = settlement.advanceDueDate ?? undefined;
   const serviceYear = settlement.year;
 
+  // Compute period-aware dates and label
+  const periodDates = getServicePeriodDates(
+    serviceYear, settlement.periodType, settlement.advanceInterval, settlement.month
+  );
+  const periodLabel = getServicePeriodLabel(
+    serviceYear, settlement.periodType, settlement.advanceInterval, settlement.month
+  );
+
   await prisma.$transaction(async (tx) => {
     let numberIndex = 0;
 
@@ -370,7 +480,7 @@ export async function generateAdvanceInvoices(
       if (poolFeeEur > 0) {
         const share = round2((poolFeeEur / subtotalEur) * advanceEur);
         advanceItems.push({
-          description: `Vorschuss Flaechenanteil windhoefige Flaeche ${serviceYear}`,
+          description: `Vorschuss Flaechenanteil Poolflaeche\n${periodLabel}`,
           netAmount: share,
           taxType: "STANDARD",
         });
@@ -379,7 +489,7 @@ export async function generateAdvanceInvoices(
       if (standortFeeEur > 0) {
         const share = round2((standortFeeEur / subtotalEur) * advanceEur);
         advanceItems.push({
-          description: `Vorschuss WEA-Standort ${serviceYear}`,
+          description: `Vorschuss WEA-Standort\n${periodLabel}`,
           netAmount: share,
           taxType: "EXEMPT",
         });
@@ -388,7 +498,7 @@ export async function generateAdvanceInvoices(
       if (sealedAreaFeeEur > 0) {
         const share = round2((sealedAreaFeeEur / subtotalEur) * advanceEur);
         advanceItems.push({
-          description: `Vorschuss versiegelte Flaeche ${serviceYear}`,
+          description: `Vorschuss versiegelte Flaeche\n${periodLabel}`,
           netAmount: share,
           taxType: "EXEMPT",
         });
@@ -397,7 +507,7 @@ export async function generateAdvanceInvoices(
       if (roadUsageFeeEur > 0) {
         const share = round2((roadUsageFeeEur / subtotalEur) * advanceEur);
         advanceItems.push({
-          description: `Vorschuss Wegenutzung ${serviceYear}`,
+          description: `Vorschuss Wegenutzung\n${periodLabel}`,
           netAmount: share,
           taxType: "EXEMPT",
         });
@@ -406,7 +516,7 @@ export async function generateAdvanceInvoices(
       if (cableFeeEur > 0) {
         const share = round2((cableFeeEur / subtotalEur) * advanceEur);
         advanceItems.push({
-          description: `Vorschuss Kabeltrasse ${serviceYear}`,
+          description: `Vorschuss Kabeltrasse\n${periodLabel}`,
           netAmount: share,
           taxType: "EXEMPT",
         });
@@ -479,15 +589,16 @@ export async function generateAdvanceInvoices(
           taxRate: new Decimal(headerTaxRate),
           taxAmount: new Decimal(totalTax),
           grossAmount: new Decimal(totalGross),
-          status: "DRAFT",
+          status: options?.initialStatus ?? "DRAFT",
           fundId,
           leaseId: item.leaseId,
           parkId: settlement.parkId,
           createdById,
-          serviceStartDate: new Date(`${serviceYear}-01-01`),
-          serviceEndDate: new Date(`${serviceYear}-12-31`),
+          serviceStartDate: periodDates.start,
+          serviceEndDate: periodDates.end,
           internalReference: `NE-VS-${serviceYear}-${recipientName}`,
-          paymentReference: `Nutzungsentgelt Vorschuss ${serviceYear} - ${settlement.park.name}`,
+          sentAt: options?.initialStatus === "SENT" ? new Date() : null,
+          paymentReference: `Nutzungsentgelt Vorschuss ${periodLabel} - ${settlement.park.name}`,
           items: {
             createMany: {
               data: invoiceItemsData,
@@ -541,7 +652,8 @@ export async function generateAdvanceInvoices(
 export async function generateSettlementInvoices(
   tenantId: string,
   settlementId: string,
-  createdById?: string
+  createdById?: string,
+  options?: { initialStatus?: "DRAFT" | "SENT" }
 ): Promise<GenerateInvoiceResult> {
   const result: GenerateInvoiceResult = {
     created: 0,
@@ -642,10 +754,12 @@ export async function generateSettlementInvoices(
       };
     });
   } else {
+    const displayMode = (calcDetails?.revenueDisplayMode as "MONTHLY" | "YEARLY") || "YEARLY";
     revenueTable = await loadRevenueTableEntries(
       tenantId,
       settlement.parkId,
-      settlement.year
+      settlement.year,
+      displayMode
     );
   }
   const revenueTableTotal = Number(settlement.totalParkRevenueEur);
@@ -749,35 +863,35 @@ export async function generateSettlementInvoices(
       // Positive positions: full FINAL fees
       if (poolFeeEur > 0) {
         feePositions.push({
-          description: `Jahresnutzungsentgelt${plotSuffix} (Flaechenanteil windhoefige Flaeche) ${serviceYear}`,
+          description: `Jahresnutzungsentgelt Flaechenanteil Poolflaeche${plotSuffix}\nJahr ${serviceYear}`,
           netAmount: poolFeeEur,
           taxType: "STANDARD",
         });
       }
       if (standortFeeEur > 0) {
         feePositions.push({
-          description: `Jahresnutzungsentgelt WEA-Standort${plotSuffix} ${serviceYear}`,
+          description: `Jahresnutzungsentgelt WEA-Standort${plotSuffix}\nJahr ${serviceYear}`,
           netAmount: standortFeeEur,
           taxType: "EXEMPT",
         });
       }
       if (sealedAreaFeeEur > 0) {
         feePositions.push({
-          description: `Jahresnutzungsentgelt versiegelte Flaeche ${serviceYear}`,
+          description: `Jahresnutzungsentgelt versiegelte Flaeche\nJahr ${serviceYear}`,
           netAmount: sealedAreaFeeEur,
           taxType: "EXEMPT",
         });
       }
       if (roadUsageFeeEur > 0) {
         feePositions.push({
-          description: `Jahresnutzungsentgelt Wegenutzung ${serviceYear}`,
+          description: `Jahresnutzungsentgelt Wegenutzung\nJahr ${serviceYear}`,
           netAmount: roadUsageFeeEur,
           taxType: "EXEMPT",
         });
       }
       if (cableFeeEur > 0) {
         feePositions.push({
-          description: `Jahresnutzungsentgelt Kabeltrasse ${serviceYear}`,
+          description: `Jahresnutzungsentgelt Kabeltrasse\nJahr ${serviceYear}`,
           netAmount: cableFeeEur,
           taxType: "EXEMPT",
         });
@@ -787,35 +901,35 @@ export async function generateSettlementInvoices(
       if (advance) {
         if (advance.poolFeeEur > 0) {
           feePositions.push({
-            description: `Verrechnung Mindestnutzungsentgelt Flaechenanteil ${serviceYear}`,
+            description: `Verrechnung Vorschuss Poolflaeche\nJahr ${serviceYear}`,
             netAmount: -advance.poolFeeEur,
             taxType: "STANDARD",
           });
         }
         if (advance.standortFeeEur > 0) {
           feePositions.push({
-            description: `Verrechnung Mindestnutzungsentgelt WEA-Standort ${serviceYear}`,
+            description: `Verrechnung Vorschuss WEA-Standort\nJahr ${serviceYear}`,
             netAmount: -advance.standortFeeEur,
             taxType: "EXEMPT",
           });
         }
         if (advance.sealedAreaFeeEur > 0) {
           feePositions.push({
-            description: `Verrechnung versiegelte Flaeche ${serviceYear}`,
+            description: `Verrechnung Vorschuss versiegelte Flaeche\nJahr ${serviceYear}`,
             netAmount: -advance.sealedAreaFeeEur,
             taxType: "EXEMPT",
           });
         }
         if (advance.roadUsageFeeEur > 0) {
           feePositions.push({
-            description: `Verrechnung Wegenutzung ${serviceYear}`,
+            description: `Verrechnung Vorschuss Wegenutzung\nJahr ${serviceYear}`,
             netAmount: -advance.roadUsageFeeEur,
             taxType: "EXEMPT",
           });
         }
         if (advance.cableFeeEur > 0) {
           feePositions.push({
-            description: `Verrechnung Kabeltrasse ${serviceYear}`,
+            description: `Verrechnung Vorschuss Kabeltrasse\nJahr ${serviceYear}`,
             netAmount: -advance.cableFeeEur,
             taxType: "EXEMPT",
           });
@@ -840,35 +954,35 @@ export async function generateSettlementInvoices(
 
       if (netPool > 0) {
         payoutItems.push({
-          description: `Verguetung Jahresendabrechnung Pool ${serviceYear}`,
+          description: `Verguetung Endabrechnung Poolflaeche\nJahr ${serviceYear}`,
           netAmount: netPool,
           taxType: "STANDARD",
         });
       }
       if (netStandort > 0) {
         payoutItems.push({
-          description: `Verguetung Jahresendabrechnung Standort ${serviceYear}`,
+          description: `Verguetung Endabrechnung WEA-Standort\nJahr ${serviceYear}`,
           netAmount: netStandort,
           taxType: "EXEMPT",
         });
       }
       if (netSealed > 0) {
         payoutItems.push({
-          description: `Verguetung Jahresendabrechnung Ausgleichsmassnahmen ${serviceYear}`,
+          description: `Verguetung Endabrechnung versiegelte Flaeche\nJahr ${serviceYear}`,
           netAmount: netSealed,
           taxType: "EXEMPT",
         });
       }
       if (netRoad > 0) {
         payoutItems.push({
-          description: `Verguetung Jahresendabrechnung Wege ${serviceYear}`,
+          description: `Verguetung Endabrechnung Wegenutzung\nJahr ${serviceYear}`,
           netAmount: netRoad,
           taxType: "EXEMPT",
         });
       }
       if (netCable > 0) {
         payoutItems.push({
-          description: `Verguetung Jahresendabrechnung Kabel ${serviceYear}`,
+          description: `Verguetung Endabrechnung Kabeltrasse\nJahr ${serviceYear}`,
           netAmount: netCable,
           taxType: "EXEMPT",
         });
@@ -945,7 +1059,7 @@ export async function generateSettlementInvoices(
           taxRate: new Decimal(headerTaxRate),
           taxAmount: new Decimal(totalTax),
           grossAmount: new Decimal(totalGross),
-          status: "DRAFT",
+          status: options?.initialStatus ?? "DRAFT",
           fundId,
           leaseId: item.leaseId,
           parkId: settlement.parkId,
@@ -953,7 +1067,8 @@ export async function generateSettlementInvoices(
           serviceStartDate: new Date(`${serviceYear}-01-01`),
           serviceEndDate: new Date(`${serviceYear}-12-31`),
           internalReference: `NE-EA-${serviceYear}-${recipientName}`,
-          paymentReference: `Nutzungsentgelt Endabrechnung ${serviceYear} - ${park.name}`,
+          sentAt: options?.initialStatus === "SENT" ? new Date() : null,
+          paymentReference: `Nutzungsentgelt Endabrechnung Jahr ${serviceYear} - ${park.name}`,
           calculationDetails:
             invoicePdfDetails as unknown as Prisma.InputJsonValue,
           items: {
@@ -997,11 +1112,11 @@ export async function generateSettlementInvoices(
 /**
  * Creates invoices (Rechnungen) from Netzgesellschaft to operator companies.
  *
- * For each ParkCostAllocationItem, creates TWO invoices:
- * 1. VAT invoice (19% MwSt) for taxableAmountEur (Pool/Flaechenanteil)
- * 2. Exempt invoice (par.4 Nr.12 UStG) for exemptAmountEur (Standort + versiegelt + Weg + Kabel)
+ * For each ParkCostAllocationItem, creates ONE invoice with up to 2 positions:
+ * - Position 1 (if taxable > 0): VAT (19% MwSt) for taxableAmountEur (Pool/Flaechenanteil)
+ * - Position 2 (if exempt > 0): Exempt (par.4 Nr.12 UStG) for exemptAmountEur (Standort + versiegelt + Weg + Kabel)
  *
- * Links via vatInvoiceId and exemptInvoiceId.
+ * Links via vatInvoiceId and exemptInvoiceId (both point to the same invoice).
  * Updates allocation status to INVOICED.
  */
 export async function generateAllocationInvoices(
@@ -1047,13 +1162,21 @@ export async function generateAllocationInvoices(
   const park = settlement.park;
   const serviceYear = settlement.year;
 
-  // Count invoices needed: up to 2 per item (VAT + exempt), but only if amount > 0
-  // and not already created
+  // Compute period-aware dates and label for invoices
+  const periodDates = getServicePeriodDates(
+    serviceYear, settlement.periodType, settlement.advanceInterval, settlement.month
+  );
+  const periodLabel = getServicePeriodLabel(
+    serviceYear, settlement.periodType, settlement.advanceInterval, settlement.month
+  );
+  const isAdvance = settlement.periodType === "ADVANCE";
+
+  // Count invoices needed: 1 per operator item that has any amount > 0
   let invoiceCount = 0;
   for (const item of allocation.items) {
-    if (!item.vatInvoiceId && Number(item.taxableAmountEur) > 0) invoiceCount++;
-    if (!item.exemptInvoiceId && Number(item.exemptAmountEur) > 0)
-      invoiceCount++;
+    const hasTaxable = !item.vatInvoiceId && Number(item.taxableAmountEur) > 0;
+    const hasExempt = !item.exemptInvoiceId && Number(item.exemptAmountEur) > 0;
+    if (hasTaxable || hasExempt) invoiceCount++;
   }
 
   if (invoiceCount === 0) {
@@ -1081,120 +1204,121 @@ export async function generateAllocationInvoices(
       const taxableVatEur = Number(item.taxableVatEur);
       const exemptAmountEur = Number(item.exemptAmountEur);
 
-      // Invoice 1: VAT invoice (19% MwSt) for pool/Flaechenanteil
-      if (!item.vatInvoiceId && taxableAmountEur > 0) {
-        const invoiceNumber = invoiceNumbers[numberIndex++];
-        const grossAmount = round2(taxableAmountEur + taxableVatEur);
+      const hasTaxable = !item.vatInvoiceId && taxableAmountEur > 0;
+      const hasExempt = !item.exemptInvoiceId && exemptAmountEur > 0;
 
-        const vatInvoice = await tx.invoice.create({
-          data: {
-            tenantId,
-            invoiceType: "INVOICE",
-            invoiceNumber,
-            invoiceDate,
-            recipientType: "fund",
-            recipientName,
-            recipientAddress,
-            netAmount: new Decimal(taxableAmountEur),
-            taxRate: new Decimal(19),
-            taxAmount: new Decimal(taxableVatEur),
-            grossAmount: new Decimal(grossAmount),
-            status: "DRAFT",
-            fundId: item.operatorFundId,
-            parkId: park.id,
-            createdById,
-            serviceStartDate: new Date(`${serviceYear}-01-01`),
-            serviceEndDate: new Date(`${serviceYear}-12-31`),
-            internalReference: `NE-KA-UST-${serviceYear}-${fund.name}`,
-            paymentReference: `Kostenaufteilung Nutzungsentgelt ${serviceYear} - ${park.name} (umsatzsteuerpflichtig)`,
-            items: {
-              create: {
-                position: 1,
-                description: `Flaechenanteil windhoefige Flaeche + A&E ${serviceYear} (${item.allocationBasis})`,
-                quantity: new Decimal(1),
-                unit: "pauschal",
-                unitPrice: new Decimal(taxableAmountEur),
-                netAmount: new Decimal(taxableAmountEur),
-                taxType: "STANDARD",
-                taxRate: new Decimal(19),
-                taxAmount: new Decimal(taxableVatEur),
-                grossAmount: new Decimal(grossAmount),
-                referenceType: "COST_ALLOCATION",
-                referenceId: allocationId,
-              },
-            },
-          },
-        });
-
-        // Link VAT invoice
-        await tx.parkCostAllocationItem.update({
-          where: { id: item.id },
-          data: { vatInvoiceId: vatInvoice.id },
-        });
-
-        result.invoiceIds.push(vatInvoice.id);
-        result.created++;
-      }
-
-      // Invoice 2: Exempt invoice (par.4 Nr.12 UStG) for Standort + versiegelt + Weg + Kabel
-      if (!item.exemptInvoiceId && exemptAmountEur > 0) {
-        const invoiceNumber = invoiceNumbers[numberIndex++];
-
-        const exemptInvoice = await tx.invoice.create({
-          data: {
-            tenantId,
-            invoiceType: "INVOICE",
-            invoiceNumber,
-            invoiceDate,
-            recipientType: "fund",
-            recipientName,
-            recipientAddress,
-            netAmount: new Decimal(exemptAmountEur),
-            taxRate: new Decimal(0),
-            taxAmount: new Decimal(0),
-            grossAmount: new Decimal(exemptAmountEur),
-            status: "DRAFT",
-            fundId: item.operatorFundId,
-            parkId: park.id,
-            createdById,
-            serviceStartDate: new Date(`${serviceYear}-01-01`),
-            serviceEndDate: new Date(`${serviceYear}-12-31`),
-            internalReference: `NE-KA-FRE-${serviceYear}-${fund.name}`,
-            paymentReference: `Kostenaufteilung Nutzungsentgelt ${serviceYear} - ${park.name} (steuerfrei gem. par.4 Nr.12 UStG)`,
-            notes: "Steuerfrei gemaess par.4 Nr.12 UStG (Vermietung und Verpachtung von Grundstuecken)",
-            items: {
-              create: {
-                position: 1,
-                description: `WEA-Standort, versiegelte Flaeche, Wegenutzung, Kabel ${serviceYear} (${item.allocationBasis})`,
-                quantity: new Decimal(1),
-                unit: "pauschal",
-                unitPrice: new Decimal(exemptAmountEur),
-                netAmount: new Decimal(exemptAmountEur),
-                taxType: "EXEMPT",
-                taxRate: new Decimal(0),
-                taxAmount: new Decimal(0),
-                grossAmount: new Decimal(exemptAmountEur),
-                referenceType: "COST_ALLOCATION",
-                referenceId: allocationId,
-              },
-            },
-          },
-        });
-
-        // Link exempt invoice
-        await tx.parkCostAllocationItem.update({
-          where: { id: item.id },
-          data: { exemptInvoiceId: exemptInvoice.id },
-        });
-
-        result.invoiceIds.push(exemptInvoice.id);
-        result.created++;
-      }
-
-      // If both amounts are 0, skip
-      if (taxableAmountEur <= 0 && exemptAmountEur <= 0) {
+      if (!hasTaxable && !hasExempt) {
         result.skipped++;
+        continue;
       }
+
+      const invoiceNumber = invoiceNumbers[numberIndex++];
+      const prefix = isAdvance ? "Vorschuss" : "Kostenaufteilung";
+
+      // Build invoice items (1-2 positions depending on amounts)
+      const invoiceItemsData: Prisma.InvoiceItemCreateManyInvoiceInput[] = [];
+      let totalNet = 0;
+      let totalTax = 0;
+      let totalGross = 0;
+      let position = 1;
+
+      // Position 1: Taxable (Pool/Flaechenanteil) at 19% MwSt
+      if (hasTaxable) {
+        const grossAmount = round2(taxableAmountEur + taxableVatEur);
+        totalNet += taxableAmountEur;
+        totalTax += taxableVatEur;
+        totalGross += grossAmount;
+
+        invoiceItemsData.push({
+          position: position++,
+          description: isAdvance
+            ? `Vorschuss Flaechenanteil Poolflaeche + A&E\n${periodLabel} (${item.allocationBasis})`
+            : `Flaechenanteil Poolflaeche + A&E\n${periodLabel} (${item.allocationBasis})`,
+          quantity: new Decimal(1),
+          unit: "pauschal",
+          unitPrice: new Decimal(taxableAmountEur),
+          netAmount: new Decimal(taxableAmountEur),
+          taxType: "STANDARD",
+          taxRate: new Decimal(19),
+          taxAmount: new Decimal(taxableVatEur),
+          grossAmount: new Decimal(grossAmount),
+          referenceType: "COST_ALLOCATION",
+          referenceId: allocationId,
+        });
+      }
+
+      // Position 2: Exempt (Standort + versiegelt + Weg + Kabel)
+      if (hasExempt) {
+        totalNet += exemptAmountEur;
+        totalGross += exemptAmountEur;
+
+        invoiceItemsData.push({
+          position: position++,
+          description: isAdvance
+            ? `Vorschuss WEA-Standort, versiegelte Flaeche, Wegenutzung, Kabel\n${periodLabel} (${item.allocationBasis})`
+            : `WEA-Standort, versiegelte Flaeche, Wegenutzung, Kabel\n${periodLabel} (${item.allocationBasis})`,
+          quantity: new Decimal(1),
+          unit: "pauschal",
+          unitPrice: new Decimal(exemptAmountEur),
+          netAmount: new Decimal(exemptAmountEur),
+          taxType: "EXEMPT",
+          taxRate: new Decimal(0),
+          taxAmount: new Decimal(0),
+          grossAmount: new Decimal(exemptAmountEur),
+          referenceType: "COST_ALLOCATION",
+          referenceId: allocationId,
+        });
+      }
+
+      totalNet = round2(totalNet);
+      totalTax = round2(totalTax);
+      totalGross = round2(totalGross);
+
+      const headerTaxRate = hasTaxable ? 19 : 0;
+
+      const invoice = await tx.invoice.create({
+        data: {
+          tenantId,
+          invoiceType: "INVOICE",
+          invoiceNumber,
+          invoiceDate,
+          recipientType: "fund",
+          recipientName,
+          recipientAddress,
+          netAmount: new Decimal(totalNet),
+          taxRate: new Decimal(headerTaxRate),
+          taxAmount: new Decimal(totalTax),
+          grossAmount: new Decimal(totalGross),
+          status: "DRAFT",
+          fundId: item.operatorFundId,
+          parkId: park.id,
+          createdById,
+          serviceStartDate: periodDates.start,
+          serviceEndDate: periodDates.end,
+          internalReference: `NE-KA-${serviceYear}-${fund.name}`,
+          paymentReference: `${prefix} Nutzungsentgelt ${periodLabel} - ${park.name}`,
+          notes: hasExempt
+            ? "Pos. Standort steuerfrei gem. par.4 Nr.12 UStG (Vermietung und Verpachtung von Grundstuecken)"
+            : undefined,
+          items: {
+            createMany: {
+              data: invoiceItemsData,
+            },
+          },
+        },
+      });
+
+      // Link invoice to allocation item (both fields point to same invoice)
+      await tx.parkCostAllocationItem.update({
+        where: { id: item.id },
+        data: {
+          ...(hasTaxable ? { vatInvoiceId: invoice.id } : {}),
+          ...(hasExempt ? { exemptInvoiceId: invoice.id } : {}),
+        },
+      });
+
+      result.invoiceIds.push(invoice.id);
+      result.created++;
     }
 
     // Update allocation status

@@ -252,6 +252,7 @@ export default function NewLeaseSettlementPage() {
 
   // Step 2: Umsatzdaten
   const [revenueSource, setRevenueSource] = useState<"auto" | "manual">("auto");
+  const [revenueDisplayMode, setRevenueDisplayMode] = useState<"MONTHLY" | "YEARLY">("YEARLY");
   const [energySettlements, setEnergySettlements] = useState<EnergySettlement[]>([]);
   const [loadingEnergySettlements, setLoadingEnergySettlements] = useState(false);
   const [monthlyData, setMonthlyData] = useState<MonthlyEntry[]>(
@@ -270,6 +271,7 @@ export default function NewLeaseSettlementPage() {
   const [calculating, setCalculating] = useState(false);
 
   // Step 4: Gutschriften
+  const [invoiceInitialStatus, setInvoiceInitialStatus] = useState<"DRAFT" | "SENT">("DRAFT");
   const [creatingInvoices, setCreatingInvoices] = useState(false);
   const [invoiceResult, setInvoiceResult] = useState<Array<{
     id: string;
@@ -278,6 +280,13 @@ export default function NewLeaseSettlementPage() {
     recipientName: string;
     grossAmount: number;
   }> | null>(null);
+  const [allocationInvoices, setAllocationInvoices] = useState<Array<{
+    id: string;
+    invoiceNumber: string;
+    invoiceType: string;
+    recipientName: string;
+    grossAmount: number;
+  }>>([]);
 
   // Existing settlements (collapsible history)
   const [existingSettlements, setExistingSettlements] = useState<ExistingSettlement[]>([]);
@@ -507,13 +516,19 @@ export default function NewLeaseSettlementPage() {
   async function saveMonthlyData(): Promise<boolean> {
     if (!selectedParkId || revenueSource !== "manual") return true;
 
+    const toNum = (v: string): number | null => {
+      if (v === "" || v == null) return null;
+      const n = parseFloat(v);
+      return Number.isNaN(n) ? null : n;
+    };
+
     const entries = monthlyData
       .map((m, idx) => ({
         month: idx + 1,
-        eegProductionKwh: parseFloat(m.eegProductionKwh) || null,
-        eegRevenueEur: parseFloat(m.eegRevenueEur) || null,
-        dvProductionKwh: parseFloat(m.dvProductionKwh) || null,
-        dvRevenueEur: parseFloat(m.dvRevenueEur) || null,
+        eegProductionKwh: toNum(m.eegProductionKwh),
+        eegRevenueEur: toNum(m.eegRevenueEur),
+        dvProductionKwh: toNum(m.dvProductionKwh),
+        dvRevenueEur: toNum(m.dvRevenueEur),
       }))
       .filter(
         (e) =>
@@ -604,6 +619,9 @@ export default function NewLeaseSettlementPage() {
         calcPayload.totalRevenue = effectiveRevenue;
       }
 
+      // Add EEG/DV revenue sources
+      buildRevenueSourcesPayload(calcPayload);
+
       const calcRes = await fetch(
         `/api/leases/settlement/${settlementId}/calculate`,
         {
@@ -622,6 +640,9 @@ export default function NewLeaseSettlementPage() {
       setCalculationResult(calcData.calculation);
       toast.success("Berechnung erfolgreich abgeschlossen");
 
+      // Auto-advance to Step 3 (Abschluss) after successful calculation
+      setCurrentStep(3);
+
       // Reload existing settlements
       loadExistingSettlements();
     } catch (error) {
@@ -630,6 +651,69 @@ export default function NewLeaseSettlementPage() {
       );
     } finally {
       setCalculating(false);
+    }
+  }
+
+  /** Build the revenueSources payload with EEG/DV split based on current settings */
+  function buildRevenueSourcesPayload(calcPayload: Record<string, unknown>) {
+    if (periodType !== "FINAL") return;
+    calcPayload.revenueDisplayMode = revenueDisplayMode;
+    const pad = (n: number) => String(n).padStart(2, "0");
+
+    if (revenueSource === "auto") {
+      const finalized = energySettlements.filter(
+        (es) => es.status === "INVOICED" || es.status === "CLOSED"
+      );
+      if (revenueDisplayMode === "MONTHLY") {
+        calcPayload.revenueSources = finalized
+          .sort((a, b) => (a.month ?? 0) - (b.month ?? 0))
+          .flatMap((es) => {
+            const entries = [];
+            const eegKwh = Number(es.eegProductionKwh || 0);
+            const eegEur = Number(es.eegRevenueEur || 0);
+            const dvKwh = Number(es.dvProductionKwh || 0);
+            const dvEur = Number(es.dvRevenueEur || 0);
+            if (eegEur > 0) {
+              entries.push({ category: `EEG ${pad(es.month || 0)}/${year}`, productionKwh: eegKwh, revenueEur: eegEur });
+            }
+            if (dvEur > 0) {
+              entries.push({ category: `DV ${pad(es.month || 0)}/${year}`, productionKwh: dvKwh, revenueEur: dvEur });
+            }
+            return entries;
+          });
+      } else {
+        const eegKwh = finalized.reduce((s, es) => s + Number(es.eegProductionKwh || 0), 0);
+        const eegEur = finalized.reduce((s, es) => s + Number(es.eegRevenueEur || 0), 0);
+        const dvKwh = finalized.reduce((s, es) => s + Number(es.dvProductionKwh || 0), 0);
+        const dvEur = finalized.reduce((s, es) => s + Number(es.dvRevenueEur || 0), 0);
+        const sources = [];
+        if (eegEur > 0) sources.push({ category: `EEG ${year}`, productionKwh: eegKwh, revenueEur: eegEur });
+        if (dvEur > 0) sources.push({ category: `Direktvermarktung ${year}`, productionKwh: dvKwh, revenueEur: dvEur });
+        calcPayload.revenueSources = sources;
+      }
+    } else {
+      // Manual mode
+      if (revenueDisplayMode === "MONTHLY") {
+        calcPayload.revenueSources = monthlyData.flatMap((m, i) => {
+          const entries = [];
+          const eegKwh = parseFloat(m.eegProductionKwh) || 0;
+          const eegEur = parseFloat(m.eegRevenueEur) || 0;
+          const dvKwh = parseFloat(m.dvProductionKwh) || 0;
+          const dvEur = parseFloat(m.dvRevenueEur) || 0;
+          if (eegEur > 0) {
+            entries.push({ category: `EEG ${pad(i + 1)}/${year}`, productionKwh: eegKwh, revenueEur: eegEur });
+          }
+          if (dvEur > 0) {
+            entries.push({ category: `DV ${pad(i + 1)}/${year}`, productionKwh: dvKwh, revenueEur: dvEur });
+          }
+          return entries;
+        });
+      } else {
+        const sources = [];
+        if (manualTotals.eegEur > 0) sources.push({ category: `EEG ${year}`, productionKwh: manualTotals.eegKwh, revenueEur: manualTotals.eegEur });
+        if (manualTotals.dvEur > 0) sources.push({ category: `Direktvermarktung ${year}`, productionKwh: manualTotals.dvKwh, revenueEur: manualTotals.dvEur });
+        calcPayload.revenueSources = sources;
+      }
     }
   }
 
@@ -647,6 +731,9 @@ export default function NewLeaseSettlementPage() {
       if (periodType === "FINAL" && effectiveRevenue > 0) {
         calcPayload.totalRevenue = effectiveRevenue;
       }
+
+      // Add EEG/DV revenue sources
+      buildRevenueSourcesPayload(calcPayload);
 
       const calcRes = await fetch(
         `/api/leases/settlement/${createdSettlementId}/calculate`,
@@ -689,6 +776,7 @@ export default function NewLeaseSettlementPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             invoiceDate: new Date().toISOString(),
+            initialStatus: invoiceInitialStatus,
           }),
         }
       );
@@ -700,7 +788,13 @@ export default function NewLeaseSettlementPage() {
 
       const result = await res.json();
       setInvoiceResult(result.invoices || []);
-      toast.success(result.message || "Gutschriften erfolgreich erstellt");
+      setAllocationInvoices(result.allocationInvoices || []);
+      const creditCount = result.created ?? result.invoices?.length ?? 0;
+      const allocCount = result.allocationInvoices?.length ?? 0;
+      const msg = allocCount > 0
+        ? `${creditCount} Gutschrift(en) und ${allocCount} Betreiber-Rechnung(en) erstellt`
+        : `${creditCount} Gutschrift(en) erfolgreich erstellt`;
+      toast.success(msg);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -722,6 +816,7 @@ export default function NewLeaseSettlementPage() {
     setSelectedQuarter(1);
     setLeases([]);
     setRevenueSource("auto");
+    setRevenueDisplayMode("YEARLY");
     setMonthlyData(
       Array.from({ length: 12 }, () => ({
         eegProductionKwh: "",
@@ -734,6 +829,7 @@ export default function NewLeaseSettlementPage() {
     setCalculationResult(null);
     setCreatingInvoices(false);
     setInvoiceResult(null);
+    setAllocationInvoices([]);
     setExistingSettlements([]);
     setShowExisting(false);
   }
@@ -1192,6 +1288,42 @@ export default function NewLeaseSettlementPage() {
                 </div>
               </RadioGroup>
             </div>
+
+            {/* Ertragsübersicht Anzeigemodus */}
+            <div className="space-y-3">
+              <Label>Ertragsübersicht auf Gutschrift</Label>
+              <RadioGroup
+                value={revenueDisplayMode}
+                onValueChange={(v) => setRevenueDisplayMode(v as "MONTHLY" | "YEARLY")}
+                className="flex gap-4"
+              >
+                <div
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 transition-colors cursor-pointer ${
+                    revenueDisplayMode === "YEARLY"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                  onClick={() => setRevenueDisplayMode("YEARLY")}
+                >
+                  <RadioGroupItem value="YEARLY" id="display-yearly" />
+                  <Label htmlFor="display-yearly" className="cursor-pointer">Jahreswerte</Label>
+                </div>
+                <div
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 transition-colors cursor-pointer ${
+                    revenueDisplayMode === "MONTHLY"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                  onClick={() => setRevenueDisplayMode("MONTHLY")}
+                >
+                  <RadioGroupItem value="MONTHLY" id="display-monthly" />
+                  <Label htmlFor="display-monthly" className="cursor-pointer">Monatswerte</Label>
+                </div>
+              </RadioGroup>
+              <p className="text-xs text-muted-foreground">
+                Bestimmt ob die Ertragsübersicht auf der Gutschrift-Anlage Jahres- oder Monatswerte zeigt (immer mit EEG/DV-Aufschlüsselung).
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -1387,13 +1519,17 @@ export default function NewLeaseSettlementPage() {
   function renderStep3() {
     return (
       <div className="space-y-6">
-        {/* Calculate button */}
+        {/* Calculating spinner or manual trigger */}
         {!calculationResult && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
-                Berechnung starten
+                {calculating ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Calculator className="h-5 w-5" />
+                )}
+                {calculating ? "Berechnung laeuft..." : "Berechnung"}
               </CardTitle>
               <CardDescription>
                 {periodType === "FINAL"
@@ -1405,26 +1541,18 @@ export default function NewLeaseSettlementPage() {
                       : `Monatsvorschuss ${MONTH_NAMES[selectedMonth - 1]} ${year}`}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button
-                onClick={handleCalculate}
-                disabled={calculating}
-                size="lg"
-                className="w-full sm:w-auto"
-              >
-                {calculating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Berechnung laeuft...
-                  </>
-                ) : (
-                  <>
-                    <Calculator className="mr-2 h-4 w-4" />
-                    Berechnung starten
-                  </>
-                )}
-              </Button>
-            </CardContent>
+            {!calculating && (
+              <CardContent>
+                <Button
+                  onClick={handleCalculate}
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
+                  <Calculator className="mr-2 h-4 w-4" />
+                  Berechnung starten
+                </Button>
+              </CardContent>
+            )}
           </Card>
         )}
 
@@ -1681,20 +1809,51 @@ export default function NewLeaseSettlementPage() {
               </div>
             </div>
 
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5 shrink-0" />
+              Detaillierte Berechnungsvorschau: &quot;Zurueck&quot; klicken
+            </div>
+
             <Separator />
 
             {/* Generate Credit Notes */}
             {!invoiceResult ? (
               <div className="space-y-4">
-                <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
-                  <Info className="h-5 w-5 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">Gutschriften erstellen</p>
-                    <p className="text-xs">
-                      Gutschriften werden als ENTWURF erstellt und koennen vor dem
-                      Versand noch bearbeitet werden.
-                    </p>
-                  </div>
+                <div className="space-y-3">
+                  <Label>Gutschrift-Status</Label>
+                  <RadioGroup
+                    value={invoiceInitialStatus}
+                    onValueChange={(v) => setInvoiceInitialStatus(v as "DRAFT" | "SENT")}
+                    className="flex gap-4"
+                  >
+                    <div
+                      className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 transition-colors cursor-pointer ${
+                        invoiceInitialStatus === "DRAFT"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                      onClick={() => setInvoiceInitialStatus("DRAFT")}
+                    >
+                      <RadioGroupItem value="DRAFT" id="status-draft" />
+                      <Label htmlFor="status-draft" className="cursor-pointer">Entwurf</Label>
+                    </div>
+                    <div
+                      className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 transition-colors cursor-pointer ${
+                        invoiceInitialStatus === "SENT"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                      onClick={() => setInvoiceInitialStatus("SENT")}
+                    >
+                      <RadioGroupItem value="SENT" id="status-sent" />
+                      <Label htmlFor="status-sent" className="cursor-pointer">Freigegeben</Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="text-xs text-muted-foreground">
+                    {invoiceInitialStatus === "DRAFT"
+                      ? "Gutschriften werden als Entwurf erstellt und koennen vor dem Versand noch bearbeitet werden."
+                      : "Gutschriften werden direkt als freigegeben markiert und koennen sofort versendet werden."}
+                  </p>
                 </div>
 
                 <Button
@@ -1715,43 +1874,87 @@ export default function NewLeaseSettlementPage() {
                   <Check className="h-5 w-5 mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm font-medium">
-                      {invoiceResult.length} Gutschrift(en) erstellt
+                      {invoiceResult.length} Gutschrift(en)
+                      {allocationInvoices.length > 0 && ` und ${allocationInvoices.length} Betreiber-Rechnung(en)`}
+                      {" "}erstellt
                     </p>
                     <p className="text-xs">
-                      Alle Gutschriften wurden als Entwurf angelegt.
+                      {invoiceInitialStatus === "DRAFT"
+                        ? "Alle Gutschriften wurden als Entwurf angelegt."
+                        : "Alle Gutschriften wurden als freigegeben markiert."}
+                      {allocationInvoices.length > 0 && " Betreiber-Rechnungen wurden als Entwurf angelegt."}
                     </p>
                   </div>
                 </div>
 
                 {invoiceResult.length > 0 && (
-                  <div className="rounded-md border overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Gutschrift-Nr.</TableHead>
-                          <TableHead>Empfaenger</TableHead>
-                          <TableHead className="text-right">Betrag</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {invoiceResult.map((inv) => (
-                          <TableRow key={inv.id}>
-                            <TableCell>
-                              <Link
-                                href={`/invoices/${inv.id}`}
-                                className="text-primary underline hover:no-underline"
-                              >
-                                {inv.invoiceNumber}
-                              </Link>
-                            </TableCell>
-                            <TableCell>{inv.recipientName}</TableCell>
-                            <TableCell className="text-right">
-                              {formatEur(Number(inv.grossAmount))}
-                            </TableCell>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground">Gutschriften (Verpachter)</h4>
+                    <div className="rounded-md border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Gutschrift-Nr.</TableHead>
+                            <TableHead>Empfaenger</TableHead>
+                            <TableHead className="text-right">Betrag</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {invoiceResult.map((inv) => (
+                            <TableRow key={inv.id}>
+                              <TableCell>
+                                <Link
+                                  href={`/invoices/${inv.id}`}
+                                  className="text-primary underline hover:no-underline"
+                                >
+                                  {inv.invoiceNumber}
+                                </Link>
+                              </TableCell>
+                              <TableCell>{inv.recipientName}</TableCell>
+                              <TableCell className="text-right">
+                                {formatEur(Number(inv.grossAmount))}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Allocation invoices (Betreiber-Rechnungen) */}
+                {allocationInvoices.length > 0 && (
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-muted-foreground">Rechnungen (Betreibergesellschaften)</h4>
+                    <div className="rounded-md border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Rechnungs-Nr.</TableHead>
+                            <TableHead>Betreiber</TableHead>
+                            <TableHead className="text-right">Betrag</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allocationInvoices.map((inv) => (
+                            <TableRow key={inv.id}>
+                              <TableCell>
+                                <Link
+                                  href={`/invoices/${inv.id}`}
+                                  className="text-primary underline hover:no-underline"
+                                >
+                                  {inv.invoiceNumber}
+                                </Link>
+                              </TableCell>
+                              <TableCell>{inv.recipientName}</TableCell>
+                              <TableCell className="text-right">
+                                {formatEur(Number(inv.grossAmount))}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1875,8 +2078,13 @@ export default function NewLeaseSettlementPage() {
                   if (!saved) return;
                 }
                 setCurrentStep((prev) => prev + 1);
+                // Auto-start calculation when entering Step 3
+                if (currentStep === 1) {
+                  // Small delay to let the step render first, then trigger calculation
+                  setTimeout(() => handleCalculate(), 100);
+                }
               }}
-              disabled={!canProceed() || savingMonthlyData}
+              disabled={!canProceed() || savingMonthlyData || calculating}
             >
               {savingMonthlyData ? (
                 <>

@@ -26,6 +26,7 @@ import {
   Eye,
   Loader2,
   AlertTriangle,
+  GitCompare,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -155,6 +156,35 @@ interface RevenuePhase {
   revenueSharePercentage: number;
   description: string | null;
 }
+
+interface CostAllocation {
+  id: string;
+  status: "DRAFT" | "INVOICED" | "CLOSED";
+  totalUsageFeeEur: number;
+  totalTaxableEur: number;
+  totalExemptEur: number;
+  periodLabel: string | null;
+  createdAt: string;
+  leaseRevenueSettlement: {
+    id: string;
+    year: number;
+    status: string;
+    park: { id: string; name: string; shortName: string | null };
+  };
+  _count: { items: number };
+}
+
+const allocationStatusColors: Record<string, string> = {
+  DRAFT: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  INVOICED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  CLOSED: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200",
+};
+
+const allocationStatusLabels: Record<string, string> = {
+  DRAFT: "Entwurf",
+  INVOICED: "Abgerechnet",
+  CLOSED: "Abgeschlossen",
+};
 
 type DistributionMode = "PROPORTIONAL" | "SMOOTHED" | "TOLERATED";
 
@@ -328,6 +358,12 @@ export default function ParkDetailsPage({
   const [selectedLeaseIds, setSelectedLeaseIds] = useState<Set<string>>(new Set());
   const [assigningLeases, setAssigningLeases] = useState(false);
 
+  // Cost allocation tab state
+  const [activeTab, setActiveTab] = useState("overview");
+  const [costAllocations, setCostAllocations] = useState<CostAllocation[]>([]);
+  const [loadingAllocations, setLoadingAllocations] = useState(false);
+  const [allocationsLoaded, setAllocationsLoaded] = useState(false);
+
   useEffect(() => {
     fetchPark();
   }, [id]);
@@ -432,6 +468,29 @@ export default function ParkDetailsPage({
       setError("Fehler beim Laden des Parks");
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Lazy-load cost allocations when tab is activated
+  useEffect(() => {
+    if (activeTab === "cost-allocation" && !allocationsLoaded) {
+      fetchCostAllocations();
+    }
+  }, [activeTab, allocationsLoaded]);
+
+  async function fetchCostAllocations() {
+    try {
+      setLoadingAllocations(true);
+      const res = await fetch(`/api/leases/cost-allocation?parkId=${id}&limit=100`);
+      if (res.ok) {
+        const data = await res.json();
+        setCostAllocations(data.data ?? []);
+      }
+    } catch {
+      // Non-critical
+    } finally {
+      setLoadingAllocations(false);
+      setAllocationsLoaded(true);
     }
   }
 
@@ -873,7 +932,7 @@ export default function ParkDetailsPage({
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
           <TabsTrigger value="funds">
@@ -886,6 +945,10 @@ export default function ParkDetailsPage({
           <TabsTrigger value="lease-config">
             <Settings className="mr-1 h-4 w-4" />
             Konfiguration
+          </TabsTrigger>
+          <TabsTrigger value="cost-allocation">
+            <GitCompare className="mr-1 h-4 w-4" />
+            Kostenaufteilung
           </TabsTrigger>
           <TabsTrigger value="plots">
             <MapPin className="mr-1 h-4 w-4" />
@@ -1562,6 +1625,101 @@ export default function ParkDetailsPage({
               </Button>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Cost Allocation Tab */}
+        <TabsContent value="cost-allocation">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GitCompare className="h-5 w-5" />
+                Kostenaufteilung
+              </CardTitle>
+              <CardDescription>
+                Verteilung der Nutzungsentgelte auf Betreibergesellschaften
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingAllocations ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : costAllocations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <GitCompare className="mx-auto h-10 w-10 mb-3 opacity-50" />
+                  <p className="font-medium">Keine Kostenaufteilungen vorhanden</p>
+                  <p className="text-sm mt-1">
+                    Kostenaufteilungen werden automatisch bei der Abrechnung erstellt.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Periode</TableHead>
+                      <TableHead>Jahr</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Gesamt</TableHead>
+                      <TableHead className="text-right">Steuerpflichtig</TableHead>
+                      <TableHead className="text-right">Steuerfrei</TableHead>
+                      <TableHead className="text-right">Positionen</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {costAllocations.map((alloc) => (
+                      <TableRow
+                        key={alloc.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => router.push(`/leases/cost-allocation/${alloc.id}`)}
+                      >
+                        <TableCell className="font-medium">
+                          {alloc.periodLabel || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {alloc.leaseRevenueSettlement.year}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="secondary"
+                            className={allocationStatusColors[alloc.status] || ""}
+                          >
+                            {allocationStatusLabels[alloc.status] || alloc.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(alloc.totalUsageFeeEur)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(alloc.totalTaxableEur)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(alloc.totalExemptEur)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {alloc._count.items}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/leases/cost-allocation/${alloc.id}`);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Plots Tab */}

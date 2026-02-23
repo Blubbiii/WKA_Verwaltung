@@ -104,13 +104,13 @@ export async function GET(
         cancelledInvoice: {
           select: { id: true, invoiceNumber: true },
         },
-        stornoInvoices: {
+        cancellationInvoices: {
           select: { id: true, invoiceNumber: true, invoiceDate: true },
         },
-        originalInvoice: {
+        correctedInvoice: {
           select: { id: true, invoiceNumber: true },
         },
-        corrections: {
+        correctionInvoices: {
           where: { deletedAt: null },
           select: {
             id: true,

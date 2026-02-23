@@ -183,11 +183,12 @@ export function InvoiceTemplate({ invoice, template, letterhead, watermark }: In
       }
     : undefined;
 
-  // Check if settlement attachment page is needed (FINAL with data)
+  // Check if settlement attachment page is needed (FINAL or ENERGY with data)
   const sd = invoice.settlementDetails;
-  const hasAttachment = sd?.type === "FINAL" && (
+  const hasAttachment = (sd?.type === "FINAL" || sd?.type === "ENERGY") && (
     (sd.revenueTable && sd.revenueTable.length > 0) ||
     !!sd.calculationSummary ||
+    !!sd.energyDistribution ||
     (sd.turbineProductions && sd.turbineProductions.length > 0)
   );
 

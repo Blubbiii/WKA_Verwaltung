@@ -66,7 +66,7 @@ export async function generateInvoicePdf(
       tenant: true,
       park: true,
       shareholder: true,
-      originalInvoice: {
+      correctedInvoice: {
         select: { id: true, invoiceNumber: true },
       },
     },
@@ -89,7 +89,8 @@ export async function generateInvoicePdf(
   const { template, letterhead } = await resolveTemplateAndLetterhead(
     invoice.tenantId,
     documentType,
-    invoice.parkId
+    invoice.parkId,
+    invoice.fundId
   );
 
   // Daten fuer PDF aufbereiten
@@ -141,7 +142,7 @@ export async function generateInvoicePdf(
     skontoAmount: invoice.skontoAmount ? Number(invoice.skontoAmount) : null,
     skontoPaid: invoice.skontoPaid ?? false,
     // Korrektur-Info
-    correctionOfInvoiceNumber: invoice.originalInvoice?.invoiceNumber ?? undefined,
+    correctionOfInvoiceNumber: invoice.correctedInvoice?.invoiceNumber ?? undefined,
     correctionType: (invoice.correctionType as "FULL_CANCEL" | "PARTIAL_CANCEL" | "CORRECTION") ?? undefined,
     correctionReason: invoice.cancelReason ?? invoice.notes ?? undefined,
     tenant: invoice.tenant

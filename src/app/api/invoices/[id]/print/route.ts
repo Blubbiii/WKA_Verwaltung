@@ -22,6 +22,7 @@ export async function POST(
         id: true,
         invoiceNumber: true,
         tenantId: true,
+        status: true,
       },
     });
 
@@ -35,12 +36,15 @@ export async function POST(
     // PDF generieren (laedt Invoice intern mit allen Relationen)
     const pdfBuffer = await generateInvoicePdf(invoice.id);
 
-    // Druck-Zeitstempel setzen
+    // Druck-Zeitstempel setzen + bei DRAFT automatisch als versendet markieren
     await prisma.invoice.update({
       where: { id },
       data: {
         printedAt: new Date(),
         printedById: check.userId,
+        ...(invoice.status === "DRAFT"
+          ? { status: "SENT", sentAt: new Date() }
+          : {}),
       },
     });
 

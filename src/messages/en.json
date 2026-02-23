@@ -91,6 +91,7 @@
     "invoiceTemplates": "Invoice Templates",
     "autoImport": "Auto Import",
     "invoicesOverview": "Overview",
+    "invoiceDispatch": "Dispatch Overview",
     "reconciliation": "Reconciliation",
     "marketing": "Marketing",
     "invoiceSettings": "Invoice Settings",

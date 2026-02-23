@@ -5,6 +5,32 @@ import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/number
 import { Decimal } from "@prisma/client/runtime/library";
 import { TaxType } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import type { SettlementPdfDetails, EnergyDistributionSummary, RevenueTableEntry, TurbineProductionEntry } from "@/types/pdf";
+
+// Matches the CalculationDetails stored by the calculate route
+interface StoredCalculationDetails {
+  mode: string;
+  timestamp: string;
+  averageProductionKwh: number;
+  totalProductionKwh: number;
+  netOperatorRevenueEur: number;
+  pricePerKwh: number;
+  turbineData: {
+    turbineId: string;
+    turbineDesignation: string;
+    operatorFundId: string;
+    operatorFundName: string;
+    productionKwh: number;
+    productionSharePct: number;
+  }[];
+  distributionSteps: { step: string; description: string; values: Record<string, number> }[];
+}
+
+const MODE_LABELS: Record<string, string> = {
+  PROPORTIONAL: "Proportional",
+  SMOOTHED: "Duldung mit Glaettung",
+  TOLERATED: "Duldung mit Toleranz",
+};
 
 // =============================================================================
 // POST /api/energy/settlements/[id]/create-invoices - Gutschriften erstellen
@@ -324,6 +350,22 @@ export async function POST(
           totalGross = grossAmount;
         }
 
+        // Build calculationDetails for Berechnungsnachweis
+        const settlementDetails = buildEnergyCalculationDetails({
+          settlement,
+          calcDetails: settlement.calculationDetails as StoredCalculationDetails | null,
+          recipientFundId: item.recipientFundId!,
+          recipientName,
+          recipientRevenueEur: revenueEur,
+          recipientProductionKwh: productionKwh,
+          periodLabel,
+          hasEegDvSplit,
+          eegRevenue,
+          eegProduction,
+          dvRevenue,
+          dvProduction,
+        });
+
         // Erstelle Gutschrift mit allen Positionen
         const invoice = await tx.invoice.create({
           data: {
@@ -344,6 +386,7 @@ export async function POST(
             currency: "EUR",
             status: "DRAFT",
             notes: `Automatisch erstellt aus Stromabrechnung ${settlement.id}`,
+            calculationDetails: settlementDetails ? (settlementDetails as unknown as Record<string, unknown>) : undefined,
             tenantId: check.tenantId!,
             createdById: check.userId,
             fundId: item.recipientFundId,
@@ -477,4 +520,121 @@ export async function POST(
       { status: 500 }
     );
   }
+}
+
+// =============================================================================
+// Helper: Build calculationDetails for energy settlement invoices
+// =============================================================================
+
+function buildEnergyCalculationDetails(params: {
+  settlement: {
+    year: number;
+    month: number | null;
+    netOperatorRevenueEur: Decimal;
+    totalProductionKwh: Decimal;
+    distributionMode: string;
+    park: { name: string };
+    eegRevenueEur: Decimal | null;
+    eegProductionKwh: Decimal | null;
+    dvRevenueEur: Decimal | null;
+    dvProductionKwh: Decimal | null;
+  };
+  calcDetails: StoredCalculationDetails | null;
+  recipientFundId: string;
+  recipientName: string;
+  recipientRevenueEur: number;
+  recipientProductionKwh: number;
+  periodLabel: string;
+  hasEegDvSplit: boolean;
+  eegRevenue: number | null;
+  eegProduction: number | null;
+  dvRevenue: number | null;
+  dvProduction: number | null;
+}): SettlementPdfDetails | null {
+  const { settlement, calcDetails, recipientFundId, recipientName } = params;
+
+  if (!calcDetails) return null;
+
+  const totalProduction = Number(settlement.totalProductionKwh);
+  const totalRevenue = Number(settlement.netOperatorRevenueEur);
+
+  // 1. Revenue table (EEG/DV split or single line)
+  const revenueTable: RevenueTableEntry[] = [];
+  if (params.hasEegDvSplit) {
+    if (params.eegRevenue && params.eegRevenue > 0 && params.eegProduction && params.eegProduction > 0) {
+      revenueTable.push({
+        category: `EEG ${params.periodLabel}`,
+        rateCtPerKwh: (params.eegRevenue / params.eegProduction) * 100,
+        productionKwh: params.eegProduction,
+        revenueEur: params.eegRevenue,
+      });
+    }
+    if (params.dvRevenue && params.dvRevenue > 0 && params.dvProduction && params.dvProduction > 0) {
+      revenueTable.push({
+        category: `Marktpraemie ${params.periodLabel}`,
+        rateCtPerKwh: (params.dvRevenue / params.dvProduction) * 100,
+        productionKwh: params.dvProduction,
+        revenueEur: params.dvRevenue,
+      });
+    }
+  }
+  if (revenueTable.length === 0 && totalProduction > 0) {
+    revenueTable.push({
+      category: `Stromerloes ${params.periodLabel}`,
+      rateCtPerKwh: (totalRevenue / totalProduction) * 100,
+      productionKwh: totalProduction,
+      revenueEur: totalRevenue,
+    });
+  }
+
+  // 2. Energy distribution summary
+  const recipientTurbines = calcDetails.turbineData.filter(
+    (t) => t.operatorFundId === recipientFundId
+  );
+
+  const energyDistribution: EnergyDistributionSummary = {
+    mode: calcDetails.mode,
+    modeLabel: MODE_LABELS[calcDetails.mode] ?? calcDetails.mode,
+    parkName: settlement.park.name,
+    year: settlement.year,
+    month: settlement.month ?? undefined,
+    totalProductionKwh: calcDetails.totalProductionKwh,
+    averageProductionKwh: calcDetails.averageProductionKwh,
+    netOperatorRevenueEur: calcDetails.netOperatorRevenueEur,
+    pricePerKwh: calcDetails.pricePerKwh,
+    recipientName,
+    recipientTurbineCount: recipientTurbines.length,
+    recipientProductionKwh: params.recipientProductionKwh,
+    recipientProductionSharePct:
+      totalProduction > 0
+        ? Math.round((params.recipientProductionKwh / totalProduction) * 10000) / 100
+        : 0,
+    recipientRevenueEur: params.recipientRevenueEur,
+  };
+
+  // 3. Turbine productions (filtered to this recipient's turbines)
+  const turbineProductions: TurbineProductionEntry[] = recipientTurbines.map((t) => ({
+    designation: t.turbineDesignation,
+    productionKwh: t.productionKwh,
+    operatingHours: null,
+    availabilityPct: null,
+    productionSharePct: t.productionSharePct,
+    revenueShareEur:
+      totalProduction > 0
+        ? Math.round((t.productionKwh / totalProduction) * totalRevenue * 100) / 100
+        : 0,
+  }));
+
+  const periodStr = settlement.month
+    ? `${String(settlement.month).padStart(2, "0")}/${settlement.year}`
+    : `${settlement.year}`;
+
+  return {
+    type: "ENERGY",
+    subtitle: `Stromerloes / ${settlement.park.name} / ${periodStr}`,
+    revenueTable,
+    revenueTableTotal: totalRevenue,
+    energyDistribution,
+    turbineProductions,
+  };
 }

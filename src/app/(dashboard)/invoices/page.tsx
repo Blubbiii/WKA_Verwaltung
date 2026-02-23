@@ -418,6 +418,7 @@ export default function InvoicesPage() {
                   </TableHead>
                   <TableHead>Nummer</TableHead>
                   <TableHead>Typ</TableHead>
+                  <TableHead>Versender</TableHead>
                   <TableHead>Empfänger</TableHead>
                   <TableHead>Datum</TableHead>
                   <TableHead className="text-right">Netto</TableHead>
@@ -432,7 +433,7 @@ export default function InvoicesPage() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 11 }).map((_, j) => (
+                      {Array.from({ length: 12 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-5 w-20" />
                         </TableCell>
@@ -441,7 +442,7 @@ export default function InvoicesPage() {
                   ))
                 ) : filteredInvoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={12} className="h-32 text-center text-muted-foreground">
                       Keine Belege gefunden
                     </TableCell>
                   </TableRow>
@@ -469,6 +470,9 @@ export default function InvoicesPage() {
                         <Badge variant="outline">
                           {invoice.invoiceType === "INVOICE" ? "Rechnung" : "Gutschrift"}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {invoice.fund?.name || "-"}
                       </TableCell>
                       <TableCell>{getRecipientName(invoice)}</TableCell>
                       <TableCell>

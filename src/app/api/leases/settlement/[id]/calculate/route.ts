@@ -24,6 +24,7 @@ export async function POST(
     // Read optional body parameters (e.g. manual revenue from wizard)
     let manualRevenueEur: number | undefined;
     let revenueSources: Array<{ category: string; productionKwh: number; revenueEur: number }> | undefined;
+    let revenueDisplayMode: "MONTHLY" | "YEARLY" | undefined;
     try {
       const body = await request.json();
       if (body.totalRevenue != null && Number(body.totalRevenue) > 0) {
@@ -36,13 +37,21 @@ export async function POST(
           revenueEur: Number(s.revenueEur || 0),
         })).filter((s: { revenueEur: number }) => s.revenueEur > 0);
       }
+      if (body.revenueDisplayMode === "MONTHLY" || body.revenueDisplayMode === "YEARLY") {
+        revenueDisplayMode = body.revenueDisplayMode;
+      }
     } catch {
       // No body or invalid JSON — that's fine, proceed without manual revenue
     }
 
-    const calcOptions: { manualRevenueEur?: number; revenueSources?: typeof revenueSources } = {};
+    const calcOptions: {
+      manualRevenueEur?: number;
+      revenueSources?: typeof revenueSources;
+      revenueDisplayMode?: "MONTHLY" | "YEARLY";
+    } = {};
     if (manualRevenueEur != null) calcOptions.manualRevenueEur = manualRevenueEur;
     if (revenueSources && revenueSources.length > 0) calcOptions.revenueSources = revenueSources;
+    if (revenueDisplayMode) calcOptions.revenueDisplayMode = revenueDisplayMode;
 
     const { settlement, calculation } = await executeSettlementCalculation(
       check.tenantId!,

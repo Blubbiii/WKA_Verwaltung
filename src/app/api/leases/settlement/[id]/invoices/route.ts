@@ -7,7 +7,9 @@ import { apiLogger as logger } from "@/lib/logger";
 import {
   generateAdvanceInvoices,
   generateSettlementInvoices,
+  generateAllocationInvoices,
 } from "@/lib/lease-revenue/invoice-generator";
+import { executeCostAllocation } from "@/lib/lease-revenue/allocator";
 
 // =============================================================================
 // POST /api/leases/settlement/[id]/invoices - Generate credit notes (Gutschriften)
@@ -26,6 +28,17 @@ export async function POST(
 
     const { id } = await params;
 
+    // Parse optional body parameters (e.g. initialStatus from wizard)
+    let initialStatus: "DRAFT" | "SENT" = "DRAFT";
+    try {
+      const body = await request.json();
+      if (body.initialStatus === "SENT") {
+        initialStatus = "SENT";
+      }
+    } catch {
+      // No body — default to DRAFT
+    }
+
     // Load settlement to determine period type and verify ownership + status
     const settlement = await prisma.leaseRevenueSettlement.findFirst({
       where: {
@@ -34,7 +47,7 @@ export async function POST(
       },
       include: {
         items: true,
-        park: { select: { id: true, name: true } },
+        park: { select: { id: true, name: true, leaseSettlementMode: true } },
       },
     });
 
@@ -72,10 +85,30 @@ export async function POST(
       const result = await generateAdvanceInvoices(
         check.tenantId!,
         id,
-        check.userId
+        check.userId,
+        { initialStatus }
       );
 
-      return NextResponse.json(serializePrisma(result));
+      // Load created invoices for wizard display
+      const invoices = result.invoiceIds.length > 0
+        ? await prisma.invoice.findMany({
+            where: { id: { in: result.invoiceIds } },
+            select: { id: true, invoiceNumber: true, invoiceType: true, recipientName: true, grossAmount: true, status: true },
+          })
+        : [];
+
+      // Auto-trigger cost allocation for all parks
+      const allocationInvoices = await tryGenerateAllocationInvoices(
+        check.tenantId!,
+        id,
+        settlement.year,
+        settlement.periodType,
+        settlement.advanceInterval,
+        settlement.month,
+        check.userId ?? undefined
+      );
+
+      return NextResponse.json(serializePrisma({ ...result, invoices, allocationInvoices }));
     } else {
       // FINAL: generate settlement invoices (remainder after advances)
       if (
@@ -94,10 +127,30 @@ export async function POST(
       const result = await generateSettlementInvoices(
         check.tenantId!,
         id,
-        check.userId
+        check.userId,
+        { initialStatus }
       );
 
-      return NextResponse.json(serializePrisma(result));
+      // Load created invoices for wizard display
+      const invoices = result.invoiceIds.length > 0
+        ? await prisma.invoice.findMany({
+            where: { id: { in: result.invoiceIds } },
+            select: { id: true, invoiceNumber: true, invoiceType: true, recipientName: true, grossAmount: true, status: true },
+          })
+        : [];
+
+      // Auto-trigger cost allocation for all parks
+      const allocationInvoices = await tryGenerateAllocationInvoices(
+        check.tenantId!,
+        id,
+        settlement.year,
+        settlement.periodType,
+        settlement.advanceInterval,
+        settlement.month,
+        check.userId ?? undefined
+      );
+
+      return NextResponse.json(serializePrisma({ ...result, invoices, allocationInvoices }));
     }
   } catch (error) {
     const message =
@@ -116,4 +169,77 @@ export async function POST(
       { status: 500 }
     );
   }
+}
+
+// =============================================================================
+// Helper: Auto-generate allocation invoices (Betreiber-Rechnungen)
+// =============================================================================
+
+/**
+ * When the park uses NETWORK_COMPANY mode, automatically create cost allocation
+ * and generate invoices to operator companies after credit notes are created.
+ * Returns the allocation invoices or an empty array if not applicable.
+ */
+async function tryGenerateAllocationInvoices(
+  tenantId: string,
+  settlementId: string,
+  year: number,
+  periodType: string,
+  advanceInterval: string | null,
+  month: number | null,
+  userId?: string
+) {
+
+  try {
+    // Build period label for the allocation
+    let periodLabel = `Nutzungsentgelt ${year}`;
+    if (periodType === "ADVANCE") {
+      if (advanceInterval === "QUARTERLY" && month != null) {
+        const quarter = Math.ceil(month / 3);
+        periodLabel = `Vorschuss Q${quarter} ${year}`;
+      } else if (advanceInterval === "MONTHLY" && month != null) {
+        periodLabel = `Vorschuss ${String(month).padStart(2, "0")}/${year}`;
+      } else {
+        periodLabel = `Vorschuss ${year}`;
+      }
+    }
+
+    // Step 1: Create cost allocation (distributes costs to operators)
+    const { allocation } = await executeCostAllocation(
+      tenantId,
+      settlementId,
+      periodLabel
+    );
+
+    // Step 2: Generate invoices from allocation (VAT + exempt per operator)
+    const allocResult = await generateAllocationInvoices(
+      tenantId,
+      allocation.id,
+      userId
+    );
+
+    // Step 3: Load created invoices for wizard display
+    if (allocResult.invoiceIds.length > 0) {
+      const loaded = await prisma.invoice.findMany({
+        where: { id: { in: allocResult.invoiceIds } },
+        select: {
+          id: true,
+          invoiceNumber: true,
+          invoiceType: true,
+          recipientName: true,
+          grossAmount: true,
+          status: true,
+        },
+      });
+      return loaded;
+    }
+  } catch (error) {
+    // Cost allocation is non-critical - log but don't fail the request
+    logger.warn(
+      { err: error },
+      "Cost allocation failed (non-critical) - credit notes were created successfully"
+    );
+  }
+
+  return [];
 }

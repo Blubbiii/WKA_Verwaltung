@@ -283,6 +283,26 @@ export interface TurbineProductionEntry {
   productionKwh: number;           // Jahresproduktion kWh (Summe 12 Monate)
   operatingHours: number | null;   // Betriebsstunden gesamt
   availabilityPct: number | null;  // Durchschnittliche Verfuegbarkeit %
+  productionSharePct?: number;     // Anteil an Gesamtproduktion % (Energy only)
+  revenueShareEur?: number;        // Zugewiesener Erloesanteil EUR (Energy only)
+}
+
+/** Energy distribution summary for Stromerloes-Gutschriften */
+export interface EnergyDistributionSummary {
+  mode: string;                    // "PROPORTIONAL", "SMOOTHED", "TOLERATED"
+  modeLabel: string;               // "Proportional", "Duldung mit Glaettung", etc.
+  parkName: string;
+  year: number;
+  month?: number;
+  totalProductionKwh: number;
+  averageProductionKwh: number;
+  netOperatorRevenueEur: number;
+  pricePerKwh: number;
+  recipientName: string;
+  recipientTurbineCount: number;
+  recipientProductionKwh: number;
+  recipientProductionSharePct: number;
+  recipientRevenueEur: number;
 }
 
 /** Detailed fee position entry for Anlage (positive fees + negative advance deductions) */
@@ -294,14 +314,15 @@ export interface FeePositionEntry {
 
 /** Full settlement details stored on Invoice.calculationDetails */
 export interface SettlementPdfDetails {
-  type: "ADVANCE" | "FINAL";
+  type: "ADVANCE" | "FINAL" | "ENERGY";
   subtitle?: string;                           // "Nutzungsentgelt / WP Barenburg / 2025"
   introText?: string;                          // "gemaess den Ihnen vorliegenden Vertraegen..."
   revenueTable?: RevenueTableEntry[];          // Optional: Einspeisung-Tabelle
   revenueTableTotal?: number;
-  calculationSummary?: CalculationSummary;     // Berechnungsuebersicht
-  feePositions?: FeePositionEntry[];           // Positionsaufstellung: volle Gebuehren + Vorschuss-Verrechnungen
+  calculationSummary?: CalculationSummary;     // Berechnungsuebersicht (Lease only)
+  feePositions?: FeePositionEntry[];           // Positionsaufstellung (Lease only)
   turbineProductions?: TurbineProductionEntry[];  // Pro-WEA Produktionsdaten (fuer Anlage)
+  energyDistribution?: EnergyDistributionSummary; // Verteilungsnachweis (Energy only)
 }
 
 export interface InvoiceItemPdfData {

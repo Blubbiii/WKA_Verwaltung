@@ -1,8 +1,9 @@
 /**
  * Template Resolution mit Fallback-Kette:
- * 1. Park-spezifische Vorlage
- * 2. Mandanten-Standard-Vorlage
- * 3. System-Default
+ * 1. Fund-spezifische Vorlage (Briefpapier der Gesellschaft)
+ * 2. Park-spezifische Vorlage
+ * 3. Mandanten-Standard-Vorlage
+ * 4. System-Default
  */
 
 import { prisma } from "@/lib/prisma";
@@ -198,18 +199,37 @@ export async function resolveTemplate(
 }
 
 /**
- * Loedt das passende Briefpapier mit Fallback-Kette
+ * Loedt das passende Briefpapier mit Fallback-Kette:
+ * Fund → Park → Tenant → System-Default
  */
 export async function resolveLetterhead(
   tenantId: string,
-  parkId?: string | null
+  parkId?: string | null,
+  fundId?: string | null
 ): Promise<ResolvedLetterhead> {
-  // 1. Park-spezifisches Briefpapier suchen
+  // 1. Fund-spezifisches Briefpapier suchen (Firmen-Briefpapier)
+  if (fundId) {
+    const fundLetterhead = await prisma.letterhead.findFirst({
+      where: {
+        tenantId,
+        fundId,
+        isActive: true,
+      },
+      orderBy: { isDefault: "desc" },
+    });
+
+    if (fundLetterhead) {
+      return mapLetterhead(fundLetterhead);
+    }
+  }
+
+  // 2. Park-spezifisches Briefpapier suchen
   if (parkId) {
     const parkLetterhead = await prisma.letterhead.findFirst({
       where: {
         tenantId,
         parkId,
+        fundId: null,
         isActive: true,
       },
       orderBy: { isDefault: "desc" },
@@ -220,11 +240,12 @@ export async function resolveLetterhead(
     }
   }
 
-  // 2. Mandanten-Standard-Briefpapier suchen
+  // 3. Mandanten-Standard-Briefpapier suchen
   const tenantLetterhead = await prisma.letterhead.findFirst({
     where: {
       tenantId,
       parkId: null,
+      fundId: null,
       isActive: true,
     },
     orderBy: { isDefault: "desc" },
@@ -234,7 +255,7 @@ export async function resolveLetterhead(
     return mapLetterhead(tenantLetterhead);
   }
 
-  // 3. System-Default
+  // 4. System-Default
   return DEFAULT_LETTERHEAD;
 }
 
@@ -244,14 +265,15 @@ export async function resolveLetterhead(
 export async function resolveTemplateAndLetterhead(
   tenantId: string,
   documentType: DocumentType,
-  parkId?: string | null
+  parkId?: string | null,
+  fundId?: string | null
 ): Promise<{
   template: ResolvedTemplate;
   letterhead: ResolvedLetterhead;
 }> {
   const [template, letterhead] = await Promise.all([
     resolveTemplate(tenantId, documentType, parkId),
-    resolveLetterhead(tenantId, parkId),
+    resolveLetterhead(tenantId, parkId, fundId),
   ]);
 
   return { template, letterhead };

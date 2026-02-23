@@ -25,6 +25,7 @@ const createLetterheadSchema = z.object({
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
   secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
   parkId: z.string().uuid().optional().nullable(),
+  fundId: z.string().uuid().optional().nullable(),
   isDefault: z.boolean().default(false),
   backgroundPdfKey: z.string().optional().nullable(),
   backgroundPdfName: z.string().optional().nullable(),
@@ -38,22 +39,25 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
+    const fundId = searchParams.get("fundId");
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-
     const where: any = {
       tenantId: check.tenantId!,
       isActive: true,
     };
 
     if (parkId) where.parkId = parkId;
+    if (fundId) where.fundId = fundId;
 
     const letterheads = await prisma.letterhead.findMany({
       where,
       include: {
         park: {
           select: { id: true, name: true },
+        },
+        fund: {
+          select: { id: true, name: true, legalForm: true },
         },
       },
       orderBy: [{ isDefault: "desc" }, { name: "asc" }],
@@ -81,12 +85,8 @@ export async function POST(request: NextRequest) {
     // Wenn parkId gesetzt, pruefen ob Park existiert
     if (data.parkId) {
       const park = await prisma.park.findFirst({
-        where: {
-          id: data.parkId,
-          tenantId: check.tenantId!,
-        },
+        where: { id: data.parkId, tenantId: check.tenantId! },
       });
-
       if (!park) {
         return NextResponse.json(
           { error: "Windpark nicht gefunden" },
@@ -95,11 +95,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Wenn isDefault, andere Defaults zuruecksetzen
+    // Wenn fundId gesetzt, pruefen ob Fund existiert
+    if (data.fundId) {
+      const fund = await prisma.fund.findFirst({
+        where: { id: data.fundId, tenantId: check.tenantId! },
+      });
+      if (!fund) {
+        return NextResponse.json(
+          { error: "Gesellschaft nicht gefunden" },
+          { status: 404 }
+        );
+      }
+    }
+
+    // Wenn isDefault, andere Defaults im gleichen Scope zuruecksetzen
     if (data.isDefault) {
       await prisma.letterhead.updateMany({
         where: {
           tenantId: check.tenantId!,
+          fundId: data.fundId || null,
           parkId: data.parkId || null,
           isDefault: true,
         },
@@ -128,6 +142,7 @@ export async function POST(request: NextRequest) {
         primaryColor: data.primaryColor,
         secondaryColor: data.secondaryColor,
         parkId: data.parkId || null,
+        fundId: data.fundId || null,
         isDefault: data.isDefault,
         backgroundPdfKey: data.backgroundPdfKey,
         backgroundPdfName: data.backgroundPdfName,
@@ -136,6 +151,9 @@ export async function POST(request: NextRequest) {
       include: {
         park: {
           select: { id: true, name: true },
+        },
+        fund: {
+          select: { id: true, name: true, legalForm: true },
         },
       },
     });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Card,
@@ -85,6 +85,7 @@ interface LetterheadFormData {
   isDefault: boolean;
   backgroundPdfKey: string;
   backgroundPdfName: string;
+  fundId: string;
 }
 
 const defaultFormData: LetterheadFormData = {
@@ -108,6 +109,7 @@ const defaultFormData: LetterheadFormData = {
   isDefault: false,
   backgroundPdfKey: "",
   backgroundPdfName: "",
+  fundId: "",
 };
 
 export function LetterheadSettings() {
@@ -120,8 +122,33 @@ export function LetterheadSettings() {
   const [letterheadToDelete, setLetterheadToDelete] = useState<string | null>(null);
   const [previewLetterheadId, setPreviewLetterheadId] = useState<string | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [funds, setFunds] = useState<{ id: string; name: string; legalForm: string | null }[]>([]);
 
   const { upload: uploadWithProgress, isUploading, progress: imageUploadProgress } = useFileUpload();
+
+  useEffect(() => {
+    async function loadFunds() {
+      try {
+        const response = await fetch("/api/funds?limit=200");
+        if (response.ok) {
+          const data = await response.json();
+          const fundList = data.data ?? data;
+          setFunds(
+            Array.isArray(fundList)
+              ? fundList.map((f: { id: string; name: string; legalForm: string | null }) => ({
+                  id: f.id,
+                  name: f.name,
+                  legalForm: f.legalForm,
+                }))
+              : []
+          );
+        }
+      } catch {
+        // Fund loading failed silently
+      }
+    }
+    loadFunds();
+  }, []);
 
   const letterheadList = Array.isArray(letterheads) ? letterheads : [];
 
@@ -154,6 +181,7 @@ export function LetterheadSettings() {
       isDefault: letterhead.isDefault,
       backgroundPdfKey: letterhead.backgroundPdfKey || "",
       backgroundPdfName: letterhead.backgroundPdfName || "",
+      fundId: letterhead.fundId || "",
     });
     setShowDialog(true);
   }
@@ -248,6 +276,7 @@ export function LetterheadSettings() {
         isDefault: formData.isDefault,
         backgroundPdfKey: formData.backgroundPdfKey || null,
         backgroundPdfName: formData.backgroundPdfName || null,
+        fundId: formData.fundId || null,
       };
 
       if (editingLetterhead) {
@@ -359,6 +388,7 @@ export function LetterheadSettings() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Windpark</TableHead>
+                  <TableHead>Gesellschaft</TableHead>
                   <TableHead>Header</TableHead>
                   <TableHead>Standard</TableHead>
                   <TableHead className="w-[140px]"></TableHead>
@@ -373,6 +403,15 @@ export function LetterheadSettings() {
                         <Badge variant="outline">{letterhead.park.name}</Badge>
                       ) : (
                         <span className="text-muted-foreground">Alle</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {letterhead.fund ? (
+                        <Badge variant="outline">
+                          {letterhead.fund.name}{letterhead.fund.legalForm ? ` ${letterhead.fund.legalForm}` : ""}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -473,6 +512,29 @@ export function LetterheadSettings() {
                 />
                 <Label htmlFor="isDefault">Als Standard verwenden</Label>
               </div>
+            </div>
+
+            {/* Zugehoerige Gesellschaft */}
+            <div className="space-y-2">
+              <Label htmlFor="fundId">Zugehoerige Gesellschaft</Label>
+              <Select
+                value={formData.fundId || "__none__"}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, fundId: value === "__none__" ? "" : value })
+                }
+              >
+                <SelectTrigger id="fundId">
+                  <SelectValue placeholder="Keine (Mandanten-Standard)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Keine (Mandanten-Standard)</SelectItem>
+                  {funds.map((fund) => (
+                    <SelectItem key={fund.id} value={fund.id}>
+                      {fund.name}{fund.legalForm ? ` ${fund.legalForm}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Separator />

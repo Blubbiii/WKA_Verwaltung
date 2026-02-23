@@ -7,3 +7,4 @@ export { DatevExportDialog } from "./datev-export-dialog";
 export { RecurringInvoicesManager } from "./recurring-invoices-manager";
 export { PartialCancelDialog } from "./partial-cancel-dialog";
 export { CorrectionDialog } from "./correction-dialog";
+export { SettlementDetailsCard } from "./settlement-details-card";

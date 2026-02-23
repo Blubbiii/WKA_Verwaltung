@@ -345,6 +345,7 @@ model Fund {
   tenant                                                Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices                                              Invoice[]
   leaseRevenueSettlementItems                           LeaseRevenueSettlementItem[]
+  letterheads                                           Letterhead[]
   contractPartnerLeases            Lease[]                          @relation("LeaseContractPartner")
   directBillingLeases              Lease[]                          @relation("LeaseDirectBilling")
   news                                                  News[]
@@ -948,7 +949,7 @@ model BillingRule {
   lastRunAt               DateTime?
   nextRunAt               DateTime?
   createdAt               DateTime                  @default(now())
-  updatedAt               DateTime
+  updatedAt               DateTime @updatedAt
   tenantId                String
   executions              BillingRuleExecution[]
   tenant                 Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -986,7 +987,7 @@ model Distribution {
   executedAt         DateTime?
   notes              String?
   createdAt          DateTime             @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
   fundId             String
   tenantId           String
   createdById        String?
@@ -1011,7 +1012,7 @@ model DocumentTemplate {
   footerText   String?
   isActive     Boolean      @default(true)
   createdAt    DateTime     @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
   tenantId     String
   parkId       String?
   park        Park?        @relation(fields: [parkId], references: [id])
@@ -1033,7 +1034,7 @@ model EmailTemplate {
   textContent String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   tenantId    String
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -1051,7 +1052,7 @@ model EnergyMonthlyRate {
   managementFee        Decimal?             @db.Decimal(10, 4)
   notes                String?
   createdAt            DateTime             @default(now())
-  updatedAt            DateTime
+  updatedAt            DateTime @updatedAt
   revenueTypeId        String
   tenantId             String
   revenueType          EnergyRevenueType @relation(fields: [revenueTypeId], references: [id], onDelete: Cascade)
@@ -1076,7 +1077,7 @@ model EnergyReportConfig {
   tenantId      String
   createdById   String
   createdAt     DateTime @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
   createdBy         User     @relation(fields: [createdById], references: [id])
   park         Park?    @relation(fields: [parkId], references: [id])
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1098,7 +1099,7 @@ model EnergyRevenueType {
   isActive             Boolean                @default(true)
   sortOrder            Int                    @default(0)
   createdAt            DateTime               @default(now())
-  updatedAt            DateTime
+  updatedAt            DateTime @updatedAt
   tenantId             String
   energyMonthlyRates   EnergyMonthlyRate[]
 
@@ -1148,7 +1149,7 @@ model EnergySettlement {
   calculationDetails        Json?
   notes                     String?
   createdAt                 DateTime                    @default(now())
-  updatedAt                 DateTime
+  updatedAt                 DateTime @updatedAt
   parkId                    String
   tenantId                  String
   dvProductionKwh           Decimal?                    @db.Decimal(15, 3)
@@ -1177,7 +1178,7 @@ model FundCategory {
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   tenantId    String
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   funds       Fund[]
@@ -1236,7 +1237,7 @@ model InvoiceItemTemplate {
   isActive     Boolean  @default(true)
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
-  updatedAt    DateTime
+  updatedAt    DateTime @updatedAt
   tenantId     String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -1281,7 +1282,7 @@ model InvoiceNumberSequence {
   nextNumber  Int         @default(1)
   digitCount  Int         @default(4)
   createdAt   DateTime    @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   tenantId    String
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -1301,7 +1302,7 @@ model InvoiceTemplate {
   styles     Json?
   variables  Json?
   createdAt  DateTime @default(now())
-  updatedAt  DateTime
+  updatedAt  DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
@@ -1381,7 +1382,7 @@ model LeaseRevenueSettlement {
   settlementCreatedAt                                 DateTime?
   calculationDetails                                  Json?
   createdAt                                           DateTime                         @default(now())
-  updatedAt                                           DateTime
+  updatedAt                                           DateTime @updatedAt
   createdById                                         String?
   periodType                                          String                           @default("FINAL")
   advanceInterval                                     String?
@@ -1418,7 +1419,7 @@ model LeaseSettlementPeriod {
   totalActualRent                                    Decimal?               @db.Decimal(15, 2)
   notes                                              String?
   createdAt                                          DateTime               @default(now())
-  updatedAt                                          DateTime
+  updatedAt                                          DateTime @updatedAt
   month                                              Int?
   periodType                                         String                 @default("FINAL")
   advanceInterval                                    String?
@@ -1471,16 +1472,19 @@ model Letterhead {
   secondaryColor    String?
   isActive          Boolean   @default(true)
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime
+  updatedAt         DateTime @updatedAt
   tenantId          String
   parkId            String?
   backgroundPdfKey  String?
   backgroundPdfName String?
+  fundId            String?
   invoices          Invoice[]
+  fund             Fund?     @relation(fields: [fundId], references: [id])
   park             Park?     @relation(fields: [parkId], references: [id])
   tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@unique([tenantId, parkId, isDefault])
+  @@unique([tenantId, fundId, parkId, isDefault])
+  @@index([fundId])
   @@index([parkId])
   @@index([tenantId])
   @@map("letterheads")
@@ -1502,7 +1506,7 @@ model ManagementBilling {
   invoiceId          String?                 @unique
   notes              String?
   createdAt          DateTime                @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
   stakeholder        ParkStakeholder       @relation(fields: [stakeholderId], references: [id], onDelete: Cascade)
 
   @@unique([stakeholderId, year, month])
@@ -1520,7 +1524,7 @@ model MassCommunication {
   sentAt          DateTime?
   errorMessage    String?
   createdAt       DateTime  @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   tenantId        String
   createdById     String
   createdBy           User      @relation(fields: [createdById], references: [id])
@@ -1540,7 +1544,7 @@ model NetworkConnection {
   lengthM                                                     Float?
   metadata                                                    Json?
   createdAt                                                   DateTime      @default(now())
-  updatedAt                                                   DateTime
+  updatedAt                                                   DateTime @updatedAt
   fromNode NetworkNode @relation("NetworkConnectionFrom", fields: [fromNodeId], references: [id], onDelete: Cascade)
   tenant                                                     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   toNode   NetworkNode @relation("NetworkConnectionTo", fields: [toNodeId], references: [id], onDelete: Cascade)
@@ -1562,7 +1566,7 @@ model NetworkNode {
   turbineId                                                         String?
   metadata                                                          Json?
   createdAt                                                         DateTime              @default(now())
-  updatedAt                                                         DateTime
+  updatedAt                                                         DateTime @updatedAt
   fromConnections NetworkConnection[] @relation("NetworkConnectionFrom")
   toConnections   NetworkConnection[] @relation("NetworkConnectionTo")
   park                                                             Park                  @relation(fields: [parkId], references: [id], onDelete: Cascade)
@@ -1608,7 +1612,7 @@ model ParkCostAllocation {
   periodLabel                String?
   notes                      String?
   createdAt                  DateTime                     @default(now())
-  updatedAt                  DateTime
+  updatedAt                  DateTime @updatedAt
   items                      ParkCostAllocationItem[]
   leaseRevenueSettlement     LeaseRevenueSettlement    @relation(fields: [leaseRevenueSettlementId], references: [id])
   tenant                    Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1626,7 +1630,7 @@ model ParkRevenuePhase {
   revenueSharePercentage Decimal  @db.Decimal(5, 2)
   description            String?
   createdAt              DateTime @default(now())
-  updatedAt              DateTime
+  updatedAt              DateTime @updatedAt
   parkId                 String
   park                  Park     @relation(fields: [parkId], references: [id], onDelete: Cascade)
 
@@ -1652,7 +1656,7 @@ model ParkStakeholder {
   isActive                Boolean                   @default(true)
   notes                   String?
   createdAt               DateTime                  @default(now())
-  updatedAt               DateTime
+  updatedAt               DateTime @updatedAt
   managementBillings      ManagementBilling[]
   stakeholderTenant      Tenant                    @relation(fields: [stakeholderTenantId], references: [id])
   stakeholderFeeHistory   StakeholderFeeHistory[]
@@ -1704,7 +1708,7 @@ model PlotArea {
   compensationPercentage  Decimal?         @db.Decimal(5, 2)
   notes                   String?
   createdAt               DateTime         @default(now())
-  updatedAt               DateTime
+  updatedAt               DateTime @updatedAt
   plotId                  String
   plot                    Plot             @relation(fields: [plotId], references: [id], onDelete: Cascade)
 
@@ -1733,7 +1737,7 @@ model RecurringInvoice {
   totalGenerated   Int       @default(0)
   lastInvoiceId    String?
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
   tenantId         String
   createdById      String
   fundId           String?
@@ -1808,7 +1812,7 @@ model Role {
   hierarchy             Int                     @default(0)
   color                 String?
   createdAt             DateTime                @default(now())
-  updatedAt             DateTime
+  updatedAt             DateTime @updatedAt
   tenantId              String?
   permissions           RolePermission[]
   tenant               Tenant?                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1836,7 +1840,7 @@ model ScadaAnomaly {
   acknowledgedAt   DateTime?
   notes            String?
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime @updatedAt
   acknowledgedBy            User?     @relation(fields: [acknowledgedById], references: [id])
   tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   turbine         Turbine   @relation(fields: [turbineId], references: [id], onDelete: Cascade)
@@ -1859,7 +1863,7 @@ model ScadaAnomalyConfig {
   notifyByEmail           Boolean  @default(true)
   notifyInApp             Boolean  @default(true)
   createdAt               DateTime @default(now())
-  updatedAt               DateTime
+  updatedAt               DateTime @updatedAt
   tenant                 Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   @@map("scada_anomaly_configs")
 }
@@ -1925,7 +1929,7 @@ model ScadaImportLog {
   errorDetails      Json?
   lastProcessedDate DateTime?
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime
+  updatedAt         DateTime @updatedAt
   tenantId          String
   tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -2030,7 +2034,7 @@ model ScadaTurbineMapping {
   description        String?
   status             String    @default("ACTIVE")
   createdAt          DateTime  @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
   autoImportEnabled  Boolean   @default(false)
   autoImportPath     String?
   lastAutoImport     DateTime?
@@ -2154,7 +2158,7 @@ model ScheduledReport {
   nextRunAt   DateTime
   lastRunAt   DateTime?
   createdAt   DateTime                @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime @updatedAt
   tenantId    String
   createdById String
   createdBy       User                    @relation(fields: [createdById], references: [id])
@@ -2188,7 +2192,7 @@ model SystemConfig {
   category  String
   label     String?
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   tenantId  String?
   tenant   Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -2207,7 +2211,7 @@ model TurbineOperator {
   status              String    @default("ACTIVE")
   notes               String?
   createdAt           DateTime  @default(now())
-  updatedAt           DateTime
+  updatedAt           DateTime @updatedAt
   turbineId           String
   operatorFundId      String
   operatorFund        Fund      @relation(fields: [operatorFundId], references: [id])
@@ -2230,7 +2234,7 @@ model TurbineProduction {
   status          ProductionStatus     @default(DRAFT)
   notes           String?
   createdAt       DateTime             @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
   turbineId       String
   tenantId        String
   turbine        Turbine              @relation(fields: [turbineId], references: [id], onDelete: Cascade)

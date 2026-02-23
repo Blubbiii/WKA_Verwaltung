@@ -24,6 +24,7 @@ const updateLetterheadSchema = z.object({
   marginRight: z.number().min(10).max(50).optional(),
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
   secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
+  fundId: z.string().uuid().optional().nullable(),
   isDefault: z.boolean().optional(),
   isActive: z.boolean().optional(),
   backgroundPdfKey: z.string().optional().nullable(),
@@ -46,6 +47,9 @@ export async function GET(
       include: {
         park: {
           select: { id: true, name: true },
+        },
+        fund: {
+          select: { id: true, name: true, legalForm: true },
         },
       },
     });
@@ -89,7 +93,7 @@ export async function PATCH(
 
     const letterhead = await prisma.letterhead.findUnique({
       where: { id },
-      select: { id: true, tenantId: true, parkId: true },
+      select: { id: true, tenantId: true, parkId: true, fundId: true },
     });
 
     if (!letterhead) {
@@ -106,11 +110,12 @@ export async function PATCH(
       );
     }
 
-    // Wenn isDefault auf true gesetzt, andere Defaults zuruecksetzen
+    // Wenn isDefault auf true gesetzt, andere Defaults im gleichen Scope zuruecksetzen
     if (data.isDefault === true) {
       await prisma.letterhead.updateMany({
         where: {
           tenantId: check.tenantId!,
+          fundId: letterhead.fundId,
           parkId: letterhead.parkId,
           isDefault: true,
           id: { not: id },
@@ -131,6 +136,9 @@ export async function PATCH(
       include: {
         park: {
           select: { id: true, name: true },
+        },
+        fund: {
+          select: { id: true, name: true, legalForm: true },
         },
       },
     });

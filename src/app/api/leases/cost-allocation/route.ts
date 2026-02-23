@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     // Filter parameters
     const settlementId = searchParams.get("settlementId");
     const status = searchParams.get("status");
+    const parkId = searchParams.get("parkId");
 
     // Pagination
     const page = parseInt(searchParams.get("page") || "1", 10);
@@ -38,6 +39,9 @@ export async function GET(request: NextRequest) {
     }
     if (status && ["DRAFT", "INVOICED", "CLOSED"].includes(status)) {
       where.status = status;
+    }
+    if (parkId) {
+      where.leaseRevenueSettlement = { parkId };
     }
 
     const [allocations, total] = await Promise.all([

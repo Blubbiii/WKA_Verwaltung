@@ -514,6 +514,7 @@ export async function executeSettlementCalculation(
   options?: {
     manualRevenueEur?: number;
     revenueSources?: Array<{ category: string; productionKwh: number; revenueEur: number }>;
+    revenueDisplayMode?: "MONTHLY" | "YEARLY";
   }
 ): Promise<{
   settlement: Awaited<ReturnType<typeof prisma.leaseRevenueSettlement.update>>;
@@ -603,6 +604,7 @@ export async function executeSettlementCalculation(
           ...(options?.revenueSources && options.revenueSources.length > 0
             ? { revenueSources: options.revenueSources }
             : {}),
+          revenueDisplayMode: options?.revenueDisplayMode ?? "YEARLY",
         } as Prisma.InputJsonValue,
       },
     });

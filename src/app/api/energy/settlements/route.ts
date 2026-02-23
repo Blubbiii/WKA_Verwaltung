@@ -246,6 +246,7 @@ export async function POST(request: NextRequest) {
         status: "DRAFT",
         notes: validatedData.notes ?? null,
         tenantId: check.tenantId!,
+        updatedAt: new Date(),
       },
       include: {
         park: {

@@ -76,7 +76,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { InvoicePreviewDialog, PartialCancelDialog, CorrectionDialog } from "@/components/invoices";
+import { InvoicePreviewDialog, PartialCancelDialog, CorrectionDialog, SettlementDetailsCard } from "@/components/invoices";
 import { INVOICE_STATUS, getStatusBadge } from "@/lib/status-config";
 import { getSkontoStatus, getSkontoStatusLabel, getSkontoStatusBadgeClass } from "@/lib/invoices/skonto";
 
@@ -160,6 +160,9 @@ interface Invoice {
   } | null;
   cancelledInvoice: { id: string; invoiceNumber: string } | null;
   cancellingInvoice: { id: string; invoiceNumber: string } | null;
+  // Settlement calculation details (JSON)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  calculationDetails: Record<string, any> | null;
   // E-Invoice fields
   leitwegId: string | null;
   einvoiceFormat: string | null;
@@ -1179,6 +1182,11 @@ export default function InvoiceDetailPage({
             </Table>
           </CardContent>
         </Card>
+      )}
+
+      {/* Settlement calculation details (Berechnungsnachweis) */}
+      {invoice.calculationDetails && (
+        <SettlementDetailsCard calculationDetails={invoice.calculationDetails} />
       )}
 
       {/* E-Invoice (XRechnung / ZUGFeRD) - Pflicht seit 2025 fuer B2B */}

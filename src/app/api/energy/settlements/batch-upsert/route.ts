@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
               netOperatorRevenueEur,
               status: "DRAFT",
               tenantId: check.tenantId!,
+              updatedAt: new Date(),
             },
           });
           created.push(record.id);

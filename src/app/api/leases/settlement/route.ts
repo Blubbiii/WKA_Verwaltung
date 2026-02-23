@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
@@ -217,14 +218,65 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Already finalized — block duplicate
-      return NextResponse.json(
-        {
-          error: "Duplikat erkannt",
-          details: `Fuer Park "${park.name}" existiert bereits eine abgeschlossene Abrechnung fuer diesen Zeitraum (${validatedData.year}, ${validatedData.periodType || "FINAL"}, Monat: ${validatedData.month ?? "ganzjaehrig"})`,
-        },
-        { status: 409 }
-      );
+      // Cancelled or settled settlements can be reactivated — reset to OPEN
+      if (existing.status === "CANCELLED" || existing.status === "SETTLED") {
+        // Reset settlement items: clear invoice links and advance data
+        await prisma.leaseRevenueSettlementItem.updateMany({
+          where: { settlementId: existing.id },
+          data: {
+            settlementInvoiceId: null,
+            advanceInvoiceId: null,
+            advancePaidEur: 0,
+            remainderEur: 0,
+          },
+        });
+
+        const reactivated = await prisma.leaseRevenueSettlement.update({
+          where: { id: existing.id },
+          data: {
+            status: "OPEN",
+            advanceInterval: validatedData.advanceInterval ?? existing.advanceInterval,
+            linkedEnergySettlementId: validatedData.linkedEnergySettlementId ?? existing.linkedEnergySettlementId,
+            advanceDueDate: validatedData.advanceDueDate
+              ? new Date(validatedData.advanceDueDate)
+              : existing.advanceDueDate,
+            settlementDueDate: validatedData.settlementDueDate
+              ? new Date(validatedData.settlementDueDate)
+              : existing.settlementDueDate,
+            notes: validatedData.notes ?? null,
+            // Reset calculation fields
+            totalParkRevenueEur: 0,
+            calculatedFeeEur: 0,
+            actualFeeEur: 0,
+            usedMinimum: false,
+            calculationDetails: Prisma.JsonNull,
+            advanceCreatedAt: null,
+            settlementCreatedAt: null,
+          },
+          include: {
+            park: {
+              select: { id: true, name: true, shortName: true },
+            },
+          },
+        });
+        logger.info(
+          { settlementId: existing.id, parkId: validatedData.parkId, year: validatedData.year },
+          `Reactivated ${existing.status} settlement (items reset)`
+        );
+        return NextResponse.json(
+          { settlement: serializePrisma(reactivated) },
+          { status: 200 }
+        );
+      } else {
+        // Already finalized — block duplicate
+        return NextResponse.json(
+          {
+            error: "Duplikat erkannt",
+            details: `Fuer Park "${park.name}" existiert bereits eine abgeschlossene Abrechnung fuer diesen Zeitraum (${validatedData.year}, ${validatedData.periodType || "FINAL"}, Monat: ${validatedData.month ?? "ganzjaehrig"})`,
+          },
+          { status: 409 }
+        );
+      }
     }
 
     // Create settlement with status OPEN
