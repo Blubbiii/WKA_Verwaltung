@@ -68,7 +68,7 @@ RUN npm run build
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS prisma-cli
 WORKDIR /prisma-cli
-RUN npm init -y > /dev/null 2>&1 && npm install prisma
+RUN npm init -y > /dev/null 2>&1 && npm install prisma@6
 # Verifiziere dass effect installiert wurde
 RUN node -e "require('effect'); console.log('effect OK')"
 RUN node -e "require('@prisma/config'); console.log('@prisma/config OK')"
