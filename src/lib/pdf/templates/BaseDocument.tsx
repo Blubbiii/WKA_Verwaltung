@@ -130,7 +130,7 @@ export function BasePage({
   );
 }
 
-interface BaseDocumentProps extends BasePageProps {}
+type BaseDocumentProps = BasePageProps;
 
 /**
  * Single-page document wrapper (backwards compatible).

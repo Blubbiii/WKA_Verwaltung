@@ -19,8 +19,11 @@ WORKDIR /app
 # Package files kopieren
 COPY package.json package-lock.json ./
 
-# Dependencies installieren (mit devDependencies fuer Prisma und Build)
-RUN npm ci
+# Dependencies installieren
+# npm install statt npm ci: Lockfile wird auf Windows generiert und enthaelt
+# keine Linux/Alpine-spezifischen optionalen Dependencies (SWC, Parcel, Rollup).
+# npm install loest diese automatisch fuer die aktuelle Plattform auf.
+RUN npm install
 
 # -----------------------------------------------------------------------------
 # Stage 2: Builder
@@ -34,6 +37,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Platform-spezifische optionale Dependencies nachinstallieren
+# Das Lockfile wird auf Windows generiert und enthaelt keine Alpine/musl Binaries
+RUN npm install @parcel/watcher-linux-x64-musl @rollup/rollup-linux-x64-musl --no-save 2>/dev/null; true
+
 # Prisma Client generieren
 RUN npx prisma generate
 
@@ -46,6 +53,8 @@ ENV NODE_ENV=production
 ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
+# Build mit erhoehtem Memory-Limit (Next.js Build braucht ~2GB)
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
 
 # -----------------------------------------------------------------------------
