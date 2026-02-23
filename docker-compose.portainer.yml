@@ -4,7 +4,15 @@
 # Diese Datei ist fuer den Einsatz in Portainer optimiert.
 # Kopiere den gesamten Inhalt in Portainer > Stacks > Add Stack > Web Editor
 #
-# WICHTIG: Unter "Environment variables" die Werte anpassen!
+# WICHTIG: Unter "Environment variables" folgende Werte setzen:
+#
+#   DATABASE_URL          = postgresql://wpm:DEIN_PASSWORT@postgres:5432/windparkmanager?schema=public
+#   POSTGRES_USER         = wpm
+#   POSTGRES_PASSWORD     = DEIN_PASSWORT        (MUSS identisch sein wie in DATABASE_URL!)
+#   POSTGRES_DB           = windparkmanager
+#   NEXTAUTH_SECRET       = ein-langer-geheimer-string-min-32-zeichen
+#   MINIO_ROOT_PASSWORD   = ein-minio-passwort
+#
 # =============================================================================
 
 services:
@@ -23,8 +31,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Database (intern im Docker-Netzwerk)
-      DATABASE_URL: postgresql://${POSTGRES_USER:-wpm}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-windparkmanager}?schema=public
+      # Database - DIREKT setzen (keine Variablen-Interpolation!)
+      DATABASE_URL: ${DATABASE_URL}
 
       # NextAuth
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://192.168.178.101:3000}
@@ -80,10 +88,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-windparkmanager}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # Datenbank NICHT nach aussen exponieren (nur intern im Docker-Netzwerk)
-    # Zum Debuggen temporaer einkommentieren:
-    # ports:
-    #   - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wpm} -d ${POSTGRES_DB:-windparkmanager}"]
       interval: 10s
