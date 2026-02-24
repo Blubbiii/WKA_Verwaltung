@@ -27,6 +27,16 @@ import {
   SystemStatusWidget,
   UserStatsWidget,
   PendingActionsWidget,
+  AuditLogWidget,
+  BillingJobsWidget,
+  EnergyYieldKPI,
+  AvailabilityKPI,
+  WindSpeedKPI,
+  LeaseRevenueKPI,
+  TurbineStatusChart,
+  ProductionForecastChart,
+  RevenueByParkChart,
+  LeaseOverviewWidget,
 } from "./widgets";
 import { useAnalytics, useFormatCurrencyCompact } from "@/hooks/useAnalytics";
 import type { AvailableWidget } from "@/hooks/useDashboardConfig";
@@ -374,6 +384,89 @@ export function WidgetRenderer({
           onRemove={onRemove}
         >
           <UserStatsWidget />
+        </WidgetWrapper>
+      );
+    }
+
+    if (widgetId === "admin-audit-log") {
+      return (
+        <WidgetWrapper
+          title={widgetTitle}
+          isEditing={isEditing}
+          onRemove={onRemove}
+        >
+          <AuditLogWidget />
+        </WidgetWrapper>
+      );
+    }
+
+    if (widgetId === "admin-billing-jobs") {
+      return (
+        <WidgetWrapper
+          title={widgetTitle}
+          isEditing={isEditing}
+          onRemove={onRemove}
+        >
+          <BillingJobsWidget />
+        </WidgetWrapper>
+      );
+    }
+
+    // Energy KPI Widgets
+    if (widgetId === "kpi-energy-yield") {
+      return (
+        <WidgetWrapper title={widgetTitle} isEditing={isEditing} onRemove={onRemove}>
+          <EnergyYieldKPI />
+        </WidgetWrapper>
+      );
+    }
+
+    if (widgetId === "kpi-availability") {
+      return (
+        <WidgetWrapper title={widgetTitle} isEditing={isEditing} onRemove={onRemove}>
+          <AvailabilityKPI />
+        </WidgetWrapper>
+      );
+    }
+
+    if (widgetId === "kpi-wind-speed") {
+      return (
+        <WidgetWrapper title={widgetTitle} isEditing={isEditing} onRemove={onRemove}>
+          <WindSpeedKPI />
+        </WidgetWrapper>
+      );
+    }
+
+    if (widgetId === "kpi-lease-revenue") {
+      return (
+        <WidgetWrapper title={widgetTitle} isEditing={isEditing} onRemove={onRemove}>
+          <LeaseRevenueKPI />
+        </WidgetWrapper>
+      );
+    }
+
+    // Energy Chart Widgets (standalone - own card structure)
+    if (widgetId === "chart-turbine-status") {
+      return <TurbineStatusChart />;
+    }
+
+    if (widgetId === "chart-production-forecast") {
+      return <ProductionForecastChart />;
+    }
+
+    if (widgetId === "chart-revenue-by-park") {
+      return <RevenueByParkChart />;
+    }
+
+    // Energy List Widget
+    if (widgetId === "list-lease-overview") {
+      return (
+        <WidgetWrapper
+          title={widgetTitle}
+          isEditing={isEditing}
+          onRemove={onRemove}
+        >
+          <LeaseOverviewWidget />
         </WidgetWrapper>
       );
     }

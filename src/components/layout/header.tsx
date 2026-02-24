@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { Search, User, LogOut, Settings, Moon, Sun, Shield, X, Keyboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,8 +45,8 @@ function getInitials(name: string | null | undefined): string {
 
 export function Header() {
   const { data: session } = useSession();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const t = useTranslations();
@@ -95,29 +96,8 @@ export function Header() {
     }
   }, [session?.user?.id]);
 
-  // Check initial theme on mount
-  useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains("dark") ||
-      (localStorage.getItem("theme") === "dark") ||
-      (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
-
-    setIsDark(isDarkMode);
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
-
   const toggleTheme = () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-
-    if (newIsDark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
   const stopImpersonation = async () => {
@@ -189,8 +169,8 @@ export function Header() {
           )}
 
           {/* Theme Toggle - only render icon after mount to prevent hydration mismatch */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="transition-all duration-200 hover:bg-accent" title={isDark ? t("common.lightMode") : t("common.darkMode")} aria-label={isDark ? t("common.lightMode") : t("common.darkMode")}>
-            {mounted ? (isDark ? <Sun className="h-5 w-5 transition-transform duration-200 hover:rotate-12" /> : <Moon className="h-5 w-5 transition-transform duration-200 hover:-rotate-12" />) : <div className="h-5 w-5" />}
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="transition-all duration-200 hover:bg-accent" title={resolvedTheme === "dark" ? t("common.lightMode") : t("common.darkMode")} aria-label={resolvedTheme === "dark" ? t("common.lightMode") : t("common.darkMode")}>
+            {mounted ? (resolvedTheme === "dark" ? <Sun className="h-5 w-5 transition-transform duration-200 hover:rotate-12" /> : <Moon className="h-5 w-5 transition-transform duration-200 hover:-rotate-12" />) : <div className="h-5 w-5" />}
           </Button>
 
           {/* Language Switcher */}

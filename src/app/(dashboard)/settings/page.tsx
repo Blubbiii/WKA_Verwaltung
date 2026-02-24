@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTheme } from "next-themes";
 import {
   User,
   Bell,
@@ -498,55 +499,27 @@ function AppearanceTab({
   settings: UserSettings | null;
   onSettingsUpdated: () => void;
 }) {
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+  const { theme, setTheme: setNextTheme } = useTheme();
   const [isSavingTheme, setIsSavingTheme] = useState(false);
   const [pageSize, setPageSize] = useState("25");
   const [startPage, setStartPage] = useState("/dashboard");
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
 
-  // Load from settings
+  // Load preferences from settings (theme is handled by next-themes)
   useEffect(() => {
     if (settings) {
-      const savedTheme = settings.preferences.theme as
-        | "light"
-        | "dark"
-        | "system";
-      if (["light", "dark", "system"].includes(savedTheme)) {
-        setTheme(savedTheme);
+      // Sync theme from DB if it differs from current
+      const savedTheme = settings.preferences.theme as "light" | "dark" | "system";
+      if (["light", "dark", "system"].includes(savedTheme) && savedTheme !== theme) {
+        setNextTheme(savedTheme);
       }
       setPageSize(String(settings.preferences.defaultPageSize || 25));
       setStartPage(settings.preferences.defaultStartPage || "/dashboard");
-    } else {
-      // Fallback to localStorage for theme
-      const localTheme = localStorage.getItem("theme") as
-        | "light"
-        | "dark"
-        | "system"
-        | null;
-      if (localTheme && ["light", "dark", "system"].includes(localTheme)) {
-        setTheme(localTheme);
-      }
     }
-  }, [settings]);
-
-  function applyTheme(newTheme: "light" | "dark" | "system") {
-    // Apply theme to DOM immediately
-    const root = document.documentElement;
-    if (newTheme === "system") {
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-      root.classList.toggle("dark", prefersDark);
-    } else {
-      root.classList.toggle("dark", newTheme === "dark");
-    }
-    // Save to localStorage for immediate persistence
-    localStorage.setItem("theme", newTheme);
-  }
+  }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleThemeChange(newTheme: "light" | "dark" | "system") {
-    setTheme(newTheme);
-    applyTheme(newTheme);
+    setNextTheme(newTheme);
 
     // Also save to API for cross-browser persistence
     try {
@@ -559,8 +532,7 @@ function AppearanceTab({
         }),
       });
 
-      if (!response.ok) {
-      } else {
+      if (response.ok) {
         onSettingsUpdated();
       }
     } catch {
