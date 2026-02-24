@@ -24,6 +24,7 @@ services:
       DATABASE_URL: postgresql://wpm:WpmSicher2026@postgres:5432/windparkmanager?schema=public
       NEXTAUTH_URL: http://192.168.178.101:3000
       NEXTAUTH_SECRET: WindparkManager-Secret-Key-Mindestens-32-Zeichen-Lang
+      AUTH_SECRET: WindparkManager-Secret-Key-Mindestens-32-Zeichen-Lang
       AUTH_TRUST_HOST: "true"
       NEXT_PUBLIC_APP_URL: http://192.168.178.101:3000
       APP_URL: http://192.168.178.101:3000
