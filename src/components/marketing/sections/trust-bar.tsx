@@ -1,63 +1,37 @@
-import {
-  Wind,
-  Zap,
-  Sun,
-  Building2,
-  BarChart3,
-  Shield,
-  Globe,
-  Leaf,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-
-const items: Array<{ icon: LucideIcon; label: string }> = [
-  { icon: Wind, label: "Windenergie" },
-  { icon: Zap, label: "Stromhandel" },
-  { icon: Sun, label: "Solarparks" },
-  { icon: Building2, label: "Betreiber" },
-  { icon: BarChart3, label: "Analytics" },
-  { icon: Shield, label: "Compliance" },
-  { icon: Globe, label: "International" },
-  { icon: Leaf, label: "Erneuerbare" },
-];
-
-// Duplicate for seamless infinite loop
-const allItems = [...items, ...items];
+// ============================================================================
+// TrustBar -- Minimal trust indicator with partner placeholders.
+// Server Component.
+// ============================================================================
 
 export function TrustBar() {
   return (
-    <section className="bg-muted/20 border-y border-border/40 py-6">
-      <p className="text-center text-sm text-muted-foreground font-medium uppercase tracking-wider mb-6">
-        Vertraut von fuehrenden Windpark-Betreibern
-      </p>
+    <section className="py-10 border-y border-[hsl(var(--m-border))]">
+      <div className="container mx-auto px-4 md:px-6">
+        <div className="flex flex-col items-center gap-6">
+          <p className="text-sm font-medium text-[hsl(var(--m-text-muted))] uppercase tracking-wider">
+            Vertraut von führenden Windpark-Betreibern
+          </p>
 
-      <div
-        className="overflow-hidden"
-        style={{
-          maskImage:
-            "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
-          WebkitMaskImage:
-            "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
-        }}
-      >
-        <div
-          className="flex animate-scroll-left"
-          style={{ width: "max-content" }}
-        >
-          {allItems.map((item, index) => {
-            const Icon = item.icon;
-            return (
+          {/* Partner logo placeholders */}
+          <div className="flex items-center gap-8 md:gap-12 flex-wrap justify-center">
+            {[1, 2, 3, 4, 5].map((i) => (
               <div
-                key={`${item.label}-${index}`}
-                className="flex items-center gap-2 px-8 shrink-0 text-muted-foreground/60"
+                key={i}
+                className="h-8 w-20 md:w-24 rounded border border-dashed border-[hsl(var(--m-border))] bg-[hsl(var(--m-primary-light))] flex items-center justify-center"
               >
-                <Icon className="h-5 w-5" aria-hidden="true" />
-                <span className="text-sm font-medium whitespace-nowrap">
-                  {item.label}
+                <span className="text-[10px] font-mono text-[hsl(var(--m-text-muted))] opacity-50">
+                  Partner {i}
                 </span>
               </div>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Stat line */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+            <span className="font-mono text-[hsl(var(--m-primary))]">50+</span>
+            <span className="text-[hsl(var(--m-text-muted))]">Windparks werden aktiv verwaltet</span>
+          </div>
         </div>
       </div>
     </section>

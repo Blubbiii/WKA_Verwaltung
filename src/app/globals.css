@@ -29,6 +29,16 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    /* Marketing Colors */
+    --m-bg: 0 0% 98%;
+    --m-surface: 0 0% 100%;
+    --m-text: 220 20% 14%;
+    --m-text-muted: 220 10% 46%;
+    --m-primary: 173 80% 36%;
+    --m-primary-light: 173 60% 92%;
+    --m-accent: 38 92% 50%;
+    --m-border: 220 13% 91%;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -64,6 +74,16 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    /* Marketing Colors (Dark) */
+    --m-bg: 220 20% 6%;
+    --m-surface: 220 20% 10%;
+    --m-text: 0 0% 95%;
+    --m-text-muted: 220 10% 60%;
+    --m-primary: 173 80% 46%;
+    --m-primary-light: 173 60% 15%;
+    --m-accent: 38 92% 60%;
+    --m-border: 220 13% 18%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -141,6 +161,46 @@
   .dot-pattern {
     background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 24px 24px;
+  }
+
+  /* Marketing: Teal gradient text */
+  .gradient-text-marketing {
+    background: linear-gradient(135deg, hsl(173 80% 36%) 0%, hsl(160 84% 39%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .dark .gradient-text-marketing {
+    background: linear-gradient(135deg, hsl(173 80% 46%) 0%, hsl(160 84% 49%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Marketing: Teal glow effect */
+  .glow-teal {
+    box-shadow: 0 0 12px 3px hsl(173 80% 36% / 0.25);
+  }
+  .dark .glow-teal {
+    box-shadow: 0 0 12px 3px hsl(173 80% 46% / 0.3);
+  }
+
+  /* Marketing: Feature card with left border accent */
+  .feature-card {
+    @apply rounded-xl border bg-card shadow-sm;
+    border-left: 3px solid hsl(var(--m-primary));
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+  }
+  .feature-card:hover {
+    border-color: hsl(var(--m-primary));
+    box-shadow: 0 4px 24px hsl(var(--m-primary) / 0.12);
+    transform: translateY(-2px);
+  }
+
+  /* Marketing: Topographic line pattern background */
+  .topo-pattern {
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 Q25 30 50 50 T100 50' fill='none' stroke='%2314b8a6' stroke-width='0.5' opacity='0.08'/%3E%3Cpath d='M0 30 Q25 10 50 30 T100 30' fill='none' stroke='%2314b8a6' stroke-width='0.5' opacity='0.06'/%3E%3Cpath d='M0 70 Q25 50 50 70 T100 70' fill='none' stroke='%2314b8a6' stroke-width='0.5' opacity='0.06'/%3E%3Cpath d='M0 90 Q25 70 50 90 T100 90' fill='none' stroke='%2314b8a6' stroke-width='0.5' opacity='0.04'/%3E%3Cpath d='M0 10 Q25 -10 50 10 T100 10' fill='none' stroke='%2314b8a6' stroke-width='0.5' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
   }
 
   /* Gradient border wrapper trick */

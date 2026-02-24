@@ -14,7 +14,6 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import type { PricingConfig } from "@/lib/marketing/types";
 
-// Default values used when no config is provided from the database
 const DEFAULT_BASE_PRICE = 50;
 const DEFAULT_TURBINE_PRICE = 10;
 const DEFAULT_USER_PRICE = 5;
@@ -45,9 +44,9 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
   const monthlyCost = isAnnual ? monthlyBase * ANNUAL_DISCOUNT : monthlyBase;
 
   return (
-    <Card className="w-full max-w-lg mx-auto shadow-xl border-border/50 rounded-2xl">
+    <Card className="w-full max-w-lg mx-auto shadow-xl border-border/50 rounded-2xl border-t-[2px] border-t-[hsl(var(--m-primary))]">
       <CardHeader>
-        <CardTitle className="text-xl">Preis-Rechner</CardTitle>
+        <CardTitle className="text-xl font-serif">Preis-Rechner</CardTitle>
         <CardDescription>
           Berechnen Sie Ihre individuellen monatlichen Kosten.
         </CardDescription>
@@ -59,7 +58,7 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
             <Label htmlFor="turbines">Anzahl Windkraftanlagen</Label>
             <output
               htmlFor="turbines"
-              className="w-12 rounded-md border text-center px-2 py-0.5 text-sm text-foreground"
+              className="w-12 rounded-md border text-center px-2 py-0.5 text-sm font-mono font-medium text-foreground"
             >
               {turbines}
             </output>
@@ -72,12 +71,13 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
             step={1}
             value={turbines}
             onChange={(e) => setTurbines(parseInt(e.target.value, 10))}
-            className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+            className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+            style={{ accentColor: "hsl(var(--m-primary))" }}
             aria-describedby={`${priceId}-turbines`}
           />
           <p
             id={`${priceId}-turbines`}
-            className="text-xs text-muted-foreground text-right"
+            className="text-xs font-mono text-muted-foreground text-right"
           >
             {(turbines * TURBINE_PRICE).toFixed(2)} € / Monat
           </p>
@@ -89,7 +89,7 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
             <Label htmlFor="users">Anzahl Benutzer</Label>
             <output
               htmlFor="users"
-              className="w-12 rounded-md border text-center px-2 py-0.5 text-sm text-foreground"
+              className="w-12 rounded-md border text-center px-2 py-0.5 text-sm font-mono font-medium text-foreground"
             >
               {users}
             </output>
@@ -102,12 +102,13 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
             step={1}
             value={users}
             onChange={(e) => setUsers(parseInt(e.target.value, 10))}
-            className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+            className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+            style={{ accentColor: "hsl(var(--m-primary))" }}
             aria-describedby={`${priceId}-users`}
           />
           <p
             id={`${priceId}-users`}
-            className="text-xs text-muted-foreground text-right"
+            className="text-xs font-mono text-muted-foreground text-right"
           >
             {(users * USER_PRICE).toFixed(2)} € / Monat
           </p>
@@ -122,16 +123,16 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
           <Label htmlFor="annual">Jährliche Zahlung (-{ANNUAL_DISCOUNT_PERCENT}%)</Label>
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col gap-4 bg-muted/50 p-6 rounded-b-2xl">
+      <CardFooter className="flex flex-col gap-4 bg-muted/30 p-6 rounded-b-2xl">
         <div
           className="flex w-full items-center justify-between"
           role="status"
           aria-live="polite"
           aria-atomic="true"
         >
-          <span className="text-muted-foreground">Geschaetzter Preis</span>
+          <span className="text-muted-foreground">Geschätzter Preis</span>
           <div className="text-right">
-            <span className="text-4xl font-bold gradient-text">
+            <span className="text-4xl font-mono font-bold gradient-text-marketing">
               {monthlyCost.toFixed(2)} €
             </span>
             <span className="text-sm font-medium text-muted-foreground">
@@ -142,7 +143,8 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
         </div>
         <Link
           href="/register"
-          className="w-full inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-3 text-base font-semibold text-white hover:brightness-110 transition-all"
+          className="w-full inline-flex items-center justify-center rounded-xl px-6 py-3 text-base font-semibold text-white hover:brightness-110 transition-all glow-teal"
+          style={{ backgroundColor: "hsl(var(--m-primary))" }}
         >
           Jetzt Angebot anfordern
         </Link>

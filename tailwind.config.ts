@@ -10,6 +10,11 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
+        mono: ["var(--font-mono)", "monospace"],
+      },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
@@ -104,6 +109,22 @@ const config: Config = {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-6px)" },
         },
+        "reveal-up": {
+          "0%": { opacity: "0", transform: "translateY(24px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "reveal-left": {
+          "0%": { opacity: "0", transform: "translateX(-24px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { boxShadow: "0 0 8px 2px hsl(173 80% 36% / 0.3)" },
+          "50%": { boxShadow: "0 0 20px 6px hsl(173 80% 36% / 0.5)" },
+        },
+        "draw-line": {
+          "0%": { strokeDashoffset: "1000" },
+          "100%": { strokeDashoffset: "0" },
+        },
       },
       animation: {
         shimmer: "shimmer 2s infinite",
@@ -115,6 +136,10 @@ const config: Config = {
         "slide-up": "slide-up 0.6s ease-out forwards",
         "scroll-left": "scroll-left 30s linear infinite",
         "bounce-slow": "bounce-slow 2s ease-in-out infinite",
+        "reveal-up": "reveal-up 0.7s ease-out forwards",
+        "reveal-left": "reveal-left 0.7s ease-out forwards",
+        "glow-pulse": "glow-pulse 3s ease-in-out infinite",
+        "draw-line": "draw-line 1.5s ease-out forwards",
       },
       transitionTimingFunction: {
         "ease-out-expo": "cubic-bezier(0.16, 1, 0.3, 1)",
