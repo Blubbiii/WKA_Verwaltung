@@ -97,8 +97,8 @@ interface Turbine {
   warrantyEndDate: string | null;
   latitude: number | null;
   longitude: number | null;
-  technischeBetriebsfuehrung: string | null;
-  kaufmaennischeBetriebsfuehrung: string | null;
+  technischeBetriebsführung: string | null;
+  kaufmaennischeBetriebsführung: string | null;
   netzgesellschaftFundId: string | null;
   netzgesellschaftFund: { id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null; childHierarchies?: { ownershipPercentage: number | null; childFundId: string }[] } | null;
   operatorHistory?: {
@@ -208,8 +208,8 @@ interface Park {
     legalForm: string | null;
     fundCategory?: { id: string; name: string; code: string; color: string | null } | null;
   } | null;
-  technischeBetriebsfuehrung: string | null;
-  kaufmaennischeBetriebsfuehrung: string | null;
+  technischeBetriebsführung: string | null;
+  kaufmaennischeBetriebsführung: string | null;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   createdAt: string;
   updatedAt: string;
@@ -584,13 +584,13 @@ export default function ParkDetailsPage({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Loeschen");
+        throw new Error(error.error || "Fehler beim Löschen");
       }
 
-      toast.success("Anlage wurde unwiderruflich geloescht");
+      toast.success("Anlage wurde unwiderruflich gelöscht");
       fetchPark();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Loeschen");
+      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
     } finally {
       setIsDeletingTurbine(false);
       setDeleteTurbineDialogOpen(false);
@@ -851,7 +851,7 @@ export default function ParkDetailsPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild aria-label="Zurueck zur Uebersicht">
+          <Button variant="ghost" size="icon" asChild aria-label="Zurück zur Übersicht">
             <Link href="/parks">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -1012,7 +1012,7 @@ export default function ParkDetailsPage({
               <CardHeader>
                 <CardTitle>Schluesselrollen</CardTitle>
                 <CardDescription>
-                  Abrechnungsgesellschaft fuer diesen Park
+                  Abrechnungsgesellschaft für diesen Park
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1150,7 +1150,7 @@ export default function ParkDetailsPage({
                     onClick={() => setIsAddTurbineOpen(true)}
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Erste Anlage hinzufuegen
+                    Erste Anlage hinzufügen
                   </Button>
                 </div>
               ) : (
@@ -1238,7 +1238,7 @@ export default function ParkDetailsPage({
                                 className="text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Loeschen
+                                Löschen
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1458,7 +1458,7 @@ export default function ParkDetailsPage({
                   <div className="space-y-5">
                     {/* Abrechnungsempfänger */}
                     <div className="space-y-2">
-                      <Label>Abrechnungsempfaenger (NB-Gutschrift)</Label>
+                      <Label>Abrechnungsempfänger (NB-Gutschrift)</Label>
                       <Select
                         value={energyConfig.billingEntityFundId || "__none"}
                         onValueChange={(v) =>
@@ -1503,7 +1503,7 @@ export default function ParkDetailsPage({
                       />
                       <p className="text-xs text-muted-foreground">
                         {energyConfig.defaultDistributionMode === "TOLERATED"
-                          ? "Nur Abweichungen ueber dieser Grenze werden ausgeglichen"
+                          ? "Nur Abweichungen über dieser Grenze werden ausgeglichen"
                           : "Nur relevant bei Modus 'Mit Toleranz'"}
                       </p>
                     </div>
@@ -1511,7 +1511,7 @@ export default function ParkDetailsPage({
                     <div className="p-3 rounded-lg bg-muted/50">
                       <p className="text-sm font-medium">DULDUNGS-Formel:</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Ausgleich = (Ist-Produktion - Durchschnitt) x Verguetungssatz
+                        Ausgleich = (Ist-Produktion - Durchschnitt) x Vergütungssatz
                       </p>
                       <ul className="text-xs text-muted-foreground mt-2 list-disc list-inside space-y-1">
                         <li>Positiv = Abzug (WKA produzierte mehr als Durchschnitt)</li>
@@ -2306,9 +2306,9 @@ export default function ParkDetailsPage({
       <AlertDialog open={deleteTurbineDialogOpen} onOpenChange={setDeleteTurbineDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Anlage unwiderruflich loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>Anlage unwiderruflich löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechten Sie die Anlage &quot;{turbineToDelete?.designation}&quot; wirklich unwiderruflich loeschen?
+              Möchten Sie die Anlage &quot;{turbineToDelete?.designation}&quot; wirklich unwiderruflich löschen?
               Diese Aktion kann nicht rueckgaengig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -2320,7 +2320,7 @@ export default function ParkDetailsPage({
               className="bg-red-600 hover:bg-red-700"
             >
               {isDeletingTurbine && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Unwiderruflich loeschen
+              Unwiderruflich löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

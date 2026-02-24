@@ -6,7 +6,7 @@ import { apiLogger as logger } from "@/lib/logger";
 
 // Validation schema for profile updates
 const updateProfileSchema = z.object({
-  email: z.string().email("Ungueltige E-Mail-Adresse").optional(),
+  email: z.string().email("Ungültige E-Mail-Adresse").optional(),
   phone: z.string().max(50, "Telefonnummer zu lang").optional().nullable(),
   address: z
     .object({
@@ -20,14 +20,14 @@ const updateProfileSchema = z.object({
   iban: z
     .string()
     .max(34, "IBAN zu lang")
-    .regex(/^[A-Z]{2}[0-9A-Z]+$/, "Ungueltiges IBAN-Format")
+    .regex(/^[A-Z]{2}[0-9A-Z]+$/, "Ungültiges IBAN-Format")
     .optional()
     .nullable()
     .or(z.literal("")),
   bic: z
     .string()
     .max(11, "BIC zu lang")
-    .regex(/^[A-Z0-9]+$/, "Ungueltiges BIC-Format")
+    .regex(/^[A-Z0-9]+$/, "Ungültiges BIC-Format")
     .optional()
     .nullable()
     .or(z.literal("")),
@@ -130,7 +130,7 @@ export async function PATCH(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Ungueltige Eingabedaten",
+          error: "Ungültige Eingabedaten",
           details: parsed.error.flatten().fieldErrors,
         },
         { status: 400 }

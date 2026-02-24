@@ -18,11 +18,11 @@ import { apiLogger as logger } from "@/lib/logger";
 // ============================================================================
 
 /**
- * Schema fuer das Erstellen eines neuen Gesellschaftstyps
+ * Schema für das Erstellen eines neuen Gesellschaftstyps
  * - name: Pflichtfeld, max 200 Zeichen
  * - code: Pflichtfeld, eindeutig, max 50 Zeichen (z.B. "GMBH", "GMBH_CO_KG")
  * - description: Optionale Beschreibung
- * - color: Optionale Hex-Farbe fuer Badge-Anzeige
+ * - color: Optionale Hex-Farbe für Badge-Anzeige
  * - isActive: Standard true
  * - sortOrder: Standard 0
  */
@@ -47,7 +47,7 @@ const createFundCategorySchema = z.object({
 // ============================================================================
 
 /**
- * Listet alle Gesellschaftstypen fuer den aktuellen Tenant
+ * Listet alle Gesellschaftstypen für den aktuellen Tenant
  *
  * Query-Parameter:
  * - isActive: Filter nach aktivem Status (true/false)
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createFundCategorySchema.parse(body);
 
-    // Pruefen ob Code bereits existiert (innerhalb des Tenants)
+    // Prüfen ob Code bereits existiert (innerhalb des Tenants)
     const existingCategory = await prisma.fundCategory.findFirst({
       where: {
         code: validatedData.code,

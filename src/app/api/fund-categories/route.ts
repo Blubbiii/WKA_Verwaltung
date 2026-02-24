@@ -1,6 +1,6 @@
 /**
  * API Route: /api/fund-categories (Public endpoint for non-admin users)
- * GET: Liste aktiver Gesellschaftstypen (fuer Dropdowns)
+ * GET: Liste aktiver Gesellschaftstypen (für Dropdowns)
  *
  * Multi-Tenancy: Filtert automatisch nach tenantId aus der Session
  * Berechtigung: FUNDS_READ
@@ -17,9 +17,9 @@ import { apiLogger as logger } from "@/lib/logger";
 // ============================================================================
 
 /**
- * Listet alle aktiven Gesellschaftstypen fuer den aktuellen Tenant
+ * Listet alle aktiven Gesellschaftstypen für den aktuellen Tenant
  *
- * Dieser Endpoint ist fuer nicht-Admin-Benutzer zugaenglich (mit FUNDS_READ Permission)
+ * Dieser Endpoint ist für nicht-Admin-Benutzer zugaenglich (mit FUNDS_READ Permission)
  * und wird z.B. in Dropdowns verwendet.
  *
  * Returns: Nur id, name, code, color, sortOrder (keine _count oder sensitive Daten)

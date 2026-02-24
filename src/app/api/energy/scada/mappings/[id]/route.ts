@@ -63,7 +63,7 @@ export async function PATCH(
 
     const { id } = await params;
 
-    // Existenz- und Tenant-Pruefung
+    // Existenz- und Tenant-Prüfung
     const existing = await prisma.scadaTurbineMapping.findFirst({
       where: {
         id,
@@ -81,7 +81,7 @@ export async function PATCH(
     const body = await request.json();
     const { locationCode, plantNo, parkId, turbineId, description, status } = body;
 
-    // Update-Daten zusammenstellen (nur uebergebene Felder)
+    // Update-Daten zusammenstellen (nur übergebene Felder)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
     const updateData: any = {};
@@ -167,7 +167,7 @@ export async function PATCH(
       updateData.status = status;
     }
 
-    // Duplikat-Pruefung bei Aenderung von locationCode oder plantNo
+    // Duplikat-Prüfung bei Änderung von locationCode oder plantNo
     if (updateData.locationCode || updateData.plantNo) {
       const checkCode = (updateData.locationCode as string) || existing.locationCode;
       const checkPlantNo = (updateData.plantNo as number) || existing.plantNo;
@@ -185,7 +185,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error: "Duplikat erkannt",
-            details: `Zuordnung fuer ${checkCode} / Anlage ${checkPlantNo} existiert bereits`,
+            details: `Zuordnung für ${checkCode} / Anlage ${checkPlantNo} existiert bereits`,
           },
           { status: 409 }
         );
@@ -230,7 +230,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Existenz- und Tenant-Pruefung
+    // Existenz- und Tenant-Prüfung
     const existing = await prisma.scadaTurbineMapping.findFirst({
       where: {
         id,

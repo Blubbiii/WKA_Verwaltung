@@ -187,7 +187,7 @@ export function PaymentCalendar({ payments, year }: PaymentCalendarProps) {
         </div>
         <div className="flex items-center gap-1">
           <div className="h-3 w-3 rounded-full bg-red-500" />
-          <span>{monthSummary.overdue} ueberfaellig</span>
+          <span>{monthSummary.overdue} überfällig</span>
         </div>
       </div>
 
@@ -243,7 +243,7 @@ export function PaymentCalendar({ payments, year }: PaymentCalendarProps) {
                       {/* Payment dots */}
                       <div className="flex gap-1 flex-wrap">
                         {indicators.hasOverdue && (
-                          <div className="h-2 w-2 rounded-full bg-red-500" title="Ueberfaellig" />
+                          <div className="h-2 w-2 rounded-full bg-red-500" title="Überfällig" />
                         )}
                         {indicators.hasPending && (
                           <div className="h-2 w-2 rounded-full bg-yellow-500" title="Offen" />
@@ -277,7 +277,7 @@ export function PaymentCalendar({ payments, year }: PaymentCalendarProps) {
               Zahlungen am {selectedDate && format(selectedDate, "dd. MMMM yyyy", { locale: de })}
             </DialogTitle>
             <DialogDescription>
-              {selectedDatePayments.length} {selectedDatePayments.length === 1 ? "Zahlung" : "Zahlungen"} faellig
+              {selectedDatePayments.length} {selectedDatePayments.length === 1 ? "Zahlung" : "Zahlungen"} fällig
             </DialogDescription>
           </DialogHeader>
 

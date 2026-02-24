@@ -2,9 +2,9 @@
  * Settlement Report PDF Template
  *
  * Generiert einen Pacht-Abrechnungsbericht mit:
- * - Uebersicht der Abrechnungsperiode
+ * - Übersicht der Abrechnungsperiode
  * - Tabelle mit allen Verpachtern
- * - Spalten: Verpachter, Flurstuecke, Mindestpacht, Erloesanteil, Auszahlung, Differenz
+ * - Spalten: Verpachter, Flurstuecke, Mindestpacht, Erlösanteil, Auszahlung, Differenz
  * - Summenzeile
  * - Unterschriftenbereich
  */
@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Titel und Uebersicht
+  // Titel und Übersicht
   title: {
     fontSize: 18,
     fontWeight: "bold",
@@ -405,7 +405,7 @@ export function SettlementReportTemplate({
               </Text>
             </View>
             <View style={styles.configItem}>
-              <Text style={styles.configLabel}>Verguetungsphase</Text>
+              <Text style={styles.configLabel}>Vergütungsphase</Text>
               <Text style={styles.configValue}>
                 {calculation.revenuePhasePercentage
                   ? formatPercent(calculation.revenuePhasePercentage)
@@ -421,7 +421,7 @@ export function SettlementReportTemplate({
               <Text style={[styles.tableHeaderText, styles.colLessor]}>Verpachter</Text>
               <Text style={[styles.tableHeaderText, styles.colPlots]}>Flurstuecke</Text>
               <Text style={[styles.tableHeaderText, styles.colMinRent]}>Mindestpacht</Text>
-              <Text style={[styles.tableHeaderText, styles.colRevShare]}>Erloesanteil</Text>
+              <Text style={[styles.tableHeaderText, styles.colRevShare]}>Erlösanteil</Text>
               <Text style={[styles.tableHeaderText, styles.colPayment]}>Auszahlung</Text>
               <Text style={[styles.tableHeaderText, styles.colDiff]}>Differenz</Text>
             </View>
@@ -491,16 +491,16 @@ export function SettlementReportTemplate({
           <View style={styles.legend}>
             <Text style={styles.legendTitle}>Legende</Text>
             <Text style={styles.legendItem}>
-              Mindestpacht: Vertraglich vereinbarte Mindestzahlung unabhaengig vom Ertrag
+              Mindestpacht: Vertraglich vereinbarte Mindestzahlung unabhängig vom Ertrag
             </Text>
             <Text style={styles.legendItem}>
-              Erloesanteil: Berechneter Anteil am Jahresertrag des Windparks
+              Erlösanteil: Berechneter Anteil am Jahresertrag des Windparks
             </Text>
             <Text style={styles.legendItem}>
-              Auszahlung: MAX(Mindestpacht, Erloesanteil) - der hoehere Wert wird ausgezahlt
+              Auszahlung: MAX(Mindestpacht, Erlösanteil) - der hoehere Wert wird ausgezahlt
             </Text>
             <Text style={styles.legendItem}>
-              Differenz: Erloesanteil minus Mindestpacht (positiv = Nachzahlung ueber Mindestpacht)
+              Differenz: Erlösanteil minus Mindestpacht (positiv = Nachzahlung über Mindestpacht)
             </Text>
           </View>
 
@@ -525,7 +525,7 @@ export function SettlementReportTemplate({
               <View style={styles.signatureBlock}>
                 <Text style={styles.signatureDate}>Datum: _________________</Text>
                 <View style={styles.signatureLine}>
-                  <Text style={styles.signatureLabel}>Geprueft durch Geschaeftsfuehrung</Text>
+                  <Text style={styles.signatureLabel}>Geprüft durch Geschaeftsführung</Text>
                 </View>
               </View>
             </View>

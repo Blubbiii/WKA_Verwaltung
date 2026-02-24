@@ -35,7 +35,7 @@ export const DEFAULT_SETTINGS: GeneralSettings = {
 
   // Maintenance Mode
   maintenanceModeEnabled: false,
-  maintenanceMessage: "Das System wird gewartet. Bitte versuchen Sie es spaeter erneut.",
+  maintenanceMessage: "Das System wird gewartet. Bitte versuchen Sie es später erneut.",
   scheduledMaintenanceTime: null,
 
   // Security Settings

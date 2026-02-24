@@ -29,7 +29,7 @@ const MAX_EXPORT_ENTRIES = 10000;
 const ACTION_LABELS: Record<string, string> = {
   CREATE: "Erstellt",
   UPDATE: "Bearbeitet",
-  DELETE: "Geloescht",
+  DELETE: "Gelöscht",
   VIEW: "Angesehen",
   EXPORT: "Exportiert",
   DOCUMENT_DOWNLOAD: "Heruntergeladen",
@@ -123,7 +123,7 @@ const auditLogColumns: ColumnDef[] = [
   },
   {
     key: "changes",
-    header: "Aenderungen",
+    header: "Änderungen",
     width: 50,
     transform: (_, row) => {
       const { action, oldValues, newValues } = row as {
@@ -141,11 +141,11 @@ const auditLogColumns: ColumnDef[] = [
         const changedKeys = Object.keys(newValues).filter(
           (key) => JSON.stringify(oldValues[key]) !== JSON.stringify(newValues[key])
         );
-        return changedKeys.length > 0 ? `Geaendert: ${changedKeys.slice(0, 5).join(", ")}` : "-";
+        return changedKeys.length > 0 ? `Geändert: ${changedKeys.slice(0, 5).join(", ")}` : "-";
       }
 
       if (action === "DELETE") {
-        return "Eintrag geloescht";
+        return "Eintrag gelöscht";
       }
 
       return "-";
@@ -281,7 +281,7 @@ export async function GET(request: NextRequest) {
     if (!parseResult.success) {
       return NextResponse.json(
         {
-          error: "Ungueltige Parameter",
+          error: "Ungültige Parameter",
           details: parseResult.error.errors,
         },
         { status: 400 }
@@ -435,7 +435,7 @@ export async function GET(request: NextRequest) {
 
       default:
         return NextResponse.json(
-          { error: "Ungueltiges Export-Format" },
+          { error: "Ungültiges Export-Format" },
           { status: 400 }
         );
     }
@@ -459,7 +459,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Ungueltige Parameter", details: error.errors },
+        { error: "Ungültige Parameter", details: error.errors },
         { status: 400 }
       );
     }

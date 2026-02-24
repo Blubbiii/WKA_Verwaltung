@@ -90,7 +90,7 @@ interface ImportResult {
 const WIZARD_STEPS = [
   { id: 'upload', title: 'Hochladen', description: 'CSV/Excel-Datei' },
   { id: 'mapping', title: 'Zuordnung', description: 'Spalten zuordnen' },
-  { id: 'preview', title: 'Vorschau', description: 'Daten pruefen' },
+  { id: 'preview', title: 'Vorschau', description: 'Daten prüfen' },
   { id: 'import', title: 'Import', description: 'Daten importieren' },
 ]
 
@@ -113,7 +113,7 @@ const COLUMN_PATTERNS: Record<keyof ColumnMapping, RegExp> = {
   month: /^(monat|month|m)$/i,
   production: /^(produktion[_-]?kwh|production[_-]?kwh|produktion|production|kwh|erzeugung|strom[_-]?kwh|einspeisung[_-]?kwh)$/i,
   operatingHours: /^(betriebsstunden|betriebs[_-]?std|operating[_-]?hours|bh|laufstunden|std)$/i,
-  availability: /^(verfuegbarkeit[_-]?pct|verfuegbarkeit|availability|verf[_-]?%|verf|avail)$/i,
+  availability: /^(verfügbarkeit[_-]?pct|verfügbarkeit|availability|verf[_-]?%|verf|avail)$/i,
 }
 
 // ---------------------------------------------------------------------------
@@ -265,7 +265,7 @@ export function ProductionImportSheet({
 
     try {
       if (selectedFile.size > MAX_FILE_SIZE) {
-        throw new Error('Datei ist groesser als 10 MB. Bitte eine kleinere Datei verwenden.')
+        throw new Error('Datei ist größer als 10 MB. Bitte eine kleinere Datei verwenden.')
       }
 
       const data = await selectedFile.arrayBuffer()
@@ -377,14 +377,14 @@ export function ProductionImportSheet({
         // Year
         const year = mapping.year ? Number(row[mapping.year]) : NaN
         if (isNaN(year) || year < 2000 || year > 2100) {
-          messages.push(`Ungueltiges Jahr: ${mapping.year ? row[mapping.year] : '(leer)'}`)
+          messages.push(`Ungültiges Jahr: ${mapping.year ? row[mapping.year] : '(leer)'}`)
           status = 'error'
         }
 
         // Month
         const month = mapping.month ? parseMonth(row[mapping.month]) : null
         if (month === null) {
-          messages.push(`Ungueltiger Monat: ${mapping.month ? row[mapping.month] : '(leer)'}`)
+          messages.push(`Ungültiger Monat: ${mapping.month ? row[mapping.month] : '(leer)'}`)
           status = 'error'
         }
 
@@ -394,11 +394,11 @@ export function ProductionImportSheet({
           : null
         if (production === null || production < 0) {
           messages.push(
-            `Ungueltige Produktion: ${mapping.production ? row[mapping.production] : '(leer)'}`
+            `Ungültige Produktion: ${mapping.production ? row[mapping.production] : '(leer)'}`
           )
           status = 'error'
         } else if (production > 50_000_000) {
-          messages.push('Sehr hohe Produktionsmenge - bitte pruefen')
+          messages.push('Sehr hohe Produktionsmenge - bitte prüfen')
           if (status === 'success') status = 'warning'
         }
 
@@ -418,7 +418,7 @@ export function ProductionImportSheet({
           const avail = parseGermanNumber(row[mapping.availability])
           if (avail !== null && (avail < 0 || avail > 100)) {
             messages.push(
-              `Verfuegbarkeit ausserhalb 0-100: ${row[mapping.availability]}`
+              `Verfügbarkeit ausserhalb 0-100: ${row[mapping.availability]}`
             )
             if (status === 'success') status = 'warning'
           }
@@ -727,9 +727,9 @@ export function ProductionImportSheet({
       },
       {
         key: 'availability',
-        label: 'Verfuegbarkeit %',
+        label: 'Verfügbarkeit %',
         required: false,
-        description: 'Technische Verfuegbarkeit 0-100 (optional)',
+        description: 'Technische Verfügbarkeit 0-100 (optional)',
       },
     ]
 
@@ -835,7 +835,7 @@ export function ProductionImportSheet({
         <div className="flex gap-3 mb-4 flex-shrink-0 flex-wrap">
           <Badge variant="default" className="bg-green-600 hover:bg-green-600">
             <CheckCircle2 className="h-3 w-3 mr-1" />
-            {validCount} gueltig
+            {validCount} gültig
           </Badge>
           {warningCount > 0 && (
             <Badge variant="secondary" className="bg-yellow-500 text-white hover:bg-yellow-500">
@@ -925,7 +925,7 @@ export function ProductionImportSheet({
         {validationResults.length > 100 && (
           <p className="text-xs text-muted-foreground mt-2 flex-shrink-0">
             Zeige 100 von {validationResults.length} Zeilen. Fehlerhafte Zeilen werden
-            beim Import uebersprungen.
+            beim Import übersprungen.
           </p>
         )}
       </div>
@@ -982,7 +982,7 @@ export function ProductionImportSheet({
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-2xl font-bold text-yellow-600">{importResult.skipped}</p>
-            <p className="text-xs text-muted-foreground">Uebersprungen</p>
+            <p className="text-xs text-muted-foreground">Übersprungen</p>
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-2xl font-bold text-destructive">{importResult.errors}</p>
@@ -1053,7 +1053,7 @@ export function ProductionImportSheet({
               {currentStep > 0 && currentStep < 3 && (
                 <Button variant="outline" onClick={handleBack}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurueck
+                  Zurück
                 </Button>
               )}
             </div>

@@ -324,7 +324,7 @@ export default function EditStakeholderPage({
           <CardHeader>
             <CardTitle>Zuordnung</CardTitle>
             <CardDescription>
-              Diese Felder koennen nicht geaendert werden
+              Diese Felder können nicht geändert werden
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -366,7 +366,7 @@ export default function EditStakeholderPage({
           <CardHeader>
             <CardTitle>Abrechnung</CardTitle>
             <CardDescription>
-              Abrechnungseinstellungen und Gebuehren
+              Abrechnungseinstellungen und Gebühren
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -376,7 +376,7 @@ export default function EditStakeholderPage({
                   Abrechnung aktiviert
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Automatische BF-Abrechnung fuer diesen
+                  Automatische BF-Abrechnung für diesen
                   Vertrag
                 </p>
               </div>
@@ -391,7 +391,7 @@ export default function EditStakeholderPage({
 
             <div className="space-y-2">
               <Label htmlFor="feePercentage">
-                Gebuehrensatz (%)
+                Gebührensatz (%)
               </Label>
               <Input
                 id="feePercentage"
@@ -408,7 +408,7 @@ export default function EditStakeholderPage({
             {feePercentageChanged && (
               <div className="space-y-2">
                 <Label htmlFor="feeChangeReason">
-                  Grund der Aenderung
+                  Grund der Änderung
                 </Label>
                 <Input
                   id="feeChangeReason"
@@ -419,7 +419,7 @@ export default function EditStakeholderPage({
                   placeholder="z.B. Vertragsanpassung 2026"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Wird in der Gebuehrenhistorie dokumentiert
+                  Wird in der Gebührenhistorie dokumentiert
                 </p>
               </div>
             )}
@@ -476,17 +476,17 @@ export default function EditStakeholderPage({
           </CardContent>
         </Card>
 
-        {/* Card 4: Gueltigkeit */}
+        {/* Card 4: Gültigkeit */}
         <Card>
           <CardHeader>
-            <CardTitle>Gueltigkeit</CardTitle>
+            <CardTitle>Gültigkeit</CardTitle>
             <CardDescription>
               Zeitraum und Aktivitaetsstatus
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="validTo">Gueltig bis</Label>
+              <Label htmlFor="validTo">Gültig bis</Label>
               <Input
                 id="validTo"
                 type="date"
@@ -494,7 +494,7 @@ export default function EditStakeholderPage({
                 onChange={(e) => setValidTo(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Leer lassen fuer unbefristete Gueltigkeit
+                Leer lassen für unbefristete Gültigkeit
               </p>
             </div>
 
@@ -504,7 +504,7 @@ export default function EditStakeholderPage({
               <div className="space-y-0.5">
                 <Label htmlFor="isActive">Aktiv</Label>
                 <p className="text-sm text-muted-foreground">
-                  Deaktivierte Vertraege werden nicht
+                  Deaktivierte Verträge werden nicht
                   abgerechnet
                 </p>
               </div>
@@ -535,7 +535,7 @@ export default function EditStakeholderPage({
           <CardHeader>
             <CardTitle>Verwaltete Gesellschaften</CardTitle>
             <CardDescription>
-              Fuer welche Gesellschaften werden BF-Gebuehren berechnet?
+              Für welche Gesellschaften werden BF-Gebühren berechnet?
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -567,7 +567,7 @@ export default function EditStakeholderPage({
               </div>
             ) : funds.length === 0 ? (
               <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                Keine Gesellschaften fuer diesen Park gefunden
+                Keine Gesellschaften für diesen Park gefunden
               </div>
             ) : allFundsSelected ? (
               <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground flex items-start gap-2">
@@ -628,7 +628,7 @@ export default function EditStakeholderPage({
             )}
 
             <p className="text-xs text-muted-foreground">
-              Die Gebuehr wird basierend auf der Einspeiseverguetung dieser
+              Die Gebühr wird basierend auf der Einspeisevergütung dieser
               Gesellschaften berechnet
             </p>
           </CardContent>

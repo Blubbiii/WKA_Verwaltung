@@ -1,10 +1,10 @@
 /**
  * Settlement Calculator - Pacht-Abrechnungslogik
  *
- * Berechnet die jaehrliche Pachtabrechnung fuer einen Windpark:
+ * Berechnet die jährliche Pachtabrechnung für einen Windpark:
  * - Mindestpacht pro Lease
- * - Erloesanteil basierend auf PlotArea-Typ (WEA vs. Pool)
- * - Finale Zahlung = MAX(Mindestpacht, Erloesanteil)
+ * - Erlösanteil basierend auf PlotArea-Typ (WEA vs. Pool)
+ * - Finale Zahlung = MAX(Mindestpacht, Erlösanteil)
  */
 
 import { prisma } from "@/lib/prisma";
@@ -31,8 +31,8 @@ export interface PlotAreaCalculationResult {
   compensationPercentage: number | null;
 
   // Berechnete Werte
-  minimumRent: number; // Mindestpacht fuer diese Flaeche
-  revenueShare: number; // Erloesanteil fuer diese Flaeche
+  minimumRent: number; // Mindestpacht für diese Flaeche
+  revenueShare: number; // Erlösanteil für diese Flaeche
   calculatedAmount: number; // MAX(minimumRent, revenueShare)
   difference: number; // revenueShare - minimumRent (positiv = Nachzahlung)
 }
@@ -95,16 +95,16 @@ export interface SettlementCalculationResult {
 export interface CalculateSettlementOptions {
   parkId: string;
   year: number;
-  totalRevenue?: number; // Optional: Ueberschreibt Period.totalRevenue
+  totalRevenue?: number; // Optional: Überschreibt Period.totalRevenue
   tenantId: string;
   /**
    * Typ der Abrechnungsperiode:
    * - "ADVANCE": Monatlicher Vorschuss (1/12 der Jahresmindestpacht)
-   * - "FINAL": Jahresendabrechnung mit Verrechnung der Vorschuesse
+   * - "FINAL": Jahresendabrechnung mit Verrechnung der Vorschüsse
    */
   periodType?: "ADVANCE" | "FINAL";
   /**
-   * Monat fuer monatliche Vorschuss-Berechnung (1-12)
+   * Monat für monatliche Vorschuss-Berechnung (1-12)
    * Nur relevant wenn periodType = "ADVANCE"
    */
   month?: number;
@@ -132,9 +132,9 @@ export interface AdvanceCalculationResult {
   lessorBankName: string | null;
   /** 1/12 der Jahres-Mindestpacht */
   monthlyMinimumRent: number;
-  /** Anteil fuer WEA-Standorte (10% der Mindestpacht) */
+  /** Anteil für WEA-Standorte (10% der Mindestpacht) */
   weaShareAmount: number;
-  /** Anteil fuer Pool/Flaechen-Umlage (90% der Mindestpacht) */
+  /** Anteil für Pool/Flaechen-Umlage (90% der Mindestpacht) */
   poolShareAmount: number;
   /** Gesamt-Vorschuss = monthlyMinimumRent */
   totalAdvance: number;
@@ -161,7 +161,7 @@ export interface MonthlyAdvanceResult {
   weaSharePercentage: number;
   poolSharePercentage: number;
 
-  // Vorschuesse pro Lease
+  // Vorschüsse pro Lease
   advances: AdvanceCalculationResult[];
 
   // Summen
@@ -187,16 +187,16 @@ export interface AdvancePaymentInfo {
 }
 
 /**
- * Erweitertes Settlement-Ergebnis fuer Jahresendabrechnung (FINAL)
- * Enthaelt Informationen ueber gezahlte Vorschuesse und Restbetrag
+ * Erweitertes Settlement-Ergebnis für Jahresendabrechnung (FINAL)
+ * Enthaelt Informationen über gezahlte Vorschüsse und Restbetrag
  */
 export interface FinalSettlementResult extends SettlementCalculationResult {
   periodType: "FINAL";
-  /** Summe aller gezahlten Vorschuesse im Jahr */
+  /** Summe aller gezahlten Vorschüsse im Jahr */
   paidAdvances: number;
   /** Restbetrag = totalPayment - paidAdvances (Nachzahlung wenn positiv) */
   remainingAmount: number;
-  /** Details zu allen gezahlten Vorschuessen */
+  /** Details zu allen gezahlten Vorschüssen */
   advancePayments: AdvancePaymentInfo[];
   /** Verknuepfte Stromabrechnung ID */
   linkedEnergySettlementId?: string;
@@ -205,14 +205,14 @@ export interface FinalSettlementResult extends SettlementCalculationResult {
 }
 
 /**
- * Erweitertes Lease-Ergebnis fuer Jahresendabrechnung
+ * Erweitertes Lease-Ergebnis für Jahresendabrechnung
  */
 export interface FinalLeaseCalculationResult extends LeaseCalculationResult {
-  /** Gezahlte Vorschuesse fuer diesen Lease */
+  /** Gezahlte Vorschüsse für diesen Lease */
   paidAdvances: number;
   /** Restbetrag = totalPayment - paidAdvances */
   remainingAmount: number;
-  /** Details zu gezahlten Vorschuessen */
+  /** Details zu gezahlten Vorschüssen */
   advancePayments: AdvancePaymentInfo[];
 }
 
@@ -221,11 +221,11 @@ export interface FinalLeaseCalculationResult extends LeaseCalculationResult {
 // ===========================================
 
 /**
- * Berechnet die Pachtabrechnung fuer einen Park und ein Jahr
+ * Berechnet die Pachtabrechnung für einen Park und ein Jahr
  *
  * Unterstuetzt zwei Modi:
  * - ADVANCE: Monatlicher Vorschuss (1/12 der Jahresmindestpacht)
- * - FINAL: Jahresendabrechnung mit Verrechnung der Vorschuesse
+ * - FINAL: Jahresendabrechnung mit Verrechnung der Vorschüsse
  *
  * @example
  * // Monatlicher Vorschuss (Februar)
@@ -279,7 +279,7 @@ export async function calculateSettlement(
   }
 
   if (park.tenantId !== tenantId) {
-    throw new Error("Keine Berechtigung fuer diesen Park");
+    throw new Error("Keine Berechtigung für diesen Park");
   }
 
   // 2. Lade verknuepfte EnergySettlement wenn vorhanden
@@ -302,7 +302,7 @@ export async function calculateSettlement(
       parkId,
       year,
       tenantId,
-      periodType: "FINAL", // Fuer Revenue-Daten die Jahresperiode nutzen
+      periodType: "FINAL", // Für Revenue-Daten die Jahresperiode nutzen
     },
   });
 
@@ -338,7 +338,7 @@ export async function calculateSettlement(
     include: {
       plotAreas: {
         where: {
-          compensationType: "ANNUAL", // Nur jaehrliche Zahlungen
+          compensationType: "ANNUAL", // Nur jährliche Zahlungen
         },
       },
       leasePlots: {
@@ -365,7 +365,7 @@ export async function calculateSettlement(
     : null;
   const turbineCount = park.turbines.length;
 
-  // Entschaedigungssaetze fuer Sonderflaechentypen
+  // Entschaedigungssaetze für Sonderflaechentypen
   const wegRate = park.wegCompensationPerSqm ? Number(park.wegCompensationPerSqm) : 0;
   const ausgleichRate = park.ausgleichCompensationPerSqm ? Number(park.ausgleichCompensationPerSqm) : 0;
   const kabelRate = park.kabelCompensationPerM ? Number(park.kabelCompensationPerM) : 0;
@@ -373,9 +373,9 @@ export async function calculateSettlement(
   // =================================================================
   // KERNLOGIK: Berechnung pro Turbine, dann Verteilung nach m²
   //
-  // 1. Erloesanteil pro WKA = totalRevenue * revenuePhasePercentage% / turbineCount
+  // 1. Erlösanteil pro WKA = totalRevenue * revenuePhasePercentage% / turbineCount
   // 2. Mindestpacht pro WKA = minimumRentPerTurbine
-  // 3. Zahlung pro WKA = MAX(Erloesanteil, Mindestpacht)
+  // 3. Zahlung pro WKA = MAX(Erlösanteil, Mindestpacht)
   // 4. Verteilung: weaSharePercentage% → Standort (nach m²),
   //    poolSharePercentage% → Pool (nach m²)
   // 5. WEG/AUSGLEICH/KABEL: Gesondert nach Park-Entschaedigungssaetzen
@@ -392,7 +392,7 @@ export async function calculateSettlement(
       ? Math.max(revenuePerTurbine, minimumRentPerTurbine)
       : revenuePerTurbine;
 
-  // 6b. Berechne Gesamtflaechen fuer proportionale Verteilung
+  // 6b. Berechne Gesamtflaechen für proportionale Verteilung
   let totalStandortSqm = 0;
   let totalPoolAreaSqm = 0;
   let totalWeaAreaCount = 0;
@@ -412,7 +412,7 @@ export async function calculateSettlement(
   const leaseMap = new Map<string, LeaseCalculationResult>();
 
   for (const plot of plots) {
-    // Finde aktiven Lease fuer dieses Plot
+    // Finde aktiven Lease für dieses Plot
     const activeLeasePlot = plot.leasePlots.find(
       (lp) => lp.lease && lp.lease.status === "ACTIVE"
     );
@@ -452,7 +452,7 @@ export async function calculateSettlement(
 
     const leaseCalc = leaseMap.get(lease.id)!;
 
-    // 8. Berechne fuer jede PlotArea
+    // 8. Berechne für jede PlotArea
     for (const area of plot.plotAreas) {
       const areaCalc = calculatePlotArea({
         area,
@@ -524,17 +524,17 @@ export async function calculateSettlement(
     totals,
   };
 
-  // 12. Bei FINAL: Lade und verrechne gezahlte Vorschuesse
+  // 12. Bei FINAL: Lade und verrechne gezahlte Vorschüsse
   if (periodType === "FINAL") {
     const advancePayments = await loadAdvancePayments(parkId, year, tenantId);
 
-    // Berechne Summe der gezahlten Vorschuesse
+    // Berechne Summe der gezahlten Vorschüsse
     const paidAdvances = advancePayments.reduce(
       (sum, ap) => sum + ap.amount,
       0
     );
 
-    // Restbetrag = Tatsaechliche Pacht - gezahlte Vorschuesse
+    // Restbetrag = Tatsaechliche Pacht - gezahlte Vorschüsse
     // (Nachzahlung wenn positiv, sonst 0 - keine Rueckzahlung)
     const remainingAmount = Math.max(0, totals.totalPayment - paidAdvances);
 
@@ -569,7 +569,7 @@ export interface CalculateMonthlyAdvanceOptions {
  * Formel: Jahresmindestpacht / 12
  *
  * Die Verteilung erfolgt nach dem WP Barenburg Schema:
- * - 10% fuer WEA-Standorte (aufgeteilt auf Anzahl WEAs)
+ * - 10% für WEA-Standorte (aufgeteilt auf Anzahl WEAs)
  * - 90% Umlage auf Flaeche (Pool-Bereich)
  *
  * @example
@@ -622,7 +622,7 @@ export async function calculateMonthlyAdvance(
   }
 
   if (park.tenantId !== tenantId) {
-    throw new Error("Keine Berechtigung fuer diesen Park");
+    throw new Error("Keine Berechtigung für diesen Park");
   }
 
   // 2. Park-Konfiguration
@@ -631,13 +631,13 @@ export async function calculateMonthlyAdvance(
     : 0;
   const weaSharePercentage = park.weaSharePercentage
     ? Number(park.weaSharePercentage)
-    : 10; // Default: 10% fuer WEA-Standorte
+    : 10; // Default: 10% für WEA-Standorte
   const poolSharePercentage = park.poolSharePercentage
     ? Number(park.poolSharePercentage)
-    : 90; // Default: 90% fuer Pool/Flaechen
+    : 90; // Default: 90% für Pool/Flaechen
   const turbineCount = park.turbines.length;
 
-  // Entschaedigungssaetze fuer WEG/AUSGLEICH/KABEL
+  // Entschaedigungssaetze für WEG/AUSGLEICH/KABEL
   const wegRate = park.wegCompensationPerSqm ? Number(park.wegCompensationPerSqm) : 0;
   const ausgleichRate = park.ausgleichCompensationPerSqm ? Number(park.ausgleichCompensationPerSqm) : 0;
   const kabelRate = park.kabelCompensationPerM ? Number(park.kabelCompensationPerM) : 0;
@@ -667,7 +667,7 @@ export async function calculateMonthlyAdvance(
     },
   });
 
-  // 4. Vorberechnung: Gesamtflaechen fuer proportionale Verteilung
+  // 4. Vorberechnung: Gesamtflaechen für proportionale Verteilung
   let totalWeaCount = 0;
   let totalStandortSqm = 0;
   let totalPoolAreaSqm = 0;
@@ -689,7 +689,7 @@ export async function calculateMonthlyAdvance(
   const yearlyWeaTotal = (yearlyMinimumRentBase * weaSharePercentage) / 100;
   const yearlyPoolTotal = (yearlyMinimumRentBase * poolSharePercentage) / 100;
 
-  // Zusaetzlich: WEG/AUSGLEICH/KABEL Entschaedigungen (jaehrlich)
+  // Zusätzlich: WEG/AUSGLEICH/KABEL Entschaedigungen (jährlich)
   let yearlySpecialCompensation = 0;
   for (const plot of plots) {
     for (const area of plot.plotAreas) {
@@ -718,7 +718,7 @@ export async function calculateMonthlyAdvance(
 
   const totalYearlyMinimumRent = yearlyMinimumRentBase + yearlySpecialCompensation;
 
-  // 6. Berechne monatliche Vorschuesse pro Lease
+  // 6. Berechne monatliche Vorschüsse pro Lease
   const leaseAdvanceMap = new Map<string, AdvanceCalculationResult>();
 
   for (const plot of plots) {
@@ -757,7 +757,7 @@ export async function calculateMonthlyAdvance(
 
     const leaseAdvance = leaseAdvanceMap.get(lease.id)!;
 
-    // Berechne Anteil pro PlotArea fuer dieses Lease
+    // Berechne Anteil pro PlotArea für dieses Lease
     for (const area of plot.plotAreas) {
       const areaSqm = area.areaSqm ? Number(area.areaSqm) : 0;
       const lengthM = area.lengthM ? Number(area.lengthM) : 0;
@@ -811,7 +811,7 @@ export async function calculateMonthlyAdvance(
     }
   }
 
-  // Finalisiere Vorschuesse
+  // Finalisiere Vorschüsse
   for (const leaseAdvance of leaseAdvanceMap.values()) {
     leaseAdvance.monthlyMinimumRent =
       leaseAdvance.weaShareAmount + leaseAdvance.poolShareAmount;
@@ -849,7 +849,7 @@ export async function calculateMonthlyAdvance(
 // ===========================================
 
 /**
- * Laedt alle gezahlten Vorschuesse fuer ein Jahr
+ * Laedt alle gezahlten Vorschüsse für ein Jahr
  *
  * Sucht nach Invoices die mit ADVANCE Settlement Periods verknuepft sind
  */
@@ -858,7 +858,7 @@ async function loadAdvancePayments(
   year: number,
   tenantId: string
 ): Promise<AdvancePaymentInfo[]> {
-  // Lade alle ADVANCE Periods fuer dieses Jahr mit ihren Invoices
+  // Lade alle ADVANCE Periods für dieses Jahr mit ihren Invoices
   const advancePeriods = await prisma.leaseSettlementPeriod.findMany({
     where: {
       parkId,
@@ -874,7 +874,7 @@ async function loadAdvancePayments(
   for (const period of advancePeriods) {
     if (period.month === null) continue;
 
-    // Lade Invoices fuer diese Settlement Period separat
+    // Lade Invoices für diese Settlement Period separat
     const invoices = await prisma.invoice.findMany({
       where: {
         settlementPeriodId: period.id,
@@ -888,7 +888,7 @@ async function loadAdvancePayments(
       },
     });
 
-    // Summe aller Invoices fuer diese Periode
+    // Summe aller Invoices für diese Periode
     const periodTotal = invoices.reduce(
       (sum: number, inv) => sum + (inv.grossAmount ? Number(inv.grossAmount) : 0),
       0
@@ -947,17 +947,17 @@ interface CalculatePlotAreaParams {
 }
 
 /**
- * Berechnet den Pachtanteil fuer eine einzelne PlotArea
+ * Berechnet den Pachtanteil für eine einzelne PlotArea
  *
  * Die Kernlogik (MAX pro Turbine) ist bereits in calculateSettlement erledigt.
  * Diese Funktion verteilt den Betrag auf die einzelnen Flaechen:
  *
  * - WEA_STANDORT: weaSharePercentage% von paymentPerTurbine * turbineCount, proportional nach m²
  * - POOL: poolSharePercentage% von paymentPerTurbine * turbineCount, proportional nach m²
- * - WEG: areaSqm * wegRate (€/m²) — gesonderte Verguetung
- * - AUSGLEICH: areaSqm * ausgleichRate (€/m²) — gesonderte Verguetung
- * - KABEL: lengthM * kabelRate (€/m) — gesonderte Verguetung
- * - compensationFixedAmount auf PlotArea ueberschreibt immer die automatische Berechnung
+ * - WEG: areaSqm * wegRate (€/m²) — gesonderte Vergütung
+ * - AUSGLEICH: areaSqm * ausgleichRate (€/m²) — gesonderte Vergütung
+ * - KABEL: lengthM * kabelRate (€/m) — gesonderte Vergütung
+ * - compensationFixedAmount auf PlotArea überschreibt immer die automatische Berechnung
  */
 function calculatePlotArea(
   params: CalculatePlotAreaParams
@@ -1119,7 +1119,7 @@ export async function saveSettlementCalculation(
       totalMinimumRent: new Decimal(calculation.totals.totalMinimumRent),
       totalActualRent: new Decimal(calculation.totals.totalPayment),
       status: "IN_PROGRESS",
-      // Das vollstaendige Berechnungsergebnis koennte in einem JSON-Feld gespeichert werden
+      // Das vollstaendige Berechnungsergebnis könnte in einem JSON-Feld gespeichert werden
       // falls das Schema erweitert wird
     },
   });

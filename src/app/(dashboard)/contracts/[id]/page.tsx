@@ -169,7 +169,7 @@ export default function ContractDetailPage() {
         <Button variant="ghost" asChild>
           <Link href="/contracts">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurueck
+            Zurück
           </Link>
         </Button>
         <Card>
@@ -222,20 +222,20 @@ export default function ContractDetailPage() {
             <AlertDialogTrigger asChild>
               <Button variant="destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
-                Loeschen
+                Löschen
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Vertrag loeschen?</AlertDialogTitle>
+                <AlertDialogTitle>Vertrag löschen?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Moechten Sie den Vertrag &quot;{contract.title}&quot; wirklich loeschen? Diese
+                  Möchten Sie den Vertrag &quot;{contract.title}&quot; wirklich löschen? Diese
                   Aktion kann nicht rueckgaengig gemacht werden.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction onClick={deleteContract}>Loeschen</AlertDialogAction>
+                <AlertDialogAction onClick={deleteContract}>Löschen</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -263,7 +263,7 @@ export default function ContractDetailPage() {
           <CardContent className="flex items-center gap-4 py-4">
             <Clock className="h-8 w-8 text-red-600" />
             <div>
-              <p className="font-semibold text-red-800">Vertrag laeuft bald aus!</p>
+              <p className="font-semibold text-red-800">Vertrag läuft bald aus!</p>
               <p className="text-sm text-red-700">
                 Noch {contract.daysUntilEnd} Tage bis zum Vertragsende am{" "}
                 {format(new Date(contract.endDate!), "dd.MM.yyyy", { locale: de })}
@@ -368,7 +368,7 @@ export default function ContractDetailPage() {
                   </h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-sm text-muted-foreground">Jaehrlicher Wert</p>
+                      <p className="text-sm text-muted-foreground">Jährlicher Wert</p>
                       <p className="font-medium text-lg">
                         {formatCurrency(contract.annualValue)}
                       </p>

@@ -1,5 +1,5 @@
 /**
- * API Routes fuer Report Archive
+ * API Routes für Report Archive
  *
  * GET  /api/reports/archive - Liste archivierter Reports
  * POST /api/reports/archive - Neuen Report archivieren
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungueltige Parameter", details: parsed.error.flatten() },
+        { error: "Ungültige Parameter", details: parsed.error.flatten() },
         { status: 400 }
       );
     }
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       pageSize
     );
 
-    // Optional: Stats hinzufuegen
+    // Optional: Stats hinzufügen
     let stats = null;
     if (includeStats) {
       stats = await getArchiveStats(check.tenantId!);
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungueltige Daten", details: parsed.error.flatten() },
+        { error: "Ungültige Daten", details: parsed.error.flatten() },
         { status: 400 }
       );
     }

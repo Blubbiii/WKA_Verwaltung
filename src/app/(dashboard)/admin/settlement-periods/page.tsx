@@ -183,7 +183,7 @@ export default function SettlementPeriodsPage() {
     }
 
     if (formData.periodType === "ADVANCE" && !formData.month) {
-      toast.error("Bitte waehlen Sie einen Monat fuer den Vorschuss aus");
+      toast.error("Bitte waehlen Sie einen Monat für den Vorschuss aus");
       return;
     }
 
@@ -304,7 +304,7 @@ export default function SettlementPeriodsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Pachtabrechnungen</h1>
           <p className="text-muted-foreground">
-            Verwalten Sie Pachtvorschuesse und Jahresendabrechnungen
+            Verwalten Sie Pachtvorschüsse und Jahresendabrechnungen
           </p>
         </div>
         <div className="flex gap-2">
@@ -335,14 +335,14 @@ export default function SettlementPeriodsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Bearbeitung / Pruefung</CardTitle>
+            <CardTitle className="text-sm font-medium">In Bearbeitung / Prüfung</CardTitle>
             <Calculator className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpis.inProgressCount + kpis.pendingReviewCount}</div>
             <p className="text-xs text-muted-foreground">
               {kpis.pendingReviewCount > 0
-                ? `${kpis.inProgressCount} in Bearbeitung, ${kpis.pendingReviewCount} zur Pruefung`
+                ? `${kpis.inProgressCount} in Bearbeitung, ${kpis.pendingReviewCount} zur Prüfung`
                 : "Berechnet, noch nicht genehmigt"}
             </p>
           </CardContent>
@@ -355,7 +355,7 @@ export default function SettlementPeriodsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(kpis.totalMinimumRent)}</div>
             <p className="text-xs text-muted-foreground">
-              Ueber alle Perioden
+              Über alle Perioden
             </p>
           </CardContent>
         </Card>
@@ -369,7 +369,7 @@ export default function SettlementPeriodsPage() {
               {formatCurrency(kpis.totalAdditionalPayment)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Ueber Mindestpacht hinaus
+              Über Mindestpacht hinaus
             </p>
           </CardContent>
         </Card>
@@ -469,7 +469,7 @@ export default function SettlementPeriodsPage() {
                   <SelectItem value="all">Alle Status</SelectItem>
                   <SelectItem value="OPEN">Offen</SelectItem>
                   <SelectItem value="IN_PROGRESS">In Bearbeitung</SelectItem>
-                  <SelectItem value="PENDING_REVIEW">Zur Pruefung</SelectItem>
+                  <SelectItem value="PENDING_REVIEW">Zur Prüfung</SelectItem>
                   <SelectItem value="APPROVED">Genehmigt</SelectItem>
                   <SelectItem value="CLOSED">Abgeschlossen</SelectItem>
                 </SelectContent>
@@ -482,7 +482,7 @@ export default function SettlementPeriodsPage() {
                 className="w-full"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Zuruecksetzen
+                Zurücksetzen
               </Button>
             </div>
           </div>
@@ -638,7 +638,7 @@ export default function SettlementPeriodsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ADVANCE">Vorschuss (monatlich)</SelectItem>
-                  <SelectItem value="FINAL">Endabrechnung (jaehrlich)</SelectItem>
+                  <SelectItem value="FINAL">Endabrechnung (jährlich)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -721,7 +721,7 @@ export default function SettlementPeriodsPage() {
           <DialogHeader>
             <DialogTitle>Jahr vorbereiten</DialogTitle>
             <DialogDescription>
-              Erstellen Sie automatisch alle Vorschussperioden und die Endabrechnung fuer ein Jahr
+              Erstellen Sie automatisch alle Vorschussperioden und die Endabrechnung für ein Jahr
             </DialogDescription>
           </DialogHeader>
 
@@ -767,7 +767,7 @@ export default function SettlementPeriodsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Frequenz der Vorschuesse</Label>
+              <Label>Frequenz der Vorschüsse</Label>
               <Select
                 value={bulkFormData.frequency}
                 onValueChange={(value: "MONTHLY" | "QUARTERLY") =>
@@ -778,8 +778,8 @@ export default function SettlementPeriodsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MONTHLY">Monatlich (12 Vorschuesse)</SelectItem>
-                  <SelectItem value="QUARTERLY">Quartalsweise (4 Vorschuesse)</SelectItem>
+                  <SelectItem value="MONTHLY">Monatlich (12 Vorschüsse)</SelectItem>
+                  <SelectItem value="QUARTERLY">Quartalsweise (4 Vorschüsse)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
@@ -827,7 +827,7 @@ export default function SettlementPeriodsPage() {
             </Button>
             <Button onClick={handleBulkCreate} disabled={isBulkCreating || parksLoading}>
               {isBulkCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {bulkFormData.frequency === "MONTHLY" ? "12" : "4"} Vorschuesse + {bulkFormData.createFinalPeriod ? "Endabrechnung" : ""} erstellen
+              {bulkFormData.frequency === "MONTHLY" ? "12" : "4"} Vorschüsse + {bulkFormData.createFinalPeriod ? "Endabrechnung" : ""} erstellen
             </Button>
           </DialogFooter>
         </DialogContent>

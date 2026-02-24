@@ -46,7 +46,7 @@ export function ReminderSettings({
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Pruefe ob sich etwas geaendert hat
+  // Pruefe ob sich etwas geändert hat
   useEffect(() => {
     const sortedInitial = [...initialReminderDays].sort((a, b) => a - b);
     const sortedCurrent = [...selectedDays].sort((a, b) => a - b);
@@ -70,7 +70,7 @@ export function ReminderSettings({
     if (isNaN(days) || days <= 0 || days > 3650) {
       toast({
         variant: "destructive",
-        title: "Ungueltige Eingabe",
+        title: "Ungültige Eingabe",
         description: "Bitte geben Sie eine Zahl zwischen 1 und 3650 ein",
       });
       return;
@@ -155,8 +155,8 @@ export function ReminderSettings({
         </CardTitle>
         <CardDescription>
           {endDate
-            ? "Konfigurieren Sie, wann Sie an diesen Vertrag erinnert werden moechten."
-            : "Dieser Vertrag hat kein Enddatum. Erinnerungen koennen trotzdem konfiguriert werden."}
+            ? "Konfigurieren Sie, wann Sie an diesen Vertrag erinnert werden möchten."
+            : "Dieser Vertrag hat kein Enddatum. Erinnerungen können trotzdem konfiguriert werden."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -164,7 +164,7 @@ export function ReminderSettings({
         <div>
           <Label className="text-base font-medium">Standard-Erinnerungen</Label>
           <p className="text-sm text-muted-foreground mb-4">
-            Waehlen Sie vordefinierte Zeitraeume fuer Erinnerungen aus.
+            Waehlen Sie vordefinierte Zeitraeume für Erinnerungen aus.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {PRESET_REMINDERS.map(({ days, label }) => {
@@ -233,7 +233,7 @@ export function ReminderSettings({
               />
             </div>
             <Button variant="outline" onClick={addCustomDays} disabled={!customDays}>
-              Hinzufuegen
+              Hinzufügen
             </Button>
           </div>
         </div>

@@ -60,12 +60,12 @@ export function RecipientBlock({ recipient, layout, marginLeft, senderLine }: Re
       ]}
     >
       <View style={styles.recipientWindow}>
-        {/* Ruecksendeangabe (DIN 5008 - kleine Zeile ueber Adresse) */}
+        {/* Ruecksendeangabe (DIN 5008 - kleine Zeile über Adresse) */}
         {senderLine && (
           <Text style={styles.senderLine}>{senderLine}</Text>
         )}
 
-        {/* Zusaetzliche Zeile (z.B. "z.Hd.") */}
+        {/* Zusätzliche Zeile (z.B. "z.Hd.") */}
         {recipient.additionalLine && (
           <Text style={styles.line}>{recipient.additionalLine}</Text>
         )}

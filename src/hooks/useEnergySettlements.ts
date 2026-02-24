@@ -105,7 +105,7 @@ export interface UseEnergySettlementsOptions {
 // =============================================================================
 
 /**
- * Hook fuer alle Stromabrechnungen mit Filtern und Paginierung
+ * Hook für alle Stromabrechnungen mit Filtern und Paginierung
  */
 export function useEnergySettlements(options: UseEnergySettlementsOptions = {}) {
   const params = new URLSearchParams();
@@ -140,7 +140,7 @@ export function useEnergySettlements(options: UseEnergySettlementsOptions = {}) 
 }
 
 /**
- * Hook fuer eine einzelne Stromabrechnung
+ * Hook für eine einzelne Stromabrechnung
  */
 export function useEnergySettlement(id: string | null) {
   const { data, error, isLoading, mutate } = useSWR<EnergySettlement>(
@@ -224,7 +224,7 @@ export async function updateEnergySettlement(
 }
 
 /**
- * Stromabrechnung loeschen
+ * Stromabrechnung löschen
  */
 export async function deleteEnergySettlement(id: string) {
   const res = await fetch(`/api/energy/settlements/${id}`, {
@@ -233,7 +233,7 @@ export async function deleteEnergySettlement(id: string) {
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.error || "Fehler beim Loeschen");
+    throw new Error(error.error || "Fehler beim Löschen");
   }
 
   return res.json();
@@ -281,8 +281,8 @@ export async function createEnergySettlementInvoices(
 }
 
 /**
- * Produktionsdaten fuer Settlement Auto-Fill laden
- * Gibt aggregierte TurbineProduction-Daten zurueck, die fuer
+ * Produktionsdaten für Settlement Auto-Fill laden
+ * Gibt aggregierte TurbineProduction-Daten zurück, die für
  * die automatische Befuellung der Abrechnungsfelder verwendet werden.
  */
 export interface ProductionForSettlement {
@@ -356,7 +356,7 @@ export const settlementStatusLabels: Record<EnergySettlementStatus, string> = {
 };
 
 /**
- * Status-Farben fuer Badges
+ * Status-Farben für Badges
  */
 export const settlementStatusColors: Record<EnergySettlementStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-800",

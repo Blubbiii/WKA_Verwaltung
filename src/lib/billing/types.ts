@@ -1,6 +1,6 @@
 /**
  * Billing Types
- * TypeScript Interfaces fuer das automatische Abrechnungssystem
+ * TypeScript Interfaces für das automatische Abrechnungssystem
  */
 
 // Enum-like constants - these should match the Prisma schema
@@ -30,10 +30,10 @@ export type BillingRuleFrequency = (typeof BillingRuleFrequency)[keyof typeof Bi
 // =============================================================================
 
 /**
- * Parameter fuer Pachtzahlungen (LEASE_PAYMENT)
+ * Parameter für Pachtzahlungen (LEASE_PAYMENT)
  */
 export interface LeasePaymentParameters {
-  parkId?: string; // Optional: Nur fuer einen bestimmten Park
+  parkId?: string; // Optional: Nur für einen bestimmten Park
   year?: number; // Abrechnungsjahr (default: aktuelles Jahr)
   month?: number; // Abrechnungsmonat (default: aktueller Monat)
   useMinimumRent?: boolean; // Mindestpacht oder tatsaechliche Pacht
@@ -42,18 +42,18 @@ export interface LeasePaymentParameters {
 }
 
 /**
- * Parameter fuer Pacht-Vorschussrechnungen (LEASE_ADVANCE)
+ * Parameter für Pacht-Vorschussrechnungen (LEASE_ADVANCE)
  */
 export interface LeaseAdvanceParameters {
-  parkId?: string; // Optional: Nur fuer einen bestimmten Park
+  parkId?: string; // Optional: Nur für einen bestimmten Park
   year?: number; // Abrechnungsjahr (default: aktuelles Jahr)
   month?: number; // Abrechnungsmonat (default: aktueller Monat)
-  taxType?: "STANDARD" | "REDUCED" | "EXEMPT"; // Steuerart (default: EXEMPT fuer Pacht)
+  taxType?: "STANDARD" | "REDUCED" | "EXEMPT"; // Steuerart (default: EXEMPT für Pacht)
   dueDays?: number; // Zahlungsziel in Tagen (default: 14)
 }
 
 /**
- * Parameter fuer Ausschuettungen (DISTRIBUTION)
+ * Parameter für Ausschuettungen (DISTRIBUTION)
  */
 export interface DistributionParameters {
   fundId: string; // Pflichtfeld: Gesellschafts-ID
@@ -64,23 +64,23 @@ export interface DistributionParameters {
 }
 
 /**
- * Parameter fuer Verwaltungsgebuehren (MANAGEMENT_FEE)
+ * Parameter für Verwaltungsgebühren (MANAGEMENT_FEE)
  */
 export interface ManagementFeeParameters {
-  fundId?: string; // Optional: Nur fuer eine bestimmte Gesellschaft
-  parkId?: string; // Optional: Nur fuer einen bestimmten Park
+  fundId?: string; // Optional: Nur für eine bestimmte Gesellschaft
+  parkId?: string; // Optional: Nur für einen bestimmten Park
   calculationType: "FIXED" | "PERCENTAGE"; // Fester Betrag oder Prozentsatz
   amount?: number; // Fester Betrag in Euro
   percentage?: number; // Prozentsatz (z.B. 2.5)
-  baseValue?: "TOTAL_CAPITAL" | "ANNUAL_REVENUE" | "NET_ASSET_VALUE"; // Basis fuer Prozentsatz
-  recipientName?: string; // Empfaenger (z.B. Verwaltungsgesellschaft)
+  baseValue?: "TOTAL_CAPITAL" | "ANNUAL_REVENUE" | "NET_ASSET_VALUE"; // Basis für Prozentsatz
+  recipientName?: string; // Empfänger (z.B. Verwaltungsgesellschaft)
   recipientAddress?: string;
   taxType?: "STANDARD" | "REDUCED" | "EXEMPT";
   description?: string;
 }
 
 /**
- * Parameter fuer benutzerdefinierte Regeln (CUSTOM)
+ * Parameter für benutzerdefinierte Regeln (CUSTOM)
  */
 export interface CustomRuleParameters {
   invoiceType: "INVOICE" | "CREDIT_NOTE";
@@ -105,7 +105,7 @@ export interface CustomRuleItem {
 }
 
 /**
- * Union Type fuer alle Parameter-Typen
+ * Union Type für alle Parameter-Typen
  */
 export type BillingRuleParameters =
   | LeasePaymentParameters
@@ -119,18 +119,18 @@ export type BillingRuleParameters =
 // =============================================================================
 
 /**
- * Status einer Regelausfuehrung
+ * Status einer Regelausführung
  */
 export type ExecutionStatus = "success" | "failed" | "partial";
 
 /**
- * Optionen fuer die Regelausfuehrung
+ * Optionen für die Regelausführung
  */
 export interface ExecuteRuleOptions {
   dryRun?: boolean; // Nur Vorschau, keine echten Rechnungen erstellen
-  forceRun?: boolean; // Ausfuehrung erzwingen, auch wenn nextRunAt noch nicht erreicht
+  forceRun?: boolean; // Ausführung erzwingen, auch wenn nextRunAt noch nicht erreicht
   notifyOnComplete?: boolean; // Benachrichtigung nach Abschluss senden
-  overrideParameters?: Partial<BillingRuleParameters>; // Parameter ueberschreiben
+  overrideParameters?: Partial<BillingRuleParameters>; // Parameter überschreiben
 }
 
 /**
@@ -146,7 +146,7 @@ export interface InvoiceCreationResult {
 }
 
 /**
- * Detaillierte Ausfuehrungsinformationen
+ * Detaillierte Ausführungsinformationen
  */
 export interface ExecutionDetails {
   invoices: InvoiceCreationResult[];
@@ -161,7 +161,7 @@ export interface ExecutionDetails {
 }
 
 /**
- * Ergebnis einer Regelausfuehrung
+ * Ergebnis einer Regelausführung
  */
 export interface ExecutionResult {
   status: ExecutionStatus;
@@ -177,7 +177,7 @@ export interface ExecutionResult {
 // =============================================================================
 
 /**
- * Informationen zur naechsten geplanten Ausfuehrung
+ * Informationen zur nächsten geplanten Ausführung
  */
 export interface NextRunInfo {
   ruleId: string;
@@ -187,7 +187,7 @@ export interface NextRunInfo {
 }
 
 /**
- * Job-Informationen fuer BullMQ
+ * Job-Informationen für BullMQ
  */
 export interface BillingJob {
   ruleId: string;
@@ -201,7 +201,7 @@ export interface BillingJob {
 // =============================================================================
 
 /**
- * Interface fuer Rule Handler Implementierungen
+ * Interface für Rule Handler Implementierungen
  */
 export interface RuleHandler {
   /**
@@ -219,12 +219,12 @@ export interface RuleHandler {
   ): Promise<ExecutionResult>;
 
   /**
-   * Validiert die Parameter fuer diesen Regel-Typ
+   * Validiert die Parameter für diesen Regel-Typ
    */
   validateParameters(parameters: unknown): parameters is BillingRuleParameters;
 
   /**
-   * Gibt eine Vorschau der zu erstellenden Rechnungen zurueck (Dry-Run)
+   * Gibt eine Vorschau der zu erstellenden Rechnungen zurück (Dry-Run)
    */
   preview(
     tenantId: string,
@@ -237,7 +237,7 @@ export interface RuleHandler {
 // =============================================================================
 
 /**
- * Billing Rule DTO fuer API Responses
+ * Billing Rule DTO für API Responses
  */
 export interface BillingRuleDTO {
   id: string;
@@ -257,7 +257,7 @@ export interface BillingRuleDTO {
 }
 
 /**
- * Billing Rule Execution DTO fuer API Responses
+ * Billing Rule Execution DTO für API Responses
  */
 export interface BillingRuleExecutionDTO {
   id: string;
@@ -272,7 +272,7 @@ export interface BillingRuleExecutionDTO {
 }
 
 /**
- * Input fuer das Erstellen einer neuen Regel
+ * Input für das Erstellen einer neuen Regel
  */
 export interface CreateBillingRuleInput {
   name: string;
@@ -286,7 +286,7 @@ export interface CreateBillingRuleInput {
 }
 
 /**
- * Input fuer das Aktualisieren einer Regel
+ * Input für das Aktualisieren einer Regel
  */
 export interface UpdateBillingRuleInput {
   name?: string;
@@ -303,7 +303,7 @@ export interface UpdateBillingRuleInput {
 // =============================================================================
 
 /**
- * Cron-Expression Informationen fuer UI
+ * Cron-Expression Informationen für UI
  */
 export interface CronExpressionInfo {
   expression: string;
@@ -326,9 +326,9 @@ export const FREQUENCY_CRON_PATTERNS: Record<Exclude<BillingRuleFrequency, "CUST
  */
 export const FREQUENCY_LABELS: Record<BillingRuleFrequency, string> = {
   MONTHLY: "Monatlich",
-  QUARTERLY: "Vierteljaehrlich",
-  SEMI_ANNUAL: "Halbjaehrlich",
-  ANNUAL: "Jaehrlich",
+  QUARTERLY: "Vierteljährlich",
+  SEMI_ANNUAL: "Halbjährlich",
+  ANNUAL: "Jährlich",
   CUSTOM_CRON: "Benutzerdefiniert",
 };
 
@@ -339,6 +339,6 @@ export const RULE_TYPE_LABELS: Record<BillingRuleType, string> = {
   LEASE_PAYMENT: "Pachtzahlung",
   LEASE_ADVANCE: "Pacht-Vorschuss",
   DISTRIBUTION: "Ausschuettung",
-  MANAGEMENT_FEE: "Verwaltungsgebuehr",
+  MANAGEMENT_FEE: "Verwaltungsgebühr",
   CUSTOM: "Benutzerdefiniert",
 };

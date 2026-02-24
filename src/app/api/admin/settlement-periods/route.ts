@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prüfe auf Duplikat (mit month + periodType fuer unique constraint)
+    // Prüfe auf Duplikat (mit month + periodType für unique constraint)
     const existing = await prisma.leaseSettlementPeriod.findFirst({
       where: {
         tenantId: check.tenantId!,
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
           ? `${month}/${year} (${periodType})`
           : `${year} (${periodType})`;
         return NextResponse.json(
-          { error: `Abrechnungsperiode ${periodDesc} fuer diesen Park existiert bereits (Status: ${existing.status})` },
+          { error: `Abrechnungsperiode ${periodDesc} für diesen Park existiert bereits (Status: ${existing.status})` },
           { status: 409 }
         );
       }

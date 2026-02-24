@@ -1,4 +1,4 @@
-// PDF System Types fuer WindparkManager
+// PDF System Types für WindparkManager
 
 export type DocumentType = "INVOICE" | "CREDIT_NOTE" | "CONTRACT" | "SETTLEMENT_REPORT";
 
@@ -8,7 +8,7 @@ export type LogoPosition = "top-left" | "top-center" | "top-right";
 export type RecipientPosition = "left" | "right";
 export type MetadataPosition = "right-column" | "below-header";
 
-// Layout-Konfiguration fuer DocumentTemplate.layout
+// Layout-Konfiguration für DocumentTemplate.layout
 export interface DocumentTemplateLayout {
   // Seitenformat
   pageSize: PageSize;
@@ -74,7 +74,7 @@ export interface DocumentTemplateLayout {
   taxExemptDisclaimer: string; // "Steuerfrei gem. §4 Nr.12 UStG"
 }
 
-// Firmeninfo fuer Letterhead.companyInfo
+// Firmeninfo für Letterhead.companyInfo
 export interface LetterheadCompanyInfo {
   name: string;
   legalForm?: string; // GmbH, AG, KG, etc.
@@ -179,10 +179,10 @@ export const DEFAULT_COMPANY_INFO: LetterheadCompanyInfo = {
 export interface PdfGenerationOptions {
   download?: boolean; // true = Download, false = Inline anzeigen
   filename?: string;
-  watermark?: string; // z.B. "ENTWURF" fuer Draft-Rechnungen
+  watermark?: string; // z.B. "ENTWURF" für Draft-Rechnungen
 }
 
-// Invoice Data fuer PDF Template
+// Invoice Data für PDF Template
 export interface InvoicePdfData {
   // Rechnung
   invoiceNumber: string;
@@ -191,7 +191,7 @@ export interface InvoicePdfData {
   dueDate: Date | null;
   status: "DRAFT" | "SENT" | "PAID" | "CANCELLED";
 
-  // Empfaenger
+  // Empfänger
   recipientName: string;
   recipientAddress: string | null;
 
@@ -234,7 +234,7 @@ export interface InvoicePdfData {
   correctionType?: "FULL_CANCEL" | "PARTIAL_CANCEL" | "CORRECTION";
   correctionReason?: string;
 
-  // Mandantendaten (fuer Briefkopf/Bankverbindung)
+  // Mandantendaten (für Briefkopf/Bankverbindung)
   tenant?: {
     name: string | null;
     bankName: string | null;
@@ -242,7 +242,7 @@ export interface InvoicePdfData {
     bic: string | null;
   };
 
-  // Settlement-Details (fuer detaillierte Gutschrift-PDFs)
+  // Settlement-Details (für detaillierte Gutschrift-PDFs)
   settlementDetails?: SettlementPdfDetails;
 }
 
@@ -250,7 +250,7 @@ export interface InvoicePdfData {
 // SETTLEMENT PDF TYPES (Detaillierte Gutschrift)
 // ===========================================
 
-/** Revenue table entry (Ertragsuebersicht) for settlement credit note */
+/** Revenue table entry (Ertragsübersicht) for settlement credit note */
 export interface RevenueTableEntry {
   category: string;        // e.g. "WnK290S-----09"
   rateCtPerKwh: number;   // e.g. 9.4310
@@ -282,12 +282,12 @@ export interface TurbineProductionEntry {
   designation: string;              // "WEA 1", "E-115/3"
   productionKwh: number;           // Jahresproduktion kWh (Summe 12 Monate)
   operatingHours: number | null;   // Betriebsstunden gesamt
-  availabilityPct: number | null;  // Durchschnittliche Verfuegbarkeit %
+  availabilityPct: number | null;  // Durchschnittliche Verfügbarkeit %
   productionSharePct?: number;     // Anteil an Gesamtproduktion % (Energy only)
-  revenueShareEur?: number;        // Zugewiesener Erloesanteil EUR (Energy only)
+  revenueShareEur?: number;        // Zugewiesener Erlösanteil EUR (Energy only)
 }
 
-/** Energy distribution summary for Stromerloes-Gutschriften */
+/** Energy distribution summary for Stromerlös-Gutschriften */
 export interface EnergyDistributionSummary {
   mode: string;                    // "PROPORTIONAL", "SMOOTHED", "TOLERATED"
   modeLabel: string;               // "Proportional", "Duldung mit Glaettung", etc.
@@ -316,12 +316,12 @@ export interface FeePositionEntry {
 export interface SettlementPdfDetails {
   type: "ADVANCE" | "FINAL" | "ENERGY";
   subtitle?: string;                           // "Nutzungsentgelt / WP Barenburg / 2025"
-  introText?: string;                          // "gemaess den Ihnen vorliegenden Vertraegen..."
+  introText?: string;                          // "gemaess den Ihnen vorliegenden Verträgen..."
   revenueTable?: RevenueTableEntry[];          // Optional: Einspeisung-Tabelle
   revenueTableTotal?: number;
-  calculationSummary?: CalculationSummary;     // Berechnungsuebersicht (Lease only)
+  calculationSummary?: CalculationSummary;     // Berechnungsübersicht (Lease only)
   feePositions?: FeePositionEntry[];           // Positionsaufstellung (Lease only)
-  turbineProductions?: TurbineProductionEntry[];  // Pro-WEA Produktionsdaten (fuer Anlage)
+  turbineProductions?: TurbineProductionEntry[];  // Pro-WEA Produktionsdaten (für Anlage)
   energyDistribution?: EnergyDistributionSummary; // Verteilungsnachweis (Energy only)
 }
 

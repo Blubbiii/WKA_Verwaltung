@@ -164,14 +164,14 @@ export function SettlementDetailsCard({ calculationDetails }: SettlementDetailsC
           <section>
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              {sectionNum++}. Ertragsuebersicht
+              {sectionNum++}. Ertragsübersicht
             </h3>
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Kategorie</TableHead>
-                    <TableHead className="text-right">Verguetung</TableHead>
+                    <TableHead className="text-right">Vergütung</TableHead>
                     <TableHead className="text-right">Einspeisung</TableHead>
                     <TableHead className="text-right">Ertrag</TableHead>
                   </TableRow>
@@ -221,7 +221,7 @@ export function SettlementDetailsCard({ calculationDetails }: SettlementDetailsC
           <section>
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <Calculator className="h-4 w-4" />
-              {sectionNum++}. Berechnungsuebersicht
+              {sectionNum++}. Berechnungsübersicht
             </h3>
             {renderCalculationSummary(details.calculationSummary!)}
           </section>
@@ -291,7 +291,7 @@ function renderEnergyDistribution(dist: EnergyDistributionSummary) {
         <Table>
           <TableBody>
             <TableRow>
-              <TableCell className="font-medium">Gesamterloes Park</TableCell>
+              <TableCell className="font-medium">Gesamterlös Park</TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatCurrency(dist.netOperatorRevenueEur)}
               </TableCell>
@@ -322,7 +322,7 @@ function renderEnergyDistribution(dist: EnergyDistributionSummary) {
 
       {/* Recipient share (highlighted) */}
       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-        Anteil Empfaenger
+        Anteil Empfänger
       </h4>
       <div className="rounded-md border bg-primary/5 p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -340,7 +340,7 @@ function renderEnergyDistribution(dist: EnergyDistributionSummary) {
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Zugewiesener Erloes</p>
+            <p className="text-xs text-muted-foreground">Zugewiesener Erlös</p>
             <p className="text-2xl font-bold tabular-nums">
               {formatCurrency(dist.recipientRevenueEur)}
             </p>
@@ -363,7 +363,7 @@ function renderEnergyTurbineTable(turbines: TurbineProductionEntry[]) {
             <TableHead>Anlage</TableHead>
             <TableHead className="text-right">Produktion kWh</TableHead>
             <TableHead className="text-right">Anteil %</TableHead>
-            <TableHead className="text-right">Erloes</TableHead>
+            <TableHead className="text-right">Erlös</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -408,7 +408,7 @@ function renderLeaseTurbineTable(turbines: TurbineProductionEntry[], totalProduc
             <TableHead>Anlage</TableHead>
             <TableHead className="text-right">Produktion kWh</TableHead>
             <TableHead className="text-right">Betriebsstunden</TableHead>
-            <TableHead className="text-right">Verfuegbarkeit</TableHead>
+            <TableHead className="text-right">Verfügbarkeit</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -467,14 +467,14 @@ function renderCalculationSummary(summary: CalculationSummary) {
         <Table>
           <TableBody>
             <TableRow>
-              <TableCell className="font-medium">Gesamterloes Park</TableCell>
+              <TableCell className="font-medium">Gesamterlös Park</TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatCurrency(summary.totalRevenueEur)}
               </TableCell>
             </TableRow>
             <TableRow>
               <TableCell className="font-medium">
-                Verguetungssatz (Ertragsphase)
+                Vergütungssatz (Ertragsphase)
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatPercent(summary.revenuePhasePercentage)}

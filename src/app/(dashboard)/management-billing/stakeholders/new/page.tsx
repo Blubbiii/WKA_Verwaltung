@@ -63,8 +63,8 @@ interface FundOption {
 // =============================================================================
 
 const ROLE_OPTIONS = [
-  { value: "TECHNICAL_BF", label: "Technische Betriebsfuehrung" },
-  { value: "COMMERCIAL_BF", label: "Kaufmaennische Betriebsfuehrung" },
+  { value: "TECHNICAL_BF", label: "Technische Betriebsführung" },
+  { value: "COMMERCIAL_BF", label: "Kaufmaennische Betriebsführung" },
   { value: "DEVELOPER", label: "Projektierer" },
   { value: "GRID_OPERATOR", label: "Netzbetreiber" },
   { value: "OPERATOR", label: "Betreiber" },
@@ -259,7 +259,7 @@ export default function NewStakeholderPage() {
       return;
     }
     if (!formData.feePercentage || parseFloat(formData.feePercentage) < 0) {
-      toast.error("Bitte geben Sie einen gueltigen Gebuehrensatz ein");
+      toast.error("Bitte geben Sie einen gültigen Gebührensatz ein");
       return;
     }
 
@@ -323,7 +323,7 @@ export default function NewStakeholderPage() {
           <div>
             <h1 className="text-2xl font-bold">Neuen BF-Vertrag anlegen</h1>
             <p className="text-muted-foreground">
-              Dienstleister einem Windpark zuordnen und Gebuehren festlegen
+              Dienstleister einem Windpark zuordnen und Gebühren festlegen
             </p>
           </div>
         </div>
@@ -356,7 +356,7 @@ export default function NewStakeholderPage() {
             <CardHeader>
               <CardTitle>Vertragspartner</CardTitle>
               <CardDescription>
-                Wer fuehrt die Betriebsfuehrung fuer welchen Windpark durch?
+                Wer führt die Betriebsführung für welchen Windpark durch?
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -396,7 +396,7 @@ export default function NewStakeholderPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Die Firma, die die Betriebsfuehrung durchfuehrt
+                    Die Firma, die die Betriebsführung durchführt
                   </p>
                 </div>
 
@@ -464,7 +464,7 @@ export default function NewStakeholderPage() {
             <CardHeader>
               <CardTitle>Aufgabe & verwaltete Gesellschaften</CardTitle>
               <CardDescription>
-                Welche Aufgabe wird uebernommen und fuer welche Gesellschaften?
+                Welche Aufgabe wird übernommen und für welche Gesellschaften?
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -528,7 +528,7 @@ export default function NewStakeholderPage() {
                   </div>
                 ) : funds.length === 0 ? (
                   <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                    Keine Gesellschaften fuer diesen Park gefunden
+                    Keine Gesellschaften für diesen Park gefunden
                   </div>
                 ) : formData.allFundsSelected ? (
                   <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground flex items-start gap-2">
@@ -587,7 +587,7 @@ export default function NewStakeholderPage() {
                 )}
 
                 <p className="text-xs text-muted-foreground">
-                  Die Gebuehr wird basierend auf der Einspeiseverguetung dieser
+                  Die Gebühr wird basierend auf der Einspeisevergütung dieser
                   Gesellschaften berechnet
                 </p>
               </div>
@@ -601,7 +601,7 @@ export default function NewStakeholderPage() {
             <CardHeader>
               <CardTitle>Konditionen</CardTitle>
               <CardDescription>
-                Gebuehren und Steuereinstellungen fuer die Betriebsfuehrung
+                Gebühren und Steuereinstellungen für die Betriebsführung
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -619,7 +619,7 @@ export default function NewStakeholderPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Fee Percentage */}
                 <div className="space-y-2">
-                  <Label htmlFor="feePercentage">Gebuehrensatz (%) *</Label>
+                  <Label htmlFor="feePercentage">Gebührensatz (%) *</Label>
                   <Input
                     id="feePercentage"
                     type="number"
@@ -634,7 +634,7 @@ export default function NewStakeholderPage() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Anteil an der Einspeiseverguetung, z.B. 1,86%
+                    Anteil an der Einspeisevergütung, z.B. 1,86%
                   </p>
                 </div>
 
@@ -715,7 +715,7 @@ export default function NewStakeholderPage() {
 
               {/* Valid From */}
               <div className="space-y-2">
-                <Label htmlFor="validFrom">Gueltig ab</Label>
+                <Label htmlFor="validFrom">Gültig ab</Label>
                 <Input
                   id="validFrom"
                   type="date"
@@ -728,7 +728,7 @@ export default function NewStakeholderPage() {
 
               {/* Valid To */}
               <div className="space-y-2">
-                <Label htmlFor="validTo">Gueltig bis</Label>
+                <Label htmlFor="validTo">Gültig bis</Label>
                 <Input
                   id="validTo"
                   type="date"
@@ -745,8 +745,8 @@ export default function NewStakeholderPage() {
           <Card className="border-blue-200 bg-blue-50">
             <CardContent className="pt-6">
               <p className="text-sm text-blue-800">
-                Nach dem Erstellen koennen Sie den Vertrag jederzeit bearbeiten
-                und die Gebuehrenhistorie einsehen.
+                Nach dem Erstellen können Sie den Vertrag jederzeit bearbeiten
+                und die Gebührenhistorie einsehen.
               </p>
             </CardContent>
           </Card>

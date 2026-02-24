@@ -8,7 +8,7 @@ import { apiLogger as logger } from "@/lib/logger";
 /**
  * GET /api/documents/search
  *
- * Volltext-Suche ueber Dokumente mit Filtermoeglichkeiten.
+ * Volltext-Suche über Dokumente mit Filtermoeglichkeiten.
  *
  * Query Parameters:
  * - q: Suchbegriff (required, min 2 chars)
@@ -23,7 +23,7 @@ import { apiLogger as logger } from "@/lib/logger";
  */
 export async function GET(request: NextRequest) {
   try {
-    // Berechtigungspruefung
+    // Berechtigungsprüfung
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_READ);
     if (!check.authorized) return check.error;
 

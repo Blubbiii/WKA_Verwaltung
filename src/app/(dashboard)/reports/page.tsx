@@ -420,7 +420,7 @@ export default function ReportsPage() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Vertraege</CardTitle>
+              <CardTitle className="text-sm font-medium">Verträge</CardTitle>
               <FileSignature className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -447,8 +447,8 @@ export default function ReportsPage() {
             Monats- & Jahresberichte
           </CardTitle>
           <CardDescription>
-            Erstellen Sie detaillierte Monats- oder Jahresberichte fuer einen Windpark als
-            PDF. Die Berichte enthalten Produktionsdaten, Verfuegbarkeit,
+            Erstellen Sie detaillierte Monats- oder Jahresberichte für einen Windpark als
+            PDF. Die Berichte enthalten Produktionsdaten, Verfügbarkeit,
             Windgeschwindigkeiten und Service-Ereignisse.
           </CardDescription>
         </CardHeader>
@@ -490,7 +490,7 @@ export default function ReportsPage() {
               </div>
               <div className="w-48">
                 <label className="text-sm font-medium mb-2 block">
-                  Monat (fuer Monatsbericht)
+                  Monat (für Monatsbericht)
                 </label>
                 <Select value={reportMonth} onValueChange={setReportMonth}>
                   <SelectTrigger>
@@ -516,8 +516,8 @@ export default function ReportsPage() {
                 <div className="flex-1">
                   <h3 className="font-medium">Monatsbericht</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Zusammenfassung, Produktion pro Anlage, Verfuegbarkeit und
-                    Service-Ereignisse fuer einen Monat.
+                    Zusammenfassung, Produktion pro Anlage, Verfügbarkeit und
+                    Service-Ereignisse für einen Monat.
                   </p>
                   <div className="flex gap-2 mt-2">
                     <Badge variant="outline">PDF</Badge>
@@ -544,7 +544,7 @@ export default function ReportsPage() {
                 <div className="flex-1">
                   <h3 className="font-medium">Jahresbericht</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Deckblatt, Jahresuebersicht, Monatsverlauf,
+                    Deckblatt, Jahresübersicht, Monatsverlauf,
                     Anlagen-Performance, Finanzen und Service-Zusammenfassung.
                   </p>
                   <div className="flex gap-2 mt-2">

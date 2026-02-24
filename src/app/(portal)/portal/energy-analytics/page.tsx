@@ -10,7 +10,7 @@ export default function PortalEnergyAnalyticsPage() {
           Anlagen-Performance
         </h1>
         <p className="text-muted-foreground">
-          Uebersicht ueber die Leistung Ihrer Windenergieanlagen
+          Übersicht über die Leistung Ihrer Windenergieanlagen
         </p>
       </div>
       <PortalEnergyAnalytics />

@@ -1,6 +1,6 @@
 /**
  * Billing Module
- * Automatisches Abrechnungssystem fuer den WindparkManager
+ * Automatisches Abrechnungssystem für den WindparkManager
  */
 
 // Types - Re-export everything from types

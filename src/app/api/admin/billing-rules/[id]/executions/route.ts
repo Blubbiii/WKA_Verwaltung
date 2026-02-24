@@ -1,6 +1,6 @@
 /**
  * API Route: /api/admin/billing-rules/[id]/executions
- * GET: Ausfuehrungshistorie einer Regel (paginiert)
+ * GET: Ausführungshistorie einer Regel (paginiert)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -49,7 +49,7 @@ export async function GET(
       ...(status && { status }),
     };
 
-    // Lade Ausfuehrungen
+    // Lade Ausführungen
     const [executions, total] = await Promise.all([
       prisma.billingRuleExecution.findMany({
         where,
@@ -133,7 +133,7 @@ export async function GET(
   } catch (error) {
     logger.error({ err: error }, "Error fetching billing rule executions");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Ausfuehrungshistorie" },
+      { error: "Fehler beim Laden der Ausführungshistorie" },
       { status: 500 }
     );
   }

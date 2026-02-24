@@ -1,10 +1,10 @@
 /**
  * API Route: /api/admin/energy-monthly-rates/[id]
- * GET: Einzelnen monatlichen Verguetungssatz abrufen
- * PATCH: Monatlichen Verguetungssatz aktualisieren
- * DELETE: Monatlichen Verguetungssatz loeschen
+ * GET: Einzelnen monatlichen Vergütungssatz abrufen
+ * PATCH: Monatlichen Vergütungssatz aktualisieren
+ * DELETE: Monatlichen Vergütungssatz löschen
  *
- * Nur fuer ADMIN und SUPERADMIN zugaenglich.
+ * Nur für ADMIN und SUPERADMIN zugaenglich.
  * Multi-Tenancy: Alle Abfragen sind auf tenantId beschraenkt.
  */
 
@@ -20,18 +20,18 @@ import { apiLogger as logger } from "@/lib/logger";
 // ============================================================================
 
 /**
- * Validation Schema fuer Updates
+ * Validation Schema für Updates
  * Alle Felder sind optional - nur gesendete Felder werden aktualisiert.
  *
- * ACHTUNG: year, month und revenueTypeId koennen nicht geaendert werden,
- * da sie Teil des Unique-Keys sind. Dafuer muss der alte Eintrag geloescht
+ * ACHTUNG: year, month und revenueTypeId können nicht geändert werden,
+ * da sie Teil des Unique-Keys sind. Dafür muss der alte Eintrag gelöscht
  * und ein neuer erstellt werden.
  */
 const updateMonthlyRateSchema = z.object({
   ratePerKwh: z
     .number()
-    .min(0, "Verguetungssatz muss positiv sein")
-    .max(100, "Verguetungssatz erscheint unrealistisch hoch")
+    .min(0, "Vergütungssatz muss positiv sein")
+    .max(100, "Vergütungssatz erscheint unrealistisch hoch")
     .optional(),
   marketValue: z
     .number()
@@ -41,8 +41,8 @@ const updateMonthlyRateSchema = z.object({
     .nullable(),
   managementFee: z
     .number()
-    .min(0, "Management-Gebuehr muss positiv sein")
-    .max(10, "Management-Gebuehr erscheint unrealistisch hoch")
+    .min(0, "Management-Gebühr muss positiv sein")
+    .max(10, "Management-Gebühr erscheint unrealistisch hoch")
     .optional()
     .nullable(),
   notes: z.string().max(1000, "Bemerkungen duerfen maximal 1000 Zeichen haben").optional().nullable(),
@@ -53,8 +53,8 @@ const updateMonthlyRateSchema = z.object({
 // ============================================================================
 
 /**
- * Ruft einen einzelnen monatlichen Verguetungssatz ab.
- * Inkludiert Details zum zugehoerigen Verguetungstyp.
+ * Ruft einen einzelnen monatlichen Vergütungssatz ab.
+ * Inkludiert Details zum zugehoerigen Vergütungstyp.
  */
 export async function GET(
   request: NextRequest,
@@ -67,7 +67,7 @@ export async function GET(
 
     const { id } = await params;
 
-    // Lade den Verguetungssatz mit Tenant-Filter
+    // Lade den Vergütungssatz mit Tenant-Filter
     const rate = await prisma.energyMonthlyRate.findUnique({
       where: {
         id,
@@ -91,7 +91,7 @@ export async function GET(
 
     if (!rate) {
       return NextResponse.json(
-        { error: "Monatlicher Verguetungssatz nicht gefunden" },
+        { error: "Monatlicher Vergütungssatz nicht gefunden" },
         { status: 404 }
       );
     }
@@ -116,7 +116,7 @@ export async function GET(
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy monthly rate");
     return NextResponse.json(
-      { error: "Fehler beim Laden des monatlichen Verguetungssatzes" },
+      { error: "Fehler beim Laden des monatlichen Vergütungssatzes" },
       { status: 500 }
     );
   }
@@ -127,11 +127,11 @@ export async function GET(
 // ============================================================================
 
 /**
- * Aktualisiert einen monatlichen Verguetungssatz.
+ * Aktualisiert einen monatlichen Vergütungssatz.
  *
- * HINWEIS: year, month und revenueTypeId koennen NICHT geaendert werden,
+ * HINWEIS: year, month und revenueTypeId können NICHT geändert werden,
  * da sie Teil des Unique-Keys sind. Um diese zu aendern, muss der alte
- * Eintrag geloescht und ein neuer erstellt werden.
+ * Eintrag gelöscht und ein neuer erstellt werden.
  */
 export async function PATCH(
   request: NextRequest,
@@ -148,7 +148,7 @@ export async function PATCH(
     // Validiere Request-Body
     const validatedData = updateMonthlyRateSchema.parse(body);
 
-    // Pruefe ob der Verguetungssatz existiert und zum Tenant gehoert
+    // Pruefe ob der Vergütungssatz existiert und zum Tenant gehoert
     const existingRate = await prisma.energyMonthlyRate.findUnique({
       where: {
         id,
@@ -158,7 +158,7 @@ export async function PATCH(
 
     if (!existingRate) {
       return NextResponse.json(
-        { error: "Monatlicher Verguetungssatz nicht gefunden" },
+        { error: "Monatlicher Vergütungssatz nicht gefunden" },
         { status: 404 }
       );
     }
@@ -227,7 +227,7 @@ export async function PATCH(
 
     logger.error({ err: error }, "Error updating energy monthly rate");
     return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des monatlichen Verguetungssatzes" },
+      { error: "Fehler beim Aktualisieren des monatlichen Vergütungssatzes" },
       { status: 500 }
     );
   }
@@ -238,11 +238,11 @@ export async function PATCH(
 // ============================================================================
 
 /**
- * Loescht einen monatlichen Verguetungssatz permanent.
+ * Loescht einen monatlichen Vergütungssatz permanent.
  *
- * HINWEIS: Dies ist ein Hard-Delete (kein Soft-Delete), da Verguetungssaetze
- * in der Regel fuer Berechnungen verwendet werden und veraltete Daten
- * zu Verwirrung fuehren koennen.
+ * HINWEIS: Dies ist ein Hard-Delete (kein Soft-Delete), da Vergütungssaetze
+ * in der Regel für Berechnungen verwendet werden und veraltete Daten
+ * zu Verwirrung fuehren können.
  *
  * WARNUNG: Dieser Vorgang kann nicht rueckgaengig gemacht werden!
  */
@@ -257,7 +257,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Pruefe ob der Verguetungssatz existiert und zum Tenant gehoert
+    // Pruefe ob der Vergütungssatz existiert und zum Tenant gehoert
     const existingRate = await prisma.energyMonthlyRate.findUnique({
       where: {
         id,
@@ -272,19 +272,19 @@ export async function DELETE(
 
     if (!existingRate) {
       return NextResponse.json(
-        { error: "Monatlicher Verguetungssatz nicht gefunden" },
+        { error: "Monatlicher Vergütungssatz nicht gefunden" },
         { status: 404 }
       );
     }
 
-    // Loesche den Verguetungssatz
+    // Loesche den Vergütungssatz
     await prisma.energyMonthlyRate.delete({
       where: { id },
     });
 
     return NextResponse.json({
       success: true,
-      message: `Verguetungssatz fuer ${existingRate.revenueType.name} (${existingRate.month}/${existingRate.year}) wurde geloescht`,
+      message: `Vergütungssatz für ${existingRate.revenueType.name} (${existingRate.month}/${existingRate.year}) wurde gelöscht`,
       deletedId: id,
     });
   } catch (error) {
@@ -294,7 +294,7 @@ export async function DELETE(
         return NextResponse.json(
           {
             error:
-              "Dieser Verguetungssatz kann nicht geloescht werden, da er noch von anderen Datensaetzen referenziert wird",
+              "Dieser Vergütungssatz kann nicht gelöscht werden, da er noch von anderen Datensaetzen referenziert wird",
           },
           { status: 409 }
         );
@@ -303,7 +303,7 @@ export async function DELETE(
 
     logger.error({ err: error }, "Error deleting energy monthly rate");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen des monatlichen Verguetungssatzes" },
+      { error: "Fehler beim Löschen des monatlichen Vergütungssatzes" },
       { status: 500 }
     );
   }

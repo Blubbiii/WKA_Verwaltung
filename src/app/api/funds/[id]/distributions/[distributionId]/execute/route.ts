@@ -6,7 +6,7 @@ import { getNextInvoiceNumbers } from "@/lib/invoices/numberGenerator";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { apiLogger as logger } from "@/lib/logger";
 
-// Hilfsfunktion: Formatiere Empfaengername
+// Hilfsfunktion: Formatiere Empfängername
 function formatRecipientName(person: {
   personType: string;
   firstName: string | null;
@@ -75,7 +75,7 @@ export async function POST(
 
     if (distribution.status !== "DRAFT") {
       return NextResponse.json(
-        { error: "Ausschuettung wurde bereits ausgefuehrt" },
+        { error: "Ausschuettung wurde bereits ausgeführt" },
         { status: 400 }
       );
     }

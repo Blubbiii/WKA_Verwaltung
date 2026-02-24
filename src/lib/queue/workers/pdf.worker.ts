@@ -20,19 +20,19 @@ import { jobLogger } from "@/lib/logger";
 // =============================================================================
 
 /**
- * PDF-Typen die generiert werden koennen
+ * PDF-Typen die generiert werden können
  */
 export type PdfType = "invoice" | "vote-result" | "settlement-report";
 
 /**
- * Basis-Interface fuer alle PDF-Jobs
+ * Basis-Interface für alle PDF-Jobs
  */
 interface BasePdfJobData {
-  /** Eindeutige Job-ID fuer Tracking */
+  /** Eindeutige Job-ID für Tracking */
   jobId: string;
   /** Typ des zu generierenden PDFs */
   type: PdfType;
-  /** Tenant-ID fuer Multi-Tenancy */
+  /** Tenant-ID für Multi-Tenancy */
   tenantId: string;
   /** Ob das PDF gespeichert werden soll */
   saveToStorage?: boolean;
@@ -41,7 +41,7 @@ interface BasePdfJobData {
 }
 
 /**
- * Job-Daten fuer Rechnungs-PDF
+ * Job-Daten für Rechnungs-PDF
  */
 export interface InvoicePdfJobData extends BasePdfJobData {
   type: "invoice";
@@ -50,7 +50,7 @@ export interface InvoicePdfJobData extends BasePdfJobData {
 }
 
 /**
- * Job-Daten fuer Abstimmungsergebnis-PDF
+ * Job-Daten für Abstimmungsergebnis-PDF
  */
 export interface VoteResultPdfJobData extends BasePdfJobData {
   type: "vote-result";
@@ -61,7 +61,7 @@ export interface VoteResultPdfJobData extends BasePdfJobData {
 }
 
 /**
- * Job-Daten fuer Settlement Report PDF
+ * Job-Daten für Settlement Report PDF
  */
 export interface SettlementReportPdfJobData extends BasePdfJobData {
   type: "settlement-report";
@@ -70,7 +70,7 @@ export interface SettlementReportPdfJobData extends BasePdfJobData {
 }
 
 /**
- * Union-Typ fuer alle PDF-Job-Daten
+ * Union-Typ für alle PDF-Job-Daten
  */
 export type PdfJobData = InvoicePdfJobData | VoteResultPdfJobData | SettlementReportPdfJobData;
 
@@ -83,7 +83,7 @@ export interface PdfJobResult {
   storageKey?: string;
   /** Base64-kodiertes PDF wenn nicht gespeichert */
   pdfBase64?: string;
-  /** Dateigroesse in Bytes */
+  /** Dateigröße in Bytes */
   fileSizeBytes?: number;
   /** Fehler wenn fehlgeschlagen */
   error?: string;
@@ -243,7 +243,7 @@ async function processPdfJob(job: Job<PdfJobData, PdfJobResult>): Promise<PdfJob
         fileSizeBytes: pdfBuffer.length,
       });
     } else {
-      // PDF als Base64 zurueckgeben
+      // PDF als Base64 zurückgeben
       result.pdfBase64 = pdfBuffer.toString("base64");
     }
 
@@ -264,7 +264,7 @@ async function processPdfJob(job: Job<PdfJobData, PdfJobResult>): Promise<PdfJob
       maxAttempts: job.opts.attempts || 3,
     });
 
-    // Re-throw fuer BullMQ Retry-Logik
+    // Re-throw für BullMQ Retry-Logik
     throw error;
   }
 }
@@ -289,7 +289,7 @@ export function startPdfWorker(): Worker<PdfJobData, PdfJobResult> {
   pdfWorker = new Worker<PdfJobData, PdfJobResult>("pdf", processPdfJob, {
     connection,
     concurrency: 5,
-    // Kein Sandbox-Modus fuer Next.js Kompatibilitaet
+    // Kein Sandbox-Modus für Next.js Kompatibilitaet
     useWorkerThreads: false,
     // PDF-Generierung kann laenger dauern
     lockDuration: 120000, // 2 Minuten
@@ -352,14 +352,14 @@ export async function stopPdfWorker(): Promise<void> {
 }
 
 /**
- * Prueft ob der Worker laeuft
+ * Prueft ob der Worker läuft
  */
 export function isPdfWorkerRunning(): boolean {
   return pdfWorker !== null && pdfWorker.isRunning();
 }
 
 /**
- * Gibt den Worker zurueck (fuer Health-Checks)
+ * Gibt den Worker zurück (für Health-Checks)
  */
 export function getPdfWorker(): Worker<PdfJobData, PdfJobResult> | null {
   return pdfWorker;

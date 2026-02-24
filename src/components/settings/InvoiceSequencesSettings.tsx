@@ -144,7 +144,7 @@ function SequenceCard({
                   <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  <p className="font-semibold mb-2">Verfuegbare Platzhalter:</p>
+                  <p className="font-semibold mb-2">Verfügbare Platzhalter:</p>
                   <ul className="text-sm space-y-1">
                     <li>
                       <code>{"{YEAR}"}</code> - Volles Jahr (z.B. 2026)
@@ -177,7 +177,7 @@ function SequenceCard({
         {/* Nächste Nummer und Stellen */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor={`nextNumber-${type}`}>Naechste Nummer</Label>
+            <Label htmlFor={`nextNumber-${type}`}>Nächste Nummer</Label>
             <Input
               id={`nextNumber-${type}`}
               type="number"
@@ -251,7 +251,7 @@ export function InvoiceSequencesSettings() {
       <SequenceCard
         type="INVOICE"
         title="Rechnungsnummer-Format"
-        description="Format fuer neue Rechnungen"
+        description="Format für neue Rechnungen"
         sequence={invoiceSequence}
         onSave={() => mutate()}
       />
@@ -259,7 +259,7 @@ export function InvoiceSequencesSettings() {
       <SequenceCard
         type="CREDIT_NOTE"
         title="Gutschriftsnummer-Format"
-        description="Format fuer neue Gutschriften"
+        description="Format für neue Gutschriften"
         sequence={creditNoteSequence}
         onSave={() => mutate()}
       />

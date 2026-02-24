@@ -167,7 +167,7 @@ export default function LeasePaymentsPage() {
 
   async function handleSendReminder(payment: Payment) {
     try {
-      toast.info(`Zahlungserinnerung fuer ${payment.lessorName} wird gesendet...`);
+      toast.info(`Zahlungserinnerung für ${payment.lessorName} wird gesendet...`);
 
       const response = await fetch("/api/leases/payments/remind", {
         method: "POST",
@@ -203,7 +203,7 @@ export default function LeasePaymentsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Pachtzahlungen</h1>
           <p className="text-muted-foreground">
-            Uebersicht aller faelligen und geleisteten Pachtzahlungen
+            Übersicht aller fälligen und geleisteten Pachtzahlungen
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -305,7 +305,7 @@ export default function LeasePaymentsPage() {
 
         <Card className={summary?.overdue && summary.overdue > 0 ? "border-red-300" : ""}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ueberfaellig</CardTitle>
+            <CardTitle className="text-sm font-medium">Überfällig</CardTitle>
             <AlertTriangle
               className={`h-4 w-4 ${summary?.overdue && summary.overdue > 0 ? "text-red-600" : "text-muted-foreground"}`}
             />
@@ -337,9 +337,9 @@ export default function LeasePaymentsPage() {
         <TabsContent value="table" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Zahlungsuebersicht</CardTitle>
+              <CardTitle>Zahlungsübersicht</CardTitle>
               <CardDescription>
-                Alle Pachtzahlungen fuer {year}
+                Alle Pachtzahlungen für {year}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -377,7 +377,7 @@ export default function LeasePaymentsPage() {
                     <SelectItem value="all">Alle Status</SelectItem>
                     <SelectItem value="pending">Offen</SelectItem>
                     <SelectItem value="paid">Bezahlt</SelectItem>
-                    <SelectItem value="overdue">Ueberfaellig</SelectItem>
+                    <SelectItem value="overdue">Überfällig</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -390,7 +390,7 @@ export default function LeasePaymentsPage() {
                       <TableHead>Verpaechter</TableHead>
                       <TableHead>Pachtvertrag</TableHead>
                       <TableHead>Park</TableHead>
-                      <TableHead>Faelligkeit</TableHead>
+                      <TableHead>Fälligkeit</TableHead>
                       <TableHead className="text-right">Betrag</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Rechnung</TableHead>
@@ -499,7 +499,7 @@ export default function LeasePaymentsPage() {
                               {filteredPayments.filter((p) => p.status === "pending").length} offen
                             </span>
                             <span className="text-red-600">
-                              {filteredPayments.filter((p) => p.status === "overdue").length} ueberfaellig
+                              {filteredPayments.filter((p) => p.status === "overdue").length} überfällig
                             </span>
                           </div>
                         </TableCell>
@@ -517,7 +517,7 @@ export default function LeasePaymentsPage() {
             <CardHeader>
               <CardTitle>Zahlungskalender</CardTitle>
               <CardDescription>
-                Monatsansicht der Pachtzahlungen fuer {year}
+                Monatsansicht der Pachtzahlungen für {year}
               </CardDescription>
             </CardHeader>
             <CardContent>

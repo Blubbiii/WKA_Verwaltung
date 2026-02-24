@@ -143,8 +143,8 @@ export default function InvoicesPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Fehler beim Loeschen" }));
-        throw new Error(error.error || "Fehler beim Loeschen");
+        const error = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
+        throw new Error(error.error || "Fehler beim Löschen");
       }
       return response.json();
     },
@@ -153,7 +153,7 @@ export default function InvoicesPage() {
         invalidate(["invoices"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Loeschen der Rechnung");
+        toast.error(error.message || "Fehler beim Löschen der Rechnung");
       },
     }
   );
@@ -202,7 +202,7 @@ export default function InvoicesPage() {
       .map((inv) => inv.id);
 
     if (draftIds.length === 0) {
-      toast.error("Nur Entwuerfe koennen geloescht werden.");
+      toast.error("Nur Entwuerfe können gelöscht werden.");
       return;
     }
 
@@ -228,9 +228,9 @@ export default function InvoicesPage() {
     invalidate(["invoices"]);
 
     if (failCount === 0) {
-      toast.success(`${successCount} Beleg(e) erfolgreich geloescht`);
+      toast.success(`${successCount} Beleg(e) erfolgreich gelöscht`);
     } else {
-      toast.warning(`${successCount} geloescht, ${failCount} fehlgeschlagen`);
+      toast.warning(`${successCount} gelöscht, ${failCount} fehlgeschlagen`);
     }
   }
 
@@ -241,7 +241,7 @@ export default function InvoicesPage() {
       .map((inv) => inv.id);
 
     if (sentIds.length === 0) {
-      toast.error("Nur versendete Belege koennen als bezahlt markiert werden.");
+      toast.error("Nur versendete Belege können als bezahlt markiert werden.");
       return;
     }
 
@@ -282,7 +282,7 @@ export default function InvoicesPage() {
     const selected = filteredInvoices.filter((inv) => selectedIds.has(inv.id));
     if (selected.length === 0) return;
 
-    const header = ["Nummer", "Typ", "Empfaenger", "Datum", "Netto", "Brutto", "Status"];
+    const header = ["Nummer", "Typ", "Empfänger", "Datum", "Netto", "Brutto", "Status"];
     const rows = selected.map((inv) => [
       inv.invoiceNumber,
       inv.invoiceType === "INVOICE" ? "Rechnung" : "Gutschrift",
@@ -568,7 +568,7 @@ export default function InvoicesPage() {
                                 className="text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Loeschen
+                                Löschen
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -596,7 +596,7 @@ export default function InvoicesPage() {
             setDeleteId(null);
           }
         }}
-        title="Rechnung loeschen"
+        title="Rechnung löschen"
       />
 
       {/* DATEV Export Dialog */}
@@ -623,7 +623,7 @@ export default function InvoicesPage() {
             disabled: isBatchProcessing,
           },
           {
-            label: "Loeschen",
+            label: "Löschen",
             icon: isBatchProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />,
             onClick: handleBatchDelete,
             variant: "destructive",

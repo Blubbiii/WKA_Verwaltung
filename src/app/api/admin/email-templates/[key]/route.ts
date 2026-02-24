@@ -350,7 +350,7 @@ export async function DELETE(
   } catch (error) {
     logger.error({ err: error }, "[Email Templates API] DELETE [key] error");
     return NextResponse.json(
-      { error: "Fehler beim Zuruecksetzen der Vorlage" },
+      { error: "Fehler beim Zurücksetzen der Vorlage" },
       { status: 500 }
     );
   }

@@ -14,7 +14,7 @@ export default function SuperAdminSettingsPage() {
           SuperAdmin-Einstellungen
         </h1>
         <p className="text-muted-foreground">
-          Systemweite Einstellungen fuer Feature-Flags, Mandanten-Limits und
+          Systemweite Einstellungen für Feature-Flags, Mandanten-Limits und
           Wartungsmodus
         </p>
       </div>

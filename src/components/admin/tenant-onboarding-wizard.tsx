@@ -486,7 +486,7 @@ export function TenantOnboardingWizard() {
                 className="bg-muted"
               />
               <p className="text-xs text-muted-foreground">
-                Der Firmenname kann in der Mandantenverwaltung geaendert werden.
+                Der Firmenname kann in der Mandantenverwaltung geändert werden.
               </p>
             </div>
 
@@ -650,8 +650,8 @@ export function TenantOnboardingWizard() {
               Ersten Windpark anlegen
             </CardTitle>
             <CardDescription>
-              Erstellen Sie Ihren ersten Windpark. Details und Turbinen koennen
-              Sie spaeter ergaenzen.
+              Erstellen Sie Ihren ersten Windpark. Details und Turbinen können
+              Sie später ergaenzen.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -717,8 +717,8 @@ export function TenantOnboardingWizard() {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Sie koennen spaeter weitere Parks und Detail-Konfiguration in
-                der Parkverwaltung hinzufuegen.
+                Sie können später weitere Parks und Detail-Konfiguration in
+                der Parkverwaltung hinzufügen.
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -737,7 +737,7 @@ export function TenantOnboardingWizard() {
               Erste Gesellschaft anlegen
             </CardTitle>
             <CardDescription>
-              Erstellen Sie die Betreibergesellschaft fuer Ihren Windpark.
+              Erstellen Sie die Betreibergesellschaft für Ihren Windpark.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -777,7 +777,7 @@ export function TenantOnboardingWizard() {
               <Info className="h-4 w-4" />
               <AlertDescription>
                 Die Betreibergesellschaft ist die juristische Person, die den
-                Windpark betreibt und Erloese erhaelt.
+                Windpark betreibt und Erlöse erhaelt.
                 {createdParkId && (
                   <>
                     {" "}
@@ -812,7 +812,7 @@ export function TenantOnboardingWizard() {
               <div className="text-center py-8">
                 <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                 <p className="text-muted-foreground mb-4">
-                  Noch keine Benutzer hinzugefuegt. Klicken Sie auf den Button
+                  Noch keine Benutzer hinzugefügt. Klicken Sie auf den Button
                   unten, um einen Benutzer einzuladen.
                 </p>
               </div>
@@ -906,7 +906,7 @@ export function TenantOnboardingWizard() {
                 className="w-full"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Benutzer hinzufuegen
+                Benutzer hinzufügen
               </Button>
             )}
 
@@ -915,7 +915,7 @@ export function TenantOnboardingWizard() {
               <AlertDescription>
                 Den Benutzern wird ein temporaeres Passwort zugewiesen. Bitte
                 teilen Sie den Benutzern ihre Zugangsdaten manuell mit - sie
-                koennen das Passwort nach der ersten Anmeldung aendern.
+                können das Passwort nach der ersten Anmeldung aendern.
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -954,22 +954,22 @@ export function TenantOnboardingWizard() {
             <SummaryItem
               done={companyUpdated}
               label="Firmendaten hinterlegt"
-              skipLabel="uebersprungen"
+              skipLabel="übersprungen"
             />
             <SummaryItem
               done={!!createdParkName}
               label={`Park "${createdParkName}" angelegt`}
-              skipLabel="uebersprungen"
+              skipLabel="übersprungen"
             />
             <SummaryItem
               done={!!createdFundName}
               label={`Gesellschaft "${createdFundName}" angelegt`}
-              skipLabel="uebersprungen"
+              skipLabel="übersprungen"
             />
             <SummaryItem
               done={invitedUsers.length > 0}
               label={`${invitedUsers.length} Benutzer eingeladen`}
-              skipLabel="uebersprungen"
+              skipLabel="übersprungen"
             />
           </CardContent>
         </Card>
@@ -977,16 +977,16 @@ export function TenantOnboardingWizard() {
         {/* Next Steps */}
         <Card>
           <CardHeader>
-            <CardTitle>Naechste Schritte</CardTitle>
+            <CardTitle>Nächste Schritte</CardTitle>
             <CardDescription>
-              Hier sind ein paar Vorschlaege, wie Sie weitermachen koennen.
+              Hier sind ein paar Vorschlaege, wie Sie weitermachen können.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
               <NextStepCard
                 icon={Wind}
-                title="Turbinen hinzufuegen"
+                title="Turbinen hinzufügen"
                 description="Fuegen Sie Windkraftanlagen zu Ihrem Park hinzu."
                 href="/parks"
               />
@@ -998,14 +998,14 @@ export function TenantOnboardingWizard() {
               />
               <NextStepCard
                 icon={FileText}
-                title="Pachtvertraege anlegen"
-                description="Erfassen Sie die Grundstueckspachtvertraege."
+                title="Pachtverträge anlegen"
+                description="Erfassen Sie die Grundstueckspachtverträge."
                 href="/leases/new"
               />
               <NextStepCard
                 icon={LayoutDashboard}
                 title="Zum Dashboard"
-                description="Zurueck zur Uebersicht."
+                description="Zurück zur Übersicht."
                 href="/dashboard"
               />
             </div>
@@ -1126,7 +1126,7 @@ export function TenantOnboardingWizard() {
                 disabled={loading}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Zurueck
+                Zurück
               </Button>
             )}
             <Button
@@ -1135,7 +1135,7 @@ export function TenantOnboardingWizard() {
               disabled={loading}
             >
               <SkipForward className="mr-2 h-4 w-4" />
-              Ueberspringen
+              Überspringen
             </Button>
           </div>
 

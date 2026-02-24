@@ -236,7 +236,7 @@ export function getRateLimitResponse(
 
   return NextResponse.json(
     {
-      error: "Zu viele Anfragen. Bitte versuchen Sie es spaeter erneut.",
+      error: "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
     },
     {
       status: 429,

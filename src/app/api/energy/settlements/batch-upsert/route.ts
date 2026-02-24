@@ -17,7 +17,7 @@ const monthlyEntrySchema = z.object({
 });
 
 const batchUpsertSchema = z.object({
-  parkId: z.string().uuid("Ungueltige Park-ID"),
+  parkId: z.string().uuid("Ungültige Park-ID"),
   year: z.number().int().min(2000).max(2100),
   entries: z.array(monthlyEntrySchema).min(1).max(12),
 });
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
-      message: `${created.length} erstellt, ${updated.length} aktualisiert${skipped.length > 0 ? `, ${skipped.length} uebersprungen` : ""}`,
+      message: `${created.length} erstellt, ${updated.length} aktualisiert${skipped.length > 0 ? `, ${skipped.length} übersprungen` : ""}`,
       settlements,
       summary: {
         created: created.length,

@@ -151,7 +151,7 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <Cloud className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">Keine Wetterdaten verfuegbar</p>
+          <p className="text-sm">Keine Wetterdaten verfügbar</p>
         </div>
       </div>
     );

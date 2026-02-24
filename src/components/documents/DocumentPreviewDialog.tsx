@@ -279,9 +279,9 @@ export function DocumentPreviewDialog({
               </div>
               <div className="flex-1 flex flex-col items-center justify-center bg-muted/50 p-8 text-center">
                 <FileSpreadsheet className="h-16 w-16 text-muted-foreground mb-4" />
-                <p className="text-lg font-medium">Office-Vorschau nicht verfuegbar</p>
+                <p className="text-lg font-medium">Office-Vorschau nicht verfügbar</p>
                 <p className="text-sm text-muted-foreground mt-2 max-w-md">
-                  Office-Dokumente aus dem internen Speicher koennen nicht direkt
+                  Office-Dokumente aus dem internen Speicher können nicht direkt
                   in der Vorschau angezeigt werden. Bitte laden Sie die Datei herunter.
                 </p>
                 <Button variant="default" className="mt-4" onClick={handleDownload}>
@@ -311,9 +311,9 @@ export function DocumentPreviewDialog({
           {!urlLoading && presignedUrl && fileType === "unknown" && (
             <div className="flex flex-col items-center justify-center h-64 text-center p-8">
               <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">Vorschau nicht verfuegbar</p>
+              <p className="text-lg font-medium">Vorschau nicht verfügbar</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Fuer diesen Dateityp ist keine Vorschau moeglich.
+                Für diesen Dateityp ist keine Vorschau moeglich.
               </p>
               <Button variant="default" className="mt-4" onClick={handleDownload}>
                 <Download className="mr-2 h-4 w-4" />

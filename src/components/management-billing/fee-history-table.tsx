@@ -56,12 +56,12 @@ export function FeeHistoryTable({
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-base font-semibold">
           <History className="h-4 w-4" />
-          Gebuehren-Historie
+          Gebühren-Historie
         </h3>
         {onAddEntry && (
           <Button variant="outline" size="sm" onClick={onAddEntry}>
             <Plus className="mr-2 h-4 w-4" />
-            Eintrag hinzufuegen
+            Eintrag hinzufügen
           </Button>
         )}
       </div>
@@ -70,16 +70,16 @@ export function FeeHistoryTable({
         <EmptyState
           icon={History}
           title="Keine Historie vorhanden"
-          description="Es wurden noch keine Gebuehren-Aenderungen erfasst."
+          description="Es wurden noch keine Gebühren-Änderungen erfasst."
         />
       ) : (
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Gueltig ab</TableHead>
-                <TableHead>Gueltig bis</TableHead>
-                <TableHead className="text-right">Gebuehr %</TableHead>
+                <TableHead>Gültig ab</TableHead>
+                <TableHead>Gültig bis</TableHead>
+                <TableHead className="text-right">Gebühr %</TableHead>
                 <TableHead>Grund</TableHead>
               </TableRow>
             </TableHeader>

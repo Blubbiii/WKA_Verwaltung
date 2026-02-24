@@ -98,7 +98,7 @@ export async function POST(
       targetStatus = "DRAFT";
     } else {
       return NextResponse.json(
-        { error: "Keine gueltige Aktion angegeben. Verwenden Sie: submit, approve, reject, publish oder revise." },
+        { error: "Keine gültige Aktion angegeben. Verwenden Sie: submit, approve, reject, publish oder revise." },
         { status: 400 }
       );
     }
@@ -121,7 +121,7 @@ export async function POST(
       !isAdmin
     ) {
       return NextResponse.json(
-        { error: "Nur Administratoren koennen Dokumente genehmigen, ablehnen oder veroeffentlichen." },
+        { error: "Nur Administratoren können Dokumente genehmigen, ablehnen oder veroeffentlichen." },
         { status: 403 }
       );
     }
@@ -188,7 +188,7 @@ export async function POST(
     //   for (const admin of admins) {
     //     await createNotification({
     //       type: "DOCUMENT",
-    //       title: "Dokument zur Pruefung eingereicht",
+    //       title: "Dokument zur Prüfung eingereicht",
     //       message: `"${document.title}" wartet auf Genehmigung`,
     //       link: `/documents/${document.id}`,
     //       userId: admin.id,
@@ -229,7 +229,7 @@ export async function POST(
 
     const statusLabels: Record<string, string> = {
       DRAFT: "Entwurf",
-      PENDING_REVIEW: "Zur Pruefung eingereicht",
+      PENDING_REVIEW: "Zur Prüfung eingereicht",
       APPROVED: "Genehmigt",
       PUBLISHED: "Veroeffentlicht",
       REJECTED: "Abgelehnt",
@@ -246,7 +246,7 @@ export async function POST(
       reviewedAt: updatedDocument.reviewedAt?.toISOString() || null,
       reviewNotes: updatedDocument.reviewNotes,
       publishedAt: updatedDocument.publishedAt?.toISOString() || null,
-      message: `Status geaendert: ${statusLabels[targetStatus] || targetStatus}`,
+      message: `Status geändert: ${statusLabels[targetStatus] || targetStatus}`,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -414,7 +414,7 @@ export default function BillingDetailPage({
           <CardContent className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">
-                Basis-Erloes
+                Basis-Erlös
               </span>
               <span className="text-lg font-medium">
                 {formatCurrency(billing.baseRevenueEur)}
@@ -423,7 +423,7 @@ export default function BillingDetailPage({
 
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">
-                x Gebuehrensatz
+                x Gebührensatz
               </span>
               <span>
                 {billing.feePercentageUsed
@@ -480,7 +480,7 @@ export default function BillingDetailPage({
               Details pro Gesellschaft
             </CardTitle>
             <CardDescription>
-              Aufschluesselung der Erloesanteile pro Gesellschaft
+              Aufschluesselung der Erlösanteile pro Gesellschaft
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -490,10 +490,10 @@ export default function BillingDetailPage({
                   <TableRow>
                     <TableHead>Gesellschaft</TableHead>
                     <TableHead className="text-right">
-                      Erloesanteil
+                      Erlösanteil
                     </TableHead>
                     <TableHead className="text-right">
-                      Gebuehr
+                      Gebühr
                     </TableHead>
                   </TableRow>
                 </TableHeader>

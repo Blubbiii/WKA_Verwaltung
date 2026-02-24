@@ -695,8 +695,8 @@ export default function ProxiesPage() {
         open={revokeDialogOpen}
         onOpenChange={setRevokeDialogOpen}
         onConfirm={handleConfirmRevoke}
-        title="Widerruf bestaetigen"
-        description="Moechten Sie diese Vollmacht wirklich widerrufen?"
+        title="Widerruf bestätigen"
+        description="Möchten Sie diese Vollmacht wirklich widerrufen?"
       />
     </div>
   );

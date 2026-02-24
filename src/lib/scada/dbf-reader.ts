@@ -1,12 +1,12 @@
 /**
- * DBF-Reader Service fuer Enercon SCADA-Daten
+ * DBF-Reader Service für Enercon SCADA-Daten
  *
  * Liest dBASE III (DBF) Dateien aus dem Enercon SCADA-System.
  * Unterstuetzt alle Enercon-Dateitypen:
  *
  *   WSD - Wind Speed Daily (10-Min Leistungsdaten)
  *   UID - Electrical / Grid Data (Zaehlerstaende, Netzparameter)
- *   AVR/AVW/AVM/AVY - Availability (Verfuegbarkeit: daily/weekly/monthly/yearly)
+ *   AVR/AVW/AVM/AVY - Availability (Verfügbarkeit: daily/weekly/monthly/yearly)
  *   SSM - State Summary Monthly (Zustandsstatistik)
  *   SWM - Warning Summary Monthly (Warnungsstatistik)
  *   PES - Plant Event State (Zustandsereignisse)
@@ -366,8 +366,8 @@ export interface AllLocationsResult {
 // ---------------------------------------------------------------
 
 /**
- * Ungueltige Messwerte im Enercon SCADA-System.
- * Diese Werte bedeuten "Sensor nicht verfuegbar" oder "Messfehler"
+ * Ungültige Messwerte im Enercon SCADA-System.
+ * Diese Werte bedeuten "Sensor nicht verfügbar" oder "Messfehler"
  * und muessen als null interpretiert werden.
  */
 const INVALID_VALUES = [32767, 65535, 6553.5, 65.535];
@@ -399,7 +399,7 @@ const KNOWN_FILE_TYPES = Object.keys(FILE_TYPE_EXTENSIONS);
 // ---------------------------------------------------------------
 
 /**
- * Prueft ob ein Messwert gueltig ist.
+ * Prueft ob ein Messwert gültig ist.
  * Enercon SCADA verwendet 32767, 65535, 6553.5 und 65.535 als "kein Messwert"-Markierung.
  */
 function isValidValue(val: unknown): val is number {
@@ -409,7 +409,7 @@ function isValidValue(val: unknown): val is number {
 
 /**
  * Konvertiert einen unbekannten Wert in eine Zahl oder null.
- * Beruecksichtigt die SCADA-spezifischen ungueltigen Werte.
+ * Beruecksichtigt die SCADA-spezifischen ungültigen Werte.
  */
 function toValidNumber(val: unknown): number | null {
   if (val == null) return null;
@@ -562,7 +562,7 @@ async function directoryExists(dirPath: string): Promise<boolean> {
 // ---------------------------------------------------------------
 
 /**
- * Liest eine WSD-Datei (Wind Speed Daily) und gibt die Messwerte zurueck.
+ * Liest eine WSD-Datei (Wind Speed Daily) und gibt die Messwerte zurück.
  *
  * WSD-Dateien enthalten 10-Minuten-Intervall-Daten mit folgenden Feldern:
  * - Date: Datum (Date-Objekt, nur der Tag)
@@ -575,7 +575,7 @@ async function directoryExists(dirPath: string): Promise<boolean> {
  * - arwAbWorkH: Kumulative Betriebsstunden
  *
  * WICHTIG: Werte 32767, 65535, 6553.5, 65.535 sind Enercon-spezifische
- *          "kein Messwert"-Markierungen und werden als null zurueckgegeben.
+ *          "kein Messwert"-Markierungen und werden als null zurückgegeben.
  *
  * @param filePath - Absoluter Pfad zur .wsd Datei (dBASE III Format)
  * @returns Array der geparseten WSD-Messwerte
@@ -735,12 +735,12 @@ export async function readUidFile(filePath: string): Promise<UidRecord[]> {
 /**
  * Liest eine AVR/AVW/AVM/AVY-Datei (Availability).
  *
- * Availability-Dateien enthalten Verfuegbarkeitsdaten mit Zeitkategorien T1-T6:
+ * Availability-Dateien enthalten Verfügbarkeitsdaten mit Zeitkategorien T1-T6:
  * - T1: Production time (Produktion)
  * - T2: Waiting for wind (Windflaute)
  * - T3: Environmental stop (Umweltstop)
  * - T4: Routine maintenance (Wartung)
- * - T5: Equipment failure (Stoerung)
+ * - T5: Equipment failure (Störung)
  * - T6: Other downtime (Sonstige)
  * - T5_1, T5_2, T5_3: External stop subtypes
  *
@@ -792,7 +792,7 @@ export async function readAvrFile(filePath: string): Promise<AvailabilityRecord[
  *
  * SSM-Dateien enthalten zusammengefasste Zustandsinformationen mit:
  * - State/SubState: Zustandscodes der Anlage
- * - FaultMsg: ob es sich um eine Stoerung handelt
+ * - FaultMsg: ob es sich um eine Störung handelt
  * - Frequency: Haeufigkeit des Zustands
  * - Duration: Gesamtdauer des Zustands in Sekunden
  *
@@ -885,7 +885,7 @@ export async function readSwmFile(filePath: string): Promise<WarningSummaryRecor
  * PES-Dateien enthalten einzelne Zustandsereignisse mit Zeitstempel:
  * - State/SubState: Zustandscodes
  * - Service: ob Servicemodus aktiv war
- * - FaultMsg: ob Stoerungsmeldung
+ * - FaultMsg: ob Störungsmeldung
  * - Value0: Windgeschwindigkeit zum Zeitpunkt des Ereignisses
  *
  * @param filePath - Absoluter Pfad zur .pes Datei
@@ -972,10 +972,10 @@ export async function readPewFile(filePath: string): Promise<WarningEventRecord[
  *
  * Wind-Summary-Dateien enthalten aggregierte Messdaten mit:
  * - Alle Kern-Messwerte wie in WSD (Wind, Leistung, Rotor) als mean/peak/low
- * - Zusaetzliche Umweltsensoren (Regen, Sicht, Helligkeit, Blitz, Eis)
+ * - Zusätzliche Umweltsensoren (Regen, Sicht, Helligkeit, Blitz, Eis)
  * - Kumulative Zaehler (Energie, Betriebsstunden, Arbeitsminuten)
  * - Leistungskomponenten (Wind, Technik, Zwang, Extern)
- * - Peak-Zeitstempel fuer verschiedene Messwerte
+ * - Peak-Zeitstempel für verschiedene Messwerte
  * - SmpCount: Anzahl der Messwerte in der Zusammenfassung
  *
  * Die verschiedenen Dateitypen haben die gleiche Struktur, unterscheiden sich aber
@@ -1341,7 +1341,7 @@ export async function scanAllLocations(
         fileTypes,
       });
     } catch {
-      // Standort konnte nicht gescannt werden - ueberspringen
+      // Standort konnte nicht gescannt werden - überspringen
       continue;
     }
   }

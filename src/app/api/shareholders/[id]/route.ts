@@ -235,7 +235,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_DELETE);
 
     // Hard-Delete + audit log + recalculate atomar in einer Transaktion
     await prisma.$transaction(async (tx) => {
-      // 1. Hard-Delete: Unwiderruflich loeschen
+      // 1. Hard-Delete: Unwiderruflich löschen
       await tx.shareholder.delete({
         where: { id },
       });

@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
 const ACTION_LABELS: Record<string, string> = {
   CREATE: "Erstellt",
   UPDATE: "Bearbeitet",
-  DELETE: "Geloescht",
+  DELETE: "Gelöscht",
   VIEW: "Angesehen",
   EXPORT: "Exportiert",
   DOCUMENT_DOWNLOAD: "Download",
@@ -295,10 +295,10 @@ function formatUserName(user: AuditLogEntry["user"]): string {
 }
 
 /**
- * Extrahiert wichtige Details aus den Aenderungen
+ * Extrahiert wichtige Details aus den Änderungen
  */
 function extractDetails(entry: AuditLogEntry): string {
-  // Fuer CREATE/UPDATE: zeige geaenderte Felder
+  // Für CREATE/UPDATE: zeige geänderte Felder
   if (entry.action === "CREATE" && entry.newValues) {
     const keys = Object.keys(entry.newValues).slice(0, 3);
     if (keys.length > 0) {
@@ -311,7 +311,7 @@ function extractDetails(entry: AuditLogEntry): string {
       (key) => JSON.stringify(entry.oldValues?.[key]) !== JSON.stringify(entry.newValues?.[key])
     );
     if (changedKeys.length > 0) {
-      return `Geaendert: ${changedKeys.slice(0, 3).join(", ")}`;
+      return `Geändert: ${changedKeys.slice(0, 3).join(", ")}`;
     }
   }
 
@@ -323,7 +323,7 @@ function extractDetails(entry: AuditLogEntry): string {
 }
 
 /**
- * Gibt den Stil basierend auf der Aktion zurueck
+ * Gibt den Stil basierend auf der Aktion zurück
  */
 function getActionStyle(action: string) {
   switch (action) {
@@ -339,7 +339,7 @@ function getActionStyle(action: string) {
 }
 
 /**
- * Gibt den Zeilen-Stil basierend auf der Aktion zurueck
+ * Gibt den Zeilen-Stil basierend auf der Aktion zurück
  */
 function getRowStyle(action: string) {
   switch (action) {
@@ -408,7 +408,7 @@ export function AuditLogTemplate({ data }: AuditLogTemplateProps) {
             {pageIndex === 0 && (
               <>
                 <Text style={styles.subtitle}>
-                  Protokoll aller System-Aktivitaeten
+                  Protokoll aller System-Aktivitäten
                 </Text>
                 <View style={styles.metaInfo}>
                   <Text>Mandant: {data.tenantName}</Text>
@@ -451,7 +451,7 @@ export function AuditLogTemplate({ data }: AuditLogTemplateProps) {
                 </Text>
               </View>
               <View style={[styles.summaryCard, { borderLeftWidth: 3, borderLeftColor: "#DC2626" }]}>
-                <Text style={styles.summaryLabel}>Geloescht</Text>
+                <Text style={styles.summaryLabel}>Gelöscht</Text>
                 <Text style={[styles.summaryValue, styles.actionDelete]}>
                   {data.statistics.deletes}
                 </Text>
@@ -491,7 +491,7 @@ export function AuditLogTemplate({ data }: AuditLogTemplateProps) {
             {/* Table Rows */}
             {pageEntries.length === 0 ? (
               <View style={[styles.tableRow, { justifyContent: "center", padding: 20 }]}>
-                <Text style={styles.cellText}>Keine Eintraege gefunden</Text>
+                <Text style={styles.cellText}>Keine Einträge gefunden</Text>
               </View>
             ) : (
               pageEntries.map((entry, index) => {

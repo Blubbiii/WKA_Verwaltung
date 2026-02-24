@@ -42,7 +42,7 @@ describe("validateFileContent - leere Dateien", () => {
 // =============================================================================
 
 describe("validateFileContent - PDF", () => {
-  it("akzeptiert gueltige PDF-Dateien", () => {
+  it("akzeptiert gültige PDF-Dateien", () => {
     const buffer = bufferFrom(PDF_HEADER);
     const result = validateFileContent(buffer, "application/pdf");
     expect(result.valid).toBe(true);
@@ -68,7 +68,7 @@ describe("validateFileContent - PDF", () => {
 // =============================================================================
 
 describe("validateFileContent - PNG", () => {
-  it("akzeptiert gueltige PNG-Dateien", () => {
+  it("akzeptiert gültige PNG-Dateien", () => {
     const buffer = bufferFrom(PNG_HEADER);
     const result = validateFileContent(buffer, "image/png");
     expect(result.valid).toBe(true);
@@ -87,7 +87,7 @@ describe("validateFileContent - PNG", () => {
 // =============================================================================
 
 describe("validateFileContent - JPEG", () => {
-  it("akzeptiert gueltige JPEG-Dateien", () => {
+  it("akzeptiert gültige JPEG-Dateien", () => {
     const buffer = bufferFrom(JPEG_HEADER);
     const result = validateFileContent(buffer, "image/jpeg");
     expect(result.valid).toBe(true);
@@ -123,7 +123,7 @@ describe("validateFileContent - GIF", () => {
 // =============================================================================
 
 describe("validateFileContent - WebP", () => {
-  it("akzeptiert gueltige WebP-Dateien (RIFF + WEBP Marker)", () => {
+  it("akzeptiert gültige WebP-Dateien (RIFF + WEBP Marker)", () => {
     const buffer = bufferFrom(WEBP_HEADER);
     const result = validateFileContent(buffer, "image/webp");
     expect(result.valid).toBe(true);
@@ -160,7 +160,7 @@ describe("validateFileContent - Office ZIP-Dokumente", () => {
   ];
 
   for (const mimeType of officeTypes) {
-    it(`akzeptiert ZIP-Signatur fuer ${mimeType.split(".").pop()}`, () => {
+    it(`akzeptiert ZIP-Signatur für ${mimeType.split(".").pop()}`, () => {
       const buffer = bufferFrom([...ZIP_HEADER, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
       const result = validateFileContent(buffer, mimeType);
       expect(result.valid).toBe(true);
@@ -187,7 +187,7 @@ describe("validateFileContent - Legacy Office-Dokumente (OLE2)", () => {
   ];
 
   for (const mimeType of legacyTypes) {
-    it(`akzeptiert OLE2-Signatur fuer ${mimeType}`, () => {
+    it(`akzeptiert OLE2-Signatur für ${mimeType}`, () => {
       const buffer = bufferFrom([...OLE2_HEADER, 0x00, 0x00, 0x00, 0x00]);
       const result = validateFileContent(buffer, mimeType);
       expect(result.valid).toBe(true);
@@ -237,7 +237,7 @@ describe("validateFileContent - SVG", () => {
 // =============================================================================
 
 describe("validateFileContent - Textdateien", () => {
-  it("akzeptiert gueltige Textdateien", () => {
+  it("akzeptiert gültige Textdateien", () => {
     const buffer = Buffer.from("Hello World\nLine 2\nLine 3");
     const result = validateFileContent(buffer, "text/plain");
     expect(result.valid).toBe(true);

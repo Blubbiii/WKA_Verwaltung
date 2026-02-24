@@ -530,7 +530,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Ungueltige Eingabedaten",
+          error: "Ungültige Eingabedaten",
           details: parsed.error.flatten().fieldErrors,
         },
         { status: 400 }
@@ -545,13 +545,13 @@ export async function POST(request: NextRequest) {
 
     if (isNaN(fromDate.getTime())) {
       return NextResponse.json(
-        { error: "Ungueltiges 'from' Datum (ISO-Format erwartet)" },
+        { error: "Ungültiges 'from' Datum (ISO-Format erwartet)" },
         { status: 400 }
       );
     }
     if (isNaN(toDate.getTime())) {
       return NextResponse.json(
-        { error: "Ungueltiges 'to' Datum (ISO-Format erwartet)" },
+        { error: "Ungültiges 'to' Datum (ISO-Format erwartet)" },
         { status: 400 }
       );
     }
@@ -581,7 +581,7 @@ export async function POST(request: NextRequest) {
 
     if (turbines.length === 0) {
       return NextResponse.json(
-        { error: "Keine Turbinen fuer die gewaehlten Filter gefunden" },
+        { error: "Keine Turbinen für die gewaehlten Filter gefunden" },
         { status: 404 }
       );
     }

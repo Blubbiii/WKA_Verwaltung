@@ -64,7 +64,7 @@ import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices
 
 interface InvoiceItem {
   id: string;
-  isNew?: boolean; // Marker fuer neue Items
+  isNew?: boolean; // Marker für neue Items
   description: string;
   quantity: number;
   unit: string;
@@ -186,9 +186,9 @@ export default function EditInvoicePage({
 
         const data: Invoice = await response.json();
 
-        // Nur DRAFT-Rechnungen koennen bearbeitet werden
+        // Nur DRAFT-Rechnungen können bearbeitet werden
         if (data.status !== "DRAFT") {
-          toast.error("Nur Entwuerfe koennen bearbeitet werden");
+          toast.error("Nur Entwuerfe können bearbeitet werden");
           router.push(`/invoices/${id}`);
           return;
         }
@@ -275,7 +275,7 @@ export default function EditInvoicePage({
 
     const item = items.find((i) => i.id === itemId);
     if (item && !item.isNew) {
-      // Bestehende Items merken zum Loeschen
+      // Bestehende Items merken zum Löschen
       setDeletedItemIds([...deletedItemIds, itemId]);
     }
 
@@ -333,7 +333,7 @@ export default function EditInvoicePage({
     e.preventDefault();
 
     if (!formData.recipientName.trim()) {
-      toast.error("Empfaengername erforderlich");
+      toast.error("Empfängername erforderlich");
       return;
     }
 
@@ -350,7 +350,7 @@ export default function EditInvoicePage({
     try {
       setSaving(true);
 
-      // 1. Geloeschte Items entfernen
+      // 1. Gelöschte Items entfernen
       for (const itemId of deletedItemIds) {
         await fetch(`/api/invoices/${id}/items/${itemId}`, {
           method: "DELETE",
@@ -529,10 +529,10 @@ export default function EditInvoicePage({
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Linke Spalte */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Empfaenger */}
+          {/* Empfänger */}
           <Card>
             <CardHeader>
-              <CardTitle>Empfaenger</CardTitle>
+              <CardTitle>Empfänger</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -562,7 +562,7 @@ export default function EditInvoicePage({
                       onChange={(e) =>
                         setFormData({ ...formData, recipientName: e.target.value })
                       }
-                      placeholder="Name des Empfaengers"
+                      placeholder="Name des Empfängers"
                       required
                       className="pr-10"
                     />
@@ -811,7 +811,7 @@ export default function EditInvoicePage({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dueDate">Faelligkeitsdatum</Label>
+                <Label htmlFor="dueDate">Fälligkeitsdatum</Label>
                 <Input
                   id="dueDate"
                   type="date"

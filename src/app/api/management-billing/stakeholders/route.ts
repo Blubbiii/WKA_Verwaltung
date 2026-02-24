@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     const validRoles = ["DEVELOPER", "GRID_OPERATOR", "TECHNICAL_BF", "COMMERCIAL_BF", "OPERATOR"];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
-        { error: `Ungueltige Rolle. Erlaubt: ${validRoles.join(", ")}` },
+        { error: `Ungültige Rolle. Erlaubt: ${validRoles.join(", ")}` },
         { status: 400 }
       );
     }
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
     });
     if (existing) {
       return NextResponse.json(
-        { error: "Diese Rolle ist fuer diesen Mandanten und Park bereits vergeben" },
+        { error: "Diese Rolle ist für diesen Mandanten und Park bereits vergeben" },
         { status: 409 }
       );
     }
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
     const isBfRole = role === "TECHNICAL_BF" || role === "COMMERCIAL_BF";
     if (isBfRole && billingEnabled && (!feePercentage || feePercentage <= 0)) {
       return NextResponse.json(
-        { error: "BF-Rollen mit Abrechnung benoetigen einen Gebuehrensatz (feePercentage)" },
+        { error: "BF-Rollen mit Abrechnung benoetigen einen Gebührensatz (feePercentage)" },
         { status: 400 }
       );
     }

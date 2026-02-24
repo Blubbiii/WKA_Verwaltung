@@ -191,8 +191,8 @@ export const BLOCK_PALETTE: BlockPaletteItem[] = [
   },
   {
     type: "RECIPIENT_ADDRESS",
-    label: "Empfaenger",
-    description: "Empfaengeradresse (DIN 5008)",
+    label: "Empfänger",
+    description: "Empfängeradresse (DIN 5008)",
     category: "layout",
     icon: "User",
     defaultConfig: { showWindow: true },
@@ -218,7 +218,7 @@ export const BLOCK_PALETTE: BlockPaletteItem[] = [
   {
     type: "INVOICE_META",
     label: "Rechnungsdaten",
-    description: "Nr., Datum, Faelligkeit",
+    description: "Nr., Datum, Fälligkeit",
     category: "content",
     icon: "FileText",
     defaultConfig: {
@@ -233,7 +233,7 @@ export const BLOCK_PALETTE: BlockPaletteItem[] = [
   {
     type: "NOTES",
     label: "Notizen",
-    description: "Freitextfeld fuer Bemerkungen",
+    description: "Freitextfeld für Bemerkungen",
     category: "content",
     icon: "StickyNote",
     defaultConfig: { defaultText: "" },
@@ -274,7 +274,7 @@ export const BLOCK_PALETTE: BlockPaletteItem[] = [
   },
   {
     type: "TAX_SUMMARY",
-    label: "Steueruebersicht",
+    label: "Steuerübersicht",
     description: "MwSt-Aufstellung nach Saetzen",
     category: "financial",
     icon: "Percent",
@@ -334,11 +334,11 @@ export const CATEGORY_LABELS: Record<string, string> = {
 export const BLOCK_TYPE_LABELS: Record<string, string> = {
   HEADER: "Kopfzeile",
   SENDER_ADDRESS: "Absender",
-  RECIPIENT_ADDRESS: "Empfaenger",
+  RECIPIENT_ADDRESS: "Empfänger",
   INVOICE_META: "Rechnungsdaten",
   POSITIONS_TABLE: "Positionstabelle",
   SUBTOTAL: "Zwischensumme",
-  TAX_SUMMARY: "Steueruebersicht",
+  TAX_SUMMARY: "Steuerübersicht",
   TOTAL: "Gesamtbetrag",
   PAYMENT_INFO: "Zahlungsinformationen",
   BANK_DETAILS: "Bankverbindung",
@@ -361,7 +361,7 @@ export const SAMPLE_INVOICE_DATA = {
   senderStreet: "Am Windpark 12",
   senderCity: "21271 Hanstedt",
   recipientName: "Stadtwerke Hamburg Energie GmbH",
-  recipientStreet: "Ueberseering 12",
+  recipientStreet: "Überseering 12",
   recipientCity: "22297 Hamburg",
   invoiceNumber: "RE-2026-00042",
   invoiceDate: "12.02.2026",

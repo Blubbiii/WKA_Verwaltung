@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generateVoteResultPdf } from "@/lib/pdf/generators/voteResultPdf";
 import { apiLogger as logger } from "@/lib/logger";
 
-// GET /api/votes/[id]/export - PDF-Export fuer Abstimmungsergebnis
+// GET /api/votes/[id]/export - PDF-Export für Abstimmungsergebnis
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -16,7 +16,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
 
     const { id } = await params;
 
-    // Vote laden und pruefen
+    // Vote laden und prüfen
     const vote = await prisma.vote.findFirst({
       where: {
         id,
@@ -36,10 +36,10 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
       );
     }
 
-    // Nur CLOSED Abstimmungen koennen exportiert werden
+    // Nur CLOSED Abstimmungen können exportiert werden
     if (vote.status !== "CLOSED") {
       return NextResponse.json(
-        { error: "PDF-Export ist nur fuer beendete Abstimmungen verfuegbar" },
+        { error: "PDF-Export ist nur für beendete Abstimmungen verfügbar" },
         { status: 400 }
       );
     }
@@ -58,14 +58,14 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
       .substring(0, 50);
     const filename = `Abstimmungsergebnis_${safeTitle}_${new Date().toISOString().split("T")[0]}.pdf`;
 
-    // PDF als Download zurueckgeben (Buffer zu Uint8Array konvertieren)
+    // PDF als Download zurückgeben (Buffer zu Uint8Array konvertieren)
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Content-Length": pdfBuffer.length.toString(),
-        // Cache-Control: Kein Caching fuer dynamische Dokumente
+        // Cache-Control: Kein Caching für dynamische Dokumente
         "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
         Pragma: "no-cache",
         Expires: "0",
@@ -82,7 +82,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
           { status: 404 }
         );
       }
-      if (error.message.includes("nur fuer abgeschlossene")) {
+      if (error.message.includes("nur für abgeschlossene")) {
         return NextResponse.json(
           { error: error.message },
           { status: 400 }

@@ -73,7 +73,7 @@ const wizardRequestSchema = z.object({
 
 // Direct API request (programmatic)
 const importRowSchema = z.object({
-  turbineId: z.string().uuid("Ungueltige Turbinen-ID"),
+  turbineId: z.string().uuid("Ungültige Turbinen-ID"),
   year: z.number().int().min(2000).max(2100),
   month: z.number().int().min(1).max(12),
   productionKwh: z.number().nonnegative(),
@@ -186,24 +186,24 @@ async function resolveRows(
     // Validate year
     const year = Number(yearRaw);
     if (isNaN(year) || year < 2000 || year > 2100) {
-      messages.push(`Ungueltiges Jahr: ${yearRaw}`);
+      messages.push(`Ungültiges Jahr: ${yearRaw}`);
       status = "error";
     }
 
     // Validate month
     const month = Number(monthRaw);
     if (isNaN(month) || month < 1 || month > 12) {
-      messages.push(`Ungueltiger Monat: ${monthRaw}`);
+      messages.push(`Ungültiger Monat: ${monthRaw}`);
       status = "error";
     }
 
     // Validate production
     const production = Number(typeof productionRaw === "string" ? productionRaw.replace(",", ".") : productionRaw);
     if (isNaN(production) || production < 0) {
-      messages.push(`Ungueltige Produktion: ${productionRaw}`);
+      messages.push(`Ungültige Produktion: ${productionRaw}`);
       status = "error";
     } else if (production > 50000000) {
-      messages.push("Sehr hohe Produktionsmenge - bitte pruefen");
+      messages.push("Sehr hohe Produktionsmenge - bitte prüfen");
       if (status === "success") status = "warning";
     }
 
@@ -212,7 +212,7 @@ async function resolveRows(
     if (operatingHoursRaw !== null && operatingHoursRaw !== undefined && operatingHoursRaw !== "") {
       operatingHours = Number(typeof operatingHoursRaw === "string" ? operatingHoursRaw.replace(",", ".") : operatingHoursRaw);
       if (isNaN(operatingHours) || operatingHours < 0) {
-        messages.push(`Ungueltige Betriebsstunden: ${operatingHoursRaw}`);
+        messages.push(`Ungültige Betriebsstunden: ${operatingHoursRaw}`);
         if (status === "success") status = "warning";
         operatingHours = undefined;
       }
@@ -223,7 +223,7 @@ async function resolveRows(
     if (availabilityPctRaw !== null && availabilityPctRaw !== undefined && availabilityPctRaw !== "") {
       availabilityPct = Number(typeof availabilityPctRaw === "string" ? availabilityPctRaw.replace(",", ".") : availabilityPctRaw);
       if (isNaN(availabilityPct) || availabilityPct < 0 || availabilityPct > 100) {
-        messages.push(`Ungueltige Verfuegbarkeit: ${availabilityPctRaw} (erwartet 0-100)`);
+        messages.push(`Ungültige Verfügbarkeit: ${availabilityPctRaw} (erwartet 0-100)`);
         if (status === "success") status = "warning";
         availabilityPct = undefined;
       }
@@ -326,7 +326,7 @@ async function executeImport(
     if (existing) {
       if (!options.updateExisting) {
         rowResult.action = "skipped";
-        rowResult.error = `Eintrag existiert bereits fuer ${turbine.designation} ${row.month}/${row.year}`;
+        rowResult.error = `Eintrag existiert bereits für ${turbine.designation} ${row.month}/${row.year}`;
         result.results.push(rowResult);
         result.skippedCount++;
         continue;
@@ -422,7 +422,7 @@ export async function POST(request: NextRequest) {
       // action === "import"
       if (resolved.length === 0) {
         return NextResponse.json(
-          { success: false, error: "Keine gueltigen Zeilen zum Importieren", imported: 0, skipped: 0, errors: rawRows.length, details: ["Alle Zeilen enthalten Fehler"] },
+          { success: false, error: "Keine gültigen Zeilen zum Importieren", imported: 0, skipped: 0, errors: rawRows.length, details: ["Alle Zeilen enthalten Fehler"] },
           { status: 400 }
         );
       }

@@ -69,7 +69,7 @@ export function getEntityDisplayName(entityType: AuditEntityType): string {
     ParkCostAllocation: "Kostenaufteilung",
     MassCommunication: "Massen-Kommunikation",
     ArchivedDocument: "Archiviertes Dokument",
-    ArchiveVerification: "Archiv-Integritaetspruefung",
+    ArchiveVerification: "Archiv-Integritaetsprüfung",
   };
   return displayNames[entityType] || entityType;
 }
@@ -81,7 +81,7 @@ export function getActionDisplayName(action: AuditAction): string {
   const displayNames: Record<AuditAction, string> = {
     CREATE: "Erstellt",
     UPDATE: "Bearbeitet",
-    DELETE: "Geloescht",
+    DELETE: "Gelöscht",
     VIEW: "Angesehen",
     EXPORT: "Exportiert",
     DOCUMENT_DOWNLOAD: "Heruntergeladen",

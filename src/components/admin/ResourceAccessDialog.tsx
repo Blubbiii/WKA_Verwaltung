@@ -122,7 +122,7 @@ export function ResourceAccessDialog({
   mode = "grant",
   onSuccess,
 }: ResourceAccessDialogProps) {
-  // State fuer Formular
+  // State für Formular
   const [selectedUserId, setSelectedUserId] = useState(preSelectedUserId ?? "");
   const [selectedResourceType, setSelectedResourceType] = useState(preSelectedResourceType ?? "");
   const [selectedResourceId, setSelectedResourceId] = useState(preSelectedResourceId ?? "");
@@ -130,7 +130,7 @@ export function ResourceAccessDialog({
   const [notes, setNotes] = useState("");
   const [expiresAt, setExpiresAt] = useState<string>("");
 
-  // State fuer Daten
+  // State für Daten
   const [users, setUsers] = useState<User[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [accessList, setAccessList] = useState<ResourceAccessEntry[]>([]);
@@ -242,7 +242,7 @@ export function ResourceAccessDialog({
     }
   }, [selectedResourceType, fetchResources]);
 
-  // Lade bestehende Zugriffe (fuer manage mode)
+  // Lade bestehende Zugriffe (für manage mode)
   const fetchAccessList = useCallback(async () => {
     if (mode !== "manage") return;
 
@@ -354,7 +354,7 @@ export function ResourceAccessDialog({
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Fehler beim Loeschen");
+        throw new Error(data.error || "Fehler beim Löschen");
       }
 
       toast({
@@ -522,7 +522,7 @@ export function ResourceAccessDialog({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <p className="text-xs text-muted-foreground">
-                Leer lassen fuer unbegrenzten Zugriff
+                Leer lassen für unbegrenzten Zugriff
               </p>
             </div>
 
@@ -531,7 +531,7 @@ export function ResourceAccessDialog({
               <Label htmlFor="notes">Notiz (optional)</Label>
               <Textarea
                 id="notes"
-                placeholder="Grund fuer Zugriff..."
+                placeholder="Grund für Zugriff..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
@@ -645,7 +645,7 @@ export function ResourceAccessDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>Zugriff entziehen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechten Sie den Zugriff auf &quot;{deleteTarget?.resourceName}&quot; wirklich
+              Möchten Sie den Zugriff auf &quot;{deleteTarget?.resourceName}&quot; wirklich
               entziehen? Diese Aktion kann nicht rueckgaengig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>

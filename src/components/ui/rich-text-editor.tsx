@@ -211,19 +211,19 @@ function EditorToolbar({ editor }: EditorToolbarProps) {
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
         isActive={editor.isActive("heading", { level: 1 })}
         icon={<Heading1 className="h-4 w-4" />}
-        label="Ueberschrift 1"
+        label="Überschrift 1"
       />
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
         isActive={editor.isActive("heading", { level: 2 })}
         icon={<Heading2 className="h-4 w-4" />}
-        label="Ueberschrift 2"
+        label="Überschrift 2"
       />
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
         isActive={editor.isActive("heading", { level: 3 })}
         icon={<Heading3 className="h-4 w-4" />}
-        label="Ueberschrift 3"
+        label="Überschrift 3"
       />
 
       <ToolbarDivider />

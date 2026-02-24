@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       fromDate = new Date(from);
       if (isNaN(fromDate.getTime())) {
         return NextResponse.json(
-          { error: "Ungueltiges Datum fuer 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
+          { error: "Ungültiges Datum für 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
           { status: 400 }
         );
       }
@@ -80,13 +80,13 @@ export async function GET(request: NextRequest) {
       toDate = new Date(to);
       if (isNaN(toDate.getTime())) {
         return NextResponse.json(
-          { error: "Ungueltiges Datum fuer 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
+          { error: "Ungültiges Datum für 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
           { status: 400 }
         );
       }
     }
 
-    // --- Turbines fuer Tenant ermitteln (gefiltert nach Park/Turbine) ---
+    // --- Turbines für Tenant ermitteln (gefiltert nach Park/Turbine) ---
     const turbineWhere: Record<string, unknown> = {
       park: { tenantId },
     };
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
       countMap.get(row.direction_sector)!.set(row.speed_range, Number(row.count));
     }
 
-    // Totals pro Richtung berechnen (fuer dominantDirection)
+    // Totals pro Richtung berechnen (für dominantDirection)
     const directionTotals: Record<string, number> = {};
     for (const sector of DIRECTION_SECTORS) {
       const speedMap = countMap.get(sector.label);

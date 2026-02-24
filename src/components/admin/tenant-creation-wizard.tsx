@@ -211,7 +211,7 @@ export function TenantCreationWizard({
         return false;
       }
       if (admin.password !== admin.passwordConfirm) {
-        toast.error("Passwoerter stimmen nicht ueberein");
+        toast.error("Passwörter stimmen nicht überein");
         return false;
       }
     }
@@ -295,7 +295,7 @@ export function TenantCreationWizard({
           );
         } else {
           toast.warning(
-            "Mandant erstellt, aber Einladungs-E-Mail konnte nicht gesendet werden. Bitte E-Mail-Konfiguration pruefen."
+            "Mandant erstellt, aber Einladungs-E-Mail konnte nicht gesendet werden. Bitte E-Mail-Konfiguration prüfen."
           );
         }
       } else if (adminMode === "password") {
@@ -565,7 +565,7 @@ export function TenantCreationWizard({
           </TabsTrigger>
           <TabsTrigger value="skip" className="flex-1 gap-1.5">
             <SkipForward className="h-3.5 w-3.5" />
-            Ueberspringen
+            Überspringen
           </TabsTrigger>
         </TabsList>
 
@@ -573,7 +573,7 @@ export function TenantCreationWizard({
         <TabsContent value="invitation" className="space-y-4 mt-4">
           {renderAdminUserFields()}
           <p className="text-sm text-muted-foreground rounded-md bg-muted/50 p-3">
-            Eine Einladungs-E-Mail mit Aktivierungslink (7 Tage gueltig) wird an
+            Eine Einladungs-E-Mail mit Aktivierungslink (7 Tage gültig) wird an
             diese Adresse gesendet.
           </p>
         </TabsContent>
@@ -604,7 +604,7 @@ export function TenantCreationWizard({
           {/* Password Confirm */}
           <div className="space-y-2">
             <Label htmlFor="wizard-admin-password-confirm">
-              Passwort bestaetigen <span className="text-destructive">*</span>
+              Passwort bestätigen <span className="text-destructive">*</span>
             </Label>
             <Input
               id="wizard-admin-password-confirm"
@@ -621,11 +621,11 @@ export function TenantCreationWizard({
           </div>
         </TabsContent>
 
-        {/* Tab: Ueberspringen */}
+        {/* Tab: Überspringen */}
         <TabsContent value="skip" className="mt-4">
           <p className="text-sm text-muted-foreground rounded-md bg-muted/50 p-3">
-            Der Mandant wird ohne Admin-Benutzer erstellt. Sie koennen Benutzer
-            spaeter in der Mandantenverwaltung unter &quot;Benutzer&quot;
+            Der Mandant wird ohne Admin-Benutzer erstellt. Sie können Benutzer
+            später in der Mandantenverwaltung unter &quot;Benutzer&quot;
             anlegen.
           </p>
         </TabsContent>
@@ -679,7 +679,7 @@ export function TenantCreationWizard({
                 disabled={isSaving}
               >
                 <ChevronLeft className="mr-1 h-4 w-4" />
-                Zurueck
+                Zurück
               </Button>
               <Button onClick={handleSubmit} disabled={isSaving}>
                 {isSaving && (

@@ -187,8 +187,8 @@ const MODULE_LABELS: Record<string, string> = {
   funds: "Beteiligungen",
   shareholders: "Gesellschafter",
   plots: "Flurstuecke",
-  leases: "Pachtvertraege",
-  contracts: "Vertraege",
+  leases: "Pachtverträge",
+  contracts: "Verträge",
   documents: "Dokumente",
   invoices: "Rechnungen",
   votes: "Abstimmungen",
@@ -258,7 +258,7 @@ export function PermissionMatrixTemplate({ data }: PermissionMatrixTemplateProps
         <View style={styles.header}>
           <Text style={styles.title}>Berechtigungs-Matrix</Text>
           <Text style={styles.subtitle}>
-            Uebersicht aller Rollen und deren Berechtigungen
+            Übersicht aller Rollen und deren Berechtigungen
           </Text>
           <View style={styles.metaInfo}>
             <Text>Mandant: {data.tenantName}</Text>

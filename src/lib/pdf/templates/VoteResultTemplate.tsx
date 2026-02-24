@@ -580,7 +580,7 @@ export function VoteResultTemplate({
           <View style={styles.signatureRow}>
             <View style={styles.signatureBlock}>
               <View style={styles.signatureLine} />
-              <Text style={styles.signatureLabel}>Geschaeftsfuehrung</Text>
+              <Text style={styles.signatureLabel}>Geschaeftsführung</Text>
             </View>
             <View style={styles.signatureBlock}>
               <View style={styles.signatureLine} />

@@ -108,7 +108,7 @@ export async function checkPermission(
   const userPerms = await getUserPermissions(userId);
 
   // Schneller Ausschluss: Wenn die Permission in keiner Rolle existiert,
-  // koennen wir sofort false zurueckgeben
+  // können wir sofort false zurückgeben
   if (!userPerms.permissions.includes(permission)) {
     return {
       hasPermission: false,

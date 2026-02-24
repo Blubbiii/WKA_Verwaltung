@@ -240,7 +240,7 @@ export function TenantParkSelector({
         ) : funds.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {tenantId
-              ? 'Keine Gesellschaften verfuegbar.'
+              ? 'Keine Gesellschaften verfügbar.'
               : 'Erst Mandant auswaehlen.'}
           </p>
         ) : (

@@ -244,7 +244,7 @@ export function ProductShowcase() {
             Erleben Sie WindparkManager
           </h2>
           <p className="mt-4 text-muted-foreground md:text-lg max-w-2xl mx-auto">
-            Eine Plattform fuer alle Bereiche der Windpark-Verwaltung.
+            Eine Plattform für alle Bereiche der Windpark-Verwaltung.
           </p>
         </div>
 

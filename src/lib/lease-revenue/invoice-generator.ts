@@ -968,35 +968,35 @@ export async function generateSettlementInvoices(
 
       if (netPool > 0) {
         payoutItems.push({
-          description: `Verguetung Endabrechnung Poolflaeche\nJahr ${serviceYear}`,
+          description: `Vergütung Endabrechnung Poolflaeche\nJahr ${serviceYear}`,
           netAmount: netPool,
           taxType: taxMap.POOL_AREA ?? "STANDARD",
         });
       }
       if (netStandort > 0) {
         payoutItems.push({
-          description: `Verguetung Endabrechnung WEA-Standort\nJahr ${serviceYear}`,
+          description: `Vergütung Endabrechnung WEA-Standort\nJahr ${serviceYear}`,
           netAmount: netStandort,
           taxType: taxMap.TURBINE_SITE ?? "EXEMPT",
         });
       }
       if (netSealed > 0) {
         payoutItems.push({
-          description: `Verguetung Endabrechnung versiegelte Flaeche\nJahr ${serviceYear}`,
+          description: `Vergütung Endabrechnung versiegelte Flaeche\nJahr ${serviceYear}`,
           netAmount: netSealed,
           taxType: taxMap.SEALED_AREA ?? "EXEMPT",
         });
       }
       if (netRoad > 0) {
         payoutItems.push({
-          description: `Verguetung Endabrechnung Wegenutzung\nJahr ${serviceYear}`,
+          description: `Vergütung Endabrechnung Wegenutzung\nJahr ${serviceYear}`,
           netAmount: netRoad,
           taxType: taxMap.ROAD_USAGE ?? "EXEMPT",
         });
       }
       if (netCable > 0) {
         payoutItems.push({
-          description: `Verguetung Endabrechnung Kabeltrasse\nJahr ${serviceYear}`,
+          description: `Vergütung Endabrechnung Kabeltrasse\nJahr ${serviceYear}`,
           netAmount: netCable,
           taxType: taxMap.CABLE_ROUTE ?? "EXEMPT",
         });

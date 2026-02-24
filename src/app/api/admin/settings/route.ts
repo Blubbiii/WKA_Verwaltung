@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS = {
 
   // Maintenance Mode
   maintenanceModeEnabled: false,
-  maintenanceMessage: "Das System wird gewartet. Bitte versuchen Sie es spaeter erneut.",
+  maintenanceMessage: "Das System wird gewartet. Bitte versuchen Sie es später erneut.",
   scheduledMaintenanceTime: null,
 
   // Security Settings
@@ -135,7 +135,7 @@ export async function PUT(request: NextRequest) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(body.adminEmail)) {
         return NextResponse.json(
-          { error: "Ungueltige E-Mail-Adresse" },
+          { error: "Ungültige E-Mail-Adresse" },
           { status: 400 }
         );
       }

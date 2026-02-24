@@ -21,7 +21,7 @@ const FEATURE_FLAGS = [
   {
     key: "management-billing.enabled",
     label: "BF-Abrechnung",
-    description: "Betriebsfuehrungs-Abrechnungen (Konstellationen, Berechnung, Rechnungserstellung)",
+    description: "Betriebsführungs-Abrechnungen (Konstellationen, Berechnung, Rechnungserstellung)",
   },
 ] as const;
 

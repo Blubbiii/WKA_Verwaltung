@@ -207,7 +207,7 @@ export function WeatherChart({
         className="flex items-center justify-center text-muted-foreground"
         style={{ height }}
       >
-        Keine Daten verfuegbar
+        Keine Daten verfügbar
       </div>
     );
   }
@@ -383,7 +383,7 @@ export function MultiWeatherChart({
         className="flex items-center justify-center text-muted-foreground"
         style={{ height }}
       >
-        Keine Daten verfuegbar
+        Keine Daten verfügbar
       </div>
     );
   }

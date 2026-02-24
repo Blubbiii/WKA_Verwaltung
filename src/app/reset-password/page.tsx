@@ -45,10 +45,10 @@ const resetPasswordSchema = z
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
         "Passwort muss mindestens einen Grossbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten"
       ),
-    confirmPassword: z.string().min(1, "Bitte bestaetigen Sie Ihr Passwort"),
+    confirmPassword: z.string().min(1, "Bitte bestätigen Sie Ihr Passwort"),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwoerter stimmen nicht ueberein",
+    message: "Passwörter stimmen nicht überein",
     path: ["confirmPassword"],
   });
 
@@ -83,16 +83,16 @@ function ResetPasswordForm() {
               <AlertCircle className="h-8 w-8 text-destructive" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Ungueltiger Link</CardTitle>
+          <CardTitle className="text-2xl font-bold">Ungültiger Link</CardTitle>
           <CardDescription>
-            Der Link zum Zuruecksetzen des Passworts ist ungueltig oder fehlt.
+            Der Link zum Zurücksetzen des Passworts ist ungültig oder fehlt.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Bitte fordern Sie einen neuen Link zum Zuruecksetzen des Passworts an.
+              Bitte fordern Sie einen neuen Link zum Zurücksetzen des Passworts an.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -105,7 +105,7 @@ function ResetPasswordForm() {
             className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center"
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Zurueck zum Login
+            Zurück zum Login
           </Link>
         </CardFooter>
       </Card>
@@ -132,7 +132,7 @@ function ResetPasswordForm() {
         const errorData = await response.json().catch(() => ({}));
 
         if (response.status === 400 && errorData.code === "INVALID_TOKEN") {
-          setError("Der Link zum Zuruecksetzen des Passworts ist ungueltig oder abgelaufen. Bitte fordern Sie einen neuen Link an.");
+          setError("Der Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen. Bitte fordern Sie einen neuen Link an.");
           return;
         }
 
@@ -166,10 +166,10 @@ function ResetPasswordForm() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">
-            Passwort zurueckgesetzt
+            Passwort zurückgesetzt
           </CardTitle>
           <CardDescription>
-            Ihr Passwort wurde erfolgreich geaendert.
+            Ihr Passwort wurde erfolgreich geändert.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -252,7 +252,7 @@ function ResetPasswordForm() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Passwort bestaetigen</FormLabel>
+                  <FormLabel>Passwort bestätigen</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -295,14 +295,14 @@ function ResetPasswordForm() {
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Passwort zuruecksetzen
+              Passwort zurücksetzen
             </Button>
             <Link
               href="/login"
               className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center"
             >
               <ArrowLeft className="mr-1 h-4 w-4" />
-              Zurueck zum Login
+              Zurück zum Login
             </Link>
           </CardFooter>
         </form>

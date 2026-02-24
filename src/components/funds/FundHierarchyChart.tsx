@@ -443,7 +443,7 @@ export function FundHierarchyChart({
             Unternehmensstruktur
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            {parentFunds.length > 0 && `${parentFunds.length} uebergeordnete`}
+            {parentFunds.length > 0 && `${parentFunds.length} übergeordnete`}
             {parentFunds.length > 0 && (childFunds.length > 0 || operatedTurbines.length > 0) && " | "}
             {childFunds.length > 0 && `${childFunds.length} untergeordnete`}
             {childFunds.length > 0 && operatedTurbines.length > 0 && " | "}
@@ -453,7 +453,7 @@ export function FundHierarchyChart({
         {hasCustomPositions && (
           <Button variant="ghost" size="sm" onClick={resetPositions}>
             <RotateCcw className="mr-2 h-4 w-4" />
-            Zuruecksetzen
+            Zurücksetzen
           </Button>
         )}
       </CardHeader>

@@ -47,11 +47,11 @@ const PIE_LABELS: Record<string, string> = {
   SENT: "Versendet",
   DRAFT: "Entwurf",
   CANCELLED: "Storniert",
-  OVERDUE: "Ueberfaellig",
+  OVERDUE: "Überfällig",
 };
 
 // =============================================================================
-// Monthly comparison bar chart (Vorschuesse vs Abrechnungen)
+// Monthly comparison bar chart (Vorschüsse vs Abrechnungen)
 // =============================================================================
 
 interface MonthlyData {
@@ -131,12 +131,12 @@ export function MonthlyComparisonChart({
             Monatlicher Vergleich
           </CardTitle>
           <CardDescription>
-            Vorschuesse vs. Abrechnungen pro Monat
+            Vorschüsse vs. Abrechnungen pro Monat
           </CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-[300px]">
           <p className="text-muted-foreground text-sm">
-            Keine Daten fuer diesen Zeitraum vorhanden
+            Keine Daten für diesen Zeitraum vorhanden
           </p>
         </CardContent>
       </Card>
@@ -153,7 +153,7 @@ export function MonthlyComparisonChart({
       <CardHeader>
         <CardTitle className="text-base">Monatlicher Vergleich</CardTitle>
         <CardDescription>
-          Vorschuesse vs. Abrechnungen pro Monat
+          Vorschüsse vs. Abrechnungen pro Monat
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -181,7 +181,7 @@ export function MonthlyComparisonChart({
             />
             <Bar
               dataKey="advances"
-              name="Vorschuesse"
+              name="Vorschüsse"
               fill={COLORS.advances}
               radius={[2, 2, 0, 0]}
             />

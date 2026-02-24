@@ -82,7 +82,7 @@ export function StepReview({ data, onGoToStep }: StepReviewProps) {
       <div>
         <h3 className="text-lg font-semibold">Zusammenfassung</h3>
         <p className="text-sm text-muted-foreground">
-          Pruefen Sie alle Angaben bevor Sie den Gesellschafter anlegen.
+          Prüfen Sie alle Angaben bevor Sie den Gesellschafter anlegen.
         </p>
       </div>
 

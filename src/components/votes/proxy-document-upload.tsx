@@ -42,7 +42,7 @@ interface ProxyDocumentUploadProps {
   onUploadSuccess?: () => void;
   onDeleteSuccess?: () => void;
   className?: string;
-  /** Kompakte Ansicht fuer Tabellen-Integration */
+  /** Kompakte Ansicht für Tabellen-Integration */
   compact?: boolean;
 }
 
@@ -150,19 +150,19 @@ export function ProxyDocumentUpload({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Fehler beim Loeschen");
+        throw new Error(errorData.error || "Fehler beim Löschen");
       }
 
       toast({
         title: "Erfolgreich",
-        description: "Dokument wurde geloescht",
+        description: "Dokument wurde gelöscht",
       });
 
       onDeleteSuccess?.();
     } catch (error) {
       toast({
         title: "Fehler",
-        description: error instanceof Error ? error.message : "Fehler beim Loeschen",
+        description: error instanceof Error ? error.message : "Fehler beim Löschen",
         variant: "destructive",
       });
     } finally {
@@ -203,7 +203,7 @@ export function ProxyDocumentUpload({
     }
   };
 
-  // Kompakte Ansicht fuer Tabellen
+  // Kompakte Ansicht für Tabellen
   if (compact) {
     if (hasDocument) {
       return (
@@ -320,14 +320,14 @@ export function ProxyDocumentUpload({
                     ) : (
                       <Trash2 className="mr-2 h-4 w-4" />
                     )}
-                    Loeschen
+                    Löschen
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Dokument loeschen?</AlertDialogTitle>
+                    <AlertDialogTitle>Dokument löschen?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Moechten Sie das Vollmachts-Dokument wirklich loeschen?
+                      Möchten Sie das Vollmachts-Dokument wirklich löschen?
                       Diese Aktion kann nicht rueckgaengig gemacht werden.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
@@ -337,7 +337,7 @@ export function ProxyDocumentUpload({
                       onClick={handleDelete}
                       className="bg-red-600 hover:bg-red-700"
                     >
-                      Loeschen
+                      Löschen
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

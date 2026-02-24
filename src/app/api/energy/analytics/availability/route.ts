@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
     if (isNaN(year) || year < 2000 || year > 2100) {
       return NextResponse.json(
-        { error: "Ungueltiges Jahr (2000-2100 erwartet)" },
+        { error: "Ungültiges Jahr (2000-2100 erwartet)" },
         { status: 400 }
       );
     }
@@ -66,9 +66,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    logger.error({ err: error }, "Fehler beim Laden der Verfuegbarkeits-Analytics");
+    logger.error({ err: error }, "Fehler beim Laden der Verfügbarkeits-Analytics");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Verfuegbarkeits-Analytics" },
+      { error: "Fehler beim Laden der Verfügbarkeits-Analytics" },
       { status: 500 }
     );
   }

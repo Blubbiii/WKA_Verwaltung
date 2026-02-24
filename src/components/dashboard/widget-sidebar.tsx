@@ -113,9 +113,9 @@ export function WidgetSidebar({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div>
-          <h2 className="font-semibold">Widgets hinzufuegen</h2>
+          <h2 className="font-semibold">Widgets hinzufügen</h2>
           <p className="text-xs text-muted-foreground">
-            {totalAvailable} Widgets verfuegbar
+            {totalAvailable} Widgets verfügbar
           </p>
         </div>
         {onClose && (
@@ -130,7 +130,7 @@ export function WidgetSidebar({
         {totalAvailable === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <LayoutGrid className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Alle Widgets wurden hinzugefuegt</p>
+            <p className="text-sm">Alle Widgets wurden hinzugefügt</p>
           </div>
         ) : (
           <div className="space-y-6">

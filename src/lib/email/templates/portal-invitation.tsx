@@ -46,8 +46,8 @@ export function PortalInvitationEmail({
       <Paragraph>Hallo {userName},</Paragraph>
 
       <Paragraph>
-        fuer Sie wurde ein Zugang zum Gesellschafter-Portal von {tenantName}{' '}
-        eingerichtet. Sie koennen sich ab sofort mit den folgenden Zugangsdaten
+        für Sie wurde ein Zugang zum Gesellschafter-Portal von {tenantName}{' '}
+        eingerichtet. Sie können sich ab sofort mit den folgenden Zugangsdaten
         anmelden.
       </Paragraph>
 
@@ -75,12 +75,12 @@ export function PortalInvitationEmail({
       </Section>
 
       <Paragraph>
-        Im Portal koennen Sie Ihre Beteiligungen einsehen, an Abstimmungen
+        Im Portal können Sie Ihre Beteiligungen einsehen, an Abstimmungen
         teilnehmen und auf wichtige Dokumente zugreifen.
       </Paragraph>
 
       <Paragraph>
-        Falls Sie Fragen haben oder Unterstuetzung benoetigen, koennen Sie uns
+        Falls Sie Fragen haben oder Unterstützung benoetigen, können Sie uns
         jederzeit kontaktieren.
       </Paragraph>
 

@@ -1,5 +1,5 @@
 /**
- * POST /api/admin/archive/export - Export archive for tax audit (Betriebspruefung)
+ * POST /api/admin/archive/export - Export archive for tax audit (Betriebsprüfung)
  *
  * Generates a structured export with:
  * - Index CSV (GDPdU/GoBD format) with document metadata
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungueltige Eingabedaten", details: parsed.error.errors },
+        { error: "Ungültige Eingabedaten", details: parsed.error.errors },
         { status: 400 }
       );
     }
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     if (exportData.documents.length === 0) {
       return NextResponse.json(
-        { error: `Keine archivierten Dokumente fuer das Jahr ${year} gefunden` },
+        { error: `Keine archivierten Dokumente für das Jahr ${year} gefunden` },
         { status: 404 }
       );
     }
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         documentCount: exportData.documents.length,
         totalSizeBytes: exportData.totalSize,
       },
-      description: `GoBD-Archiv Export fuer Betriebspruefung: Jahr ${year}, ${exportData.documents.length} Dokumente`,
+      description: `GoBD-Archiv Export für Betriebsprüfung: Jahr ${year}, ${exportData.documents.length} Dokumente`,
     });
 
     // Return the index CSV and document list as JSON

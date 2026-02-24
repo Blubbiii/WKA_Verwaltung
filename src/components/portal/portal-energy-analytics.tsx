@@ -135,7 +135,7 @@ export function PortalEnergyAnalytics() {
     return (
       <Card>
         <CardContent className="py-16 text-center text-muted-foreground">
-          Keine Daten verfuegbar
+          Keine Daten verfügbar
         </CardContent>
       </Card>
     );
@@ -217,13 +217,13 @@ export function PortalEnergyAnalytics() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Verfuegbarkeit</CardTitle>
+            <CardTitle className="text-sm font-medium">Verfügbarkeit</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fmtNum(kpis.availabilityPct)} %</div>
             <p className="text-xs text-muted-foreground">
-              Technische Verfuegbarkeit
+              Technische Verfügbarkeit
             </p>
           </CardContent>
         </Card>
@@ -253,7 +253,7 @@ export function PortalEnergyAnalytics() {
         <CardContent>
           {productionChart.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Keine Produktionsdaten verfuegbar
+              Keine Produktionsdaten verfügbar
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={320}>
@@ -286,15 +286,15 @@ export function PortalEnergyAnalytics() {
       {/* Availability Trend */}
       <Card>
         <CardHeader>
-          <CardTitle>Verfuegbarkeits-Trend {selectedYear}</CardTitle>
+          <CardTitle>Verfügbarkeits-Trend {selectedYear}</CardTitle>
           <CardDescription>
-            Monatliche technische Verfuegbarkeit (%)
+            Monatliche technische Verfügbarkeit (%)
           </CardDescription>
         </CardHeader>
         <CardContent>
           {availabilityTrend.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Keine Verfuegbarkeitsdaten vorhanden
+              Keine Verfügbarkeitsdaten vorhanden
             </p>
           ) : (
             <ResponsiveContainer width="100%" height={250}>
@@ -303,7 +303,7 @@ export function PortalEnergyAnalytics() {
                 <XAxis dataKey="label" />
                 <YAxis domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
                 <Tooltip
-                  formatter={(value: number) => [`${fmtNum(value, 2)} %`, "Verfuegbarkeit"]}
+                  formatter={(value: number) => [`${fmtNum(value, 2)} %`, "Verfügbarkeit"]}
                 />
                 <Line
                   type="monotone"
@@ -311,7 +311,7 @@ export function PortalEnergyAnalytics() {
                   stroke="#22c55e"
                   strokeWidth={2}
                   dot={{ r: 3 }}
-                  name="Verfuegbarkeit"
+                  name="Verfügbarkeit"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -323,7 +323,7 @@ export function PortalEnergyAnalytics() {
         {/* Turbine Overview */}
         <Card>
           <CardHeader>
-            <CardTitle>Anlagen-Uebersicht</CardTitle>
+            <CardTitle>Anlagen-Übersicht</CardTitle>
             <CardDescription>Status und Leistung der einzelnen Anlagen</CardDescription>
           </CardHeader>
           <CardContent>

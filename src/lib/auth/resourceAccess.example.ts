@@ -4,7 +4,7 @@
  * Diese Datei zeigt, wie das ResourceAccess-System in API-Routes und
  * Server-Komponenten verwendet werden kann.
  *
- * NICHT fuer Produktion - nur als Dokumentation/Referenz!
+ * NICHT für Produktion - nur als Dokumentation/Referenz!
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -26,10 +26,10 @@ import {
 import { PERMISSIONS } from "./permissions";
 
 // =============================================================================
-// BEISPIEL 1: Einfache Zugriffspruefung
+// BEISPIEL 1: Einfache Zugriffsprüfung
 // =============================================================================
 
-export async function beispielEinfacheZugriffspruefung() {
+export async function beispielEinfacheZugriffsprüfung() {
   const userId = "user-123";
   const parkId = "park-456";
 
@@ -78,7 +78,7 @@ export async function beispielListeFiltern(userId: string) {
 // =============================================================================
 
 export async function beispielPrismaQuery(userId: string) {
-  // WHERE-Clause fuer Ressourcen-Filterung generieren
+  // WHERE-Clause für Ressourcen-Filterung generieren
   const resourceWhere = await buildResourceWhereClause(
     userId,
     RESOURCE_TYPES.PARK,
@@ -90,7 +90,7 @@ export async function beispielPrismaQuery(userId: string) {
   const parks = await prisma.park.findMany({
     where: {
       status: "ACTIVE",
-      // Ressourcen-Filter hinzufuegen (falls vorhanden)
+      // Ressourcen-Filter hinzufügen (falls vorhanden)
       ...(resourceWhere && resourceWhere),
     },
     orderBy: { name: "asc" },
@@ -135,7 +135,7 @@ export async function GET_parks_beispiel(request: NextRequest) {
 }
 
 // =============================================================================
-// BEISPIEL 5: Einzelnes Item pruefen
+// BEISPIEL 5: Einzelnes Item prüfen
 // =============================================================================
 
 export async function GET_park_detail_beispiel(
@@ -150,7 +150,7 @@ export async function GET_park_detail_beispiel(
   const parkId = params.id;
   const userId = session.user.id;
 
-  // Pruefen ob User Zugriff hat (Rolle ODER direkt)
+  // Prüfen ob User Zugriff hat (Rolle ODER direkt)
   const hasAccess = await hasAccessToItem(
     userId,
     RESOURCE_TYPES.PARK,
@@ -175,7 +175,7 @@ export async function GET_park_detail_beispiel(
 }
 
 // =============================================================================
-// BEISPIEL 6: Update mit Schreibzugriff pruefen
+// BEISPIEL 6: Update mit Schreibzugriff prüfen
 // =============================================================================
 
 export async function PATCH_park_beispiel(
@@ -190,7 +190,7 @@ export async function PATCH_park_beispiel(
   const parkId = params.id;
   const userId = session.user.id;
 
-  // Pruefen ob User SCHREIB-Zugriff hat
+  // Prüfen ob User SCHREIB-Zugriff hat
   const canWrite = await hasWriteAccess(
     userId,
     RESOURCE_TYPES.PARK,

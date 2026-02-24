@@ -44,7 +44,7 @@ export function WelcomeEmail({
 
       <Paragraph>
         wir freuen uns, Sie als neuen Benutzer bei {tenantName} begruessen zu
-        duerfen. Ihr Zugang wurde erfolgreich eingerichtet und Sie koennen sich
+        duerfen. Ihr Zugang wurde erfolgreich eingerichtet und Sie können sich
         ab sofort in unserem Portal anmelden.
       </Paragraph>
 
@@ -56,7 +56,7 @@ export function WelcomeEmail({
           - Einsicht in Ihre Beteiligungen und Dokumente{'\n'}
           - Teilnahme an Abstimmungen{'\n'}
           - Zugriff auf aktuelle Berichte und Mitteilungen{'\n'}
-          - Uebersicht Ihrer Abrechnungen
+          - Übersicht Ihrer Abrechnungen
         </Text>
       </InfoBox>
 
@@ -67,7 +67,7 @@ export function WelcomeEmail({
       </Section>
 
       <Paragraph>
-        Falls Sie Fragen haben oder Unterstuetzung benoetigen, koennen Sie uns
+        Falls Sie Fragen haben oder Unterstützung benoetigen, können Sie uns
         jederzeit kontaktieren. Wir helfen Ihnen gerne weiter.
       </Paragraph>
 

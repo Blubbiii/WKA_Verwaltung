@@ -116,10 +116,10 @@ export async function POST(
     // Determine the description based on role
     const roleLabel =
       billing.stakeholder.role === "TECHNICAL_BF"
-        ? "technischen Betriebsfuehrung"
+        ? "technischen Betriebsführung"
         : billing.stakeholder.role === "COMMERCIAL_BF"
           ? "kaufmaennischen Betreuung"
-          : "Betriebsfuehrung";
+          : "Betriebsführung";
 
     const periodLabel = billing.month
       ? `${String(billing.month).padStart(2, "0")}/${billing.year}`
@@ -185,13 +185,13 @@ export async function POST(
         serviceEndDate: billing.month
           ? new Date(billing.year, billing.month, 0)
           : new Date(billing.year, 11, 31),
-        notes: `Betriebsfuehrung - ${parkName} - ${periodLabel} (Leistungszeitraum)`,
+        notes: `Betriebsführung - ${parkName} - ${periodLabel} (Leistungszeitraum)`,
         createdById: check.userId!,
         items: {
           create: [
             {
               position: 1,
-              description: `Kosten der ${roleLabel} ueber ${feePercent.toFixed(2).replace(".", ",")} % Ihrer oben genannten Einspeiseverguetung`,
+              description: `Kosten der ${roleLabel} über ${feePercent.toFixed(2).replace(".", ",")} % Ihrer oben genannten Einspeisevergütung`,
               quantity: 1,
               unit: "pauschal",
               unitPrice: billing.feeAmountNetEur,

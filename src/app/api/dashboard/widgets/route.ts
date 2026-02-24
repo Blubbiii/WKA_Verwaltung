@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Error fetching available widgets");
     return NextResponse.json(
-      { error: "Fehler beim Laden der verfuegbaren Widgets" },
+      { error: "Fehler beim Laden der verfügbaren Widgets" },
       { status: 500 }
     );
   }

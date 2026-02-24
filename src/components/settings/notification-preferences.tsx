@@ -263,8 +263,8 @@ export function NotificationPreferences() {
             </CardTitle>
           </div>
           <CardDescription>
-            Waehlen Sie, ueber welche Ereignisse Sie per E-Mail benachrichtigt
-            werden moechten.
+            Waehlen Sie, über welche Ereignisse Sie per E-Mail benachrichtigt
+            werden möchten.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -285,7 +285,7 @@ export function NotificationPreferences() {
             <PreferenceItem
               id="votes"
               label="Abstimmungen"
-              description="Benachrichtigungen ueber neue Abstimmungen, Erinnerungen und Ergebnisse."
+              description="Benachrichtigungen über neue Abstimmungen, Erinnerungen und Ergebnisse."
               icon={<Vote className="h-5 w-5" />}
               checked={preferences.votes}
               onChange={handleChange}
@@ -294,7 +294,7 @@ export function NotificationPreferences() {
             <PreferenceItem
               id="documents"
               label="Dokumente"
-              description="Benachrichtigungen ueber neue oder aktualisierte Dokumente."
+              description="Benachrichtigungen über neue oder aktualisierte Dokumente."
               icon={<FileText className="h-5 w-5" />}
               checked={preferences.documents}
               onChange={handleChange}
@@ -303,7 +303,7 @@ export function NotificationPreferences() {
             <PreferenceItem
               id="invoices"
               label="Rechnungen & Gutschriften"
-              description="Benachrichtigungen ueber neue Rechnungen und Gutschriften."
+              description="Benachrichtigungen über neue Rechnungen und Gutschriften."
               icon={<Receipt className="h-5 w-5" />}
               checked={preferences.invoices}
               onChange={handleChange}
@@ -311,8 +311,8 @@ export function NotificationPreferences() {
 
             <PreferenceItem
               id="contracts"
-              label="Vertraege"
-              description="Benachrichtigungen ueber Vertragsfristen und -aenderungen."
+              label="Verträge"
+              description="Benachrichtigungen über Vertragsfristen und -änderungen."
               icon={<FileSignature className="h-5 w-5" />}
               checked={preferences.contracts}
               onChange={handleChange}
@@ -333,7 +333,7 @@ export function NotificationPreferences() {
             <Info className="h-4 w-4" />
             <AlertDescription>
               Systemmeldungen enthalten wichtige Sicherheitsinformationen wie
-              Anmeldebenachrichtigungen und Passwortaenderungen. Wir empfehlen,
+              Anmeldebenachrichtigungen und Passwortänderungen. Wir empfehlen,
               diese aktiviert zu lassen.
             </AlertDescription>
           </Alert>
@@ -344,7 +344,7 @@ export function NotificationPreferences() {
       <div className="flex justify-end gap-3 sticky bottom-4">
         {hasChanges && (
           <Button variant="outline" onClick={handleReset} disabled={isSaving}>
-            Zuruecksetzen
+            Zurücksetzen
           </Button>
         )}
         <Button

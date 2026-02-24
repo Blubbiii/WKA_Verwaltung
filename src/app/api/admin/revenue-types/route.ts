@@ -30,7 +30,7 @@ export async function GET() {
   } catch (error) {
     logger.error({ err: error }, "Error fetching revenue types");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Verguetungsarten" },
+      { error: "Fehler beim Laden der Vergütungsarten" },
       { status: 500 }
     );
   }
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.errors[0]?.message || "Ungueltige Eingabe" },
+        { error: parsed.error.errors[0]?.message || "Ungültige Eingabe" },
         { status: 400 }
       );
     }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Error creating revenue type");
     return NextResponse.json(
-      { error: "Fehler beim Erstellen der Verguetungsart" },
+      { error: "Fehler beim Erstellen der Vergütungsart" },
       { status: 500 }
     );
   }

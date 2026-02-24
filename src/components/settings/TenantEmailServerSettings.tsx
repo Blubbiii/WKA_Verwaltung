@@ -302,7 +302,7 @@ export function TenantEmailServerSettings() {
             <div>
               <CardTitle className="text-lg">E-Mail-Server</CardTitle>
               <CardDescription>
-                Eigenen SMTP-Server fuer den E-Mail-Versand konfigurieren
+                Eigenen SMTP-Server für den E-Mail-Versand konfigurieren
               </CardDescription>
             </div>
           </div>
@@ -326,8 +326,8 @@ export function TenantEmailServerSettings() {
             </Label>
             <p className="text-sm text-muted-foreground">
               {useCustom
-                ? "E-Mails werden ueber Ihren eigenen SMTP-Server versendet"
-                : "E-Mails werden ueber die Systemkonfiguration versendet"}
+                ? "E-Mails werden über Ihren eigenen SMTP-Server versendet"
+                : "E-Mails werden über die Systemkonfiguration versendet"}
             </p>
           </div>
           <Switch checked={useCustom} onCheckedChange={setUseCustom} />
@@ -337,7 +337,7 @@ export function TenantEmailServerSettings() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              E-Mails werden ueber den vom System bereitgestellten E-Mail-Server
+              E-Mails werden über den vom System bereitgestellten E-Mail-Server
               versendet. Aktivieren Sie den Schalter oben, um einen eigenen
               SMTP-Server zu konfigurieren.
             </AlertDescription>
@@ -503,7 +503,7 @@ export function TenantEmailServerSettings() {
               <div className="flex gap-4">
                 <div className="flex-1 space-y-2">
                   <Label htmlFor="tenant-test-email">
-                    Test-Empfaenger (optional)
+                    Test-Empfänger (optional)
                   </Label>
                   <Input
                     id="tenant-test-email"
@@ -524,7 +524,7 @@ export function TenantEmailServerSettings() {
                     ) : (
                       <Server className="mr-2 h-4 w-4" />
                     )}
-                    Verbindung pruefen
+                    Verbindung prüfen
                   </Button>
                   <Button
                     variant="outline"
@@ -580,8 +580,8 @@ export function TenantEmailServerSettings() {
                         Eigene Konfiguration entfernen?
                       </AlertDialogTitle>
                       <AlertDialogDescription>
-                        Alle eigenen SMTP-Einstellungen werden geloescht.
-                        E-Mails werden danach ueber den System-Standard
+                        Alle eigenen SMTP-Einstellungen werden gelöscht.
+                        E-Mails werden danach über den System-Standard
                         versendet. Diese Aktion kann nicht rueckgaengig gemacht
                         werden.
                       </AlertDialogDescription>

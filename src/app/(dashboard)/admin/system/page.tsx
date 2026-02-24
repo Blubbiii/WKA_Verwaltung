@@ -196,7 +196,7 @@ function formatUserName(user: AuditLogUser | null): string {
 const actionDisplayNames: Record<string, string> = {
   CREATE: "Erstellt",
   UPDATE: "Bearbeitet",
-  DELETE: "Geloescht",
+  DELETE: "Gelöscht",
   VIEW: "Angesehen",
   EXPORT: "Exportiert",
   LOGIN: "Angemeldet",
@@ -226,7 +226,7 @@ const entityDisplayNames: Record<string, string> = {
 
 // Category display names
 const categoryDisplayNames: Record<string, string> = {
-  CONTRACT: "Vertraege",
+  CONTRACT: "Verträge",
   PROTOCOL: "Protokolle",
   REPORT: "Berichte",
   INVOICE: "Rechnungen",
@@ -262,8 +262,8 @@ const tableDisplayNames: Record<string, string> = {
   funds: "Gesellschaften",
   shareholders: "Gesellschafter",
   plots: "Flurstuecke",
-  leases: "Pachtvertraege",
-  contracts: "Vertraege",
+  leases: "Pachtverträge",
+  contracts: "Verträge",
   documents: "Dokumente",
   invoices: "Rechnungen",
   auditLogs: "Audit-Logs",
@@ -317,7 +317,7 @@ export default function SystemHealthPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">System & Wartung</h1>
           <p className="text-muted-foreground">
-            Ueberwachung, Statistiken und Wartungsmodus
+            Überwachung, Statistiken und Wartungsmodus
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -519,7 +519,7 @@ export default function SystemHealthPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <HardDrive className="h-5 w-5" />
-              Speicher-Uebersicht
+              Speicher-Übersicht
             </CardTitle>
             <CardDescription>Dokumente und Dateispeicher</CardDescription>
           </CardHeader>
@@ -583,9 +583,9 @@ export default function SystemHealthPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5" />
-              Letzte Aktivitaeten
+              Letzte Aktivitäten
             </CardTitle>
-            <CardDescription>Die letzten 10 Audit-Log-Eintraege</CardDescription>
+            <CardDescription>Die letzten 10 Audit-Log-Einträge</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -636,7 +636,7 @@ export default function SystemHealthPage() {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>Keine Aktivitaeten vorhanden</p>
+                <p>Keine Aktivitäten vorhanden</p>
               </div>
             )}
           </CardContent>

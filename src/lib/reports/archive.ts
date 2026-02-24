@@ -89,7 +89,7 @@ export function mapFormatToEnum(format: string): ReportFormat {
 }
 
 /**
- * Gibt den MIME-Type fuer ein Format zurueck
+ * Gibt den MIME-Type für ein Format zurück
  */
 export function getMimeType(format: ReportFormat): string {
   const mimeTypes: Record<ReportFormat, string> = {
@@ -103,7 +103,7 @@ export function getMimeType(format: ReportFormat): string {
 }
 
 /**
- * Gibt die Dateiendung fuer ein Format zurueck
+ * Gibt die Dateiendung für ein Format zurück
  */
 export function getFileExtension(format: ReportFormat): string {
   const extensions: Record<ReportFormat, string> = {
@@ -116,7 +116,7 @@ export function getFileExtension(format: ReportFormat): string {
 }
 
 /**
- * Gibt den deutschen Namen fuer einen ReportType zurueck
+ * Gibt den deutschen Namen für einen ReportType zurück
  */
 export function getReportTypeName(type: ReportType): string {
   const names: Record<ReportType, string> = {
@@ -124,10 +124,10 @@ export function getReportTypeName(type: ReportType): string {
     [ReportType.ANNUAL]: "Jahresbericht",
     [ReportType.SHAREHOLDERS]: "Gesellschafterbericht",
     [ReportType.SETTLEMENT]: "Pachtabrechnung",
-    [ReportType.CONTRACTS]: "Vertragsuebersicht",
-    [ReportType.INVOICES]: "Rechnungsuebersicht",
-    [ReportType.PARKS_OVERVIEW]: "Windpark-Uebersicht",
-    [ReportType.TURBINES_OVERVIEW]: "Turbinen-Uebersicht",
+    [ReportType.CONTRACTS]: "Vertragsübersicht",
+    [ReportType.INVOICES]: "Rechnungsübersicht",
+    [ReportType.PARKS_OVERVIEW]: "Windpark-Übersicht",
+    [ReportType.TURBINES_OVERVIEW]: "Turbinen-Übersicht",
     [ReportType.FUND_PERFORMANCE]: "Gesellschafts-Performance",
     [ReportType.VOTES_RESULTS]: "Abstimmungsergebnisse",
     [ReportType.CUSTOM]: "Benutzerdefiniert",
@@ -227,7 +227,7 @@ export async function getArchivedReports(
     }),
   };
 
-  // Parallele Abfrage fuer Daten und Gesamtanzahl
+  // Parallele Abfrage für Daten und Gesamtanzahl
   const [reports, total] = await Promise.all([
     prisma.generatedReport.findMany({
       where,
@@ -268,7 +268,7 @@ export async function getArchivedReports(
  * Holt einen einzelnen Report mit Download-URL
  *
  * @param id - Report ID
- * @param tenantId - Mandanten-ID (fuer Sicherheitspruefung)
+ * @param tenantId - Mandanten-ID (für Sicherheitsprüfung)
  * @returns Report mit signierter Download-URL
  */
 export async function getArchivedReportById(id: string, tenantId: string) {
@@ -290,7 +290,7 @@ export async function getArchivedReportById(id: string, tenantId: string) {
     return null;
   }
 
-  // Signierte Download-URL generieren (1 Stunde gueltig)
+  // Signierte Download-URL generieren (1 Stunde gültig)
   const downloadUrl = await getSignedUrl(report.fileUrl, 3600);
 
   return {
@@ -303,7 +303,7 @@ export async function getArchivedReportById(id: string, tenantId: string) {
  * Loescht einen archivierten Report (inkl. Datei)
  *
  * @param id - Report ID
- * @param tenantId - Mandanten-ID (fuer Sicherheitspruefung)
+ * @param tenantId - Mandanten-ID (für Sicherheitsprüfung)
  * @returns true wenn erfolgreich, false wenn nicht gefunden
  */
 export async function deleteArchivedReport(
@@ -319,15 +319,15 @@ export async function deleteArchivedReport(
     return false;
   }
 
-  // Datei aus S3/MinIO loeschen
+  // Datei aus S3/MinIO löschen
   try {
     await deleteFile(report.fileUrl);
   } catch (error) {
-    logger.error({ err: error }, "Fehler beim Loeschen der Datei aus Storage");
-    // Wir loeschen den DB-Eintrag trotzdem, um Orphans zu vermeiden
+    logger.error({ err: error }, "Fehler beim Löschen der Datei aus Storage");
+    // Wir löschen den DB-Eintrag trotzdem, um Orphans zu vermeiden
   }
 
-  // DB-Eintrag loeschen
+  // DB-Eintrag löschen
   await prisma.generatedReport.delete({
     where: { id },
   });
@@ -336,7 +336,7 @@ export async function deleteArchivedReport(
 }
 
 /**
- * Holt Statistiken ueber archivierte Reports
+ * Holt Statistiken über archivierte Reports
  *
  * @param tenantId - Mandanten-ID
  * @returns Statistiken
@@ -360,7 +360,7 @@ export async function getArchiveStats(tenantId: string) {
       _count: { id: true },
     }),
 
-    // Gesamtgroesse
+    // Gesamtgröße
     prisma.generatedReport.aggregate({
       where: { tenantId },
       _sum: { fileSize: true },

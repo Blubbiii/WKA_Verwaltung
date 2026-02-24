@@ -130,11 +130,11 @@ export default function SettlementDetailPage({
   async function handleDelete() {
     try {
       await deleteEnergySettlement(id);
-      toast.success("Abrechnung wurde geloescht");
+      toast.success("Abrechnung wurde gelöscht");
       router.push("/energy");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Loeschen"
+        error instanceof Error ? error.message : "Fehler beim Löschen"
       );
     }
   }
@@ -237,7 +237,7 @@ export default function SettlementDetailPage({
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Loeschen
+                Löschen
               </Button>
             </>
           )}
@@ -302,12 +302,12 @@ export default function SettlementDetailPage({
           </CardContent>
         </Card>
 
-        {/* Produktion & Erloes */}
+        {/* Produktion & Erlös */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Zap className="h-4 w-4" />
-              Produktion & Erloes
+              Produktion & Erlös
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -321,7 +321,7 @@ export default function SettlementDetailPage({
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">
-                Netzeinspeisung Erloes
+                Netzeinspeisung Erlös
               </span>
               <span className="font-medium font-mono">
                 {formatCurrency(Number(settlement.netOperatorRevenueEur))}
@@ -420,14 +420,14 @@ export default function SettlementDetailPage({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Gesellschaft / Empfaenger</TableHead>
+                    <TableHead>Gesellschaft / Empfänger</TableHead>
                     <TableHead>Anlage</TableHead>
                     <TableHead className="text-right">
                       Produktionsanteil (kWh)
                     </TableHead>
                     <TableHead className="text-right">Anteil (%)</TableHead>
                     <TableHead className="text-right">
-                      Erloesanteil (EUR)
+                      Erlösanteil (EUR)
                     </TableHead>
                     <TableHead>Verteilungsschluessel</TableHead>
                     <TableHead>Gutschrift</TableHead>
@@ -492,7 +492,7 @@ export default function SettlementDetailPage({
                 <Separator />
                 <div className="flex justify-between gap-8">
                   <span className="text-muted-foreground font-medium">
-                    Gesamterloes:
+                    Gesamterlös:
                   </span>
                   <span className="font-mono font-bold">
                     {formatCurrency(
@@ -542,7 +542,7 @@ export default function SettlementDetailPage({
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         onConfirm={handleDelete}
-        title="Abrechnung loeschen"
+        title="Abrechnung löschen"
         itemName={title}
       />
     </div>

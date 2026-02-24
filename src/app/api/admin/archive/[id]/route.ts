@@ -75,7 +75,7 @@ export async function GET(
       return NextResponse.json(
         {
           error: "Integritaetsverletzung: Das Dokument wurde moeglicherweise manipuliert. " +
-            "Bitte fuehren Sie eine vollstaendige Integritaetspruefung durch.",
+            "Bitte fuehren Sie eine vollstaendige Integritaetsprüfung durch.",
         },
         { status: 500 }
       );

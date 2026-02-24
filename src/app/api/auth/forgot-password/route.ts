@@ -13,7 +13,7 @@ import { sendTemplatedEmailSync } from "@/lib/email";
 
 // Validation Schema
 const forgotPasswordSchema = z.object({
-  email: z.string().email("Ungueltige E-Mail-Adresse"),
+  email: z.string().email("Ungültige E-Mail-Adresse"),
 });
 
 // Token Expiry: 1 hour

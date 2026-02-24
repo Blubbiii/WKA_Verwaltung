@@ -134,7 +134,7 @@ export async function PATCH(
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Ungueltige Eingabedaten",
+          error: "Ungültige Eingabedaten",
           details: parsed.error.flatten().fieldErrors,
         },
         { status: 400 }
@@ -248,7 +248,7 @@ export async function DELETE(
   } catch (error) {
     logger.error({ err: error }, "Error deleting energy report config");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Berichts-Konfiguration" },
+      { error: "Fehler beim Löschen der Berichts-Konfiguration" },
       { status: 500 }
     );
   }

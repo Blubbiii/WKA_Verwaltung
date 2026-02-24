@@ -110,7 +110,7 @@ export function FeatureFlagsTab() {
       }
 
       toast.success(
-        `${FLAG_LABELS[flagKey]} fuer "${tenant.name}" ${newValue ? "aktiviert" : "deaktiviert"}`
+        `${FLAG_LABELS[flagKey]} für "${tenant.name}" ${newValue ? "aktiviert" : "deaktiviert"}`
       );
     } catch (error) {
       // Revert optimistic update
@@ -200,7 +200,7 @@ export function FeatureFlagsTab() {
                           disabled={
                             updating === `${tenant.id}-${flagKey}`
                           }
-                          aria-label={`${FLAG_LABELS[flagKey]} fuer ${tenant.name}`}
+                          aria-label={`${FLAG_LABELS[flagKey]} für ${tenant.name}`}
                         />
                       </TableCell>
                     ))}

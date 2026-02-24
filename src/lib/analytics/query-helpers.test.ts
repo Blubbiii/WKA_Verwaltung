@@ -26,32 +26,32 @@ import type { AnalyticsTurbineMeta } from "@/types/analytics";
 // =============================================================================
 
 describe("buildDateRange", () => {
-  it("gibt korrektes Start- und Enddatum fuer ein Jahr zurueck", () => {
+  it("gibt korrektes Start- und Enddatum für ein Jahr zurück", () => {
     const { from, to } = buildDateRange(2024);
     expect(from.toISOString()).toBe("2024-01-01T00:00:00.000Z");
     expect(to.toISOString()).toBe("2025-01-01T00:00:00.000Z");
   });
 
-  it("funktioniert fuer das aktuelle Jahr 2026", () => {
+  it("funktioniert für das aktuelle Jahr 2026", () => {
     const { from, to } = buildDateRange(2026);
     expect(from.toISOString()).toBe("2026-01-01T00:00:00.000Z");
     expect(to.toISOString()).toBe("2027-01-01T00:00:00.000Z");
   });
 
-  it("funktioniert fuer Schaltjahre", () => {
+  it("funktioniert für Schaltjahre", () => {
     const { from, to } = buildDateRange(2024);
     // 2024 is a leap year (366 days)
     const days = (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24);
     expect(days).toBe(366);
   });
 
-  it("funktioniert fuer Nicht-Schaltjahre", () => {
+  it("funktioniert für Nicht-Schaltjahre", () => {
     const { from, to } = buildDateRange(2023);
     const days = (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24);
     expect(days).toBe(365);
   });
 
-  it("gibt UTC-Daten zurueck (keine Zeitzonen-Verschiebung)", () => {
+  it("gibt UTC-Daten zurück (keine Zeitzonen-Verschiebung)", () => {
     const { from, to } = buildDateRange(2025);
     expect(from.getUTCHours()).toBe(0);
     expect(from.getUTCMinutes()).toBe(0);
@@ -65,28 +65,28 @@ describe("buildDateRange", () => {
 // =============================================================================
 
 describe("hoursInPeriod", () => {
-  it("berechnet Stunden fuer einen ganzen Tag", () => {
+  it("berechnet Stunden für einen ganzen Tag", () => {
     const from = new Date("2024-01-01T00:00:00Z");
     const to = new Date("2024-01-02T00:00:00Z");
     expect(hoursInPeriod(from, to)).toBe(24);
   });
 
-  it("berechnet Stunden fuer ein ganzes Jahr (365 Tage)", () => {
+  it("berechnet Stunden für ein ganzes Jahr (365 Tage)", () => {
     const { from, to } = buildDateRange(2023);
     expect(hoursInPeriod(from, to)).toBe(8760); // 365 * 24
   });
 
-  it("berechnet Stunden fuer ein Schaltjahr (366 Tage)", () => {
+  it("berechnet Stunden für ein Schaltjahr (366 Tage)", () => {
     const { from, to } = buildDateRange(2024);
     expect(hoursInPeriod(from, to)).toBe(8784); // 366 * 24
   });
 
-  it("gibt 0 zurueck wenn from === to", () => {
+  it("gibt 0 zurück wenn from === to", () => {
     const date = new Date("2024-06-15T12:00:00Z");
     expect(hoursInPeriod(date, date)).toBe(0);
   });
 
-  it("gibt negative Stunden zurueck wenn to < from", () => {
+  it("gibt negative Stunden zurück wenn to < from", () => {
     const from = new Date("2024-01-02T00:00:00Z");
     const to = new Date("2024-01-01T00:00:00Z");
     expect(hoursInPeriod(from, to)).toBe(-24);
@@ -104,11 +104,11 @@ describe("hoursInPeriod", () => {
 // =============================================================================
 
 describe("safeNumber", () => {
-  it("gibt 0 zurueck fuer null", () => {
+  it("gibt 0 zurück für null", () => {
     expect(safeNumber(null)).toBe(0);
   });
 
-  it("gibt 0 zurueck fuer undefined", () => {
+  it("gibt 0 zurück für undefined", () => {
     expect(safeNumber(undefined)).toBe(0);
   });
 
@@ -127,12 +127,12 @@ describe("safeNumber", () => {
     expect(safeNumber(BigInt(1000))).toBe(1000);
   });
 
-  it("gibt 0 zurueck fuer 0-Werte", () => {
+  it("gibt 0 zurück für 0-Werte", () => {
     expect(safeNumber(0)).toBe(0);
     expect(safeNumber("0")).toBe(0);
   });
 
-  it("gibt NaN zurueck fuer nicht-numerische Strings", () => {
+  it("gibt NaN zurück für nicht-numerische Strings", () => {
     expect(safeNumber("abc")).toBeNaN();
   });
 });
@@ -197,7 +197,7 @@ describe("buildTurbineMap", () => {
     expect(map.has("t3")).toBe(true);
   });
 
-  it("gibt korrekte Turbine-Metadaten zurueck", () => {
+  it("gibt korrekte Turbine-Metadaten zurück", () => {
     const map = buildTurbineMap(turbines);
     const t1 = map.get("t1");
     expect(t1).toBeDefined();
@@ -206,12 +206,12 @@ describe("buildTurbineMap", () => {
     expect(t1!.ratedPowerKw).toBe(3000);
   });
 
-  it("gibt undefined fuer unbekannte IDs zurueck", () => {
+  it("gibt undefined für unbekannte IDs zurück", () => {
     const map = buildTurbineMap(turbines);
     expect(map.get("unknown")).toBeUndefined();
   });
 
-  it("erstellt leere Map fuer leeres Array", () => {
+  it("erstellt leere Map für leeres Array", () => {
     const map = buildTurbineMap([]);
     expect(map.size).toBe(0);
   });
@@ -222,7 +222,7 @@ describe("buildTurbineMap", () => {
 // =============================================================================
 
 describe("monthLabel", () => {
-  it("gibt korrekte deutsche Monatsnamen zurueck", () => {
+  it("gibt korrekte deutsche Monatsnamen zurück", () => {
     expect(monthLabel(1)).toBe("Jan");
     expect(monthLabel(2)).toBe("Feb");
     expect(monthLabel(3)).toBe("M\u00e4r");
@@ -237,14 +237,14 @@ describe("monthLabel", () => {
     expect(monthLabel(12)).toBe("Dez");
   });
 
-  it("gibt Fallback fuer Monat 0 zurueck", () => {
+  it("gibt Fallback für Monat 0 zurück", () => {
     // Month 0 would be index -1 → MONTH_NAMES[-1] is undefined → fallback
     const result = monthLabel(0);
     // (0 - 1) % 12 = -1 → MONTH_NAMES[-1] = undefined → "M0"
     expect(result).toBe("M0");
   });
 
-  it("gibt Fallback fuer Monat 13+ zurueck", () => {
+  it("gibt Fallback für Monat 13+ zurück", () => {
     // Month 13 → (13 - 1) % 12 = 0 → "Jan" (wraps around)
     expect(monthLabel(13)).toBe("Jan");
   });

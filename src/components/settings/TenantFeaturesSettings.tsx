@@ -113,7 +113,7 @@ export function TenantFeaturesSettings() {
           Optionale Module
         </CardTitle>
         <CardDescription>
-          Aktivieren oder deaktivieren Sie optionale Module fuer Ihren Mandanten
+          Aktivieren oder deaktivieren Sie optionale Module für Ihren Mandanten
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

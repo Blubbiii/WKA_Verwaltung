@@ -153,7 +153,7 @@ export async function PATCH(
     if (validatedData.description !== undefined) updateData.description = validatedData.description;
     if (validatedData.color !== undefined) updateData.color = validatedData.color;
 
-    // Flag um zu tracken ob Permissions geaendert wurden
+    // Flag um zu tracken ob Permissions geändert wurden
     let permissionsChanged = false;
 
     // Update permissions if provided
@@ -224,7 +224,7 @@ export async function PATCH(
       },
     });
 
-    // Wenn Permissions geaendert wurden, gesamten Cache invalidieren
+    // Wenn Permissions geändert wurden, gesamten Cache invalidieren
     // da alle User mit dieser Rolle betroffen sind
     if (permissionsChanged) {
       invalidateAll();
@@ -306,7 +306,7 @@ export async function DELETE(
       where: { id },
     });
 
-    // Gesamten Cache invalidieren da die Rolle geloescht wurde
+    // Gesamten Cache invalidieren da die Rolle gelöscht wurde
     // (auch wenn keine User mehr zugewiesen sind, sicherheitshalber)
     invalidateAll();
 

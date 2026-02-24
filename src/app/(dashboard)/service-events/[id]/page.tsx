@@ -207,7 +207,7 @@ export default function ServiceEventDetailPage({
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-lg text-muted-foreground">{error}</p>
         <Button asChild className="mt-4">
-          <Link href="/parks">Zurueck zu Windparks</Link>
+          <Link href="/parks">Zurück zu Windparks</Link>
         </Button>
       </div>
     );

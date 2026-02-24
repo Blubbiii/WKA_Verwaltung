@@ -125,13 +125,13 @@ export async function deleteDocumentTemplate(id: string) {
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.error || "Fehler beim Loeschen");
+    throw new Error(error.error || "Fehler beim Löschen");
   }
 
   return res.json();
 }
 
-// Labels fuer DocumentType
+// Labels für DocumentType
 export const documentTypeLabels: Record<DocumentType, string> = {
   INVOICE: "Rechnung",
   CREDIT_NOTE: "Gutschrift",

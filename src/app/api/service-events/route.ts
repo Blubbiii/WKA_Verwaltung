@@ -82,7 +82,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
     const validSortField = ALLOWED_SORT_FIELDS[sortBy] || "eventDate";
     const validSortOrder = sortOrder === "asc" ? "asc" : "desc";
 
-    // Tenant-weite Basis-Where-Bedingung fuer Aggregationen
+    // Tenant-weite Basis-Where-Bedingung für Aggregationen
     const baseWhere = {
       turbine: {
         park: {

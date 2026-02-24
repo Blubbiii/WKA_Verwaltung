@@ -420,7 +420,7 @@ export default function ParkWeatherPage({
       {/* Main Content */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="overview">Uebersicht</TabsTrigger>
+          <TabsTrigger value="overview">Übersicht</TabsTrigger>
           <TabsTrigger value="forecast">5-Tage Vorhersage</TabsTrigger>
           <TabsTrigger value="history">Historische Daten</TabsTrigger>
           <TabsTrigger value="statistics">Statistiken</TabsTrigger>
@@ -551,7 +551,7 @@ export default function ParkWeatherPage({
                 5-Tage Vorhersage
               </CardTitle>
               <CardDescription>
-                Wettervorhersage fuer die naechsten 5 Tage
+                Wettervorhersage für die nächsten 5 Tage
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -596,7 +596,7 @@ export default function ParkWeatherPage({
                 </div>
               ) : (
                 <p className="py-8 text-center text-muted-foreground">
-                  Keine Vorhersage verfuegbar
+                  Keine Vorhersage verfügbar
                 </p>
               )}
             </CardContent>
@@ -643,7 +643,7 @@ export default function ParkWeatherPage({
                 />
               ) : (
                 <p className="py-8 text-center text-muted-foreground">
-                  Keine historischen Daten verfuegbar
+                  Keine historischen Daten verfügbar
                 </p>
               )}
             </CardContent>
@@ -791,7 +791,7 @@ export default function ParkWeatherPage({
               <Card className="md:col-span-2">
                 <CardContent className="py-12">
                   <p className="text-center text-muted-foreground">
-                    Keine Statistiken verfuegbar
+                    Keine Statistiken verfügbar
                   </p>
                 </CardContent>
               </Card>

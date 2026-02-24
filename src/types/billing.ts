@@ -49,7 +49,7 @@ export const SETTLEMENT_STATUS_LABELS: Record<LeaseRevenueSettlementStatus, stri
   ADVANCE_CREATED: "Vorschuss erstellt",
   CALCULATED: "Berechnet",
   SETTLED: "Abgerechnet",
-  PENDING_REVIEW: "Zur Pruefung",
+  PENDING_REVIEW: "Zur Prüfung",
   APPROVED: "Freigegeben",
   CLOSED: "Abgeschlossen",
   CANCELLED: "Storniert",
@@ -81,7 +81,7 @@ export const PERIOD_TYPE_LABELS: Record<string, string> = {
 export const ADVANCE_INTERVAL_LABELS: Record<string, string> = {
   MONTHLY: "Monatlich",
   QUARTERLY: "Quartalsweise",
-  YEARLY: "Jaehrlich",
+  YEARLY: "Jährlich",
 };
 
 /**
@@ -221,7 +221,7 @@ export interface LeaseRevenueSettlementItemResponse {
   turbineCount: number;
   standortFeeEur: number;
 
-  // Zusatzgebuehren
+  // Zusatzgebühren
   sealedAreaSqm: number;
   sealedAreaRate: number;
   sealedAreaFeeEur: number;
@@ -282,7 +282,7 @@ export interface LeaseRevenueSettlementResponse {
   year: number;
   status: LeaseRevenueSettlementStatus;
 
-  // Erloesbasis
+  // Erlösbasis
   totalParkRevenueEur: number;
   revenueSharePercent: number;
 

@@ -136,7 +136,7 @@ export async function GET() {
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] GET overview error");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Uebersicht" },
+      { error: "Fehler beim Laden der Übersicht" },
       { status: 500 }
     );
   }

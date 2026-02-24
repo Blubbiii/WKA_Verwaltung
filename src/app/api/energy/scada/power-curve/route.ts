@@ -7,7 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 // =============================================================================
 // GET /api/energy/scada/power-curve
 // Liefert Scatter-Daten (Windgeschwindigkeit vs. Leistung) und eine gemittelte
-// Leistungskurve (0.5 m/s Bins) fuer die Power-Curve-Analyse.
+// Leistungskurve (0.5 m/s Bins) für die Power-Curve-Analyse.
 // =============================================================================
 
 /** Default and maximum limits for scatter data */
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       fromDate = new Date(from);
       if (isNaN(fromDate.getTime())) {
         return NextResponse.json(
-          { error: "Ungueltiges Datum fuer 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
+          { error: "Ungültiges Datum für 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
           { status: 400 }
         );
       }
@@ -76,13 +76,13 @@ export async function GET(request: NextRequest) {
       toDate = new Date(to);
       if (isNaN(toDate.getTime())) {
         return NextResponse.json(
-          { error: "Ungueltiges Datum fuer 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
+          { error: "Ungültiges Datum für 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
           { status: 400 }
         );
       }
     }
 
-    // --- Turbines fuer Tenant ermitteln (gefiltert nach Park/Turbine) ---
+    // --- Turbines für Tenant ermitteln (gefiltert nach Park/Turbine) ---
     const turbineWhere: Record<string, unknown> = {
       park: { tenantId },
     };
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
 
     const whereClause = Prisma.sql`${baseConditions} ${dateFragment}`;
 
-    // --- Scatter Query: Zufaellige Stichprobe bis zum Limit ---
+    // --- Scatter Query: Zufällige Stichprobe bis zum Limit ---
     const scatterRows = await prisma.$queryRaw<ScatterRow[]>`
       SELECT
         "windSpeedMs"::float AS "windSpeed",

@@ -40,7 +40,7 @@ export async function POST(
     if (settlement.status !== "CALCULATED") {
       return NextResponse.json(
         {
-          error: "Vorschussrechnungen koennen nur fuer berechnete Abrechnungen erstellt werden",
+          error: "Vorschussrechnungen können nur für berechnete Abrechnungen erstellt werden",
           details: `Aktueller Status: ${settlement.status}. Bitte zuerst die Berechnung durchfuehren.`,
         },
         { status: 400 }

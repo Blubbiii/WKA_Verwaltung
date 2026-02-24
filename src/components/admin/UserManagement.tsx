@@ -135,7 +135,7 @@ interface TenantOption {
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
 const userFormSchema = z.object({
-  email: z.string().email("Ungueltige E-Mail-Adresse"),
+  email: z.string().email("Ungültige E-Mail-Adresse"),
   firstName: z.string().min(1, "Vorname ist erforderlich"),
   lastName: z.string().min(1, "Nachname ist erforderlich"),
   role: z.enum(["SUPERADMIN", "ADMIN", "MANAGER", "VIEWER"]).default("VIEWER"),
@@ -164,7 +164,7 @@ const moduleLabels: Record<string, string> = {
   reports: "Berichte",
   settings: "Einstellungen",
   admin: "Administration",
-  contracts: "Vertraege",
+  contracts: "Verträge",
   invoices: "Rechnungen",
   shareholders: "Gesellschafter",
   votes: "Abstimmungen",
@@ -174,7 +174,7 @@ const actionLabels: Record<string, string> = {
   read: "Lesen",
   create: "Erstellen",
   update: "Bearbeiten",
-  delete: "Loeschen",
+  delete: "Löschen",
   manage: "Verwalten",
   assign: "Zuweisen",
   export: "Exportieren",
@@ -856,7 +856,7 @@ export function UserManagement() {
                   </div>
                 ) : availableRoles.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Keine Rollen verfuegbar
+                    Keine Rollen verfügbar
                   </p>
                 ) : (
                   <div className="max-h-48 overflow-y-auto space-y-2 border rounded-md p-3">
@@ -937,7 +937,7 @@ export function UserManagement() {
             <AlertDialogDescription asChild>
               <div className="space-y-2">
                 <p>
-                  Moechten Sie{" "}
+                  Möchten Sie{" "}
                   <span className="font-semibold">
                     {userToDelete?.firstName} {userToDelete?.lastName}
                   </span>{" "}
@@ -983,7 +983,7 @@ export function UserManagement() {
             </DialogTitle>
             <DialogDescription>
               {permissionsUser
-                ? `Alle Berechtigungen fuer ${permissionsUser.firstName} ${permissionsUser.lastName}`
+                ? `Alle Berechtigungen für ${permissionsUser.firstName} ${permissionsUser.lastName}`
                 : "Benutzerberechtigungen"}
             </DialogDescription>
           </DialogHeader>

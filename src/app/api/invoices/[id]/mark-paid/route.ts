@@ -67,7 +67,7 @@ export async function POST(
 
     if (invoice.status === "CANCELLED") {
       return NextResponse.json(
-        { error: "Stornierte Rechnungen koennen nicht als bezahlt markiert werden" },
+        { error: "Stornierte Rechnungen können nicht als bezahlt markiert werden" },
         { status: 400 }
       );
     }
@@ -81,7 +81,7 @@ export async function POST(
 
     if (invoice.status === "DRAFT") {
       return NextResponse.json(
-        { error: "Entwuerfe koennen nicht als bezahlt markiert werden. Bitte erst versenden." },
+        { error: "Entwuerfe können nicht als bezahlt markiert werden. Bitte erst versenden." },
         { status: 400 }
       );
     }
@@ -92,7 +92,7 @@ export async function POST(
       // Verify Skonto is configured
       if (!invoice.skontoPercent || !invoice.skontoDeadline) {
         return NextResponse.json(
-          { error: "Kein Skonto fuer diese Rechnung konfiguriert" },
+          { error: "Kein Skonto für diese Rechnung konfiguriert" },
           { status: 400 }
         );
       }

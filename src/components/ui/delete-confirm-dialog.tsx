@@ -26,8 +26,8 @@ export function DeleteConfirmDialog({
   open,
   onOpenChange,
   onConfirm,
-  title = "Eintrag loeschen",
-  description = "Moechten Sie diesen Eintrag wirklich unwiderruflich loeschen?",
+  title = "Eintrag löschen",
+  description = "Möchten Sie diesen Eintrag wirklich unwiderruflich löschen?",
   itemName,
 }: DeleteConfirmDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -55,8 +55,8 @@ export function DeleteConfirmDialog({
           <AlertDialogDescription>
             {itemName ? (
               <>
-                Moechten Sie <span className="font-semibold">{itemName}</span> wirklich
-                unwiderruflich loeschen?
+                Möchten Sie <span className="font-semibold">{itemName}</span> wirklich
+                unwiderruflich löschen?
               </>
             ) : (
               description
@@ -77,7 +77,7 @@ export function DeleteConfirmDialog({
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isDeleting ? "Loeschen..." : "Loeschen"}
+            {isDeleting ? "Löschen..." : "Löschen"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

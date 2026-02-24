@@ -100,7 +100,7 @@ export function Footer({
 }: FooterProps) {
   const { showBankDetails, showTaxDisclaimer } = layout.sections.footer;
 
-  // CompanyInfo aus Letterhead oder uebergebene Daten
+  // CompanyInfo aus Letterhead oder übergebene Daten
   const info = (letterhead.companyInfo as CompanyInfo) || companyInfo || {};
 
   return (

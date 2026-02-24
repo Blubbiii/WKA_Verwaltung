@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     if (!healthy) {
       return NextResponse.json(
         {
-          error: 'Redis-Verbindung nicht verfuegbar',
+          error: 'Redis-Verbindung nicht verfügbar',
           healthy: false,
           queues: [],
           totals: {

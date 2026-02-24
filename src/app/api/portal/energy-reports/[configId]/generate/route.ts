@@ -555,7 +555,7 @@ export async function POST(
 
     if (!config) {
       return NextResponse.json(
-        { error: "Berichts-Konfiguration nicht gefunden oder nicht fuer Portal freigegeben" },
+        { error: "Berichts-Konfiguration nicht gefunden oder nicht für Portal freigegeben" },
         { status: 404 }
       );
     }
@@ -567,7 +567,7 @@ export async function POST(
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Ungueltige Eingabedaten",
+          error: "Ungültige Eingabedaten",
           details: parsed.error.flatten().fieldErrors,
         },
         { status: 400 }
@@ -579,13 +579,13 @@ export async function POST(
 
     if (isNaN(fromDate.getTime())) {
       return NextResponse.json(
-        { error: "Ungueltiges 'from' Datum (ISO-Format erwartet)" },
+        { error: "Ungültiges 'from' Datum (ISO-Format erwartet)" },
         { status: 400 }
       );
     }
     if (isNaN(toDate.getTime())) {
       return NextResponse.json(
-        { error: "Ungueltiges 'to' Datum (ISO-Format erwartet)" },
+        { error: "Ungültiges 'to' Datum (ISO-Format erwartet)" },
         { status: 400 }
       );
     }
@@ -619,7 +619,7 @@ export async function POST(
 
     if (turbines.length === 0) {
       return NextResponse.json(
-        { error: "Keine Turbinen fuer diese Konfiguration gefunden" },
+        { error: "Keine Turbinen für diese Konfiguration gefunden" },
         { status: 404 }
       );
     }

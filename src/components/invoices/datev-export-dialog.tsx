@@ -181,7 +181,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
         <DialogHeader>
           <DialogTitle>DATEV-Export</DialogTitle>
           <DialogDescription>
-            Exportieren Sie Buchungssaetze im DATEV-Format (Buchungsstapel) fuer
+            Exportieren Sie Buchungssaetze im DATEV-Format (Buchungsstapel) für
             Ihren Steuerberater.
           </DialogDescription>
         </DialogHeader>
@@ -307,7 +307,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="datev-revenue">Erloeskonto</Label>
+                  <Label htmlFor="datev-revenue">Erlöskonto</Label>
                   <Input
                     id="datev-revenue"
                     value={revenueAccount}
@@ -316,7 +316,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
                     maxLength={10}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Standard: 8400 (Erloese Stromlieferung)
+                    Standard: 8400 (Erlöse Stromlieferung)
                   </p>
                 </div>
                 <div className="space-y-2">

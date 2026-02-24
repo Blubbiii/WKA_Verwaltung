@@ -10,7 +10,7 @@ import { sendTemplatedEmailSync } from "@/lib/email/sender";
 
 const adminUserSchema = z
   .object({
-    email: z.string().email("Ungueltige E-Mail-Adresse"),
+    email: z.string().email("Ungültige E-Mail-Adresse"),
     firstName: z.string().min(1, "Vorname ist erforderlich"),
     lastName: z.string().min(1, "Nachname ist erforderlich"),
     mode: z.enum(["password", "invitation"]),

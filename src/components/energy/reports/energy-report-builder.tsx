@@ -73,14 +73,14 @@ const ICON_MAP: Record<string, React.ElementType> = {
 const REPORT_MODULES = [
   {
     id: "kpiSummary",
-    label: "Kennzahlen-Uebersicht",
+    label: "Kennzahlen-Übersicht",
     description:
       "Wichtige KPIs wie Gesamtproduktion, Durchschnittsleistung, Windgeschwindigkeit",
     icon: "BarChart3",
   },
   {
     id: "production",
-    label: "Produktionsuebersicht",
+    label: "Produktionsübersicht",
     description: "Zeitreihe der Energieproduktion nach gewaehltem Intervall",
     icon: "TrendingUp",
   },
@@ -105,7 +105,7 @@ const REPORT_MODULES = [
   {
     id: "dailyProfile",
     label: "Tagesgang",
-    description: "Durchschnittlicher Leistungsverlauf ueber den Tag",
+    description: "Durchschnittlicher Leistungsverlauf über den Tag",
     icon: "Clock",
   },
 ] as const;
@@ -465,7 +465,7 @@ export function EnergyReportBuilder() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Berichtsmodule</CardTitle>
               <CardDescription className="text-xs">
-                Waehlen Sie die Module fuer Ihren Bericht
+                Waehlen Sie die Module für Ihren Bericht
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -710,7 +710,7 @@ export function EnergyReportBuilder() {
                   reportData.kpiSummary && (
                     <section className="report-module">
                       <h2 className="text-xl font-semibold mb-4">
-                        Kennzahlen-Uebersicht
+                        Kennzahlen-Übersicht
                       </h2>
                       <KpiSummaryModule data={reportData.kpiSummary} />
                     </section>
@@ -721,7 +721,7 @@ export function EnergyReportBuilder() {
                   reportData.production && (
                     <section className="report-module">
                       <h2 className="text-xl font-semibold mb-4">
-                        Produktionsuebersicht
+                        Produktionsübersicht
                       </h2>
                       <Card>
                         <CardContent className="pt-6">
@@ -957,7 +957,7 @@ function TurbineComparisonModule({
               </TableHead>
               <TableHead className="text-right">Datenpunkte</TableHead>
               <TableHead className="text-right">
-                Verfuegbarkeit (%)
+                Verfügbarkeit (%)
               </TableHead>
             </TableRow>
           </TableHeader>

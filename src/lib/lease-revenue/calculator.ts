@@ -378,7 +378,7 @@ export async function loadSettlementData(
   );
 
   if (!activePhase)
-    throw new Error(`Keine Erloesphase fuer Jahr ${year} konfiguriert`);
+    throw new Error(`Keine Erlösphase für Jahr ${year} konfiguriert`);
 
   // Load total park revenue for the year from EnergySettlements
   // If a specific EnergySettlement is linked, use that; otherwise aggregate all

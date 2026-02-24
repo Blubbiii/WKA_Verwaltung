@@ -86,7 +86,7 @@ export async function GET(
   } catch (error) {
     logger.error({ err: error }, "Error checking portal access status");
     return NextResponse.json(
-      { error: "Fehler beim Pruefen des Portal-Zugangs" },
+      { error: "Fehler beim Prüfen des Portal-Zugangs" },
       { status: 500 }
     );
   }

@@ -276,7 +276,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
     try {
       setIsSubmittingForReview(true);
       await updateSettlementPeriod(id, { status: "PENDING_REVIEW" });
-      toast.success("Zur Pruefung eingereicht");
+      toast.success("Zur Prüfung eingereicht");
       setShowSubmitForReviewDialog(false);
       mutate();
     } catch (error) {
@@ -302,7 +302,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
 
   async function handleReject() {
     if (!rejectionNotes.trim()) {
-      toast.error("Bitte geben Sie eine Begruendung fuer die Ablehnung an");
+      toast.error("Bitte geben Sie eine Begruendung für die Ablehnung an");
       return;
     }
     try {
@@ -311,7 +311,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
         action: "reject",
         notes: rejectionNotes.trim(),
       });
-      toast.success("Abrechnungsperiode zurueckgewiesen");
+      toast.success("Abrechnungsperiode zurückgewiesen");
       setShowRejectDialog(false);
       setRejectionNotes("");
       mutate();
@@ -340,10 +340,10 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
     try {
       setIsDeleting(true);
       await deleteSettlementPeriod(id);
-      toast.success("Abrechnungsperiode geloescht");
+      toast.success("Abrechnungsperiode gelöscht");
       router.push("/admin/settlement-periods");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Loeschen");
+      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
     } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
@@ -427,7 +427,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               onClick={() => setShowSubmitForReviewDialog(true)}
             >
               <Send className="mr-2 h-4 w-4" />
-              Zur Pruefung einreichen
+              Zur Prüfung einreichen
             </Button>
           )}
           {canApproveOrReject && (
@@ -475,7 +475,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               className="text-destructive hover:text-destructive"
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Loeschen
+              Löschen
             </Button>
           )}
         </div>
@@ -490,7 +490,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               Wartet auf Genehmigung
             </p>
             <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              Diese Abrechnungsperiode wurde zur Pruefung eingereicht und wartet auf die Genehmigung eines Administrators.
+              Diese Abrechnungsperiode wurde zur Prüfung eingereicht und wartet auf die Genehmigung eines Administrators.
             </p>
           </div>
         </div>
@@ -528,7 +528,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
           <div>
             <p className="font-medium text-red-800 dark:text-red-200">
-              Zurueckgewiesen
+              Zurückgewiesen
               {period.reviewedBy && (
                 <span className="font-normal">
                   {" "}von {formatReviewerName()}
@@ -581,7 +581,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                 {formatCurrency(period.totalRevenue)}
               </div>
               <p className="text-sm text-muted-foreground">
-                Stromerloes {period.year}
+                Stromerlös {period.year}
               </p>
             </CardContent>
           </Card>
@@ -599,7 +599,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               {formatCurrency(period.totalMinimumRent)}
             </div>
             <p className="text-sm text-muted-foreground">
-              {period.periodType === "ADVANCE" ? "Monatlich" : "Jaehrlich"}
+              {period.periodType === "ADVANCE" ? "Monatlich" : "Jährlich"}
             </p>
           </CardContent>
         </Card>
@@ -616,7 +616,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               {formatCurrency(period.totalActualRent)}
             </div>
             <p className="text-sm text-muted-foreground">
-              Inkl. Erloesanteil
+              Inkl. Erlösanteil
             </p>
           </CardContent>
         </Card>
@@ -645,7 +645,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
             Genehmigungsworkflow
           </CardTitle>
           <CardDescription>
-            Status des Pruefungs- und Genehmigungsprozesses
+            Status des Prüfungs- und Genehmigungsprozesses
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -697,7 +697,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               ) : (
                 <Clock className="h-3.5 w-3.5" />
               )}
-              Pruefung
+              Prüfung
             </div>
             <Separator className="w-6" />
             {/* APPROVED step */}
@@ -799,7 +799,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                   ) : (
                     <>
                       <div>
-                        <div className="text-sm text-muted-foreground">Gezahlte Vorschuesse</div>
+                        <div className="text-sm text-muted-foreground">Gezahlte Vorschüsse</div>
                         <div className="text-lg font-semibold">
                           {formatCurrency(calculationResult.totals.totalAdvancesPaid)}
                         </div>
@@ -828,8 +828,8 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                         ) : (
                           <>
                             <TableHead className="text-right">Mindestpacht</TableHead>
-                            <TableHead className="text-right">Erloesanteil</TableHead>
-                            <TableHead className="text-right">Gezahlte Vorschuesse</TableHead>
+                            <TableHead className="text-right">Erlösanteil</TableHead>
+                            <TableHead className="text-right">Gezahlte Vorschüsse</TableHead>
                             <TableHead className="text-right">Restbetrag</TableHead>
                             <TableHead>Status</TableHead>
                           </>
@@ -840,7 +840,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                       {calculationResult.leases.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={calculationResult.periodType === "ADVANCE" ? 3 : 6} className="text-center py-8 text-muted-foreground">
-                            Keine Verpaechter mit aktiven Pachtvertraegen gefunden
+                            Keine Verpaechter mit aktiven Pachtverträgen gefunden
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -959,7 +959,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               <div>
                 <p className="font-medium">Stromabrechnung {period.year}</p>
                 <p className="text-sm text-muted-foreground">
-                  Die Erloesdaten werden aus dieser Stromabrechnung uebernommen
+                  Die Erlösdaten werden aus dieser Stromabrechnung übernommen
                 </p>
               </div>
               <Button variant="outline" asChild>
@@ -982,7 +982,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               Rechnungen ({period.invoices.length})
             </CardTitle>
             <CardDescription>
-              Erstellte Rechnungen fuer diese Abrechnungsperiode
+              Erstellte Rechnungen für diese Abrechnungsperiode
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -991,7 +991,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nummer</TableHead>
-                    <TableHead>Empfaenger</TableHead>
+                    <TableHead>Empfänger</TableHead>
                     <TableHead>Typ</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Datum</TableHead>
@@ -1082,10 +1082,10 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
       <AlertDialog open={showSubmitForReviewDialog} onOpenChange={setShowSubmitForReviewDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Zur Pruefung einreichen?</AlertDialogTitle>
+            <AlertDialogTitle>Zur Prüfung einreichen?</AlertDialogTitle>
             <AlertDialogDescription>
               Die Abrechnungsperiode wird zur Genehmigung an einen Administrator weitergeleitet.
-              Waehrend der Pruefung koennen keine Aenderungen vorgenommen werden.
+              Waehrend der Prüfung können keine Änderungen vorgenommen werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1104,8 +1104,8 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Abrechnungsperiode genehmigen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Durch die Genehmigung bestaetigen Sie, dass die Berechnung korrekt ist.
-              Anschliessend koennen Rechnungen erstellt und die Periode abgeschlossen werden.
+              Durch die Genehmigung bestätigen Sie, dass die Berechnung korrekt ist.
+              Anschliessend können Rechnungen erstellt und die Periode abgeschlossen werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1131,8 +1131,8 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <DialogHeader>
             <DialogTitle>Abrechnungsperiode ablehnen</DialogTitle>
             <DialogDescription>
-              Geben Sie eine Begruendung fuer die Ablehnung an. Die Periode wird zurueck in den
-              Status &quot;In Bearbeitung&quot; versetzt und kann ueberarbeitet werden.
+              Geben Sie eine Begruendung für die Ablehnung an. Die Periode wird zurück in den
+              Status &quot;In Bearbeitung&quot; versetzt und kann überarbeitet werden.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -1142,7 +1142,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                 id="rejectionNotes"
                 value={rejectionNotes}
                 onChange={(e) => setRejectionNotes(e.target.value)}
-                placeholder="Bitte beschreiben Sie, warum die Abrechnung ueberarbeitet werden muss..."
+                placeholder="Bitte beschreiben Sie, warum die Abrechnung überarbeitet werden muss..."
                 rows={4}
               />
             </div>
@@ -1175,7 +1175,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <DialogHeader>
             <DialogTitle>Rechnungen erstellen</DialogTitle>
             <DialogDescription>
-              Erstellen Sie {period.periodType === "ADVANCE" ? "Mindestpacht-Rechnungen" : "Schlussrechnungen"} fuer alle Verpaechter dieser Periode
+              Erstellen Sie {period.periodType === "ADVANCE" ? "Mindestpacht-Rechnungen" : "Schlussrechnungen"} für alle Verpaechter dieser Periode
             </DialogDescription>
           </DialogHeader>
 
@@ -1185,7 +1185,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               <p className="text-sm text-muted-foreground">
                 {period.periodType === "ADVANCE"
                   ? "Mindestpacht-Vorschuss (Monatliche Abschlagszahlung)"
-                  : "Jahresendabrechnung (Verrechnung der Vorschuesse mit dem Erloesanteil)"}
+                  : "Jahresendabrechnung (Verrechnung der Vorschüsse mit dem Erlösanteil)"}
               </p>
             </div>
 
@@ -1223,7 +1223,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Faelligkeitsdatum</Label>
+                <Label>Fälligkeitsdatum</Label>
                 <Input
                   type="date"
                   value={invoiceFormData.dueDate}
@@ -1261,8 +1261,8 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Abrechnungsperiode abschliessen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Nach dem Abschliessen koennen keine weiteren Aenderungen oder Rechnungen
-              fuer diese Periode erstellt werden. Dieser Vorgang kann nicht rueckgaengig
+              Nach dem Abschliessen können keine weiteren Änderungen oder Rechnungen
+              für diese Periode erstellt werden. Dieser Vorgang kann nicht rueckgaengig
               gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1280,9 +1280,9 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Abrechnungsperiode loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>Abrechnungsperiode löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie diese Abrechnungsperiode loeschen moechten?
+              Sind Sie sicher, dass Sie diese Abrechnungsperiode löschen möchten?
               Dieser Vorgang kann nicht rueckgaengig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1294,7 +1294,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Loeschen
+              Löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

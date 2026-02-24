@@ -27,8 +27,8 @@ const updateScheduledReportSchema = z.object({
     .optional(),
   schedule: z.enum(["MONTHLY", "QUARTERLY", "ANNUALLY"]).optional(),
   recipients: z
-    .array(z.string().email("Ungueltige E-Mail-Adresse"))
-    .min(1, "Mindestens ein Empfaenger ist erforderlich")
+    .array(z.string().email("Ungültige E-Mail-Adresse"))
+    .min(1, "Mindestens ein Empfänger ist erforderlich")
     .optional(),
   config: z
     .object({
@@ -267,12 +267,12 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: "Geplanter Bericht wurde geloescht",
+      message: "Geplanter Bericht wurde gelöscht",
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting scheduled report");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen des geplanten Berichts" },
+      { error: "Fehler beim Löschen des geplanten Berichts" },
       { status: 500 }
     );
   }

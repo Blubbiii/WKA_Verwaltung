@@ -81,15 +81,15 @@ interface ExecutionsResponse {
 const RULE_TYPE_LABELS: Record<string, string> = {
   LEASE_PAYMENT: "Pachtzahlung",
   DISTRIBUTION: "Ausschuettung",
-  MANAGEMENT_FEE: "Verwaltungsgebuehr",
+  MANAGEMENT_FEE: "Verwaltungsgebühr",
   CUSTOM: "Benutzerdefiniert",
 };
 
 const FREQUENCY_LABELS: Record<string, string> = {
   MONTHLY: "Monatlich",
-  QUARTERLY: "Vierteljaehrlich",
-  SEMI_ANNUAL: "Halbjaehrlich",
-  ANNUAL: "Jaehrlich",
+  QUARTERLY: "Vierteljährlich",
+  SEMI_ANNUAL: "Halbjährlich",
+  ANNUAL: "Jährlich",
   CUSTOM_CRON: "Benutzerdefiniert",
 };
 
@@ -124,7 +124,7 @@ function ParameterDisplay({ parameters, ruleType }: { parameters: Record<string,
     amount: "Betrag",
     percentage: "Prozentsatz",
     baseValue: "Basiswert",
-    recipientName: "Empfaenger",
+    recipientName: "Empfänger",
     recipientAddress: "Adresse",
     invoiceType: "Rechnungstyp",
     items: "Positionen",
@@ -250,10 +250,10 @@ export default function BillingRuleDetailPage({
           fetchExecutions();
         }
       } else {
-        toast.error(result.errorMessage || "Ausfuehrung fehlgeschlagen");
+        toast.error(result.errorMessage || "Ausführung fehlgeschlagen");
       }
     } catch (error) {
-      toast.error("Fehler bei der Ausfuehrung");
+      toast.error("Fehler bei der Ausführung");
     } finally {
       setIsExecuting(false);
     }
@@ -345,7 +345,7 @@ export default function BillingRuleDetailPage({
               ) : (
                 <XCircle className="h-5 w-5 text-red-600" />
               )}
-              {executionResult.dryRun ? "Vorschau-Ergebnis" : "Ausfuehrungsergebnis"}
+              {executionResult.dryRun ? "Vorschau-Ergebnis" : "Ausführungsergebnis"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -413,11 +413,11 @@ export default function BillingRuleDetailPage({
         <TabsList>
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Uebersicht
+            Übersicht
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <History className="h-4 w-4" />
-            Ausfuehrungshistorie
+            Ausführungshistorie
           </TabsTrigger>
         </TabsList>
 
@@ -452,7 +452,7 @@ export default function BillingRuleDetailPage({
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <Clock className="h-4 w-4" />
-                  <span className="text-sm">Letzte Ausfuehrung</span>
+                  <span className="text-sm">Letzte Ausführung</span>
                 </div>
                 <p className="text-lg font-semibold">{formatDate(rule.lastRunAt)}</p>
               </CardContent>
@@ -462,7 +462,7 @@ export default function BillingRuleDetailPage({
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <Clock className="h-4 w-4" />
-                  <span className="text-sm">Naechste Ausfuehrung</span>
+                  <span className="text-sm">Nächste Ausführung</span>
                 </div>
                 <p className="text-lg font-semibold">{formatDate(rule.nextRunAt)}</p>
               </CardContent>
@@ -474,7 +474,7 @@ export default function BillingRuleDetailPage({
             <CardHeader>
               <CardTitle>Parameter</CardTitle>
               <CardDescription>
-                Konfiguration fuer {RULE_TYPE_LABELS[rule.ruleType]}
+                Konfiguration für {RULE_TYPE_LABELS[rule.ruleType]}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -500,7 +500,7 @@ export default function BillingRuleDetailPage({
                   </div>
                 )}
                 <div>
-                  <p className="text-sm text-muted-foreground">Ausfuehrungen gesamt</p>
+                  <p className="text-sm text-muted-foreground">Ausführungen gesamt</p>
                   <p className="font-medium">{rule.executionCount}</p>
                 </div>
               </div>
@@ -531,8 +531,8 @@ export default function BillingRuleDetailPage({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Regel deaktivieren?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Die Regel wird deaktiviert und nicht mehr automatisch ausgefuehrt.
-                      Die Ausfuehrungshistorie bleibt erhalten.
+                      Die Regel wird deaktiviert und nicht mehr automatisch ausgeführt.
+                      Die Ausführungshistorie bleibt erhalten.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

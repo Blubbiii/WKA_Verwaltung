@@ -178,7 +178,7 @@ export default function AnalyticsPage() {
           </TabsTrigger>
           <TabsTrigger value="availability" className="gap-1">
             <Clock className="h-4 w-4 hidden sm:block" />
-            <span>Verfuegbarkeit</span>
+            <span>Verfügbarkeit</span>
           </TabsTrigger>
           <TabsTrigger value="comparison" className="gap-1">
             <GitCompare className="h-4 w-4 hidden sm:block" />
@@ -186,7 +186,7 @@ export default function AnalyticsPage() {
           </TabsTrigger>
           <TabsTrigger value="faults" className="gap-1">
             <AlertTriangle className="h-4 w-4 hidden sm:block" />
-            <span>Stoerungen</span>
+            <span>Störungen</span>
           </TabsTrigger>
           <TabsTrigger value="environment" className="gap-1">
             <Cloud className="h-4 w-4 hidden sm:block" />
@@ -265,7 +265,7 @@ export default function AnalyticsPage() {
         {/* Availability Tab */}
         <TabsContent value="availability" className="mt-6">
           {availError ? (
-            <ErrorState message="Fehler beim Laden der Verfuegbarkeitsdaten" />
+            <ErrorState message="Fehler beim Laden der Verfügbarkeitsdaten" />
           ) : (
             <AvailabilityChart
               breakdown={availData?.breakdown ?? []}
@@ -294,7 +294,7 @@ export default function AnalyticsPage() {
         {/* Faults Tab */}
         <TabsContent value="faults" className="mt-6">
           {faultError ? (
-            <ErrorState message="Fehler beim Laden der Stoerungsdaten" />
+            <ErrorState message="Fehler beim Laden der Störungsdaten" />
           ) : (
             <FaultAnalysis
               statePareto={faultData?.statePareto ?? []}

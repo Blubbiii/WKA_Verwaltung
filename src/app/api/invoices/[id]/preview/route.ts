@@ -4,7 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { generateInvoicePdfBase64 } from "@/lib/pdf";
 import { apiLogger as logger } from "@/lib/logger";
 
-// GET /api/invoices/[id]/preview - PDF als Base64 fuer Vorschau
+// GET /api/invoices/[id]/preview - PDF als Base64 für Vorschau
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -15,7 +15,7 @@ export async function GET(
 
     const { id } = await params;
 
-    // Rechnung pruefen
+    // Rechnung prüfen
     const invoice = await prisma.invoice.findUnique({
       where: { id },
       select: {

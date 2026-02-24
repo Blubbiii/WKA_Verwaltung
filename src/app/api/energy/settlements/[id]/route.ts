@@ -12,11 +12,11 @@ import { invalidate } from "@/lib/cache/invalidation";
 // =============================================================================
 
 /**
- * Schema fuer Stromabrechnung-Updates
- * Alle Felder optional, da nur geaenderte Werte uebergeben werden
+ * Schema für Stromabrechnung-Updates
+ * Alle Felder optional, da nur geänderte Werte übergeben werden
  */
 const settlementUpdateSchema = z.object({
-  netOperatorRevenueEur: z.number().nonnegative("Erloes muss >= 0 sein").optional(),
+  netOperatorRevenueEur: z.number().nonnegative("Erlös muss >= 0 sein").optional(),
   netOperatorReference: z.string().max(100).optional().nullable(),
   totalProductionKwh: z.number().nonnegative("Produktion muss >= 0 sein").optional(),
   eegProductionKwh: z.number().nonnegative().optional().nullable(),
@@ -158,8 +158,8 @@ export async function PATCH(
     if (existing.status !== "DRAFT") {
       return NextResponse.json(
         {
-          error: "Nur Entwuerfe koennen bearbeitet werden",
-          details: `Aktuelle Status: ${existing.status}. Setze Status zurueck auf DRAFT um zu bearbeiten.`,
+          error: "Nur Entwuerfe können bearbeitet werden",
+          details: `Aktuelle Status: ${existing.status}. Setze Status zurück auf DRAFT um zu bearbeiten.`,
         },
         { status: 400 }
       );
@@ -170,11 +170,11 @@ export async function PATCH(
 
     const updateData: any = {};
 
-    // Aenderung von netOperatorRevenueEur setzt Status zurueck auf DRAFT
-    // (redundant da wir schon DRAFT pruefen, aber fuer zukuenftige Erweiterungen)
+    // Änderung von netOperatorRevenueEur setzt Status zurück auf DRAFT
+    // (redundant da wir schon DRAFT prüfen, aber für zukuenftige Erweiterungen)
     if (validatedData.netOperatorRevenueEur !== undefined) {
       updateData.netOperatorRevenueEur = validatedData.netOperatorRevenueEur;
-      // Bei Aenderung des Erloes-Betrags muss neu berechnet werden
+      // Bei Änderung des Erlös-Betrags muss neu berechnet werden
       updateData.status = "DRAFT";
       updateData.calculationDetails = null; // Reset calculation
     }
@@ -185,7 +185,7 @@ export async function PATCH(
 
     if (validatedData.totalProductionKwh !== undefined) {
       updateData.totalProductionKwh = validatedData.totalProductionKwh;
-      // Bei Aenderung der Produktion muss neu berechnet werden
+      // Bei Änderung der Produktion muss neu berechnet werden
       updateData.status = "DRAFT";
       updateData.calculationDetails = null;
     }
@@ -205,7 +205,7 @@ export async function PATCH(
 
     if (validatedData.distributionMode !== undefined) {
       updateData.distributionMode = validatedData.distributionMode as DistributionMode;
-      // Bei Aenderung des Verteilmodus muss neu berechnet werden
+      // Bei Änderung des Verteilmodus muss neu berechnet werden
       updateData.status = "DRAFT";
       updateData.calculationDetails = null;
     }
@@ -278,7 +278,7 @@ export async function PATCH(
 }
 
 // =============================================================================
-// DELETE /api/energy/settlements/[id] - Stromabrechnung loeschen
+// DELETE /api/energy/settlements/[id] - Stromabrechnung löschen
 // =============================================================================
 
 export async function DELETE(
@@ -289,7 +289,7 @@ export async function DELETE(
     const check = await requirePermission("energy:delete");
     if (!check.authorized) return check.error;
 
-    // Zusaetzliche Pruefung: Nur ADMIN oder SUPERADMIN duerfen loeschen
+    // Zusätzliche Prüfung: Nur ADMIN oder SUPERADMIN duerfen löschen
     const session = await prisma.user.findUnique({
       where: { id: check.userId! },
       select: { role: true },
@@ -297,7 +297,7 @@ export async function DELETE(
 
     if (!session || !["ADMIN", "SUPERADMIN"].includes(session.role)) {
       return NextResponse.json(
-        { error: "Nur Administratoren duerfen Stromabrechnungen loeschen" },
+        { error: "Nur Administratoren duerfen Stromabrechnungen löschen" },
         { status: 403 }
       );
     }
@@ -340,14 +340,14 @@ export async function DELETE(
     if (hasInvoices) {
       return NextResponse.json(
         {
-          error: "Loeschen nicht moeglich",
+          error: "Löschen nicht moeglich",
           details: "Es wurden bereits Gutschriften aus dieser Abrechnung erstellt. Bitte zuerst die Gutschriften stornieren.",
         },
         { status: 400 }
       );
     }
 
-    // Hard-delete: Abrechnung und zugehoerige Items loeschen (CASCADE)
+    // Hard-delete: Abrechnung und zugehoerige Items löschen (CASCADE)
     await prisma.energySettlement.delete({ where: { id } });
 
     // Log deletion for audit trail
@@ -367,7 +367,7 @@ export async function DELETE(
   } catch (error) {
     logger.error({ err: error }, "Error deleting settlement");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Stromabrechnung" },
+      { error: "Fehler beim Löschen der Stromabrechnung" },
       { status: 500 }
     );
   }

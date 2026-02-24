@@ -31,7 +31,7 @@ const createRecurringInvoiceSchema = z.object({
   name: z.string().min(1, "Name erforderlich").max(200),
   recipientType: z.enum(["shareholder", "lessor", "fund", "custom"]),
   recipientId: z.string().optional().nullable(),
-  recipientName: z.string().min(1, "Empfaengername erforderlich"),
+  recipientName: z.string().min(1, "Empfängername erforderlich"),
   recipientAddress: z.string().optional().nullable(),
   invoiceType: z.enum(["INVOICE", "CREDIT_NOTE"]).default("INVOICE"),
   positions: z

@@ -147,7 +147,7 @@ export async function DELETE(
     // Prevent deleting the default template
     if (existing.isDefault) {
       return NextResponse.json(
-        { error: "Die Standard-Vorlage kann nicht geloescht werden. Setzen Sie zuerst eine andere Vorlage als Standard." },
+        { error: "Die Standard-Vorlage kann nicht gelöscht werden. Setzen Sie zuerst eine andere Vorlage als Standard." },
         { status: 400 }
       );
     }
@@ -160,7 +160,7 @@ export async function DELETE(
   } catch (error) {
     logger.error({ err: error }, "Error deleting invoice template");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Rechnungsvorlage" },
+      { error: "Fehler beim Löschen der Rechnungsvorlage" },
       { status: 500 }
     );
   }

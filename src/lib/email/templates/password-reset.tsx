@@ -27,7 +27,7 @@ export function PasswordResetEmail({
   unsubscribeUrl,
 }: PasswordResetEmailProps) {
   const brandName = appName || 'WindparkManager';
-  const preview = `Passwort zuruecksetzen fuer ${brandName}`;
+  const preview = `Passwort zurücksetzen für ${brandName}`;
 
   return (
     <BaseLayout
@@ -39,25 +39,25 @@ export function PasswordResetEmail({
       currentYear={currentYear}
       unsubscribeUrl={unsubscribeUrl}
     >
-      <Heading>Passwort zuruecksetzen</Heading>
+      <Heading>Passwort zurücksetzen</Heading>
 
       <Paragraph>Hallo {userName},</Paragraph>
 
       <Paragraph>
-        Sie haben angefordert, Ihr Passwort fuer Ihren {tenantName}-Zugang
-        zurueckzusetzen. Klicken Sie auf den folgenden Button, um ein neues
+        Sie haben angefordert, Ihr Passwort für Ihren {tenantName}-Zugang
+        zurückzusetzen. Klicken Sie auf den folgenden Button, um ein neues
         Passwort festzulegen:
       </Paragraph>
 
       <Section style={{ textAlign: 'center', margin: '32px 0' }}>
         <Button href={resetUrl} color={primaryColor}>
-          Passwort zuruecksetzen
+          Passwort zurücksetzen
         </Button>
       </Section>
 
       <InfoBox borderColor="#f59e0b">
         <Text style={warningTextStyle}>
-          <strong>Wichtig:</strong> Dieser Link ist nur {expiresIn} gueltig und
+          <strong>Wichtig:</strong> Dieser Link ist nur {expiresIn} gültig und
           kann nur einmal verwendet werden.
         </Text>
       </InfoBox>
@@ -76,7 +76,7 @@ export function PasswordResetEmail({
           <strong>Sicherheitshinweis:</strong> Falls Sie diese Anfrage nicht
           gestellt haben, ignorieren Sie diese E-Mail bitte. Ihr Passwort bleibt
           unveraendert. Wenn Sie vermuten, dass jemand unbefugt auf Ihr Konto
-          zugreifen moechte, kontaktieren Sie uns bitte umgehend.
+          zugreifen möchte, kontaktieren Sie uns bitte umgehend.
         </Text>
       </Section>
 

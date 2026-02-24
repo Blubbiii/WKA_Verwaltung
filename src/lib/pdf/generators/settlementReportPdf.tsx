@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { calculateSettlement } from "@/lib/settlement";
 
 /**
- * Generiert ein PDF fuer einen Settlement Report
+ * Generiert ein PDF für einen Settlement Report
  */
 export async function generateSettlementReportPdf(
   periodId: string,
@@ -43,7 +43,7 @@ export async function generateSettlementReportPdf(
   }
 
   if (period.tenantId !== tenantId) {
-    throw new Error("Keine Berechtigung fuer diese Abrechnungsperiode");
+    throw new Error("Keine Berechtigung für diese Abrechnungsperiode");
   }
 
   // Berechnung durchfuehren
@@ -61,7 +61,7 @@ export async function generateSettlementReportPdf(
     period.parkId
   );
 
-  // Daten fuer PDF aufbereiten
+  // Daten für PDF aufbereiten
   const reportData: SettlementReportData = {
     calculation,
     periodId: period.id,
@@ -90,7 +90,7 @@ export async function generateSettlementReportPdf(
 }
 
 /**
- * Generiert ein PDF als Base64-String (fuer Vorschau)
+ * Generiert ein PDF als Base64-String (für Vorschau)
  */
 export async function generateSettlementReportPdfBase64(
   periodId: string,
@@ -101,7 +101,7 @@ export async function generateSettlementReportPdfBase64(
 }
 
 /**
- * Generiert einen Dateinamen fuer den Settlement Report
+ * Generiert einen Dateinamen für den Settlement Report
  */
 export function getSettlementReportFilename(
   parkName: string,

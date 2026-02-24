@@ -134,7 +134,7 @@ export async function createPartialCancellation(
 
   if (original.status !== "SENT" && original.status !== "PAID") {
     throw new Error(
-      "Nur versendete oder bezahlte Rechnungen koennen teilstorniert werden"
+      "Nur versendete oder bezahlte Rechnungen können teilstorniert werden"
     );
   }
 
@@ -146,7 +146,7 @@ export async function createPartialCancellation(
   for (const pos of positions) {
     if (pos.originalIndex < 0 || pos.originalIndex >= original.items.length) {
       throw new Error(
-        `Ungueltige Position: ${pos.originalIndex}. Gueltig: 0-${original.items.length - 1}`
+        `Ungültige Position: ${pos.originalIndex}. Gültig: 0-${original.items.length - 1}`
       );
     }
 
@@ -156,12 +156,12 @@ export async function createPartialCancellation(
     if (pos.cancelQuantity !== undefined) {
       if (pos.cancelQuantity <= 0) {
         throw new Error(
-          `Stornomenge fuer Position ${pos.originalIndex + 1} muss groesser als 0 sein`
+          `Stornomenge für Position ${pos.originalIndex + 1} muss größer als 0 sein`
         );
       }
       if (pos.cancelQuantity > originalQty) {
         throw new Error(
-          `Stornomenge (${pos.cancelQuantity}) uebersteigt Originalmenge (${originalQty}) bei Position ${pos.originalIndex + 1}`
+          `Stornomenge (${pos.cancelQuantity}) übersteigt Originalmenge (${originalQty}) bei Position ${pos.originalIndex + 1}`
         );
       }
     }
@@ -367,7 +367,7 @@ export async function createCorrectionInvoice(
 
   if (original.status !== "SENT" && original.status !== "PAID") {
     throw new Error(
-      "Nur versendete oder bezahlte Rechnungen koennen korrigiert werden"
+      "Nur versendete oder bezahlte Rechnungen können korrigiert werden"
     );
   }
 
@@ -379,19 +379,19 @@ export async function createCorrectionInvoice(
   for (const corr of corrections) {
     if (corr.originalIndex < 0 || corr.originalIndex >= original.items.length) {
       throw new Error(
-        `Ungueltige Position: ${corr.originalIndex}. Gueltig: 0-${original.items.length - 1}`
+        `Ungültige Position: ${corr.originalIndex}. Gültig: 0-${original.items.length - 1}`
       );
     }
 
     if (corr.newQuantity !== undefined && corr.newQuantity <= 0) {
       throw new Error(
-        `Menge fuer Position ${corr.originalIndex + 1} muss groesser als 0 sein`
+        `Menge für Position ${corr.originalIndex + 1} muss größer als 0 sein`
       );
     }
 
     if (corr.newUnitPrice !== undefined && corr.newUnitPrice < 0) {
       throw new Error(
-        `Einzelpreis fuer Position ${corr.originalIndex + 1} darf nicht negativ sein`
+        `Einzelpreis für Position ${corr.originalIndex + 1} darf nicht negativ sein`
       );
     }
 
@@ -409,7 +409,7 @@ export async function createCorrectionInvoice(
 
     if (!hasChange) {
       throw new Error(
-        `Position ${corr.originalIndex + 1}: Keine Aenderungen erkannt`
+        `Position ${corr.originalIndex + 1}: Keine Änderungen erkannt`
       );
     }
   }

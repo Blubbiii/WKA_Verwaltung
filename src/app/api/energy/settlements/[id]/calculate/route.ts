@@ -6,7 +6,7 @@ import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
-// Typen fuer Berechnungsdetails
+// Typen für Berechnungsdetails
 // =============================================================================
 
 interface TurbineProductionData {
@@ -111,14 +111,14 @@ export async function POST(
     if (settlement.status !== "DRAFT") {
       return NextResponse.json(
         {
-          error: "Nur Entwuerfe koennen berechnet werden",
+          error: "Nur Entwuerfe können berechnet werden",
           details: `Aktuelle Status: ${settlement.status}`,
         },
         { status: 400 }
       );
     }
 
-    // Sammle Produktionsdaten fuer den Abrechnungszeitraum
+    // Sammle Produktionsdaten für den Abrechnungszeitraum
     const productionWhere: Record<string, unknown> = {
       tenantId: check.tenantId!,
       year: settlement.year,
@@ -195,7 +195,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: "Keine Produktionsdaten gefunden",
-          details: `Fuer den Zeitraum ${settlement.month ? `${settlement.month}/` : ""}${settlement.year} wurden keine Produktionsdaten erfasst.`,
+          details: `Für den Zeitraum ${settlement.month ? `${settlement.month}/` : ""}${settlement.year} wurden keine Produktionsdaten erfasst.`,
         },
         { status: 400 }
       );
@@ -209,7 +209,7 @@ export async function POST(
     const pricePerKwh = totalProductionKwh > 0 ? netOperatorRevenueEur / totalProductionKwh : 0;
     const averageProductionKwh = totalProductionKwh / turbineProductionMap.size;
 
-    // Turbine-Daten fuer Berechnung
+    // Turbine-Daten für Berechnung
     const turbineData: TurbineProductionData[] = Array.from(turbineProductionMap.values())
       .map((t) => ({
         turbineId: t.turbineId,
@@ -320,7 +320,7 @@ export async function POST(
           if (Math.abs(deviation) <= toleranceKwh) {
             adjustedKwh = averageProductionKwh;
           } else {
-            // Ausserhalb: nur den Teil ueber der Toleranz ausgleichen
+            // Ausserhalb: nur den Teil über der Toleranz ausgleichen
             if (deviation > 0) {
               adjustedKwh = averageProductionKwh + toleranceKwh;
               toleranceAdjustment = (deviation - toleranceKwh) * pricePerKwh;
@@ -366,7 +366,7 @@ export async function POST(
       distributionSteps,
     };
 
-    // Transaktion: Alte Items loeschen, neue erstellen, Status aktualisieren
+    // Transaktion: Alte Items löschen, neue erstellen, Status aktualisieren
     const updatedSettlement = await prisma.$transaction(async (tx) => {
       // Loesche alte Items
       await tx.energySettlementItem.deleteMany({
@@ -428,7 +428,7 @@ export async function POST(
     });
 
     return NextResponse.json({
-      message: "Berechnung erfolgreich durchgefuehrt",
+      message: "Berechnung erfolgreich durchgeführt",
       settlement: updatedSettlement,
       calculation: calculationDetails,
     });

@@ -63,7 +63,7 @@ interface Profile {
 
 // Form validation schema
 const profileFormSchema = z.object({
-  email: z.string().email("Bitte geben Sie eine gueltige E-Mail-Adresse ein"),
+  email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein"),
   phone: z.string().optional().nullable(),
   street: z.string().optional().nullable(),
   houseNumber: z.string().optional().nullable(),
@@ -77,7 +77,7 @@ const profileFormSchema = z.object({
     .nullable()
     .refine(
       (val) => !val || /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4,30}$/.test(val.replace(/\s/g, "")),
-      "Bitte geben Sie eine gueltige IBAN ein"
+      "Bitte geben Sie eine gültige IBAN ein"
     ),
   bic: z
     .string()
@@ -85,7 +85,7 @@ const profileFormSchema = z.object({
     .nullable()
     .refine(
       (val) => !val || /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(val),
-      "Bitte geben Sie einen gueltigen BIC ein"
+      "Bitte geben Sie einen gültigen BIC ein"
     ),
 });
 
@@ -256,7 +256,7 @@ export default function ProfilePage() {
       {saveSuccess && (
         <Alert className="border-green-200 bg-green-50 text-green-800">
           <AlertDescription>
-            Ihre Aenderungen wurden erfolgreich gespeichert.
+            Ihre Änderungen wurden erfolgreich gespeichert.
           </AlertDescription>
         </Alert>
       )}
@@ -505,7 +505,7 @@ export default function ProfilePage() {
                 Bankverbindung
               </CardTitle>
               <CardDescription>
-                Ihre Bankdaten fuer Ausschuettungen
+                Ihre Bankdaten für Ausschuettungen
               </CardDescription>
             </CardHeader>
             <CardContent>

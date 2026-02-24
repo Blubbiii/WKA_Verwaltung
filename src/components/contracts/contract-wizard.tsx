@@ -126,7 +126,7 @@ const STEPS = [
   {
     id: "review",
     title: "Zusammenfassung",
-    description: "Pruefen & Speichern",
+    description: "Prüfen & Speichern",
   },
 ];
 
@@ -135,26 +135,26 @@ const CONTRACT_TYPE_OPTIONS = [
   {
     value: "LEASE",
     label: "Pachtvertrag",
-    description: "Pachtvertrag fuer Grundstuecke/Flurstuecke",
+    description: "Pachtvertrag für Grundstuecke/Flurstuecke",
     icon: Landmark,
   },
   {
     value: "SERVICE",
-    label: "Betriebsfuehrungsvertrag",
+    label: "Betriebsführungsvertrag",
     description:
-      "Vertrag zur technischen oder kaufmaennischen Betriebsfuehrung",
+      "Vertrag zur technischen oder kaufmaennischen Betriebsführung",
     icon: Building2,
   },
   {
     value: "INSURANCE",
     label: "Versicherungsvertrag",
-    description: "Versicherungsschutz fuer Anlagen und Betrieb",
+    description: "Versicherungsschutz für Anlagen und Betrieb",
     icon: FileText,
   },
   {
     value: "GRID_CONNECTION",
     label: "Netzanschlussvertrag",
-    description: "Vertrag fuer Netzanschluss und Einspeisung",
+    description: "Vertrag für Netzanschluss und Einspeisung",
     icon: Wind,
   },
   {
@@ -166,7 +166,7 @@ const CONTRACT_TYPE_OPTIONS = [
   {
     value: "OTHER",
     label: "Sonstiger Vertrag",
-    description: "Wartungs-, Dienstleistungs- oder sonstige Vertraege",
+    description: "Wartungs-, Dienstleistungs- oder sonstige Verträge",
     icon: FileText,
   },
 ];
@@ -302,7 +302,7 @@ export function ContractWizard() {
   function addReminder() {
     const days = parseInt(newReminderInput);
     if (isNaN(days) || days <= 0) {
-      toast.error("Bitte eine gueltige Anzahl Tage eingeben");
+      toast.error("Bitte eine gültige Anzahl Tage eingeben");
       return;
     }
     if (formData.reminderDays.includes(days)) {
@@ -759,13 +759,13 @@ export function ContractWizard() {
           <CardHeader>
             <CardTitle>Finanzielles</CardTitle>
             <CardDescription>
-              Jaehrlicher Wert und Zahlungsbedingungen
+              Jährlicher Wert und Zahlungsbedingungen
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="annualValue">Jaehrlicher Wert (EUR)</Label>
+                <Label htmlFor="annualValue">Jährlicher Wert (EUR)</Label>
                 <Input
                   id="annualValue"
                   type="number"
@@ -794,7 +794,7 @@ export function ContractWizard() {
                       paymentTerms: e.target.value,
                     }))
                   }
-                  placeholder="z.B. Jaehrlich im Voraus zum 01.01."
+                  placeholder="z.B. Jährlich im Voraus zum 01.01."
                   rows={2}
                 />
               </div>
@@ -966,13 +966,13 @@ export function ContractWizard() {
             </CardTitle>
             <CardDescription>
               Erinnerungen vor Vertragsende (nur relevant bei befristeten
-              Vertraegen)
+              Verträgen)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {!formData.endDate && (
               <p className="text-sm text-muted-foreground italic">
-                Erinnerungen werden nur bei befristeten Vertraegen mit
+                Erinnerungen werden nur bei befristeten Verträgen mit
                 Enddatum ausgeloest.
               </p>
             )}
@@ -1018,7 +1018,7 @@ export function ContractWizard() {
               />
               <Button type="button" variant="outline" onClick={addReminder}>
                 <Plus className="mr-2 h-4 w-4" />
-                Hinzufuegen
+                Hinzufügen
               </Button>
             </div>
           </CardContent>
@@ -1041,7 +1041,7 @@ export function ContractWizard() {
           <CardHeader>
             <CardTitle>Zusammenfassung</CardTitle>
             <CardDescription>
-              Bitte ueberpruefen Sie die Angaben vor dem Speichern
+              Bitte überprüfen Sie die Angaben vor dem Speichern
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -1147,7 +1147,7 @@ export function ContractWizard() {
                   formData.annualValue !== undefined && (
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        Jaehrlicher Wert
+                        Jährlicher Wert
                       </p>
                       <p className="font-medium">
                         {formData.annualValue.toLocaleString("de-DE", {
@@ -1294,7 +1294,7 @@ export function ContractWizard() {
         <Button variant="ghost" size="icon" asChild>
           <Link href="/contracts">
             <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Zurueck zur Vertragsuebersicht</span>
+            <span className="sr-only">Zurück zur Vertragsübersicht</span>
           </Link>
         </Button>
         <div>
@@ -1335,7 +1335,7 @@ export function ContractWizard() {
             disabled={currentStep === 0}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurueck
+            Zurück
           </Button>
         </div>
 

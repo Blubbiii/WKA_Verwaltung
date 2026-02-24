@@ -635,7 +635,7 @@ export function TopologyCanvas({
               setContextMenu(null);
             }}
           >
-            Knoten loeschen
+            Knoten löschen
           </button>
         )}
         {contextMenu.connectionId && (
@@ -646,7 +646,7 @@ export function TopologyCanvas({
               setContextMenu(null);
             }}
           >
-            Verbindung loeschen
+            Verbindung löschen
           </button>
         )}
       </div>

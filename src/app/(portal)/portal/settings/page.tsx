@@ -63,7 +63,7 @@ export default function SettingsPage() {
             Benachrichtigungen
           </CardTitle>
           <CardDescription>
-            Legen Sie fest, worueber Sie per E-Mail informiert werden moechten
+            Legen Sie fest, worüber Sie per E-Mail informiert werden möchten
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -72,7 +72,7 @@ export default function SettingsPage() {
             <Info className="h-4 w-4" />
             <AlertDescription>
               E-Mail-Benachrichtigungen werden in einer zukuenftigen Version aktiviert.
-              Sie koennen Ihre Praeferenzen bereits jetzt festlegen.
+              Sie können Ihre Praeferenzen bereits jetzt festlegen.
             </AlertDescription>
           </Alert>
 
@@ -164,7 +164,7 @@ export default function SettingsPage() {
             Anzeige-Einstellungen
           </CardTitle>
           <CardDescription>
-            Sprache und Waehrungseinstellungen fuer das Portal
+            Sprache und Währungseinstellungen für das Portal
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -183,7 +183,7 @@ export default function SettingsPage() {
 
             {/* Currency */}
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Waehrung</Label>
+              <Label className="text-muted-foreground">Währung</Label>
               <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
                 <span className="text-muted-foreground">EUR</span>
                 <span>Euro</span>

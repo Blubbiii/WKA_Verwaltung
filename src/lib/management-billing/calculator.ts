@@ -47,7 +47,7 @@ export async function calculateManagementBilling(
   }
 
   if (!stakeholder.billingEnabled) {
-    throw new Error("Abrechnung fuer diesen Stakeholder nicht aktiviert");
+    throw new Error("Abrechnung für diesen Stakeholder nicht aktiviert");
   }
 
   // 2. Get settlement data from client tenant
@@ -61,7 +61,7 @@ export async function calculateManagementBilling(
   const feePercentage = await resolveFeePercentage(stakeholderId, year, month);
 
   if (feePercentage <= 0) {
-    throw new Error("Kein gueltiger Gebuehrensatz konfiguriert");
+    throw new Error("Kein gültiger Gebührensatz konfiguriert");
   }
 
   // 4. Calculate per-fund details

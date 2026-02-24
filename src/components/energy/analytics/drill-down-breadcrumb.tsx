@@ -40,10 +40,10 @@ export function DrillDownBreadcrumb({
         size="sm"
         onClick={onBack}
         className="h-7 gap-1 px-2 text-muted-foreground hover:text-foreground"
-        aria-label="Zurueck zur vorherigen Ebene"
+        aria-label="Zurück zur vorherigen Ebene"
       >
         <ChevronLeft className="h-4 w-4" />
-        <span className="hidden sm:inline">Zurueck</span>
+        <span className="hidden sm:inline">Zurück</span>
       </Button>
 
       {/* Separator */}
@@ -87,10 +87,10 @@ export function DrillDownBreadcrumb({
         size="sm"
         onClick={onReset}
         className="h-7 gap-1 px-2 text-muted-foreground hover:text-foreground"
-        aria-label="Zurueck zur Jahresuebersicht"
+        aria-label="Zurück zur Jahresübersicht"
       >
         <RotateCcw className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Jahresuebersicht</span>
+        <span className="hidden sm:inline">Jahresübersicht</span>
       </Button>
     </div>
   );

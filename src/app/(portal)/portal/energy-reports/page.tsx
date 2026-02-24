@@ -42,17 +42,17 @@ const MODULE_LABELS: Record<string, string> = {
   productionHeatmap: "Produktions-Heatmap",
   turbineRanking: "Turbinen-Ranking",
   yearOverYear: "Jahresvergleich",
-  availabilityBreakdown: "Verfuegbarkeit T1-T6",
-  availabilityTrend: "Verfuegbarkeits-Trend",
-  availabilityHeatmap: "Verfuegbarkeits-Heatmap",
+  availabilityBreakdown: "Verfügbarkeit T1-T6",
+  availabilityTrend: "Verfügbarkeits-Trend",
+  availabilityHeatmap: "Verfügbarkeits-Heatmap",
   downtimePareto: "Ausfallzeiten-Pareto",
   powerCurveOverlay: "Leistungskurven-Overlay",
-  faultPareto: "Stoerungen-Pareto",
+  faultPareto: "Störungen-Pareto",
   warningTrend: "Warnungs-Trend",
   windDistribution: "Windverteilung",
   environmentalData: "Umweltdaten",
-  financialOverview: "Finanz-Uebersicht",
-  revenueComparison: "Erloesvergleich",
+  financialOverview: "Finanz-Übersicht",
+  revenueComparison: "Erlösvergleich",
 };
 
 // =============================================================================
@@ -139,10 +139,10 @@ export default function EnergyReportsPage() {
                 <CloudOff className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">
-                Keine Energieberichte verfuegbar
+                Keine Energieberichte verfügbar
               </h3>
               <p className="text-muted-foreground max-w-sm">
-                Derzeit sind keine Energieberichte fuer Ihr Portal
+                Derzeit sind keine Energieberichte für Ihr Portal
                 freigeschaltet. Bitte wenden Sie sich an die Verwaltung.
               </p>
             </div>

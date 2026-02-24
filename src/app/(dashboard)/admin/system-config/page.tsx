@@ -122,7 +122,7 @@ export default function SystemConfigPage() {
             System-Konfiguration
           </h1>
           <p className="text-muted-foreground">
-            Zentrale Einstellungen fuer E-Mail, Wetter-API, Storage und mehr
+            Zentrale Einstellungen für E-Mail, Wetter-API, Storage und mehr
           </p>
         </div>
         <Button variant="outline" onClick={loadConfigs} disabled={loading}>
@@ -135,8 +135,8 @@ export default function SystemConfigPage() {
       <Alert>
         <Settings className="h-4 w-4" />
         <AlertDescription>
-          <strong>Hinweis:</strong> Aenderungen an der System-Konfiguration
-          werden sofort wirksam. Sensitive Werte (Passwoerter, API-Keys) werden
+          <strong>Hinweis:</strong> Änderungen an der System-Konfiguration
+          werden sofort wirksam. Sensitive Werte (Passwörter, API-Keys) werden
           verschluesselt gespeichert und nie im Klartext angezeigt.
           Umgebungsvariablen dienen als Fallback, wenn keine Datenbankwerte
           gesetzt sind.
@@ -177,7 +177,7 @@ export default function SystemConfigPage() {
                 E-Mail-Konfiguration
               </CardTitle>
               <CardDescription>
-                SMTP-Server-Einstellungen fuer den Versand von System-E-Mails
+                SMTP-Server-Einstellungen für den Versand von System-E-Mails
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -199,7 +199,7 @@ export default function SystemConfigPage() {
                 Wetter-API-Konfiguration
               </CardTitle>
               <CardDescription>
-                OpenWeatherMap API-Einstellungen fuer Wetterdaten
+                OpenWeatherMap API-Einstellungen für Wetterdaten
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -120,11 +120,11 @@ export default function NewProductionPage() {
       return;
     }
     if (!formData.revenueTypeId) {
-      toast.error("Bitte waehlen Sie eine Verguetungsart aus");
+      toast.error("Bitte waehlen Sie eine Vergütungsart aus");
       return;
     }
     if (!formData.productionKwh || parseFloat(formData.productionKwh) < 0) {
-      toast.error("Bitte geben Sie eine gueltige Produktionsmenge ein");
+      toast.error("Bitte geben Sie eine gültige Produktionsmenge ein");
       return;
     }
 
@@ -173,9 +173,9 @@ export default function NewProductionPage() {
       {/* Notice banner */}
       <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
         <p className="text-sm text-blue-800">
-          Die manuelle Erfassung ist auch direkt ueber die Produktionsdaten-Seite erreichbar.
+          Die manuelle Erfassung ist auch direkt über die Produktionsdaten-Seite erreichbar.
           <Link href="/energy/productions" className="underline ml-1 font-medium">
-            Zur Uebersicht
+            Zur Übersicht
           </Link>
         </p>
       </div>
@@ -349,15 +349,15 @@ export default function NewProductionPage() {
           {/* Production & Revenue */}
           <Card>
             <CardHeader>
-              <CardTitle>Produktion & Erloes</CardTitle>
+              <CardTitle>Produktion & Erlös</CardTitle>
               <CardDescription>
-                Produktionsdaten und Erloese eintragen
+                Produktionsdaten und Erlöse eintragen
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Revenue Type */}
               <div className="space-y-2">
-                <Label htmlFor="revenueTypeId">Verguetungsart *</Label>
+                <Label htmlFor="revenueTypeId">Vergütungsart *</Label>
                 <Select
                   value={formData.revenueTypeId || "none"}
                   onValueChange={(value) =>
@@ -369,11 +369,11 @@ export default function NewProductionPage() {
                   disabled={revenueTypesLoading}
                 >
                   <SelectTrigger id="revenueTypeId">
-                    <SelectValue placeholder="Verguetungsart waehlen" />
+                    <SelectValue placeholder="Vergütungsart waehlen" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none" disabled>
-                      Verguetungsart waehlen...
+                      Vergütungsart waehlen...
                     </SelectItem>
                     {revenueTypesLoading ? (
                       <SelectItem value="loading" disabled>
@@ -410,7 +410,7 @@ export default function NewProductionPage() {
 
                 {/* Revenue */}
                 <div className="space-y-2">
-                  <Label htmlFor="revenueEur">Erloes (EUR)</Label>
+                  <Label htmlFor="revenueEur">Erlös (EUR)</Label>
                   <Input
                     id="revenueEur"
                     type="number"
@@ -453,7 +453,7 @@ export default function NewProductionPage() {
                 <strong>Manuell</strong> erstellt.
               </p>
               <p className="text-sm text-blue-800">
-                Pro Anlage, Monat und Verguetungsart kann nur ein Eintrag
+                Pro Anlage, Monat und Vergütungsart kann nur ein Eintrag
                 existieren.
               </p>
             </CardContent>

@@ -326,7 +326,7 @@ export async function checkAvailability(
         parkName: turbine.parkName,
         type: "LOW_AVAILABILITY",
         severity,
-        message: `Verfuegbarkeit ${availPct.toFixed(1)}% liegt unter Schwellwert von ${cfg.availabilityThreshold}%.`,
+        message: `Verfügbarkeit ${availPct.toFixed(1)}% liegt unter Schwellwert von ${cfg.availabilityThreshold}%.`,
         detectedAt: now,
         details: {
           availabilityPct: availPct,
@@ -347,7 +347,7 @@ export async function checkAvailability(
         parkName: turbine.parkName,
         type: "LOW_AVAILABILITY",
         severity,
-        message: `Stoerungszeit (T5) von ${t5Hours.toFixed(1)} Stunden am ${record.date.toISOString().split("T")[0]}.`,
+        message: `Störungszeit (T5) von ${t5Hours.toFixed(1)} Stunden am ${record.date.toISOString().split("T")[0]}.`,
         detectedAt: now,
         details: {
           t5Hours: Math.round(t5Hours * 10) / 10,
@@ -658,7 +658,7 @@ export async function checkDataQuality(
         parkName: turbine.parkName,
         type: "DATA_QUALITY",
         severity: invalidPct > 30 ? "CRITICAL" : "WARNING",
-        message: `${invalidCount} ungueltige Messwerte (${invalidPct.toFixed(1)}%) in den letzten 24 Stunden.`,
+        message: `${invalidCount} ungültige Messwerte (${invalidPct.toFixed(1)}%) in den letzten 24 Stunden.`,
         detectedAt: now,
         details: {
           invalidPowerCount: row.invalid_power,

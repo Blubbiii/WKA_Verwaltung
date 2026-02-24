@@ -10,8 +10,8 @@ import { apiLogger as logger } from "@/lib/logger";
 // =============================================================================
 
 /**
- * Schema fuer Aktualisierung von TurbineOperator-Eintraegen
- * Turbine und Fund sind NICHT aenderbar - dafuer neuen Operator anlegen
+ * Schema für Aktualisierung von TurbineOperator-Einträgen
+ * Turbine und Fund sind NICHT aenderbar - dafür neuen Operator anlegen
  */
 const turbineOperatorUpdateSchema = z.object({
   ownershipPercentage: z
@@ -21,11 +21,11 @@ const turbineOperatorUpdateSchema = z.object({
     .optional(),
   validFrom: z
     .string()
-    .datetime({ message: "Ungueltiges Datum (ISO 8601 Format erwartet)" })
+    .datetime({ message: "Ungültiges Datum (ISO 8601 Format erwartet)" })
     .optional(),
   validTo: z
     .string()
-    .datetime({ message: "Ungueltiges Datum (ISO 8601 Format erwartet)" })
+    .datetime({ message: "Ungültiges Datum (ISO 8601 Format erwartet)" })
     .optional()
     .nullable(),
   status: z.enum(["ACTIVE", "HISTORICAL"]).optional(),
@@ -90,7 +90,7 @@ export async function GET(
       );
     }
 
-    // Multi-Tenancy Pruefung ueber Turbine -> Park -> Tenant
+    // Multi-Tenancy Prüfung über Turbine -> Park -> Tenant
     if (operator.turbine.park.tenantId !== check.tenantId!) {
       return NextResponse.json(
         { error: "Keine Berechtigung" },
@@ -98,7 +98,7 @@ export async function GET(
       );
     }
 
-    // Lade auch die Historie fuer diese Turbine (andere Operatoren)
+    // Lade auch die Historie für diese Turbine (andere Operatoren)
     const operatorHistory = await prisma.turbineOperator.findMany({
       where: {
         turbineId: operator.turbineId,
@@ -157,7 +157,7 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = turbineOperatorUpdateSchema.parse(body);
 
-    // Existenz und Tenant pruefen
+    // Existenz und Tenant prüfen
     const existing = await prisma.turbineOperator.findUnique({
       where: { id },
       include: {
@@ -182,7 +182,7 @@ export async function PATCH(
       );
     }
 
-    // Multi-Tenancy Pruefung
+    // Multi-Tenancy Prüfung
     if (existing.turbine.park.tenantId !== check.tenantId!) {
       return NextResponse.json(
         { error: "Keine Berechtigung" },
@@ -199,7 +199,7 @@ export async function PATCH(
     if (newStatus === "HISTORICAL" && !newValidTo) {
       return NextResponse.json(
         {
-          error: "Ungueltiger Status",
+          error: "Ungültiger Status",
           details: "Bei Status 'HISTORICAL' muss ein Enddatum (validTo) angegeben werden",
         },
         { status: 400 }
@@ -214,14 +214,14 @@ export async function PATCH(
     if (newValidTo && newValidFrom >= new Date(newValidTo)) {
       return NextResponse.json(
         {
-          error: "Ungueltige Datumsangabe",
+          error: "Ungültige Datumsangabe",
           details: "Das Startdatum (validFrom) muss vor dem Enddatum (validTo) liegen",
         },
         { status: 400 }
       );
     }
 
-    // Alte Werte fuer Audit-Log speichern
+    // Alte Werte für Audit-Log speichern
     const oldValues = {
       ownershipPercentage: Number(existing.ownershipPercentage),
       validFrom: existing.validFrom.toISOString(),
@@ -303,8 +303,8 @@ export async function PATCH(
 }
 
 // =============================================================================
-// DELETE /api/energy/turbine-operators/[id] - Betreiber-Zuordnung loeschen
-// ACHTUNG: Nur HISTORICAL-Eintraege koennen geloescht werden!
+// DELETE /api/energy/turbine-operators/[id] - Betreiber-Zuordnung löschen
+// ACHTUNG: Nur HISTORICAL-Einträge können gelöscht werden!
 // =============================================================================
 
 export async function DELETE(
@@ -315,7 +315,7 @@ export async function DELETE(
     const check = await requirePermission("energy:delete");
     if (!check.authorized) return check.error;
 
-    // Zusaetzliche Pruefung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen loeschen
+    // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
     const user = await prisma.user.findUnique({
       where: { id: check.userId! },
       select: { role: true },
@@ -323,14 +323,14 @@ export async function DELETE(
 
     if (!user || !["MANAGER", "ADMIN", "SUPERADMIN"].includes(user.role)) {
       return NextResponse.json(
-        { error: "Keine Berechtigung zum Loeschen von Betreiber-Zuordnungen" },
+        { error: "Keine Berechtigung zum Löschen von Betreiber-Zuordnungen" },
         { status: 403 }
       );
     }
 
     const { id } = await params;
 
-    // Existenz und Tenant pruefen
+    // Existenz und Tenant prüfen
     const existing = await prisma.turbineOperator.findUnique({
       where: { id },
       include: {
@@ -355,7 +355,7 @@ export async function DELETE(
       );
     }
 
-    // Multi-Tenancy Pruefung
+    // Multi-Tenancy Prüfung
     if (existing.turbine.park.tenantId !== check.tenantId!) {
       return NextResponse.json(
         { error: "Keine Berechtigung" },
@@ -363,12 +363,12 @@ export async function DELETE(
       );
     }
 
-    // WICHTIG: Aktive Betreiber-Zuordnungen koennen nicht geloescht werden!
-    // Stattdessen muss ein Betreiberwechsel durchgefuehrt werden (POST mit neuem Operator)
+    // WICHTIG: Aktive Betreiber-Zuordnungen können nicht gelöscht werden!
+    // Stattdessen muss ein Betreiberwechsel durchgeführt werden (POST mit neuem Operator)
     if (existing.status === "ACTIVE") {
       return NextResponse.json(
         {
-          error: "Aktive Betreiber-Zuordnungen koennen nicht geloescht werden",
+          error: "Aktive Betreiber-Zuordnungen können nicht gelöscht werden",
           details:
             "Um den Betreiber zu aendern, erstellen Sie einen neuen Operator-Eintrag. " +
             "Der aktuelle Eintrag wird dann automatisch auf HISTORICAL gesetzt.",
@@ -377,7 +377,7 @@ export async function DELETE(
       );
     }
 
-    // Loeschen
+    // Löschen
     await prisma.turbineOperator.delete({ where: { id } });
 
     // Audit Log
@@ -392,12 +392,12 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: `Betreiber-Zuordnung "${existing.operatorFund.name}" fuer Turbine "${existing.turbine.designation}" geloescht`,
+      message: `Betreiber-Zuordnung "${existing.operatorFund.name}" für Turbine "${existing.turbine.designation}" gelöscht`,
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting turbine operator");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Betreiber-Zuordnung" },
+      { error: "Fehler beim Löschen der Betreiber-Zuordnung" },
       { status: 500 }
     );
   }

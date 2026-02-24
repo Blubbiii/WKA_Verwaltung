@@ -10,21 +10,21 @@ import { apiLogger as logger } from "@/lib/logger";
 // =============================================================================
 
 /**
- * Schema fuer neue FundHierarchy-Eintraege
+ * Schema für neue FundHierarchy-Einträge
  * Definiert eine Eltern-Kind-Beziehung zwischen zwei Funds
  * (Ein Fund kann Gesellschafter eines anderen Funds sein)
  */
 const fundHierarchyCreateSchema = z.object({
-  parentFundId: z.string().uuid("Ungueltige Eltern-Fund-ID"),
-  childFundId: z.string().uuid("Ungueltige Kind-Fund-ID"),
+  parentFundId: z.string().uuid("Ungültige Eltern-Fund-ID"),
+  childFundId: z.string().uuid("Ungültige Kind-Fund-ID"),
   ownershipPercentage: z
     .number()
     .min(0, "Anteil muss >= 0% sein")
     .max(100, "Anteil darf nicht > 100% sein"),
-  validFrom: z.string().datetime({ message: "Ungueltiges Datum (ISO 8601 Format erwartet)" }),
+  validFrom: z.string().datetime({ message: "Ungültiges Datum (ISO 8601 Format erwartet)" }),
   validTo: z
     .string()
-    .datetime({ message: "Ungueltiges Datum (ISO 8601 Format erwartet)" })
+    .datetime({ message: "Ungültiges Datum (ISO 8601 Format erwartet)" })
     .optional()
     .nullable(),
   notes: z.string().max(1000).optional().nullable(),
@@ -33,7 +33,7 @@ const fundHierarchyCreateSchema = z.object({
 type FundHierarchyCreateInput = z.infer<typeof fundHierarchyCreateSchema>;
 
 // =============================================================================
-// HELPER: Zirkulaere Referenzen pruefen
+// HELPER: Zirkulaere Referenzen prüfen
 // Verhindert: Fund A -> Fund B -> Fund A (oder laengere Ketten)
 // =============================================================================
 
@@ -96,7 +96,7 @@ async function checkCircularReference(
   const isCircular = await hasPathTo(parentFundId, childFundId);
 
   if (isCircular) {
-    // Hole Fund-Namen fuer bessere Fehlermeldung
+    // Hole Fund-Namen für bessere Fehlermeldung
     const funds = await prisma.fund.findMany({
       where: {
         id: { in: path },
@@ -119,7 +119,7 @@ async function checkCircularReference(
 
 export async function GET(request: NextRequest) {
   try {
-    // Berechtigungspruefung: MANAGER+ fuer Funds-Modul
+    // Berechtigungsprüfung: MANAGER+ für Funds-Modul
     const check = await requirePermission(["funds:read"]);
     if (!check.authorized) return check.error;
 
@@ -212,12 +212,12 @@ export async function GET(request: NextRequest) {
 
 // =============================================================================
 // POST /api/funds/hierarchy - Neue Fund-Hierarchie erstellen
-// Mit Pruefung auf zirkulaere Referenzen
+// Mit Prüfung auf zirkulaere Referenzen
 // =============================================================================
 
 export async function POST(request: NextRequest) {
   try {
-    // Berechtigungspruefung: MANAGER+ fuer Funds-Modul
+    // Berechtigungsprüfung: MANAGER+ für Funds-Modul
     const check = await requirePermission(["funds:create", "funds:update"]);
     if (!check.authorized) return check.error;
 
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // KRITISCH: Pruefung auf zirkulaere Referenzen
+    // KRITISCH: Prüfung auf zirkulaere Referenzen
     const circularCheck = await checkCircularReference(
       validatedData.parentFundId,
       validatedData.childFundId,
@@ -281,7 +281,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Pruefung auf Duplikat (bereits existierende Beziehung fuer denselben Zeitraum)
+    // Prüfung auf Duplikat (bereits existierende Beziehung für denselben Zeitraum)
     const existing = await prisma.fundHierarchy.findFirst({
       where: {
         parentFundId: validatedData.parentFundId,
@@ -300,7 +300,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Pruefung: Gesamtanteil am Parent Fund darf nicht > 100% sein
+    // Prüfung: Gesamtanteil am Parent Fund darf nicht > 100% sein
     const existingHierarchies = await prisma.fundHierarchy.findMany({
       where: {
         parentFundId: validatedData.parentFundId,
@@ -319,7 +319,7 @@ export async function POST(request: NextRequest) {
     if (currentTotal + validatedData.ownershipPercentage > 100) {
       return NextResponse.json(
         {
-          error: "Anteil uebersteigt 100%",
+          error: "Anteil übersteigt 100%",
           details: `Aktueller Gesamtanteil: ${currentTotal.toFixed(2)}%. ` +
             `Mit neuem Anteil (${validatedData.ownershipPercentage}%) waeren es ${(currentTotal + validatedData.ownershipPercentage).toFixed(2)}%`,
         },

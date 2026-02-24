@@ -7,13 +7,13 @@ import * as path from "path";
 
 // =============================================================================
 // POST /api/energy/scada/scan - SCADA-Quellordner scannen
-// Scannt den SCADA-Basisordner und liefert gefundene Standorte zurueck
+// Scannt den SCADA-Basisordner und liefert gefundene Standorte zurück
 //
 // Body: { basePath: string }
 //   -> Scannt alle Loc_XXXX Ordner unter basePath
 //
 // Body: { basePath: string, locationCode: string }
-//   -> Scannt einen spezifischen Standort und liefert alle verfuegbaren Dateitypen
+//   -> Scannt einen spezifischen Standort und liefert alle verfügbaren Dateitypen
 // =============================================================================
 
 export async function POST(request: NextRequest) {
@@ -33,10 +33,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Minimale Sicherheitspruefung: Pfad darf keine gefaehrlichen Zeichen enthalten
+    // Minimale Sicherheitsprüfung: Pfad darf keine gefaehrlichen Zeichen enthalten
     if (basePath.includes("..") || basePath.includes("\0")) {
       return NextResponse.json(
-        { error: "Ungueltiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
+        { error: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
         { status: 400 }
       );
     }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Detail-Scan fuer einen spezifischen Standort (alle Dateitypen)
+    // Detail-Scan für einen spezifischen Standort (alle Dateitypen)
     if (locationCode && typeof locationCode === "string") {
       if (!locationCode.startsWith("Loc_")) {
         return NextResponse.json(
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Scannen des SCADA-Ordners");
 
-    // Spezifische Fehlerbehandlung fuer Dateisystem-Fehler
+    // Spezifische Fehlerbehandlung für Dateisystem-Fehler
     if (error instanceof Error && error.message.includes("ENOENT")) {
       return NextResponse.json(
         { error: `Verzeichnis nicht gefunden: Der angegebene Pfad existiert nicht` },
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof Error && error.message.includes("EACCES")) {
       return NextResponse.json(
-        { error: "Zugriff verweigert: Keine Leseberechtigung fuer das Verzeichnis" },
+        { error: "Zugriff verweigert: Keine Leseberechtigung für das Verzeichnis" },
         { status: 403 }
       );
     }

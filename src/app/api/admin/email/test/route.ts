@@ -17,7 +17,7 @@ import { apiLogger as logger } from "@/lib/logger";
 // =============================================================================
 
 const testEmailSchema = z.object({
-  to: z.string().email("Ungueltige E-Mail-Adresse"),
+  to: z.string().email("Ungültige E-Mail-Adresse"),
 });
 
 // =============================================================================
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
         {
           success: false,
           error:
-            "E-Mail-Provider-Verbindung fehlgeschlagen. Bitte ueberpruefen Sie die Konfiguration.",
+            "E-Mail-Provider-Verbindung fehlgeschlagen. Bitte überprüfen Sie die Konfiguration.",
         },
         { status: 400 }
       );
@@ -99,14 +99,14 @@ export async function GET() {
       connected: isValid,
       message: isValid
         ? "E-Mail-Provider ist korrekt konfiguriert und verbunden."
-        : "E-Mail-Provider-Verbindung fehlgeschlagen. Bitte ueberpruefen Sie die Konfiguration.",
+        : "E-Mail-Provider-Verbindung fehlgeschlagen. Bitte überprüfen Sie die Konfiguration.",
     });
   } catch (error) {
     logger.error({ err: error }, "[Admin Email Test API] Verify error");
     return NextResponse.json(
       {
         connected: false,
-        error: "Fehler beim Ueberpruefen der E-Mail-Konfiguration",
+        error: "Fehler beim Überprüfen der E-Mail-Konfiguration",
       },
       { status: 500 }
     );

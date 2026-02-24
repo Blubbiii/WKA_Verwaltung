@@ -47,7 +47,7 @@ export function NewInvoiceEmail({
 
       <Paragraph>
         im Anhang erhalten Sie eine neue Rechnung von {tenantName}. Die Details
-        finden Sie in der untenstehenden Uebersicht.
+        finden Sie in der untenstehenden Übersicht.
       </Paragraph>
 
       <InfoBox borderColor={primaryColor}>
@@ -70,7 +70,7 @@ export function NewInvoiceEmail({
           </Row>
           <Row>
             <Column style={labelColumnStyle}>
-              <Text style={labelStyle}>Faellig am:</Text>
+              <Text style={labelStyle}>Fällig am:</Text>
             </Column>
             <Column style={valueColumnStyle}>
               <Text style={valueStyle}>{dueDate}</Text>
@@ -86,14 +86,14 @@ export function NewInvoiceEmail({
       </Section>
 
       <Paragraph>
-        Sie koennen die Rechnung auch jederzeit in Ihrem Portal unter dem Bereich
+        Sie können die Rechnung auch jederzeit in Ihrem Portal unter dem Bereich
         &quot;Rechnungen&quot; einsehen und herunterladen.
       </Paragraph>
 
       <Section style={paymentInfoStyle}>
         <Text style={paymentInfoHeaderStyle}>Zahlungshinweise</Text>
         <Text style={paymentInfoTextStyle}>
-          Bitte ueberweisen Sie den Betrag bis zum genannten Faelligkeitsdatum
+          Bitte überweisen Sie den Betrag bis zum genannten Fälligkeitsdatum
           unter Angabe der Rechnungsnummer als Verwendungszweck. Die
           Bankverbindung finden Sie auf der Rechnung.
         </Text>

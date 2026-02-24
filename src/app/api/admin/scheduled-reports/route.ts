@@ -24,8 +24,8 @@ const createScheduledReportSchema = z.object({
   ]),
   schedule: z.enum(["MONTHLY", "QUARTERLY", "ANNUALLY"]),
   recipients: z
-    .array(z.string().email("Ungueltige E-Mail-Adresse"))
-    .min(1, "Mindestens ein Empfaenger ist erforderlich"),
+    .array(z.string().email("Ungültige E-Mail-Adresse"))
+    .min(1, "Mindestens ein Empfänger ist erforderlich"),
   config: z.object({
     parkId: z.string().uuid().optional(),
     fundId: z.string().uuid().optional(),

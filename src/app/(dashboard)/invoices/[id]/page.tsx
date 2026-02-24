@@ -406,12 +406,12 @@ export default function InvoiceDetailPage({
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Loeschen");
+        throw new Error(error.error || "Fehler beim Löschen");
       }
-      toast.success("Entwurf geloescht");
+      toast.success("Entwurf gelöscht");
       router.push("/invoices");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Loeschen");
+      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
     } finally {
       setActionLoading(null);
     }
@@ -458,7 +458,7 @@ export default function InvoiceDetailPage({
         throw new Error(error.error || "Fehler beim E-Mail-Versand");
       }
       const result = await response.json();
-      toast.success(`E-Mail versendet an ${result.emailedTo || "Empfaenger"}`);
+      toast.success(`E-Mail versendet an ${result.emailedTo || "Empfänger"}`);
       fetchInvoice();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Fehler beim E-Mail-Versand");
@@ -533,14 +533,14 @@ export default function InvoiceDetailPage({
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm">
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Loeschen
+                    Löschen
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Entwurf loeschen?</AlertDialogTitle>
+                    <AlertDialogTitle>Entwurf löschen?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Dieser Entwurf wird unwiderruflich geloescht. Diese Aktion kann nicht rueckgaengig gemacht werden.
+                      Dieser Entwurf wird unwiderruflich gelöscht. Diese Aktion kann nicht rueckgaengig gemacht werden.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -554,7 +554,7 @@ export default function InvoiceDetailPage({
                       ) : (
                         <Trash2 className="mr-2 h-4 w-4" />
                       )}
-                      Loeschen
+                      Löschen
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -648,7 +648,7 @@ export default function InvoiceDetailPage({
                   <DialogHeader>
                     <DialogTitle>Rechnung stornieren</DialogTitle>
                     <DialogDescription>
-                      Es wird eine Storno-Gutschrift fuer die gesamte Rechnung erstellt. Dieser Vorgang kann nicht rueckgaengig gemacht werden.
+                      Es wird eine Storno-Gutschrift für die gesamte Rechnung erstellt. Dieser Vorgang kann nicht rueckgaengig gemacht werden.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
@@ -767,7 +767,7 @@ export default function InvoiceDetailPage({
         </Card>
       )}
 
-      {/* Absender & Empfaenger */}
+      {/* Absender & Empfänger */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Absender / Aussteller */}
         <Card>
@@ -822,12 +822,12 @@ export default function InvoiceDetailPage({
           </CardContent>
         </Card>
 
-        {/* Empfaenger */}
+        {/* Empfänger */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              {isInvoice ? "Rechnungsempfaenger" : "Gutschrift an"}
+              {isInvoice ? "Rechnungsempfänger" : "Gutschrift an"}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -870,7 +870,7 @@ export default function InvoiceDetailPage({
             </div>
             {invoice.dueDate && (
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Faellig am</span>
+                <span className="text-sm text-muted-foreground">Fällig am</span>
                 <span>{format(new Date(invoice.dueDate), "dd.MM.yyyy", { locale: de })}</span>
               </div>
             )}
@@ -1189,7 +1189,7 @@ export default function InvoiceDetailPage({
         <SettlementDetailsCard calculationDetails={invoice.calculationDetails} />
       )}
 
-      {/* E-Invoice (XRechnung / ZUGFeRD) - Pflicht seit 2025 fuer B2B */}
+      {/* E-Invoice (XRechnung / ZUGFeRD) - Pflicht seit 2025 für B2B */}
       {invoice.status !== "CANCELLED" && (
         <Card>
           <CardHeader>
@@ -1198,7 +1198,7 @@ export default function InvoiceDetailPage({
               E-Rechnung (XRechnung / ZUGFeRD)
             </CardTitle>
             <CardDescription>
-              Pflicht seit 2025 fuer B2B-Rechnungen (EN 16931)
+              Pflicht seit 2025 für B2B-Rechnungen (EN 16931)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1207,7 +1207,7 @@ export default function InvoiceDetailPage({
                 <span className="text-sm text-muted-foreground">Status:</span>
                 {invoice.einvoiceFormat ? (
                   <Badge variant="default" className="bg-green-600">
-                    {invoice.einvoiceFormat} verfuegbar
+                    {invoice.einvoiceFormat} verfügbar
                   </Badge>
                 ) : (
                   <Badge variant="secondary">Noch nicht generiert</Badge>
@@ -1222,7 +1222,7 @@ export default function InvoiceDetailPage({
             </div>
             <div className="space-y-2">
               <Label htmlFor="leitwegId" className="text-sm">
-                Leitweg-ID (optional, fuer oeffentliche Auftraggeber)
+                Leitweg-ID (optional, für oeffentliche Auftraggeber)
               </Label>
               <div className="flex items-center gap-2">
                 <Input
@@ -1248,7 +1248,7 @@ export default function InvoiceDetailPage({
               )}
               <p className="text-xs text-muted-foreground">
                 Die Leitweg-ID wird als Kaeufer-Referenz (BT-10) in der XRechnung verwendet.
-                {invoice.status !== "DRAFT" && " Aenderung nur im Entwurfs-Status moeglich."}
+                {invoice.status !== "DRAFT" && " Änderung nur im Entwurfs-Status moeglich."}
               </p>
             </div>
             <Separator />

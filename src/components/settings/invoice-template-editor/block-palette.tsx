@@ -70,7 +70,7 @@ export function BlockPalette({ onAddBlock }: BlockPaletteProps) {
       <div className="px-1">
         <h3 className="text-sm font-semibold mb-1">Bausteine</h3>
         <p className="text-xs text-muted-foreground">
-          Ziehen Sie Bausteine in die Vorschau oder klicken Sie zum Hinzufuegen
+          Ziehen Sie Bausteine in die Vorschau oder klicken Sie zum Hinzufügen
         </p>
       </div>
 
@@ -97,7 +97,7 @@ export function BlockPalette({ onAddBlock }: BlockPaletteProps) {
                       onAddBlock(item.type);
                     }
                   }}
-                  aria-label={`${item.label} hinzufuegen`}
+                  aria-label={`${item.label} hinzufügen`}
                 >
                   {IconComponent && (
                     <IconComponent className="h-4 w-4 text-muted-foreground shrink-0" />

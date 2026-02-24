@@ -1,6 +1,6 @@
 /**
  * Billing Rule Scheduler
- * Berechnet die naechste Ausfuehrung und plant Regeln
+ * Berechnet die nächste Ausführung und plant Regeln
  */
 
 import { prisma } from "@/lib/prisma";
@@ -8,16 +8,16 @@ import { BillingRuleFrequency } from "./types";
 import { FREQUENCY_CRON_PATTERNS, NextRunInfo } from "./types";
 
 // Note: In Produktion wuerde man hier BullMQ oder einen aehnlichen Job-Scheduler integrieren
-// Fuer das MVP verwenden wir eine einfache Cron-Berechnung
+// Für das MVP verwenden wir eine einfache Cron-Berechnung
 
 /**
- * Parst eine Cron-Expression und gibt die naechsten Ausfuehrungszeitpunkte zurueck
- * Vereinfachte Implementation fuer Standard-Cron (minute hour day month weekday)
+ * Parst eine Cron-Expression und gibt die nächsten Ausführungszeitpunkte zurück
+ * Vereinfachte Implementation für Standard-Cron (minute hour day month weekday)
  */
 function parseCronExpression(cronPattern: string, count: number = 5): Date[] {
   const parts = cronPattern.trim().split(/\s+/);
   if (parts.length !== 5) {
-    throw new Error(`Ungueltige Cron-Expression: ${cronPattern}`);
+    throw new Error(`Ungültige Cron-Expression: ${cronPattern}`);
   }
 
   const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
@@ -25,7 +25,7 @@ function parseCronExpression(cronPattern: string, count: number = 5): Date[] {
   const now = new Date();
   let current = new Date(now);
 
-  // Setze auf naechste volle Minute
+  // Setze auf nächste volle Minute
   current.setSeconds(0);
   current.setMilliseconds(0);
 
@@ -100,7 +100,7 @@ function matchesCronField(value: number, field: string): boolean {
 }
 
 /**
- * Berechnet die naechste Ausfuehrung basierend auf Frequenz und dayOfMonth
+ * Berechnet die nächste Ausführung basierend auf Frequenz und dayOfMonth
  */
 export function calculateNextRun(
   rule: {
@@ -114,7 +114,7 @@ export function calculateNextRun(
 ): Date {
   const now = fromDate || new Date();
 
-  // Fuer CUSTOM_CRON: Cron-Expression parsen
+  // Für CUSTOM_CRON: Cron-Expression parsen
   if (rule.frequency === "CUSTOM_CRON" && rule.cronPattern) {
     const nextRuns = parseCronExpression(rule.cronPattern, 1);
     if (nextRuns.length > 0) {
@@ -136,7 +136,7 @@ export function calculateNextRun(
 
   switch (rule.frequency) {
     case "MONTHLY":
-      // Naechster Monat am angegebenen Tag
+      // Nächster Monat am angegebenen Tag
       if (now.getDate() >= validDay) {
         next.setMonth(next.getMonth() + 1);
       }
@@ -144,7 +144,7 @@ export function calculateNextRun(
       break;
 
     case "QUARTERLY":
-      // Naechstes Quartal (Januar, April, Juli, Oktober)
+      // Nächstes Quartal (Januar, April, Juli, Oktober)
       const quarterMonths = [0, 3, 6, 9]; // 0-indexed
       const currentMonth = now.getMonth();
       const nextQuarterMonth = quarterMonths.find(
@@ -154,7 +154,7 @@ export function calculateNextRun(
       if (nextQuarterMonth !== undefined) {
         next.setMonth(nextQuarterMonth);
       } else {
-        // Naechstes Jahr Januar
+        // Nächstes Jahr Januar
         next.setFullYear(next.getFullYear() + 1);
         next.setMonth(0);
       }
@@ -162,7 +162,7 @@ export function calculateNextRun(
       break;
 
     case "SEMI_ANNUAL":
-      // Halbjaehrlich (Januar, Juli)
+      // Halbjährlich (Januar, Juli)
       const semiAnnualMonths = [0, 6];
       const currentMonth2 = now.getMonth();
       const nextSemiMonth = semiAnnualMonths.find(
@@ -179,7 +179,7 @@ export function calculateNextRun(
       break;
 
     case "ANNUAL":
-      // Jaehrlich (Januar)
+      // Jährlich (Januar)
       if (now.getMonth() > 0 || (now.getMonth() === 0 && now.getDate() >= validDay)) {
         next.setFullYear(next.getFullYear() + 1);
       }
@@ -188,7 +188,7 @@ export function calculateNextRun(
       break;
 
     default:
-      // Fallback: Naechster Monat
+      // Fallback: Nächster Monat
       next.setMonth(next.getMonth() + 1);
       next.setDate(validDay);
   }
@@ -197,7 +197,7 @@ export function calculateNextRun(
 }
 
 /**
- * Aktualisiert die nextRunAt fuer alle aktiven Regeln
+ * Aktualisiert die nextRunAt für alle aktiven Regeln
  */
 export async function scheduleAllRules(tenantId?: string): Promise<NextRunInfo[]> {
   const rules = await prisma.billingRule.findMany({
@@ -221,7 +221,7 @@ export async function scheduleAllRules(tenantId?: string): Promise<NextRunInfo[]
   for (const rule of rules) {
     const nextRunAt = calculateNextRun(rule);
 
-    // Aktualisiere nur wenn sich nextRunAt geaendert hat
+    // Aktualisiere nur wenn sich nextRunAt geändert hat
     if (!rule.nextRunAt || rule.nextRunAt.getTime() !== nextRunAt.getTime()) {
       await prisma.billingRule.update({
         where: { id: rule.id },
@@ -241,7 +241,7 @@ export async function scheduleAllRules(tenantId?: string): Promise<NextRunInfo[]
 }
 
 /**
- * Gibt alle faelligen Regeln zurueck
+ * Gibt alle fälligen Regeln zurück
  */
 export async function getDueRules(tenantId?: string): Promise<
   Array<{
@@ -278,7 +278,7 @@ export async function getDueRules(tenantId?: string): Promise<
 }
 
 /**
- * Gibt die naechsten geplanten Ausfuehrungen zurueck
+ * Gibt die nächsten geplanten Ausführungen zurück
  */
 export async function getUpcomingRuns(
   tenantId?: string,
@@ -326,11 +326,11 @@ export function formatCronPattern(
     case "MONTHLY":
       return `Monatlich am ${day}.`;
     case "QUARTERLY":
-      return `Vierteljaehrlich am ${day}. (Jan, Apr, Jul, Okt)`;
+      return `Vierteljährlich am ${day}. (Jan, Apr, Jul, Okt)`;
     case "SEMI_ANNUAL":
-      return `Halbjaehrlich am ${day}. (Jan, Jul)`;
+      return `Halbjährlich am ${day}. (Jan, Jul)`;
     case "ANNUAL":
-      return `Jaehrlich am ${day}. Januar`;
+      return `Jährlich am ${day}. Januar`;
     case "CUSTOM_CRON":
       return cronPattern || "Benutzerdefiniert";
     default:
@@ -350,14 +350,14 @@ export function validateCronExpression(cronPattern: string): {
     if (nextRuns.length === 0) {
       return {
         valid: false,
-        error: "Cron-Expression ergibt keine gueltigen Ausfuehrungszeitpunkte",
+        error: "Cron-Expression ergibt keine gültigen Ausführungszeitpunkte",
       };
     }
     return { valid: true };
   } catch (error) {
     return {
       valid: false,
-      error: error instanceof Error ? error.message : "Ungueltige Cron-Expression",
+      error: error instanceof Error ? error.message : "Ungültige Cron-Expression",
     };
   }
 }

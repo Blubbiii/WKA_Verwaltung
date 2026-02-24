@@ -1,6 +1,6 @@
 /**
  * API Route: /api/admin/billing-rules/[id]
- * GET: Regel-Details mit Ausfuehrungshistorie
+ * GET: Regel-Details mit Ausführungshistorie
  * PATCH: Regel aktualisieren
  * DELETE: Regel deaktivieren (soft-delete via isActive)
  */
@@ -13,7 +13,7 @@ import { z } from "zod";
 import { validateRuleParameters, calculateNextRun, BillingRuleType, BillingRuleFrequency } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
 
-// Validation Schema fuer Update
+// Validation Schema für Update
 const updateRuleSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(1000).optional().nullable(),
@@ -135,13 +135,13 @@ export async function PATCH(
       const newCronPattern = validatedData.cronPattern ?? existingRule.cronPattern;
       if (!newCronPattern) {
         return NextResponse.json(
-          { error: "Cron-Pattern ist erforderlich fuer CUSTOM_CRON Frequenz" },
+          { error: "Cron-Pattern ist erforderlich für CUSTOM_CRON Frequenz" },
           { status: 400 }
         );
       }
     }
 
-    // Validiere Parameter wenn geaendert
+    // Validiere Parameter wenn geändert
     if (validatedData.parameters) {
       const paramValidation = validateRuleParameters(
         existingRule.ruleType as BillingRuleType,
@@ -150,13 +150,13 @@ export async function PATCH(
 
       if (!paramValidation.valid) {
         return NextResponse.json(
-          { error: paramValidation.error || "Ungueltige Parameter" },
+          { error: paramValidation.error || "Ungültige Parameter" },
           { status: 400 }
         );
       }
     }
 
-    // Berechne nextRunAt neu wenn Frequenz oder dayOfMonth geaendert
+    // Berechne nextRunAt neu wenn Frequenz oder dayOfMonth geändert
     let nextRunAt = existingRule.nextRunAt;
     if (validatedData.frequency || validatedData.dayOfMonth !== undefined || validatedData.cronPattern !== undefined) {
       nextRunAt = calculateNextRun({
@@ -251,7 +251,7 @@ export async function DELETE(
   } catch (error) {
     logger.error({ err: error }, "Error deleting billing rule");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Abrechnungsregel" },
+      { error: "Fehler beim Löschen der Abrechnungsregel" },
       { status: 500 }
     );
   }

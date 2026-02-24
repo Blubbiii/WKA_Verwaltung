@@ -132,8 +132,8 @@ export function ParkWizard() {
   const [longitude, setLongitude] = useState("");
   const [operatorFundId, setOperatorFundId] = useState("");
   const [billingEntityFundId, setBillingEntityFundId] = useState("");
-  const [technischeBetriebsfuehrung, setTechnischeBetriebsfuehrung] = useState("");
-  const [kaufmaennischeBetriebsfuehrung, setKaufmaennischeBetriebsfuehrung] = useState("");
+  const [technischeBetriebsführung, setTechnischeBetriebsführung] = useState("");
+  const [kaufmaennischeBetriebsführung, setKaufmaennischeBetriebsführung] = useState("");
 
   // Step 3: Abrechnungs-Konfiguration
   const [defaultDistributionMode, setDefaultDistributionMode] = useState<DistributionMode>("PROPORTIONAL");
@@ -239,8 +239,8 @@ export function ParkWizard() {
         // Operator
         operatorFundId: operatorFundId || null,
         billingEntityFundId: billingEntityFundId || null,
-        technischeBetriebsfuehrung: technischeBetriebsfuehrung.trim() || null,
-        kaufmaennischeBetriebsfuehrung: kaufmaennischeBetriebsfuehrung.trim() || null,
+        technischeBetriebsführung: technischeBetriebsführung.trim() || null,
+        kaufmaennischeBetriebsführung: kaufmaennischeBetriebsführung.trim() || null,
 
         // Billing config
         defaultDistributionMode,
@@ -532,7 +532,7 @@ export function ParkWizard() {
               Betreiber & Verwaltung
             </CardTitle>
             <CardDescription>
-              Gesellschaften und Betriebsfuehrung
+              Gesellschaften und Betriebsführung
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -601,20 +601,20 @@ export function ParkWizard() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="park-tbf">Technische Betriebsfuehrung</Label>
+                <Label htmlFor="park-tbf">Technische Betriebsführung</Label>
                 <Input
                   id="park-tbf"
-                  value={technischeBetriebsfuehrung}
-                  onChange={(e) => setTechnischeBetriebsfuehrung(e.target.value)}
+                  value={technischeBetriebsführung}
+                  onChange={(e) => setTechnischeBetriebsführung(e.target.value)}
                   placeholder="z.B. Enercon Service GmbH"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="park-kbf">Kaufmaennische Betriebsfuehrung</Label>
+                <Label htmlFor="park-kbf">Kaufmaennische Betriebsführung</Label>
                 <Input
                   id="park-kbf"
-                  value={kaufmaennischeBetriebsfuehrung}
-                  onChange={(e) => setKaufmaennischeBetriebsfuehrung(e.target.value)}
+                  value={kaufmaennischeBetriebsführung}
+                  onChange={(e) => setKaufmaennischeBetriebsführung(e.target.value)}
                   placeholder="z.B. WPM Verwaltung GmbH"
                 />
               </div>
@@ -639,7 +639,7 @@ export function ParkWizard() {
               Verteilungsmodus
             </CardTitle>
             <CardDescription>
-              Wie werden Ertraege auf die Betreibergesellschaften verteilt?
+              Wie werden Erträge auf die Betreibergesellschaften verteilt?
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -695,7 +695,7 @@ export function ParkWizard() {
           <CardHeader>
             <CardTitle>Pacht-Konfiguration</CardTitle>
             <CardDescription>
-              Anteile und Mindestpacht fuer die Pachtberechnung
+              Anteile und Mindestpacht für die Pachtberechnung
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -797,9 +797,9 @@ export function ParkWizard() {
               <CollapsibleTrigger asChild>
                 <div className="flex items-center justify-between w-full">
                   <div>
-                    <CardTitle className="text-base">Verguetungssaetze pro Nutzungsart</CardTitle>
+                    <CardTitle className="text-base">Vergütungssaetze pro Nutzungsart</CardTitle>
                     <CardDescription>
-                      Optionale Verguetungssaetze fuer Zuwegung, Kabeltrasse und Ausgleichsflaechen
+                      Optionale Vergütungssaetze für Zuwegung, Kabeltrasse und Ausgleichsflaechen
                     </CardDescription>
                   </div>
                   {showCompensation ? (
@@ -860,7 +860,7 @@ export function ParkWizard() {
           <CardHeader>
             <CardTitle>Zusammenfassung</CardTitle>
             <CardDescription>
-              Bitte ueberpruefen Sie die Angaben vor dem Speichern
+              Bitte überprüfen Sie die Angaben vor dem Speichern
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -937,7 +937,7 @@ export function ParkWizard() {
             )}
 
             {/* Betreiber */}
-            {(operatorFundId || billingEntityFundId || technischeBetriebsfuehrung || kaufmaennischeBetriebsfuehrung) && (
+            {(operatorFundId || billingEntityFundId || technischeBetriebsführung || kaufmaennischeBetriebsführung) && (
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">
                   Betreiber & Verwaltung
@@ -963,11 +963,11 @@ export function ParkWizard() {
                       </span>
                     </p>
                   )}
-                  {technischeBetriebsfuehrung && (
-                    <p>TBF: {technischeBetriebsfuehrung}</p>
+                  {technischeBetriebsführung && (
+                    <p>TBF: {technischeBetriebsführung}</p>
                   )}
-                  {kaufmaennischeBetriebsfuehrung && (
-                    <p>KBF: {kaufmaennischeBetriebsfuehrung}</p>
+                  {kaufmaennischeBetriebsführung && (
+                    <p>KBF: {kaufmaennischeBetriebsführung}</p>
                   )}
                 </div>
               </div>
@@ -1036,7 +1036,7 @@ export function ParkWizard() {
                   <>
                     <Separator className="my-2" />
                     <p className="text-muted-foreground text-xs font-medium mb-1">
-                      Verguetungssaetze
+                      Vergütungssaetze
                     </p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                       {wegCompensationPerSqm && (
@@ -1084,7 +1084,7 @@ export function ParkWizard() {
         <Button variant="ghost" size="icon" asChild>
           <Link href="/parks">
             <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Zurueck zu Parks</span>
+            <span className="sr-only">Zurück zu Parks</span>
           </Link>
         </Button>
         <div>
@@ -1124,7 +1124,7 @@ export function ParkWizard() {
             disabled={currentStep === 0}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurueck
+            Zurück
           </Button>
         </div>
 

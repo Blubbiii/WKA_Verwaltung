@@ -81,7 +81,7 @@ export async function PATCH(
       // ADMIN can only update their own tenant
       if (adminCheck.tenantId !== id) {
         return NextResponse.json(
-          { error: "Keine Berechtigung fuer diesen Mandanten" },
+          { error: "Keine Berechtigung für diesen Mandanten" },
           { status: 403 }
         );
       }
@@ -169,7 +169,7 @@ export async function PATCH(
 }
 
 // DELETE /api/admin/tenants/[id] - Deaktiviert oder loescht den Mandanten
-// ?hard=true => Endgueltiges Loeschen (nur wenn bereits INACTIVE)
+// ?hard=true => Endgültiges Löschen (nur wenn bereits INACTIVE)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -197,7 +197,7 @@ export async function DELETE(
       // Hard-Delete: Mandant muss bereits INACTIVE sein
       if (existingTenant.status !== "INACTIVE") {
         return NextResponse.json(
-          { error: "Mandant muss zuerst deaktiviert werden, bevor er endgueltig geloescht werden kann" },
+          { error: "Mandant muss zuerst deaktiviert werden, bevor er endgültig gelöscht werden kann" },
           { status: 400 }
         );
       }
@@ -208,7 +208,7 @@ export async function DELETE(
         const msg = deleteError instanceof Error ? deleteError.message : "";
         if (msg.includes("Foreign key constraint")) {
           return NextResponse.json(
-            { error: "Mandant kann nicht geloescht werden, da noch zugehoerige Daten existieren" },
+            { error: "Mandant kann nicht gelöscht werden, da noch zugehoerige Daten existieren" },
             { status: 409 }
           );
         }
@@ -234,7 +234,7 @@ export async function DELETE(
   } catch (error) {
     logger.error({ err: error }, "Error deleting tenant");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen des Mandanten" },
+      { error: "Fehler beim Löschen des Mandanten" },
       { status: 500 }
     );
   }

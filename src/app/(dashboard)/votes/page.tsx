@@ -147,8 +147,8 @@ export default function VotesPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: "Fehler beim Loeschen" }));
-        throw new Error(data.error || "Fehler beim Loeschen");
+        const data = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
+        throw new Error(data.error || "Fehler beim Löschen");
       }
       return response.json();
     },
@@ -157,7 +157,7 @@ export default function VotesPage() {
         invalidate(["votes"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Loeschen der Abstimmung");
+        toast.error(error.message || "Fehler beim Löschen der Abstimmung");
       },
       onSettled: () => {
         setDeleteId(null);
@@ -386,7 +386,7 @@ export default function VotesPage() {
                                   className="text-red-600"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Loeschen
+                                  Löschen
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -415,7 +415,7 @@ export default function VotesPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Zurueck
+                  Zurück
                 </Button>
                 <Button
                   variant="outline"
@@ -440,7 +440,7 @@ export default function VotesPage() {
             await deleteMutation.mutateAsync(deleteId);
           }
         }}
-        title="Abstimmung loeschen"
+        title="Abstimmung löschen"
       />
     </div>
   );

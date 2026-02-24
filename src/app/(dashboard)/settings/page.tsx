@@ -85,7 +85,7 @@ interface UserSettings {
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "Vorname ist erforderlich"),
   lastName: z.string().min(1, "Nachname ist erforderlich"),
-  email: z.string().email("Ungueltige E-Mail-Adresse"),
+  email: z.string().email("Ungültige E-Mail-Adresse"),
   phone: z.string().optional(),
 });
 
@@ -97,10 +97,10 @@ const passwordFormSchema = z
       .min(8, "Neues Passwort muss mindestens 8 Zeichen lang sein"),
     confirmPassword: z
       .string()
-      .min(1, "Passwort-Bestaetigung ist erforderlich"),
+      .min(1, "Passwort-Bestätigung ist erforderlich"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwoerter stimmen nicht ueberein",
+    message: "Passwörter stimmen nicht überein",
     path: ["confirmPassword"],
   });
 
@@ -147,13 +147,13 @@ function AvatarUploadSection({
     // Client-side validation
     const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Ungueltiges Dateiformat. Erlaubt: PNG, JPEG, WebP");
+      toast.error("Ungültiges Dateiformat. Erlaubt: PNG, JPEG, WebP");
       return;
     }
 
     const maxSize = 2 * 1024 * 1024; // 2MB
     if (file.size > maxSize) {
-      toast.error("Datei zu gross. Maximale Groesse: 2MB");
+      toast.error("Datei zu gross. Maximale Größe: 2MB");
       return;
     }
 
@@ -443,7 +443,7 @@ function ProfileTab({
                       />
                     </FormControl>
                     <FormDescription>
-                      Die E-Mail-Adresse kann nicht geaendert werden.
+                      Die E-Mail-Adresse kann nicht geändert werden.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -585,10 +585,10 @@ function AppearanceTab({
         toast.success("Seitengröße wurde gespeichert");
         onSettingsUpdated();
       } else {
-        toast.error("Fehler beim Speichern der Seitengroesse");
+        toast.error("Fehler beim Speichern der Seitengröße");
       }
     } catch (error) {
-      toast.error("Fehler beim Speichern der Seitengroesse");
+      toast.error("Fehler beim Speichern der Seitengröße");
     } finally {
       setIsSavingPrefs(false);
     }
@@ -704,7 +704,7 @@ function AppearanceTab({
           {/* Default Page Size */}
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Standard-Seitengroesse (Tabelleneintraege)
+              Standard-Seitengröße (Tabelleneinträge)
             </label>
             <Select
               value={pageSize}
@@ -715,14 +715,14 @@ function AppearanceTab({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">10 Eintraege</SelectItem>
-                <SelectItem value="25">25 Eintraege</SelectItem>
-                <SelectItem value="50">50 Eintraege</SelectItem>
-                <SelectItem value="100">100 Eintraege</SelectItem>
+                <SelectItem value="10">10 Einträge</SelectItem>
+                <SelectItem value="25">25 Einträge</SelectItem>
+                <SelectItem value="50">50 Einträge</SelectItem>
+                <SelectItem value="100">100 Einträge</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
-              Bestimmt, wie viele Eintraege pro Seite in Tabellen angezeigt
+              Bestimmt, wie viele Einträge pro Seite in Tabellen angezeigt
               werden
             </p>
           </div>
@@ -808,7 +808,7 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
         throw new Error(result.error || "Fehler beim Aendern des Passworts");
       }
 
-      toast.success("Passwort wurde erfolgreich geaendert");
+      toast.success("Passwort wurde erfolgreich geändert");
       passwordForm.reset();
       setServerErrors({});
     } catch (error) {
@@ -829,7 +829,7 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
         <CardHeader>
           <CardTitle>Passwort aendern</CardTitle>
           <CardDescription>
-            Aktualisieren Sie Ihr Passwort regelmaessig fuer mehr Sicherheit
+            Aktualisieren Sie Ihr Passwort regelmaessig für mehr Sicherheit
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -894,7 +894,7 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Passwort bestaetigen</FormLabel>
+                    <FormLabel>Passwort bestätigen</FormLabel>
                     <FormControl>
                       <Input
                         type="password"

@@ -163,8 +163,8 @@ interface InvoicesResponse {
 
 const WIZARD_STEPS = [
   { id: "park", title: "Park & Periode", description: "Zeitraum waehlen" },
-  { id: "data", title: "NB-Daten", description: "Erloes & Verteilung" },
-  { id: "calculate", title: "Berechnung", description: "Verteilung pruefen" },
+  { id: "data", title: "NB-Daten", description: "Erlös & Verteilung" },
+  { id: "calculate", title: "Berechnung", description: "Verteilung prüfen" },
   { id: "invoices", title: "Gutschriften", description: "Erstellen" },
   { id: "summary", title: "Abschluss", description: "Zusammenfassung" },
 ];
@@ -422,7 +422,7 @@ export function SettlementWizard() {
 
       const calcData = await calcRes.json();
       setCalculationResult(calcData);
-      toast.success("Berechnung erfolgreich durchgefuehrt");
+      toast.success("Berechnung erfolgreich durchgeführt");
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Fehler bei der Berechnung"
@@ -517,7 +517,7 @@ export function SettlementWizard() {
     if (step === 2 && settlementId) {
       // Warn when going back from calculation step
       const confirmed = window.confirm(
-        "Wenn Sie zurueckgehen, wird die bestehende Berechnung verworfen. Fortfahren?"
+        "Wenn Sie zurückgehen, wird die bestehende Berechnung verworfen. Fortfahren?"
       );
       if (!confirmed) return;
     }
@@ -604,7 +604,7 @@ export function SettlementWizard() {
               Park und Abrechnungszeitraum
             </CardTitle>
             <CardDescription>
-              Waehlen Sie den Windpark und den Zeitraum fuer die Abrechnung
+              Waehlen Sie den Windpark und den Zeitraum für die Abrechnung
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -730,7 +730,7 @@ export function SettlementWizard() {
                   <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                     <p className="text-sm text-green-800 font-medium">
                       {productionStatus.turbinesWithData} Turbine(n) mit
-                      Produktionsdaten fuer {formatPeriodLabel()}
+                      Produktionsdaten für {formatPeriodLabel()}
                     </p>
                     <p className="text-xs text-green-700 mt-1">
                       Gesamtproduktion:{" "}
@@ -746,7 +746,7 @@ export function SettlementWizard() {
                       <AlertTriangle className="h-4 w-4" />
                       <AlertTitle>Unvollstaendige Daten</AlertTitle>
                       <AlertDescription>
-                        Nicht alle Turbinen haben Produktionsdaten fuer{" "}
+                        Nicht alle Turbinen haben Produktionsdaten für{" "}
                         {formatPeriodLabel()}.{" "}
                         {productionStatus.totalTurbines -
                           productionStatus.turbinesWithData}{" "}
@@ -761,7 +761,7 @@ export function SettlementWizard() {
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Keine Produktionsdaten</AlertTitle>
                     <AlertDescription>
-                      Fuer {formatPeriodLabel()} liegen keine Produktionsdaten
+                      Für {formatPeriodLabel()} liegen keine Produktionsdaten
                       vor. Bitte importieren Sie zuerst Produktionsdaten, bevor
                       Sie eine Abrechnung erstellen.
                     </AlertDescription>
@@ -823,7 +823,7 @@ export function SettlementWizard() {
           <CardHeader>
             <CardTitle>Netzbetreiber-Abrechnungsdaten</CardTitle>
             <CardDescription>
-              Einspeisung und Erloes laut Netzbetreiber-Gutschrift fuer{" "}
+              Einspeisung und Erlös laut Netzbetreiber-Gutschrift für{" "}
               {selectedPark?.name || "den ausgewaehlten Park"},{" "}
               {formatPeriodLabel()}
             </CardDescription>
@@ -860,7 +860,7 @@ export function SettlementWizard() {
               {/* Revenue EUR */}
               <div className="space-y-2">
                 <Label htmlFor="wizard-revenue">
-                  Erloes (EUR) <span className="text-destructive">*</span>
+                  Erlös (EUR) <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="wizard-revenue"
@@ -875,11 +875,11 @@ export function SettlementWizard() {
                       revenueEur: e.target.value,
                     }))
                   }
-                  aria-label="Erloes in Euro"
+                  aria-label="Erlös in Euro"
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Verguetungsbetrag vom Netzbetreiber
+                  Vergütungsbetrag vom Netzbetreiber
                 </p>
               </div>
             </div>
@@ -915,7 +915,7 @@ export function SettlementWizard() {
           <CardHeader>
             <CardTitle>Verteilungsmodus</CardTitle>
             <CardDescription>
-              Wie soll der Erloes auf die Betreibergesellschaften verteilt
+              Wie soll der Erlös auf die Betreibergesellschaften verteilt
               werden?
             </CardDescription>
           </CardHeader>
@@ -1083,7 +1083,7 @@ export function SettlementWizard() {
                 Verteilung berechnen
               </CardTitle>
               <CardDescription>
-                Die Berechnung erstellt die Abrechnung und verteilt den Erloes
+                Die Berechnung erstellt die Abrechnung und verteilt den Erlös
                 auf die Betreibergesellschaften basierend auf den
                 Produktionsdaten.
               </CardDescription>
@@ -1106,7 +1106,7 @@ export function SettlementWizard() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Erloes</p>
+                  <p className="text-xs text-muted-foreground">Erlös</p>
                   <p className="font-medium font-mono">
                     {formatCurrency(Number(formData.revenueEur))}
                   </p>
@@ -1182,7 +1182,7 @@ export function SettlementWizard() {
               <CardHeader>
                 <CardTitle>Berechnungsergebnis</CardTitle>
                 <CardDescription>
-                  Verteilung des Erloeses von{" "}
+                  Verteilung des Erlöses von{" "}
                   {formatCurrency(
                     calculationResult.calculation.netOperatorRevenueEur
                   )}{" "}
@@ -1296,7 +1296,7 @@ export function SettlementWizard() {
                 Gutschriften erstellen
               </CardTitle>
               <CardDescription>
-                Fuer jede Berechnungsposition wird eine Gutschrift an die
+                Für jede Berechnungsposition wird eine Gutschrift an die
                 jeweilige Betreibergesellschaft erstellt.
               </CardDescription>
             </CardHeader>
@@ -1306,7 +1306,7 @@ export function SettlementWizard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Empfaenger</TableHead>
+                      <TableHead>Empfänger</TableHead>
                       <TableHead>Beschreibung</TableHead>
                       <TableHead className="text-right">
                         Betrag (EUR)
@@ -1321,7 +1321,7 @@ export function SettlementWizard() {
                             {item.recipientFund?.name || "-"}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            Stromerloes {formatPeriodLabel()} -{" "}
+                            Stromerlös {formatPeriodLabel()} -{" "}
                             {selectedPark?.name || ""}
                             {item.turbine
                               ? ` - WKA ${item.turbine.designation}`
@@ -1397,7 +1397,7 @@ export function SettlementWizard() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nr.</TableHead>
-                      <TableHead>Empfaenger</TableHead>
+                      <TableHead>Empfänger</TableHead>
                       <TableHead className="text-right">
                         Betrag (EUR)
                       </TableHead>
@@ -1472,7 +1472,7 @@ export function SettlementWizard() {
               Abrechnung abgeschlossen
             </CardTitle>
             <CardDescription>
-              Die Jahresendabrechnung wurde erfolgreich durchgefuehrt
+              Die Jahresendabrechnung wurde erfolgreich durchgeführt
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -1487,7 +1487,7 @@ export function SettlementWizard() {
                 <p className="font-medium">{formatPeriodLabel()}</p>
               </div>
               <div className="p-4 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground">Gesamterloes</p>
+                <p className="text-xs text-muted-foreground">Gesamterlös</p>
                 <p className="font-medium font-mono">
                   {formatCurrency(Number(formData.revenueEur))}
                 </p>
@@ -1514,7 +1514,7 @@ export function SettlementWizard() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Gutschrift-Nr.</TableHead>
-                        <TableHead>Empfaenger</TableHead>
+                        <TableHead>Empfänger</TableHead>
                         <TableHead className="text-right">
                           Betrag (EUR)
                         </TableHead>
@@ -1581,7 +1581,7 @@ export function SettlementWizard() {
           <Button asChild className="w-full sm:w-auto">
             <Link href="/energy/settlements">
               <FileText className="mr-2 h-4 w-4" />
-              Zur Uebersicht
+              Zur Übersicht
             </Link>
           </Button>
         </div>
@@ -1614,7 +1614,7 @@ export function SettlementWizard() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/energy/settlements" aria-label="Zurueck zur Uebersicht">
+          <Link href="/energy/settlements" aria-label="Zurück zur Übersicht">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -1623,7 +1623,7 @@ export function SettlementWizard() {
             Abrechnung erstellen
           </h1>
           <p className="text-muted-foreground">
-            Gefuehrter Prozess in {WIZARD_STEPS.length} Schritten
+            Geführter Prozess in {WIZARD_STEPS.length} Schritten
           </p>
         </div>
       </div>
@@ -1637,7 +1637,7 @@ export function SettlementWizard() {
           if (clickedStep < step) {
             if (step >= 2 && clickedStep < 2 && settlementId) {
               const confirmed = window.confirm(
-                "Wenn Sie zurueckgehen, wird die bestehende Berechnung verworfen. Fortfahren?"
+                "Wenn Sie zurückgehen, wird die bestehende Berechnung verworfen. Fortfahren?"
               );
               if (!confirmed) return;
             }
@@ -1662,7 +1662,7 @@ export function SettlementWizard() {
               disabled={step === 0}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Zurueck
+              Zurück
             </Button>
           </div>
 

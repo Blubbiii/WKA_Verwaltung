@@ -249,7 +249,7 @@ export async function GET(
     if (!SUPPORTED_TYPES.includes(type)) {
       return NextResponse.json(
         {
-          error: `Ungueltiger Export-Typ: ${type}`,
+          error: `Ungültiger Export-Typ: ${type}`,
           supportedTypes: SUPPORTED_TYPES,
         },
         { status: 400 }
@@ -260,7 +260,7 @@ export async function GET(
     const requiredPermission = EXPORT_PERMISSION_MAP[type];
     if (!requiredPermission) {
       return NextResponse.json(
-        { error: `Keine Berechtigung fuer Export-Typ: ${type}` },
+        { error: `Keine Berechtigung für Export-Typ: ${type}` },
         { status: 403 }
       );
     }
@@ -284,7 +284,7 @@ export async function GET(
     // Validate format
     if (!['xlsx', 'csv'].includes(format)) {
       return NextResponse.json(
-        { error: `Ungueltiges Format: ${format}. Unterstuetzte Formate: xlsx, csv` },
+        { error: `Ungültiges Format: ${format}. Unterstuetzte Formate: xlsx, csv` },
         { status: 400 }
       );
     }

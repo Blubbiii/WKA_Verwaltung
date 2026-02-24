@@ -62,7 +62,7 @@ export async function PATCH(
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
-        { error: "Keine Aenderungen angegeben" },
+        { error: "Keine Änderungen angegeben" },
         { status: 400 }
       );
     }

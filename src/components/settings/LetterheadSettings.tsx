@@ -306,10 +306,10 @@ export function LetterheadSettings() {
 
     try {
       await deleteLetterhead(letterheadToDelete);
-      toast.success("Briefpapier geloescht");
+      toast.success("Briefpapier gelöscht");
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Loeschen");
+      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
     } finally {
       setDeleteDialogOpen(false);
       setLetterheadToDelete(null);
@@ -543,7 +543,7 @@ export function LetterheadSettings() {
             <div className="space-y-4">
               <h4 className="font-medium">PDF-Hintergrund</h4>
               <p className="text-sm text-muted-foreground">
-                Laden Sie ein fertiges Briefpapier als PDF hoch. Es wird als Hintergrund fuer alle Dokumente verwendet.
+                Laden Sie ein fertiges Briefpapier als PDF hoch. Es wird als Hintergrund für alle Dokumente verwendet.
                 Seite 1 = Titelseite, Seite 2 (optional) = Folgeseiten.
               </p>
 
@@ -738,7 +738,7 @@ export function LetterheadSettings() {
                       placeholder="Firma GmbH - Strasse 1 - 12345 Stadt"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Wird ueber dem Empfaenger-Adressfeld angezeigt
+                      Wird über dem Empfänger-Adressfeld angezeigt
                     </p>
                   </div>
                 </div>
@@ -819,7 +819,7 @@ export function LetterheadSettings() {
                 <div className="space-y-4">
                   <h4 className="font-medium">Farben (optional)</h4>
                   <p className="text-sm text-muted-foreground">
-                    Ueberschreiben die Mandanten-Farben wenn gesetzt
+                    Überschreiben die Mandanten-Farben wenn gesetzt
                   </p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
@@ -948,8 +948,8 @@ export function LetterheadSettings() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
-        title="Briefpapier loeschen"
-        description="Moechten Sie dieses Briefpapier wirklich loeschen?"
+        title="Briefpapier löschen"
+        description="Möchten Sie dieses Briefpapier wirklich löschen?"
       />
     </div>
   );

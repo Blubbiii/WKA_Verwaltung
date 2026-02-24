@@ -70,25 +70,25 @@ const check = await requireSuperadmin();
       case "dashboard":
         if (tenantId) {
           await dashboardCache.invalidateTenantStats(tenantId);
-          message = `Dashboard-Cache fuer Mandant ${tenantId} wurde geloescht`;
+          message = `Dashboard-Cache für Mandant ${tenantId} wurde gelöscht`;
         } else {
           await dashboardCache.invalidateAll();
-          message = "Alle Dashboard-Caches wurden geloescht";
+          message = "Alle Dashboard-Caches wurden gelöscht";
         }
         break;
 
       case "system":
         await dashboardCache.invalidateSystemStats();
-        message = "System-Stats-Cache wurde geloescht";
+        message = "System-Stats-Cache wurde gelöscht";
         break;
 
       case "tenant":
         if (tenantId) {
           await cache.clearTenant(tenantId);
-          message = `Alle Caches fuer Mandant ${tenantId} wurden geloescht`;
+          message = `Alle Caches für Mandant ${tenantId} wurden gelöscht`;
         } else {
           return NextResponse.json(
-            { error: "tenantId erforderlich fuer type=tenant" },
+            { error: "tenantId erforderlich für type=tenant" },
             { status: 400 }
           );
         }
@@ -97,7 +97,7 @@ const check = await requireSuperadmin();
       default:
         // Clear everything
         await dashboardCache.invalidateAll();
-        message = "Alle Caches wurden geloescht";
+        message = "Alle Caches wurden gelöscht";
     }
 
     return NextResponse.json({
@@ -108,7 +108,7 @@ const check = await requireSuperadmin();
   } catch (error) {
     logger.error({ err: error }, "Error clearing cache");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen des Caches" },
+      { error: "Fehler beim Löschen des Caches" },
       { status: 500 }
     );
   }

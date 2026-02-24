@@ -5,7 +5,7 @@ import { scanLocation, readWsdFile } from "@/lib/scada/dbf-reader";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
-// POST /api/energy/scada/preview - Vorschau fuer einen SCADA-Standort
+// POST /api/energy/scada/preview - Vorschau für einen SCADA-Standort
 // Liest den ersten WSD-File eines Standorts und zeigt Beispieldaten + Mappings
 // =============================================================================
 
@@ -45,17 +45,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Minimale Sicherheitspruefung: Pfad darf keine gefaehrlichen Zeichen enthalten
+    // Minimale Sicherheitsprüfung: Pfad darf keine gefaehrlichen Zeichen enthalten
     if (basePath.includes("..") || basePath.includes("\0")) {
       return NextResponse.json(
-        { error: "Ungueltiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
+        { error: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
         { status: 400 }
       );
     }
 
     if (locationCode.includes("..") || locationCode.includes("\0")) {
       return NextResponse.json(
-        { error: "Ungueltiger locationCode" },
+        { error: "Ungültiger locationCode" },
         { status: 400 }
       );
     }
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     // Plant-Nummern aus dem Scan (Fallback falls keine WSD-Datei lesbar)
     const plantNumbersFromScan = wsdScan?.plantNumbers ?? [];
 
-    // Aggregierte Daten pro Anlage: Anzahl Records, Summen fuer Durchschnitt
+    // Aggregierte Daten pro Anlage: Anzahl Records, Summen für Durchschnitt
     const plantStats = new Map<
       number,
       {
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
         // Fehler beim Lesen der WSD-Datei - Vorschau trotzdem liefern
         logger.error(
           { err: error },
-          `Fehler beim Lesen der WSD-Vorschaudatei fuer ${locationCode}`
+          `Fehler beim Lesen der WSD-Vorschaudatei für ${locationCode}`
         );
       }
     }
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Mappings nach plantNo indexieren fuer schnellen Zugriff
+    // Mappings nach plantNo indexieren für schnellen Zugriff
     const mappingByPlantNo = new Map(
       mappings.map((m) => [m.plantNo, m] as const)
     );
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der SCADA-Vorschau");
 
-    // Spezifische Fehlerbehandlung fuer Dateisystem-Fehler
+    // Spezifische Fehlerbehandlung für Dateisystem-Fehler
     if (error instanceof Error && error.message.includes("ENOENT")) {
       return NextResponse.json(
         {
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Zugriff verweigert: Keine Leseberechtigung fuer das Verzeichnis",
+            "Zugriff verweigert: Keine Leseberechtigung für das Verzeichnis",
         },
         { status: 403 }
       );

@@ -20,13 +20,13 @@ export async function getClientSettlementData(
   });
 
   if (!stakeholder || !stakeholder.isActive) {
-    throw new Error("Kein gueltiger Stakeholder-Eintrag gefunden");
+    throw new Error("Kein gültiger Stakeholder-Eintrag gefunden");
   }
 
   // Check date validity
   const now = new Date();
   if (stakeholder.validFrom > now) {
-    throw new Error("Vertrag noch nicht gueltig");
+    throw new Error("Vertrag noch nicht gültig");
   }
   if (stakeholder.validTo && stakeholder.validTo < now) {
     throw new Error("Vertrag abgelaufen");

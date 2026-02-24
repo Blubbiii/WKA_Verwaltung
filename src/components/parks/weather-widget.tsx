@@ -172,7 +172,7 @@ export function WeatherWidget({
         <CardContent>
           <div className="flex items-center gap-2 text-muted-foreground">
             <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{error || "Nicht verfuegbar"}</span>
+            <span className="text-sm">{error || "Nicht verfügbar"}</span>
           </div>
         </CardContent>
       </Card>

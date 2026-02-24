@@ -189,7 +189,7 @@ export async function DELETE(
 
     // Delete + Summen aktualisieren + Positionen neu nummerieren atomar in einer Transaktion
     await prisma.$transaction(async (tx) => {
-      // 1. Item loeschen
+      // 1. Item löschen
       await tx.invoiceItem.delete({ where: { id: itemId } });
 
       // 2. Rechnung-Summen aktualisieren

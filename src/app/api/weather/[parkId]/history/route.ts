@@ -58,7 +58,7 @@ export async function GET(
     // Validate dates
     if (isNaN(from.getTime()) || isNaN(to.getTime())) {
       return NextResponse.json(
-        { error: "Ungueltiges Datumsformat. Bitte ISO-Format verwenden." },
+        { error: "Ungültiges Datumsformat. Bitte ISO-Format verwenden." },
         { status: 400 }
       );
     }

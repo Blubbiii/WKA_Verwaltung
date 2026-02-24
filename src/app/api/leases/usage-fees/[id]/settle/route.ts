@@ -43,7 +43,7 @@ export async function POST(
     ) {
       return NextResponse.json(
         {
-          error: "Endabrechnung kann nur fuer berechnete Abrechnungen erstellt werden",
+          error: "Endabrechnung kann nur für berechnete Abrechnungen erstellt werden",
           details: `Aktueller Status: ${settlement.status}. Bitte zuerst die Berechnung durchfuehren.`,
         },
         { status: 400 }

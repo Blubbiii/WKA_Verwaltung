@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.errors[0]?.message || "Ungueltige Eingabe" },
+        { error: parsed.error.errors[0]?.message || "Ungültige Eingabe" },
         { status: 400 }
       );
     }

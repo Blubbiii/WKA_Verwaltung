@@ -189,7 +189,7 @@ const MODULE_LABELS: Record<string, string> = {
   shareholders: "Gesellschafter",
   plots: "Flaechen",
   leases: "Pacht",
-  contracts: "Vertraege",
+  contracts: "Verträge",
   documents: "Dokumente",
   invoices: "Abrechnungen",
   votes: "Abstimmungen",
@@ -267,7 +267,7 @@ export function AccessReportTemplate({ data }: AccessReportTemplateProps) {
         <View style={styles.header}>
           <Text style={styles.title}>Zugriffsreport</Text>
           <Text style={styles.subtitle}>
-            Uebersicht aller Benutzer und ihrer effektiven Berechtigungen
+            Übersicht aller Benutzer und ihrer effektiven Berechtigungen
           </Text>
           <View style={styles.metaInfo}>
             <Text>Mandant: {data.tenantName}</Text>

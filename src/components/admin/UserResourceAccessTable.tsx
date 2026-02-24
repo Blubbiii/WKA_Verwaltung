@@ -129,7 +129,7 @@ export function UserResourceAccessTable({
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Fehler beim Loeschen");
+        throw new Error(data.error || "Fehler beim Löschen");
       }
 
       toast({
@@ -213,14 +213,14 @@ export function UserResourceAccessTable({
         {!readOnly && (
           <Button onClick={() => setDialogOpen(true)} size="sm">
             <Plus className="h-4 w-4 mr-2" />
-            Zugriff hinzufuegen
+            Zugriff hinzufügen
           </Button>
         )}
       </div>
 
       {/* Description */}
       <p className="text-sm text-muted-foreground">
-        Direkte Zugriffsrechte auf einzelne Ressourcen, unabhaengig von Rollen.
+        Direkte Zugriffsrechte auf einzelne Ressourcen, unabhängig von Rollen.
         {userName && ` Aktueller Benutzer: ${userName}`}
       </p>
 
@@ -238,7 +238,7 @@ export function UserResourceAccessTable({
               className="mt-4"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Ersten Zugriff hinzufuegen
+              Ersten Zugriff hinzufügen
             </Button>
           )}
         </div>
@@ -323,7 +323,7 @@ export function UserResourceAccessTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Zugriff entziehen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechten Sie den Zugriff auf &quot;{deleteTarget?.resourceName}&quot; wirklich
+              Möchten Sie den Zugriff auf &quot;{deleteTarget?.resourceName}&quot; wirklich
               entziehen? Diese Aktion kann nicht rueckgaengig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>

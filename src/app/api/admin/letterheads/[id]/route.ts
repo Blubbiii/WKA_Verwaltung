@@ -110,7 +110,7 @@ export async function PATCH(
       );
     }
 
-    // Wenn isDefault auf true gesetzt, andere Defaults im gleichen Scope zuruecksetzen
+    // Wenn isDefault auf true gesetzt, andere Defaults im gleichen Scope zurücksetzen
     if (data.isDefault === true) {
       await prisma.letterhead.updateMany({
         where: {
@@ -195,11 +195,11 @@ export async function DELETE(
       data: { isActive: false },
     });
 
-    return NextResponse.json({ message: "Briefpapier geloescht" });
+    return NextResponse.json({ message: "Briefpapier gelöscht" });
   } catch (error) {
     logger.error({ err: error }, "Error deleting letterhead");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen des Briefpapiers" },
+      { error: "Fehler beim Löschen des Briefpapiers" },
       { status: 500 }
     );
   }

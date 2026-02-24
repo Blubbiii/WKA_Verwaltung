@@ -106,7 +106,7 @@ export default function EditProductionPage({
     e.preventDefault();
 
     if (!formData.productionKwh || parseFloat(formData.productionKwh) < 0) {
-      toast.error("Bitte geben Sie eine gueltige Produktionsmenge ein");
+      toast.error("Bitte geben Sie eine gültige Produktionsmenge ein");
       return;
     }
 
@@ -173,9 +173,9 @@ export default function EditProductionPage({
       {/* Notice banner */}
       <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
         <p className="text-sm text-blue-800">
-          Die Bearbeitung ist auch direkt ueber die Produktionsdaten-Seite erreichbar.
+          Die Bearbeitung ist auch direkt über die Produktionsdaten-Seite erreichbar.
           <Link href="/energy/productions" className="underline ml-1 font-medium">
-            Zur Uebersicht
+            Zur Übersicht
           </Link>
         </p>
       </div>
@@ -219,7 +219,7 @@ export default function EditProductionPage({
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="pt-6">
             <p className="text-sm text-amber-800">
-              Abgerechnete Datensaetze koennen nicht bearbeitet werden.
+              Abgerechnete Datensaetze können nicht bearbeitet werden.
               Stornieren Sie zuerst die zugehoerige Gutschrift.
             </p>
           </CardContent>
@@ -232,9 +232,9 @@ export default function EditProductionPage({
           {/* Production & Revenue */}
           <Card>
             <CardHeader>
-              <CardTitle>Produktion & Erloes</CardTitle>
+              <CardTitle>Produktion & Erlös</CardTitle>
               <CardDescription>
-                Produktionswerte und Erloese anpassen
+                Produktionswerte und Erlöse anpassen
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -259,7 +259,7 @@ export default function EditProductionPage({
 
                 {/* Revenue */}
                 <div className="space-y-2">
-                  <Label htmlFor="revenueEur">Erloes (EUR)</Label>
+                  <Label htmlFor="revenueEur">Erlös (EUR)</Label>
                   <Input
                     id="revenueEur"
                     type="number"
@@ -301,7 +301,7 @@ export default function EditProductionPage({
             <CardHeader>
               <CardTitle>Details</CardTitle>
               <CardDescription>
-                Diese Felder koennen nicht geaendert werden
+                Diese Felder können nicht geändert werden
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -320,7 +320,7 @@ export default function EditProductionPage({
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Verguetungsart</p>
+                <p className="text-sm text-muted-foreground">Vergütungsart</p>
                 <p className="font-medium">
                   {production.revenueType
                     ? `${production.revenueType.name} (${production.revenueType.code})`

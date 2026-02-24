@@ -84,7 +84,7 @@ function TurbineFaultTooltip({ active, payload, label }: { active?: boolean; pay
   return (
     <div className="rounded-lg border bg-background p-3 shadow-lg">
       <p className="font-medium mb-1">{label}</p>
-      {bar && <p className="text-sm">Stoerungszeit: {dec1Fmt.format(bar.value)} h</p>}
+      {bar && <p className="text-sm">Störungszeit: {dec1Fmt.format(bar.value)} h</p>}
     </div>
   );
 }
@@ -103,7 +103,7 @@ function ScatterTooltip({ active, payload }: { active?: boolean; payload?: Scatt
   return (
     <div className="rounded-lg border bg-background p-3 shadow-lg">
       <p className="font-medium mb-1">{d.designation}</p>
-      <p className="text-sm">Stoerungen: {numFmt.format(d.totalFaultCount)}</p>
+      <p className="text-sm">Störungen: {numFmt.format(d.totalFaultCount)}</p>
       <p className="text-sm text-muted-foreground">Produktionsverlust: {dec1Fmt.format(d.lossMwh)} MWh</p>
     </div>
   );
@@ -137,13 +137,13 @@ export function FaultAnalysis({
 
   const kpis = useMemo(() => [
     {
-      title: "Stoerungscodes",
+      title: "Störungscodes",
       value: numFmt.format(kpiData.uniqueStates),
       icon: AlertTriangle,
       description: "Verschiedene Zustaende",
     },
     {
-      title: "Gesamte Stoerungszeit",
+      title: "Gesamte Störungszeit",
       value: numFmt.format(Math.round(kpiData.totalFaultHours)) + " h",
       icon: Clock,
       description: "Alle Anlagen",
@@ -158,7 +158,7 @@ export function FaultAnalysis({
       title: "Geschaetzter Produktionsverlust",
       value: dec1Fmt.format(kpiData.totalLossMwh) + " MWh",
       icon: Zap,
-      description: "Durch Stoerungen",
+      description: "Durch Störungen",
     },
   ], [kpiData]);
 
@@ -197,7 +197,7 @@ export function FaultAnalysis({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <AlertTriangle className="h-8 w-8 mb-2" />
-        <p>Keine Stoerungsdaten vorhanden</p>
+        <p>Keine Störungsdaten vorhanden</p>
       </div>
     );
   }
@@ -209,10 +209,10 @@ export function FaultAnalysis({
 
       {/* Row: Pareto + Warning Trend */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Stoerungen-Pareto */}
+        {/* Störungen-Pareto */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Stoerungen-Pareto (Top 20 Zustaende)</CardTitle>
+            <CardTitle className="text-sm font-medium">Störungen-Pareto (Top 20 Zustaende)</CardTitle>
           </CardHeader>
           <CardContent>
             {statePareto.length > 0 ? (
@@ -267,7 +267,7 @@ export function FaultAnalysis({
                 </ComposedChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">Keine Stoerungen erfasst</p>
+              <p className="text-sm text-muted-foreground text-center py-8">Keine Störungen erfasst</p>
             )}
           </CardContent>
         </Card>
@@ -332,10 +332,10 @@ export function FaultAnalysis({
 
       {/* Row: Turbine Fault Duration + Scatter */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Stoerungen pro Turbine (horizontal bar) */}
+        {/* Störungen pro Turbine (horizontal bar) */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Stoerungszeit pro Anlage</CardTitle>
+            <CardTitle className="text-sm font-medium">Störungszeit pro Anlage</CardTitle>
           </CardHeader>
           <CardContent>
             {turbineFaultData.length > 0 ? (
@@ -360,14 +360,14 @@ export function FaultAnalysis({
                   <Tooltip content={<TurbineFaultTooltip />} />
                   <Bar
                     dataKey="faultHours"
-                    name="Stoerungszeit"
+                    name="Störungszeit"
                     fill="#ef4444"
                     radius={[0, 4, 4, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">Keine Stoerungsdaten pro Anlage</p>
+              <p className="text-sm text-muted-foreground text-center py-8">Keine Störungsdaten pro Anlage</p>
             )}
           </CardContent>
         </Card>
@@ -375,7 +375,7 @@ export function FaultAnalysis({
         {/* Scatter: Fault Count vs Production Loss */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Stoerungen vs. Produktionsverlust</CardTitle>
+            <CardTitle className="text-sm font-medium">Störungen vs. Produktionsverlust</CardTitle>
           </CardHeader>
           <CardContent>
             {scatterData.length > 0 ? (
@@ -385,11 +385,11 @@ export function FaultAnalysis({
                   <XAxis
                     type="number"
                     dataKey="totalFaultCount"
-                    name="Stoerungen"
+                    name="Störungen"
                     tick={{ fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
-                    label={{ value: "Stoerungen (Anzahl)", position: "insideBottom", offset: -5, fontSize: 11 }}
+                    label={{ value: "Störungen (Anzahl)", position: "insideBottom", offset: -5, fontSize: 11 }}
                   />
                   <YAxis
                     type="number"
@@ -410,7 +410,7 @@ export function FaultAnalysis({
                 </ScatterChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">Keine Daten fuer Scatter-Chart</p>
+              <p className="text-sm text-muted-foreground text-center py-8">Keine Daten für Scatter-Chart</p>
             )}
           </CardContent>
         </Card>

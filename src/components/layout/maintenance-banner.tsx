@@ -41,7 +41,7 @@ export function MaintenanceBanner() {
     <div className="bg-yellow-500 text-yellow-900 px-4 py-2 text-center text-sm font-medium relative flex items-center justify-center">
       <span>
         {status.message ||
-          "Das System befindet sich im Wartungsmodus. Bitte versuchen Sie es spaeter erneut."}
+          "Das System befindet sich im Wartungsmodus. Bitte versuchen Sie es später erneut."}
       </span>
       <Button
         variant="ghost"

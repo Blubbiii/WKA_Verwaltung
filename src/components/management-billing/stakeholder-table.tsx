@@ -90,7 +90,7 @@ export function StakeholderTable({
       <EmptyState
         icon={Users}
         title="Keine Beteiligten vorhanden"
-        description="Es wurden noch keine Beteiligten fuer die Verwaltungsabrechnung angelegt."
+        description="Es wurden noch keine Beteiligten für die Verwaltungsabrechnung angelegt."
       />
     );
   }
@@ -102,7 +102,7 @@ export function StakeholderTable({
           <TableHead>Dienstleister</TableHead>
           <TableHead>Park</TableHead>
           <TableHead>Rolle</TableHead>
-          <TableHead className="text-right">Gebuehr %</TableHead>
+          <TableHead className="text-right">Gebühr %</TableHead>
           <TableHead>Abrechnung</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="w-[60px]">

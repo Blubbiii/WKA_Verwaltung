@@ -22,7 +22,7 @@ export async function GET(
 
     const { id } = await params;
 
-    // Pruefen ob Gesellschaft existiert und zum Mandanten gehoert
+    // Prüfen ob Gesellschaft existiert und zum Mandanten gehoert
     const fund = await prisma.fund.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true },
@@ -130,7 +130,7 @@ export async function POST(
       );
     }
 
-    // Pruefen ob alle Gesellschafter eine gueltige Beteiligungsquote haben
+    // Prüfen ob alle Gesellschafter eine gültige Beteiligungsquote haben
     const totalPercentage = fund.shareholders.reduce(
       (sum, s) => sum + (Number(s.distributionPercentage) || Number(s.ownershipPercentage) || 0),
       0
@@ -170,7 +170,7 @@ export async function POST(
         },
       });
 
-      // Items fuer jeden Gesellschafter erstellen
+      // Items für jeden Gesellschafter erstellen
       const items = fund.shareholders.map((shareholder) => {
         // Verwende distributionPercentage falls vorhanden, sonst ownershipPercentage
         const percentage = Number(shareholder.distributionPercentage) ||

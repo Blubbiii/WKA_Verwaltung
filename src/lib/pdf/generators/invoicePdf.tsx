@@ -107,7 +107,7 @@ function buildCompanyInfoFromFund(fund: {
 }
 
 /**
- * Generiert ein PDF fuer eine Rechnung
+ * Generiert ein PDF für eine Rechnung
  * @param invoiceId - ID der Rechnung
  * @param options - Optionale Konfiguration (Wasserzeichen, Vorschau, etc.)
  */
@@ -136,7 +136,7 @@ export async function generateInvoicePdf(
     throw new Error("Rechnung nicht gefunden");
   }
 
-  // Tenant-Einstellungen fuer konfigurierbare Texte laden
+  // Tenant-Einstellungen für konfigurierbare Texte laden
   const tenantData = await prisma.tenant.findUnique({
     where: { id: invoice.tenantId },
     select: { settings: true },
@@ -163,7 +163,7 @@ export async function generateInvoicePdf(
     ? (letterhead.companyInfo as unknown as LetterheadCompanyInfo)
     : fundCompanyInfo;
 
-  // Daten fuer PDF aufbereiten
+  // Daten für PDF aufbereiten
   const pdfData: InvoicePdfData = {
     invoiceNumber: invoice.invoiceNumber || "",
     invoiceType: (invoice.invoiceType as "INVOICE" | "CREDIT_NOTE") || "INVOICE",
@@ -196,8 +196,8 @@ export async function generateInvoicePdf(
     // Zahlungstext basierend auf Rechnungstyp aus Tenant-Einstellungen
     paymentText: (() => {
       const isCredit = invoice.invoiceType === "CREDIT_NOTE";
-      const defaultInvoiceText = "Bitte ueberweisen Sie den Betrag bis zum {dueDate} auf das unten angegebene Konto. Geben Sie als Verwendungszweck bitte die Rechnungsnummer {invoiceNumber} an.";
-      const defaultCreditText = "Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto ueberwiesen. Referenz: Gutschriftsnummer {invoiceNumber}.";
+      const defaultInvoiceText = "Bitte überweisen Sie den Betrag bis zum {dueDate} auf das unten angegebene Konto. Geben Sie als Verwendungszweck bitte die Rechnungsnummer {invoiceNumber} an.";
+      const defaultCreditText = "Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto überwiesen. Referenz: Gutschriftsnummer {invoiceNumber}.";
 
       const textTemplate = isCredit
         ? (tenantSettings.creditNotePaymentText as string) || defaultCreditText
@@ -223,7 +223,7 @@ export async function generateInvoicePdf(
           bic: invoice.tenant.bic ?? null,
         }
       : undefined,
-    // Settlement-Details fuer detaillierte Gutschrift-PDFs
+    // Settlement-Details für detaillierte Gutschrift-PDFs
     settlementDetails: invoice.calculationDetails
       ? (invoice.calculationDetails as unknown as SettlementPdfDetails)
       : undefined,
@@ -232,7 +232,7 @@ export async function generateInvoicePdf(
   // Wasserzeichen-Konfiguration bestimmen
   let watermarkConfig: WatermarkProps | undefined;
 
-  // Pruefen ob Wasserzeichen angezeigt werden soll
+  // Prüfen ob Wasserzeichen angezeigt werden soll
   const watermarkResult = shouldShowWatermark(pdfData.status, {
     watermarkType: options.watermark,
     isPreview: options.isPreview,
@@ -262,7 +262,7 @@ export async function generateInvoicePdf(
 }
 
 /**
- * Generiert ein PDF als Base64-String (fuer Vorschau)
+ * Generiert ein PDF als Base64-String (für Vorschau)
  * @param invoiceId - ID der Rechnung
  * @param options - Optionale Konfiguration (Wasserzeichen, Vorschau, etc.)
  */

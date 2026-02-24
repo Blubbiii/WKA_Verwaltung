@@ -180,13 +180,13 @@ export function StorageOverview() {
           {data.isOverLimit && (
             <div className="flex items-center gap-2 text-sm text-red-600">
               <AlertTriangle className="h-4 w-4" />
-              <span>Speicherlimit ueberschritten! Neue Uploads sind blockiert.</span>
+              <span>Speicherlimit überschritten! Neue Uploads sind blockiert.</span>
             </div>
           )}
           {data.isNearLimit && !data.isOverLimit && (
             <div className="flex items-center gap-2 text-sm text-yellow-600">
               <AlertTriangle className="h-4 w-4" />
-              <span>Speicher fast voll. Bitte nicht benoetigte Dateien loeschen.</span>
+              <span>Speicher fast voll. Bitte nicht benötigte Dateien löschen.</span>
             </div>
           )}
         </div>

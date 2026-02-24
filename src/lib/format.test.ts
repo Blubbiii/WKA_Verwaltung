@@ -42,15 +42,15 @@ describe("formatCurrency", () => {
     expect(result).toMatch(/1\.234,56/);
   });
 
-  it('gibt "-" zurueck fuer null', () => {
+  it('gibt "-" zurück für null', () => {
     expect(formatCurrency(null)).toBe("-");
   });
 
-  it('gibt "-" zurueck fuer undefined', () => {
+  it('gibt "-" zurück für undefined', () => {
     expect(formatCurrency(undefined)).toBe("-");
   });
 
-  it('gibt "-" zurueck fuer nicht-numerische Strings', () => {
+  it('gibt "-" zurück für nicht-numerische Strings', () => {
     expect(formatCurrency("abc")).toBe("-");
     expect(formatCurrency("")).toBe("-");
   });
@@ -91,15 +91,15 @@ describe("formatCurrencyCompact", () => {
     expect(result).toMatch(/1,2/);
   });
 
-  it('gibt "-" zurueck fuer null', () => {
+  it('gibt "-" zurück für null', () => {
     expect(formatCurrencyCompact(null)).toBe("-");
   });
 
-  it('gibt "-" zurueck fuer undefined', () => {
+  it('gibt "-" zurück für undefined', () => {
     expect(formatCurrencyCompact(undefined)).toBe("-");
   });
 
-  it('gibt "-" zurueck fuer nicht-numerische Strings', () => {
+  it('gibt "-" zurück für nicht-numerische Strings', () => {
     expect(formatCurrencyCompact("xyz")).toBe("-");
   });
 

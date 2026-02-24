@@ -115,7 +115,7 @@ export async function getNextInvoiceNumber(
 
 /**
  * Holt mehrere Rechnungsnummern auf einmal atomar (mit Locking)
- * Vermeidet N+1 Queries wenn viele Nummern in einer Schleife benoetigt werden.
+ * Vermeidet N+1 Queries wenn viele Nummern in einer Schleife benötigt werden.
  * Inkrementiert den Zaehler einmal um `count` statt N einzelne Inkrements.
  */
 export async function getNextInvoiceNumbers(
@@ -153,7 +153,7 @@ export async function getNextInvoiceNumbers(
       });
     }
 
-    // Jahr zuruecksetzen wenn noetig
+    // Jahr zurücksetzen wenn noetig
     if (sequence.currentYear !== currentYear) {
       sequence = await tx.invoiceNumberSequence.update({
         where: { id: sequence.id },

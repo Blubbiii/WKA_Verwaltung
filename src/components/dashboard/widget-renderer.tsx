@@ -12,7 +12,7 @@ import {
   Vote,
 } from "lucide-react";
 import { WidgetWrapper } from "./widget-wrapper";
-import { KPICard } from "./kpi-card";
+import { KPICard, KPI_ACCENT_COLORS, KPI_ICON_COLORS } from "./kpi-card";
 import {
   MonthlyInvoicesChart,
   CapitalDevelopmentChart,
@@ -52,20 +52,29 @@ const WIDGET_TITLES: Record<string, string> = {
   "kpi-shareholders": "Gesellschafter",
   "kpi-fund-capital": "Gesellschaftskapital",
   "kpi-open-invoices": "Offene Rechnungen",
-  "kpi-contracts": "Vertraege",
+  "kpi-contracts": "Verträge",
   "kpi-documents": "Dokumente",
   "kpi-votes": "Abstimmungen",
   "chart-monthly-invoices": "Rechnungen pro Monat",
   "chart-capital-development": "Kapitalentwicklung",
   "chart-documents-by-type": "Dokumente nach Typ",
-  "list-expiring-contracts": "Auslaufende Vertraege",
+  "list-expiring-contracts": "Auslaufende Verträge",
   "list-deadlines": "Anstehende Fristen",
-  "list-activities": "Letzte Aktivitaeten",
+  "list-activities": "Letzte Aktivitäten",
   "list-pending-actions": "Handlungsbedarf",
   "weather-widget": "Wetter",
   "quick-actions": "Schnellzugriff",
   "admin-system-status": "System-Status",
   "admin-user-stats": "Benutzer-Statistiken",
+  // Energy widgets (planned)
+  "kpi-energy-yield": "Energieertrag",
+  "kpi-availability": "Verfügbarkeit",
+  "kpi-wind-speed": "Windgeschwindigkeit",
+  "kpi-lease-revenue": "Pachteinnahmen",
+  "chart-turbine-status": "Turbinen-Status",
+  "chart-production-forecast": "Produktion vs. Prognose",
+  "chart-revenue-by-park": "Erlöse nach Park",
+  "list-lease-overview": "Pachtübersicht",
 };
 
 // =============================================================================
@@ -104,6 +113,8 @@ export function WidgetRenderer({
           icon={Building2}
           description={kpis ? `${kpis.totalParks} total` : undefined}
           isLoading={isLoading}
+          accentColor={KPI_ACCENT_COLORS[widgetId]}
+          iconColor={KPI_ICON_COLORS[widgetId]}
         />
       );
     }
@@ -123,6 +134,8 @@ export function WidgetRenderer({
           }
           isLoading={isLoading}
           isAlert={kpis ? kpis.turbinesInMaintenance > 0 : false}
+          accentColor={KPI_ACCENT_COLORS[widgetId]}
+          iconColor={KPI_ICON_COLORS[widgetId]}
         />
       );
     }
@@ -136,6 +149,8 @@ export function WidgetRenderer({
           trend={kpis?.trends.shareholders}
           trendLabel="vs. Vormonat"
           isLoading={isLoading}
+          accentColor={KPI_ACCENT_COLORS[widgetId]}
+          iconColor={KPI_ICON_COLORS[widgetId]}
         />
       );
     }
@@ -149,6 +164,8 @@ export function WidgetRenderer({
           trend={kpis?.trends.revenue}
           trendLabel="Einnahmen vs. Vormonat"
           isLoading={isLoading}
+          accentColor={KPI_ACCENT_COLORS[widgetId]}
+          iconColor={KPI_ICON_COLORS[widgetId]}
         />
       );
     }
@@ -162,6 +179,8 @@ export function WidgetRenderer({
           description={kpis ? `${kpis.openInvoicesCount} ausstehend` : undefined}
           isLoading={isLoading}
           isAlert={kpis ? kpis.openInvoicesCount > 10 : false}
+          accentColor={KPI_ACCENT_COLORS[widgetId]}
+          iconColor={KPI_ICON_COLORS[widgetId]}
         />
       );
     }
@@ -169,7 +188,7 @@ export function WidgetRenderer({
     if (widgetId === "kpi-contracts") {
       return (
         <KPICard
-          title="Vertraege"
+          title="Verträge"
           value={
             kpis
               ? kpis.expiringContractsCount > 0
@@ -179,15 +198,17 @@ export function WidgetRenderer({
           }
           icon={FileWarning}
           description={
-            kpis ? `${kpis.activeContractsCount} aktive Vertraege` : undefined
+            kpis ? `${kpis.activeContractsCount} aktive Verträge` : undefined
           }
           isLoading={isLoading}
           isAlert={kpis ? kpis.expiringContractsCount > 0 : false}
           trendLabel={
             kpis && kpis.expiringContractsCount > 0
-              ? "Naechste 30 Tage"
+              ? "Nächste 30 Tage"
               : undefined
           }
+          accentColor={KPI_ACCENT_COLORS[widgetId]}
+          iconColor={KPI_ICON_COLORS[widgetId]}
         />
       );
     }
@@ -201,6 +222,8 @@ export function WidgetRenderer({
           description={kpis ? `+${kpis.documentsThisMonth} diesen Monat` : undefined}
           trend={kpis?.trends.documents}
           isLoading={isLoading}
+          accentColor={KPI_ACCENT_COLORS[widgetId]}
+          iconColor={KPI_ICON_COLORS[widgetId]}
         />
       );
     }
@@ -220,6 +243,8 @@ export function WidgetRenderer({
           }
           isLoading={isLoading}
           isAlert={kpis ? kpis.pendingVotersCount > 5 : false}
+          accentColor={KPI_ACCENT_COLORS[widgetId]}
+          iconColor={KPI_ICON_COLORS[widgetId]}
         />
       );
     }

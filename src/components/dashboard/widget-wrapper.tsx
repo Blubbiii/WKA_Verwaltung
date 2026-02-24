@@ -118,7 +118,7 @@ export function WidgetWrapper({
               {isEditing && (
                 <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground cursor-grab active:cursor-grabbing" />
               )}
-              <CardTitle className="text-sm font-medium truncate">{title}</CardTitle>
+              <CardTitle className="uppercase tracking-wider text-[11px] font-semibold text-muted-foreground truncate">{title}</CardTitle>
             </div>
             {isEditing && onRemove && (
               <Button
@@ -172,7 +172,7 @@ export function WidgetSkeleton({ className }: { className?: string }) {
 // =============================================================================
 
 export function EmptyWidgetState({
-  message = "Keine Daten verfuegbar",
+  message = "Keine Daten verfügbar",
   className,
 }: {
   message?: string;

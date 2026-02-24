@@ -143,14 +143,14 @@ export function KeyboardProvider({ children }: KeyboardProviderProps) {
       {
         prefix: "g",
         key: "c",
-        label: "Zu Vertraegen",
+        label: "Zu Verträgen",
         group: "Navigation",
         action: () => router.push("/contracts"),
       },
       {
         prefix: "g",
         key: "l",
-        label: "Zu Pachtvertraegen",
+        label: "Zu Pachtverträgen",
         group: "Navigation",
         action: () => router.push("/leases"),
       },

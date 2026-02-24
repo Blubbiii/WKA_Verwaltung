@@ -247,7 +247,7 @@ export default function EnergyOverviewPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Energie - Uebersicht"
+        title="Energie - Übersicht"
         description="Zusammenfassung aller Energie-Daten und -Abrechnungen"
       />
 
@@ -258,7 +258,7 @@ export default function EnergyOverviewPage() {
         <Card>
           <CardContent className="py-8">
             <p className="text-center text-destructive">
-              Fehler beim Laden der Uebersichtsdaten. Bitte versuchen Sie es
+              Fehler beim Laden der Übersichtsdaten. Bitte versuchen Sie es
               erneut.
             </p>
           </CardContent>
@@ -272,10 +272,10 @@ export default function EnergyOverviewPage() {
             description={`Produktionsdaten ${currentYear}`}
           />
           <KPICard
-            title="Netzbetreiber-Erloes"
+            title="Netzbetreiber-Erlös"
             value={formatCurrency(data?.totalRevenueEur ?? 0)}
             icon={TrendingUp}
-            description={`Netzbetreiber-Erloese ${currentYear}`}
+            description={`Netzbetreiber-Erlöse ${currentYear}`}
           />
           <KPICard
             title="Offene Abrechnungen"
@@ -450,7 +450,7 @@ export default function EnergyOverviewPage() {
                     <TableRow>
                       <TableHead>Park</TableHead>
                       <TableHead>Zeitraum</TableHead>
-                      <TableHead className="text-right">Erloes</TableHead>
+                      <TableHead className="text-right">Erlös</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>

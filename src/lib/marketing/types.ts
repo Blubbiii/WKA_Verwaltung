@@ -39,7 +39,7 @@ export const marketingConfigSchema = z.object({
 
 export const legalPageSchema = z.object({
   impressum: z.string().max(50000, "Impressum darf maximal 50.000 Zeichen haben"),
-  datenschutz: z.string().max(100000, "Datenschutzerklaerung darf maximal 100.000 Zeichen haben"),
+  datenschutz: z.string().max(100000, "Datenschutzerklärung darf maximal 100.000 Zeichen haben"),
 });
 
 // =============================================================================

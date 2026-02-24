@@ -22,7 +22,7 @@ interface MaintenanceStatus {
 }
 
 const DEFAULT_MESSAGE =
-  "Das System befindet sich im Wartungsmodus. Bitte versuchen Sie es spaeter erneut.";
+  "Das System befindet sich im Wartungsmodus. Bitte versuchen Sie es später erneut.";
 
 export function MaintenanceModeTab() {
   const [status, setStatus] = useState<MaintenanceStatus>({
@@ -205,7 +205,7 @@ export function MaintenanceModeTab() {
             Vorschau
           </CardTitle>
           <CardDescription>
-            So sieht das Wartungsbanner fuer die Benutzer aus
+            So sieht das Wartungsbanner für die Benutzer aus
           </CardDescription>
         </CardHeader>
         <CardContent>

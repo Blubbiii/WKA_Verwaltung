@@ -189,12 +189,12 @@ export const CONFIG_KEYS = {
     label: "Wartungsmodus Nachricht",
     encrypted: false,
     envFallback: "MAINTENANCE_MESSAGE",
-    defaultValue: "Das System wird gewartet. Bitte versuchen Sie es spaeter erneut.",
+    defaultValue: "Das System wird gewartet. Bitte versuchen Sie es später erneut.",
   },
   // Feature Flags
   "management-billing.enabled": {
     category: "features" as ConfigCategory,
-    label: "Betriebsfuehrung aktiviert",
+    label: "Betriebsführung aktiviert",
     encrypted: false,
     envFallback: "MANAGEMENT_BILLING_ENABLED",
     defaultValue: "false",

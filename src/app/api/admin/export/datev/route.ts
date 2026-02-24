@@ -65,7 +65,7 @@ async function getHandler(request: NextRequest) {
     if (!parseResult.success) {
       return NextResponse.json(
         {
-          error: "Ungueltige Parameter",
+          error: "Ungültige Parameter",
           details: parseResult.error.errors,
         },
         { status: 400 }
@@ -270,7 +270,7 @@ async function getHandler(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Ungueltige Parameter", details: error.errors },
+        { error: "Ungültige Parameter", details: error.errors },
         { status: 400 }
       );
     }

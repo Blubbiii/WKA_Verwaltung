@@ -14,7 +14,7 @@ export function PricingSection({ pricingConfig }: PricingSectionProps) {
             Transparente Preise
           </h2>
           <p className="max-w-2xl text-muted-foreground md:text-lg">
-            Skalierbar fuer jede Parkgroesse. Keine versteckten Kosten, keine langen Vertragslaufzeiten.
+            Skalierbar für jede Parkgröße. Keine versteckten Kosten, keine langen Vertragslaufzeiten.
           </p>
         </div>
 

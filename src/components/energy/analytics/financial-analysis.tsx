@@ -213,10 +213,10 @@ export function FinancialAnalysis({
   const kpis = useMemo(
     () => [
       {
-        title: "Gesamterloese",
+        title: "Gesamterlöse",
         value: eurFmt.format(summary.totalRevenueEur),
         icon: Euro,
-        description: "Netzbetreiber-Erloese (netto)",
+        description: "Netzbetreiber-Erlöse (netto)",
       },
       {
         title: "Gesamtproduktion",
@@ -225,10 +225,10 @@ export function FinancialAnalysis({
         description: "Abgerechnete Produktion",
       },
       {
-        title: "Durchschnittserloes",
+        title: "Durchschnittserlös",
         value: formatCtKwh(summary.avgRevenuePerKwh),
         icon: TrendingUp,
-        description: "Mittlerer Erloes pro kWh",
+        description: "Mittlerer Erlös pro kWh",
       },
       {
         title: "Geschaetzter Verlust",
@@ -261,7 +261,7 @@ export function FinancialAnalysis({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Monatliche Erloese
+              Monatliche Erlöse
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -287,7 +287,7 @@ export function FinancialAnalysis({
                 <Tooltip content={<RevenueTooltip />} />
                 <Bar
                   dataKey="revenueEur"
-                  name="Erloese"
+                  name="Erlöse"
                   fill="#22c55e"
                   radius={[4, 4, 0, 0]}
                 />
@@ -345,7 +345,7 @@ export function FinancialAnalysis({
                   yAxisId="ct"
                   type="monotone"
                   dataKey="ctPerKwh"
-                  name="Erloes (ct/kWh)"
+                  name="Erlös (ct/kWh)"
                   stroke="#f59e0b"
                   strokeWidth={2}
                   dot={{ r: 3, fill: "#f59e0b" }}
@@ -362,7 +362,7 @@ export function FinancialAnalysis({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Erloese pro kWh Trend
+              Erlöse pro kWh Trend
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -389,7 +389,7 @@ export function FinancialAnalysis({
                 <Line
                   type="monotone"
                   dataKey="ctPerKwh"
-                  name="Erloes"
+                  name="Erlös"
                   stroke="#f59e0b"
                   strokeWidth={2}
                   dot={{ r: 4, fill: "#f59e0b" }}
@@ -405,7 +405,7 @@ export function FinancialAnalysis({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">
-            Geschaetzter Produktionsverlust (Stoerungen)
+            Geschaetzter Produktionsverlust (Störungen)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -420,7 +420,7 @@ export function FinancialAnalysis({
             </div>
             <div className="rounded-lg border p-4">
               <p className="text-sm text-muted-foreground">
-                Geschaetzter Erloesausfall
+                Geschaetzter Erlösausfall
               </p>
               <p className="text-xl font-bold mt-1">
                 {eurFmt.format(lostRevenue.estimatedLostEur)}
@@ -428,7 +428,7 @@ export function FinancialAnalysis({
             </div>
             <div className="rounded-lg border p-4">
               <p className="text-sm text-muted-foreground">
-                Durchschnittl. Erloes/kWh
+                Durchschnittl. Erlös/kWh
               </p>
               <p className="text-xl font-bold mt-1">
                 {formatCtKwh(lostRevenue.avgRevenuePerKwh)}

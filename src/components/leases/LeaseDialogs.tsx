@@ -165,7 +165,7 @@ const statusColors: Record<string, string> = {
 const statusLabels: Record<string, string> = {
   DRAFT: "Entwurf",
   ACTIVE: "Aktiv",
-  EXPIRING: "Laeuft aus",
+  EXPIRING: "Läuft aus",
   EXPIRED: "Abgelaufen",
   TERMINATED: "Gekuendigt",
 };
@@ -179,7 +179,7 @@ const areaTypeLabels: Record<string, string> = {
 };
 
 const compensationTypeLabels: Record<string, string> = {
-  ANNUAL: "Jaehrlich",
+  ANNUAL: "Jährlich",
   ONE_TIME: "Einmalig",
 };
 
@@ -324,7 +324,7 @@ function LeaseDetailDialog({
         throw new Error(error.error || "Fehler beim Erstellen");
       }
 
-      toast.success("Teilflaeche hinzugefuegt");
+      toast.success("Teilflaeche hinzugefügt");
       setIsAddingArea(false);
       setEditingPlotId(null);
       setNewArea({
@@ -354,15 +354,15 @@ function LeaseDetailDialog({
       });
 
       if (!response.ok) {
-        throw new Error("Fehler beim Loeschen");
+        throw new Error("Fehler beim Löschen");
       }
 
-      toast.success("Teilflaeche geloescht");
+      toast.success("Teilflaeche gelöscht");
       setDeleteAreaId(null);
       fetchLeaseDetail();
       onSuccess?.();
     } catch {
-      toast.error("Fehler beim Loeschen der Teilflaeche");
+      toast.error("Fehler beim Löschen der Teilflaeche");
     }
   }
 
@@ -409,7 +409,7 @@ function LeaseDetailDialog({
                     <AlertTriangle className="h-5 w-5 text-yellow-600" />
                     <div>
                       <p className="font-medium text-yellow-800 text-sm">
-                        Vertrag laeuft in {daysUntilEnd} Tagen aus
+                        Vertrag läuft in {daysUntilEnd} Tagen aus
                       </p>
                     </div>
                   </div>
@@ -560,7 +560,7 @@ function LeaseDetailDialog({
                             ? "Einmalig"
                             : leaseDetail.waitingMoneySchedule === "monthly"
                               ? "Monatlich"
-                              : "Jaehrlich"}
+                              : "Jährlich"}
                         </p>
                       </div>
                     </div>
@@ -740,7 +740,7 @@ function LeaseDetailDialog({
                           {editingPlotId === plot.id && isAddingArea && (
                             <div className="mt-4 p-4 border rounded-lg bg-muted/30 space-y-4">
                               <h5 className="font-medium text-sm">
-                                Neue Teilflaeche hinzufuegen
+                                Neue Teilflaeche hinzufügen
                               </h5>
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -806,7 +806,7 @@ function LeaseDetailDialog({
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="ANNUAL">
-                                        Jaehrlich
+                                        Jährlich
                                       </SelectItem>
                                       <SelectItem value="ONE_TIME">
                                         Einmalig
@@ -837,7 +837,7 @@ function LeaseDetailDialog({
                                   disabled={savingArea}
                                 >
                                   <Check className="h-4 w-4 mr-1" />
-                                  {savingArea ? "Speichern..." : "Hinzufuegen"}
+                                  {savingArea ? "Speichern..." : "Hinzufügen"}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -875,7 +875,7 @@ function LeaseDetailDialog({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Teilflaeche loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>Teilflaeche löschen?</AlertDialogTitle>
             <AlertDialogDescription>
               Diese Aktion kann nicht rueckgaengig gemacht werden.
             </AlertDialogDescription>
@@ -891,7 +891,7 @@ function LeaseDetailDialog({
                 }
               }}
             >
-              Loeschen
+              Löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -106,7 +106,7 @@ export function ExpiringContractsWidget() {
 
       const data = await response.json();
 
-      // Transformiere und filtere Vertraege
+      // Transformiere und filtere Verträge
       const expiring = data.data
         .filter((c: { endDate: string | null }) => c.endDate)
         .map((c: {
@@ -235,10 +235,10 @@ export function ExpiringContractsWidget() {
         <div>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Auslaufende Vertraege
+            Auslaufende Verträge
           </CardTitle>
           <CardDescription>
-            Vertraege die in den naechsten 90 Tagen auslaufen
+            Verträge die in den nächsten 90 Tagen auslaufen
           </CardDescription>
         </div>
         <Button
@@ -268,9 +268,9 @@ export function ExpiringContractsWidget() {
         ) : totalCount === 0 ? (
           <div className="py-8 text-center">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-            <p className="text-lg font-medium">Keine auslaufenden Vertraege</p>
+            <p className="text-lg font-medium">Keine auslaufenden Verträge</p>
             <p className="text-sm text-muted-foreground mt-1">
-              In den naechsten 90 Tagen laufen keine Vertraege aus.
+              In den nächsten 90 Tagen laufen keine Verträge aus.
             </p>
           </div>
         ) : (
@@ -311,7 +311,7 @@ export function ExpiringContractsWidget() {
       <CardFooter className="border-t pt-4">
         <Button variant="outline" className="w-full" asChild>
           <Link href="/contracts?status=ACTIVE">
-            Alle Vertraege anzeigen
+            Alle Verträge anzeigen
             <ChevronRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>

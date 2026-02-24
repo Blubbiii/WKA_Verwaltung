@@ -110,7 +110,7 @@ const categoryConfig: Record<string, { label: string; color: string }> = {
 
 const approvalStatusConfig: Record<string, { label: string; color: string }> = {
   DRAFT: { label: "Entwurf", color: "bg-gray-100 text-gray-800" },
-  PENDING_REVIEW: { label: "In Pruefung", color: "bg-amber-100 text-amber-800" },
+  PENDING_REVIEW: { label: "In Prüfung", color: "bg-amber-100 text-amber-800" },
   APPROVED: { label: "Genehmigt", color: "bg-blue-100 text-blue-800" },
   PUBLISHED: { label: "Veroeffentlicht", color: "bg-green-100 text-green-800" },
   REJECTED: { label: "Abgelehnt", color: "bg-red-100 text-red-800" },
@@ -199,16 +199,16 @@ export default function DocumentDetailPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Fehler bei der Statusaenderung");
+        toast.error(data.error || "Fehler bei der Statusänderung");
         return;
       }
 
-      toast.success(data.message || "Status erfolgreich geaendert");
+      toast.success(data.message || "Status erfolgreich geändert");
 
       // Refresh document data
       await fetchDocument();
     } catch {
-      toast.error("Fehler bei der Statusaenderung");
+      toast.error("Fehler bei der Statusänderung");
     } finally {
       setApprovalLoading(false);
       setRejectDialogOpen(false);
@@ -237,7 +237,7 @@ export default function DocumentDetailPage() {
         <Button variant="ghost" asChild>
           <Link href="/documents">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurueck
+            Zurück
           </Link>
         </Button>
         <Card>
@@ -299,7 +299,7 @@ export default function DocumentDetailPage() {
               ) : (
                 <SendHorizontal className="mr-2 h-4 w-4" />
               )}
-              Zur Pruefung einreichen
+              Zur Prüfung einreichen
             </Button>
           )}
           {document.approvalStatus === "PENDING_REVIEW" && (
@@ -351,7 +351,7 @@ export default function DocumentDetailPage() {
               ) : (
                 <RotateCcw className="mr-2 h-4 w-4" />
               )}
-              Ueberarbeiten
+              Überarbeiten
             </Button>
           )}
 
@@ -426,7 +426,7 @@ export default function DocumentDetailPage() {
                 Versionshistorie
               </CardTitle>
               <CardDescription>
-                {document.versions.length} Version(en) verfuegbar
+                {document.versions.length} Version(en) verfügbar
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -435,7 +435,7 @@ export default function DocumentDetailPage() {
                   <TableRow>
                     <TableHead>Version</TableHead>
                     <TableHead>Dateiname</TableHead>
-                    <TableHead>Groesse</TableHead>
+                    <TableHead>Größe</TableHead>
                     <TableHead>Hochgeladen</TableHead>
                     <TableHead>Von</TableHead>
                     <TableHead></TableHead>
@@ -506,13 +506,13 @@ export default function DocumentDetailPage() {
               </div>
               {document.reviewedBy && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Geprueft von</p>
+                  <p className="text-sm text-muted-foreground">Geprüft von</p>
                   <p className="font-medium">{document.reviewedBy.name}</p>
                 </div>
               )}
               {document.reviewedAt && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Geprueft am</p>
+                  <p className="text-sm text-muted-foreground">Geprüft am</p>
                   <p className="font-medium">
                     {format(new Date(document.reviewedAt), "dd.MM.yyyy HH:mm", {
                       locale: de,
@@ -550,7 +550,7 @@ export default function DocumentDetailPage() {
                 <p className="font-medium">{document.mimeType || "Unbekannt"}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Dateigroesse</p>
+                <p className="text-sm text-muted-foreground">Dateigröße</p>
                 <p className="font-medium">{formatFileSize(document.fileSizeBytes)}</p>
               </div>
               <div>
@@ -571,7 +571,7 @@ export default function DocumentDetailPage() {
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Zuletzt geaendert</p>
+                <p className="text-sm text-muted-foreground">Zuletzt geändert</p>
                 <p className="font-medium">
                   {format(new Date(document.updatedAt), "dd.MM.yyyy HH:mm", {
                     locale: de,
@@ -690,8 +690,8 @@ export default function DocumentDetailPage() {
         open={archiveDialogOpen}
         onOpenChange={setArchiveDialogOpen}
         onConfirm={handleConfirmArchive}
-        title="Archivieren bestaetigen"
-        description="Moechten Sie dieses Dokument wirklich archivieren?"
+        title="Archivieren bestätigen"
+        description="Möchten Sie dieses Dokument wirklich archivieren?"
       />
 
       {/* Reject Dialog */}
@@ -700,14 +700,14 @@ export default function DocumentDetailPage() {
           <DialogHeader>
             <DialogTitle>Dokument ablehnen</DialogTitle>
             <DialogDescription>
-              Bitte geben Sie einen Grund fuer die Ablehnung an. Der Ersteller wird benachrichtigt.
+              Bitte geben Sie einen Grund für die Ablehnung an. Der Ersteller wird benachrichtigt.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Label htmlFor="reject-notes">Ablehnungsgrund</Label>
             <Textarea
               id="reject-notes"
-              placeholder="Grund fuer die Ablehnung..."
+              placeholder="Grund für die Ablehnung..."
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
               className="mt-2"

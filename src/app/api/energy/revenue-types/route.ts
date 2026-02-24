@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 
-// GET /api/energy/revenue-types - Alle Verguetungsarten
+// GET /api/energy/revenue-types - Alle Vergütungsarten
 export async function GET() {
   try {
     const check = await requirePermission("energy:read");
@@ -30,7 +30,7 @@ export async function GET() {
   } catch (error) {
     logger.error({ err: error }, "Error fetching revenue types");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Verguetungsarten" },
+      { error: "Fehler beim Laden der Vergütungsarten" },
       { status: 500 }
     );
   }

@@ -356,7 +356,7 @@ export default function SettlementsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Netzbetreiber-Erloes
+              Netzbetreiber-Erlös
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -369,7 +369,7 @@ export default function SettlementsPage() {
                   {formatCurrency(stats.totalRevenueEur)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Netzbetreiber-Erloese{" "}
+                  Netzbetreiber-Erlöse{" "}
                   {selectedYear !== "all" ? selectedYear : "gesamt"}
                 </p>
               </>
@@ -528,7 +528,7 @@ export default function SettlementsPage() {
                     onClick={() => handleSort("revenue")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Netzbetreiber-Erloes
+                      Netzbetreiber-Erlös
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -801,7 +801,7 @@ export default function SettlementsPage() {
                   currentPage * (pagination.limit || ITEMS_PER_PAGE),
                   pagination.total
                 )}{" "}
-                von {pagination.total} Eintraegen
+                von {pagination.total} Einträgen
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -821,7 +821,7 @@ export default function SettlementsPage() {
                   size="sm"
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
-                  aria-label="Naechste Seite"
+                  aria-label="Nächste Seite"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>

@@ -160,7 +160,7 @@ export function buildXRechnungDataFromInvoice(
 
   // Build customer party from recipient data
   const customer: XRechnungParty = {
-    name: invoice.recipientName || "Unbekannter Empfaenger",
+    name: invoice.recipientName || "Unbekannter Empfänger",
     street: recipientAddress.street,
     postalCode: recipientAddress.postalCode,
     city: recipientAddress.city,

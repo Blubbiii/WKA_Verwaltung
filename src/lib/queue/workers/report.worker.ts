@@ -1,9 +1,9 @@
 /**
  * Report Worker - Verarbeitet Jobs aus der "report" Queue
  *
- * Dieser Worker ist verantwortlich fuer:
- * - Taegliche Pruefung auf faellige geplante Berichte (06:00 Uhr)
- * - Ausfuehrung der Berichtsgenerierung via scheduled-report-service
+ * Dieser Worker ist verantwortlich für:
+ * - Taegliche Prüfung auf fällige geplante Berichte (06:00 Uhr)
+ * - Ausführung der Berichtsgenerierung via scheduled-report-service
  * - Archivierung und E-Mail-Benachrichtigung
  */
 

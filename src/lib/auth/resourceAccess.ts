@@ -295,7 +295,7 @@ export async function getResourceAccessList(
 
 /**
  * Holt alle Ressource-IDs auf die ein User Zugriff hat
- * Nuetzlich fuer Listen-Filterung
+ * Nützlich für Listen-Filterung
  *
  * @param userId - ID des Benutzers
  * @param resourceType - Typ der Ressource
@@ -330,7 +330,7 @@ export async function getAccessibleResourceIds(
 /**
  * Loescht alle abgelaufenen Zugriffe (Cleanup-Job)
  *
- * @returns Anzahl der geloeschten Eintraege
+ * @returns Anzahl der gelöschten Einträge
  */
 export async function cleanupExpiredAccess(): Promise<number> {
   const result = await prisma.resourceAccess.deleteMany({
@@ -369,7 +369,7 @@ export async function grantResourceAccessBulk(
 
 /**
  * Entzieht allen Usern den Zugriff auf eine Ressource
- * Nuetzlich wenn Ressource geloescht wird
+ * Nützlich wenn Ressource gelöscht wird
  */
 export async function revokeAllResourceAccess(
   resourceType: ResourceType | string,
@@ -390,7 +390,7 @@ export async function revokeAllResourceAccess(
 // ============================================================================
 
 /**
- * Kombinierte Pruefung: Hat User entweder ueber Rolle ODER direkt Zugriff?
+ * Kombinierte Prüfung: Hat User entweder über Rolle ODER direkt Zugriff?
  *
  * Logik:
  * 1. Wenn User globale Rolle mit passendem Permission hat -> Zugriff
@@ -398,10 +398,10 @@ export async function revokeAllResourceAccess(
  * 3. Wenn User direkten ResourceAccess hat -> Zugriff
  *
  * @param userId - ID des Benutzers
- * @param permission - Benoetigte Permission (z.B. "parks:read")
+ * @param permission - Benötigte Permission (z.B. "parks:read")
  * @param resourceType - Ressourcen-Typ
  * @param resourceId - ID der Ressource
- * @param minAccessLevel - Mindest-Level fuer direkten Zugriff
+ * @param minAccessLevel - Mindest-Level für direkten Zugriff
  */
 export async function hasAccessToResource(
   userId: string,

@@ -49,7 +49,7 @@ export default function DashboardError({
             </Button>
             <Button onClick={() => window.history.back()} variant="outline">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Zurueck
+              Zurück
             </Button>
             <Button onClick={() => window.location.href = "/dashboard"} variant="outline">
               <Home className="mr-2 h-4 w-4" />

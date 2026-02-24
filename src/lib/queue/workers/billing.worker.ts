@@ -1,12 +1,12 @@
 /**
  * Billing Worker - Verarbeitet Jobs aus der "billing" Queue
  *
- * Dieser Worker ist verantwortlich fuer Abrechnungsprozesse:
+ * Dieser Worker ist verantwortlich für Abrechnungsprozesse:
  * - Rechnungsgenerierung (aus Job-Daten oder BillingRule)
  * - Pachtabrechnungen (LeaseSettlementPeriod)
  * - Mahnwesen (Zahlungserinnerungen per E-Mail)
- * - Gebuehrenberechnung (Management Fees via BillingRule)
- * - Massenrechnungen (Bulk Invoicing fuer Gesellschafter)
+ * - Gebührenberechnung (Management Fees via BillingRule)
+ * - Massenrechnungen (Bulk Invoicing für Gesellschafter)
  *
  * Verwendet:
  *   - src/lib/billing/executor.ts (executeRule) for rule-based billing
@@ -37,19 +37,19 @@ export type BillingJobType =
   | "process-recurring-invoices";
 
 /**
- * Basis-Interface fuer alle Billing-Jobs
+ * Basis-Interface für alle Billing-Jobs
  */
 interface BaseBillingJobData {
-  /** Eindeutige Job-ID fuer Tracking */
+  /** Eindeutige Job-ID für Tracking */
   jobId: string;
   /** Typ des Billing-Jobs */
   type: BillingJobType;
-  /** Tenant-ID fuer Multi-Tenancy */
+  /** Tenant-ID für Multi-Tenancy */
   tenantId: string;
 }
 
 /**
- * Job-Daten fuer Rechnungsgenerierung
+ * Job-Daten für Rechnungsgenerierung
  */
 export interface GenerateInvoiceJobData extends BaseBillingJobData {
   type: "generate-invoice";
@@ -62,14 +62,14 @@ export interface GenerateInvoiceJobData extends BaseBillingJobData {
     unitPrice: number;
     taxRate: number;
   }>;
-  /** Faelligkeitsdatum (ISO-String) */
+  /** Fälligkeitsdatum (ISO-String) */
   dueDate?: string;
   /** Interne Referenz */
   reference?: string;
 }
 
 /**
- * Job-Daten fuer Settlement-Generierung
+ * Job-Daten für Settlement-Generierung
  */
 export interface GenerateSettlementJobData extends BaseBillingJobData {
   type: "generate-settlement";
@@ -82,7 +82,7 @@ export interface GenerateSettlementJobData extends BaseBillingJobData {
 }
 
 /**
- * Job-Daten fuer Zahlungserinnerungen
+ * Job-Daten für Zahlungserinnerungen
  */
 export interface SendReminderJobData extends BaseBillingJobData {
   type: "send-reminder";
@@ -93,7 +93,7 @@ export interface SendReminderJobData extends BaseBillingJobData {
 }
 
 /**
- * Job-Daten fuer Gebuehrenberechnung
+ * Job-Daten für Gebührenberechnung
  */
 export interface CalculateFeesJobData extends BaseBillingJobData {
   type: "calculate-fees";
@@ -106,7 +106,7 @@ export interface CalculateFeesJobData extends BaseBillingJobData {
 }
 
 /**
- * Job-Daten fuer Massenrechnungen
+ * Job-Daten für Massenrechnungen
  */
 export interface BulkInvoiceJobData extends BaseBillingJobData {
   type: "bulk-invoice";
@@ -114,7 +114,7 @@ export interface BulkInvoiceJobData extends BaseBillingJobData {
   parkId: string;
   /** Abrechnungsperiode */
   period: string;
-  /** Filter fuer Gesellschafter */
+  /** Filter für Gesellschafter */
   shareholderFilter?: {
     status?: string[];
     minimumShare?: number;
@@ -122,16 +122,16 @@ export interface BulkInvoiceJobData extends BaseBillingJobData {
 }
 
 /**
- * Job-Daten fuer wiederkehrende Rechnungen
+ * Job-Daten für wiederkehrende Rechnungen
  */
 export interface ProcessRecurringInvoicesJobData extends BaseBillingJobData {
   type: "process-recurring-invoices";
-  /** Optional: Nur fuer bestimmten Tenant ausfuehren (default: alle) */
+  /** Optional: Nur für bestimmten Tenant ausfuehren (default: alle) */
   targetTenantId?: string;
 }
 
 /**
- * Union-Typ fuer alle Billing-Job-Daten
+ * Union-Typ für alle Billing-Job-Daten
  */
 export type BillingJobData =
   | GenerateInvoiceJobData
@@ -379,7 +379,7 @@ async function processGenerateInvoice(data: GenerateInvoiceJobData): Promise<Bil
 }
 
 /**
- * Generiert eine Pachtabrechnung (Settlement Period) fuer einen Park.
+ * Generiert eine Pachtabrechnung (Settlement Period) für einen Park.
  *
  * 1. Loads park data and all associated leases/shareholders from Prisma
  * 2. Creates a LeaseSettlementPeriod record in the database
@@ -453,7 +453,7 @@ async function processGenerateSettlement(data: GenerateSettlementJobData): Promi
     });
     return {
       success: false,
-      error: `Abrechnungsperiode fuer Park "${park.name}" Jahr ${data.year} existiert bereits (ID: ${existingPeriod.id})`,
+      error: `Abrechnungsperiode für Park "${park.name}" Jahr ${data.year} existiert bereits (ID: ${existingPeriod.id})`,
       settlementIds: [existingPeriod.id],
       processedCount: 0,
       processedAt: new Date(),
@@ -529,7 +529,7 @@ async function processGenerateSettlement(data: GenerateSettlementJobData): Promi
 }
 
 /**
- * Sendet eine Zahlungserinnerung (Dunning) fuer eine ueberfaellige Rechnung.
+ * Sendet eine Zahlungserinnerung (Dunning) für eine überfällige Rechnung.
  *
  * 1. Loads invoice from database and verifies it is overdue
  * 2. Determines correct reminder level (1st, 2nd, 3rd notice)
@@ -637,7 +637,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
     });
     return {
       success: false,
-      error: `Rechnung ist noch nicht faellig (Faelligkeit: ${invoice.dueDate.toLocaleDateString("de-DE")})`,
+      error: `Rechnung ist noch nicht fällig (Fälligkeit: ${invoice.dueDate.toLocaleDateString("de-DE")})`,
       processedCount: 0,
       processedAt: new Date(),
     };
@@ -657,17 +657,17 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
 
   // Late fees based on reminder level
   if (data.reminderLevel === 2) {
-    lateFee = 5.0; // 5 EUR Mahngebuehr
+    lateFee = 5.0; // 5 EUR Mahngebühr
   } else if (data.reminderLevel === 3) {
-    lateFee = 10.0; // 10 EUR Mahngebuehr
+    lateFee = 10.0; // 10 EUR Mahngebühr
   }
 
   const reminderLabel = reminderLabels[data.reminderLevel] || `Mahnstufe ${data.reminderLevel}`;
 
   // 5. Update invoice notes with reminder history
   const reminderTimestamp = now.toLocaleString("de-DE");
-  const reminderNote = `\n[${reminderTimestamp}] ${reminderLabel} versendet (${daysOverdue} Tage ueberfaellig)${
-    lateFee > 0 ? ` - Mahngebuehr: ${lateFee.toFixed(2)} EUR` : ""
+  const reminderNote = `\n[${reminderTimestamp}] ${reminderLabel} versendet (${daysOverdue} Tage überfällig)${
+    lateFee > 0 ? ` - Mahngebühr: ${lateFee.toFixed(2)} EUR` : ""
   }`;
 
   const updatedNotes = (invoice.notes || "") + reminderNote;
@@ -714,7 +714,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
         template: "invoice-notification",
         data: {
           invoiceNumber: invoice.invoiceNumber,
-          recipientName: invoice.recipientName || "Empfaenger",
+          recipientName: invoice.recipientName || "Empfänger",
           grossAmount: Number(invoice.grossAmount),
           dueDate: invoice.dueDate?.toLocaleDateString("de-DE") || "n/a",
           daysOverdue,
@@ -783,7 +783,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
 }
 
 /**
- * Berechnet Verwaltungsgebuehren (Management Fees) basierend auf BillingRules.
+ * Berechnet Verwaltungsgebühren (Management Fees) basierend auf BillingRules.
  *
  * 1. Loads all active MANAGEMENT_FEE billing rules for the tenant and period
  * 2. Filters by entityIds if provided
@@ -834,7 +834,7 @@ async function processCalculateFees(data: CalculateFeesJobData): Promise<Billing
       details: {
         periodStart: data.periodStart,
         periodEnd: data.periodEnd,
-        message: "Keine aktiven Verwaltungsgebuehr-Regeln gefunden",
+        message: "Keine aktiven Verwaltungsgebühr-Regeln gefunden",
       },
       processedAt: new Date(),
     };
@@ -938,7 +938,7 @@ async function processCalculateFees(data: CalculateFeesJobData): Promise<Billing
     invoiceIds: allInvoiceIds,
     processedCount: totalProcessed,
     error: totalFailed > 0
-      ? `${totalFailed} von ${totalProcessed} Gebuehrenberechnungen fehlgeschlagen`
+      ? `${totalFailed} von ${totalProcessed} Gebührenberechnungen fehlgeschlagen`
       : undefined,
     details: {
       periodStart: data.periodStart,
@@ -954,7 +954,7 @@ async function processCalculateFees(data: CalculateFeesJobData): Promise<Billing
 }
 
 /**
- * Erstellt Massenrechnungen (Bulk Invoicing) fuer alle Gesellschafter eines Parks.
+ * Erstellt Massenrechnungen (Bulk Invoicing) für alle Gesellschafter eines Parks.
  *
  * 1. Loads all shareholders for the given park via FundPark -> Fund -> Shareholder
  * 2. Applies shareholderFilter (status, minimumShare) to filter recipients
@@ -1131,7 +1131,7 @@ async function processBulkInvoice(
       // based on the distribution percentage. The actual amount would normally
       // come from the settlement calculation, but for the bulk job we create
       // placeholder credit notes that can be finalized later.
-      // Using EXEMPT tax type for distributions (Kapitalertraege)
+      // Using EXEMPT tax type for distributions (Kapitalerträge)
       const netAmount = 0; // Will be filled when settlement is calculated
       const { taxRate, taxAmount, grossAmount } = calculateTaxAmounts(
         netAmount,
@@ -1152,7 +1152,7 @@ async function processBulkInvoice(
           taxAmount,
           grossAmount,
           status: "DRAFT",
-          notes: `Massenabrechnung fuer Periode ${data.period}, Park: ${park.name}, Gesellschaft: ${fundName}`,
+          notes: `Massenabrechnung für Periode ${data.period}, Park: ${park.name}, Gesellschaft: ${fundName}`,
           tenantId: data.tenantId,
           fundId,
           shareholderId: sh.id,
@@ -1243,7 +1243,7 @@ async function processBulkInvoice(
  * Verarbeitet wiederkehrende Rechnungen.
  *
  * Delegiert die eigentliche Verarbeitung an den recurring-invoice-service.
- * Dieser Job wird typischerweise stuendlich per BullMQ Repeat ausgefuehrt.
+ * Dieser Job wird typischerweise stuendlich per BullMQ Repeat ausgeführt.
  */
 async function processRecurringInvoicesJob(data: ProcessRecurringInvoicesJobData): Promise<BillingJobResult> {
   log("info", data.jobId, "Processing recurring invoices job", {
@@ -1348,7 +1348,7 @@ async function processBillingJob(job: Job<BillingJobData, BillingJobResult>): Pr
       maxAttempts: job.opts.attempts || 3,
     });
 
-    // Re-throw fuer BullMQ Retry-Logik
+    // Re-throw für BullMQ Retry-Logik
     throw error;
   }
 }
@@ -1373,7 +1373,7 @@ export function startBillingWorker(): Worker<BillingJobData, BillingJobResult> {
   billingWorker = new Worker<BillingJobData, BillingJobResult>("billing", processBillingJob, {
     connection,
     concurrency: 5,
-    // Kein Sandbox-Modus fuer Next.js Kompatibilitaet
+    // Kein Sandbox-Modus für Next.js Kompatibilitaet
     useWorkerThreads: false,
     // Billing kann komplexe Berechnungen haben
     lockDuration: 180000, // 3 Minuten
@@ -1432,14 +1432,14 @@ export async function stopBillingWorker(): Promise<void> {
 }
 
 /**
- * Prueft ob der Worker laeuft
+ * Prueft ob der Worker läuft
  */
 export function isBillingWorkerRunning(): boolean {
   return billingWorker !== null && billingWorker.isRunning();
 }
 
 /**
- * Gibt den Worker zurueck (fuer Health-Checks)
+ * Gibt den Worker zurück (für Health-Checks)
  */
 export function getBillingWorker(): Worker<BillingJobData, BillingJobResult> | null {
   return billingWorker;

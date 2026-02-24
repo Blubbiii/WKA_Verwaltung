@@ -131,7 +131,7 @@ const INTERVAL_DESCRIPTIONS: Record<Interval, string> = {
   hour: "Stuendliche Aggregation",
   day: "Taegliche Aggregation",
   month: "Monatliche Aggregation",
-  year: "Jaehrliche Aggregation",
+  year: "Jährliche Aggregation",
 };
 
 // =============================================================================
@@ -497,7 +497,7 @@ export function DataExplorerTab() {
                 <div className="flex flex-col items-center justify-center h-[400px] gap-2">
                   <Radio className="h-8 w-8 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    Keine Produktionsdaten fuer den ausgewaehlten Zeitraum
+                    Keine Produktionsdaten für den ausgewaehlten Zeitraum
                   </p>
                 </div>
               ) : (
@@ -537,7 +537,7 @@ export function DataExplorerTab() {
                 <div className="flex flex-col items-center justify-center h-[400px] gap-2">
                   <Radio className="h-8 w-8 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    Keine Leistungskurvendaten fuer den ausgewaehlten Zeitraum
+                    Keine Leistungskurvendaten für den ausgewaehlten Zeitraum
                   </p>
                 </div>
               ) : (
@@ -570,7 +570,7 @@ export function DataExplorerTab() {
                 <div className="flex flex-col items-center justify-center h-[400px] gap-2">
                   <Radio className="h-8 w-8 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    Keine Windrosendaten fuer den ausgewaehlten Zeitraum
+                    Keine Windrosendaten für den ausgewaehlten Zeitraum
                   </p>
                 </div>
               ) : (
@@ -640,7 +640,7 @@ export function DataExplorerTab() {
                 <div className="flex flex-col items-center justify-center h-[400px] gap-2">
                   <Radio className="h-8 w-8 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    Keine Daten fuer den ausgewaehlten Tag
+                    Keine Daten für den ausgewaehlten Tag
                   </p>
                 </div>
               ) : (

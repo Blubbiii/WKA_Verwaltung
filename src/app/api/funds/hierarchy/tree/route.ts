@@ -34,7 +34,7 @@ interface ParentInfo {
 }
 
 /**
- * Knoten im Hierarchie-Baum fuer Visualisierung
+ * Knoten im Hierarchie-Baum für Visualisierung
  */
 interface HierarchyTreeNode {
   id: string;
@@ -43,19 +43,19 @@ interface HierarchyTreeNode {
   legalForm: string | null;
   fundCategory: { id: string; name: string; code: string; color: string | null } | null;
   status: string;
-  ownershipPercentage: number | null; // null fuer Root-Knoten
+  ownershipPercentage: number | null; // null für Root-Knoten
   validFrom: string | null;
   validTo: string | null;
   depth: number;
   children: HierarchyTreeNode[];
-  // Zusaetzliche Infos
+  // Zusätzliche Infos
   totalChildOwnership: number; // Summe der Anteile aller direkten Kinder
   shareholderCount: number;
   turbineCount: number;
 }
 
 /**
- * Flache Darstellung fuer Tabellen/Listen
+ * Flache Darstellung für Tabellen/Listen
  */
 interface FlatHierarchyItem {
   hierarchyId: string;
@@ -173,12 +173,12 @@ function findMaxDepth(node: HierarchyTreeNode): number {
 }
 
 // =============================================================================
-// GET /api/funds/hierarchy/tree - Hierarchie-Baum fuer Visualisierung
+// GET /api/funds/hierarchy/tree - Hierarchie-Baum für Visualisierung
 // =============================================================================
 
 export async function GET(request: NextRequest) {
   try {
-    // Berechtigungspruefung: MANAGER+ fuer Funds-Modul
+    // Berechtigungsprüfung: MANAGER+ für Funds-Modul
     const check = await requirePermission(["funds:read"]);
     if (!check.authorized) return check.error;
 
@@ -229,7 +229,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Erstelle Lookup-Maps fuer schnellen Zugriff
+    // Erstelle Lookup-Maps für schnellen Zugriff
     const fundMap = new Map<string, FundData>(allFunds.map((f) => [f.id, f]));
 
     // Map: childFundId -> parentInfo
@@ -253,7 +253,7 @@ export async function GET(request: NextRequest) {
       parentToChildren.get(h.parentFundId)!.push(h.childFundId);
     }
 
-    // Finde Root-Funds (Funds die kein Parent haben, aber Children haben koennten)
+    // Finde Root-Funds (Funds die kein Parent haben, aber Children haben könnten)
     const childFundIds = new Set(hierarchies.map((h) => h.childFundId));
     const rootFundIds = allFunds
       .filter((f) => !childFundIds.has(f.id))

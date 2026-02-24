@@ -219,7 +219,7 @@ export function RecipientSearchDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {step === "search" ? "Empfaenger auswaehlen" : "Neuen Kunden anlegen"}
+            {step === "search" ? "Empfänger auswaehlen" : "Neuen Kunden anlegen"}
           </DialogTitle>
           <DialogDescription>
             {step === "search"
@@ -423,7 +423,7 @@ export function RecipientSearchDialog({
                   resetCreateForm();
                 }}
               >
-                Zurueck
+                Zurück
               </Button>
               <Button
                 type="button"

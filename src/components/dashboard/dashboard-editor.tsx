@@ -142,7 +142,7 @@ export function DashboardEditor({
       await resetConfig();
       setHasChanges(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Fehler beim Zuruecksetzen";
+      const message = err instanceof Error ? err.message : "Fehler beim Zurücksetzen";
       setSaveError(message);
     } finally {
       setResetDialogOpen(false);
@@ -170,7 +170,7 @@ export function DashboardEditor({
             <h2 className="text-lg font-semibold">Dashboard bearbeiten</h2>
             {hasChanges && (
               <span className="text-xs px-2 py-1 bg-yellow-500/10 text-yellow-600 rounded">
-                Ungespeicherte Aenderungen
+                Ungespeicherte Änderungen
               </span>
             )}
           </div>
@@ -182,7 +182,7 @@ export function DashboardEditor({
               onClick={() => setShowSidebar(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Widget hinzufuegen
+              Widget hinzufügen
             </Button>
 
             <Button
@@ -192,7 +192,7 @@ export function DashboardEditor({
               disabled={isSaving}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
-              Zuruecksetzen
+              Zurücksetzen
             </Button>
 
             <div className="w-px h-6 bg-border mx-2" />
@@ -234,7 +234,7 @@ export function DashboardEditor({
       <div className="mb-4 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
         <p>
           <strong>Tipp:</strong> Ziehen Sie Widgets um sie neu anzuordnen. Aendern Sie
-          die Groesse durch Ziehen an den Ecken. Klicken Sie auf das X um Widgets zu
+          die Größe durch Ziehen an den Ecken. Klicken Sie auf das X um Widgets zu
           entfernen.
         </p>
       </div>
@@ -261,9 +261,9 @@ export function DashboardEditor({
       <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Dashboard zuruecksetzen</AlertDialogTitle>
+            <AlertDialogTitle>Dashboard zurücksetzen</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechten Sie das Dashboard wirklich auf die Standardeinstellungen zuruecksetzen? Alle individuellen Anpassungen gehen verloren.
+              Möchten Sie das Dashboard wirklich auf die Standardeinstellungen zurücksetzen? Alle individuellen Anpassungen gehen verloren.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -274,7 +274,7 @@ export function DashboardEditor({
                 handleConfirmReset();
               }}
             >
-              Zuruecksetzen
+              Zurücksetzen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

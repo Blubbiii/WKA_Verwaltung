@@ -173,7 +173,7 @@ export default function LeaseAdvancesPage() {
       setPreviewResult(data);
 
       if (data.summary.successful === 0) {
-        toast.info("Keine Vorschuesse zu generieren fuer diesen Zeitraum");
+        toast.info("Keine Vorschüsse zu generieren für diesen Zeitraum");
       } else {
         toast.success(
           `Vorschau: ${data.summary.successful} Gutschriften, Gesamt: ${formatCurrency(data.summary.totalAmount)}`
@@ -222,7 +222,7 @@ export default function LeaseAdvancesPage() {
         toast.info("Keine Gutschriften erstellt");
       }
     } catch {
-      toast.error("Fehler beim Generieren der Vorschuesse");
+      toast.error("Fehler beim Generieren der Vorschüsse");
     } finally {
       setGenerating(false);
       setShowConfirmDialog(false);
@@ -243,7 +243,7 @@ export default function LeaseAdvancesPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Pacht-Vorschuesse
+          Pacht-Vorschüsse
         </h1>
         <p className="text-muted-foreground">
           Monatliche Vorschuss-Gutschriften an Verpaechter generieren
@@ -255,7 +255,7 @@ export default function LeaseAdvancesPage() {
         <CardHeader>
           <CardTitle>Zeitraum und Filter</CardTitle>
           <CardDescription>
-            Waehlen Sie den Monat und optionalen Park-Filter fuer die
+            Waehlen Sie den Monat und optionalen Park-Filter für die
             Vorschussgenerierung
           </CardDescription>
         </CardHeader>
@@ -379,7 +379,7 @@ export default function LeaseAdvancesPage() {
                 {activeResult.summary.totalProcessed}
               </div>
               <p className="text-xs text-muted-foreground">
-                Pachtvertraege geprueft
+                Pachtverträge geprüft
               </p>
             </CardContent>
           </Card>
@@ -429,7 +429,7 @@ export default function LeaseAdvancesPage() {
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Uebersprungen/Fehler
+                Übersprungen/Fehler
               </CardTitle>
               <AlertTriangle className="h-4 w-4 text-yellow-600" />
             </CardHeader>
@@ -580,12 +580,12 @@ export default function LeaseAdvancesPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Pacht-Vorschuesse generieren?
+              Pacht-Vorschüsse generieren?
             </AlertDialogTitle>
             <AlertDialogDescription>
               Es werden{" "}
               <strong>{previewResult?.summary.successful || 0}</strong>{" "}
-              Gutschriften fuer{" "}
+              Gutschriften für{" "}
               <strong>
                 {MONTH_NAMES[month - 1]} {year}
               </strong>{" "}
@@ -597,7 +597,7 @@ export default function LeaseAdvancesPage() {
               <br />
               <br />
               Die Gutschriften werden im Status &quot;Entwurf&quot; erstellt und
-              koennen vor dem Versand noch bearbeitet werden.
+              können vor dem Versand noch bearbeitet werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

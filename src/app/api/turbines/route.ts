@@ -22,8 +22,8 @@ const turbineCreateSchema = z.object({
   longitude: z.number().optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
   technicalData: z.record(z.any()).optional(),
-  technischeBetriebsfuehrung: z.string().optional().nullable(),
-  kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
+  technischeBetriebsführung: z.string().optional().nullable(),
+  kaufmaennischeBetriebsführung: z.string().optional().nullable(),
   operatorFundId: z.string().uuid().optional().nullable(),
 });
 

@@ -1,7 +1,7 @@
 /**
  * Email Worker - Verarbeitet Jobs aus der "email" Queue
  *
- * Dieser Worker ist verantwortlich fuer das Versenden von E-Mails
+ * Dieser Worker ist verantwortlich für das Versenden von E-Mails
  * unter Verwendung der Email-Provider-Abstraktion.
  */
 
@@ -14,12 +14,12 @@ import { emailLogger } from "@/lib/logger";
 // =============================================================================
 
 /**
- * Job-Daten fuer E-Mail-Versand
+ * Job-Daten für E-Mail-Versand
  */
 export interface EmailJobData {
-  /** Eindeutige Job-ID fuer Tracking */
+  /** Eindeutige Job-ID für Tracking */
   jobId: string;
-  /** E-Mail-Typ fuer unterschiedliche Templates */
+  /** E-Mail-Typ für unterschiedliche Templates */
   type:
     | "welcome"
     | "password-reset"
@@ -33,11 +33,11 @@ export interface EmailJobData {
     | "document-shared"
     | "news-announcement"
     | "service-event";
-  /** Empfaenger-E-Mail-Adresse */
+  /** Empfänger-E-Mail-Adresse */
   to: string;
-  /** CC-Empfaenger (optional) */
+  /** CC-Empfänger (optional) */
   cc?: string[];
-  /** BCC-Empfaenger (optional) */
+  /** BCC-Empfänger (optional) */
   bcc?: string[];
   /** E-Mail-Betreff */
   subject: string;
@@ -49,7 +49,7 @@ export interface EmailJobData {
     content: string; // Base64-encoded
     contentType: string;
   }>;
-  /** Tenant-ID fuer Multi-Tenancy */
+  /** Tenant-ID für Multi-Tenancy */
   tenantId: string;
   /** Prioritaet (1 = hoechste) */
   priority?: number;
@@ -215,7 +215,7 @@ async function processEmailJob(job: Job<EmailJobData, EmailJobResult>): Promise<
       throw new Error("Missing required fields: to, subject");
     }
 
-    // E-Mail validieren (einfache Pruefung)
+    // E-Mail validieren (einfache Prüfung)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(data.to)) {
       throw new Error(`Invalid email address: ${data.to}`);
@@ -242,7 +242,7 @@ async function processEmailJob(job: Job<EmailJobData, EmailJobResult>): Promise<
       maxAttempts: job.opts.attempts || 3,
     });
 
-    // Re-throw fuer BullMQ Retry-Logik
+    // Re-throw für BullMQ Retry-Logik
     throw error;
   }
 }
@@ -267,7 +267,7 @@ export function startEmailWorker(): Worker<EmailJobData, EmailJobResult> {
   emailWorker = new Worker<EmailJobData, EmailJobResult>("email", processEmailJob, {
     connection,
     concurrency: 5,
-    // Kein Sandbox-Modus fuer Next.js Kompatibilitaet
+    // Kein Sandbox-Modus für Next.js Kompatibilitaet
     useWorkerThreads: false,
     // Retry-Einstellungen
     limiter: {
@@ -326,14 +326,14 @@ export async function stopEmailWorker(): Promise<void> {
 }
 
 /**
- * Prueft ob der Worker laeuft
+ * Prueft ob der Worker läuft
  */
 export function isEmailWorkerRunning(): boolean {
   return emailWorker !== null && emailWorker.isRunning();
 }
 
 /**
- * Gibt den Worker zurueck (fuer Health-Checks)
+ * Gibt den Worker zurück (für Health-Checks)
  */
 export function getEmailWorker(): Worker<EmailJobData, EmailJobResult> | null {
   return emailWorker;

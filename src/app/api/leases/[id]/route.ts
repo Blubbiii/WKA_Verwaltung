@@ -32,7 +32,7 @@ const leaseUpdateSchema = z.object({
   linkedTurbineId: z.string().uuid().nullable().optional(),
   // Vertragspartner (Paechter-Gesellschaft)
   contractPartnerFundId: z.string().uuid().nullable().optional(),
-  // Stichtag fuer Gutschriften (Tag im Monat, ueberschreibt Park-Default)
+  // Stichtag für Gutschriften (Tag im Monat, überschreibt Park-Default)
   paymentDay: z.number().int().min(1).max(28).nullable().optional(),
   // Anhänge & Notizen
   contractDocumentUrl: z.string().url().nullable().optional(),

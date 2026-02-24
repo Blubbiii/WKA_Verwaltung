@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
-          error: 'Ungueltige Parameter',
+          error: 'Ungültige Parameter',
           details: error.errors.map((e) => ({
             field: e.path.join('.'),
             message: e.message,

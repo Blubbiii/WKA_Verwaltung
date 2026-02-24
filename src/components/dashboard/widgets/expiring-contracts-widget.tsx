@@ -137,7 +137,7 @@ export function ExpiringContractsWidget({ className }: ExpiringContractsWidgetPr
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <FileWarning className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">Keine auslaufenden Vertraege</p>
+          <p className="text-sm">Keine auslaufenden Verträge</p>
         </div>
       </div>
     );
@@ -153,7 +153,7 @@ export function ExpiringContractsWidget({ className }: ExpiringContractsWidgetPr
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm truncate">{contract.title}</p>
             <p className="text-xs text-muted-foreground">
-              {contract.type} - Laeuft ab am {contract.expiryDate}
+              {contract.type} - Läuft ab am {contract.expiryDate}
             </p>
           </div>
           <div className="flex items-center gap-2">

@@ -316,7 +316,7 @@ async function fetchMonthlyReportData(
   for (const avail of turbineAvailability) {
     if (avail.availabilityPct != null && avail.availabilityPct < 90) {
       notableDowntimes.push(
-        `${avail.designation}: Verfuegbarkeit ${Number(avail.availabilityPct).toFixed(1)}% (T5: ${avail.t5Hours.toFixed(0)}h Stoerung)`
+        `${avail.designation}: Verfügbarkeit ${Number(avail.availabilityPct).toFixed(1)}% (T5: ${avail.t5Hours.toFixed(0)}h Störung)`
       );
     }
   }

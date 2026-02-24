@@ -136,7 +136,7 @@ export function ActivitiesWidget({ className }: ActivitiesWidgetProps) {
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <Activity className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">Keine Aktivitaeten</p>
+          <p className="text-sm">Keine Aktivitäten</p>
         </div>
       </div>
     );

@@ -1,7 +1,7 @@
 /**
  * API Route: /api/admin/billing-rules/[id]/execute
  * POST: Regel manuell ausfuehren
- * Query: ?dryRun=true fuer Vorschau
+ * Query: ?dryRun=true für Vorschau
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -58,7 +58,7 @@ export async function POST(
     // Fuehre Regel aus
     const result = await executeRule(id, {
       dryRun,
-      forceRun: true, // Manuelle Ausfuehrung ignoriert nextRunAt
+      forceRun: true, // Manuelle Ausführung ignoriert nextRunAt
       overrideParameters,
     });
 

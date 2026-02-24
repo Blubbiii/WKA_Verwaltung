@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       case "enable": {
         if (!locationCode) {
           return NextResponse.json(
-            { error: "locationCode ist erforderlich fuer enable" },
+            { error: "locationCode ist erforderlich für enable" },
             { status: 400 },
           );
         }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         );
 
         return NextResponse.json({
-          message: `Auto-Import aktiviert fuer ${locationCode}`,
+          message: `Auto-Import aktiviert für ${locationCode}`,
           updatedMappings: count,
         });
       }
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       case "disable": {
         if (!locationCode) {
           return NextResponse.json(
-            { error: "locationCode ist erforderlich fuer disable" },
+            { error: "locationCode ist erforderlich für disable" },
             { status: 400 },
           );
         }
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         );
 
         return NextResponse.json({
-          message: `Auto-Import deaktiviert fuer ${locationCode}`,
+          message: `Auto-Import deaktiviert für ${locationCode}`,
           updatedMappings: count,
         });
       }
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       case "configure": {
         if (!locationCode) {
           return NextResponse.json(
-            { error: "locationCode ist erforderlich fuer configure" },
+            { error: "locationCode ist erforderlich für configure" },
             { status: 400 },
           );
         }
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
         );
 
         return NextResponse.json({
-          message: `Auto-Import konfiguriert fuer ${locationCode}`,
+          message: `Auto-Import konfiguriert für ${locationCode}`,
           updatedMappings: count,
         });
       }

@@ -37,7 +37,7 @@ function getS3Client(): S3Client {
  * GET /api/documents/[id]/content
  *
  * Proxy-Route die Dokument-Inhalte von S3/MinIO streamt.
- * Loest das CORS-Problem fuer PDF-Viewer im Browser.
+ * Loest das CORS-Problem für PDF-Viewer im Browser.
  */
 export async function GET(
   request: NextRequest,
@@ -68,7 +68,7 @@ export async function GET(
       );
     }
 
-    // Tenant-Pruefung
+    // Tenant-Prüfung
     if (document.tenantId !== check.tenantId) {
       return NextResponse.json(
         { error: "Keine Berechtigung" },
@@ -85,7 +85,7 @@ export async function GET(
       );
     }
 
-    // Pruefen ob fileUrl ein S3-Key ist oder eine externe URL
+    // Prüfen ob fileUrl ein S3-Key ist oder eine externe URL
     const isS3Key = !document.fileUrl.startsWith("http://") &&
       !document.fileUrl.startsWith("https://");
 
@@ -106,7 +106,7 @@ export async function GET(
         }
       } catch {
         return NextResponse.json(
-          { error: "Ungueltige Datei-URL" },
+          { error: "Ungültige Datei-URL" },
           { status: 400 }
         );
       }
@@ -176,14 +176,14 @@ export async function GET(
 
       // Bei NoSuchKey: Versuche lokalen Fallback (alte Uploads)
       if (errorName === "NoSuchKey" || errorMessage.includes("NoSuchKey")) {
-        // Versuche Datei lokal zu laden (Fallback fuer alte Uploads)
+        // Versuche Datei lokal zu laden (Fallback für alte Uploads)
         const publicDir = path.resolve(process.cwd(), "public");
         const localPath = path.resolve(publicDir, document.fileUrl);
 
         // Security: Prevent path traversal outside public/ directory
         if (!localPath.startsWith(publicDir + path.sep)) {
           return NextResponse.json(
-            { error: "Ungueltiger Dateipfad" },
+            { error: "Ungültiger Dateipfad" },
             { status: 400 }
           );
         }
@@ -236,7 +236,7 @@ export async function GET(
   }
 }
 
-// OPTIONS fuer CORS Preflight
+// OPTIONS für CORS Preflight
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,

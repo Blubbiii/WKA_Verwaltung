@@ -77,7 +77,7 @@ export function BillingCalculationCard({ billing }: BillingCalculationCardProps)
 
           {/* Fee percentage */}
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Gebuehr-Satz</span>
+            <span className="text-muted-foreground">Gebühr-Satz</span>
             <span className="font-mono">
               {billing.feePercentageUsed.toFixed(2)} %
             </span>
@@ -85,7 +85,7 @@ export function BillingCalculationCard({ billing }: BillingCalculationCardProps)
 
           {/* Fee net */}
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Gebuehr netto</span>
+            <span className="text-muted-foreground">Gebühr netto</span>
             <span className="font-mono">
               {formatCurrency(billing.feeNet)}
             </span>
@@ -105,7 +105,7 @@ export function BillingCalculationCard({ billing }: BillingCalculationCardProps)
 
           {/* Fee gross - total */}
           <div className="flex items-center justify-between">
-            <span className="text-lg font-semibold">Gebuehr brutto</span>
+            <span className="text-lg font-semibold">Gebühr brutto</span>
             <span className="text-lg font-semibold font-mono">
               {formatCurrency(billing.feeGross)}
             </span>
@@ -125,7 +125,7 @@ export function BillingCalculationCard({ billing }: BillingCalculationCardProps)
                     <TableHead>Gesellschaft</TableHead>
                     <TableHead className="text-right">Umsatz</TableHead>
                     <TableHead className="text-right">Anteil</TableHead>
-                    <TableHead className="text-right">Gebuehr</TableHead>
+                    <TableHead className="text-right">Gebühr</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

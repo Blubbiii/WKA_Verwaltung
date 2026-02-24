@@ -653,7 +653,7 @@ export default function VoteDetailPage() {
         </Card>
       )}
 
-      {/* Ergebnis-Anzeige fuer geschlossene Abstimmungen */}
+      {/* Ergebnis-Anzeige für geschlossene Abstimmungen */}
       {isClosed && vote.results && (
         <div className="space-y-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">

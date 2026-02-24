@@ -133,7 +133,7 @@ export async function PATCH(
       if (!allowedTransitions.includes(data.status)) {
         return NextResponse.json(
           {
-            error: `Ungueltiger Statusuebergang: ${period.status} -> ${data.status}. Erlaubte Uebergaenge: ${allowedTransitions.join(", ") || "keine"}`,
+            error: `Ungültiger Statusübergang: ${period.status} -> ${data.status}. Erlaubte Übergaenge: ${allowedTransitions.join(", ") || "keine"}`,
           },
           { status: 400 }
         );

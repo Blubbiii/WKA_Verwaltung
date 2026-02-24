@@ -236,7 +236,7 @@ export default function StakeholderDetailPage() {
 
   // Deactivate stakeholder
   async function handleDeactivate() {
-    if (!confirm("Moechten Sie diesen BF-Vertrag wirklich deaktivieren?")) {
+    if (!confirm("Möchten Sie diesen BF-Vertrag wirklich deaktivieren?")) {
       return;
     }
 
@@ -275,7 +275,7 @@ export default function StakeholderDetailPage() {
       !newFee.feePercentage ||
       parseFloat(newFee.feePercentage) < 0
     ) {
-      toast.error("Bitte geben Sie einen gueltigen Gebuehrensatz ein");
+      toast.error("Bitte geben Sie einen gültigen Gebührensatz ein");
       return;
     }
     if (!newFee.validFrom) {
@@ -304,7 +304,7 @@ export default function StakeholderDetailPage() {
       if (!res.ok) {
         const errorData = await res.json().catch(() => null);
         throw new Error(
-          errorData?.error ?? "Fehler beim Hinzufuegen der Gebuehr"
+          errorData?.error ?? "Fehler beim Hinzufügen der Gebühr"
         );
       }
 
@@ -312,12 +312,12 @@ export default function StakeholderDetailPage() {
       setStakeholder(json.stakeholder ?? json);
       setFeeDialogOpen(false);
       setNewFee({ feePercentage: "", validFrom: "", reason: "" });
-      toast.success("Gebuehr erfolgreich hinzugefuegt");
+      toast.success("Gebühr erfolgreich hinzugefügt");
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Hinzufuegen der Gebuehr"
+          : "Fehler beim Hinzufügen der Gebühr"
       );
     } finally {
       setSavingFee(false);
@@ -389,7 +389,7 @@ export default function StakeholderDetailPage() {
           <CardContent className="py-8">
             <p className="text-center text-destructive">
               Der BF-Vertrag konnte nicht geladen werden. Bitte versuchen
-              Sie es erneut oder kehren Sie zur Uebersicht zurueck.
+              Sie es erneut oder kehren Sie zur Übersicht zurück.
             </p>
           </CardContent>
         </Card>
@@ -517,7 +517,7 @@ export default function StakeholderDetailPage() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-muted-foreground">
-                  Gueltig ab
+                  Gültig ab
                 </dt>
                 <dd className="text-sm font-medium">
                   {formatDate(stakeholder.validFrom)}
@@ -525,7 +525,7 @@ export default function StakeholderDetailPage() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-muted-foreground">
-                  Gueltig bis
+                  Gültig bis
                 </dt>
                 <dd className="text-sm font-medium">
                   {formatDate(stakeholder.validTo)}
@@ -559,7 +559,7 @@ export default function StakeholderDetailPage() {
             <dl className="space-y-3">
               <div className="flex justify-between">
                 <dt className="text-sm text-muted-foreground">
-                  Gebuehr
+                  Gebühr
                 </dt>
                 <dd className="text-sm font-medium font-mono">
                   {formatPercent(stakeholder.feePercentage)}
@@ -627,31 +627,31 @@ export default function StakeholderDetailPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Gebuehrenhistorie</CardTitle>
+              <CardTitle>Gebührenhistorie</CardTitle>
               <CardDescription>
-                Verlauf der Gebuehrensaetze fuer diesen BF-Vertrag
+                Verlauf der Gebührensaetze für diesen BF-Vertrag
               </CardDescription>
             </div>
             <Dialog open={feeDialogOpen} onOpenChange={setFeeDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   <Plus className="mr-2 h-4 w-4" />
-                  Neue Gebuehr
+                  Neue Gebühr
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <form onSubmit={handleAddFee}>
                   <DialogHeader>
-                    <DialogTitle>Neue Gebuehr hinzufuegen</DialogTitle>
+                    <DialogTitle>Neue Gebühr hinzufügen</DialogTitle>
                     <DialogDescription>
-                      Erstellen Sie einen neuen Gebuehrensatz. Der bisherige
+                      Erstellen Sie einen neuen Gebührensatz. Der bisherige
                       Satz wird automatisch mit einem Enddatum versehen.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
                       <Label htmlFor="newFeePercentage">
-                        Gebuehrensatz (%) *
+                        Gebührensatz (%) *
                       </Label>
                       <Input
                         id="newFeePercentage"
@@ -672,7 +672,7 @@ export default function StakeholderDetailPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="newFeeValidFrom">
-                        Gueltig ab *
+                        Gültig ab *
                       </Label>
                       <Input
                         id="newFeeValidFrom"
@@ -730,10 +730,10 @@ export default function StakeholderDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Gueltig ab</TableHead>
-                    <TableHead>Gueltig bis</TableHead>
+                    <TableHead>Gültig ab</TableHead>
+                    <TableHead>Gültig bis</TableHead>
                     <TableHead className="text-right">
-                      Gebuehr %
+                      Gebühr %
                     </TableHead>
                     <TableHead>Grund</TableHead>
                   </TableRow>
@@ -769,7 +769,7 @@ export default function StakeholderDetailPage() {
             </div>
           ) : (
             <div className="py-8 text-center text-muted-foreground">
-              Keine Gebuehrenhistorie vorhanden
+              Keine Gebührenhistorie vorhanden
             </div>
           )}
         </CardContent>
@@ -782,7 +782,7 @@ export default function StakeholderDetailPage() {
             <div>
               <CardTitle>Abrechnungen</CardTitle>
               <CardDescription>
-                Betriebsfuehrungs-Abrechnungen fuer diesen Vertrag
+                Betriebsführungs-Abrechnungen für diesen Vertrag
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
@@ -803,7 +803,7 @@ export default function StakeholderDetailPage() {
                   <TableRow>
                     <TableHead>Zeitraum</TableHead>
                     <TableHead className="text-right">
-                      Basiserloes
+                      Basiserlös
                     </TableHead>
                     <TableHead className="text-right">Netto</TableHead>
                     <TableHead className="text-right">Brutto</TableHead>

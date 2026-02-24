@@ -62,12 +62,12 @@ export async function POST() {
     return NextResponse.json({
       config: defaultConfig,
       isDefault: true,
-      message: "Dashboard auf Standardlayout zurueckgesetzt",
+      message: "Dashboard auf Standardlayout zurückgesetzt",
     });
   } catch (error) {
     logger.error({ err: error }, "Error resetting dashboard config");
     return NextResponse.json(
-      { error: "Fehler beim Zuruecksetzen der Dashboard-Konfiguration" },
+      { error: "Fehler beim Zurücksetzen der Dashboard-Konfiguration" },
       { status: 500 }
     );
   }

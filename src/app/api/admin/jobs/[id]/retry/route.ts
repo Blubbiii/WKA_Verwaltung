@@ -78,7 +78,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         {
           error: `Job kann nicht erneut gestartet werden`,
-          message: `Nur fehlgeschlagene Jobs koennen erneut gestartet werden. Der aktuelle Status ist "${state}".`,
+          message: `Nur fehlgeschlagene Jobs können erneut gestartet werden. Der aktuelle Status ist "${state}".`,
           currentState: state,
           requiredState: 'failed',
         },
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
-          error: 'Ungueltige Parameter',
+          error: 'Ungültige Parameter',
           details: error.errors.map((e) => ({
             field: e.path.join('.'),
             message: e.message,

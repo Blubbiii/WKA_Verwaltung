@@ -1265,7 +1265,7 @@ export default function EditLeasePage({
           <CardHeader>
             <CardTitle>Abrechnungsintervall</CardTitle>
             <CardDescription>
-              Bestimmt wie oft Mindestpacht-Vorschuesse erstellt werden
+              Bestimmt wie oft Mindestpacht-Vorschüsse erstellt werden
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1284,7 +1284,7 @@ export default function EditLeasePage({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ANNUAL">Jaehrlich</SelectItem>
+                  <SelectItem value="ANNUAL">Jährlich</SelectItem>
                   <SelectItem value="QUARTERLY">Quartalsweise</SelectItem>
                   <SelectItem value="MONTHLY">Monatlich</SelectItem>
                 </SelectContent>

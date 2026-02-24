@@ -64,7 +64,7 @@ function getStatusLabel(status: "healthy" | "degraded" | "down") {
     case "degraded":
       return "Eingeschraenkte Funktionalitaet";
     case "down":
-      return "System nicht verfuegbar";
+      return "System nicht verfügbar";
   }
 }
 
@@ -141,7 +141,7 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">{error || "Status nicht verfuegbar"}</p>
+          <p className="text-sm">{error || "Status nicht verfügbar"}</p>
         </div>
       </div>
     );
@@ -242,7 +242,7 @@ export function UserStatsWidget({ className }: UserStatsWidgetProps) {
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">{error || "Statistiken nicht verfuegbar"}</p>
+          <p className="text-sm">{error || "Statistiken nicht verfügbar"}</p>
         </div>
       </div>
     );

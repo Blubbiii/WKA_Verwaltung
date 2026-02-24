@@ -110,7 +110,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
-          error: 'Ungueltige Parameter',
+          error: 'Ungültige Parameter',
           details: error.errors.map((e) => ({
             field: e.path.join('.'),
             message: e.message,
@@ -175,8 +175,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!['waiting', 'delayed'].includes(state)) {
       return NextResponse.json(
         {
-          error: `Job kann nicht geloescht werden`,
-          message: `Jobs im Status "${state}" koennen nicht geloescht werden. Nur wartende oder verzoegerte Jobs koennen entfernt werden.`,
+          error: `Job kann nicht gelöscht werden`,
+          message: `Jobs im Status "${state}" können nicht gelöscht werden. Nur wartende oder verzoegerte Jobs können entfernt werden.`,
           currentState: state,
           allowedStates: ['waiting', 'delayed'],
         },
@@ -193,7 +193,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
-      message: `Job "${jobId}" wurde erfolgreich geloescht`,
+      message: `Job "${jobId}" wurde erfolgreich gelöscht`,
       deletedJob: {
         id: jobId,
         queue: queueInfo.name,
@@ -211,7 +211,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json(
-      { error: 'Fehler beim Loeschen des Jobs' },
+      { error: 'Fehler beim Löschen des Jobs' },
       { status: 500 }
     );
   }

@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
     if (isNaN(year) || year < 2000 || year > 2100) {
       return NextResponse.json(
-        { error: "Ungueltiges Jahr (2000-2100 erwartet)" },
+        { error: "Ungültiges Jahr (2000-2100 erwartet)" },
         { status: 400 }
       );
     }

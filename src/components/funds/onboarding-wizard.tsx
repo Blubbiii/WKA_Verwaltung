@@ -49,7 +49,7 @@ function validatePersonalData(data: PersonalData): Partial<Record<keyof Personal
   if (!data.email.trim()) {
     errors.email = "E-Mail ist erforderlich";
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.email = "Bitte eine gueltige E-Mail-Adresse eingeben";
+    errors.email = "Bitte eine gültige E-Mail-Adresse eingeben";
   }
   return errors;
 }
@@ -58,7 +58,7 @@ function validateParticipation(data: ParticipationData): Partial<Record<keyof Pa
   const errors: Partial<Record<keyof ParticipationData, string>> = {};
   if (!data.fundId) errors.fundId = "Bitte eine Gesellschaft auswaehlen";
   if (!data.capitalContribution || parseFloat(data.capitalContribution) <= 0) {
-    errors.capitalContribution = "Kapitalanteil muss groesser als 0 sein";
+    errors.capitalContribution = "Kapitalanteil muss größer als 0 sein";
   }
   if (!data.entryDate) errors.entryDate = "Beitrittsdatum ist erforderlich";
   return errors;
@@ -323,7 +323,7 @@ export function OnboardingWizard() {
           disabled={currentStep === 0 || isSubmitting}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Zurueck
+          Zurück
         </Button>
 
         <div className="flex items-center gap-2">

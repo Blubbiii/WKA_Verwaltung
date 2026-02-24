@@ -297,10 +297,10 @@ export function DocumentTemplatesSettings() {
 
     try {
       await deleteDocumentTemplate(templateToDelete);
-      toast.success("Vorlage geloescht");
+      toast.success("Vorlage gelöscht");
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Loeschen");
+      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
     } finally {
       setDeleteDialogOpen(false);
       setTemplateToDelete(null);
@@ -342,7 +342,7 @@ export function DocumentTemplatesSettings() {
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="INVOICE">Rechnungen</TabsTrigger>
               <TabsTrigger value="CREDIT_NOTE">Gutschriften</TabsTrigger>
-              <TabsTrigger value="CONTRACT">Vertraege</TabsTrigger>
+              <TabsTrigger value="CONTRACT">Verträge</TabsTrigger>
               <TabsTrigger value="SETTLEMENT_REPORT">Abrechnungen</TabsTrigger>
             </TabsList>
 
@@ -513,7 +513,7 @@ export function DocumentTemplatesSettings() {
 
             {/* Footer-Text */}
             <div className="space-y-2">
-              <Label htmlFor="footerText">Zusaetzlicher Fusszeilen-Text</Label>
+              <Label htmlFor="footerText">Zusätzlicher Fusszeilen-Text</Label>
               <Textarea
                 id="footerText"
                 value={formData.footerText}
@@ -545,8 +545,8 @@ export function DocumentTemplatesSettings() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
-        title="Vorlage loeschen"
-        description="Moechten Sie diese Dokumentvorlage wirklich loeschen?"
+        title="Vorlage löschen"
+        description="Möchten Sie diese Dokumentvorlage wirklich löschen?"
       />
     </div>
   );

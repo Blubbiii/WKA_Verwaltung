@@ -362,7 +362,7 @@ export async function deleteBackup(backupId: string): Promise<{ success: boolean
         { filePath, backupDir: config.backupDir },
         "[BACKUP] Attempted path traversal in backup delete"
       );
-      return { success: false, error: "Ungueltiger Backup-Pfad" };
+      return { success: false, error: "Ungültiger Backup-Pfad" };
     }
 
     // Check if file exists

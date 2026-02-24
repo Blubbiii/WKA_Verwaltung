@@ -507,8 +507,8 @@ export default function InvoiceDispatchPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Versanduebersicht"
-        description="Belege pruefen und versenden (Drucken, E-Mail oder beides)"
+        title="Versandübersicht"
+        description="Belege prüfen und versenden (Drucken, E-Mail oder beides)"
       />
 
       {/* Stats */}
@@ -554,7 +554,7 @@ export default function InvoiceDispatchPage() {
           <SearchFilter
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Suchen nach Nummer, Empfaenger, Park..."
+            searchPlaceholder="Suchen nach Nummer, Empfänger, Park..."
             filters={[
               {
                 value: typeFilter,
@@ -702,7 +702,7 @@ export default function InvoiceDispatchPage() {
                               </TableHead>
                               <TableHead>Nummer</TableHead>
                               <TableHead>Typ</TableHead>
-                              <TableHead>Empfaenger</TableHead>
+                              <TableHead>Empfänger</TableHead>
                               <TableHead className="text-right">Betrag</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead className="w-10 text-center" title="Gedruckt">
@@ -745,7 +745,7 @@ export default function InvoiceDispatchPage() {
                     </TableHead>
                     <TableHead>Nummer</TableHead>
                     <TableHead>Typ</TableHead>
-                    <TableHead>Empfaenger</TableHead>
+                    <TableHead>Empfänger</TableHead>
                     <TableHead>Park</TableHead>
                     <TableHead className="text-right">Betrag</TableHead>
                     <TableHead>Status</TableHead>

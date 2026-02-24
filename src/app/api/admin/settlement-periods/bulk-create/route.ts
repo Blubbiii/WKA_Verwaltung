@@ -8,7 +8,7 @@ const bulkCreateSchema = z.object({
   parkId: z.string().uuid(),
   year: z.number().int().min(2000).max(2100),
   frequency: z.enum(["MONTHLY", "QUARTERLY"]),
-  createFinalPeriod: z.boolean().default(true), // Erstelle auch FINAL Periode fuer das Jahr
+  createFinalPeriod: z.boolean().default(true), // Erstelle auch FINAL Periode für das Jahr
   notes: z.string().optional(),
 });
 
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Pruefe auf existierende Perioden fuer dieses Jahr
+    // Pruefe auf existierende Perioden für dieses Jahr
     const existingPeriods = await prisma.leaseSettlementPeriod.findMany({
       where: {
         parkId,
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     if (newMonths.length === 0 && (hasFinalPeriod || !createFinalPeriod)) {
       return NextResponse.json(
-        { error: `Alle ${frequency === "MONTHLY" ? "monatlichen" : "quartalsweisen"} ADVANCE Perioden fuer ${year} existieren bereits` },
+        { error: `Alle ${frequency === "MONTHLY" ? "monatlichen" : "quartalsweisen"} ADVANCE Perioden für ${year} existieren bereits` },
         { status: 409 }
       );
     }
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     const finalCount = createdPeriods.filter(p => p.periodType === "FINAL").length;
 
     return NextResponse.json({
-      message: `${advanceCount} ADVANCE Periode(n) und ${finalCount} FINAL Periode(n) fuer ${park.name} ${year} erstellt`,
+      message: `${advanceCount} ADVANCE Periode(n) und ${finalCount} FINAL Periode(n) für ${park.name} ${year} erstellt`,
       summary: {
         year,
         frequency,
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/admin/settlement-periods/bulk-create - Pruefe Status fuer ein Jahr
+// GET /api/admin/settlement-periods/bulk-create - Pruefe Status für ein Jahr
 export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("invoices:read");
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
       orderBy: [{ month: "asc" }],
     });
 
-    // Erstelle Status-Uebersicht
+    // Erstelle Status-Übersicht
     const monthlyStatus = Array.from({ length: 12 }, (_, i) => {
       const month = i + 1;
       const period = existingPeriods.find(p => p.month === month && p.periodType === "ADVANCE");
@@ -233,7 +233,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Error checking settlement periods");
     return NextResponse.json(
-      { error: "Fehler beim Pruefen der Abrechnungsperioden" },
+      { error: "Fehler beim Prüfen der Abrechnungsperioden" },
       { status: 500 }
     );
   }

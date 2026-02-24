@@ -2,7 +2,7 @@
  * API Route: /api/admin/fund-categories/[id]
  * GET: Einzelnen Gesellschaftstyp abrufen
  * PATCH: Gesellschaftstyp aktualisieren
- * DELETE: Gesellschaftstyp loeschen (nur wenn keine Gesellschaften zugeordnet)
+ * DELETE: Gesellschaftstyp löschen (nur wenn keine Gesellschaften zugeordnet)
  *
  * Multi-Tenancy: Filtert automatisch nach tenantId aus der Session
  * Berechtigung: Nur ADMIN und SUPERADMIN
@@ -19,7 +19,7 @@ import { apiLogger as logger } from "@/lib/logger";
 // ============================================================================
 
 /**
- * Schema fuer das Aktualisieren eines Gesellschaftstyps
+ * Schema für das Aktualisieren eines Gesellschaftstyps
  * Alle Felder sind optional (Partial Update)
  */
 const updateFundCategorySchema = z.object({
@@ -109,7 +109,7 @@ export async function GET(
  * Aktualisiert einen Gesellschaftstyp
  *
  * Validierung:
- * - Bei Code-Aenderung: Neuer Code muss eindeutig sein
+ * - Bei Code-Änderung: Neuer Code muss eindeutig sein
  */
 export async function PATCH(
   request: NextRequest,
@@ -127,7 +127,7 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = updateFundCategorySchema.parse(body);
 
-    // Pruefen ob Gesellschaftstyp existiert
+    // Prüfen ob Gesellschaftstyp existiert
     const existingCategory = await prisma.fundCategory.findUnique({
       where: {
         id,
@@ -142,7 +142,7 @@ export async function PATCH(
       );
     }
 
-    // Bei Code-Aenderung: Pruefen ob neuer Code bereits existiert
+    // Bei Code-Änderung: Prüfen ob neuer Code bereits existiert
     if (validatedData.code && validatedData.code !== existingCategory.code) {
       const codeExists = await prisma.fundCategory.findFirst({
         where: {
@@ -233,7 +233,7 @@ export async function PATCH(
  *
  * Validierung:
  * - Nur moeglich wenn keine Gesellschaften diesem Typ zugeordnet sind
- * - Gibt 409 Conflict zurueck mit Anzahl der zugeordneten Gesellschaften
+ * - Gibt 409 Conflict zurück mit Anzahl der zugeordneten Gesellschaften
  */
 export async function DELETE(
   request: NextRequest,
@@ -247,7 +247,7 @@ export async function DELETE(
     // ID aus URL-Parametern extrahieren
     const { id } = await params;
 
-    // Pruefen ob Gesellschaftstyp existiert
+    // Prüfen ob Gesellschaftstyp existiert
     const existingCategory = await prisma.fundCategory.findUnique({
       where: {
         id,
@@ -262,7 +262,7 @@ export async function DELETE(
       );
     }
 
-    // Pruefen ob Gesellschaften diesem Typ zugeordnet sind
+    // Prüfen ob Gesellschaften diesem Typ zugeordnet sind
     const fundsCount = await prisma.fund.count({
       where: { fundCategoryId: id },
     });
@@ -270,7 +270,7 @@ export async function DELETE(
     if (fundsCount > 0) {
       return NextResponse.json(
         {
-          error: `Kann nicht geloescht werden: ${fundsCount} ${
+          error: `Kann nicht gelöscht werden: ${fundsCount} ${
             fundsCount === 1 ? "Gesellschaft ist" : "Gesellschaften sind"
           } diesem Typ zugeordnet`,
         },
@@ -278,19 +278,19 @@ export async function DELETE(
       );
     }
 
-    // Gesellschaftstyp loeschen
+    // Gesellschaftstyp löschen
     await prisma.fundCategory.delete({
       where: { id },
     });
 
     return NextResponse.json({
       success: true,
-      message: "Gesellschaftstyp erfolgreich geloescht",
+      message: "Gesellschaftstyp erfolgreich gelöscht",
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting fund category");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen des Gesellschaftstyps" },
+      { error: "Fehler beim Löschen des Gesellschaftstyps" },
       { status: 500 }
     );
   }

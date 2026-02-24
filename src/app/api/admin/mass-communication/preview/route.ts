@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "[Mass Communication Preview] Error");
     return NextResponse.json(
-      { error: "Fehler bei der Empfaenger-Vorschau" },
+      { error: "Fehler bei der Empfänger-Vorschau" },
       { status: 500 }
     );
   }

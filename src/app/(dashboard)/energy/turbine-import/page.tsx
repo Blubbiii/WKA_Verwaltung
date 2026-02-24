@@ -94,7 +94,7 @@ interface ImportResult {
 const STEPS = [
   { id: "upload", title: "Datei-Upload", description: "CSV/Excel hochladen" },
   { id: "mapping", title: "Spalten-Mapping", description: "Spalten zuordnen" },
-  { id: "validation", title: "Validierung", description: "Daten pruefen" },
+  { id: "validation", title: "Validierung", description: "Daten prüfen" },
   { id: "import", title: "Import", description: "Daten importieren" },
 ];
 
@@ -111,7 +111,7 @@ const TURBINE_FIELD_LABELS: Record<keyof TurbineColumnMapping, string> = {
   month: "Monat",
   production: "Produktion (kWh)",
   operatingHours: "Betriebsstunden",
-  availability: "Verfuegbarkeit (%)",
+  availability: "Verfügbarkeit (%)",
   notes: "Bemerkungen",
 };
 
@@ -282,14 +282,14 @@ function FileUploadStep({
 
   const validateAndSelectFile = (selectedFile: File) => {
     if (selectedFile.size > MAX_FILE_SIZE) {
-      toast.error("Datei zu gross. Maximale Groesse: 10MB");
+      toast.error("Datei zu gross. Maximale Größe: 10MB");
       return;
     }
 
     const extension =
       "." + selectedFile.name.split(".").pop()?.toLowerCase();
     if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-      toast.error("Ungueltiges Dateiformat. Erlaubt: CSV, XLSX");
+      toast.error("Ungültiges Dateiformat. Erlaubt: CSV, XLSX");
       return;
     }
 
@@ -367,7 +367,7 @@ function FileUploadStep({
         <AlertTitle>Beispiel-Datei</AlertTitle>
         <AlertDescription className="flex items-center justify-between">
           <span>
-            Laden Sie eine Beispiel-CSV herunter, um das erwartete Format fuer
+            Laden Sie eine Beispiel-CSV herunter, um das erwartete Format für
             Turbinendaten zu sehen.
           </span>
           <Button
@@ -392,9 +392,9 @@ function FileUploadStep({
         <Info className="h-4 w-4" />
         <AlertTitle>Hinweis</AlertTitle>
         <AlertDescription>
-          Dieser Import ist fuer Produktionsdaten direkt von den
+          Dieser Import ist für Produktionsdaten direkt von den
           Windenergieanlagen (z.B. aus Betreiber-Reports oder SCADA-Exporten).
-          Fuer Abrechnungsdaten von Netzbetreibern nutzen Sie bitte den{" "}
+          Für Abrechnungsdaten von Netzbetreibern nutzen Sie bitte den{" "}
           <Link
             href="/energy/import"
             className="font-medium underline hover:text-primary"
@@ -504,7 +504,7 @@ function TurbineColumnMappingStep({
         <AlertDescription>
           Ordnen Sie die Spalten aus Ihrer Datei den entsprechenden Feldern zu.
           Pflichtfelder sind mit * gekennzeichnet. Betriebsstunden,
-          Verfuegbarkeit und Bemerkungen sind optional.
+          Verfügbarkeit und Bemerkungen sind optional.
         </AlertDescription>
       </Alert>
 
@@ -576,17 +576,17 @@ function TurbineColumnMappingStep({
       {/* Default Revenue Type Selection */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Verguetungsart</CardTitle>
+          <CardTitle className="text-lg">Vergütungsart</CardTitle>
           <CardDescription>
-            Da Turbinendaten keine Verguetungsart enthalten, wird eine
-            Standard-Verguetungsart fuer alle importierten Datensaetze
+            Da Turbinendaten keine Vergütungsart enthalten, wird eine
+            Standard-Vergütungsart für alle importierten Datensaetze
             verwendet.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="max-w-sm space-y-2">
             <Label htmlFor="defaultRevenueType">
-              Standard-Verguetungsart
+              Standard-Vergütungsart
               <span className="text-destructive ml-1">*</span>
             </Label>
             <Select
@@ -594,7 +594,7 @@ function TurbineColumnMappingStep({
               onValueChange={onDefaultRevenueTypeChange}
             >
               <SelectTrigger id="defaultRevenueType">
-                <SelectValue placeholder="Verguetungsart waehlen..." />
+                <SelectValue placeholder="Vergütungsart waehlen..." />
               </SelectTrigger>
               <SelectContent>
                 {availableRevenueTypes.map((rt) => (
@@ -729,7 +729,7 @@ function ValidationStep({
                 }
               />
               <Label htmlFor="skipErrors" className="cursor-pointer">
-                Fehlerhafte Zeilen beim Import ueberspringen ({errorCount}{" "}
+                Fehlerhafte Zeilen beim Import überspringen ({errorCount}{" "}
                 Zeilen)
               </Label>
             </div>
@@ -894,7 +894,7 @@ function ImportStep({
               <p className="text-2xl font-bold text-amber-700">
                 {importResult.skipped}
               </p>
-              <p className="text-sm text-amber-600">Uebersprungen</p>
+              <p className="text-sm text-amber-600">Übersprungen</p>
             </div>
             <div className="bg-red-50 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-red-700">
@@ -1010,7 +1010,7 @@ export default function TurbineDataImportPage() {
       } catch {
         // Fallback defaults
         setAvailableRevenueTypes([
-          { code: "EEG", name: "EEG-Verguetung" },
+          { code: "EEG", name: "EEG-Vergütung" },
           { code: "DIRECT", name: "Direktvermarktung" },
           { code: "PPA", name: "PPA" },
           { code: "SPOT", name: "Spotmarkt" },
@@ -1039,7 +1039,7 @@ export default function TurbineDataImportPage() {
         const parsed = parseCSV(text);
 
         if (parsed.headers.length === 0) {
-          setFileError("Die Datei enthaelt keine gueltigen Daten");
+          setFileError("Die Datei enthaelt keine gültigen Daten");
           return;
         }
 
@@ -1136,7 +1136,7 @@ export default function TurbineDataImportPage() {
       }
       if (columnMapping.availability && row[columnMapping.availability] != null) {
         parts.push(
-          `Verfuegbarkeit: ${row[columnMapping.availability]}%`
+          `Verfügbarkeit: ${row[columnMapping.availability]}%`
         );
       }
       if (columnMapping.notes && row[columnMapping.notes]) {
@@ -1190,10 +1190,10 @@ export default function TurbineDataImportPage() {
               : row[columnMapping.operatingHours]
           );
           if (isNaN(hours) || hours < 0) {
-            additionalMessages.push("Ungueltige Betriebsstunden");
+            additionalMessages.push("Ungültige Betriebsstunden");
           } else if (hours > 744) {
             additionalMessages.push(
-              "Betriebsstunden > 744h (max. pro Monat) - bitte pruefen"
+              "Betriebsstunden > 744h (max. pro Monat) - bitte prüfen"
             );
           }
         }
@@ -1207,7 +1207,7 @@ export default function TurbineDataImportPage() {
           );
           if (isNaN(avail) || avail < 0 || avail > 100) {
             additionalMessages.push(
-              "Ungueltige Verfuegbarkeit (muss 0-100% sein)"
+              "Ungültige Verfügbarkeit (muss 0-100% sein)"
             );
           }
         }
@@ -1245,7 +1245,7 @@ export default function TurbineDataImportPage() {
         if (columnMapping.year) {
           const year = Number(row[columnMapping.year]);
           if (isNaN(year) || year < 2000 || year > 2100) {
-            messages.push("Ungueltiges Jahr");
+            messages.push("Ungültiges Jahr");
             status = "error";
           }
         }
@@ -1253,7 +1253,7 @@ export default function TurbineDataImportPage() {
         if (columnMapping.month) {
           const month = Number(row[columnMapping.month]);
           if (isNaN(month) || month < 1 || month > 12) {
-            messages.push("Ungueltiger Monat (1-12)");
+            messages.push("Ungültiger Monat (1-12)");
             status = "error";
           }
         }
@@ -1261,10 +1261,10 @@ export default function TurbineDataImportPage() {
         if (columnMapping.production) {
           const prod = Number(row[columnMapping.production]);
           if (isNaN(prod) || prod < 0) {
-            messages.push("Ungueltige Produktionsmenge");
+            messages.push("Ungültige Produktionsmenge");
             status = "error";
           } else if (prod > 50000000) {
-            messages.push("Sehr hohe Produktionsmenge - bitte pruefen");
+            messages.push("Sehr hohe Produktionsmenge - bitte prüfen");
             if (status === "success") status = "warning";
           }
         }
@@ -1272,11 +1272,11 @@ export default function TurbineDataImportPage() {
         if (columnMapping.operatingHours && row[columnMapping.operatingHours] != null) {
           const hours = Number(row[columnMapping.operatingHours]);
           if (isNaN(hours) || hours < 0) {
-            messages.push("Ungueltige Betriebsstunden");
+            messages.push("Ungültige Betriebsstunden");
             if (status === "success") status = "warning";
           } else if (hours > 744) {
             messages.push(
-              "Betriebsstunden > 744h (max. pro Monat) - bitte pruefen"
+              "Betriebsstunden > 744h (max. pro Monat) - bitte prüfen"
             );
             if (status === "success") status = "warning";
           }
@@ -1285,7 +1285,7 @@ export default function TurbineDataImportPage() {
         if (columnMapping.availability && row[columnMapping.availability] != null) {
           const avail = Number(row[columnMapping.availability]);
           if (isNaN(avail) || avail < 0 || avail > 100) {
-            messages.push("Ungueltige Verfuegbarkeit (muss 0-100% sein)");
+            messages.push("Ungültige Verfügbarkeit (muss 0-100% sein)");
             if (status === "success") status = "warning";
           }
         }
@@ -1440,9 +1440,9 @@ export default function TurbineDataImportPage() {
       {/* Notice banner */}
       <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
         <p className="text-sm text-blue-800">
-          Der CSV-Import ist auch direkt ueber die Produktionsdaten-Seite erreichbar.
+          Der CSV-Import ist auch direkt über die Produktionsdaten-Seite erreichbar.
           <Link href="/energy/productions" className="underline ml-1 font-medium">
-            Zur Uebersicht
+            Zur Übersicht
           </Link>
         </p>
       </div>
@@ -1525,7 +1525,7 @@ export default function TurbineDataImportPage() {
             disabled={currentStep === 0 || isValidating || isImporting}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Zurueck
+            Zurück
           </Button>
 
           <Button

@@ -475,7 +475,7 @@ export default function TopologyPage() {
               <EmptyState
                 icon={Network}
                 title="Keine Topologie vorhanden"
-                description="Fuer diesen Park wurde noch keine Netz-Topologie erstellt. Nutzen Sie 'Bearbeiten' und 'Auto-Layout' um eine zu generieren."
+                description="Für diesen Park wurde noch keine Netz-Topologie erstellt. Nutzen Sie 'Bearbeiten' und 'Auto-Layout' um eine zu generieren."
               />
             </Card>
           ) : (

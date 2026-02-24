@@ -351,7 +351,7 @@ async function deleteHandler(
   } catch (error) {
     logger.error({ err: error }, "Error deleting recurring invoice");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der wiederkehrenden Rechnung" },
+      { error: "Fehler beim Löschen der wiederkehrenden Rechnung" },
       { status: 500 }
     );
   }

@@ -366,7 +366,7 @@ export default function UsageFeesPage() {
             Nutzungsentgelt-Abrechnungen
           </h1>
           <p className="text-muted-foreground">
-            Jahresabrechnungen fuer Grundeigentuemer
+            Jahresabrechnungen für Grundeigentümer
           </p>
         </div>
         <div className="flex gap-2">
@@ -393,7 +393,7 @@ export default function UsageFeesPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Jahreserloese</CardTitle>
+            <CardTitle className="text-sm font-medium">Jahreserlöse</CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -578,7 +578,7 @@ export default function UsageFeesPage() {
                     onClick={() => handleSort("revenue")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Erloese
+                      Erlöse
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -766,7 +766,7 @@ export default function UsageFeesPage() {
                   currentPage * (pagination.limit || ITEMS_PER_PAGE),
                   pagination.total
                 )}{" "}
-                von {pagination.total} Eintraegen
+                von {pagination.total} Einträgen
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -786,7 +786,7 @@ export default function UsageFeesPage() {
                   size="sm"
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
-                  aria-label="Naechste Seite"
+                  aria-label="Nächste Seite"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -808,7 +808,7 @@ export default function UsageFeesPage() {
           <DialogHeader>
             <DialogTitle>Neue Nutzungsentgelt-Abrechnung</DialogTitle>
             <DialogDescription>
-              Erstellen Sie eine neue Jahresabrechnung fuer einen Windpark.
+              Erstellen Sie eine neue Jahresabrechnung für einen Windpark.
             </DialogDescription>
           </DialogHeader>
 
@@ -846,7 +846,7 @@ export default function UsageFeesPage() {
             {/* Advance Due Date */}
             <div className="space-y-2">
               <Label htmlFor="create-advance-due">
-                Vorschuss-Faelligkeitsdatum (optional)
+                Vorschuss-Fälligkeitsdatum (optional)
               </Label>
               <Input
                 id="create-advance-due"
@@ -859,7 +859,7 @@ export default function UsageFeesPage() {
             {/* Settlement Due Date */}
             <div className="space-y-2">
               <Label htmlFor="create-settlement-due">
-                Abrechnungs-Faelligkeitsdatum (optional)
+                Abrechnungs-Fälligkeitsdatum (optional)
               </Label>
               <Input
                 id="create-settlement-due"
@@ -931,7 +931,7 @@ export default function UsageFeesPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="import-revenue">Jahreserloese (EUR) *</Label>
+              <Label htmlFor="import-revenue">Jahreserlöse (EUR) *</Label>
               <Input
                 id="import-revenue"
                 type="number"

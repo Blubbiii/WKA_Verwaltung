@@ -1,6 +1,6 @@
 /**
  * Custom Rule Handler
- * Implementiert die Logik fuer benutzerdefinierte Abrechnungsregeln
+ * Implementiert die Logik für benutzerdefinierte Abrechnungsregeln
  */
 
 import { prisma } from "@/lib/prisma";
@@ -18,7 +18,7 @@ import {
 } from "../types";
 
 /**
- * Handler fuer benutzerdefinierte Regeln
+ * Handler für benutzerdefinierte Regeln
  */
 export class CustomRuleHandler implements RuleHandler {
   readonly ruleType = BillingRuleType.CUSTOM;
@@ -65,7 +65,7 @@ export class CustomRuleHandler implements RuleHandler {
       }
     }
 
-    // Optionale Felder pruefen
+    // Optionale Felder prüfen
     if (params.recipientType !== undefined && typeof params.recipientType !== "string") {
       return false;
     }
@@ -112,7 +112,7 @@ export class CustomRuleHandler implements RuleHandler {
       return [
         {
           success: false,
-          recipientName: params.recipientName || "Empfaenger",
+          recipientName: params.recipientName || "Empfänger",
           amount: 0,
           error: "Gesamtbetrag ist 0 oder negativ",
         },
@@ -121,7 +121,7 @@ export class CustomRuleHandler implements RuleHandler {
 
     results.push({
       success: true,
-      recipientName: params.recipientName || "Empfaenger",
+      recipientName: params.recipientName || "Empfänger",
       amount: totalGross,
     });
 
@@ -204,7 +204,7 @@ export class CustomRuleHandler implements RuleHandler {
             invoices: [
               {
                 success: false,
-                recipientName: params.recipientName || "Empfaenger",
+                recipientName: params.recipientName || "Empfänger",
                 amount: 0,
                 error: "Gesamtbetrag ist 0 oder negativ",
               },
@@ -257,7 +257,7 @@ export class CustomRuleHandler implements RuleHandler {
         success: true,
         invoiceId: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
-        recipientName: params.recipientName || "Empfaenger",
+        recipientName: params.recipientName || "Empfänger",
         amount: totalGross,
       });
 
@@ -287,7 +287,7 @@ export class CustomRuleHandler implements RuleHandler {
           invoices: [
             {
               success: false,
-              recipientName: params.recipientName || "Empfaenger",
+              recipientName: params.recipientName || "Empfänger",
               error: errorMessage,
             },
           ],

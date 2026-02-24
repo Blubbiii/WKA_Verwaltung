@@ -137,7 +137,7 @@ export function TenantPortalSettings() {
       formData.portalContactEmail &&
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.portalContactEmail)
     ) {
-      toast.error("Bitte geben Sie eine gueltige Kontakt-E-Mail-Adresse ein");
+      toast.error("Bitte geben Sie eine gültige Kontakt-E-Mail-Adresse ein");
       return;
     }
 
@@ -179,7 +179,7 @@ export function TenantPortalSettings() {
             </CardTitle>
           </div>
           <CardDescription>
-            Konfigurieren Sie das Selbstbedienungsportal fuer Gesellschafter
+            Konfigurieren Sie das Selbstbedienungsportal für Gesellschafter
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -188,7 +188,7 @@ export function TenantPortalSettings() {
             <div className="space-y-0.5">
               <Label htmlFor="portalEnabled">Portal aktiviert</Label>
               <p className="text-sm text-muted-foreground">
-                Gesellschafter koennen sich am Portal anmelden und
+                Gesellschafter können sich am Portal anmelden und
                 Informationen einsehen
               </p>
             </div>

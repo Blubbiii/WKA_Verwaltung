@@ -78,14 +78,14 @@ export const invoiceColumns: ColumnDef[] = [
   { key: 'invoiceNumber', header: 'Rechnungsnummer', width: 18 },
   { key: 'invoiceType', header: 'Typ', width: 15 },
   { key: 'invoiceDate', header: 'Rechnungsdatum', width: 15, format: 'date' },
-  { key: 'dueDate', header: 'Faelligkeitsdatum', width: 15, format: 'date' },
-  { key: 'recipientName', header: 'Empfaenger', width: 25 },
+  { key: 'dueDate', header: 'Fälligkeitsdatum', width: 15, format: 'date' },
+  { key: 'recipientName', header: 'Empfänger', width: 25 },
   { key: 'recipientAddress', header: 'Adresse', width: 35 },
   { key: 'netAmount', header: 'Nettobetrag', width: 15, format: 'currency' },
   { key: 'taxRate', header: 'MwSt. %', width: 10, format: 'percentage' },
   { key: 'taxAmount', header: 'MwSt. Betrag', width: 14, format: 'currency' },
   { key: 'grossAmount', header: 'Bruttobetrag', width: 15, format: 'currency' },
-  { key: 'currency', header: 'Waehrung', width: 10 },
+  { key: 'currency', header: 'Währung', width: 10 },
   { key: 'status', header: 'Status', width: 12 },
   { key: 'sentAt', header: 'Versendet am', width: 15, format: 'date' },
   { key: 'paidAt', header: 'Bezahlt am', width: 15, format: 'date' },
@@ -263,13 +263,13 @@ export function getEntityDisplayName(type: string): string {
     case 'invoices':
       return 'Rechnungen';
     case 'contracts':
-      return 'Vertraege';
+      return 'Verträge';
     case 'persons':
       return 'Personen';
     case 'funds':
       return 'Gesellschaften';
     case 'leases':
-      return 'Pachtvertraege';
+      return 'Pachtverträge';
     case 'plots':
       return 'Flurstuecke';
     default:

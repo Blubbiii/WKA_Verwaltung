@@ -141,7 +141,7 @@ export function GeneralSettings() {
     }
 
     if (formData.adminEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.adminEmail)) {
-      toast.error("Bitte geben Sie eine gueltige E-Mail-Adresse ein");
+      toast.error("Bitte geben Sie eine gültige E-Mail-Adresse ein");
       return;
     }
 
@@ -182,7 +182,7 @@ export function GeneralSettings() {
             <CardTitle className="text-lg">Anwendungseinstellungen</CardTitle>
           </div>
           <CardDescription>
-            Grundlegende Einstellungen fuer die Anwendung
+            Grundlegende Einstellungen für die Anwendung
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -257,15 +257,15 @@ export function GeneralSettings() {
             </Select>
           </div>
 
-          {/* Waehrung */}
+          {/* Währung */}
           <div className="space-y-2">
-            <Label htmlFor="currency">Waehrung</Label>
+            <Label htmlFor="currency">Währung</Label>
             <Select
               value={formData.currency}
               onValueChange={(value) => handleChange("currency", value)}
             >
               <SelectTrigger id="currency">
-                <SelectValue placeholder="Waehrung waehlen" />
+                <SelectValue placeholder="Währung waehlen" />
               </SelectTrigger>
               <SelectContent>
                 {CURRENCIES.map((curr) => (
@@ -287,7 +287,7 @@ export function GeneralSettings() {
             <CardTitle className="text-lg">Wartungsmodus</CardTitle>
           </div>
           <CardDescription>
-            Aktivieren Sie den Wartungsmodus, um Benutzer ueber geplante Wartungsarbeiten zu informieren
+            Aktivieren Sie den Wartungsmodus, um Benutzer über geplante Wartungsarbeiten zu informieren
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -296,7 +296,7 @@ export function GeneralSettings() {
             <div className="space-y-0.5">
               <Label htmlFor="maintenanceMode">Wartungsmodus aktiv</Label>
               <p className="text-sm text-muted-foreground">
-                Benutzer sehen eine Wartungsmeldung und koennen sich nicht anmelden
+                Benutzer sehen eine Wartungsmeldung und können sich nicht anmelden
               </p>
             </div>
             <Switch
@@ -317,7 +317,7 @@ export function GeneralSettings() {
               id="maintenanceMessage"
               value={formData.maintenanceMessage}
               onChange={(e) => handleChange("maintenanceMessage", e.target.value)}
-              placeholder="Das System wird gewartet. Bitte versuchen Sie es spaeter erneut."
+              placeholder="Das System wird gewartet. Bitte versuchen Sie es später erneut."
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
@@ -354,7 +354,7 @@ export function GeneralSettings() {
             <CardTitle className="text-lg">Sicherheitseinstellungen</CardTitle>
           </div>
           <CardDescription>
-            Konfigurieren Sie Sicherheitsrichtlinien fuer Benutzerkonten
+            Konfigurieren Sie Sicherheitsrichtlinien für Benutzerkonten
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -410,7 +410,7 @@ export function GeneralSettings() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Mindestanzahl der Zeichen fuer neue Passwoerter (6-32)
+              Mindestanzahl der Zeichen für neue Passwörter (6-32)
             </p>
           </div>
 
@@ -419,7 +419,7 @@ export function GeneralSettings() {
             <div className="space-y-0.5">
               <Label htmlFor="requireSpecialChars">Passwort erfordert Sonderzeichen</Label>
               <p className="text-sm text-muted-foreground">
-                Passwoerter muessen mindestens ein Sonderzeichen enthalten (!@#$%^&*)
+                Passwörter muessen mindestens ein Sonderzeichen enthalten (!@#$%^&*)
               </p>
             </div>
             <Switch
@@ -436,7 +436,7 @@ export function GeneralSettings() {
             <div className="space-y-0.5">
               <Label htmlFor="requireNumbers">Passwort erfordert Zahlen</Label>
               <p className="text-sm text-muted-foreground">
-                Passwoerter muessen mindestens eine Zahl enthalten (0-9)
+                Passwörter muessen mindestens eine Zahl enthalten (0-9)
               </p>
             </div>
             <Switch
@@ -458,7 +458,7 @@ export function GeneralSettings() {
             <CardTitle className="text-lg">Benachrichtigungen</CardTitle>
           </div>
           <CardDescription>
-            E-Mail-Benachrichtigungen fuer Systemereignisse konfigurieren
+            E-Mail-Benachrichtigungen für Systemereignisse konfigurieren
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -483,7 +483,7 @@ export function GeneralSettings() {
 
           {/* Admin-E-Mail */}
           <div className="space-y-2">
-            <Label htmlFor="adminEmail">Admin-E-Mail fuer Systembenachrichtigungen</Label>
+            <Label htmlFor="adminEmail">Admin-E-Mail für Systembenachrichtigungen</Label>
             <Input
               id="adminEmail"
               type="email"

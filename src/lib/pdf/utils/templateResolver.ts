@@ -331,7 +331,7 @@ function mapLetterhead(letterhead: {
 /**
  * Wendet ein Briefpapier-Hintergrund-PDF auf einen Content-Buffer an.
  * Faellt durch zum originalen Buffer wenn kein Hintergrund-PDF konfiguriert ist.
- * Bei Fehlern wird der Content-only Buffer zurueckgegeben (graceful degradation).
+ * Bei Fehlern wird der Content-only Buffer zurückgegeben (graceful degradation).
  */
 export async function applyLetterheadBackground(
   contentBuffer: Buffer | Uint8Array,

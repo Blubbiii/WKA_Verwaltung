@@ -244,8 +244,8 @@ export function StorageConfigForm({
           <AlertDescription>
             <strong>Lokaler Speicher</strong>
             <p className="mt-1 text-sm">
-              Dateien werden im lokalen Dateisystem gespeichert. Dies ist fuer
-              Entwicklung und kleine Deployments geeignet. Fuer Produktion wird
+              Dateien werden im lokalen Dateisystem gespeichert. Dies ist für
+              Entwicklung und kleine Deployments geeignet. Für Produktion wird
               S3/MinIO empfohlen.
             </p>
           </AlertDescription>

@@ -173,19 +173,19 @@ export async function DELETE(
 
     if (!deleted) {
       return NextResponse.json(
-        { error: "Konfiguration nicht gefunden oder konnte nicht geloescht werden" },
+        { error: "Konfiguration nicht gefunden oder konnte nicht gelöscht werden" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: `Konfiguration '${decodedKey}' wurde geloescht`,
+      message: `Konfiguration '${decodedKey}' wurde gelöscht`,
     });
   } catch (error) {
     logger.error({ err: error }, "[System Config API] DELETE [key] error");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Konfiguration" },
+      { error: "Fehler beim Löschen der Konfiguration" },
       { status: 500 }
     );
   }

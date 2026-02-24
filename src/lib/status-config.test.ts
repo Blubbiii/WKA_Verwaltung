@@ -26,17 +26,17 @@ describe("INVOICE_STATUS", () => {
     expect(INVOICE_STATUS.SENT.label).toBe("Versendet");
     expect(INVOICE_STATUS.PAID.label).toBe("Bezahlt");
     expect(INVOICE_STATUS.CANCELLED.label).toBe("Storniert");
-    expect(INVOICE_STATUS.OVERDUE.label).toBe("Ueberfaellig");
+    expect(INVOICE_STATUS.OVERDUE.label).toBe("Überfällig");
   });
 
-  it("hat className fuer jeden Status", () => {
+  it("hat className für jeden Status", () => {
     for (const key of Object.keys(INVOICE_STATUS)) {
       expect(INVOICE_STATUS[key].className).toBeTruthy();
       expect(typeof INVOICE_STATUS[key].className).toBe("string");
     }
   });
 
-  it("verwendet passende Farben fuer Status", () => {
+  it("verwendet passende Farben für Status", () => {
     expect(INVOICE_STATUS.DRAFT.className).toContain("gray");
     expect(INVOICE_STATUS.PAID.className).toContain("green");
     expect(INVOICE_STATUS.CANCELLED.className).toContain("red");
@@ -59,16 +59,16 @@ describe("CONTRACT_STATUS", () => {
   it("hat korrekte deutsche Labels", () => {
     expect(CONTRACT_STATUS.DRAFT.label).toBe("Entwurf");
     expect(CONTRACT_STATUS.ACTIVE.label).toBe("Aktiv");
-    expect(CONTRACT_STATUS.EXPIRING.label).toBe("Laeuft aus");
+    expect(CONTRACT_STATUS.EXPIRING.label).toBe("Läuft aus");
     expect(CONTRACT_STATUS.EXPIRED.label).toBe("Abgelaufen");
     expect(CONTRACT_STATUS.TERMINATED.label).toBe("Gekuendigt");
   });
 
-  it("verwendet Gruen fuer ACTIVE", () => {
+  it("verwendet Gruen für ACTIVE", () => {
     expect(CONTRACT_STATUS.ACTIVE.className).toContain("green");
   });
 
-  it("verwendet Rot fuer EXPIRED und TERMINATED", () => {
+  it("verwendet Rot für EXPIRED und TERMINATED", () => {
     expect(CONTRACT_STATUS.EXPIRED.className).toContain("red");
     expect(CONTRACT_STATUS.TERMINATED.className).toContain("red");
   });
@@ -123,7 +123,7 @@ describe("DISTRIBUTION_STATUS", () => {
 
   it("hat korrekte deutsche Labels", () => {
     expect(DISTRIBUTION_STATUS.DRAFT.label).toBe("Entwurf");
-    expect(DISTRIBUTION_STATUS.EXECUTED.label).toBe("Ausgefuehrt");
+    expect(DISTRIBUTION_STATUS.EXECUTED.label).toBe("Ausgeführt");
     expect(DISTRIBUTION_STATUS.CANCELLED.label).toBe("Storniert");
   });
 });
@@ -142,7 +142,7 @@ describe("PAYMENT_STATUS", () => {
   it("hat korrekte deutsche Labels", () => {
     expect(PAYMENT_STATUS.pending.label).toBe("Offen");
     expect(PAYMENT_STATUS.paid.label).toBe("Bezahlt");
-    expect(PAYMENT_STATUS.overdue.label).toBe("Ueberfaellig");
+    expect(PAYMENT_STATUS.overdue.label).toBe("Überfällig");
   });
 });
 
@@ -151,7 +151,7 @@ describe("PAYMENT_STATUS", () => {
 // =============================================================================
 
 describe("PORTAL_DISTRIBUTION_STATUS", () => {
-  it("verwendet andere Labels als DISTRIBUTION_STATUS fuer SENT/PAID", () => {
+  it("verwendet andere Labels als DISTRIBUTION_STATUS für SENT/PAID", () => {
     expect(PORTAL_DISTRIBUTION_STATUS.SENT.label).toBe("Offen");
     expect(PORTAL_DISTRIBUTION_STATUS.PAID.label).toBe("Ausgezahlt");
   });
@@ -168,13 +168,13 @@ describe("PORTAL_DISTRIBUTION_STATUS", () => {
 // =============================================================================
 
 describe("getStatusBadge", () => {
-  it("gibt korrekten Badge fuer bekannten Status zurueck", () => {
+  it("gibt korrekten Badge für bekannten Status zurück", () => {
     const badge = getStatusBadge(INVOICE_STATUS, "PAID");
     expect(badge.label).toBe("Bezahlt");
     expect(badge.className).toContain("green");
   });
 
-  it("gibt Fallback-Badge fuer unbekannten Status zurueck", () => {
+  it("gibt Fallback-Badge für unbekannten Status zurück", () => {
     const badge = getStatusBadge(INVOICE_STATUS, "UNKNOWN_STATUS");
     expect(badge.label).toBe("UNKNOWN_STATUS");
     expect(badge.className).toContain("gray");
@@ -185,7 +185,7 @@ describe("getStatusBadge", () => {
     expect(badge.label).toBe("PENDING_REVIEW");
   });
 
-  it("gibt immer eine className im Fallback zurueck", () => {
+  it("gibt immer eine className im Fallback zurück", () => {
     const badge = getStatusBadge(ENTITY_STATUS, "NONEXISTENT");
     expect(badge.className).toBeTruthy();
     expect(typeof badge.className).toBe("string");
@@ -194,10 +194,10 @@ describe("getStatusBadge", () => {
   it("funktioniert mit verschiedenen Status-Maps", () => {
     expect(getStatusBadge(VOTE_STATUS, "CLOSED").label).toBe("Beendet");
     expect(getStatusBadge(PAYMENT_STATUS, "paid").label).toBe("Bezahlt");
-    expect(getStatusBadge(DISTRIBUTION_STATUS, "EXECUTED").label).toBe("Ausgefuehrt");
+    expect(getStatusBadge(DISTRIBUTION_STATUS, "EXECUTED").label).toBe("Ausgeführt");
   });
 
-  it("gibt Fallback mit Dark-Mode Klassen zurueck", () => {
+  it("gibt Fallback mit Dark-Mode Klassen zurück", () => {
     const badge = getStatusBadge(INVOICE_STATUS, "NONEXISTENT");
     expect(badge.className).toContain("dark:");
   });

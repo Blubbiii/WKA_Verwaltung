@@ -124,11 +124,11 @@ export async function POST(
         "Nur versendete",
         "Nur bezahlte",
         "Mindestens eine",
-        "Ungueltige Position",
+        "Ungültige Position",
         "Stornomenge",
         "Alle Positionen",
-        "Keine Aenderungen",
-        "muss groesser",
+        "Keine Änderungen",
+        "muss größer",
         "darf nicht negativ",
       ].some((msg) => error.message.includes(msg));
 

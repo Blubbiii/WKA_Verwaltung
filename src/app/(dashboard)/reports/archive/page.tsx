@@ -95,10 +95,10 @@ const reportTypeLabels: Record<string, string> = {
   ANNUAL: "Jahresbericht",
   SHAREHOLDERS: "Gesellschafterbericht",
   SETTLEMENT: "Pachtabrechnung",
-  CONTRACTS: "Vertragsuebersicht",
-  INVOICES: "Rechnungsuebersicht",
-  PARKS_OVERVIEW: "Windpark-Uebersicht",
-  TURBINES_OVERVIEW: "Turbinen-Uebersicht",
+  CONTRACTS: "Vertragsübersicht",
+  INVOICES: "Rechnungsübersicht",
+  PARKS_OVERVIEW: "Windpark-Übersicht",
+  TURBINES_OVERVIEW: "Turbinen-Übersicht",
   FUND_PERFORMANCE: "Gesellschafts-Performance",
   VOTES_RESULTS: "Abstimmungsergebnisse",
   CUSTOM: "Benutzerdefiniert",
@@ -252,14 +252,14 @@ export default function ReportArchivePage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Fehler beim Loeschen");
+        throw new Error(data.error || "Fehler beim Löschen");
       }
 
       // Liste aktualisieren
       await fetchReports();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Loeschen des Reports"
+        error instanceof Error ? error.message : "Fehler beim Löschen des Reports"
       );
     } finally {
       setDeleting(null);
@@ -394,7 +394,7 @@ export default function ReportArchivePage() {
                   onClick={clearFilters}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Filter loeschen
+                  Filter löschen
                 </Button>
               )}
             </div>
@@ -474,7 +474,7 @@ export default function ReportArchivePage() {
                     <TableHead>Format</TableHead>
                     <TableHead>Erstellt von</TableHead>
                     <TableHead>Datum</TableHead>
-                    <TableHead>Groesse</TableHead>
+                    <TableHead>Größe</TableHead>
                     <TableHead className="text-right">Aktionen</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -565,7 +565,7 @@ export default function ReportArchivePage() {
                       disabled={page === 1 || loading}
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      Zurueck
+                      Zurück
                     </Button>
                     <Button
                       variant="outline"
@@ -588,10 +588,10 @@ export default function ReportArchivePage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Bericht loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>Bericht löschen?</AlertDialogTitle>
             <AlertDialogDescription>
               Sind Sie sicher, dass Sie den Bericht &quot;{reportToDelete?.title}
-              &quot; loeschen moechten? Diese Aktion kann nicht rueckgaengig gemacht
+              &quot; löschen möchten? Diese Aktion kann nicht rueckgaengig gemacht
               werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -601,7 +601,7 @@ export default function ReportArchivePage() {
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Loeschen
+              Löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

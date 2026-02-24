@@ -27,7 +27,7 @@ const changePasswordSchema = z
     confirmPassword: z.string().min(1, "Passwort-Bestätigung ist erforderlich"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwoerter stimmen nicht ueberein",
+    message: "Passwörter stimmen nicht überein",
     path: ["confirmPassword"],
   })
   .refine((data) => data.currentPassword !== data.newPassword, {
@@ -129,7 +129,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Passwort wurde erfolgreich geaendert",
+      message: "Passwort wurde erfolgreich geändert",
     });
   } catch (error) {
     logger.error({ err: error }, "[User Password API] POST error");

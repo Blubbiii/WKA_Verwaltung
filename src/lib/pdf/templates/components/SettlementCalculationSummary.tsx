@@ -100,7 +100,7 @@ export function SettlementCalculationSummary({ summary }: SettlementCalculationS
       {/* WEA/Pool split */}
       <View style={styles.splitRow}>
         <Text style={styles.splitLabel}>
-          {formatNumber(summary.weaSharePercentage, 1)} % der verbleibenden Summe anteilig fuer WKA-Standorte
+          {formatNumber(summary.weaSharePercentage, 1)} % der verbleibenden Summe anteilig für WKA-Standorte
         </Text>
         <Text style={styles.splitTotal}>{formatCurrency(summary.weaShareAmount)}</Text>
         <Text style={styles.splitPerUnit}>
@@ -110,7 +110,7 @@ export function SettlementCalculationSummary({ summary }: SettlementCalculationS
 
       <View style={styles.splitRow}>
         <Text style={styles.splitLabel}>
-          {formatNumber(summary.poolSharePercentage, 1)} % der verbleibenden Summe fuer Umlage auf Gesamtflaeche ({formatNumber(summary.poolTotalHa, 5)} ha)
+          {formatNumber(summary.poolSharePercentage, 1)} % der verbleibenden Summe für Umlage auf Gesamtflaeche ({formatNumber(summary.poolTotalHa, 5)} ha)
         </Text>
         <Text style={styles.splitTotal}>{formatCurrency(summary.poolShareAmount)}</Text>
         <Text style={styles.splitPerUnit}>

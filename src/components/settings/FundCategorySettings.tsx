@@ -134,13 +134,13 @@ export function FundCategorySettings() {
       );
       if (response.ok) {
         const result = await response.json();
-        toast.success(result.message || "Gesellschaftstyp geloescht");
+        toast.success(result.message || "Gesellschaftstyp gelöscht");
         fetchData();
       } else {
-        throw new Error("Fehler beim Loeschen");
+        throw new Error("Fehler beim Löschen");
       }
     } catch {
-      toast.error("Fehler beim Loeschen des Gesellschaftstyps");
+      toast.error("Fehler beim Löschen des Gesellschaftstyps");
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -211,7 +211,7 @@ export function FundCategorySettings() {
               Gesellschaftstypen
             </CardTitle>
             <CardDescription>
-              Kategorien fuer die Verwaltung von Gesellschaften (GmbH & Co. KG, GmbH etc.)
+              Kategorien für die Verwaltung von Gesellschaften (GmbH & Co. KG, GmbH etc.)
             </CardDescription>
           </div>
           <Button onClick={handleAdd}>
@@ -434,8 +434,8 @@ export function FundCategorySettings() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        title="Gesellschaftstyp loeschen"
-        description={`Moechten Sie den Gesellschaftstyp "${itemToDelete?.name}" wirklich loeschen? Falls Gesellschaften diese Kategorie verwenden, wird sie nur deaktiviert.`}
+        title="Gesellschaftstyp löschen"
+        description={`Möchten Sie den Gesellschaftstyp "${itemToDelete?.name}" wirklich löschen? Falls Gesellschaften diese Kategorie verwenden, wird sie nur deaktiviert.`}
       />
     </div>
   );

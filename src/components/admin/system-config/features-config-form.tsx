@@ -100,7 +100,7 @@ export function FeaturesConfigForm({
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Briefcase className="h-4 w-4 text-muted-foreground" />
-          <h3 className="font-medium">Betriebsfuehrung</h3>
+          <h3 className="font-medium">Betriebsführung</h3>
         </div>
 
         <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -112,7 +112,7 @@ export function FeaturesConfigForm({
               BF-Abrechnung aktivieren
             </Label>
             <p className="text-sm text-muted-foreground">
-              Aktiviert das Modul fuer Betriebsfuehrungs-Abrechnungen
+              Aktiviert das Modul für Betriebsführungs-Abrechnungen
               (Konstellationen, Berechnung, Rechnungserstellung)
             </p>
           </div>

@@ -339,7 +339,7 @@ export class LeaseAdvanceHandler implements RuleHandler {
           success: false,
           recipientName,
           amount: 0,
-          error: `Vorschuss fuer ${MONTH_NAMES[month - 1]} ${year} bereits erstellt`,
+          error: `Vorschuss für ${MONTH_NAMES[month - 1]} ${year} bereits erstellt`,
         });
         continue;
       }
@@ -459,7 +459,7 @@ export class LeaseAdvanceHandler implements RuleHandler {
       if (isDuplicate) {
         skippedLeases.push({
           lease,
-          reason: `Vorschuss fuer ${MONTH_NAMES[month - 1]} ${year} bereits erstellt`,
+          reason: `Vorschuss für ${MONTH_NAMES[month - 1]} ${year} bereits erstellt`,
         });
         continue;
       }

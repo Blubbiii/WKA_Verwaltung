@@ -10,21 +10,21 @@ import { apiLogger as logger } from "@/lib/logger";
 // =============================================================================
 
 /**
- * Schema fuer neue TurbineOperator-Eintraege
+ * Schema für neue TurbineOperator-Einträge
  * Validiert die Betreiber-Zuordnung einer WKA zu einem Fund
  */
 const turbineOperatorCreateSchema = z.object({
-  turbineId: z.string().uuid("Ungueltige Turbinen-ID"),
-  operatorFundId: z.string().uuid("Ungueltige Betreiber-Fund-ID"),
+  turbineId: z.string().uuid("Ungültige Turbinen-ID"),
+  operatorFundId: z.string().uuid("Ungültige Betreiber-Fund-ID"),
   ownershipPercentage: z
     .number()
     .min(0, "Anteil muss >= 0% sein")
     .max(100, "Anteil darf nicht > 100% sein")
     .default(100),
-  validFrom: z.string().datetime({ message: "Ungueltiges Datum (ISO 8601 Format erwartet)" }),
+  validFrom: z.string().datetime({ message: "Ungültiges Datum (ISO 8601 Format erwartet)" }),
   validTo: z
     .string()
-    .datetime({ message: "Ungueltiges Datum (ISO 8601 Format erwartet)" })
+    .datetime({ message: "Ungültiges Datum (ISO 8601 Format erwartet)" })
     .optional()
     .nullable(),
   notes: z.string().max(1000).optional().nullable(),
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50", 10);
 
     // Where-Clause aufbauen
-    // Multi-Tenancy: Filter ueber Turbine -> Park -> Tenant
+    // Multi-Tenancy: Filter über Turbine -> Park -> Tenant
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 
     const where: any = {
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Pruefung: Gibt es bereits einen AKTIVEN Betreiber fuer diese WKA?
+    // Prüfung: Gibt es bereits einen AKTIVEN Betreiber für diese WKA?
     const existingActiveOperator = await prisma.turbineOperator.findFirst({
       where: {
         turbineId: validatedData.turbineId,
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
       if (newValidFrom < existingValidFrom) {
         return NextResponse.json(
           {
-            error: "Ungueltige Datumsangabe",
+            error: "Ungültige Datumsangabe",
             details: `Das Startdatum (${newValidFrom.toISOString().split("T")[0]}) darf nicht vor dem Startdatum des aktuellen Betreibers (${existingValidFrom.toISOString().split("T")[0]}) liegen`,
           },
           { status: 400 }
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
       // Wenn es einen aktiven Operator gibt: auf HISTORICAL setzen
       if (existingActiveOperator) {
         const validFrom = new Date(validatedData.validFrom);
-        // validTo des alten Operators = validFrom des neuen Operators (minus 1 Tag fuer saubere Abgrenzung)
+        // validTo des alten Operators = validFrom des neuen Operators (minus 1 Tag für saubere Abgrenzung)
         const validTo = new Date(validFrom);
         validTo.setDate(validTo.getDate() - 1);
 
@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Audit-Log fuer Betreiberwechsel
+    // Audit-Log für Betreiberwechsel
     if (result.previousOperator) {
       await createAuditLog({
         action: "UPDATE",
@@ -320,7 +320,7 @@ export async function POST(request: NextRequest) {
         _operatorChange: result.previousOperator
           ? {
               previousOperator: result.previousOperator.fundName,
-              message: `Betreiberwechsel durchgefuehrt. Vorheriger Betreiber "${result.previousOperator.fundName}" wurde auf HISTORICAL gesetzt.`,
+              message: `Betreiberwechsel durchgeführt. Vorheriger Betreiber "${result.previousOperator.fundName}" wurde auf HISTORICAL gesetzt.`,
             }
           : null,
       },

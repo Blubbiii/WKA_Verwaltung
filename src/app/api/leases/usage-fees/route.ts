@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Duplikat erkannt",
-          details: `Fuer Park ${park.name} existiert bereits eine Nutzungsentgelt-Abrechnung fuer ${validatedData.year}`,
+          details: `Für Park ${park.name} existiert bereits eine Nutzungsentgelt-Abrechnung für ${validatedData.year}`,
         },
         { status: 409 }
       );

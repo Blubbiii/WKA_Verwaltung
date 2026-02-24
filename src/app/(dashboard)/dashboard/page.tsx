@@ -37,7 +37,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">
             {isEditing
               ? "Passen Sie Ihr Dashboard an"
-              : "Willkommen zurueck! Hier ist Ihre Uebersicht."}
+              : "Willkommen zurück! Hier ist Ihre Übersicht."}
           </p>
         </div>
 

@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const allowedTypes = ALLOWED_TYPES[category] || ALLOWED_TYPES.document;
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: `Ungueltiger Dateityp. Erlaubt: ${allowedTypes.join(", ")}` },
+        { error: `Ungültiger Dateityp. Erlaubt: ${allowedTypes.join(", ")}` },
         { status: 400 }
       );
     }
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       if (!allowed) {
         return NextResponse.json(
           {
-            error: `Speicherlimit erreicht. Verwendet: ${info.usedFormatted} von ${info.limitFormatted}. Die Datei (${(file.size / 1024 / 1024).toFixed(1)} MB) ueberschreitet das Limit.`,
+            error: `Speicherlimit erreicht. Verwendet: ${info.usedFormatted} von ${info.limitFormatted}. Die Datei (${(file.size / 1024 / 1024).toFixed(1)} MB) überschreitet das Limit.`,
             code: "STORAGE_LIMIT_EXCEEDED",
             storageInfo: info,
           },
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     } catch (bucketError) {
       logger.error({ err: bucketError }, "S3 bucket error");
       return NextResponse.json(
-        { error: "Storage-Service nicht verfuegbar. Bitte spaeter erneut versuchen." },
+        { error: "Storage-Service nicht verfügbar. Bitte später erneut versuchen." },
         { status: 503 }
       );
     }

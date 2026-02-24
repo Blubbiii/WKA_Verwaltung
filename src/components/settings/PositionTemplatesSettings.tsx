@@ -160,13 +160,13 @@ export function PositionTemplatesSettings() {
         method: "DELETE",
       });
       if (response.ok) {
-        toast.success("Vorlage geloescht");
+        toast.success("Vorlage gelöscht");
         fetchTemplates();
       } else {
-        throw new Error("Fehler beim Loeschen");
+        throw new Error("Fehler beim Löschen");
       }
     } catch {
-      toast.error("Fehler beim Loeschen der Vorlage");
+      toast.error("Fehler beim Löschen der Vorlage");
     } finally {
       setDeleteDialogOpen(false);
       setTemplateToDelete(null);
@@ -236,7 +236,7 @@ export function PositionTemplatesSettings() {
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Verfuegbare Platzhalter in Beschreibungen:{" "}
+          Verfügbare Platzhalter in Beschreibungen:{" "}
           <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{currentYear}"}</code>{" "}
           <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{lastYear}"}</code>{" "}
           <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{currentMonth}"}</code>{" "}
@@ -252,7 +252,7 @@ export function PositionTemplatesSettings() {
               Positionsvorlagen
             </CardTitle>
             <CardDescription>
-              Wiederverwendbare Vorlagen fuer Rechnungspositionen
+              Wiederverwendbare Vorlagen für Rechnungspositionen
             </CardDescription>
           </div>
           <Button onClick={handleAdd}>
@@ -338,7 +338,7 @@ export function PositionTemplatesSettings() {
               {editingId ? "Vorlage bearbeiten" : "Neue Vorlage erstellen"}
             </DialogTitle>
             <DialogDescription>
-              Erstellen Sie eine wiederverwendbare Vorlage fuer Rechnungspositionen.
+              Erstellen Sie eine wiederverwendbare Vorlage für Rechnungspositionen.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -460,8 +460,8 @@ export function PositionTemplatesSettings() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        title="Vorlage loeschen"
-        description={`Moechten Sie die Vorlage "${templateToDelete?.name}" wirklich loeschen?`}
+        title="Vorlage löschen"
+        description={`Möchten Sie die Vorlage "${templateToDelete?.name}" wirklich löschen?`}
       />
     </div>
   );

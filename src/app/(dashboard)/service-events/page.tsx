@@ -231,20 +231,20 @@ export default function ServiceEventsPage() {
       if (!response.ok) {
         const data = await response
           .json()
-          .catch(() => ({ error: "Fehler beim Loeschen" }));
+          .catch(() => ({ error: "Fehler beim Löschen" }));
         throw new Error(
-          data.error || "Fehler beim Loeschen des Service-Events"
+          data.error || "Fehler beim Löschen des Service-Events"
         );
       }
       return response.json();
     },
     {
       onSuccess: () => {
-        toast.success("Service-Event wurde geloescht");
+        toast.success("Service-Event wurde gelöscht");
         invalidate(["service-events"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Loeschen des Service-Events");
+        toast.error(error.message || "Fehler beim Löschen des Service-Events");
       },
     }
   );
@@ -298,7 +298,7 @@ export default function ServiceEventsPage() {
       {/* Header */}
       <PageHeader
         title="Service-Events"
-        description="Uebersicht aller Wartungen, Reparaturen und Inspektionen"
+        description="Übersicht aller Wartungen, Reparaturen und Inspektionen"
       />
 
       {/* Stats Cards */}
@@ -586,7 +586,7 @@ export default function ServiceEventsPage() {
                                 className="text-red-600 focus:text-red-600 focus:bg-red-50"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Loeschen
+                                Löschen
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -618,7 +618,7 @@ export default function ServiceEventsPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Zurueck
+                  Zurück
                 </Button>
                 <Button
                   variant="outline"
@@ -644,7 +644,7 @@ export default function ServiceEventsPage() {
             setEventToDelete(null);
           }
         }}
-        title="Service-Event loeschen"
+        title="Service-Event löschen"
         itemName={
           eventToDelete
             ? `${eventTypeLabels[eventToDelete.eventType] || eventToDelete.eventType} - ${eventToDelete.turbine.designation}`

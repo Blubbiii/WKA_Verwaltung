@@ -340,7 +340,7 @@ function MappingsTab() {
       return;
     }
     if (!formPlantNo || Number(formPlantNo) < 1) {
-      toast.error("Bitte gueltige Anlage-Nr. eingeben");
+      toast.error("Bitte gültige Anlage-Nr. eingeben");
       return;
     }
     if (formDeviceType === "WEA" && !formTurbineId) {
@@ -485,7 +485,7 @@ function MappingsTab() {
 
     if (failed === 0) {
       toast.success(
-        `${started} Import(e) gestartet fuer ${activeLocations.length} Standort(e). Importe laufen im Hintergrund.`
+        `${started} Import(e) gestartet für ${activeLocations.length} Standort(e). Importe laufen im Hintergrund.`
       );
     } else {
       toast.warning(
@@ -599,9 +599,9 @@ function MappingsTab() {
                     />
                   </div>
 
-                  {/* Geraetetyp */}
+                  {/* Gerätetyp */}
                   <div className="space-y-2">
-                    <Label htmlFor="deviceType">Geraetetyp *</Label>
+                    <Label htmlFor="deviceType">Gerätetyp *</Label>
                     <Select
                       value={formDeviceType}
                       onValueChange={(val) => {
@@ -707,7 +707,7 @@ function MappingsTab() {
                 <TableHead>Standort-Code</TableHead>
                 <TableHead>Anlage-Nr.</TableHead>
                 <TableHead>Park</TableHead>
-                <TableHead>Geraet</TableHead>
+                <TableHead>Gerät</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[140px]">Import</TableHead>
                 <TableHead className="w-[100px]">Aktionen</TableHead>
@@ -1111,7 +1111,7 @@ function ImportTab() {
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(
-            err.error || `Fehler beim Speichern der Zuordnung fuer Anlage ${plant.plantNo}`
+            err.error || `Fehler beim Speichern der Zuordnung für Anlage ${plant.plantNo}`
           );
         }
       }
@@ -1242,7 +1242,7 @@ function ImportTab() {
       );
     } else {
       toast.success(
-        `Import gestartet: ${startedCount} Dateityp(en) fuer ${locationCode}`
+        `Import gestartet: ${startedCount} Dateityp(en) für ${locationCode}`
       );
     }
   };
@@ -1513,7 +1513,7 @@ function ImportTab() {
               </div>
               <Button variant="outline" size="sm" onClick={handleBackToScan}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Zurueck
+                Zurück
               </Button>
             </div>
           </CardHeader>
@@ -1819,7 +1819,7 @@ function ImportTab() {
                 </p>
               </div>
               <div>
-                <p className="text-muted-foreground">Uebersprungen</p>
+                <p className="text-muted-foreground">Übersprungen</p>
                 <p className="font-mono font-medium">
                   {activeImports.reduce((s, j) => s + (j.recordsSkipped ?? 0), 0).toLocaleString("de-DE")}
                 </p>
@@ -1902,7 +1902,7 @@ function ImportTab() {
                       colSpan={7}
                       className="h-32 text-center text-muted-foreground"
                     >
-                      Noch keine Importe durchgefuehrt
+                      Noch keine Importe durchgeführt
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -2004,7 +2004,7 @@ function LogsTab() {
                 <TableHead>Dateityp</TableHead>
                 <TableHead className="text-right">Dateien</TableHead>
                 <TableHead className="text-right">Importiert</TableHead>
-                <TableHead className="text-right">Uebersprungen</TableHead>
+                <TableHead className="text-right">Übersprungen</TableHead>
                 <TableHead className="text-right">Fehlerhaft</TableHead>
               </TableRow>
             </TableHeader>
@@ -2177,8 +2177,8 @@ function AutoImportTab() {
 
       toast.success(
         currentlyEnabled
-          ? `Auto-Import deaktiviert fuer ${locationCode}`
-          : `Auto-Import aktiviert fuer ${locationCode}`,
+          ? `Auto-Import deaktiviert für ${locationCode}`
+          : `Auto-Import aktiviert für ${locationCode}`,
       );
       loadStatus();
     } catch (err) {
@@ -2437,7 +2437,7 @@ function AutoImportTab() {
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Gefunden</TableHead>
                   <TableHead className="text-right">Importiert</TableHead>
-                  <TableHead className="text-right">Uebersprungen</TableHead>
+                  <TableHead className="text-right">Übersprungen</TableHead>
                   <TableHead>Zusammenfassung</TableHead>
                 </TableRow>
               </TableHeader>
@@ -2459,7 +2459,7 @@ function AutoImportTab() {
                       colSpan={6}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      Noch keine automatischen Importe ausgefuehrt
+                      Noch keine automatischen Importe ausgeführt
                     </TableCell>
                   </TableRow>
                 ) : (

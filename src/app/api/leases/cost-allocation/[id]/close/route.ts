@@ -33,7 +33,7 @@ export async function POST(
     if (allocation.status !== "INVOICED") {
       return NextResponse.json(
         {
-          error: "Nur abgerechnete Kostenaufteilungen koennen abgeschlossen werden",
+          error: "Nur abgerechnete Kostenaufteilungen können abgeschlossen werden",
           details: `Aktueller Status: ${allocation.status}`,
         },
         { status: 400 }

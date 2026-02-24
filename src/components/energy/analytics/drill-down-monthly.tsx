@@ -241,7 +241,7 @@ export function DrillDownMonthly({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <Zap className="h-8 w-8 mb-2" />
-        <p>Keine SCADA-Daten fuer diesen Monat verfuegbar</p>
+        <p>Keine SCADA-Daten für diesen Monat verfügbar</p>
       </div>
     );
   }
@@ -311,7 +311,7 @@ export function DrillDownMonthly({
           </ResponsiveContainer>
           {onDayClick && (
             <p className="text-xs text-muted-foreground text-center mt-2">
-              Klicken Sie auf einen Tag fuer die Tagesdetails
+              Klicken Sie auf einen Tag für die Tagesdetails
             </p>
           )}
         </CardContent>

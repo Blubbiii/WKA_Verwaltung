@@ -129,7 +129,7 @@ export function TenantEmailSettings() {
             <CardTitle className="text-lg">Absender-Konfiguration</CardTitle>
           </div>
           <CardDescription>
-            Konfigurieren Sie den Absendernamen fuer alle E-Mails, die ueber
+            Konfigurieren Sie den Absendernamen für alle E-Mails, die über
             das System versendet werden
           </CardDescription>
         </CardHeader>
@@ -220,7 +220,7 @@ export function TenantEmailSettings() {
           <div className="rounded-md bg-muted/50 p-3">
             <p className="text-sm text-muted-foreground">
               Die Signatur wird automatisch an alle E-Mails angehaengt, die
-              ueber das System versendet werden (z.B. Rechnungsversand,
+              über das System versendet werden (z.B. Rechnungsversand,
               Benachrichtigungen, Abstimmungseinladungen).
             </p>
           </div>

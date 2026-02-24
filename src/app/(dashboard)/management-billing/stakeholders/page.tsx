@@ -154,7 +154,7 @@ export default function StakeholdersListPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="BF-Vertraege"
+        title="BF-Verträge"
         description="Dienstleister und deren Aufgaben in Windparks verwalten"
         createHref="/management-billing/stakeholders/new"
         createLabel="Neuer BF-Vertrag"
@@ -216,7 +216,7 @@ export default function StakeholdersListPage() {
         <Card>
           <CardContent className="py-8">
             <p className="text-center text-destructive">
-              Fehler beim Laden der BF-Vertraege. Bitte versuchen Sie es
+              Fehler beim Laden der BF-Verträge. Bitte versuchen Sie es
               erneut.
             </p>
           </CardContent>
@@ -228,12 +228,12 @@ export default function StakeholdersListPage() {
               icon={Briefcase}
               title={
                 stakeholders.length === 0
-                  ? "Keine BF-Vertraege vorhanden"
+                  ? "Keine BF-Verträge vorhanden"
                   : "Keine Ergebnisse"
               }
               description={
                 stakeholders.length === 0
-                  ? "Erstellen Sie den ersten BF-Vertrag, um Betriebsfuehrungs-Abrechnungen zu verwalten."
+                  ? "Erstellen Sie den ersten BF-Vertrag, um Betriebsführungs-Abrechnungen zu verwalten."
                   : "Passen Sie Ihre Suchkriterien an, um Ergebnisse zu finden."
               }
               action={
@@ -259,7 +259,7 @@ export default function StakeholdersListPage() {
                     <TableHead>Park</TableHead>
                     <TableHead>Aufgabe</TableHead>
                     <TableHead>Gesellschaften</TableHead>
-                    <TableHead className="text-right">Gebuehr %</TableHead>
+                    <TableHead className="text-right">Gebühr %</TableHead>
                     <TableHead>Abrechnung</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Aktionen</TableHead>

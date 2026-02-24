@@ -301,13 +301,13 @@ export default function UsageFeeDetailPage({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || "Fehler beim Loeschen");
+        throw new Error(err.error || "Fehler beim Löschen");
       }
-      toast.success("Abrechnung wurde geloescht");
+      toast.success("Abrechnung wurde gelöscht");
       router.push("/leases/usage-fees");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Loeschen"
+        error instanceof Error ? error.message : "Fehler beim Löschen"
       );
     }
   }
@@ -417,7 +417,7 @@ export default function UsageFeeDetailPage({
   const title = `Nutzungsentgelt WP ${settlement.park?.name || ""} ${settlement.year}`;
   const modelLabel = settlement.usedMinimum
     ? "Mindestpacht"
-    : "Erloesabhaengig";
+    : "Erlösabhaengig";
 
   // ---------------------------------------------------------------------------
   // Render
@@ -472,7 +472,7 @@ export default function UsageFeeDetailPage({
                 disabled={!!actionLoading}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Loeschen
+                Löschen
               </Button>
             </>
           )}
@@ -586,7 +586,7 @@ export default function UsageFeeDetailPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Jahreserloese
+              Jahreserlöse
             </CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -595,7 +595,7 @@ export default function UsageFeeDetailPage({
               {formatCurrency(Number(settlement.totalParkRevenueEur || 0))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Parkerloese {settlement.year}
+              Parkerlöse {settlement.year}
             </p>
           </CardContent>
         </Card>
@@ -614,7 +614,7 @@ export default function UsageFeeDetailPage({
                 : formatCurrency(Number(settlement.calculatedFeeEur || 0))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Erloesabhaengiger Anteil
+              Erlösabhaengiger Anteil
             </p>
           </CardContent>
         </Card>
@@ -881,7 +881,7 @@ export default function UsageFeeDetailPage({
                 </h3>
                 <p className="text-muted-foreground mb-4">
                   Klicken Sie auf &quot;Berechnung starten&quot;, um das
-                  Nutzungsentgelt auf Basis der Parkerloese und Pachtvertraege
+                  Nutzungsentgelt auf Basis der Parkerlöse und Pachtverträge
                   zu berechnen.
                 </p>
                 <Button
@@ -1020,7 +1020,7 @@ export default function UsageFeeDetailPage({
                 <p className="text-muted-foreground mb-4">
                   {settlement.status === "SETTLED"
                     ? "Erstellen Sie eine Kostenaufteilung, um die Nutzungsentgelte auf die Betreibergesellschaften aufzuteilen."
-                    : "Kostenaufteilungen koennen erstellt werden, sobald die Abrechnung den Status 'Abgerechnet' hat."}
+                    : "Kostenaufteilungen können erstellt werden, sobald die Abrechnung den Status 'Abgerechnet' hat."}
                 </p>
                 {settlement.status === "SETTLED" && (
                   <Button variant="outline" asChild>
@@ -1041,7 +1041,7 @@ export default function UsageFeeDetailPage({
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         onConfirm={handleDelete}
-        title="Abrechnung loeschen"
+        title="Abrechnung löschen"
         itemName={title}
       />
 
@@ -1061,7 +1061,7 @@ export default function UsageFeeDetailPage({
             <Label htmlFor="cancel-reason">Stornogrund *</Label>
             <Textarea
               id="cancel-reason"
-              placeholder="Bitte geben Sie den Grund fuer die Stornierung an..."
+              placeholder="Bitte geben Sie den Grund für die Stornierung an..."
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               className="mt-2"

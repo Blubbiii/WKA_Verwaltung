@@ -100,7 +100,7 @@ export function ScadaKpiCards({ parkId }: ScadaKpiCardsProps) {
       <Card>
         <CardContent className="py-6">
           <p className="text-center text-sm text-muted-foreground">
-            Keine SCADA-Daten verfuegbar. Bitte importieren Sie SCADA-Daten ueber die SCADA-Verwaltung.
+            Keine SCADA-Daten verfügbar. Bitte importieren Sie SCADA-Daten über die SCADA-Verwaltung.
           </p>
         </CardContent>
       </Card>
@@ -151,7 +151,7 @@ export function ScadaKpiCards({ parkId }: ScadaKpiCardsProps) {
 
       {/* Monthly Availability */}
       <KPICard
-        title="Verfuegbarkeit"
+        title="Verfügbarkeit"
         value={
           data.monthAvailability > 0
             ? `${dec1Fmt.format(data.monthAvailability)} %`

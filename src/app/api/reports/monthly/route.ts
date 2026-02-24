@@ -11,7 +11,7 @@ import { prisma } from "@/lib/prisma";
 
 // Validation schema
 const monthlyReportSchema = z.object({
-  parkId: z.string().uuid("Ungueltige Park-ID"),
+  parkId: z.string().uuid("Ungültige Park-ID"),
   year: z
     .number()
     .int()
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Ungueltige Eingabedaten",
+          error: "Ungültige Eingabedaten",
           details: parsed.error.flatten().fieldErrors,
         },
         { status: 400 }

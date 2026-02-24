@@ -52,7 +52,7 @@ export async function POST(
     if (allocation.status !== "DRAFT") {
       return NextResponse.json(
         {
-          error: "Rechnungen koennen nur fuer Kostenaufteilungen im Entwurf-Status erstellt werden",
+          error: "Rechnungen können nur für Kostenaufteilungen im Entwurf-Status erstellt werden",
           details: `Aktueller Status: ${allocation.status}`,
         },
         { status: 400 }

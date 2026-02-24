@@ -28,7 +28,7 @@ export function TenantAdminInvitationEmail({
   currentYear = new Date().getFullYear(),
   unsubscribeUrl,
 }: TenantAdminInvitationEmailProps) {
-  const preview = `Sie wurden als Administrator fuer ${tenantName} eingeladen`;
+  const preview = `Sie wurden als Administrator für ${tenantName} eingeladen`;
   const brandName = appName || 'WindparkManager';
 
   return (
@@ -46,7 +46,7 @@ export function TenantAdminInvitationEmail({
       <Paragraph>Hallo {userName},</Paragraph>
 
       <Paragraph>
-        Sie wurden als Administrator fuer <strong>{tenantName}</strong> im{' '}
+        Sie wurden als Administrator für <strong>{tenantName}</strong> im{' '}
         {brandName} eingerichtet. Bitte klicken Sie auf den folgenden
         Button, um Ihr Konto zu aktivieren und ein Passwort festzulegen:
       </Paragraph>
@@ -59,7 +59,7 @@ export function TenantAdminInvitationEmail({
 
       <InfoBox borderColor="#f59e0b">
         <Text style={warningTextStyle}>
-          <strong>Wichtig:</strong> Dieser Link ist nur {expiresIn} gueltig und
+          <strong>Wichtig:</strong> Dieser Link ist nur {expiresIn} gültig und
           kann nur einmal verwendet werden.
         </Text>
       </InfoBox>
@@ -77,7 +77,7 @@ export function TenantAdminInvitationEmail({
         <Text style={securityTextStyle}>
           <strong>Sicherheitshinweis:</strong> Falls Sie diese Einladung nicht
           erwartet haben, ignorieren Sie diese E-Mail bitte. Wenn Sie vermuten,
-          dass jemand unbefugt auf Ihr Konto zugreifen moechte, kontaktieren
+          dass jemand unbefugt auf Ihr Konto zugreifen möchte, kontaktieren
           Sie uns bitte umgehend.
         </Text>
       </Section>

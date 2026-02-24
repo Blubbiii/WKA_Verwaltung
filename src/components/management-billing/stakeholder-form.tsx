@@ -352,7 +352,7 @@ export function StakeholderForm({
         ) : funds.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {formData.stakeholderTenantId
-              ? 'Keine Gesellschaften verfuegbar.'
+              ? 'Keine Gesellschaften verfügbar.'
               : 'Erst Dienstleister-Mandant auswaehlen.'}
           </p>
         ) : (
@@ -386,7 +386,7 @@ export function StakeholderForm({
       {/* Fee Percentage - shown only when billing is enabled */}
       {formData.billingEnabled && (
         <div className="space-y-2">
-          <Label htmlFor="feePercentage">Gebuehr (%)</Label>
+          <Label htmlFor="feePercentage">Gebühr (%)</Label>
           <Input
             id="feePercentage"
             type="number"
@@ -451,7 +451,7 @@ export function StakeholderForm({
       {/* Valid From */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="validFrom">Gueltig ab</Label>
+          <Label htmlFor="validFrom">Gültig ab</Label>
           <Input
             id="validFrom"
             type="date"
@@ -462,7 +462,7 @@ export function StakeholderForm({
 
         {/* Valid To */}
         <div className="space-y-2">
-          <Label htmlFor="validTo">Gueltig bis (optional)</Label>
+          <Label htmlFor="validTo">Gültig bis (optional)</Label>
           <Input
             id="validTo"
             type="date"

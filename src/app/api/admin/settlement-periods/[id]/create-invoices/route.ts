@@ -29,7 +29,7 @@ const createInvoicesSchema = z.object({
 const DEFAULT_SETTLEMENT_ARTICLES = [
   { type: "MINDESTPACHT", label: "Mindestnutzungsentgeld", taxRate: 0, accountNumber: "8400" },
   { type: "JAHRESNUTZUNGSENTGELD", label: "Jahresnutzungsentgeld", taxRate: 0, accountNumber: "8400" },
-  { type: "VORSCHUSSVERRECHNUNG", label: "Verrechnung Vorschuesse", taxRate: 0, accountNumber: "8400" },
+  { type: "VORSCHUSSVERRECHNUNG", label: "Verrechnung Vorschüsse", taxRate: 0, accountNumber: "8400" },
   { type: "ZUWEGUNG", label: "Zuwegungsentschaedigung", taxRate: 0, accountNumber: "8401" },
   { type: "KABELTRASSE", label: "Kabeltrassenentschaedigung", taxRate: 0, accountNumber: "8401" },
   { type: "AUSGLEICH", label: "Ausgleichsentschaedigung", taxRate: 0, accountNumber: "8401" },
@@ -42,7 +42,7 @@ interface SettlementArticle {
   accountNumber: string;
 }
 
-// Monatsname fuer Rechnungsbeschreibung
+// Monatsname für Rechnungsbeschreibung
 const MONTH_NAMES = [
   "", "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
   "Juli", "August", "September", "Oktober", "November", "Dezember"
@@ -220,7 +220,7 @@ export async function POST(
 
     if (period.status === "CLOSED") {
       return NextResponse.json(
-        { error: "Fuer geschlossene Perioden koennen keine Gutschriften mehr erstellt werden" },
+        { error: "Für geschlossene Perioden können keine Gutschriften mehr erstellt werden" },
         { status: 400 }
       );
     }
@@ -358,7 +358,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
   // Validate: QUARTERLY and MONTHLY need a month/quarter number
   if (interval !== "YEARLY" && !period.month) {
     return NextResponse.json(
-      { error: "Quartals-/Monatsvorschuss benoetigt eine Periodenangabe" },
+      { error: "Quartals-/Monatsvorschuss benötigt eine Periodenangabe" },
       { status: 400 }
     );
   }
@@ -377,7 +377,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
 
   if (calcResult.leases.length === 0) {
     return NextResponse.json(
-      { error: "Keine abrechenbaren Vertraege gefunden" },
+      { error: "Keine abrechenbaren Verträge gefunden" },
       { status: 400 }
     );
   }
@@ -524,7 +524,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
     const settlementDetails: SettlementPdfDetails = {
       type: "ADVANCE",
       subtitle: `Nutzungsentgelt / ${period.park.name} / ${periodLabel}`,
-      introText: "Gemaess den Ihnen vorliegenden Vertraegen erhalten Sie nachfolgende Vorschuss-Pachtzahlung:",
+      introText: "Gemaess den Ihnen vorliegenden Verträgen erhalten Sie nachfolgende Vorschuss-Pachtzahlung:",
       calculationSummary,
     };
 
@@ -597,7 +597,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
   });
 
   return NextResponse.json({
-    message: `${createdInvoices.length} Gutschrift(en) fuer ${periodLabel} erstellt`,
+    message: `${createdInvoices.length} Gutschrift(en) für ${periodLabel} erstellt`,
     periodType: "ADVANCE",
     invoices: createdInvoices.map((inv) => ({
       id: inv.id,
@@ -635,7 +635,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
 
   if (calcResult.leases.length === 0) {
     return NextResponse.json(
-      { error: "Keine abrechenbaren Vertraege gefunden" },
+      { error: "Keine abrechenbaren Verträge gefunden" },
       { status: 400 }
     );
   }
@@ -969,7 +969,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
     const settlementDetails: SettlementPdfDetails = {
       type: "FINAL",
       subtitle: `Nutzungsentgelt / ${calcResult.parkName} / Leistungszeitraum ${period.year}`,
-      introText: "Gemaess den Ihnen vorliegenden Vertraegen erhalten Sie nachfolgende Pachtzahlung:",
+      introText: "Gemaess den Ihnen vorliegenden Verträgen erhalten Sie nachfolgende Pachtzahlung:",
       calculationSummary,
       revenueTable,
       revenueTableTotal,
@@ -989,7 +989,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
 
   if (prepared.length === 0) {
     return NextResponse.json(
-      { error: "Keine offenen Betraege nach Verrechnung der Vorschuesse" },
+      { error: "Keine offenen Betraege nach Verrechnung der Vorschüsse" },
       { status: 400 }
     );
   }

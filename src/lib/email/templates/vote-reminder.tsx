@@ -46,7 +46,7 @@ export function VoteReminderEmail({
       <Paragraph>Hallo {shareholderName},</Paragraph>
 
       <Paragraph>
-        wir moechten Sie daran erinnern, dass die Abstimmung{' '}
+        wir möchten Sie daran erinnern, dass die Abstimmung{' '}
         <strong>{voteName}</strong> bald endet. Bitte geben Sie Ihre Stimme
         rechtzeitig ab.
       </Paragraph>

@@ -113,7 +113,7 @@ export function RevenueTypesSettings() {
         setRevenueTypes(data.data || []);
       }
     } catch {
-      toast.error("Fehler beim Laden der Verguetungsarten");
+      toast.error("Fehler beim Laden der Vergütungsarten");
     } finally {
       setIsLoading(false);
     }
@@ -156,13 +156,13 @@ export function RevenueTypesSettings() {
       );
       if (response.ok) {
         const result = await response.json();
-        toast.success(result.message || "Verguetungsart geloescht");
+        toast.success(result.message || "Vergütungsart gelöscht");
         fetchData();
       } else {
-        throw new Error("Fehler beim Loeschen");
+        throw new Error("Fehler beim Löschen");
       }
     } catch {
-      toast.error("Fehler beim Loeschen der Verguetungsart");
+      toast.error("Fehler beim Löschen der Vergütungsart");
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -208,8 +208,8 @@ export function RevenueTypesSettings() {
 
       toast.success(
         editingId
-          ? "Verguetungsart aktualisiert"
-          : "Verguetungsart erstellt"
+          ? "Vergütungsart aktualisiert"
+          : "Vergütungsart erstellt"
       );
       setDialogOpen(false);
       fetchData();
@@ -231,23 +231,23 @@ export function RevenueTypesSettings() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5" />
-              Verguetungsarten
+              Vergütungsarten
             </CardTitle>
             <CardDescription>
-              Verguetungsarten fuer Netzbetreiber-Daten (EEG, Direktvermarktung
+              Vergütungsarten für Netzbetreiber-Daten (EEG, Direktvermarktung
               etc.)
             </CardDescription>
           </div>
           <Button onClick={handleAdd}>
             <Plus className="mr-2 h-4 w-4" />
-            Neue Verguetungsart
+            Neue Vergütungsart
           </Button>
         </CardHeader>
         <CardContent>
           {revenueTypes.length === 0 ? (
             <p className="py-8 text-center text-muted-foreground">
-              Keine Verguetungsarten vorhanden. Erstellen Sie Ihre erste
-              Verguetungsart.
+              Keine Vergütungsarten vorhanden. Erstellen Sie Ihre erste
+              Vergütungsart.
             </p>
           ) : (
             <Table>
@@ -326,11 +326,11 @@ export function RevenueTypesSettings() {
           <DialogHeader>
             <DialogTitle>
               {editingId
-                ? "Verguetungsart bearbeiten"
-                : "Neue Verguetungsart"}
+                ? "Vergütungsart bearbeiten"
+                : "Neue Vergütungsart"}
             </DialogTitle>
             <DialogDescription>
-              Verguetungsarten werden fuer die Zuordnung von Netzbetreiber-Daten
+              Vergütungsarten werden für die Zuordnung von Netzbetreiber-Daten
               verwendet.
             </DialogDescription>
           </DialogHeader>
@@ -344,7 +344,7 @@ export function RevenueTypesSettings() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="z.B. EEG-Verguetung"
+                  placeholder="z.B. EEG-Vergütung"
                 />
               </div>
               <div className="space-y-2">
@@ -430,7 +430,7 @@ export function RevenueTypesSettings() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Die konkreten Prozentsaetze werden zentral unter Steuersaetze verwaltet.
+                Die konkreten Prozentsaetze werden zentral unter Steuersätze verwaltet.
               </p>
             </div>
           </div>
@@ -453,8 +453,8 @@ export function RevenueTypesSettings() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        title="Verguetungsart loeschen"
-        description={`Moechten Sie die Verguetungsart "${itemToDelete?.name}" wirklich loeschen? Falls Netzbetreiber-Daten diese verwenden, wird sie nur deaktiviert.`}
+        title="Vergütungsart löschen"
+        description={`Möchten Sie die Vergütungsart "${itemToDelete?.name}" wirklich löschen? Falls Netzbetreiber-Daten diese verwenden, wird sie nur deaktiviert.`}
       />
     </div>
   );

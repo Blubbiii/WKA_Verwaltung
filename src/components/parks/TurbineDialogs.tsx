@@ -71,8 +71,8 @@ interface Turbine {
   latitude: number | null;
   longitude: number | null;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
-  technischeBetriebsfuehrung: string | null;
-  kaufmaennischeBetriebsfuehrung: string | null;
+  technischeBetriebsführung: string | null;
+  kaufmaennischeBetriebsführung: string | null;
   netzgesellschaftFundId: string | null;
   netzgesellschaftFund: { id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null } | null;
   operatorHistory?: { id: string; operatorFundId: string; operatorFund: { id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null } }[];
@@ -220,8 +220,8 @@ function AddTurbineDialog({
     longitude: string;
     status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
     operatorFundId: string;
-    technischeBetriebsfuehrung: string;
-    kaufmaennischeBetriebsfuehrung: string;
+    technischeBetriebsführung: string;
+    kaufmaennischeBetriebsführung: string;
     netzgesellschaftFundId: string;
   }>({
     designation: "",
@@ -236,8 +236,8 @@ function AddTurbineDialog({
     longitude: "",
     status: "ACTIVE",
     operatorFundId: "",
-    technischeBetriebsfuehrung: "",
-    kaufmaennischeBetriebsfuehrung: "",
+    technischeBetriebsführung: "",
+    kaufmaennischeBetriebsführung: "",
     netzgesellschaftFundId: "",
   });
   const [commissioningDate, setCommissioningDate] = useState<Date | undefined>();
@@ -352,8 +352,8 @@ function AddTurbineDialog({
       longitude: "",
       status: "ACTIVE",
       operatorFundId: "",
-      technischeBetriebsfuehrung: "",
-      kaufmaennischeBetriebsfuehrung: "",
+      technischeBetriebsführung: "",
+      kaufmaennischeBetriebsführung: "",
       netzgesellschaftFundId: "",
     });
     setCommissioningDate(undefined);
@@ -389,8 +389,8 @@ function AddTurbineDialog({
           warrantyEndDate: warrantyEndDate?.toISOString() || null,
           status: formData.status,
           operatorFundId: formData.operatorFundId || null,
-          technischeBetriebsfuehrung: formData.technischeBetriebsfuehrung || null,
-          kaufmaennischeBetriebsfuehrung: formData.kaufmaennischeBetriebsfuehrung || null,
+          technischeBetriebsführung: formData.technischeBetriebsführung || null,
+          kaufmaennischeBetriebsführung: formData.kaufmaennischeBetriebsführung || null,
           netzgesellschaftFundId: formData.netzgesellschaftFundId || null,
         }),
       });
@@ -416,9 +416,9 @@ function AddTurbineDialog({
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) resetForm(); setIsOpen(open); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Neue Anlage hinzufuegen</DialogTitle>
+          <DialogTitle>Neue Anlage hinzufügen</DialogTitle>
           <DialogDescription>
-            Neue Windkraftanlage fuer {parkName} erstellen
+            Neue Windkraftanlage für {parkName} erstellen
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
@@ -520,21 +520,21 @@ function AddTurbineDialog({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="technischeBetriebsfuehrung">Technische Betriebsfuehrung</Label>
+                <Label htmlFor="technischeBetriebsführung">Technische Betriebsführung</Label>
                 <Input
-                  id="technischeBetriebsfuehrung"
+                  id="technischeBetriebsführung"
                   placeholder="z.B. Enercon GmbH"
-                  value={formData.technischeBetriebsfuehrung}
-                  onChange={(e) => setFormData({ ...formData, technischeBetriebsfuehrung: e.target.value })}
+                  value={formData.technischeBetriebsführung}
+                  onChange={(e) => setFormData({ ...formData, technischeBetriebsführung: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="kaufmaennischeBetriebsfuehrung">Kaufmaennische Betriebsfuehrung</Label>
+                <Label htmlFor="kaufmaennischeBetriebsführung">Kaufmaennische Betriebsführung</Label>
                 <Input
-                  id="kaufmaennischeBetriebsfuehrung"
+                  id="kaufmaennischeBetriebsführung"
                   placeholder="z.B. Windpark Service GmbH"
-                  value={formData.kaufmaennischeBetriebsfuehrung}
-                  onChange={(e) => setFormData({ ...formData, kaufmaennischeBetriebsfuehrung: e.target.value })}
+                  value={formData.kaufmaennischeBetriebsführung}
+                  onChange={(e) => setFormData({ ...formData, kaufmaennischeBetriebsführung: e.target.value })}
                 />
               </div>
             </div>
@@ -861,8 +861,8 @@ function EditTurbineDialog({
     longitude: "",
     status: "ACTIVE" as "ACTIVE" | "INACTIVE" | "ARCHIVED",
     operatorFundId: "",
-    technischeBetriebsfuehrung: "",
-    kaufmaennischeBetriebsfuehrung: "",
+    technischeBetriebsführung: "",
+    kaufmaennischeBetriebsführung: "",
     netzgesellschaftFundId: "",
   });
   const [commissioningDate, setCommissioningDate] = useState<Date | undefined>();
@@ -940,8 +940,8 @@ function EditTurbineDialog({
         longitude: turbine.longitude?.toString() || "",
         status: turbine.status,
         operatorFundId: activeOperator?.operatorFundId || "",
-        technischeBetriebsfuehrung: turbine.technischeBetriebsfuehrung || "",
-        kaufmaennischeBetriebsfuehrung: turbine.kaufmaennischeBetriebsfuehrung || "",
+        technischeBetriebsführung: turbine.technischeBetriebsführung || "",
+        kaufmaennischeBetriebsführung: turbine.kaufmaennischeBetriebsführung || "",
         netzgesellschaftFundId: turbine.netzgesellschaftFundId || "",
       });
       const cDate = turbine.commissioningDate ? new Date(turbine.commissioningDate) : undefined;
@@ -1018,8 +1018,8 @@ function EditTurbineDialog({
           warrantyEndDate: warrantyEndDate?.toISOString() || null,
           status: formData.status,
           operatorFundId: formData.operatorFundId || null,
-          technischeBetriebsfuehrung: formData.technischeBetriebsfuehrung || null,
-          kaufmaennischeBetriebsfuehrung: formData.kaufmaennischeBetriebsfuehrung || null,
+          technischeBetriebsführung: formData.technischeBetriebsführung || null,
+          kaufmaennischeBetriebsführung: formData.kaufmaennischeBetriebsführung || null,
           netzgesellschaftFundId: formData.netzgesellschaftFundId || null,
         }),
       });
@@ -1157,21 +1157,21 @@ function EditTurbineDialog({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-technischeBetriebsfuehrung">Technische Betriebsfuehrung</Label>
+                <Label htmlFor="edit-technischeBetriebsführung">Technische Betriebsführung</Label>
                 <Input
-                  id="edit-technischeBetriebsfuehrung"
+                  id="edit-technischeBetriebsführung"
                   placeholder="z.B. Enercon GmbH"
-                  value={formData.technischeBetriebsfuehrung}
-                  onChange={(e) => setFormData({ ...formData, technischeBetriebsfuehrung: e.target.value })}
+                  value={formData.technischeBetriebsführung}
+                  onChange={(e) => setFormData({ ...formData, technischeBetriebsführung: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-kaufmaennischeBetriebsfuehrung">Kaufmaennische Betriebsfuehrung</Label>
+                <Label htmlFor="edit-kaufmaennischeBetriebsführung">Kaufmaennische Betriebsführung</Label>
                 <Input
-                  id="edit-kaufmaennischeBetriebsfuehrung"
+                  id="edit-kaufmaennischeBetriebsführung"
                   placeholder="z.B. Windpark Service GmbH"
-                  value={formData.kaufmaennischeBetriebsfuehrung}
-                  onChange={(e) => setFormData({ ...formData, kaufmaennischeBetriebsfuehrung: e.target.value })}
+                  value={formData.kaufmaennischeBetriebsführung}
+                  onChange={(e) => setFormData({ ...formData, kaufmaennischeBetriebsführung: e.target.value })}
                 />
               </div>
             </div>
@@ -1589,7 +1589,7 @@ function TurbineDetailDialog({
                 </h4>
                 <div className="grid grid-cols-3 gap-4 rounded-lg border p-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Geraetetyp</p>
+                    <p className="text-sm text-muted-foreground">Gerätetyp</p>
                     <p className="font-medium">
                       {deviceTypeLabels[turbine.deviceType || "WEA"] || "WEA"}
                     </p>
@@ -1633,12 +1633,12 @@ function TurbineDetailDialog({
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm text-muted-foreground">Technische Betriebsfuehrung</p>
-                          <p className="font-medium">{turbineDetail?.technischeBetriebsfuehrung || "-"}</p>
+                          <p className="text-sm text-muted-foreground">Technische Betriebsführung</p>
+                          <p className="font-medium">{turbineDetail?.technischeBetriebsführung || "-"}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Kaufmaennische Betriebsfuehrung</p>
-                          <p className="font-medium">{turbineDetail?.kaufmaennischeBetriebsfuehrung || "-"}</p>
+                          <p className="text-sm text-muted-foreground">Kaufmaennische Betriebsführung</p>
+                          <p className="font-medium">{turbineDetail?.kaufmaennischeBetriebsführung || "-"}</p>
                         </div>
                       </div>
                     </div>
@@ -1730,7 +1730,7 @@ function TurbineDetailDialog({
                     <div className="rounded-lg border p-3 text-center">
                       <FileText className="mx-auto h-5 w-5 text-muted-foreground mb-1" />
                       <p className="text-2xl font-bold">{turbineDetail._count.contracts}</p>
-                      <p className="text-xs text-muted-foreground">Vertraege</p>
+                      <p className="text-xs text-muted-foreground">Verträge</p>
                     </div>
                   </div>
                 </div>

@@ -31,12 +31,12 @@ const ruleHandlers: Record<BillingRuleType, RuleHandler> = {
 };
 
 /**
- * Holt den passenden Handler fuer einen Regel-Typ
+ * Holt den passenden Handler für einen Regel-Typ
  */
 export function getHandler(ruleType: BillingRuleType): RuleHandler {
   const handler = ruleHandlers[ruleType];
   if (!handler) {
-    throw new Error(`Kein Handler fuer Regel-Typ "${ruleType}" gefunden`);
+    throw new Error(`Kein Handler für Regel-Typ "${ruleType}" gefunden`);
   }
   return handler;
 }
@@ -45,8 +45,8 @@ export function getHandler(ruleType: BillingRuleType): RuleHandler {
  * Fuehrt eine Abrechnungsregel aus
  *
  * @param ruleId - ID der auszufuehrenden Regel
- * @param options - Ausfuehrungsoptionen (dryRun, forceRun, etc.)
- * @returns ExecutionResult mit Details zur Ausfuehrung
+ * @param options - Ausführungsoptionen (dryRun, forceRun, etc.)
+ * @returns ExecutionResult mit Details zur Ausführung
  */
 export async function executeRule(
   ruleId: string,
@@ -75,7 +75,7 @@ export async function executeRule(
     const now = new Date();
     if (rule.nextRunAt > now) {
       throw new Error(
-        `Regel "${rule.name}" ist erst am ${rule.nextRunAt.toLocaleDateString("de-DE")} faellig`
+        `Regel "${rule.name}" ist erst am ${rule.nextRunAt.toLocaleDateString("de-DE")} fällig`
       );
     }
   }
@@ -86,7 +86,7 @@ export async function executeRule(
   // Parameter validieren
   const parameters = rule.parameters as BillingRuleParameters;
   if (!handler.validateParameters(parameters)) {
-    throw new Error(`Ungueltige Parameter fuer Regel "${rule.name}"`);
+    throw new Error(`Ungültige Parameter für Regel "${rule.name}"`);
   }
 
   // Merge Override-Parameter
@@ -100,7 +100,7 @@ export async function executeRule(
     const execution = await prisma.billingRuleExecution.create({
       data: {
         ruleId: rule.id,
-        status: "success", // Wird spaeter aktualisiert
+        status: "success", // Wird später aktualisiert
         startedAt: new Date(),
       },
     });
@@ -182,7 +182,7 @@ export async function previewRule(ruleId: string): Promise<ExecutionResult> {
 }
 
 /**
- * Fuehrt alle faelligen Regeln aus
+ * Fuehrt alle fälligen Regeln aus
  *
  * @param tenantId - Optional: Nur Regeln eines bestimmten Tenants
  * @returns Array von ExecutionResults
@@ -192,7 +192,7 @@ export async function executeAllDueRules(
 ): Promise<ExecutionResult[]> {
   const now = new Date();
 
-  // Finde alle faelligen Regeln
+  // Finde alle fälligen Regeln
   const dueRules = await prisma.billingRule.findMany({
     where: {
       isActive: true,
@@ -236,7 +236,7 @@ export async function executeAllDueRules(
 }
 
 /**
- * Prueft ob eine Regel gueltige Parameter hat
+ * Prueft ob eine Regel gültige Parameter hat
  */
 export function validateRuleParameters(
   ruleType: BillingRuleType,
@@ -249,7 +249,7 @@ export function validateRuleParameters(
     if (!isValid) {
       return {
         valid: false,
-        error: `Ungueltige Parameter fuer Regel-Typ "${ruleType}"`,
+        error: `Ungültige Parameter für Regel-Typ "${ruleType}"`,
       };
     }
 

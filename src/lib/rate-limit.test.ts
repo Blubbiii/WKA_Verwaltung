@@ -70,7 +70,7 @@ describe("rateLimit", () => {
     expect(result3.remaining).toBe(0);
   });
 
-  it("blockiert Anfragen die das Limit ueberschreiten", () => {
+  it("blockiert Anfragen die das Limit überschreiten", () => {
     const id = uniqueId();
     // Use up all allowed requests
     for (let i = 0; i < 3; i++) {
@@ -82,7 +82,7 @@ describe("rateLimit", () => {
     expect(blocked.remaining).toBe(0);
   });
 
-  it("gibt einen reset-Timestamp zurueck", () => {
+  it("gibt einen reset-Timestamp zurück", () => {
     const id = uniqueId();
     const now = Date.now();
     const result = rateLimit(id, config);
@@ -90,7 +90,7 @@ describe("rateLimit", () => {
     expect(result.reset).toBeLessThanOrEqual(now + config.windowMs + 100);
   });
 
-  it("verwendet separate Zaehler fuer unterschiedliche Identifier", () => {
+  it("verwendet separate Zaehler für unterschiedliche Identifier", () => {
     const id1 = uniqueId("user-a");
     const id2 = uniqueId("user-b");
 
@@ -120,7 +120,7 @@ describe("rateLimit - Zeitfenster", () => {
     vi.useRealTimers();
   });
 
-  it("setzt das Limit nach Ablauf des Zeitfensters zurueck", () => {
+  it("setzt das Limit nach Ablauf des Zeitfensters zurück", () => {
     const config: RateLimitConfig = { limit: 2, windowMs: 10_000 };
     const id = uniqueId("window-reset");
 
@@ -217,12 +217,12 @@ describe("getClientIp", () => {
     expect(getClientIp(request)).toBe("172.16.0.1");
   });
 
-  it('gibt "unknown" zurueck wenn kein Header vorhanden', () => {
+  it('gibt "unknown" zurück wenn kein Header vorhanden', () => {
     const request = new Request("http://localhost");
     expect(getClientIp(request)).toBe("unknown");
   });
 
-  it("bevorzugt x-forwarded-for ueber x-real-ip", () => {
+  it("bevorzugt x-forwarded-for über x-real-ip", () => {
     const request = new Request("http://localhost", {
       headers: {
         "x-forwarded-for": "10.0.0.1",

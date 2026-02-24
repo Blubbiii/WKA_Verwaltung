@@ -219,14 +219,14 @@ export const MERGE_VARIABLES: Record<string, { key: string; label: string }[]> =
     { key: "{{senderCity}}", label: "Absenderort" },
   ],
   RECIPIENT_ADDRESS: [
-    { key: "{{recipientName}}", label: "Empfaengername" },
-    { key: "{{recipientStreet}}", label: "Empfaengerstrasse" },
-    { key: "{{recipientCity}}", label: "Empfaengerort" },
+    { key: "{{recipientName}}", label: "Empfängername" },
+    { key: "{{recipientStreet}}", label: "Empfängerstrasse" },
+    { key: "{{recipientCity}}", label: "Empfängerort" },
   ],
   INVOICE_META: [
     { key: "{{invoiceNumber}}", label: "Rechnungsnummer" },
     { key: "{{invoiceDate}}", label: "Rechnungsdatum" },
-    { key: "{{dueDate}}", label: "Faelligkeitsdatum" },
+    { key: "{{dueDate}}", label: "Fälligkeitsdatum" },
     { key: "{{customerNumber}}", label: "Kundennummer" },
     { key: "{{servicePeriod}}", label: "Leistungszeitraum" },
   ],
@@ -247,7 +247,7 @@ export const MERGE_VARIABLES: Record<string, { key: string; label: string }[]> =
     { key: "{{companyName}}", label: "Firmenname" },
     { key: "{{invoiceNumber}}", label: "Rechnungsnummer" },
     { key: "{{invoiceDate}}", label: "Rechnungsdatum" },
-    { key: "{{recipientName}}", label: "Empfaengername" },
-    { key: "{{dueDate}}", label: "Faelligkeitsdatum" },
+    { key: "{{recipientName}}", label: "Empfängername" },
+    { key: "{{dueDate}}", label: "Fälligkeitsdatum" },
   ],
 };

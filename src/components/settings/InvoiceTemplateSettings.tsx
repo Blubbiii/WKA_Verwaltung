@@ -121,10 +121,10 @@ export function InvoiceTemplateSettings() {
     if (!templateToDelete) return;
     try {
       await deleteInvoiceTemplate(templateToDelete);
-      toast.success("Rechnungsvorlage geloescht");
+      toast.success("Rechnungsvorlage gelöscht");
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Loeschen");
+      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
     } finally {
       setDeleteDialogOpen(false);
       setTemplateToDelete(null);
@@ -182,7 +182,7 @@ export function InvoiceTemplateSettings() {
               </CardTitle>
               <CardDescription>
                 Erstellen und bearbeiten Sie Rechnungsvorlagen mit dem visuellen Editor.
-                Bausteine koennen per Drag &amp; Drop angeordnet werden.
+                Bausteine können per Drag &amp; Drop angeordnet werden.
               </CardDescription>
             </div>
             <Button onClick={() => setMode({ type: "create" })}>
@@ -221,7 +221,7 @@ export function InvoiceTemplateSettings() {
                   <TableHead>Bausteine</TableHead>
                   <TableHead>Seitenformat</TableHead>
                   <TableHead>Standard</TableHead>
-                  <TableHead>Geaendert</TableHead>
+                  <TableHead>Geändert</TableHead>
                   <TableHead className="w-[140px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -294,7 +294,7 @@ export function InvoiceTemplateSettings() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDelete(template.id)}
-                            title="Loeschen"
+                            title="Löschen"
                             disabled={template.isDefault}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -315,8 +315,8 @@ export function InvoiceTemplateSettings() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
-        title="Rechnungsvorlage loeschen"
-        description="Moechten Sie diese Rechnungsvorlage wirklich loeschen? Diese Aktion kann nicht rueckgaengig gemacht werden."
+        title="Rechnungsvorlage löschen"
+        description="Möchten Sie diese Rechnungsvorlage wirklich löschen? Diese Aktion kann nicht rueckgaengig gemacht werden."
       />
     </div>
   );

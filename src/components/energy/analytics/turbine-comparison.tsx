@@ -257,7 +257,7 @@ export function TurbineComparison({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <GitCompare className="h-8 w-8 mb-2" />
-        <p>Keine Vergleichsdaten verfuegbar</p>
+        <p>Keine Vergleichsdaten verfügbar</p>
       </div>
     );
   }

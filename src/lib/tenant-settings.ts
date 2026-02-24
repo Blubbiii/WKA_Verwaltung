@@ -44,9 +44,9 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   taxExempt: false,
   taxExemptNote: "Steuerfrei gem. \u00a74 Nr.12 UStG",
   invoicePaymentText:
-    "Bitte ueberweisen Sie den Betrag bis zum {dueDate} auf das unten angegebene Konto. Geben Sie als Verwendungszweck bitte die Rechnungsnummer {invoiceNumber} an.",
+    "Bitte überweisen Sie den Betrag bis zum {dueDate} auf das unten angegebene Konto. Geben Sie als Verwendungszweck bitte die Rechnungsnummer {invoiceNumber} an.",
   creditNotePaymentText:
-    "Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto ueberwiesen. Referenz: Gutschriftsnummer {invoiceNumber}.",
+    "Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto überwiesen. Referenz: Gutschriftsnummer {invoiceNumber}.",
   defaultSkontoPercent: 2,
   defaultSkontoDays: 7,
   portalEnabled: true,

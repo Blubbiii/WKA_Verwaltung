@@ -9,7 +9,7 @@ import { apiLogger as logger } from "@/lib/logger";
 
 // Category labels for the breakdown (German UI)
 const CATEGORY_LABELS: Record<string, string> = {
-  CONTRACT: "Vertraege",
+  CONTRACT: "Verträge",
   PROTOCOL: "Protokolle",
   REPORT: "Berichte",
   INVOICE: "Rechnungen",
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     if (!storageInfo) {
       return NextResponse.json(
-        { error: "Speicherinformationen nicht verfuegbar" },
+        { error: "Speicherinformationen nicht verfügbar" },
         { status: 404 }
       );
     }

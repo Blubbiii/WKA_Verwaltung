@@ -32,7 +32,7 @@ export interface DatevExportOptions {
   fiscalYearEnd: Date;
   /** Company/entity name for the export header */
   companyName?: string;
-  /** Default revenue account (Erloeskonto) for wind power revenue */
+  /** Default revenue account (Erlöskonto) for wind power revenue */
   defaultRevenueAccount?: string;
   /** Default debtor account number start (Debitorennummernkreis) */
   defaultDebtorStart?: number;
@@ -160,7 +160,7 @@ const TAX_KEY_MAP: Record<string, string> = {
 
 /** Default account numbers */
 const DEFAULT_ACCOUNTS = {
-  /** Revenue from wind power (Erloese Stromlieferung) */
+  /** Revenue from wind power (Erlöse Stromlieferung) */
   revenueWindPower: "8400",
   /** General revenue account */
   generalRevenue: "8000",
@@ -272,7 +272,7 @@ const DATEV_COLUMNS = [
   "Zahlweise",                         // 90
   "Forderungsart",                     // 91
   "Veranlagungsjahr",                  // 92
-  "Zugeordnete Faelligkeit",           // 93
+  "Zugeordnete Fälligkeit",           // 93
   "Skontotyp",                         // 94
   "Auftragsnummer",                    // 95
   "Buchungstyp",                       // 96
@@ -280,7 +280,7 @@ const DATEV_COLUMNS = [
   "EU-Land (Anzahlungen)",             // 98
   "Sachverhalt L+L (Anzahlungen)",     // 99
   "EU-Steuersatz (Anzahlungen)",       // 100
-  "Erloeskonto (Anzahlungen)",         // 101
+  "Erlöskonto (Anzahlungen)",         // 101
   "Herkunft-Kz",                       // 102
   "Buchungs GUID",                     // 103
   "KOST-Datum",                        // 104

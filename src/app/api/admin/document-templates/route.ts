@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createTemplateSchema.parse(body);
 
-    // Wenn parkId gesetzt, pruefen ob Park existiert
+    // Wenn parkId gesetzt, prüfen ob Park existiert
     if (data.parkId) {
       const park = await prisma.park.findFirst({
         where: {
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Wenn isDefault, andere Defaults zuruecksetzen
+    // Wenn isDefault, andere Defaults zurücksetzen
     if (data.isDefault) {
       await prisma.documentTemplate.updateMany({
         where: {

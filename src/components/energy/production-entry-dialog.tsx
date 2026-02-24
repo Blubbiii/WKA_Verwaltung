@@ -312,7 +312,7 @@ export function ProductionEntryDialog({
           <DialogDescription>
             {isEdit
               ? `${editData.turbine.designation} - ${editData.month}/${editData.year}`
-              : 'Neuen Produktionsdatensatz fuer eine Turbine erfassen'}
+              : 'Neuen Produktionsdatensatz für eine Turbine erfassen'}
           </DialogDescription>
         </DialogHeader>
 
@@ -451,7 +451,7 @@ export function ProductionEntryDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="prod-avail">Verfuegbarkeit %</Label>
+              <Label htmlFor="prod-avail">Verfügbarkeit %</Label>
               <Input
                 id="prod-avail"
                 type="number"

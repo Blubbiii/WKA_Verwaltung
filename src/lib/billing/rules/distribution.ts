@@ -1,6 +1,6 @@
 /**
  * Distribution Rule Handler
- * Implementiert die Logik fuer Ausschuettungen an Gesellschafter
+ * Implementiert die Logik für Ausschuettungen an Gesellschafter
  */
 
 import { prisma } from "@/lib/prisma";
@@ -55,7 +55,7 @@ async function getNextDistributionNumber(tenantId: string): Promise<string> {
 }
 
 /**
- * Handler fuer Ausschuettungen an Gesellschafter
+ * Handler für Ausschuettungen an Gesellschafter
  */
 export class DistributionHandler implements RuleHandler {
   readonly ruleType = BillingRuleType.DISTRIBUTION;
@@ -67,7 +67,7 @@ export class DistributionHandler implements RuleHandler {
 
     const params = parameters as Record<string, unknown>;
 
-    // Pflichtfelder pruefen
+    // Pflichtfelder prüfen
     if (!params.fundId || typeof params.fundId !== "string") {
       return false;
     }
@@ -78,7 +78,7 @@ export class DistributionHandler implements RuleHandler {
       return false;
     }
 
-    // Optionale Felder pruefen
+    // Optionale Felder prüfen
     if (params.description !== undefined && typeof params.description !== "string") {
       return false;
     }
@@ -289,7 +289,7 @@ export class DistributionHandler implements RuleHandler {
 
     let totalAmount = 0;
 
-    // Erstelle Gutschriften fuer jeden Gesellschafter
+    // Erstelle Gutschriften für jeden Gesellschafter
     for (const shareholder of shareholders) {
       try {
         const percentage = Number(shareholder.distributionPercentage) || 0;
@@ -307,7 +307,7 @@ export class DistributionHandler implements RuleHandler {
           continue;
         }
 
-        // Empfaenger-Adresse formatieren
+        // Empfänger-Adresse formatieren
         const recipientName =
           shareholder.person.companyName ||
           `${shareholder.person.firstName || ""} ${shareholder.person.lastName || ""}`.trim();
@@ -324,7 +324,7 @@ export class DistributionHandler implements RuleHandler {
           InvoiceType.CREDIT_NOTE
         );
 
-        // Ausschuettungen sind steuerfrei (Kapitalertraege)
+        // Ausschuettungen sind steuerfrei (Kapitalerträge)
         const taxType: TaxType = TaxType.EXEMPT;
         const { taxRate, taxAmount, grossAmount } = calculateTaxAmounts(amount, "EXEMPT");
 

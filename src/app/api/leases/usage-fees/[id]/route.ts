@@ -256,8 +256,8 @@ export async function DELETE(
     if (existing.status !== "OPEN") {
       return NextResponse.json(
         {
-          error: "Loeschen nicht moeglich",
-          details: `Nur Abrechnungen im Status 'Offen' koennen geloescht werden. Aktueller Status: ${existing.status}`,
+          error: "Löschen nicht moeglich",
+          details: `Nur Abrechnungen im Status 'Offen' können gelöscht werden. Aktueller Status: ${existing.status}`,
         },
         { status: 400 }
       );
@@ -280,7 +280,7 @@ export async function DELETE(
       "Error deleting lease revenue settlement"
     );
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Nutzungsentgelt-Abrechnung" },
+      { error: "Fehler beim Löschen der Nutzungsentgelt-Abrechnung" },
       { status: 500 }
     );
   }

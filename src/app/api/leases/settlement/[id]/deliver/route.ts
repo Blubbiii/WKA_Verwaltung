@@ -43,7 +43,7 @@ export async function POST(
     // Validate method
     if (!method || !["print", "email", "both"].includes(method)) {
       return NextResponse.json(
-        { error: "Ungueltige Zustellmethode. Erlaubt: print, email, both" },
+        { error: "Ungültige Zustellmethode. Erlaubt: print, email, both" },
         { status: 400 }
       );
     }
@@ -194,7 +194,7 @@ async function processPrint(
       const message =
         error instanceof Error ? error.message : "Unbekannter Fehler";
       result.errors.push(
-        `Gutschrift ${entry.invoice.invoiceNumber}: Druckfehler fuer ${lessorName} - ${message}`
+        `Gutschrift ${entry.invoice.invoiceNumber}: Druckfehler für ${lessorName} - ${message}`
       );
       logger.error(
         { err: error, invoiceId: entry.invoice.id },
@@ -238,7 +238,7 @@ async function processEmail(
       // Validate email address exists
       if (!email) {
         result.errors.push(
-          `Gutschrift ${entry.invoice.invoiceNumber}: Keine E-Mail-Adresse fuer Eigentuemer ${lessorName}`
+          `Gutschrift ${entry.invoice.invoiceNumber}: Keine E-Mail-Adresse für Eigentuemer ${lessorName}`
         );
         continue;
       }
@@ -274,7 +274,7 @@ async function processEmail(
 
       if (!emailResult.success) {
         result.errors.push(
-          `Gutschrift ${entry.invoice.invoiceNumber}: E-Mail-Versand fehlgeschlagen fuer ${lessorName} - ${emailResult.error}`
+          `Gutschrift ${entry.invoice.invoiceNumber}: E-Mail-Versand fehlgeschlagen für ${lessorName} - ${emailResult.error}`
         );
         logger.error(
           {
@@ -311,7 +311,7 @@ async function processEmail(
       const message =
         error instanceof Error ? error.message : "Unbekannter Fehler";
       result.errors.push(
-        `Gutschrift ${entry.invoice.invoiceNumber}: E-Mail-Fehler fuer ${lessorName} - ${message}`
+        `Gutschrift ${entry.invoice.invoiceNumber}: E-Mail-Fehler für ${lessorName} - ${message}`
       );
       logger.error(
         { err: error, invoiceId: entry.invoice.id },
@@ -350,7 +350,7 @@ function buildEmailHtml(
       <h2>Gutschrift ${invoiceNumber}</h2>
       <p>Sehr geehrte(r) ${lessorName},</p>
       <p>anbei erhalten Sie Ihre Gutschrift <strong>${invoiceNumber}</strong> als PDF-Dokument.</p>
-      <p>Bei Rueckfragen stehen wir Ihnen gerne zur Verfuegung.</p>
+      <p>Bei Rückfragen stehen wir Ihnen gerne zur Verfuegung.</p>
       <p>Mit freundlichen Gruessen<br/>${tenantName}</p>
     </div>
   `;
@@ -368,7 +368,7 @@ function buildEmailText(
     "",
     `anbei erhalten Sie Ihre Gutschrift ${invoiceNumber} als PDF-Dokument.`,
     "",
-    "Bei Rueckfragen stehen wir Ihnen gerne zur Verfuegung.",
+    "Bei Rückfragen stehen wir Ihnen gerne zur Verfuegung.",
     "",
     `Mit freundlichen Gruessen`,
     tenantName,

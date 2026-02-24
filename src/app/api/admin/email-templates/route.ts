@@ -28,17 +28,17 @@ const TEMPLATE_DEFINITIONS: Array<{
   {
     key: "password-reset",
     name: "Passwort-Reset",
-    defaultSubject: "Passwort zuruecksetzen",
+    defaultSubject: "Passwort zurücksetzen",
   },
   {
     key: "new-invoice",
     name: "Neue Gutschrift",
-    defaultSubject: "Neue Gutschrift verfuegbar",
+    defaultSubject: "Neue Gutschrift verfügbar",
   },
   {
     key: "vote-invitation",
     name: "Abstimmungs-Einladung",
-    defaultSubject: "Neue Abstimmung verfuegbar",
+    defaultSubject: "Neue Abstimmung verfügbar",
   },
   {
     key: "tenant-admin-invitation",

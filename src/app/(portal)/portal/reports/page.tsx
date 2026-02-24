@@ -315,7 +315,7 @@ export default function ReportsPage() {
                 <FileBarChart className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">
-                Noch keine Berichte verfuegbar
+                Noch keine Berichte verfügbar
               </h3>
               <p className="text-muted-foreground max-w-sm">
                 Monatsberichte, Jahresberichte und Abrechnungen werden hier angezeigt,
@@ -328,7 +328,7 @@ export default function ReportsPage() {
         <Card>
           <CardContent className="py-12">
             <div className="text-center text-muted-foreground">
-              Keine Berichte fuer die ausgewaehlten Filter gefunden.
+              Keine Berichte für die ausgewaehlten Filter gefunden.
             </div>
           </CardContent>
         </Card>
@@ -369,7 +369,7 @@ export default function ReportsPage() {
                             <TableHead>Gesellschaft</TableHead>
                             <TableHead>Typ</TableHead>
                             <TableHead>Erstellt</TableHead>
-                            <TableHead className="text-right">Groesse</TableHead>
+                            <TableHead className="text-right">Größe</TableHead>
                             <TableHead className="w-[80px]"></TableHead>
                           </TableRow>
                         </TableHeader>

@@ -2,19 +2,19 @@
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",
-    "delete": "Loeschen",
+    "delete": "Löschen",
     "edit": "Bearbeiten",
     "create": "Erstellen",
     "search": "Suchen...",
     "filter": "Filtern",
     "export": "Exportieren",
     "import": "Importieren",
-    "back": "Zurueck",
+    "back": "Zurück",
     "next": "Weiter",
-    "previous": "Zurueck",
+    "previous": "Zurück",
     "loading": "Laden...",
     "noData": "Keine Daten vorhanden",
-    "confirm": "Bestaetigen",
+    "confirm": "Bestätigen",
     "close": "Schliessen",
     "yes": "Ja",
     "no": "Nein",
@@ -46,10 +46,10 @@
     "serviceEvents": "Service-Events",
     "finances": "Finanzen",
     "invoices": "Rechnungen",
-    "contracts": "Vertraege",
+    "contracts": "Verträge",
     "funds": "Beteiligungen",
     "energy": "Energie",
-    "energyOverview": "Uebersicht",
+    "energyOverview": "Übersicht",
     "productionData": "Produktionsdaten",
     "gridOperatorData": "Netzbetreiber-Daten",
     "scadaMeasurements": "SCADA-Messdaten",
@@ -57,11 +57,11 @@
     "energyAnalytics": "Analysen",
     "administration": "Verwaltung",
     "leases": "Pacht",
-    "leaseContracts": "Pachtvertraege",
+    "leaseContracts": "Pachtverträge",
     "usageFees": "Nutzungsentgelt",
     "costAllocation": "Kostenaufteilung",
     "leaseSettlement": "Pachtabrechnung",
-    "advances": "Vorschuesse",
+    "advances": "Vorschüsse",
     "payments": "Zahlungen",
     "documents": "Dokumente",
     "votes": "Abstimmungen",
@@ -90,23 +90,23 @@
     "gobdArchive": "GoBD-Archiv",
     "invoiceTemplates": "Rechnungsvorlagen",
     "autoImport": "Auto-Import",
-    "invoicesOverview": "Uebersicht",
-    "invoiceDispatch": "Versanduebersicht",
+    "invoicesOverview": "Übersicht",
+    "invoiceDispatch": "Versandübersicht",
     "reconciliation": "Zahlungs-Abgleich",
     "marketing": "Marketing",
     "invoiceSettings": "Rechnungseinstellungen",
     "templates": "Vorlagen",
-    "revenueTypes": "Verguetungsarten",
+    "revenueTypes": "Vergütungsarten",
     "fundCategories": "Gesellschaftstypen",
     "tenants": "Mandanten",
     "shpImport": "SHP-Import",
     "rolesPermissions": "Rollen & Rechte",
     "systemSettings": "Einstellungen",
-    "managementBilling": "Betriebsfuehrung",
-    "managementBillingOverview": "Uebersicht",
-    "managementStakeholders": "BF-Vertraege",
+    "managementBilling": "Betriebsführung",
+    "managementBillingOverview": "Übersicht",
+    "managementStakeholders": "BF-Verträge",
     "managementBillings": "Abrechnungen",
-    "taxRates": "Steuersaetze"
+    "taxRates": "Steuersätze"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",
@@ -126,11 +126,11 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "welcome": "Willkommen zurueck",
-    "overview": "Uebersicht",
+    "welcome": "Willkommen zurück",
+    "overview": "Übersicht",
     "editMode": "Bearbeiten",
-    "addWidget": "Widget hinzufuegen",
-    "resetLayout": "Layout zuruecksetzen"
+    "addWidget": "Widget hinzufügen",
+    "resetLayout": "Layout zurücksetzen"
   },
   "parks": {
     "title": "Windparks",
@@ -150,14 +150,14 @@
     "subtitle": "Verwalten Sie Rechnungen und Gutschriften",
     "create": "Rechnung erstellen",
     "number": "Rechnungsnummer",
-    "recipient": "Empfaenger",
+    "recipient": "Empfänger",
     "amount": "Betrag",
-    "dueDate": "Faelligkeitsdatum",
+    "dueDate": "Fälligkeitsdatum",
     "status": {
       "draft": "Entwurf",
       "sent": "Versendet",
       "paid": "Bezahlt",
-      "overdue": "Ueberfaellig",
+      "overdue": "Überfällig",
       "cancelled": "Storniert"
     },
     "datevExport": "DATEV Export"
@@ -169,13 +169,13 @@
     "scada": "SCADA-Daten",
     "analytics": "Analytics",
     "reports": "Berichte",
-    "availability": "Verfuegbarkeit",
+    "availability": "Verfügbarkeit",
     "windSpeed": "Windgeschwindigkeit",
     "powerOutput": "Leistung"
   },
   "settlement": {
     "title": "Pachtabrechnungen",
-    "subtitle": "Jahres- und Vorschussabrechnungen fuer Grundeigentuemer",
+    "subtitle": "Jahres- und Vorschussabrechnungen für Grundeigentümer",
     "newSettlement": "Neue Abrechnung",
     "periodType": {
       "FINAL": "Endabrechnung",
@@ -184,7 +184,7 @@
     "interval": {
       "MONTHLY": "Monatlich",
       "QUARTERLY": "Quartalsweise",
-      "YEARLY": "Jaehrlich"
+      "YEARLY": "Jährlich"
     },
     "wizard": {
       "step1": "Park & Zeitraum",
@@ -198,19 +198,19 @@
     "email": "E-Mail",
     "password": "Passwort",
     "forgotPassword": "Passwort vergessen?",
-    "resetPassword": "Passwort zuruecksetzen",
+    "resetPassword": "Passwort zurücksetzen",
     "loginError": "Anmeldung fehlgeschlagen",
     "loginDescription": "Melden Sie sich mit Ihren Zugangsdaten an",
-    "invalidCredentials": "Ungueltige Anmeldedaten. Bitte ueberpruefen Sie E-Mail und Passwort.",
-    "genericError": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es spaeter erneut.",
-    "resetSuccess": "Ihr Passwort wurde erfolgreich zurueckgesetzt. Sie koennen sich jetzt anmelden."
+    "invalidCredentials": "Ungültige Anmeldedaten. Bitte überprüfen Sie E-Mail und Passwort.",
+    "genericError": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
+    "resetSuccess": "Ihr Passwort wurde erfolgreich zurückgesetzt. Sie können sich jetzt anmelden."
   },
   "errors": {
     "generic": "Ein Fehler ist aufgetreten",
     "notFound": "Seite nicht gefunden",
     "unauthorized": "Nicht autorisiert",
     "forbidden": "Zugriff verweigert",
-    "validation": "Ungueltige Eingabedaten",
+    "validation": "Ungültige Eingabedaten",
     "network": "Netzwerkfehler"
   }
 }

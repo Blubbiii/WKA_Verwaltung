@@ -51,8 +51,8 @@ export async function POST(
         if (settlement.status !== "CALCULATED") {
           return NextResponse.json(
             {
-              error: "Zur Pruefung einreichen nicht moeglich",
-              details: `Nur berechnete Abrechnungen koennen zur Pruefung eingereicht werden. Aktueller Status: ${settlement.status}`,
+              error: "Zur Prüfung einreichen nicht moeglich",
+              details: `Nur berechnete Abrechnungen können zur Prüfung eingereicht werden. Aktueller Status: ${settlement.status}`,
             },
             { status: 400 }
           );
@@ -70,7 +70,7 @@ export async function POST(
           return NextResponse.json(
             {
               error: "Freigabe nicht moeglich",
-              details: `Nur Abrechnungen im Status 'Zur Pruefung' koennen freigegeben werden. Aktueller Status: ${settlement.status}`,
+              details: `Nur Abrechnungen im Status 'Zur Prüfung' können freigegeben werden. Aktueller Status: ${settlement.status}`,
             },
             { status: 400 }
           );
@@ -102,7 +102,7 @@ export async function POST(
           return NextResponse.json(
             {
               error: "Ablehnung nicht moeglich",
-              details: `Nur Abrechnungen im Status 'Zur Pruefung' koennen abgelehnt werden. Aktueller Status: ${settlement.status}`,
+              details: `Nur Abrechnungen im Status 'Zur Prüfung' können abgelehnt werden. Aktueller Status: ${settlement.status}`,
             },
             { status: 400 }
           );
@@ -174,7 +174,7 @@ export async function POST(
       "Error processing settlement review action"
     );
     return NextResponse.json(
-      { error: "Fehler bei der Pruefungs-Aktion" },
+      { error: "Fehler bei der Prüfungs-Aktion" },
       { status: 500 }
     );
   }

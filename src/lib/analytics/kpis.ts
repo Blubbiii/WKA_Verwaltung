@@ -24,7 +24,7 @@ export interface DashboardKPIs {
   paidThisMonth: Decimal;
 
   // Contracts
-  expiringContractsCount: number; // Naechste 30 Tage
+  expiringContractsCount: number; // Nächste 30 Tage
   activeContractsCount: number;
 
   // Documents
@@ -145,7 +145,7 @@ export function calculateTrend(current: number, previous: number): number {
 }
 
 /**
- * Serialisiert KPIs fuer die API-Response (Decimal -> string)
+ * Serialisiert KPIs für die API-Response (Decimal -> string)
  */
 export function serializeKPIs(kpis: DashboardKPIs): DashboardKPIsResponse {
   return {
@@ -171,7 +171,7 @@ export const DOCUMENT_CATEGORY_COLORS: Record<string, string> = {
 };
 
 export const DOCUMENT_CATEGORY_LABELS: Record<string, string> = {
-  CONTRACT: "Vertraege",
+  CONTRACT: "Verträge",
   PROTOCOL: "Protokolle",
   REPORT: "Berichte",
   INVOICE: "Rechnungen",

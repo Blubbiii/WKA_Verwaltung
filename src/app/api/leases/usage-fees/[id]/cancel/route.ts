@@ -51,8 +51,8 @@ export async function POST(
     if (settlement.status === "OPEN") {
       return NextResponse.json(
         {
-          error: "Offene Abrechnungen koennen direkt geloescht werden",
-          details: "Stornierung ist nur fuer bereits berechnete oder abgerechnete Abrechnungen vorgesehen",
+          error: "Offene Abrechnungen können direkt gelöscht werden",
+          details: "Stornierung ist nur für bereits berechnete oder abgerechnete Abrechnungen vorgesehen",
         },
         { status: 400 }
       );

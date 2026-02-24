@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       const parsed = getCategoriesSchema.safeParse(category);
       if (!parsed.success) {
         return NextResponse.json(
-          { error: "Ungueltige Kategorie" },
+          { error: "Ungültige Kategorie" },
           { status: 400 }
         );
       }

@@ -6,7 +6,7 @@ import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
 // POST /api/energy/scada/browse - Verzeichnisse durchsuchen
-// Liefert Unterverzeichnisse eines Pfads fuer den Ordner-Browser
+// Liefert Unterverzeichnisse eines Pfads für den Ordner-Browser
 // =============================================================================
 
 export async function POST(request: NextRequest) {
@@ -17,9 +17,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { currentPath } = body;
 
-    // Ohne Pfad: Laufwerke/Root-Verzeichnisse zurueckgeben
+    // Ohne Pfad: Laufwerke/Root-Verzeichnisse zurückgeben
     if (!currentPath || typeof currentPath !== "string") {
-      // Auf Windows: Gaengige Laufwerke pruefen
+      // Auf Windows: Gaengige Laufwerke prüfen
       const drives: Array<{ name: string; path: string }> = [];
       for (const letter of ["C", "D", "E", "F", "G", "H"]) {
         try {
@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ directories: drives, currentPath: "" });
     }
 
-    // Sicherheitspruefung
+    // Sicherheitsprüfung
     if (currentPath.includes("..") || currentPath.includes("\0")) {
       return NextResponse.json(
-        { error: "Ungueltiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
+        { error: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
         { status: 400 }
       );
     }

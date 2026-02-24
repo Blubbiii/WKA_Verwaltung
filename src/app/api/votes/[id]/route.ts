@@ -328,7 +328,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_DELETE);
 
     // Hard-delete + audit log atomar in einer Transaktion
     await prisma.$transaction(async (tx) => {
-      // 1. Abstimmung unwiderruflich loeschen (inkl. aller Responses durch Cascade)
+      // 1. Abstimmung unwiderruflich löschen (inkl. aller Responses durch Cascade)
       await tx.vote.delete({
         where: { id },
       });

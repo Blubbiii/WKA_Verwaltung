@@ -93,7 +93,7 @@ export function TenantInvoiceSettings() {
     }
 
     if (formData.datevRevenueAccount && !/^\d{4,10}$/.test(formData.datevRevenueAccount)) {
-      toast.error("DATEV Erloeskonto muss 4-10 Ziffern enthalten");
+      toast.error("DATEV Erlöskonto muss 4-10 Ziffern enthalten");
       return;
     }
 
@@ -148,7 +148,7 @@ export function TenantInvoiceSettings() {
             <CardTitle className="text-lg">Zahlungsbedingungen</CardTitle>
           </div>
           <CardDescription>
-            Standard-Zahlungsbedingungen fuer neue Rechnungen
+            Standard-Zahlungsbedingungen für neue Rechnungen
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -169,7 +169,7 @@ export function TenantInvoiceSettings() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Anzahl der Tage bis zur Faelligkeit nach Rechnungsdatum (1-365)
+              Anzahl der Tage bis zur Fälligkeit nach Rechnungsdatum (1-365)
             </p>
           </div>
         </CardContent>
@@ -183,7 +183,7 @@ export function TenantInvoiceSettings() {
             <CardTitle className="text-lg">Dokumenttexte</CardTitle>
           </div>
           <CardDescription>
-            Individuelle Texte fuer Rechnungen und Gutschriften. Verfuegbare
+            Individuelle Texte für Rechnungen und Gutschriften. Verfügbare
             Platzhalter: <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{dueDate}"}</code>{" "}
             <code className="text-xs bg-muted px-1 py-0.5 rounded">{"{invoiceNumber}"}</code>
           </CardDescription>
@@ -200,7 +200,7 @@ export function TenantInvoiceSettings() {
               onChange={(e) =>
                 handleChange("invoicePaymentText", e.target.value)
               }
-              placeholder="Bitte ueberweisen Sie den Betrag bis zum {dueDate} auf das unten angegebene Konto..."
+              placeholder="Bitte überweisen Sie den Betrag bis zum {dueDate} auf das unten angegebene Konto..."
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
@@ -221,7 +221,7 @@ export function TenantInvoiceSettings() {
               onChange={(e) =>
                 handleChange("creditNotePaymentText", e.target.value)
               }
-              placeholder="Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto ueberwiesen..."
+              placeholder="Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto überwiesen..."
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
@@ -239,13 +239,13 @@ export function TenantInvoiceSettings() {
             <CardTitle className="text-lg">DATEV Export</CardTitle>
           </div>
           <CardDescription>
-            Standard-Kontenrahmen und Nummernkreise fuer den DATEV-Export
+            Standard-Kontenrahmen und Nummernkreise für den DATEV-Export
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="datevRevenueAccount">Erloeskonto</Label>
+              <Label htmlFor="datevRevenueAccount">Erlöskonto</Label>
               <Input
                 id="datevRevenueAccount"
                 value={formData.datevRevenueAccount}
@@ -255,7 +255,7 @@ export function TenantInvoiceSettings() {
                 placeholder="8400"
               />
               <p className="text-xs text-muted-foreground">
-                Standard-Sachkonto fuer Erloese (z.B. 8400 bei SKR04)
+                Standard-Sachkonto für Erlöse (z.B. 8400 bei SKR04)
               </p>
             </div>
             <div className="space-y-2">
@@ -269,7 +269,7 @@ export function TenantInvoiceSettings() {
                 placeholder="8000"
               />
               <p className="text-xs text-muted-foreground">
-                Standard-Sachkonto fuer Aufwendungen (z.B. 8000 bei SKR04)
+                Standard-Sachkonto für Aufwendungen (z.B. 8000 bei SKR04)
               </p>
             </div>
           </div>
@@ -293,7 +293,7 @@ export function TenantInvoiceSettings() {
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Startnummer fuer Debitorenkonten (Standard: 10000)
+                Startnummer für Debitorenkonten (Standard: 10000)
               </p>
             </div>
             <div className="space-y-2">
@@ -312,7 +312,7 @@ export function TenantInvoiceSettings() {
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Startnummer fuer Kreditorenkonten (Standard: 70000)
+                Startnummer für Kreditorenkonten (Standard: 70000)
               </p>
             </div>
           </div>
@@ -327,7 +327,7 @@ export function TenantInvoiceSettings() {
             <CardTitle className="text-lg">GoBD Aufbewahrungsfristen</CardTitle>
           </div>
           <CardDescription>
-            Gesetzliche Aufbewahrungsfristen gemaess §147 AO fuer die automatische Archivierung
+            Gesetzliche Aufbewahrungsfristen gemaess §147 AO für die automatische Archivierung
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -355,7 +355,7 @@ export function TenantInvoiceSettings() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="gobdRetentionYearsContract">
-                Vertraege & Korrespondenz (Jahre)
+                Verträge & Korrespondenz (Jahre)
               </Label>
               <Input
                 id="gobdRetentionYearsContract"

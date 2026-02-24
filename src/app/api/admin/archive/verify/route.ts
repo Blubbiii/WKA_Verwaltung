@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungueltige Eingabedaten", details: parsed.error.errors },
+        { error: "Ungültige Eingabedaten", details: parsed.error.errors },
         { status: 400 }
       );
     }
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // Validate that year is provided when scope is YEAR
     if (scope === "YEAR" && !year) {
       return NextResponse.json(
-        { error: "Jahr erforderlich bei Pruefungsumfang 'YEAR'" },
+        { error: "Jahr erforderlich bei Prüfungsumfang 'YEAR'" },
         { status: 400 }
       );
     }
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         validDocuments: result.validDocuments,
         invalidDocuments: result.invalidDocuments,
       },
-      description: `GoBD-Integritaetspruefung: ${scopeLabel} - ${result.passed ? "BESTANDEN" : "FEHLGESCHLAGEN"}`,
+      description: `GoBD-Integritaetsprüfung: ${scopeLabel} - ${result.passed ? "BESTANDEN" : "FEHLGESCHLAGEN"}`,
     });
 
     return NextResponse.json({
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Error running archive verification");
     return NextResponse.json(
-      { error: "Fehler bei der Integritaetspruefung" },
+      { error: "Fehler bei der Integritaetsprüfung" },
       { status: 500 }
     );
   }

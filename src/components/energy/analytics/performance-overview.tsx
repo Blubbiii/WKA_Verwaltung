@@ -187,7 +187,7 @@ export function PerformanceOverview({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <Zap className="h-8 w-8 mb-2" />
-        <p>Keine Performance-Daten verfuegbar</p>
+        <p>Keine Performance-Daten verfügbar</p>
       </div>
     );
   }

@@ -119,7 +119,7 @@ export function PriceCalculator({ pricingConfig }: PriceCalculatorProps) {
             checked={isAnnual}
             onCheckedChange={setIsAnnual}
           />
-          <Label htmlFor="annual">Jaehrliche Zahlung (-{ANNUAL_DISCOUNT_PERCENT}%)</Label>
+          <Label htmlFor="annual">Jährliche Zahlung (-{ANNUAL_DISCOUNT_PERCENT}%)</Label>
         </div>
       </CardContent>
       <CardFooter className="flex flex-col gap-4 bg-muted/50 p-6 rounded-b-2xl">

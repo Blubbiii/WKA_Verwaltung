@@ -93,7 +93,7 @@ export const WORKER_NAMES = {
 export type WorkerName = (typeof WORKER_NAMES)[keyof typeof WORKER_NAMES];
 
 /**
- * Worker-Status fuer Health-Checks
+ * Worker-Status für Health-Checks
  */
 export interface WorkerStatus {
   name: WorkerName;
@@ -115,7 +115,7 @@ export interface WorkersHealthStatus {
 // =============================================================================
 
 /**
- * Registry-Eintrag fuer einen Worker
+ * Registry-Eintrag für einen Worker
  */
 interface WorkerRegistryEntry {
   name: WorkerName;
@@ -343,7 +343,7 @@ export async function stopWorker(name: WorkerName): Promise<boolean> {
 // =============================================================================
 
 /**
- * Gibt den Status aller Worker zurueck
+ * Gibt den Status aller Worker zurück
  */
 export function getWorkersStatus(): WorkersHealthStatus {
   const workers: WorkerStatus[] = workerRegistry.map((entry) => {
@@ -365,7 +365,7 @@ export function getWorkersStatus(): WorkersHealthStatus {
 }
 
 /**
- * Prueft ob ein spezifischer Worker laeuft
+ * Prueft ob ein spezifischer Worker läuft
  */
 export function isWorkerRunning(name: WorkerName): boolean {
   const entry = workerRegistry.find((w) => w.name === name);
@@ -373,7 +373,7 @@ export function isWorkerRunning(name: WorkerName): boolean {
 }
 
 /**
- * Gibt einen Worker anhand seines Namens zurueck
+ * Gibt einen Worker anhand seines Namens zurück
  */
 export function getWorkerByName(name: WorkerName): Worker<unknown, unknown> | null {
   const entry = workerRegistry.find((w) => w.name === name);
@@ -381,14 +381,14 @@ export function getWorkerByName(name: WorkerName): Worker<unknown, unknown> | nu
 }
 
 /**
- * Gibt alle registrierten Worker-Namen zurueck
+ * Gibt alle registrierten Worker-Namen zurück
  */
 export function getRegisteredWorkerNames(): WorkerName[] {
   return workerRegistry.map((w) => w.name);
 }
 
 // =============================================================================
-// Re-exports fuer individuellen Worker-Zugriff
+// Re-exports für individuellen Worker-Zugriff
 // =============================================================================
 
 // Email Worker

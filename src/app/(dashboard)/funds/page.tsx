@@ -162,8 +162,8 @@ export default function FundsPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: "Fehler beim Loeschen" }));
-        throw new Error(data.error || "Fehler beim Loeschen");
+        const data = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
+        throw new Error(data.error || "Fehler beim Löschen");
       }
       return response.json();
     },
@@ -172,7 +172,7 @@ export default function FundsPage() {
         invalidate(["funds"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Loeschen");
+        toast.error(error.message || "Fehler beim Löschen");
       },
     }
   );
@@ -404,7 +404,7 @@ export default function FundsPage() {
                                 className="text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Loeschen
+                                Löschen
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -453,8 +453,8 @@ export default function FundsPage() {
         open={archiveDialogOpen}
         onOpenChange={setArchiveDialogOpen}
         onConfirm={handleConfirmArchive}
-        title="Archivieren bestaetigen"
-        description="Moechten Sie diese Gesellschaft wirklich archivieren?"
+        title="Archivieren bestätigen"
+        description="Möchten Sie diese Gesellschaft wirklich archivieren?"
       />
 
       {/* Delete Confirmation Dialog */}
@@ -467,7 +467,7 @@ export default function FundsPage() {
             setFundToDelete(null);
           }
         }}
-        title="Gesellschaft loeschen"
+        title="Gesellschaft löschen"
         itemName={fundToDelete?.name}
       />
     </div>

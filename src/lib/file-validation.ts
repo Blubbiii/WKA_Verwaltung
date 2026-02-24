@@ -130,7 +130,7 @@ export function validateFileContent(
     return {
       valid: false,
       detectedType: 'unknown',
-      reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "${declaredMimeType}" ueberein. Erwartet: ZIP/PK-Signatur fuer Office-Dokument.`,
+      reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "${declaredMimeType}" überein. Erwartet: ZIP/PK-Signatur für Office-Dokument.`,
     };
   }
 
@@ -143,7 +143,7 @@ export function validateFileContent(
     return {
       valid: false,
       detectedType: 'unknown',
-      reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "${declaredMimeType}" ueberein. Erwartet: OLE2-Signatur fuer Office-Dokument.`,
+      reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "${declaredMimeType}" überein. Erwartet: OLE2-Signatur für Office-Dokument.`,
     };
   }
 
@@ -170,7 +170,7 @@ export function validateFileContent(
     return {
       valid: false,
       detectedType: 'binary',
-      reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "${declaredMimeType}" ueberein. Die Datei enthaelt nicht-druckbare Zeichen und ist keine gueltige Textdatei.`,
+      reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "${declaredMimeType}" überein. Die Datei enthaelt nicht-druckbare Zeichen und ist keine gültige Textdatei.`,
     };
   }
 
@@ -187,7 +187,7 @@ export function validateFileContent(
     return {
       valid: false,
       detectedType: 'unknown',
-      reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "image/svg+xml" ueberein. Erwartet: XML-Inhalt beginnend mit "<".`,
+      reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "image/svg+xml" überein. Erwartet: XML-Inhalt beginnend mit "<".`,
     };
   }
 
@@ -204,7 +204,7 @@ export function validateFileContent(
     return {
       valid: false,
       detectedType: 'unknown',
-      reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "image/webp" ueberein. Erwartet: RIFF/WEBP-Signatur.`,
+      reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "image/webp" überein. Erwartet: RIFF/WEBP-Signatur.`,
     };
   }
 
@@ -221,7 +221,7 @@ export function validateFileContent(
   return {
     valid: false,
     detectedType,
-    reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "${declaredMimeType}" ueberein.${detectedType ? ` Erkannter Typ: ${detectedType}.` : ''} Die Datei koennte manipuliert sein.`,
+    reason: `Dateiinhalt stimmt nicht mit dem deklarierten Typ "${declaredMimeType}" überein.${detectedType ? ` Erkannter Typ: ${detectedType}.` : ''} Die Datei könnte manipuliert sein.`,
   };
 }
 

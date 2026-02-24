@@ -1,5 +1,5 @@
 // ===========================================
-// Energy Settlement Types fuer WindparkManager
+// Energy Settlement Types für WindparkManager
 // Phase 6.1 - Stromabrechnung & Erweiterte Pacht
 // ===========================================
 

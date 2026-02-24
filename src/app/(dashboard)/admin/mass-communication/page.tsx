@@ -490,7 +490,7 @@ export default function MassCommunicationPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Empfaenger
+                Empfänger
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -713,7 +713,7 @@ export default function MassCommunicationPage() {
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Users className="h-3 w-3" />
-                        {item.recipientCount} Empfaenger
+                        {item.recipientCount} Empfänger
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
@@ -746,11 +746,11 @@ export default function MassCommunicationPage() {
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Empfaenger-Vorschau</DialogTitle>
+            <DialogTitle>Empfänger-Vorschau</DialogTitle>
             <DialogDescription>
               {loadingPreview
-                ? "Empfaenger werden geladen..."
-                : `${previewCount} Empfaenger gefunden`}
+                ? "Empfänger werden geladen..."
+                : `${previewCount} Empfänger gefunden`}
             </DialogDescription>
           </DialogHeader>
 
@@ -766,7 +766,7 @@ export default function MassCommunicationPage() {
             </div>
           ) : previewRecipients.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
-              Keine Empfaenger fuer die gewaehlten Filter-Kriterien gefunden.
+              Keine Empfänger für die gewaehlten Filter-Kriterien gefunden.
             </div>
           ) : (
             <div className="overflow-y-auto flex-1">
@@ -807,9 +807,9 @@ export default function MassCommunicationPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>E-Mails versenden?</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie diese Nachricht versenden moechten?
+              Sind Sie sicher, dass Sie diese Nachricht versenden möchten?
               Die E-Mail wird basierend auf den gewaehlten Filtern an alle
-              passenden Empfaenger gesendet. Dieser Vorgang kann nicht
+              passenden Empfänger gesendet. Dieser Vorgang kann nicht
               rueckgaengig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>

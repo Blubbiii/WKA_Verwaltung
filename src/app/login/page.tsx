@@ -42,7 +42,7 @@ function LoginForm() {
   }, []);
   const [loginError, setLoginError] = useState(
     error === "CredentialsSignin"
-      ? "Ungueltige Anmeldedaten. Bitte ueberpruefen Sie E-Mail und Passwort."
+      ? "Ungültige Anmeldedaten. Bitte überprüfen Sie E-Mail und Passwort."
       : ""
   );
 
@@ -95,7 +95,7 @@ function LoginForm() {
             <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
               <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertDescription className="text-green-800 dark:text-green-300">
-                Ihr Passwort wurde erfolgreich zurueckgesetzt. Sie koennen sich jetzt anmelden.
+                Ihr Passwort wurde erfolgreich zurückgesetzt. Sie können sich jetzt anmelden.
               </AlertDescription>
             </Alert>
           )}

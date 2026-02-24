@@ -81,7 +81,7 @@ export async function GET(
   }
 }
 
-// DELETE /api/funds/[id]/distributions/[distributionId] - Ausschuettung loeschen (nur DRAFT)
+// DELETE /api/funds/[id]/distributions/[distributionId] - Ausschuettung löschen (nur DRAFT)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; distributionId: string }> }
@@ -109,7 +109,7 @@ export async function DELETE(
 
     if (distribution.status !== "DRAFT") {
       return NextResponse.json(
-        { error: "Nur Entwuerfe koennen geloescht werden" },
+        { error: "Nur Entwuerfe können gelöscht werden" },
         { status: 400 }
       );
     }
@@ -122,7 +122,7 @@ export async function DELETE(
   } catch (error) {
     logger.error({ err: error }, "Error deleting distribution");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Ausschuettung" },
+      { error: "Fehler beim Löschen der Ausschuettung" },
       { status: 500 }
     );
   }

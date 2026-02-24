@@ -140,8 +140,8 @@ export default function ContractsPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: "Fehler beim Loeschen" }));
-        throw new Error(data.error || "Fehler beim Loeschen des Vertrags");
+        const data = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
+        throw new Error(data.error || "Fehler beim Löschen des Vertrags");
       }
       return response.json();
     },
@@ -150,7 +150,7 @@ export default function ContractsPage() {
         invalidate(["contracts"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Loeschen des Vertrags");
+        toast.error(error.message || "Fehler beim Löschen des Vertrags");
       },
     }
   );
@@ -224,7 +224,7 @@ export default function ContractsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-destructive">Fehler beim Laden der Vertraege</p>
+        <p className="text-destructive">Fehler beim Laden der Verträge</p>
         <Button onClick={() => refetch()} variant="outline" className="mt-4">
           Erneut versuchen
         </Button>
@@ -453,7 +453,7 @@ export default function ContractsPage() {
                                   className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Loeschen
+                                  Löschen
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -479,7 +479,7 @@ export default function ContractsPage() {
             setContractToDelete(null);
           }
         }}
-        title="Vertrag loeschen"
+        title="Vertrag löschen"
         itemName={contractToDelete?.title}
       />
     </div>

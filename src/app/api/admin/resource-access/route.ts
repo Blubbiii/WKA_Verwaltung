@@ -15,29 +15,29 @@ import {
 // ============================================================================
 
 const resourceAccessCreateSchema = z.object({
-  userId: z.string().uuid("Ungueltige User-ID"),
+  userId: z.string().uuid("Ungültige User-ID"),
   resourceType: z.enum(
     Object.values(RESOURCE_TYPES) as [string, ...string[]],
-    { errorMap: () => ({ message: "Ungueltiger Ressourcen-Typ" }) }
+    { errorMap: () => ({ message: "Ungültiger Ressourcen-Typ" }) }
   ),
-  resourceId: z.string().uuid("Ungueltige Ressourcen-ID"),
+  resourceId: z.string().uuid("Ungültige Ressourcen-ID"),
   accessLevel: z.enum(
     Object.values(ACCESS_LEVELS) as [string, ...string[]],
-    { errorMap: () => ({ message: "Ungueltiges Zugriffslevel" }) }
+    { errorMap: () => ({ message: "Ungültiges Zugriffslevel" }) }
   ),
   expiresAt: z.string().datetime().optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
 });
 
 const resourceAccessDeleteSchema = z.object({
-  userId: z.string().uuid("Ungueltige User-ID"),
+  userId: z.string().uuid("Ungültige User-ID"),
   resourceType: z.string().min(1, "Ressourcen-Typ erforderlich"),
-  resourceId: z.string().uuid("Ungueltige Ressourcen-ID"),
+  resourceId: z.string().uuid("Ungültige Ressourcen-ID"),
 });
 
 // ============================================================================
 // GET /api/admin/resource-access
-// Liste aller ResourceAccess Eintraege (mit Filtern)
+// Liste aller ResourceAccess Einträge (mit Filtern)
 // ============================================================================
 
 export async function GET(request: NextRequest) {
@@ -128,7 +128,7 @@ const check = await requireAdmin();
     const body = await request.json();
     const validatedData = resourceAccessCreateSchema.parse(body);
 
-    // Pruefen ob User existiert
+    // Prüfen ob User existiert
     const user = await prisma.user.findUnique({
       where: { id: validatedData.userId },
     });
@@ -140,7 +140,7 @@ const check = await requireAdmin();
       );
     }
 
-    // Pruefen ob Ressource existiert
+    // Prüfen ob Ressource existiert
     const resourceExists = await checkResourceExists(
       validatedData.resourceType,
       validatedData.resourceId
@@ -168,7 +168,7 @@ const check = await requireAdmin();
       }
     );
 
-    // Ressourcen-Name fuer Response
+    // Ressourcen-Name für Response
     const resourceName = await getResourceName(
       access.resourceType,
       access.resourceId
@@ -440,7 +440,7 @@ async function getResourceNamesBatch(
 }
 
 /**
- * Holt den Namen einer einzelnen Ressource (fuer POST-Response).
+ * Holt den Namen einer einzelnen Ressource (für POST-Response).
  */
 async function getResourceName(
   resourceType: string,

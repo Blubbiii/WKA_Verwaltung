@@ -373,7 +373,7 @@ export function EmailConfigForm({
 
         <div className="flex gap-4">
           <div className="flex-1 space-y-2">
-            <Label htmlFor="test-email">Test-Empfaenger (optional)</Label>
+            <Label htmlFor="test-email">Test-Empfänger (optional)</Label>
             <Input
               id="test-email"
               type="email"
@@ -393,7 +393,7 @@ export function EmailConfigForm({
               ) : (
                 <Server className="mr-2 h-4 w-4" />
               )}
-              Verbindung pruefen
+              Verbindung prüfen
             </Button>
             <Button
               variant="outline"

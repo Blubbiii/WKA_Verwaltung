@@ -350,7 +350,7 @@ export default function BillingsPage() {
       {/* Header */}
       <PageHeader
         title="BF-Abrechnungen"
-        description="Betriebsfuehrungsabrechnungen verwalten und berechnen"
+        description="Betriebsführungsabrechnungen verwalten und berechnen"
         actions={
           <Button
             variant="outline"
@@ -376,7 +376,7 @@ export default function BillingsPage() {
                 Batch-Berechnung
               </CardTitle>
               <CardDescription>
-                Abrechnungen fuer alle aktiven Konstellationen
+                Abrechnungen für alle aktiven Konstellationen
                 berechnen
               </CardDescription>
             </CardHeader>
@@ -515,10 +515,10 @@ export default function BillingsPage() {
                   <TableHead>Dienstleister</TableHead>
                   <TableHead>Park</TableHead>
                   <TableHead className="text-right">
-                    Basis-Erloes
+                    Basis-Erlös
                   </TableHead>
                   <TableHead className="text-right">
-                    Gebuehr %
+                    Gebühr %
                   </TableHead>
                   <TableHead className="text-right">Netto</TableHead>
                   <TableHead className="text-right">
@@ -548,7 +548,7 @@ export default function BillingsPage() {
                       <EmptyState
                         icon={Receipt}
                         title="Keine Abrechnungen"
-                        description="Fuer den ausgewaehlten Zeitraum wurden keine Abrechnungen gefunden. Starten Sie eine Batch-Berechnung."
+                        description="Für den ausgewaehlten Zeitraum wurden keine Abrechnungen gefunden. Starten Sie eine Batch-Berechnung."
                       />
                     </TableCell>
                   </TableRow>

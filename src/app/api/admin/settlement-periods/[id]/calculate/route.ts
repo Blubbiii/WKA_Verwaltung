@@ -10,13 +10,13 @@ import {
 } from "@/lib/settlement";
 
 const calculateSchema = z.object({
-  totalRevenue: z.number().optional(), // Optional: Ueberschreibt Period.totalRevenue
+  totalRevenue: z.number().optional(), // Optional: Überschreibt Period.totalRevenue
   saveResult: z.boolean().default(true), // Ergebnis in Period speichern?
 });
 
-// Typ fuer ADVANCE Berechnung wird aus Calculator importiert (MonthlyAdvanceResult)
+// Typ für ADVANCE Berechnung wird aus Calculator importiert (MonthlyAdvanceResult)
 
-// Typ fuer FINAL Berechnung (Jahresendabrechnung mit Verrechnung)
+// Typ für FINAL Berechnung (Jahresendabrechnung mit Verrechnung)
 interface FinalCalculationResult {
   parkId: string;
   parkName: string;
@@ -104,7 +104,7 @@ export async function POST(
 
     if (period.status === "CLOSED") {
       return NextResponse.json(
-        { error: "Geschlossene Perioden koennen nicht neu berechnet werden" },
+        { error: "Geschlossene Perioden können nicht neu berechnet werden" },
         { status: 400 }
       );
     }
@@ -168,7 +168,7 @@ export async function POST(
         calculation: scaledResult,
       });
     } else {
-      // FINAL: Jahresendabrechnung mit Verrechnung der Vorschuesse
+      // FINAL: Jahresendabrechnung mit Verrechnung der Vorschüsse
       const finalResult = await calculateFinalSettlement({
         parkId: period.parkId,
         year: period.year,
@@ -232,7 +232,7 @@ async function calculateFinalSettlement(
 ): Promise<FinalCalculationResult> {
   const { parkId, year, tenantId, totalRevenue: overrideRevenue } = options;
 
-  // Nutze bestehenden Calculator fuer Basis-Berechnung
+  // Nutze bestehenden Calculator für Basis-Berechnung
   const baseCalculation = await calculateSettlement({
     parkId,
     year,
@@ -240,7 +240,7 @@ async function calculateFinalSettlement(
     tenantId,
   });
 
-  // Lade bereits gezahlte ADVANCE Perioden fuer dieses Jahr
+  // Lade bereits gezahlte ADVANCE Perioden für dieses Jahr
   const advancePeriods = await prisma.leaseSettlementPeriod.findMany({
     where: {
       parkId,
@@ -261,7 +261,7 @@ async function calculateFinalSettlement(
     },
   });
 
-  // Berechne bereits gezahlte Vorschuesse pro Lease
+  // Berechne bereits gezahlte Vorschüsse pro Lease
   const advancesPaidByLease = new Map<string, number>();
   for (const period of advancePeriods) {
     for (const invoice of period.invoices) {
@@ -352,7 +352,7 @@ export async function GET(
       );
     }
 
-    // Berechnung erneut ausfuehren (ohne zu speichern) fuer aktuelle Daten
+    // Berechnung erneut ausfuehren (ohne zu speichern) für aktuelle Daten
     const calculation = await calculateSettlement({
       parkId: period.parkId,
       year: period.year,

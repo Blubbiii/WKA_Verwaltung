@@ -180,7 +180,7 @@ type CalculationResult = AdvanceCalculation | FinalCalculation;
 
 const STEPS = [
   { id: "park", title: "Park & Zeitraum", description: "Grunddaten" },
-  { id: "revenue", title: "Umsatzdaten", description: "Erloese" },
+  { id: "revenue", title: "Umsatzdaten", description: "Erlöse" },
   { id: "calculation", title: "Berechnung & Vorschau", description: "Vorschau" },
   { id: "summary", title: "Abschluss", description: "Gutschriften" },
 ];
@@ -337,7 +337,7 @@ export default function NewLeaseSettlementPage() {
           setLeases(data.leases || data.data || []);
         }
       } catch {
-        if (!cancelled) toast.error("Fehler beim Laden der Pachtvertraege");
+        if (!cancelled) toast.error("Fehler beim Laden der Pachtverträge");
       } finally {
         if (!cancelled) setLoadingLeases(false);
       }
@@ -1001,7 +1001,7 @@ export default function NewLeaseSettlementPage() {
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem value="YEARLY" id="interval-yearly" />
                       <Label htmlFor="interval-yearly" className="cursor-pointer">
-                        Jaehrlich (voller Jahresbetrag)
+                        Jährlich (voller Jahresbetrag)
                       </Label>
                     </div>
                   </RadioGroup>
@@ -1068,24 +1068,24 @@ export default function NewLeaseSettlementPage() {
         {selectedParkId && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Aktive Pachtvertraege</CardTitle>
+              <CardTitle className="text-base">Aktive Pachtverträge</CardTitle>
             </CardHeader>
             <CardContent>
               {loadingLeases ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Pachtvertraege werden geladen...
+                  Pachtverträge werden geladen...
                 </div>
               ) : leaseSummary.leaseCount === 0 ? (
                 <div className="flex items-center gap-2 text-sm text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
-                  Keine aktiven Pachtvertraege fuer diesen Park gefunden. Eine Abrechnung ist nicht moeglich.
+                  Keine aktiven Pachtverträge für diesen Park gefunden. Eine Abrechnung ist nicht moeglich.
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-sm">
                   <Check className="h-4 w-4 text-green-600" />
                   <span>
-                    <strong>{leaseSummary.leaseCount}</strong> aktive Pachtvertraege
+                    <strong>{leaseSummary.leaseCount}</strong> aktive Pachtverträge
                     {leaseSummary.plotCount > 0 && (
                       <>
                         {" "}mit <strong>{leaseSummary.plotCount}</strong> Fluerstuecken
@@ -1116,7 +1116,7 @@ export default function NewLeaseSettlementPage() {
               ) : (
                 <ChevronDown className="h-4 w-4" />
               )}
-              Bisherige Abrechnungen fuer {year}
+              Bisherige Abrechnungen für {year}
               {existingSettlements.length > 0 && (
                 <Badge variant="secondary">{existingSettlements.length}</Badge>
               )}
@@ -1132,7 +1132,7 @@ export default function NewLeaseSettlementPage() {
                     </div>
                   ) : existingSettlements.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">
-                      Keine bisherigen Abrechnungen fuer diesen Park und dieses Jahr vorhanden.
+                      Keine bisherigen Abrechnungen für diesen Park und dieses Jahr vorhanden.
                     </p>
                   ) : (
                     <div className="overflow-x-auto">
@@ -1209,11 +1209,11 @@ export default function NewLeaseSettlementPage() {
             <CardContent>
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
                 <p className="text-sm font-medium text-blue-800">
-                  Vorschuesse basieren auf der Mindestpacht. Kein Umsatz erforderlich.
+                  Vorschüsse basieren auf der Mindestpacht. Kein Umsatz erforderlich.
                 </p>
                 <p className="text-sm text-blue-700">
                   {advanceInterval === "YEARLY"
-                    ? `Der Jahresvorschuss fuer ${year} wird aus der vollen Jahresmindestpacht berechnet.`
+                    ? `Der Jahresvorschuss für ${year} wird aus der vollen Jahresmindestpacht berechnet.`
                     : advanceInterval === "QUARTERLY"
                       ? `Der Quartalsvorschuss Q${selectedQuarter} ${year} wird als 1/4 der Jahresmindestpacht berechnet.`
                       : `Der Monatsvorschuss ${MONTH_NAMES[selectedMonth - 1]} ${year} wird als 1/12 der Jahresmindestpacht berechnet.`}
@@ -1232,10 +1232,10 @@ export default function NewLeaseSettlementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
-              Umsatzdaten fuer {year}
+              Umsatzdaten für {year}
             </CardTitle>
             <CardDescription>
-              Waehlen Sie die Datenquelle fuer den Gesamtumsatz des Parks
+              Waehlen Sie die Datenquelle für den Gesamtumsatz des Parks
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -1262,7 +1262,7 @@ export default function NewLeaseSettlementPage() {
                       Automatisch aus Energieabrechnung
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Daten aus abgeschlossenen Energieabrechnungen uebernehmen
+                      Daten aus abgeschlossenen Energieabrechnungen übernehmen
                     </p>
                   </div>
                 </div>
@@ -1282,7 +1282,7 @@ export default function NewLeaseSettlementPage() {
                       Manuelle Erfassung (EEG/DV pro Monat)
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      12 Monate mit EEG-Produktion, EEG-Erloes, DV-Produktion, DV-Erloes
+                      12 Monate mit EEG-Produktion, EEG-Erlös, DV-Produktion, DV-Erlös
                     </p>
                   </div>
                 </div>
@@ -1331,7 +1331,7 @@ export default function NewLeaseSettlementPage() {
         {revenueSource === "auto" && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Jahresuebersicht {year}</CardTitle>
+              <CardTitle className="text-base">Jahresübersicht {year}</CardTitle>
             </CardHeader>
             <CardContent>
               {loadingEnergySettlements ? (
@@ -1347,16 +1347,16 @@ export default function NewLeaseSettlementPage() {
                       Keine abgeschlossenen Energieabrechnungen vorhanden
                     </p>
                     <p className="text-xs">
-                      Fuer die automatische Uebernahme muessen Energieabrechnungen mit Status
+                      Für die automatische Übernahme muessen Energieabrechnungen mit Status
                       &quot;Fakturiert&quot; oder &quot;Abgeschlossen&quot; vorhanden sein.
-                      Alternativ koennen Sie die Daten manuell erfassen.
+                      Alternativ können Sie die Daten manuell erfassen.
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Gesamterloes</p>
+                    <p className="text-xs text-muted-foreground">Gesamterlös</p>
                     <p className="text-xl font-bold">{formatEur(autoRevenueData.totalRevenue)}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {autoRevenueData.count} Monatsabrechnung(en)
@@ -1382,7 +1382,7 @@ export default function NewLeaseSettlementPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Monatliche EEG/DV-Erfassung {year}</CardTitle>
               <CardDescription>
-                Geben Sie fuer jeden Monat die EEG- und DV-Werte ein.
+                Geben Sie für jeden Monat die EEG- und DV-Werte ein.
                 {energySettlements.length > 0 && " Vorhandene Daten wurden vorausgefuellt."}
               </CardDescription>
             </CardHeader>
@@ -1502,7 +1502,7 @@ export default function NewLeaseSettlementPage() {
                 <p className="text-xs text-muted-foreground">
                   {revenueSource === "manual"
                     ? "Die Daten werden beim Fortfahren als Energieabrechnungen gespeichert."
-                    : "Die genaue Aufteilung wird im naechsten Schritt berechnet (MAX-Regel)."}
+                    : "Die genaue Aufteilung wird im nächsten Schritt berechnet (MAX-Regel)."}
                 </p>
               </div>
             </CardContent>
@@ -1529,13 +1529,13 @@ export default function NewLeaseSettlementPage() {
                 ) : (
                   <Calculator className="h-5 w-5" />
                 )}
-                {calculating ? "Berechnung laeuft..." : "Berechnung"}
+                {calculating ? "Berechnung läuft..." : "Berechnung"}
               </CardTitle>
               <CardDescription>
                 {periodType === "FINAL"
-                  ? `Jahresendabrechnung fuer ${year} mit ${formatEur(effectiveRevenue)} Umsatz`
+                  ? `Jahresendabrechnung für ${year} mit ${formatEur(effectiveRevenue)} Umsatz`
                   : advanceInterval === "YEARLY"
-                    ? `Jahresvorschuss fuer ${year}`
+                    ? `Jahresvorschuss für ${year}`
                     : advanceInterval === "QUARTERLY"
                       ? `Quartalsvorschuss Q${selectedQuarter} ${year}`
                       : `Monatsvorschuss ${MONTH_NAMES[selectedMonth - 1]} ${year}`}
@@ -1596,7 +1596,7 @@ export default function NewLeaseSettlementPage() {
           <CardDescription>
             {calc.parkName} | Umsatz: {formatEur(calc.totalRevenue)}
             {calc.revenuePhasePercentage !== null &&
-              ` | Erloesphase: ${calc.revenuePhasePercentage}%`}
+              ` | Erlösphase: ${calc.revenuePhasePercentage}%`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1605,10 +1605,10 @@ export default function NewLeaseSettlementPage() {
               <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-medium">
-                  Achtung: Ueberzahlung bei mindestens einem Verpachter
+                  Achtung: Überzahlung bei mindestens einem Verpachter
                 </p>
                 <p className="text-xs">
-                  Ein negativer Restbetrag bedeutet, dass mehr Vorschuesse gezahlt
+                  Ein negativer Restbetrag bedeutet, dass mehr Vorschüsse gezahlt
                   wurden als die tatsaechliche Pacht betraegt.
                 </p>
               </div>
@@ -1621,7 +1621,7 @@ export default function NewLeaseSettlementPage() {
                 <TableRow>
                   <TableHead>Verpachter</TableHead>
                   <TableHead className="text-right">Gesamt</TableHead>
-                  <TableHead className="text-right">Vorschuesse (gezahlt)</TableHead>
+                  <TableHead className="text-right">Vorschüsse (gezahlt)</TableHead>
                   <TableHead className="text-right">Restbetrag</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1649,7 +1649,7 @@ export default function NewLeaseSettlementPage() {
                 })}
                 {/* Summary row */}
                 <TableRow className="border-t-2 font-bold">
-                  <TableCell>Gesamt ({calc.totals.leaseCount} Vertraege)</TableCell>
+                  <TableCell>Gesamt ({calc.totals.leaseCount} Verträge)</TableCell>
                   <TableCell className="text-right">
                     {formatEur(
                       Math.max(calc.totals.totalMinimumRent, calc.totals.totalRevenueShare)
@@ -1720,7 +1720,7 @@ export default function NewLeaseSettlementPage() {
                 ))}
                 {/* Summary row */}
                 <TableRow className="border-t-2 font-bold">
-                  <TableCell>Gesamt ({calc.totals.leaseCount} Vertraege)</TableCell>
+                  <TableCell>Gesamt ({calc.totals.leaseCount} Verträge)</TableCell>
                   <TableCell />
                   <TableCell className="text-right">
                     {formatEur(calc.totals.totalMonthlyMinimumRent)}
@@ -1800,7 +1800,7 @@ export default function NewLeaseSettlementPage() {
                 </div>
               )}
               <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground">Vertraege</p>
+                <p className="text-xs text-muted-foreground">Verträge</p>
                 <p className="font-medium">
                   {calculationResult
                     ? (calculationResult as FinalCalculation | AdvanceCalculation).totals.leaseCount
@@ -1811,7 +1811,7 @@ export default function NewLeaseSettlementPage() {
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Info className="h-3.5 w-3.5 shrink-0" />
-              Detaillierte Berechnungsvorschau: &quot;Zurueck&quot; klicken
+              Detaillierte Berechnungsvorschau: &quot;Zurück&quot; klicken
             </div>
 
             <Separator />
@@ -1851,8 +1851,8 @@ export default function NewLeaseSettlementPage() {
                   </RadioGroup>
                   <p className="text-xs text-muted-foreground">
                     {invoiceInitialStatus === "DRAFT"
-                      ? "Gutschriften werden als Entwurf erstellt und koennen vor dem Versand noch bearbeitet werden."
-                      : "Gutschriften werden direkt als freigegeben markiert und koennen sofort versendet werden."}
+                      ? "Gutschriften werden als Entwurf erstellt und können vor dem Versand noch bearbeitet werden."
+                      : "Gutschriften werden direkt als freigegeben markiert und können sofort versendet werden."}
                   </p>
                 </div>
 
@@ -1895,7 +1895,7 @@ export default function NewLeaseSettlementPage() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Gutschrift-Nr.</TableHead>
-                            <TableHead>Empfaenger</TableHead>
+                            <TableHead>Empfänger</TableHead>
                             <TableHead className="text-right">Betrag</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1966,7 +1966,7 @@ export default function NewLeaseSettlementPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Button variant="outline" asChild>
                 <Link href="/leases/settlement">
-                  Zur Uebersicht
+                  Zur Übersicht
                 </Link>
               </Button>
               {createdSettlementId && (
@@ -2015,7 +2015,7 @@ export default function NewLeaseSettlementPage() {
       {/* Header with back navigation */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/leases/settlement" aria-label="Zurueck zur Uebersicht">
+          <Link href="/leases/settlement" aria-label="Zurück zur Übersicht">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -2066,7 +2066,7 @@ export default function NewLeaseSettlementPage() {
                   onClick={() => setCurrentStep((prev) => prev - 1)}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Zurueck
+                  Zurück
                 </Button>
               )}
             </div>

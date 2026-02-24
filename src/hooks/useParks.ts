@@ -24,7 +24,7 @@ export interface Park {
 }
 
 /**
- * Hook fuer alle Parks des aktuellen Mandanten
+ * Hook für alle Parks des aktuellen Mandanten
  */
 export function useParks() {
   const { data, error, isLoading, mutate } = useSWR<Park[]>(
@@ -45,7 +45,7 @@ export function useParks() {
 }
 
 /**
- * Hook fuer einen einzelnen Park
+ * Hook für einen einzelnen Park
  */
 export function usePark(id: string | null) {
   const { data, error, isLoading, mutate } = useSWR<Park>(

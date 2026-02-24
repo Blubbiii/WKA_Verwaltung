@@ -51,7 +51,7 @@ export async function POST(
     // Dateiname erstellen
     const filename = `Gutschrift_${invoice.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, "_")}.pdf`;
 
-    // PDF als Response zurueckgeben
+    // PDF als Response zurückgeben
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         "Content-Type": "application/pdf",

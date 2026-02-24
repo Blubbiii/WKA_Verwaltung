@@ -284,7 +284,7 @@ export default function LeaseSettlementOverviewPage() {
       {/* Page Header */}
       <PageHeader
         title="Pachtabrechnungen"
-        description="Jahres- und Vorschussabrechnungen fuer Grundeigentuemer"
+        description="Jahres- und Vorschussabrechnungen für Grundeigentümer"
         createHref="/leases/settlement/new"
         createLabel="Neue Abrechnung"
       />
@@ -294,7 +294,7 @@ export default function LeaseSettlementOverviewPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Jahreserloese
+              Jahreserlöse
             </CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -452,7 +452,7 @@ export default function LeaseSettlementOverviewPage() {
                   { value: "SETTLED", label: "Abgerechnet" },
                   {
                     value: "PENDING_REVIEW",
-                    label: "Zur Pruefung",
+                    label: "Zur Prüfung",
                   },
                   { value: "APPROVED", label: "Freigegeben" },
                   { value: "CLOSED", label: "Abgeschlossen" },
@@ -510,7 +510,7 @@ export default function LeaseSettlementOverviewPage() {
                     onClick={() => handleSort("revenue")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Erloese
+                      Erlöse
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -694,7 +694,7 @@ export default function LeaseSettlementOverviewPage() {
                   currentPage * (pagination.limit || ITEMS_PER_PAGE),
                   pagination.total
                 )}{" "}
-                von {pagination.total} Eintraegen
+                von {pagination.total} Einträgen
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -714,7 +714,7 @@ export default function LeaseSettlementOverviewPage() {
                   size="sm"
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
-                  aria-label="Naechste Seite"
+                  aria-label="Nächste Seite"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>

@@ -53,7 +53,7 @@ export async function POST(
     if (period.status !== "PENDING_REVIEW") {
       return NextResponse.json(
         {
-          error: `Nur Perioden im Status "Zur Pruefung" koennen genehmigt oder abgelehnt werden. Aktueller Status: ${period.status}`,
+          error: `Nur Perioden im Status "Zur Prüfung" können genehmigt oder abgelehnt werden. Aktueller Status: ${period.status}`,
         },
         { status: 400 }
       );
@@ -64,7 +64,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Sie koennen Ihre eigenen Abrechnungsperioden nicht selbst genehmigen. Ein anderer Administrator muss die Pruefung durchfuehren.",
+            "Sie können Ihre eigenen Abrechnungsperioden nicht selbst genehmigen. Ein anderer Administrator muss die Prüfung durchfuehren.",
         },
         { status: 403 }
       );
@@ -131,7 +131,7 @@ export async function POST(
 
       return NextResponse.json({
         ...updated,
-        message: "Abrechnungsperiode zurueckgewiesen",
+        message: "Abrechnungsperiode zurückgewiesen",
       });
     }
   } catch (error) {

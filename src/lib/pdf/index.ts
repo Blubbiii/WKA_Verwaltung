@@ -2,7 +2,7 @@
  * PDF-Generierung Modul
  *
  * Dieses Modul bietet Funktionen zur Erstellung von PDF-Dokumenten
- * fuer Rechnungen, Gutschriften und andere Geschaeftsdokumente.
+ * für Rechnungen, Gutschriften und andere Geschaeftsdokumente.
  */
 
 // Generatoren
@@ -47,7 +47,7 @@ export {
   calculateTotals,
 } from "./utils/formatters";
 
-// Template-Komponenten (fuer erweiterte Anpassungen)
+// Template-Komponenten (für erweiterte Anpassungen)
 export { BaseDocument } from "./templates/BaseDocument";
 export { InvoiceTemplate } from "./templates/InvoiceTemplate";
 export { VoteResultTemplate, type VoteResultPdfData } from "./templates/VoteResultTemplate";

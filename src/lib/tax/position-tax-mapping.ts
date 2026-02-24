@@ -11,7 +11,7 @@ export const DEFAULT_POSITION_TAX_MAPPINGS = [
   { category: "SEALED_AREA", label: "Versiegelte Flaeche", taxType: "EXEMPT" as TaxType, module: "lease" },
   { category: "ROAD_USAGE", label: "Wegenutzung", taxType: "EXEMPT" as TaxType, module: "lease" },
   { category: "CABLE_ROUTE", label: "Kabeltrasse", taxType: "EXEMPT" as TaxType, module: "lease" },
-  { category: "MGMT_FEE", label: "Betriebsfuehrungsverguetung", taxType: "STANDARD" as TaxType, module: "management" },
+  { category: "MGMT_FEE", label: "Betriebsführungsvergütung", taxType: "STANDARD" as TaxType, module: "management" },
 ];
 
 /**

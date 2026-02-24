@@ -94,8 +94,8 @@ const WIZARD_STEPS = [
   },
   {
     id: "review",
-    title: "Uebersicht",
-    description: "Konfiguration pruefen",
+    title: "Übersicht",
+    description: "Konfiguration prüfen",
   },
 ];
 
@@ -160,7 +160,7 @@ export default function UsageFeeSetupPage({
       setupData.revenuePhases.length === 0
     ) {
       w.push(
-        "Keine Erloesphasen konfiguriert. Bitte legen Sie mindestens eine Erloesphase an."
+        "Keine Erlösphasen konfiguriert. Bitte legen Sie mindestens eine Erlösphase an."
       );
     }
 
@@ -175,7 +175,7 @@ export default function UsageFeeSetupPage({
 
     if (setupData.leases.length === 0) {
       w.push(
-        "Keine Pachtvertraege fuer diesen Park gefunden. Bitte legen Sie zuerst Pachtvertraege an."
+        "Keine Pachtverträge für diesen Park gefunden. Bitte legen Sie zuerst Pachtverträge an."
       );
     }
 
@@ -184,7 +184,7 @@ export default function UsageFeeSetupPage({
       setupData.operatorFunds.length === 0
     ) {
       w.push(
-        "Keine Betreibergesellschaften verfuegbar. Fuer Direktabrechnung werden Gesellschaften benoetigt."
+        "Keine Betreibergesellschaften verfügbar. Für Direktabrechnung werden Gesellschaften benötigt."
       );
     }
 
@@ -323,7 +323,7 @@ export default function UsageFeeSetupPage({
         </div>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Die Konfigurationsdaten fuer diesen Park konnten nicht geladen
+            Die Konfigurationsdaten für diesen Park konnten nicht geladen
             werden.
           </CardContent>
         </Card>
@@ -348,7 +348,7 @@ export default function UsageFeeSetupPage({
             Nutzungsentgelt einrichten - {setupData.parkName}
           </h1>
           <p className="text-muted-foreground">
-            Konfiguration der Pachtabrechnung fuer {setupData.parkName}
+            Konfiguration der Pachtabrechnung für {setupData.parkName}
           </p>
         </div>
       </div>
@@ -375,7 +375,7 @@ export default function UsageFeeSetupPage({
                 Abrechnungsmodus waehlen
               </CardTitle>
               <CardDescription>
-                Bestimmen Sie, wie die Nutzungsentgelte fuer diesen Park
+                Bestimmen Sie, wie die Nutzungsentgelte für diesen Park
                 abgerechnet werden sollen.
               </CardDescription>
             </CardHeader>
@@ -444,8 +444,8 @@ export default function UsageFeeSetupPage({
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
                       Einzelne Betreibergesellschaften rechnen die
-                      Nutzungsentgelte fuer bestimmte Eigentuemer direkt ab.
-                      Im naechsten Schritt koennen Sie die Zuordnung
+                      Nutzungsentgelte für bestimmte Eigentuemer direkt ab.
+                      Im nächsten Schritt können Sie die Zuordnung
                       vornehmen.
                     </p>
                   </div>
@@ -468,7 +468,7 @@ export default function UsageFeeSetupPage({
               <CardDescription>
                 Ordnen Sie jedem Pachtvertrag die abrechnende Gesellschaft zu.
                 Waehlen Sie &quot;Netzgesellschaft&quot; oder eine
-                Betreibergesellschaft fuer die Direktabrechnung.
+                Betreibergesellschaft für die Direktabrechnung.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -548,7 +548,7 @@ export default function UsageFeeSetupPage({
         )}
 
         {/* ================================================================= */}
-        {/* STEP 3: Uebersicht pruefen */}
+        {/* STEP 3: Übersicht prüfen */}
         {/* ================================================================= */}
         {currentStepId === "review" && (
           <div className="space-y-6">
@@ -583,10 +583,10 @@ export default function UsageFeeSetupPage({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5" />
-                  Konfigurationsuebersicht
+                  Konfigurationsübersicht
                 </CardTitle>
                 <CardDescription>
-                  Pruefen Sie die Einstellungen bevor Sie speichern
+                  Prüfen Sie die Einstellungen bevor Sie speichern
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -617,7 +617,7 @@ export default function UsageFeeSetupPage({
                   </div>
                   <div className="rounded-lg border p-4">
                     <p className="text-sm text-muted-foreground mb-1">
-                      Erloesphasen
+                      Erlösphasen
                     </p>
                     <p className="font-medium">
                       {setupData.revenuePhases.length} Phase(n)
@@ -630,9 +630,9 @@ export default function UsageFeeSetupPage({
             {/* Summary Table */}
             <Card>
               <CardHeader>
-                <CardTitle>Pachtvertraege - Zusammenfassung</CardTitle>
+                <CardTitle>Pachtverträge - Zusammenfassung</CardTitle>
                 <CardDescription>
-                  {setupData.leases.length} Pachtvertrag/Pachtvertraege mit{" "}
+                  {setupData.leases.length} Pachtvertrag/Pachtverträge mit{" "}
                   {totalTurbines} WEA auf {formatArea(totalArea)} m2
                 </CardDescription>
               </CardHeader>
@@ -734,7 +734,7 @@ export default function UsageFeeSetupPage({
             {setupData.revenuePhases.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Erloesphasen</CardTitle>
+                  <CardTitle>Erlösphasen</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="rounded-md border">
@@ -745,7 +745,7 @@ export default function UsageFeeSetupPage({
                           <TableHead>Von (Jahr)</TableHead>
                           <TableHead>Bis (Jahr)</TableHead>
                           <TableHead className="text-right">
-                            Erloesanteil (%)
+                            Erlösanteil (%)
                           </TableHead>
                         </TableRow>
                       </TableHeader>
@@ -782,7 +782,7 @@ export default function UsageFeeSetupPage({
           disabled={currentStep === 0}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Zurueck
+          Zurück
         </Button>
 
         {!isLastStep ? (

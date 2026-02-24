@@ -2,7 +2,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { AccessReportTemplate, type AccessReportPdfData } from "../templates/AccessReportTemplate";
 
 /**
- * Generiert ein PDF fuer den Zugriffsreport
+ * Generiert ein PDF für den Zugriffsreport
  */
 export async function generateAccessReportPdf(
   data: AccessReportPdfData
@@ -16,7 +16,7 @@ export async function generateAccessReportPdf(
 }
 
 /**
- * Generiert ein PDF fuer den Zugriffsreport als Base64
+ * Generiert ein PDF für den Zugriffsreport als Base64
  */
 export async function generateAccessReportPdfBase64(
   data: AccessReportPdfData

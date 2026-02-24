@@ -491,7 +491,7 @@ export async function fetchDowntimePareto(
     { category: "t2", label: "Windstille", seconds: Number(r.t2_total) },
     { category: "t3", label: "Umweltstopp", seconds: Number(r.t3_total) },
     { category: "t4", label: "Wartung", seconds: Number(r.t4_total) },
-    { category: "t5", label: "Stoerung", seconds: Number(r.t5_total) },
+    { category: "t5", label: "Störung", seconds: Number(r.t5_total) },
     { category: "t6", label: "Sonstige", seconds: Number(r.t6_total) },
   ].sort((a, b) => b.seconds - a.seconds);
 
@@ -719,7 +719,7 @@ export async function fetchFaultPareto(
     const duration = Number(r.total_duration);
     const pct = totalDuration > 0 ? round((duration / totalDuration) * 100, 1) : 0;
     cumulative += pct;
-    const label = `Zustand ${r.state}.${r.subState}${r.isFault ? " (Stoerung)" : ""}`;
+    const label = `Zustand ${r.state}.${r.subState}${r.isFault ? " (Störung)" : ""}`;
 
     return {
       state: r.state,
@@ -953,7 +953,7 @@ export async function fetchLostRevenue(
   const { from, to } = buildDateRange(year);
   const hours = hoursInPeriod(from, to);
 
-  // 1. Get total fault hours from scada_availability (T5 = Stoerung)
+  // 1. Get total fault hours from scada_availability (T5 = Störung)
   const faultRows = await prisma.$queryRaw<FaultSecondsRow[]>`
     SELECT SUM(t5)::bigint AS total_fault_seconds
     FROM scada_availability

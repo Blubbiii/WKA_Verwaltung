@@ -1,5 +1,5 @@
 /**
- * Aggregation Service fuer SCADA-Produktionsdaten
+ * Aggregation Service für SCADA-Produktionsdaten
  *
  * Berechnet monatliche Produktionswerte (kWh) aus den 10-Minuten-Rohdaten
  * der ScadaMeasurement-Tabelle und schreibt diese in TurbineProduction.
@@ -7,7 +7,7 @@
  * Berechnungsformel:
  *   Summe(powerW * 10min / 60min / 1000) = kWh pro Monat
  *   Jeder 10-Min-Messwert repraesentiert eine durchschnittliche Leistung
- *   ueber das Intervall. Die Energie ist: P_avg * dt.
+ *   über das Intervall. Die Energie ist: P_avg * dt.
  */
 
 import { prisma } from '@/lib/prisma';
@@ -21,7 +21,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 export interface MonthlyAggregationResult {
   /** Gesamtproduktion in kWh */
   totalKwh: number;
-  /** Anzahl gueltiger Messpunkte mit Leistungswert */
+  /** Anzahl gültiger Messpunkte mit Leistungswert */
   dataPoints: number;
   /** Erwartete Messpunkte im Monat (Tage * 24h * 6 Intervalle) */
   expectedPoints: number;
@@ -49,7 +49,7 @@ const INTERVALS_PER_HOUR = 60 / INTERVAL_MINUTES; // 6
  */
 function daysInMonth(year: number, month: number): number {
   // month ist 1-basiert (1=Januar, 12=Dezember)
-  // new Date(year, month, 0) gibt den letzten Tag des Vormonats zurueck
+  // new Date(year, month, 0) gibt den letzten Tag des Vormonats zurück
   return new Date(year, month, 0).getDate();
 }
 
@@ -60,7 +60,7 @@ function daysInMonth(year: number, month: number): number {
 /**
  * Aggregiert die monatliche Produktion einer Turbine aus SCADA-Messdaten.
  *
- * Liest alle ScadaMeasurement-Eintraege des Monats fuer die Turbine,
+ * Liest alle ScadaMeasurement-Einträge des Monats für die Turbine,
  * summiert die Leistungswerte und rechnet in kWh um.
  *
  * Berechnung pro Messpunkt:
@@ -81,7 +81,7 @@ export async function aggregateMonthlyProduction(
   const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
   const endDate = new Date(Date.UTC(year, month, 1, 0, 0, 0)); // Exklusiv
 
-  // Alle WSD-Messwerte mit gueltigem Leistungswert fuer den Monat laden
+  // Alle WSD-Messwerte mit gültigem Leistungswert für den Monat laden
   const measurements = await prisma.scadaMeasurement.findMany({
     where: {
       turbineId,
@@ -110,7 +110,7 @@ export async function aggregateMonthlyProduction(
         : Number(m.powerW);
 
       if (isFinite(watts) && watts >= 0) {
-        // Energie fuer 10-Min-Intervall: P * dt
+        // Energie für 10-Min-Intervall: P * dt
         // kWh = W * (10/60) h / 1000
         totalKwh += watts * INTERVAL_MINUTES / 60 / 1000;
         dataPoints++;
@@ -142,7 +142,7 @@ export async function aggregateMonthlyProduction(
  *   turbineId + year + month + tenantId
  *
  * Setzt source="SCADA" und status="DRAFT", damit der Wert
- * vom Benutzer noch geprueft/bestaetigt werden kann.
+ * vom Benutzer noch geprüft/bestätigt werden kann.
  *
  * @param turbineId - UUID der Turbine
  * @param tenantId - UUID des Mandanten (Multi-Tenancy)

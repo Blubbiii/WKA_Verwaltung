@@ -3,7 +3,7 @@ import type { UserPermissions } from "./permissions";
 // ============================================================================
 // PERMISSION CACHE MODUL
 // ============================================================================
-// In-Memory Cache mit TTL fuer User-Permissions
+// In-Memory Cache mit TTL für User-Permissions
 // Optimiert die Performance durch Vermeidung wiederholter DB-Abfragen
 // ============================================================================
 
@@ -19,7 +19,7 @@ const permissionCache = new Map<string, CacheEntry>();
 // Default TTL: 5 Minuten (in Millisekunden)
 const DEFAULT_TTL_MS = 5 * 60 * 1000;
 
-// Konfigurierbare TTL (kann spaeter via Environment Variable gesetzt werden)
+// Konfigurierbare TTL (kann später via Environment Variable gesetzt werden)
 let cacheTTL = DEFAULT_TTL_MS;
 
 // ============================================================================
@@ -27,7 +27,7 @@ let cacheTTL = DEFAULT_TTL_MS;
 // ============================================================================
 
 /**
- * Holt gecachte Permissions fuer einen User
+ * Holt gecachte Permissions für einen User
  * @param userId - Die User-ID
  * @returns Die gecachten Permissions oder null wenn nicht vorhanden/abgelaufen
  */
@@ -49,7 +49,7 @@ export function getCachedPermissions(userId: string): UserPermissions | null {
 }
 
 /**
- * Speichert Permissions im Cache fuer einen User
+ * Speichert Permissions im Cache für einen User
  * @param userId - Die User-ID
  * @param permissions - Die zu cachenden Permissions
  * @param ttl - Optionale TTL in Millisekunden (Standard: 5 Minuten)
@@ -68,9 +68,9 @@ export function setCachedPermissions(
 }
 
 /**
- * Invalidiert den Cache fuer einen spezifischen User
- * Wird aufgerufen wenn die Rollen eines Users geaendert werden
- * @param userId - Die User-ID deren Cache geloescht werden soll
+ * Invalidiert den Cache für einen spezifischen User
+ * Wird aufgerufen wenn die Rollen eines Users geändert werden
+ * @param userId - Die User-ID deren Cache gelöscht werden soll
  */
 export function invalidateUser(userId: string): void {
   permissionCache.delete(userId);
@@ -78,7 +78,7 @@ export function invalidateUser(userId: string): void {
 
 /**
  * Invalidiert den gesamten Cache
- * Wird aufgerufen wenn Rollen selbst geaendert werden (Permissions einer Rolle)
+ * Wird aufgerufen wenn Rollen selbst geändert werden (Permissions einer Rolle)
  * da dies alle User mit dieser Rolle betrifft
  */
 export function invalidateAll(): void {
@@ -101,7 +101,7 @@ export function setCacheTTL(ttlMs: number): void {
 }
 
 /**
- * Gibt die aktuelle Cache TTL zurueck
+ * Gibt die aktuelle Cache TTL zurück
  * @returns TTL in Millisekunden
  */
 export function getCacheTTL(): number {
@@ -109,17 +109,17 @@ export function getCacheTTL(): number {
 }
 
 /**
- * Gibt die aktuelle Cache-Groesse zurueck (Anzahl der Eintraege)
- * Nuetzlich fuer Monitoring und Debugging
- * @returns Anzahl der Cache-Eintraege
+ * Gibt die aktuelle Cache-Größe zurück (Anzahl der Einträge)
+ * Nützlich für Monitoring und Debugging
+ * @returns Anzahl der Cache-Einträge
  */
 export function getCacheSize(): number {
   return permissionCache.size;
 }
 
 /**
- * Gibt Cache-Statistiken zurueck
- * Nuetzlich fuer Monitoring und Debugging
+ * Gibt Cache-Statistiken zurück
+ * Nützlich für Monitoring und Debugging
  */
 export function getCacheStats(): {
   size: number;
@@ -144,9 +144,9 @@ export function getCacheStats(): {
 }
 
 /**
- * Entfernt abgelaufene Eintraege aus dem Cache
+ * Entfernt abgelaufene Einträge aus dem Cache
  * Kann periodisch aufgerufen werden um Speicher freizugeben
- * @returns Anzahl der entfernten Eintraege
+ * @returns Anzahl der entfernten Einträge
  */
 export function cleanupExpiredEntries(): number {
   const now = Date.now();

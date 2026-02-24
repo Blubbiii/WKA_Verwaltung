@@ -314,7 +314,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
           </div>
           <Button onClick={() => handleDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Dokument hinzufuegen
+            Dokument hinzufügen
           </Button>
         </CardHeader>
         <CardContent>
@@ -339,7 +339,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                   <TableRow>
                     <TableHead>Dokument</TableHead>
                     <TableHead>Kategorie</TableHead>
-                    <TableHead>Groesse</TableHead>
+                    <TableHead>Größe</TableHead>
                     <TableHead>Hochgeladen</TableHead>
                     <TableHead className="w-[120px]">Aktionen</TableHead>
                   </TableRow>
@@ -431,7 +431,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       <Dialog open={addDialogOpen} onOpenChange={handleDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Dokument hinzufuegen</DialogTitle>
+            <DialogTitle>Dokument hinzufügen</DialogTitle>
             <DialogDescription>
               Verknuepfen Sie ein bestehendes Dokument oder laden Sie ein neues hoch.
             </DialogDescription>
@@ -472,7 +472,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                 ) : availableDocuments.length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground">
                     <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Keine verfuegbaren Dokumente gefunden</p>
+                    <p>Keine verfügbaren Dokumente gefunden</p>
                   </div>
                 ) : (
                   <div className="divide-y">
@@ -605,8 +605,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Verknuepfung entfernen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechten Sie die Verknuepfung des Dokuments &quot;{documentToUnlink?.title}&quot; mit
-              diesem Vertrag wirklich entfernen? Das Dokument selbst wird nicht geloescht.
+              Möchten Sie die Verknuepfung des Dokuments &quot;{documentToUnlink?.title}&quot; mit
+              diesem Vertrag wirklich entfernen? Das Dokument selbst wird nicht gelöscht.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

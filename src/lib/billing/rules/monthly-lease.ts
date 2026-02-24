@@ -1,6 +1,6 @@
 /**
  * Monthly Lease Payment Rule Handler
- * Implementiert die Logik fuer monatliche Pachtzahlungen
+ * Implementiert die Logik für monatliche Pachtzahlungen
  *
  * Supports partial month prorating (Teilmonate):
  * - If a lease starts mid-month, the first month is prorated by days
@@ -146,7 +146,7 @@ export function calculateLeaseAmount(
     for (const area of leasePlot.plot.plotAreas) {
       // Fixer Betrag hat Vorrang
       if (area.compensationFixedAmount && area.compensationFixedAmount > 0) {
-        // Jaehrliche Zahlung auf Monat runterbrechen
+        // Jährliche Zahlung auf Monat runterbrechen
         if (area.compensationType === "ANNUAL") {
           totalAmount += Number(area.compensationFixedAmount) / 12;
         } else {
@@ -200,7 +200,7 @@ export function calculateLeaseAmount(
 }
 
 /**
- * Handler fuer monatliche Pachtzahlungen
+ * Handler für monatliche Pachtzahlungen
  */
 export class MonthlyLeaseHandler implements RuleHandler {
   readonly ruleType = BillingRuleType.LEASE_PAYMENT;
@@ -212,7 +212,7 @@ export class MonthlyLeaseHandler implements RuleHandler {
 
     const params = parameters as Record<string, unknown>;
 
-    // Optionale Felder pruefen
+    // Optionale Felder prüfen
     if (params.parkId !== undefined && typeof params.parkId !== "string") {
       return false;
     }
@@ -246,7 +246,7 @@ export class MonthlyLeaseHandler implements RuleHandler {
     const year = params.year || now.getFullYear();
     const month = params.month || now.getMonth() + 1;
 
-    // Lade alle aktiven Pachtvertraege fuer diesen Tenant
+    // Lade alle aktiven Pachtverträge für diesen Tenant
     const leases = await prisma.lease.findMany({
       where: {
         tenantId,
@@ -384,7 +384,7 @@ export class MonthlyLeaseHandler implements RuleHandler {
         continue;
       }
 
-      // Formatiere Empfaenger-Name
+      // Formatiere Empfänger-Name
       const recipientName =
         lease.lessor.companyName ||
         `${lease.lessor.firstName || ""} ${lease.lessor.lastName || ""}`.trim();
@@ -437,7 +437,7 @@ export class MonthlyLeaseHandler implements RuleHandler {
     const tenantSettings = await getTenantSettings(tenantId);
     const paymentTermDays = tenantSettings.paymentTermDays;
 
-    // Lade alle aktiven Pachtvertraege
+    // Lade alle aktiven Pachtverträge
     const leases = await prisma.lease.findMany({
       where: {
         tenantId,
@@ -582,7 +582,7 @@ export class MonthlyLeaseHandler implements RuleHandler {
 
         const isPartialMonth = prorationFactor < 1;
 
-        // Empfaenger-Adresse formatieren
+        // Empfänger-Adresse formatieren
         const recipientName =
           lease.lessor.companyName ||
           `${lease.lessor.firstName || ""} ${lease.lessor.lastName || ""}`.trim();
@@ -611,7 +611,7 @@ export class MonthlyLeaseHandler implements RuleHandler {
           taxType
         );
 
-        // Monatsname fuer Beschreibung
+        // Monatsname für Beschreibung
         const monthNames = [
           "Januar",
           "Februar",

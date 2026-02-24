@@ -96,7 +96,7 @@ async function testEmailConnection(
       if (!emailRegex.test(recipient)) {
         return NextResponse.json({
           success: false,
-          error: "Ungueltige E-Mail-Adresse",
+          error: "Ungültige E-Mail-Adresse",
         });
       }
 

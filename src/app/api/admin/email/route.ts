@@ -79,18 +79,18 @@ const updateProviderSettingsSchema = z.object({
     .union([smtpProviderConfigSchema, sendgridConfigSchema, sesConfigSchema])
     .nullable()
     .optional(),
-  fromAddress: z.string().email("Ungueltige E-Mail-Adresse").nullable().optional(),
+  fromAddress: z.string().email("Ungültige E-Mail-Adresse").nullable().optional(),
   fromName: z.string().max(100).nullable().optional(),
 });
 
 // Default email templates
 const defaultTemplates: EmailTemplate[] = [
   { id: "1", name: "Willkommens-E-Mail", key: "welcome", subject: "Willkommen bei WindparkManager", active: true },
-  { id: "2", name: "Passwort-Reset", key: "password-reset", subject: "Passwort zuruecksetzen", active: true },
-  { id: "3", name: "Neue Abstimmung", key: "new-vote", subject: "Neue Abstimmung verfuegbar", active: true },
+  { id: "2", name: "Passwort-Reset", key: "password-reset", subject: "Passwort zurücksetzen", active: true },
+  { id: "3", name: "Neue Abstimmung", key: "new-vote", subject: "Neue Abstimmung verfügbar", active: true },
   { id: "4", name: "Abstimmungs-Erinnerung", key: "vote-reminder", subject: "Erinnerung: Abstimmung endet bald", active: true },
-  { id: "5", name: "Neue Gutschrift", key: "new-credit", subject: "Neue Gutschrift verfuegbar", active: false },
-  { id: "6", name: "Vertragsfrist-Warnung", key: "contract-warning", subject: "Vertragsfrist laeuft ab", active: true },
+  { id: "5", name: "Neue Gutschrift", key: "new-credit", subject: "Neue Gutschrift verfügbar", active: false },
+  { id: "6", name: "Vertragsfrist-Warnung", key: "contract-warning", subject: "Vertragsfrist läuft ab", active: true },
 ];
 
 // Default notification settings
@@ -414,7 +414,7 @@ function validateConfigForProvider(
         error: error.errors.map((e) => e.message).join(", "),
       };
     }
-    return { valid: false, error: "Ungueltige Konfiguration" };
+    return { valid: false, error: "Ungültige Konfiguration" };
   }
 }
 
@@ -491,7 +491,7 @@ export async function POST(request: NextRequest) {
 
     if (!recipient) {
       return NextResponse.json(
-        { error: "Empfaenger-Adresse fehlt" },
+        { error: "Empfänger-Adresse fehlt" },
         { status: 400 }
       );
     }
@@ -500,7 +500,7 @@ export async function POST(request: NextRequest) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(recipient)) {
       return NextResponse.json(
-        { error: "Ungueltige E-Mail-Adresse" },
+        { error: "Ungültige E-Mail-Adresse" },
         { status: 400 }
       );
     }

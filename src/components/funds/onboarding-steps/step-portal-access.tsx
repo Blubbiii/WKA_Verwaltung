@@ -68,7 +68,7 @@ export function StepPortalAccess({ data, personalData, onChange }: StepPortalAcc
               <Info className="h-4 w-4" />
               <AlertDescription>
                 Um einen Portal-Zugang zu erstellen, muss eine E-Mail-Adresse
-                in den Stammdaten hinterlegt sein. Bitte gehen Sie zurueck zu
+                in den Stammdaten hinterlegt sein. Bitte gehen Sie zurück zu
                 Schritt 1 und tragen Sie eine E-Mail-Adresse ein.
               </AlertDescription>
             </Alert>
@@ -118,7 +118,7 @@ export function StepPortalAccess({ data, personalData, onChange }: StepPortalAcc
             <AlertDescription>
               Nach dem Anlegen wird ein temporaeres Passwort generiert und angezeigt.
               Der Gesellschafter muss das Passwort beim ersten Login aendern.
-              {data.sendWelcomeEmail && " Die Zugangsdaten werden zusaetzlich per E-Mail versendet."}
+              {data.sendWelcomeEmail && " Die Zugangsdaten werden zusätzlich per E-Mail versendet."}
             </AlertDescription>
           </Alert>
         </>

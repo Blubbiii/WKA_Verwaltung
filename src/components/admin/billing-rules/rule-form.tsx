@@ -2,7 +2,7 @@
 
 /**
  * RuleForm Component
- * Formular fuer Erstellung/Bearbeitung von Billing Rules
+ * Formular für Erstellung/Bearbeitung von Billing Rules
  */
 
 import { useState, useEffect } from "react";
@@ -71,22 +71,22 @@ type FormData = z.infer<typeof formSchema>;
 const RULE_TYPE_LABELS: Record<RuleType, string> = {
   LEASE_PAYMENT: "Pachtzahlung",
   DISTRIBUTION: "Ausschuettung",
-  MANAGEMENT_FEE: "Verwaltungsgebuehr",
+  MANAGEMENT_FEE: "Verwaltungsgebühr",
   CUSTOM: "Benutzerdefiniert",
 };
 
 const RULE_TYPE_DESCRIPTIONS: Record<RuleType, string> = {
-  LEASE_PAYMENT: "Automatische Pachtzahlungen an Verpächter basierend auf Pachtvertraegen",
+  LEASE_PAYMENT: "Automatische Pachtzahlungen an Verpächter basierend auf Pachtverträgen",
   DISTRIBUTION: "Ausschuettungen an Gesellschafter basierend auf Beteiligungsanteilen",
-  MANAGEMENT_FEE: "Verwaltungsgebuehren (fix oder prozentual)",
+  MANAGEMENT_FEE: "Verwaltungsgebühren (fix oder prozentual)",
   CUSTOM: "Benutzerdefinierte Rechnungen mit frei definierbaren Positionen",
 };
 
 const FREQUENCY_LABELS: Record<Frequency, string> = {
   MONTHLY: "Monatlich",
-  QUARTERLY: "Vierteljaehrlich",
-  SEMI_ANNUAL: "Halbjaehrlich",
-  ANNUAL: "Jaehrlich",
+  QUARTERLY: "Vierteljährlich",
+  SEMI_ANNUAL: "Halbjährlich",
+  ANNUAL: "Jährlich",
   CUSTOM_CRON: "Benutzerdefiniert (Cron)",
 };
 
@@ -236,7 +236,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
               />
               {isEditing && (
                 <p className="text-xs text-muted-foreground">
-                  Regeltyp kann nach Erstellung nicht geaendert werden
+                  Regeltyp kann nach Erstellung nicht geändert werden
                 </p>
               )}
             </div>
@@ -265,7 +265,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
             <Calendar className="h-5 w-5" />
             Zeitplanung
           </CardTitle>
-          <CardDescription>Wann soll die Regel ausgefuehrt werden?</CardDescription>
+          <CardDescription>Wann soll die Regel ausgeführt werden?</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -302,7 +302,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
                   {...register("dayOfMonth", { valueAsNumber: true })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Ausfuehrung am {watch("dayOfMonth") || 1}. des Monats
+                  Ausführung am {watch("dayOfMonth") || 1}. des Monats
                 </p>
               </div>
             )}
@@ -347,7 +347,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
             Parameter
           </CardTitle>
           <CardDescription>
-            Spezifische Einstellungen fuer {RULE_TYPE_LABELS[ruleType]}
+            Spezifische Einstellungen für {RULE_TYPE_LABELS[ruleType]}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -373,7 +373,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Optional: Nur Pachtvertraege eines bestimmten Parks
+                  Optional: Nur Pachtverträge eines bestimmten Parks
                 </p>
               </div>
 
@@ -555,7 +555,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
               </div>
 
               <div className="space-y-2">
-                <Label>Empfaenger</Label>
+                <Label>Empfänger</Label>
                 <Input
                   placeholder="z.B. WindparkManager Verwaltungs GmbH"
                   value={getParameter("recipientName", "")}
@@ -564,7 +564,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
               </div>
 
               <div className="space-y-2">
-                <Label>Empfaenger-Adresse</Label>
+                <Label>Empfänger-Adresse</Label>
                 <Textarea
                   placeholder="Strasse, PLZ Ort"
                   value={getParameter("recipientAddress", "")}
@@ -598,7 +598,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
                 <Info className="h-4 w-4" />
                 <AlertDescription>
                   Benutzerdefinierte Regeln erfordern manuelle Konfiguration der Rechnungspositionen.
-                  Fuer komplexe Anwendungsfaelle kontaktieren Sie bitte den Support.
+                  Für komplexe Anwendungsfaelle kontaktieren Sie bitte den Support.
                 </AlertDescription>
               </Alert>
 
@@ -619,16 +619,16 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
               </div>
 
               <div className="space-y-2">
-                <Label>Empfaenger</Label>
+                <Label>Empfänger</Label>
                 <Input
-                  placeholder="Name des Empfaengers"
+                  placeholder="Name des Empfängers"
                   value={getParameter("recipientName", "")}
                   onChange={(e) => setParameter("recipientName", e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Empfaenger-Adresse</Label>
+                <Label>Empfänger-Adresse</Label>
                 <Textarea
                   placeholder="Strasse, PLZ Ort"
                   value={getParameter("recipientAddress", "")}
@@ -654,7 +654,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
                   }}
                 />
                 <p className="text-xs text-muted-foreground">
-                  JSON-Array mit Positionen. Jede Position benoetigt: description, quantity, unitPrice
+                  JSON-Array mit Positionen. Jede Position benötigt: description, quantity, unitPrice
                 </p>
               </div>
             </>

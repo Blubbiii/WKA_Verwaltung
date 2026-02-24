@@ -72,7 +72,7 @@ const DEFAULT_AVAILABLE_WIDGETS: AvailableWidget[] = [
   { id: "kpi-shareholders",   name: "Gesellschafter",     description: "Zeigt Anzahl der Gesellschafter",        category: "kpi", defaultSize: { w: 3, h: 2, minW: 3, minH: 2, maxW: 6, maxH: 2 } },
   { id: "kpi-fund-capital",   name: "Gesellschaftskapital",       description: "Zeigt das gesamte Gesellschaftskapital",         category: "kpi", defaultSize: { w: 3, h: 2, minW: 3, minH: 2, maxW: 6, maxH: 2 } },
   { id: "kpi-open-invoices",  name: "Offene Rechnungen",  description: "Zeigt offene Rechnungen und Betrag",     category: "kpi", defaultSize: { w: 3, h: 2, minW: 3, minH: 2, maxW: 6, maxH: 2 } },
-  { id: "kpi-contracts",      name: "Vertraege",          description: "Zeigt Vertraege und auslaufende",        category: "kpi", defaultSize: { w: 3, h: 2, minW: 3, minH: 2, maxW: 6, maxH: 2 } },
+  { id: "kpi-contracts",      name: "Verträge",          description: "Zeigt Verträge und auslaufende",        category: "kpi", defaultSize: { w: 3, h: 2, minW: 3, minH: 2, maxW: 6, maxH: 2 } },
   { id: "kpi-documents",      name: "Dokumente",          description: "Zeigt Dokument-Statistiken",             category: "kpi", defaultSize: { w: 3, h: 2, minW: 3, minH: 2, maxW: 6, maxH: 2 } },
   { id: "kpi-votes",          name: "Abstimmungen",       description: "Zeigt aktive Abstimmungen",              category: "kpi", defaultSize: { w: 3, h: 2, minW: 3, minH: 2, maxW: 6, maxH: 2 } },
 
@@ -83,16 +83,16 @@ const DEFAULT_AVAILABLE_WIDGETS: AvailableWidget[] = [
 
   // List Widgets (medium: 4x3)
   { id: "list-deadlines",          name: "Anstehende Fristen",     description: "Liste der anstehenden Fristen",            category: "list", defaultSize: { w: 4, h: 3, minW: 4, minH: 3, maxW: 8, maxH: 6 } },
-  { id: "list-activities",         name: "Letzte Aktivitaeten",    description: "Liste der letzten Aktivitaeten im System", category: "list", defaultSize: { w: 4, h: 3, minW: 4, minH: 3, maxW: 8, maxH: 6 } },
-  { id: "list-expiring-contracts", name: "Auslaufende Vertraege",  description: "Liste der bald auslaufenden Vertraege",   category: "list", defaultSize: { w: 4, h: 3, minW: 4, minH: 3, maxW: 8, maxH: 6 } },
+  { id: "list-activities",         name: "Letzte Aktivitäten",    description: "Liste der letzten Aktivitäten im System", category: "list", defaultSize: { w: 4, h: 3, minW: 4, minH: 3, maxW: 8, maxH: 6 } },
+  { id: "list-expiring-contracts", name: "Auslaufende Verträge",  description: "Liste der bald auslaufenden Verträge",   category: "list", defaultSize: { w: 4, h: 3, minW: 4, minH: 3, maxW: 8, maxH: 6 } },
 
   // Utility Widgets (small: 3x2)
-  { id: "weather-widget", name: "Wetter",        description: "Wetterdaten fuer Windparks",               category: "weather",       defaultSize: { w: 3, h: 2, minW: 3, minH: 2, maxW: 6, maxH: 4 } },
+  { id: "weather-widget", name: "Wetter",        description: "Wetterdaten für Windparks",               category: "weather",       defaultSize: { w: 3, h: 2, minW: 3, minH: 2, maxW: 6, maxH: 4 } },
   { id: "quick-actions",  name: "Schnellzugriff", description: "Schnellzugriff auf haeufige Aktionen",     category: "quick-actions",  defaultSize: { w: 3, h: 2, minW: 3, minH: 2, maxW: 6, maxH: 4 } },
 
   // Admin Widgets (medium: 4x3 / large: 6x4)
   { id: "admin-system-status", name: "System-Status",         description: "Zeigt den aktuellen System-Status",   category: "admin", defaultSize: { w: 4, h: 3, minW: 4, minH: 3, maxW: 8,  maxH: 4 }, requiredRole: ["ADMIN"] },
-  { id: "admin-audit-log",     name: "Audit-Log",             description: "Letzte Audit-Log Eintraege",          category: "admin", defaultSize: { w: 6, h: 4, minW: 4, minH: 3, maxW: 12, maxH: 6 }, requiredRole: ["ADMIN"] },
+  { id: "admin-audit-log",     name: "Audit-Log",             description: "Letzte Audit-Log Einträge",          category: "admin", defaultSize: { w: 6, h: 4, minW: 4, minH: 3, maxW: 12, maxH: 6 }, requiredRole: ["ADMIN"] },
   { id: "admin-billing-jobs",  name: "Billing-Jobs",          description: "Status der Abrechnungs-Jobs",         category: "admin", defaultSize: { w: 6, h: 4, minW: 4, minH: 3, maxW: 12, maxH: 6 }, requiredRole: ["SUPERADMIN"] },
 ];
 

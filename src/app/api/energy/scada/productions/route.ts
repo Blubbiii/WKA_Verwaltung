@@ -6,7 +6,7 @@ import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
 // GET /api/energy/scada/productions
-// Aggregiert SCADA-Messdaten in verschiedenen Zeitintervallen fuer die
+// Aggregiert SCADA-Messdaten in verschiedenen Zeitintervallen für die
 // Einspeisedaten-Seite. Unterstuetzt 10min, hour, day, month, year.
 // =============================================================================
 
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     if (!VALID_INTERVALS.includes(interval)) {
       return NextResponse.json(
         {
-          error: `Ungueltiges Intervall '${interval}'. Erlaubt: ${VALID_INTERVALS.join(", ")}`,
+          error: `Ungültiges Intervall '${interval}'. Erlaubt: ${VALID_INTERVALS.join(", ")}`,
         },
         { status: 400 }
       );
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       fromDate = new Date(from);
       if (isNaN(fromDate.getTime())) {
         return NextResponse.json(
-          { error: "Ungueltiges Datum fuer 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
+          { error: "Ungültiges Datum für 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
           { status: 400 }
         );
       }
@@ -94,13 +94,13 @@ export async function GET(request: NextRequest) {
       toDate = new Date(to);
       if (isNaN(toDate.getTime())) {
         return NextResponse.json(
-          { error: "Ungueltiges Datum fuer 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
+          { error: "Ungültiges Datum für 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
           { status: 400 }
         );
       }
     }
 
-    // --- Turbines fuer Tenant ermitteln (gefiltert nach Park/Turbine) ---
+    // --- Turbines für Tenant ermitteln (gefiltert nach Park/Turbine) ---
     const turbineWhere: Record<string, unknown> = {
       park: { tenantId },
     };
@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
       ])
     );
 
-    // --- WHERE-Fragmente aufbauen (Prisma.sql fuer sichere Parametrisierung) ---
+    // --- WHERE-Fragmente aufbauen (Prisma.sql für sichere Parametrisierung) ---
     const baseConditions = Prisma.sql`
       "tenantId" = ${tenantId}
       AND "sourceFile" = 'WSD'
@@ -216,7 +216,7 @@ export async function GET(request: NextRequest) {
               : "year";
 
       // Prisma.sql erlaubt keine parametrisierten Identifier,
-      // daher verwenden wir fuer die date_trunc-Unit ein sicheres Mapping
+      // daher verwenden wir für die date_trunc-Unit ein sicheres Mapping
       const truncSql =
         truncUnit === "hour"
           ? Prisma.sql`date_trunc('hour', "timestamp")`
@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
       `;
     }
 
-    // --- Totals Query (ueber gesamten gefilterten Bereich, unabhaengig von Pagination) ---
+    // --- Totals Query (über gesamten gefilterten Bereich, unabhängig von Pagination) ---
     const totalsRows = await prisma.$queryRaw<TotalsRow[]>`
       SELECT
         SUM("powerW" * 10.0 / 60.0 / 1000.0) AS total_kwh,

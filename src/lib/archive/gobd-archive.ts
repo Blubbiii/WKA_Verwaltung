@@ -3,7 +3,7 @@
  *
  * Provides immutable document archiving with SHA-256 hash chains,
  * retention policy enforcement, and integrity verification per GoBD
- * (Grundsaetze zur ordnungsgemaessen Fuehrung und Aufbewahrung von
+ * (Grundsaetze zur ordnungsgemaessen Führung und Aufbewahrung von
  * Buechern, Aufzeichnungen und Unterlagen in elektronischer Form).
  *
  * Key properties:
@@ -360,7 +360,7 @@ export async function getArchivedDocument(
       "INTEGRITY VIOLATION: Document content does not match stored hash!"
     );
     throw new Error(
-      "Integritaetsverletzung: Der Dokumentinhalt stimmt nicht mit dem gespeicherten Hash ueberein. " +
+      "Integritaetsverletzung: Der Dokumentinhalt stimmt nicht mit dem gespeicherten Hash überein. " +
       "Das Dokument wurde moeglicherweise manipuliert."
     );
   }
@@ -560,7 +560,7 @@ export async function verifyChainIntegrity(
       errors.push({
         documentId: doc.id,
         referenceNumber: doc.referenceNumber,
-        reason: `Ketten-Hash stimmt nicht ueberein. Erwartet: ${expectedChainHash.substring(0, 16)}..., Gespeichert: ${doc.chainHash.substring(0, 16)}...`,
+        reason: `Ketten-Hash stimmt nicht überein. Erwartet: ${expectedChainHash.substring(0, 16)}..., Gespeichert: ${doc.chainHash.substring(0, 16)}...`,
       });
     } else {
       validCount++;
@@ -617,7 +617,7 @@ export async function saveVerificationResult(
 }
 
 // ---------------------------------------------------------------------------
-// Archive export (Betriebspruefung / tax audit)
+// Archive export (Betriebsprüfung / tax audit)
 // ---------------------------------------------------------------------------
 
 /**
@@ -667,7 +667,7 @@ export async function getArchiveExportData(
     "Dokumenttyp",
     "Referenznummer",
     "Dateiname",
-    "Dateigroesse (Bytes)",
+    "Dateigröße (Bytes)",
     "MIME-Typ",
     "SHA-256 Hash",
     "Ketten-Hash",

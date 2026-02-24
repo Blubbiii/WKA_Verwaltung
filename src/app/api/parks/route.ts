@@ -32,8 +32,8 @@ const parkCreateSchema = z.object({
   commissioningDate: z.string().optional().nullable(),
   totalCapacityKw: z.number().optional().nullable(),
   operatorFundId: z.string().uuid().optional().nullable(),
-  technischeBetriebsfuehrung: z.string().optional().nullable(),
-  kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
+  technischeBetriebsführung: z.string().optional().nullable(),
+  kaufmaennischeBetriebsführung: z.string().optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
 
   // Billing configuration (Pacht-Konfiguration)

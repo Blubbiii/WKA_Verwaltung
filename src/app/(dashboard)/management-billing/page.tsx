@@ -137,8 +137,8 @@ export default function ManagementBillingOverviewPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Betriebsfuehrung - Uebersicht"
-        description="Zusammenfassung aller Betriebsfuehrungs-Vertraege und Abrechnungen"
+        title="Betriebsführung - Übersicht"
+        description="Zusammenfassung aller Betriebsführungs-Verträge und Abrechnungen"
       />
 
       {/* KPI Cards */}
@@ -148,7 +148,7 @@ export default function ManagementBillingOverviewPage() {
         <Card>
           <CardContent className="py-8">
             <p className="text-center text-destructive">
-              Fehler beim Laden der Uebersichtsdaten. Bitte versuchen Sie es
+              Fehler beim Laden der Übersichtsdaten. Bitte versuchen Sie es
               erneut.
             </p>
           </CardContent>
@@ -156,22 +156,22 @@ export default function ManagementBillingOverviewPage() {
       ) : (
         <KPICardGrid>
           <KPICard
-            title="Aktive Vertraege"
+            title="Aktive Verträge"
             value={data?.activeContracts ?? 0}
             icon={Briefcase}
-            description="Aktive BF-Vertraege"
+            description="Aktive BF-Verträge"
           />
           <KPICard
             title="Abrechnungsfaehig"
             value={data?.billingEnabledCount ?? 0}
             icon={Calculator}
-            description="Vertraege mit aktiver Abrechnung"
+            description="Verträge mit aktiver Abrechnung"
           />
           <KPICard
             title="Gesamtbetrag Netto"
             value={formatCurrency(data?.totalNetEur ?? 0)}
             icon={Euro}
-            description="Summe aller Netto-Gebuehren"
+            description="Summe aller Netto-Gebühren"
           />
           <KPICard
             title="Fakturiert"
@@ -189,7 +189,7 @@ export default function ManagementBillingOverviewPage() {
             <div>
               <CardTitle>Neueste Abrechnungen</CardTitle>
               <CardDescription>
-                Die letzten Betriebsfuehrungs-Abrechnungen
+                Die letzten Betriebsführungs-Abrechnungen
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
@@ -274,9 +274,9 @@ export default function ManagementBillingOverviewPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold">BF-Vertraege</h3>
+                <h3 className="font-semibold">BF-Verträge</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Dienstleister und Gebuehren verwalten
+                  Dienstleister und Gebühren verwalten
                 </p>
               </div>
               <Button variant="outline" size="sm" asChild>
@@ -294,7 +294,7 @@ export default function ManagementBillingOverviewPage() {
               <div>
                 <h3 className="font-semibold">Abrechnungen</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Betriebsfuehrungs-Abrechnungen erstellen und verwalten
+                  Betriebsführungs-Abrechnungen erstellen und verwalten
                 </p>
               </div>
               <Button variant="outline" size="sm" asChild>

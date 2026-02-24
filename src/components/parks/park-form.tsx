@@ -32,7 +32,7 @@ import { toast } from "sonner";
 const DEFAULT_SETTLEMENT_ARTICLES = [
   { type: "MINDESTPACHT", label: "Mindestnutzungsentgeld", taxRate: 0, accountNumber: "8400" },
   { type: "JAHRESNUTZUNGSENTGELD", label: "Jahresnutzungsentgeld", taxRate: 0, accountNumber: "8400" },
-  { type: "VORSCHUSSVERRECHNUNG", label: "Verrechnung Vorschuesse", taxRate: 0, accountNumber: "8400" },
+  { type: "VORSCHUSSVERRECHNUNG", label: "Verrechnung Vorschüsse", taxRate: 0, accountNumber: "8400" },
   { type: "ZUWEGUNG", label: "Zuwegungsentschaedigung", taxRate: 0, accountNumber: "8401" },
   { type: "KABELTRASSE", label: "Kabeltrassenentschaedigung", taxRate: 0, accountNumber: "8401" },
   { type: "AUSGLEICH", label: "Ausgleichsentschaedigung", taxRate: 0, accountNumber: "8401" },
@@ -239,7 +239,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
               <CardHeader>
                 <CardTitle>Gutschrift-Stichtag</CardTitle>
                 <CardDescription>
-                  Tag im Monat, an dem Gutschriften faellig werden (kann pro Vertrag ueberschrieben werden)
+                  Tag im Monat, an dem Gutschriften fällig werden (kann pro Vertrag überschrieben werden)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -257,7 +257,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground mt-6">
-                    Gilt fuer alle Vertraege dieses Parks, sofern nicht individuell ueberschrieben.
+                    Gilt für alle Verträge dieses Parks, sofern nicht individuell überschrieben.
                   </p>
                 </div>
               </CardContent>
@@ -267,7 +267,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
               <CardHeader>
                 <CardTitle>Artikelkonten</CardTitle>
                 <CardDescription>
-                  Buchungskonten und MwSt-Saetze fuer Pachtabrechnungs-Positionen
+                  Buchungskonten und MwSt-Saetze für Pachtabrechnungs-Positionen
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -329,7 +329,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
                   onClick={addArticle}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Artikelkonto hinzufuegen
+                  Artikelkonto hinzufügen
                 </Button>
               </CardContent>
             </Card>

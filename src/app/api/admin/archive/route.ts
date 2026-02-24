@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Ungueltige Parameter", details: error.errors },
+        { error: "Ungültige Parameter", details: error.errors },
         { status: 400 }
       );
     }
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungueltige Eingabedaten", details: parsed.error.errors },
+        { error: "Ungültige Eingabedaten", details: parsed.error.errors },
         { status: 400 }
       );
     }
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
       default: {
         return NextResponse.json(
           {
-            error: `Manuelles Archivieren fuer Typ '${documentType}' wird noch nicht unterstuetzt. ` +
+            error: `Manuelles Archivieren für Typ '${documentType}' wird noch nicht unterstuetzt. ` +
               "Verwenden Sie die API mit Content-Upload.",
           },
           { status: 400 }

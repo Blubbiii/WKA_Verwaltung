@@ -1,6 +1,6 @@
 /**
  * Rule Handlers Index
- * Zentrale Exports fuer alle Rule Handler
+ * Zentrale Exports für alle Rule Handler
  */
 
 export { MonthlyLeaseHandler, monthlyLeaseHandler } from "./monthly-lease";

@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
 
       if (!userEmail) {
         return NextResponse.json(
-          { error: "Keine E-Mail-Adresse fuer den aktuellen Benutzer gefunden" },
+          { error: "Keine E-Mail-Adresse für den aktuellen Benutzer gefunden" },
           { status: 400 }
         );
       }
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
 
     if (recipients.length === 0) {
       return NextResponse.json(
-        { error: "Keine Empfaenger gefunden fuer die gewaehlten Filter-Kriterien" },
+        { error: "Keine Empfänger gefunden für die gewaehlten Filter-Kriterien" },
         { status: 400 }
       );
     }
@@ -268,7 +268,7 @@ export async function POST(request: NextRequest) {
         sentCount,
         errorCount,
       },
-      description: `Massen-Kommunikation "${subject}" an ${recipients.length} Empfaenger gesendet`,
+      description: `Massen-Kommunikation "${subject}" an ${recipients.length} Empfänger gesendet`,
     });
 
     return NextResponse.json({

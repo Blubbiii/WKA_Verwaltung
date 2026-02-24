@@ -2,7 +2,7 @@
  * Standalone Worker Entrypoint
  *
  * Dieses Script startet alle BullMQ Worker als separaten Prozess.
- * Kann unabhaengig von der Next.js-Anwendung ausgefuehrt werden.
+ * Kann unabhängig von der Next.js-Anwendung ausgeführt werden.
  *
  * Usage:
  *   npm run workers       # Production
@@ -28,7 +28,7 @@ import { jobLogger } from "@/lib/logger";
 // Configuration
 // =============================================================================
 
-const SHUTDOWN_TIMEOUT = 30000; // 30 Sekunden fuer graceful shutdown
+const SHUTDOWN_TIMEOUT = 30000; // 30 Sekunden für graceful shutdown
 const HEALTH_CHECK_INTERVAL = 60000; // Health-Check alle 60 Sekunden
 
 // =============================================================================
@@ -191,7 +191,7 @@ async function main(): Promise<void> {
   // Error-Handler einrichten
   setupErrorHandlers();
 
-  // Redis-Verbindung pruefen
+  // Redis-Verbindung prüfen
   log("info", "Checking Redis connection...");
   const redisHealthy = await isRedisHealthy();
 

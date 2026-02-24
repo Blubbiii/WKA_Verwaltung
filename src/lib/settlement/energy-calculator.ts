@@ -1,18 +1,18 @@
 /**
  * Energy Settlement Calculator - Stromabrechnung mit DULDUNG-Logik
  *
- * Berechnet die Stromerloes-Verteilung fuer einen Windpark basierend auf:
- * - Netzbetreiber-Erloes (Quelle der Wahrheit)
+ * Berechnet die Stromerlös-Verteilung für einen Windpark basierend auf:
+ * - Netzbetreiber-Erlös (Quelle der Wahrheit)
  * - WKA-Produktionsdaten (nur als Verteilschluessel)
  * - DULDUNG/Glaettung zur Kompensation von Standortunterschieden
  *
  * WICHTIG - Abrechnungslogik:
- * - Netzbetreiber-Erloes ist die Quelle (z.B. 150.000 EUR)
+ * - Netzbetreiber-Erlös ist die Quelle (z.B. 150.000 EUR)
  * - WKA-Produktionsdaten sind NUR der Verteilschluessel
- * - NICHT: Produktion x Preis = Erloes
+ * - NICHT: Produktion x Preis = Erlös
  *
  * DULDUNG (SMOOTHED Mode) Formel:
- * Duldungs-Ausgleich = (Ist-Produktion - Durchschnitt) x Verguetungssatz
+ * Duldungs-Ausgleich = (Ist-Produktion - Durchschnitt) x Vergütungssatz
  * - Wenn positiv -> Abzug (WKA hat mehr als Durchschnitt produziert)
  * - Wenn negativ -> Zuschlag (WKA hat weniger als Durchschnitt produziert)
  *
@@ -20,7 +20,7 @@
  * - E-821118: 551.286,3 kWh (Ist)
  * - Durchschnitt: 527.664,53 kWh
  * - Abweichung: +23.621,77 kWh
- * - Verguetungssatz: 8,18 ct/kWh
+ * - Vergütungssatz: 8,18 ct/kWh
  * - DULDUNGS-ABZUG: 23.621,77 x 0,0818 = 1.932,26 EUR
  */
 
@@ -37,7 +37,7 @@ import type {
 // ===========================================
 
 /**
- * Eingabe fuer die Stromabrechnung
+ * Eingabe für die Stromabrechnung
  */
 export interface EnergySettlementInput {
   /** ID des Parks */
@@ -46,13 +46,13 @@ export interface EnergySettlementInput {
   year: number;
   /** Abrechnungsmonat (null = Jahresabrechnung) */
   month: number | null;
-  /** Erloes vom Netzbetreiber in EUR - QUELLE DER WAHRHEIT! */
+  /** Erlös vom Netzbetreiber in EUR - QUELLE DER WAHRHEIT! */
   netOperatorRevenueEur: number;
   /** Verteilungsmodus */
   distributionMode: DistributionMode;
-  /** Toleranzgrenze in % fuer TOLERATED mode */
+  /** Toleranzgrenze in % für TOLERATED mode */
   tolerancePercentage?: number;
-  /** Verguetungssatz in ct/kWh fuer DULDUNG-Berechnung */
+  /** Vergütungssatz in ct/kWh für DULDUNG-Berechnung */
   ratePerKwhCt?: number;
   /** Referenz/Belegnummer vom Netzbetreiber */
   netOperatorReference?: string;
@@ -77,7 +77,7 @@ export interface EnergySettlementResult {
 }
 
 /**
- * Verteilung fuer eine einzelne WKA
+ * Verteilung für eine einzelne WKA
  */
 export interface TurbineDistribution {
   /** Turbine ID */
@@ -92,13 +92,13 @@ export interface TurbineDistribution {
   productionKwh: number;
   /** Produktionsanteil in % */
   productionSharePct: number;
-  /** Basis-Erloes vor Ausgleich in EUR */
+  /** Basis-Erlös vor Ausgleich in EUR */
   baseRevenueEur: number;
-  /** Abweichung vom Durchschnitt in kWh (positiv = ueber Durchschnitt) */
+  /** Abweichung vom Durchschnitt in kWh (positiv = über Durchschnitt) */
   deviationFromAverage?: number;
   /** Toleranz-Ausgleich in EUR (positiv = Abzug, negativ = Zuschlag) */
   toleranceAdjustmentEur?: number;
-  /** Finaler Erloes nach Ausgleich in EUR */
+  /** Finaler Erlös nach Ausgleich in EUR */
   finalRevenueEur: number;
 }
 
@@ -118,9 +118,9 @@ interface TurbineProductionData {
 // ===========================================
 
 /**
- * Berechnet die Stromerloes-Verteilung fuer einen Windpark
+ * Berechnet die Stromerlös-Verteilung für einen Windpark
  *
- * @param input - Eingabeparameter fuer die Berechnung
+ * @param input - Eingabeparameter für die Berechnung
  * @returns Berechnungsergebnis mit Verteilung pro WKA/Betreiber
  *
  * @example
@@ -152,7 +152,7 @@ export async function calculateEnergySettlement(
 
   // 1. Validierung
   if (netOperatorRevenueEur < 0) {
-    throw new Error("Netzbetreiber-Erloes kann nicht negativ sein");
+    throw new Error("Netzbetreiber-Erlös kann nicht negativ sein");
   }
 
   // 2. Lade Park und pruefe Berechtigung
@@ -166,7 +166,7 @@ export async function calculateEnergySettlement(
   }
 
   if (park.tenantId !== tenantId) {
-    throw new Error("Keine Berechtigung fuer diesen Park");
+    throw new Error("Keine Berechtigung für diesen Park");
   }
 
   // 3. Lade Produktionsdaten mit Betreiber-Info
@@ -174,7 +174,7 @@ export async function calculateEnergySettlement(
 
   if (productionData.length === 0) {
     throw new Error(
-      `Keine Produktionsdaten fuer Park ${parkId} im ${month ? `${month}/${year}` : year} gefunden`
+      `Keine Produktionsdaten für Park ${parkId} im ${month ? `${month}/${year}` : year} gefunden`
     );
   }
 
@@ -201,7 +201,7 @@ export async function calculateEnergySettlement(
     case "SMOOTHED":
       if (!ratePerKwhCt) {
         throw new Error(
-          "SMOOTHED mode benoetigt ratePerKwhCt (Verguetungssatz)"
+          "SMOOTHED mode benötigt ratePerKwhCt (Vergütungssatz)"
         );
       }
       distributions = calculateSmoothedDistribution(
@@ -216,7 +216,7 @@ export async function calculateEnergySettlement(
     case "TOLERATED":
       if (!ratePerKwhCt) {
         throw new Error(
-          "TOLERATED mode benoetigt ratePerKwhCt (Verguetungssatz)"
+          "TOLERATED mode benötigt ratePerKwhCt (Vergütungssatz)"
         );
       }
       distributions = calculateToleratedDistribution(
@@ -259,12 +259,12 @@ export async function calculateEnergySettlement(
     calculatedAt: new Date().toISOString(),
   };
 
-  // 7. Validierung: Summe der Verteilung muss dem Erloes entsprechen
+  // 7. Validierung: Summe der Verteilung muss dem Erlös entsprechen
   const totalDistributed = distributions.reduce(
     (sum, d) => sum + d.finalRevenueEur,
     0
   );
-  const tolerance = 0.01; // 1 Cent Toleranz fuer Rundungsfehler
+  const tolerance = 0.01; // 1 Cent Toleranz für Rundungsfehler
 
   if (Math.abs(totalDistributed - netOperatorRevenueEur) > tolerance) {
     logger.warn(
@@ -288,14 +288,14 @@ export async function calculateEnergySettlement(
 /**
  * PROPORTIONAL: Direkte Aufteilung nach kWh-Anteil
  *
- * Jede WKA erhaelt den Anteil am Erloes entsprechend ihrer
+ * Jede WKA erhaelt den Anteil am Erlös entsprechend ihrer
  * Produktion an der Gesamtproduktion.
  *
- * Formel: Erloes_WKA = Erloes_Gesamt * (Produktion_WKA / Produktion_Gesamt)
+ * Formel: Erlös_WKA = Erlös_Gesamt * (Produktion_WKA / Produktion_Gesamt)
  *
  * @param productionData - Produktionsdaten pro WKA
  * @param totalProductionKwh - Gesamtproduktion aller WKAs
- * @param netOperatorRevenueEur - Erloes vom Netzbetreiber
+ * @param netOperatorRevenueEur - Erlös vom Netzbetreiber
  * @returns Verteilung pro WKA
  */
 export function calculateProportionalDistribution(
@@ -310,7 +310,7 @@ export function calculateProportionalDistribution(
         ? (turbine.productionKwh / totalProductionKwh) * 100
         : 0;
 
-    // Berechne Erloes proportional zur Produktion
+    // Berechne Erlös proportional zur Produktion
     const revenue =
       totalProductionKwh > 0
         ? (turbine.productionKwh / totalProductionKwh) * netOperatorRevenueEur
@@ -335,20 +335,20 @@ export function calculateProportionalDistribution(
  * SMOOTHED (DULDUNG): Glaettung von Standortunterschieden
  *
  * Jede WKA erhaelt:
- * 1. Basis-Erloes proportional zur Produktion
- * 2. DULDUNGS-Ausgleich: (Ist - Durchschnitt) x Verguetungssatz
+ * 1. Basis-Erlös proportional zur Produktion
+ * 2. DULDUNGS-Ausgleich: (Ist - Durchschnitt) x Vergütungssatz
  *    - Positiv (mehr produziert) = Abzug
  *    - Negativ (weniger produziert) = Zuschlag
  *
- * Dies kompensiert Standortunterschiede und sorgt fuer
+ * Dies kompensiert Standortunterschiede und sorgt für
  * eine fairere Verteilung zwischen WKAs an besseren und
  * schlechteren Standorten.
  *
  * @param productionData - Produktionsdaten pro WKA
  * @param totalProductionKwh - Gesamtproduktion aller WKAs
  * @param averageProductionKwh - Durchschnittliche Produktion pro WKA
- * @param netOperatorRevenueEur - Erloes vom Netzbetreiber
- * @param ratePerKwhCt - Verguetungssatz in ct/kWh
+ * @param netOperatorRevenueEur - Erlös vom Netzbetreiber
+ * @param ratePerKwhCt - Vergütungssatz in ct/kWh
  * @returns Verteilung pro WKA mit DULDUNG-Ausgleich
  */
 export function calculateSmoothedDistribution(
@@ -368,7 +368,7 @@ export function calculateSmoothedDistribution(
         ? (turbine.productionKwh / totalProductionKwh) * 100
         : 0;
 
-    // 2. Berechne Basis-Erloes proportional zur Produktion
+    // 2. Berechne Basis-Erlös proportional zur Produktion
     const baseRevenueEur =
       totalProductionKwh > 0
         ? (turbine.productionKwh / totalProductionKwh) * netOperatorRevenueEur
@@ -378,13 +378,13 @@ export function calculateSmoothedDistribution(
     // Abweichung = Ist - Durchschnitt
     const deviationFromAverage = turbine.productionKwh - averageProductionKwh;
 
-    // Ausgleich = Abweichung x Verguetungssatz
+    // Ausgleich = Abweichung x Vergütungssatz
     // Positiv = Abzug (WKA hat mehr produziert als Durchschnitt)
     // Negativ = Zuschlag (WKA hat weniger produziert als Durchschnitt)
     const toleranceAdjustmentEur = deviationFromAverage * ratePerKwhEur;
 
-    // 4. Berechne finalen Erloes
-    // Basis-Erloes MINUS Ausgleich (Abzug bei ueberdurchschnittlicher Produktion)
+    // 4. Berechne finalen Erlös
+    // Basis-Erlös MINUS Ausgleich (Abzug bei überdurchschnittlicher Produktion)
     const finalRevenueEur = baseRevenueEur - toleranceAdjustmentEur;
 
     return {
@@ -432,8 +432,8 @@ export function calculateSmoothedDistribution(
  * @param productionData - Produktionsdaten pro WKA
  * @param totalProductionKwh - Gesamtproduktion aller WKAs
  * @param averageProductionKwh - Durchschnittliche Produktion pro WKA
- * @param netOperatorRevenueEur - Erloes vom Netzbetreiber
- * @param ratePerKwhCt - Verguetungssatz in ct/kWh
+ * @param netOperatorRevenueEur - Erlös vom Netzbetreiber
+ * @param ratePerKwhCt - Vergütungssatz in ct/kWh
  * @param tolerancePercentage - Toleranzgrenze in % (z.B. 5%)
  * @returns Verteilung pro WKA mit toleriertem DULDUNG-Ausgleich
  */
@@ -460,7 +460,7 @@ export function calculateToleratedDistribution(
         ? (turbine.productionKwh / totalProductionKwh) * 100
         : 0;
 
-    // 2. Berechne Basis-Erloes proportional zur Produktion
+    // 2. Berechne Basis-Erlös proportional zur Produktion
     const baseRevenueEur =
       totalProductionKwh > 0
         ? (turbine.productionKwh / totalProductionKwh) * netOperatorRevenueEur
@@ -473,17 +473,17 @@ export function calculateToleratedDistribution(
     let toleranceAdjustmentEur = 0;
 
     if (turbine.productionKwh > upperBound) {
-      // Ueber oberer Grenze -> Abzug fuer Mehrproduktion ueber Toleranz
+      // Über oberer Grenze -> Abzug für Mehrproduktion über Toleranz
       const excessKwh = turbine.productionKwh - upperBound;
       toleranceAdjustmentEur = excessKwh * ratePerKwhEur;
     } else if (turbine.productionKwh < lowerBound) {
-      // Unter unterer Grenze -> Zuschlag fuer Minderproduktion unter Toleranz
+      // Unter unterer Grenze -> Zuschlag für Minderproduktion unter Toleranz
       const shortfallKwh = turbine.productionKwh - lowerBound; // Negativ!
       toleranceAdjustmentEur = shortfallKwh * ratePerKwhEur; // Negativ = Zuschlag
     }
     // Innerhalb Toleranz -> kein Ausgleich (toleranceAdjustmentEur bleibt 0)
 
-    // 5. Berechne finalen Erloes
+    // 5. Berechne finalen Erlös
     const finalRevenueEur = baseRevenueEur - toleranceAdjustmentEur;
 
     return {
@@ -525,11 +525,11 @@ export function calculateToleratedDistribution(
 // ===========================================
 
 /**
- * Laedt Produktionsdaten mit aktuellem Betreiber fuer einen Park
+ * Laedt Produktionsdaten mit aktuellem Betreiber für einen Park
  *
  * @param parkId - Park ID
  * @param year - Jahr
- * @param month - Monat (null fuer Jahressumme)
+ * @param month - Monat (null für Jahressumme)
  * @param tenantId - Tenant ID
  * @returns Produktionsdaten pro WKA mit Betreiber-Info
  */
@@ -539,7 +539,7 @@ async function loadProductionData(
   month: number | null,
   tenantId: string
 ): Promise<TurbineProductionData[]> {
-  // Bestimme Referenzdatum fuer Betreiber-Abfrage
+  // Bestimme Referenzdatum für Betreiber-Abfrage
   const referenceDate = month
     ? new Date(year, month - 1, 15) // Mitte des Monats
     : new Date(year, 11, 31); // Jahresende
@@ -570,7 +570,7 @@ async function loadProductionData(
           year,
           month,
           tenantId,
-          status: { in: ["CONFIRMED", "INVOICED"] }, // Nur bestaetigt/abgerechnet
+          status: { in: ["CONFIRMED", "INVOICED"] }, // Nur bestätigt/abgerechnet
         },
         select: {
           productionKwh: true,
@@ -621,9 +621,9 @@ async function loadProductionData(
 
     if (!operator) {
       logger.warn(
-        `Kein aktiver Betreiber fuer Turbine ${turbine.designation} (${turbine.id}) am ${referenceDate.toISOString()}`
+        `Kein aktiver Betreiber für Turbine ${turbine.designation} (${turbine.id}) am ${referenceDate.toISOString()}`
       );
-      continue; // Ueberspringe Turbinen ohne Betreiber
+      continue; // Überspringe Turbinen ohne Betreiber
     }
 
     result.push({
@@ -740,21 +740,21 @@ export async function loadEnergySettlement(
 // ===========================================
 
 /**
- * Rundet auf 2 Dezimalstellen (fuer EUR-Betraege)
+ * Rundet auf 2 Dezimalstellen (für EUR-Betraege)
  */
 function roundToTwoDecimals(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
 /**
- * Rundet auf 5 Dezimalstellen (fuer Prozentanteile)
+ * Rundet auf 5 Dezimalstellen (für Prozentanteile)
  */
 function roundToFiveDecimals(value: number): number {
   return Math.round(value * 100000) / 100000;
 }
 
 /**
- * Formatiert den Verteilungsschluessel fuer Anzeige
+ * Formatiert den Verteilungsschluessel für Anzeige
  */
 function formatDistributionKey(
   dist: TurbineDistribution,
@@ -777,13 +777,13 @@ function formatDistributionKey(
 }
 
 /**
- * Berechnet den DULDUNGS-Ausgleich fuer eine einzelne WKA
+ * Berechnet den DULDUNGS-Ausgleich für eine einzelne WKA
  *
  * Dies ist eine Hilfsfunktion die auch standalone verwendet werden kann.
  *
  * @param actualProductionKwh - Tatsaechliche Produktion der WKA
  * @param averageProductionKwh - Durchschnittliche Produktion aller WKAs
- * @param ratePerKwhCt - Verguetungssatz in ct/kWh
+ * @param ratePerKwhCt - Vergütungssatz in ct/kWh
  * @returns Ausgleichsbetrag in EUR (positiv = Abzug, negativ = Zuschlag)
  *
  * @example
@@ -792,7 +792,7 @@ function formatDistributionKey(
  * const adjustment = calculateSingleTurbineAdjustment(
  *   551286.3,  // Ist-Produktion
  *   527664.53, // Durchschnitt
- *   8.18       // Verguetungssatz
+ *   8.18       // Vergütungssatz
  * );
  * // => 1932.26 EUR (Abzug)
  * ```
@@ -810,7 +810,7 @@ export function calculateSingleTurbineAdjustment(
 /**
  * Aggregiert Verteilungen nach Betreiber (Fund)
  *
- * Nuetzlich wenn mehrere WKAs zum gleichen Betreiber gehoeren.
+ * Nützlich wenn mehrere WKAs zum gleichen Betreiber gehoeren.
  *
  * @param distributions - Verteilungen pro WKA
  * @returns Aggregierte Verteilung pro Betreiber

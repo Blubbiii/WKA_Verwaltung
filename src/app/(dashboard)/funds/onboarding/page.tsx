@@ -12,7 +12,7 @@ export default function ShareholderOnboardingPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/funds" aria-label="Zurueck zur Gesellschaftenuebersicht">
+          <Link href="/funds" aria-label="Zurück zur Gesellschaftenübersicht">
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
@@ -21,7 +21,7 @@ export default function ShareholderOnboardingPage() {
             Neuer Gesellschafter
           </h1>
           <p className="text-muted-foreground">
-            Gesellschafter-Onboarding: Schritt fuer Schritt einen neuen Gesellschafter anlegen.
+            Gesellschafter-Onboarding: Schritt für Schritt einen neuen Gesellschafter anlegen.
           </p>
         </div>
       </div>

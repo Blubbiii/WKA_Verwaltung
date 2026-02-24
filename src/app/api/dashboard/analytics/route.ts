@@ -26,7 +26,7 @@ async function getHandler(_request: NextRequest) {
     return NextResponse.json(responseData, {
       headers: {
         "X-Cache": cacheHit ? "HIT" : "MISS",
-        // Browser-Cache fuer 30 Sekunden, dann revalidieren
+        // Browser-Cache für 30 Sekunden, dann revalidieren
         "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
       },
     });

@@ -91,7 +91,7 @@ export async function PUT(request: NextRequest) {
       const firstError = parsed.error.errors[0];
       return NextResponse.json(
         {
-          error: firstError?.message || "Ungueltige Eingabedaten",
+          error: firstError?.message || "Ungültige Eingabedaten",
           details: parsed.error.errors.map((e) => ({
             field: e.path.join("."),
             message: e.message,

@@ -236,9 +236,9 @@ function formatDateDE(): string {
 // ---------------------------------------------------------------------------
 
 const SAMPLE_ITEMS = [
-  { pos: "1", desc: "Einspeiseverguetung Januar 2025", qty: "125.340", unit: "kWh", tax: "0,00 %", net: "10.528,56" },
-  { pos: "2", desc: "Einspeiseverguetung Februar 2025", qty: "98.760", unit: "kWh", tax: "0,00 %", net: "8.295,84" },
-  { pos: "3", desc: "Einspeiseverguetung Maerz 2025", qty: "142.180", unit: "kWh", tax: "0,00 %", net: "11.943,12" },
+  { pos: "1", desc: "Einspeisevergütung Januar 2025", qty: "125.340", unit: "kWh", tax: "0,00 %", net: "10.528,56" },
+  { pos: "2", desc: "Einspeisevergütung Februar 2025", qty: "98.760", unit: "kWh", tax: "0,00 %", net: "8.295,84" },
+  { pos: "3", desc: "Einspeisevergütung Maerz 2025", qty: "142.180", unit: "kWh", tax: "0,00 %", net: "11.943,12" },
   { pos: "4", desc: "Direktvermarktungsentgelt Q1/2025", qty: "1", unit: "psch.", tax: "19,00 %", net: "-1.250,00" },
 ];
 
@@ -316,7 +316,7 @@ function PreviewDocument({ letterhead, layout }: PreviewDocumentProps) {
                 <Text style={styles.metaValue}>{invoiceNo}</Text>
               </View>
               <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Faellig bis:</Text>
+                <Text style={styles.metaLabel}>Fällig bis:</Text>
                 <Text style={styles.metaValue}>{dueDate}</Text>
               </View>
               <View style={styles.metaRow}>
@@ -332,7 +332,7 @@ function PreviewDocument({ letterhead, layout }: PreviewDocumentProps) {
           {/* Intro text */}
           <Text style={styles.introText}>
             Sehr geehrte Damen und Herren, hiermit erhalten Sie die Gutschrift
-            fuer die Einspeiseverguetung des 1. Quartals 2025 gemaess
+            für die Einspeisevergütung des 1. Quartals 2025 gemaess
             Einspeisevertrag vom 15.03.2018.
           </Text>
 
@@ -381,14 +381,14 @@ function PreviewDocument({ letterhead, layout }: PreviewDocumentProps) {
             <Text style={styles.paymentLabel}>Gutschriftshinweis</Text>
             <Text style={styles.paymentText}>
               Der Gutschriftsbetrag wird innerhalb von 14 Werktagen auf das uns
-              bekannte Konto der Betreibergesellschaft ueberwiesen.
+              bekannte Konto der Betreibergesellschaft überwiesen.
             </Text>
           </View>
 
           {/* Closing */}
           <Text style={styles.outroText}>
             Diese Gutschrift wurde maschinell erstellt und ist ohne
-            Unterschrift gueltig.
+            Unterschrift gültig.
           </Text>
         </View>
 

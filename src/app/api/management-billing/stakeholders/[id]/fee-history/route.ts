@@ -50,7 +50,7 @@ export async function GET(
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] GET fee-history error");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Gebuehren-Historie" },
+      { error: "Fehler beim Laden der Gebühren-Historie" },
       { status: 500 }
     );
   }
@@ -78,7 +78,7 @@ export async function POST(
 
     if (!feePercentage || feePercentage <= 0 || feePercentage > 100) {
       return NextResponse.json(
-        { error: "Gebuehrensatz muss zwischen 0 und 100 liegen" },
+        { error: "Gebührensatz muss zwischen 0 und 100 liegen" },
         { status: 400 }
       );
     }
@@ -126,7 +126,7 @@ export async function POST(
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] POST fee-history error");
     return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Gebuehrensatzes" },
+      { error: "Fehler beim Aktualisieren des Gebührensatzes" },
       { status: 500 }
     );
   }

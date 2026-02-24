@@ -234,7 +234,7 @@ export function EnvironmentChart({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <Wind className="h-8 w-8 mb-2" />
-        <p>Keine Umweltdaten verfuegbar</p>
+        <p>Keine Umweltdaten verfügbar</p>
       </div>
     );
   }

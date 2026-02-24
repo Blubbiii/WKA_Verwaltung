@@ -281,7 +281,7 @@ export function DrillDownDaily({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <Zap className="h-8 w-8 mb-2" />
-        <p>Keine 10-Min-Daten fuer diesen Tag verfuegbar</p>
+        <p>Keine 10-Min-Daten für diesen Tag verfügbar</p>
       </div>
     );
   }

@@ -5,7 +5,7 @@ import { SafeHtml } from "@/components/ui/safe-html";
 
 export const metadata: Metadata = {
   title: "Datenschutz -- WindparkManager",
-  description: "Datenschutzerklaerung von WindparkManager.",
+  description: "Datenschutzerklärung von WindparkManager.",
 };
 
 export default async function DatenschutzPage() {
@@ -22,7 +22,7 @@ export default async function DatenschutzPage() {
     <div className="container mx-auto px-4 md:px-6 py-12 md:py-24">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold tracking-tighter md:text-4xl mb-8">
-          Datenschutzerklaerung
+          Datenschutzerklärung
         </h1>
 
         {datenschutzContent ? (
@@ -33,7 +33,7 @@ export default async function DatenschutzPage() {
         ) : (
           <div className="rounded-lg border bg-card p-8 text-center">
             <p className="text-muted-foreground">
-              Datenschutzerklaerung wird in Kuerze bereitgestellt.
+              Datenschutzerklärung wird in Kuerze bereitgestellt.
             </p>
           </div>
         )}

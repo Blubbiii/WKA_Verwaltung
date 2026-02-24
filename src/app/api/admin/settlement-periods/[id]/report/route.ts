@@ -18,7 +18,7 @@ export async function GET(
 
     const { id } = await params;
 
-    // Hole Periode fuer Dateinamen
+    // Hole Periode für Dateinamen
     const period = await prisma.leaseSettlementPeriod.findUnique({
       where: { id },
       include: {
@@ -52,7 +52,7 @@ export async function GET(
       "download"
     );
 
-    // PDF als Response zurueckgeben
+    // PDF als Response zurückgeben
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
@@ -70,7 +70,7 @@ export async function GET(
   }
 }
 
-// POST /api/admin/settlement-periods/[id]/report - PDF als Base64 (fuer Vorschau)
+// POST /api/admin/settlement-periods/[id]/report - PDF als Base64 (für Vorschau)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

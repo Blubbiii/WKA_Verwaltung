@@ -46,7 +46,7 @@ export async function clearAnalyticsCache(tenantId?: string): Promise<void> {
 // =============================================================================
 
 /**
- * Berechnet alle Dashboard KPIs fuer einen Tenant
+ * Berechnet alle Dashboard KPIs für einen Tenant
  */
 export async function calculateKPIs(tenantId: string): Promise<DashboardKPIs> {
   // Note: KPIs contain Decimal objects which do not survive JSON serialization.
@@ -58,7 +58,7 @@ export async function calculateKPIs(tenantId: string): Promise<DashboardKPIs> {
   const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
   const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-  // Parallele Datenbankabfragen fuer bessere Performance
+  // Parallele Datenbankabfragen für bessere Performance
   const [
     // Parks
     parksData,
@@ -288,7 +288,7 @@ export async function calculateKPIs(tenantId: string): Promise<DashboardKPIs> {
 // =============================================================================
 
 /**
- * Berechnet Daten fuer alle Dashboard-Charts
+ * Berechnet Daten für alle Dashboard-Charts
  */
 export async function calculateChartData(tenantId: string): Promise<AnalyticsChartData> {
   const cacheKey = `analytics:charts:${tenantId}`;
@@ -378,13 +378,13 @@ async function calculateCapitalDevelopment(tenantId: string): Promise<CapitalDev
 
   let capital = Number(currentCapital._sum.totalCapital || 0);
 
-  // Fuer echte Kapitalentwicklung muessten wir historische Daten haben
+  // Für echte Kapitalentwicklung muessten wir historische Daten haben
   // Hier simulieren wir einen leichten Trend basierend auf neuen Gesellschaftern
   for (let i = 11; i >= 0; i--) {
     const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const monthName = startDate.toLocaleDateString("de-DE", { month: "short", year: "2-digit" });
 
-    // Zufaellige Variation fuer Demo (in Produktion: echte historische Daten)
+    // Zufällige Variation für Demo (in Produktion: echte historische Daten)
     const variance = i > 0 ? 0.98 + Math.random() * 0.04 : 1;
     const monthlyCapital = capital * Math.pow(variance, i);
 
@@ -419,7 +419,7 @@ async function calculateDocumentsByType(tenantId: string): Promise<DocumentsByTy
 // =============================================================================
 
 /**
- * Holt alle Analytics-Daten (KPIs + Charts) fuer das Dashboard
+ * Holt alle Analytics-Daten (KPIs + Charts) für das Dashboard
  */
 export async function getFullAnalytics(tenantId: string): Promise<FullAnalyticsResponse & { _cacheHit?: boolean }> {
   const cacheKey = `analytics:full:${tenantId}`;

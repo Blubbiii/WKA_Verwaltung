@@ -122,7 +122,7 @@ export function AvailabilityChart({
 
   // Trend data
   const trendData = useMemo(
-    () => trend.map((t) => ({ label: t.label, verfuegbarkeit: t.avgAvailability })),
+    () => trend.map((t) => ({ label: t.label, verfügbarkeit: t.avgAvailability })),
     [trend]
   );
 
@@ -137,7 +137,7 @@ export function AvailabilityChart({
   // KPI cards
   const kpis = useMemo(() => [
     {
-      title: "Mittlere Verfuegbarkeit",
+      title: "Mittlere Verfügbarkeit",
       value: dec2Fmt.format(fleet.avgAvailability) + " %",
       icon: CheckCircle,
       description: `${breakdown.length} Anlagen`,
@@ -149,7 +149,7 @@ export function AvailabilityChart({
       description: "Summe aller Anlagen (T1)",
     },
     {
-      title: "Stoerungszeit",
+      title: "Störungszeit",
       value: numFmt.format(fleet.totalDowntimeHours) + " h",
       icon: AlertTriangle,
       description: "Ungeplante Ausfaelle (T5)",
@@ -166,7 +166,7 @@ export function AvailabilityChart({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <Clock className="h-8 w-8 mb-2" />
-        <p>Keine Verfuegbarkeitsdaten vorhanden</p>
+        <p>Keine Verfügbarkeitsdaten vorhanden</p>
       </div>
     );
   }
@@ -281,7 +281,7 @@ export function AvailabilityChart({
       {trendData.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Verfuegbarkeits-Trend (monatlich)</CardTitle>
+            <CardTitle className="text-sm font-medium">Verfügbarkeits-Trend (monatlich)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -304,13 +304,13 @@ export function AvailabilityChart({
                   ]}
                 />
                 <Tooltip
-                  formatter={(value: number) => [`${dec2Fmt.format(value)} %`, "Verfuegbarkeit"]}
+                  formatter={(value: number) => [`${dec2Fmt.format(value)} %`, "Verfügbarkeit"]}
                   contentStyle={{ borderRadius: 8 }}
                 />
                 <Line
                   type="monotone"
-                  dataKey="verfuegbarkeit"
-                  name="Verfuegbarkeit"
+                  dataKey="verfügbarkeit"
+                  name="Verfügbarkeit"
                   stroke="#22c55e"
                   strokeWidth={2}
                   dot={{ r: 4, fill: "#22c55e" }}
@@ -325,7 +325,7 @@ export function AvailabilityChart({
       {/* Availability Heatmap */}
       <HeatmapChart
         data={heatmap}
-        title="Verfuegbarkeit pro Anlage und Monat (%)"
+        title="Verfügbarkeit pro Anlage und Monat (%)"
         colorScale="green"
         valueFormatter={(v) => dec2Fmt.format(v) + " %"}
       />

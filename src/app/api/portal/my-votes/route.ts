@@ -5,7 +5,7 @@ import { VoteStatus } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { apiLogger as logger } from "@/lib/logger";
 
-// Interface fuer Ergebnis-Berechnung
+// Interface für Ergebnis-Berechnung
 interface VoteResults {
   byHeadcount: {
     yes: { count: number; percent: number };
@@ -352,7 +352,7 @@ export async function GET(request: NextRequest) {
       const isClosed =
         vote.status === "CLOSED" || new Date(vote.endDate) <= now;
 
-      // Ergebnisse nur fuer geschlossene Abstimmungen berechnen
+      // Ergebnisse nur für geschlossene Abstimmungen berechnen
       let results: VoteResults | null = null;
       if (isClosed) {
         results = calculateVoteResultsFromData(

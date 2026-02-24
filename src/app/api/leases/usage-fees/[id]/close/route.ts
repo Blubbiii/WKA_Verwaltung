@@ -35,7 +35,7 @@ export async function POST(
     if (settlement.status !== "SETTLED") {
       return NextResponse.json(
         {
-          error: "Nur abgerechnete Abrechnungen koennen abgeschlossen werden",
+          error: "Nur abgerechnete Abrechnungen können abgeschlossen werden",
           details: `Aktueller Status: ${settlement.status}`,
         },
         { status: 400 }

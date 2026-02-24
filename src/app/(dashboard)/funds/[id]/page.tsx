@@ -679,7 +679,7 @@ export default function FundDetailsPage({
     fetchFund();
 
     if (failCount === 0) {
-      toast.success(`Portal-Zugang fuer ${successCount} Gesellschafter aktiviert`);
+      toast.success(`Portal-Zugang für ${successCount} Gesellschafter aktiviert`);
     } else {
       toast.warning(`${successCount} aktiviert, ${failCount} fehlgeschlagen`);
     }
@@ -712,7 +712,7 @@ export default function FundDetailsPage({
   async function handleCreateDistribution() {
     const amount = parseFloat(distributionAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast.error("Bitte geben Sie einen gueltigen Betrag ein");
+      toast.error("Bitte geben Sie einen gültigen Betrag ein");
       return;
     }
 
@@ -748,7 +748,7 @@ export default function FundDetailsPage({
     try {
       setIsExecutingDistribution(distToExecute);
       await executeDistribution(id, distToExecute);
-      toast.success("Ausschuettung wurde ausgefuehrt und Gutschriften erstellt");
+      toast.success("Ausschuettung wurde ausgeführt und Gutschriften erstellt");
       mutateDistributions();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Fehler beim Ausfuehren der Ausschuettung");
@@ -770,10 +770,10 @@ export default function FundDetailsPage({
     try {
       setIsDeletingDistribution(distToDelete);
       await deleteDistribution(id, distToDelete);
-      toast.success("Ausschuettung wurde geloescht");
+      toast.success("Ausschuettung wurde gelöscht");
       mutateDistributions();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Loeschen der Ausschuettung");
+      toast.error(err instanceof Error ? err.message : "Fehler beim Löschen der Ausschuettung");
     } finally {
       setIsDeletingDistribution(null);
       setDeleteDistDialogOpen(false);
@@ -932,7 +932,7 @@ export default function FundDetailsPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fund.stats.voteCount}</div>
-            <p className="text-xs text-muted-foreground">Durchgefuehrt</p>
+            <p className="text-xs text-muted-foreground">Durchgeführt</p>
           </CardContent>
         </Card>
       </div>
@@ -990,7 +990,7 @@ export default function FundDetailsPage({
                 </Button>
                 <Button onClick={() => setIsAddShareholderOpen(true)}>
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Gesellschafter hinzufuegen
+                  Gesellschafter hinzufügen
                 </Button>
               </div>
             </CardHeader>
@@ -1396,7 +1396,7 @@ export default function FundDetailsPage({
                                   size="icon"
                                   onClick={() => handleDeleteDistribution(dist.id)}
                                   disabled={isDeletingDistribution === dist.id}
-                                  title="Loeschen"
+                                  title="Löschen"
                                 >
                                   {isDeletingDistribution === dist.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1738,7 +1738,7 @@ export default function FundDetailsPage({
                 <SelectContent>
                   {availableFunds.length === 0 ? (
                     <SelectItem value="_none" disabled>
-                      Keine verfuegbaren Gesellschaften
+                      Keine verfügbaren Gesellschaften
                     </SelectItem>
                   ) : (
                     availableFunds.map((f) => (
@@ -1763,7 +1763,7 @@ export default function FundDetailsPage({
               />
             </div>
             <div className="space-y-2">
-              <Label>Gueltig ab</Label>
+              <Label>Gültig ab</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -1834,7 +1834,7 @@ export default function FundDetailsPage({
                 <SelectContent>
                   {availableParksForTurbine.length === 0 ? (
                     <SelectItem value="_none" disabled>
-                      Keine Parks verfuegbar
+                      Keine Parks verfügbar
                     </SelectItem>
                   ) : (
                     availableParksForTurbine.map((p) => (
@@ -1855,7 +1855,7 @@ export default function FundDetailsPage({
                 <SelectContent>
                   {availableTurbines.length === 0 ? (
                     <SelectItem value="_none" disabled>
-                      Keine Turbinen verfuegbar
+                      Keine Turbinen verfügbar
                     </SelectItem>
                   ) : (
                     availableTurbines.map((t) => (
@@ -1881,7 +1881,7 @@ export default function FundDetailsPage({
               />
             </div>
             <div className="space-y-2">
-              <Label>Gueltig ab</Label>
+              <Label>Gültig ab</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -2036,8 +2036,8 @@ export default function FundDetailsPage({
                   </Table>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Nach dem Erstellen koennen Sie die Ausschuettung ausfuehren, um automatisch
-                  Gutschriften fuer jeden Gesellschafter zu generieren.
+                  Nach dem Erstellen können Sie die Ausschuettung ausfuehren, um automatisch
+                  Gutschriften für jeden Gesellschafter zu generieren.
                 </p>
               </div>
             )}
@@ -2113,7 +2113,7 @@ export default function FundDetailsPage({
                 </div>
                 {selectedDistribution.executedAt && (
                   <div>
-                    <p className="text-muted-foreground">Ausgefuehrt am</p>
+                    <p className="text-muted-foreground">Ausgeführt am</p>
                     <p className="font-medium">
                       {format(new Date(selectedDistribution.executedAt), "dd.MM.yyyy HH:mm", {
                         locale: de,
@@ -2256,7 +2256,7 @@ export default function FundDetailsPage({
         onOpenChange={setDeleteHierarchyDialogOpen}
         onConfirm={handleConfirmDeleteHierarchy}
         title="Verknuepfung entfernen"
-        description="Moechten Sie diese Gesellschafts-Verknuepfung wirklich entfernen?"
+        description="Möchten Sie diese Gesellschafts-Verknuepfung wirklich entfernen?"
       />
 
       {/* Execute Distribution Confirmation Dialog */}
@@ -2265,7 +2265,7 @@ export default function FundDetailsPage({
           <AlertDialogHeader>
             <AlertDialogTitle>Ausschuettung ausfuehren</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechten Sie die Ausschuettung ausfuehren? Es werden Gutschriften fuer alle Gesellschafter erstellt.
+              Möchten Sie die Ausschuettung ausfuehren? Es werden Gutschriften für alle Gesellschafter erstellt.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -2287,8 +2287,8 @@ export default function FundDetailsPage({
         open={deleteDistDialogOpen}
         onOpenChange={setDeleteDistDialogOpen}
         onConfirm={handleConfirmDeleteDistribution}
-        title="Ausschuettung loeschen"
-        description="Moechten Sie diese Ausschuettung wirklich loeschen?"
+        title="Ausschuettung löschen"
+        description="Möchten Sie diese Ausschuettung wirklich löschen?"
       />
 
       {/* Portal Access Dialogs */}

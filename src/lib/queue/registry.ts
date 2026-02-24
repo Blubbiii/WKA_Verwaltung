@@ -53,7 +53,7 @@ const queueRegistry: QueueInfo[] = [
   {
     name: PDF_QUEUE_NAME,
     displayName: 'PDF Queue',
-    description: 'Generiert PDFs fuer Rechnungen, Reports und Abstimmungsergebnisse',
+    description: 'Generiert PDFs für Rechnungen, Reports und Abstimmungsergebnisse',
     getQueue: getPdfQueue,
   },
   {
@@ -65,7 +65,7 @@ const queueRegistry: QueueInfo[] = [
   {
     name: WEATHER_QUEUE_NAME,
     displayName: 'Weather Queue',
-    description: 'Synchronisiert Wetterdaten fuer Windparks',
+    description: 'Synchronisiert Wetterdaten für Windparks',
     getQueue: getWeatherQueue,
   },
   {
@@ -77,7 +77,7 @@ const queueRegistry: QueueInfo[] = [
   {
     name: REMINDER_QUEUE_NAME,
     displayName: 'Reminder Queue',
-    description: 'Prueft taeglich auf ueberfaellige Rechnungen, auslaufende Vertraege und offene Abrechnungen',
+    description: 'Prueft taeglich auf überfällige Rechnungen, auslaufende Verträge und offene Abrechnungen',
     getQueue: getReminderQueue as () => Queue,
   },
   {

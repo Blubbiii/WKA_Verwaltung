@@ -50,8 +50,8 @@ export function VoteInvitationEmail({
       <Paragraph>Guten Tag {shareholderName},</Paragraph>
 
       <Paragraph>
-        als Gesellschafter/in von {tenantName} moechten wir Sie zur Teilnahme an
-        einer neuen Abstimmung einladen. Ihre Stimme ist wichtig fuer die
+        als Gesellschafter/in von {tenantName} möchten wir Sie zur Teilnahme an
+        einer neuen Abstimmung einladen. Ihre Stimme ist wichtig für die
         Entscheidungsfindung.
       </Paragraph>
 
@@ -73,7 +73,7 @@ export function VoteInvitationEmail({
       </Section>
 
       <Paragraph>
-        Sie koennen Ihre Stimme bis zum Ende der Abstimmungsfrist abgeben. Nach
+        Sie können Ihre Stimme bis zum Ende der Abstimmungsfrist abgeben. Nach
         Ablauf der Frist wird das Ergebnis ermittelt und Ihnen mitgeteilt.
       </Paragraph>
 
@@ -84,14 +84,14 @@ export function VoteInvitationEmail({
           2. Melden Sie sich in Ihrem Portal an{'\n'}
           3. Lesen Sie die Abstimmungsunterlagen{'\n'}
           4. Geben Sie Ihre Stimme ab{'\n'}
-          5. Sie erhalten eine Bestaetigung
+          5. Sie erhalten eine Bestätigung
         </Text>
       </Section>
 
       <Section style={proxyNoteStyle}>
         <Text style={proxyNoteTextStyle}>
           <strong>Vollmacht:</strong> Falls Sie an der Abstimmung nicht
-          teilnehmen koennen, haben Sie die Moeglichkeit, eine Vollmacht zu
+          teilnehmen können, haben Sie die Moeglichkeit, eine Vollmacht zu
           erteilen. Weitere Informationen finden Sie in Ihrem Portal.
         </Text>
       </Section>

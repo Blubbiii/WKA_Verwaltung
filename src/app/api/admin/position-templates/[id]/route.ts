@@ -74,7 +74,7 @@ export async function PATCH(
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.errors[0]?.message || "Ungueltige Eingabe" },
+        { error: parsed.error.errors[0]?.message || "Ungültige Eingabe" },
         { status: 400 }
       );
     }
@@ -125,7 +125,7 @@ export async function DELETE(
   } catch (error) {
     logger.error({ err: error }, "Error deleting position template");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Vorlage" },
+      { error: "Fehler beim Löschen der Vorlage" },
       { status: 500 }
     );
   }

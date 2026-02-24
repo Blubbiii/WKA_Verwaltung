@@ -331,7 +331,7 @@ function ArchiveContent() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Pruefung fehlgeschlagen");
+        throw new Error(data.error || "Prüfung fehlgeschlagen");
       }
 
       const data = await response.json();
@@ -340,7 +340,7 @@ function ArchiveContent() {
       // Refresh stats after verification
       fetchStats();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Pruefung fehlgeschlagen");
+      alert(err instanceof Error ? err.message : "Prüfung fehlgeschlagen");
     } finally {
       setVerifying(false);
     }
@@ -378,7 +378,7 @@ function ArchiveContent() {
       setShowExportDialog(false);
       alert(
         `Export erfolgreich: ${data.documentCount} Dokumente indexiert.\n` +
-        `Die Index-CSV wurde heruntergeladen. Einzelne Dokumente koennen ueber die Tabelle heruntergeladen werden.`
+        `Die Index-CSV wurde heruntergeladen. Einzelne Dokumente können über die Tabelle heruntergeladen werden.`
       );
     } catch (err) {
       alert(err instanceof Error ? err.message : "Export fehlgeschlagen");
@@ -410,14 +410,14 @@ function ArchiveContent() {
             ) : (
               <ShieldCheck className="mr-2 h-4 w-4" />
             )}
-            Integritaet pruefen
+            Integritaet prüfen
           </Button>
           <Button
             variant="outline"
             onClick={() => setShowExportDialog(true)}
           >
             <FileDown className="mr-2 h-4 w-4" />
-            Export fuer Betriebspruefung
+            Export für Betriebsprüfung
           </Button>
         </div>
       </div>
@@ -468,7 +468,7 @@ function ArchiveContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Naechste Aufbewahrungsfrist
+              Nächste Aufbewahrungsfrist
             </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -493,7 +493,7 @@ function ArchiveContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Letzte Pruefung
+              Letzte Prüfung
             </CardTitle>
             {stats?.lastVerification ? (
               stats.lastVerification.result === "PASSED" ? (
@@ -583,7 +583,7 @@ function ArchiveContent() {
                     type="button"
                     onClick={() => setSearchText("")}
                     className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Suche loeschen"
+                    aria-label="Suche löschen"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -645,7 +645,7 @@ function ArchiveContent() {
                   <TableHead className="w-[110px]">Typ</TableHead>
                   <TableHead>Referenz-Nr.</TableHead>
                   <TableHead>Dateiname</TableHead>
-                  <TableHead className="w-[80px] text-right">Groesse</TableHead>
+                  <TableHead className="w-[80px] text-right">Größe</TableHead>
                   <TableHead className="w-[160px]">Hash</TableHead>
                   <TableHead className="w-[80px] text-right">Aktionen</TableHead>
                 </TableRow>
@@ -748,7 +748,7 @@ function ArchiveContent() {
                   disabled={!pagination.hasPrevPage || loading}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Zurueck
+                  Zurück
                 </Button>
                 <Button
                   variant="outline"
@@ -778,11 +778,11 @@ function ArchiveContent() {
               ) : (
                 <XCircle className="h-5 w-5 text-red-600" />
               )}
-              Integritaetspruefung{" "}
+              Integritaetsprüfung{" "}
               {verificationResult?.passed ? "bestanden" : "fehlgeschlagen"}
             </DialogTitle>
             <DialogDescription>
-              Ergebnis der Hash-Ketten-Pruefung
+              Ergebnis der Hash-Ketten-Prüfung
             </DialogDescription>
           </DialogHeader>
 
@@ -799,13 +799,13 @@ function ArchiveContent() {
                   <p className="text-2xl font-bold text-green-600">
                     {verificationResult.validDocuments}
                   </p>
-                  <p className="text-xs text-muted-foreground">Gueltig</p>
+                  <p className="text-xs text-muted-foreground">Gültig</p>
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-red-600">
                     {verificationResult.invalidDocuments}
                   </p>
-                  <p className="text-xs text-muted-foreground">Ungueltig</p>
+                  <p className="text-xs text-muted-foreground">Ungültig</p>
                 </div>
               </div>
 
@@ -852,11 +852,11 @@ function ArchiveContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileDown className="h-5 w-5" />
-              Export fuer Betriebspruefung
+              Export für Betriebsprüfung
             </DialogTitle>
             <DialogDescription>
               Exportiert einen GoBD-konformen Index aller archivierten Dokumente
-              fuer das ausgewaehlte Jahr.
+              für das ausgewaehlte Jahr.
             </DialogDescription>
           </DialogHeader>
 
@@ -884,7 +884,7 @@ function ArchiveContent() {
               <p className="font-medium mb-1">Der Export beinhaltet:</p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li>Index-CSV mit allen Dokumentmetadaten</li>
-                <li>SHA-256 Hashes fuer Integritaetsnachweis</li>
+                <li>SHA-256 Hashes für Integritaetsnachweis</li>
                 <li>GoBD/GDPdU-konformes Format</li>
               </ul>
             </div>

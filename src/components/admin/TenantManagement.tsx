@@ -282,7 +282,7 @@ export function TenantManagement() {
   async function handleHardDelete() {
     if (!tenantToHardDelete) return;
     if (hardDeleteConfirmName !== tenantToHardDelete.name) {
-      toast.error("Der eingegebene Name stimmt nicht ueberein");
+      toast.error("Der eingegebene Name stimmt nicht überein");
       return;
     }
 
@@ -294,14 +294,14 @@ export function TenantManagement() {
       );
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error || "Fehler beim Loeschen");
+        throw new Error(json.error || "Fehler beim Löschen");
       }
-      toast.success(`"${tenantToHardDelete.name}" wurde endgueltig geloescht`);
+      toast.success(`"${tenantToHardDelete.name}" wurde endgültig gelöscht`);
       setHardDeleteDialogOpen(false);
       setHardDeleteConfirmName("");
       fetchTenants();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Loeschen");
+      toast.error(err instanceof Error ? err.message : "Fehler beim Löschen");
     } finally {
       setIsHardDeleting(false);
     }
@@ -455,7 +455,7 @@ export function TenantManagement() {
                               }}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Endgueltig loeschen
+                              Endgültig löschen
                             </DropdownMenuItem>
                           </>
                         )}
@@ -682,7 +682,7 @@ export function TenantManagement() {
         onOpenChange={setDeactivateDialogOpen}
         onConfirm={handleDeactivate}
         title="Mandant deaktivieren"
-        description={`Moechten Sie "${tenantToDeactivate?.name}" wirklich deaktivieren? Alle Benutzer dieses Mandanten werden ebenfalls gesperrt. Der Mandant kann spaeter reaktiviert werden.`}
+        description={`Möchten Sie "${tenantToDeactivate?.name}" wirklich deaktivieren? Alle Benutzer dieses Mandanten werden ebenfalls gesperrt. Der Mandant kann später reaktiviert werden.`}
       />
 
       {/* Hard-Delete Dialog (with name confirmation) */}
@@ -691,13 +691,13 @@ export function TenantManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="h-5 w-5" />
-              Mandant endgueltig loeschen
+              Mandant endgültig löschen
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
                 <p>
-                  Moechten Sie <span className="font-semibold">{tenantToHardDelete?.name}</span>{" "}
-                  wirklich endgueltig loeschen? Alle zugehoerigen Daten (Benutzer, Parks,
+                  Möchten Sie <span className="font-semibold">{tenantToHardDelete?.name}</span>{" "}
+                  wirklich endgültig löschen? Alle zugehoerigen Daten (Benutzer, Parks,
                   Gesellschaften, Rechnungen, Dokumente etc.) werden unwiderruflich entfernt.
                 </p>
                 <p className="text-destructive font-medium">
@@ -705,7 +705,7 @@ export function TenantManagement() {
                 </p>
                 <div className="space-y-2 pt-2">
                   <Label htmlFor="confirm-name">
-                    Geben Sie zur Bestaetigung den Namen des Mandanten ein:
+                    Geben Sie zur Bestätigung den Namen des Mandanten ein:
                   </Label>
                   <Input
                     id="confirm-name"
@@ -729,7 +729,7 @@ export function TenantManagement() {
               }
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isHardDeleting ? "Loeschen..." : "Endgueltig loeschen"}
+              {isHardDeleting ? "Löschen..." : "Endgültig löschen"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

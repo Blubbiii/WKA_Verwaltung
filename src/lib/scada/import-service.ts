@@ -1,12 +1,12 @@
 /**
- * Import Service fuer SCADA-Daten
+ * Import Service für SCADA-Daten
  *
  * Orchestriert den vollstaendigen Import-Prozess:
  * 1. DBF-Dateien lesen (via dbf-reader)
  * 2. PlantNo -> Turbine-ID aufloesen (via ScadaTurbineMapping)
  * 3. Messdaten in das passende Prisma-Modell schreiben (Batch-Upsert)
  * 4. Import-Fortschritt in ScadaImportLog protokollieren
- * 5. Monatliche Aggregation anstossen (nur fuer WSD)
+ * 5. Monatliche Aggregation anstossen (nur für WSD)
  *
  * Unterstuetzte Dateitypen:
  *   WSD          - Wind Speed Daily (10-Min Leistungsdaten) -> ScadaMeasurement
@@ -65,7 +65,7 @@ export type ScadaFileType =
 /** Period type for summary/availability files */
 export type ScadaPeriodType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
-/** Parameter fuer den Import-Start */
+/** Parameter für den Import-Start */
 export interface ImportParams {
   /** Mandanten-ID (Multi-Tenancy) */
   tenantId: string;
@@ -87,13 +87,13 @@ export interface ImportResult {
   filesProcessed: number;
   /** Anzahl importierter Messwerte */
   recordsImported: number;
-  /** Anzahl uebersprungener Duplikate */
+  /** Anzahl übersprungener Duplikate */
   recordsSkipped: number;
   /** Anzahl fehlgeschlagener Records */
   recordsFailed: number;
   /** Fehlerbeschreibungen (falls aufgetreten) */
   errors: string[];
-  /** Betroffene Monate (fuer Aggregation, nur WSD) */
+  /** Betroffene Monate (für Aggregation, nur WSD) */
   affectedMonths: Array<{ year: number; month: number }>;
 }
 
@@ -139,7 +139,7 @@ interface BatchWriteResult {
 // ---------------------------------------------------------------
 
 /**
- * Batch-Groesse fuer createMany.
+ * Batch-Größe für createMany.
  * Haelt den Memory-Verbrauch unter Kontrolle bei grossen Dateien.
  */
 const BATCH_SIZE = 1000;
@@ -190,7 +190,7 @@ const FILE_TYPE_CONFIG: Record<ScadaFileType, FileTypeConfig> = {
 // ---------------------------------------------------------------
 
 /**
- * Laedt die PlantNo -> TurbineId Zuordnung fuer einen Standort.
+ * Laedt die PlantNo -> TurbineId Zuordnung für einen Standort.
  * Nur aktive Mappings werden beruecksichtigt.
  */
 async function loadTurbineMappings(
@@ -266,10 +266,10 @@ function toDecimalOrNull(val: number | null | undefined): Decimal | null {
 // ---------------------------------------------------------------
 
 /**
- * Konvertiert WSD-Records in ScadaMeasurement-Eintraege und schreibt sie batchweise.
- * Nutzt createMany mit skipDuplicates fuer Performance und Idempotenz.
+ * Konvertiert WSD-Records in ScadaMeasurement-Einträge und schreibt sie batchweise.
+ * Nutzt createMany mit skipDuplicates für Performance und Idempotenz.
  *
- * @returns Anzahl erfolgreich geschriebener und uebersprungener Records
+ * @returns Anzahl erfolgreich geschriebener und übersprungener Records
  */
 async function writeWsdMeasurements(
   records: WsdRecord[],
@@ -302,7 +302,7 @@ async function writeWsdMeasurements(
       const turbineId = turbineMappings.get(rec.plantNo);
 
       if (!turbineId) {
-        // Keine Zuordnung fuer diese PlantNo -> ueberspringen
+        // Keine Zuordnung für diese PlantNo -> überspringen
         unmappedPlants.add(rec.plantNo);
         skipped++;
         continue;
@@ -327,14 +327,14 @@ async function writeWsdMeasurements(
 
     try {
       // createMany mit skipDuplicates: unique constraint (turbineId, timestamp, sourceFile)
-      // Duplikate werden stillschweigend uebersprungen
+      // Duplikate werden stillschweigend übersprungen
       const result = await prisma.scadaMeasurement.createMany({
         data: dbRecords,
         skipDuplicates: true,
       });
 
       imported += result.count;
-      // Die Differenz sind Duplikate die uebersprungen wurden
+      // Die Differenz sind Duplikate die übersprungen wurden
       skipped += dbRecords.length - result.count;
     } catch (_err) {
       // Batch-Fehler: alle Records dieses Batches als fehlgeschlagen zaehlen
@@ -1124,7 +1124,7 @@ async function readAndWriteFile(
     }
 
     default:
-      throw new Error(`Unbekannter Reader-Key: ${config.readerKey} fuer Dateityp ${fileType}`);
+      throw new Error(`Unbekannter Reader-Key: ${config.readerKey} für Dateityp ${fileType}`);
   }
 }
 
@@ -1134,7 +1134,7 @@ async function readAndWriteFile(
 
 /**
  * Ermittelt alle eindeutigen Monate aus den Messwerten.
- * Wird benoetigt um die Aggregation gezielt nur fuer betroffene Monate auszufuehren.
+ * Wird benötigt um die Aggregation gezielt nur für betroffene Monate auszufuehren.
  */
 function extractAffectedMonths(records: WsdRecord[]): Array<{ year: number; month: number }> {
   const monthSet = new Set<string>();
@@ -1383,14 +1383,14 @@ export async function scanAllFileTypes(
 }
 
 /**
- * Startet den Import von SCADA-Dateien fuer einen Standort.
+ * Startet den Import von SCADA-Dateien für einen Standort.
  *
  * Ablauf:
  * 1. Standort scannen -> Dateien des gewuenschten Typs finden
  * 2. PlantNo -> TurbineId Mapping laden
  * 3. Jede Datei lesen und Daten in das passende DB-Modell schreiben
  * 4. ImportLog nach jeder Datei aktualisieren
- * 5. Monatliche Aggregation fuer alle betroffenen Monate ausfuehren (nur WSD)
+ * 5. Monatliche Aggregation für alle betroffenen Monate ausfuehren (nur WSD)
  *
  * WICHTIG: Der importLogId-Eintrag muss VOR dem Aufruf erstellt worden sein,
  * z.B. durch den API-Handler. Dadurch kann der Fortschritt sofort abgefragt werden.
@@ -1425,7 +1425,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
         await updateImportLog(importLogId, {
           status: 'FAILED',
           completedAt: new Date(),
-          errorDetails: { message: `Keine ${fileType}-Dateien fuer ${locationCode} gefunden` },
+          errorDetails: { message: `Keine ${fileType}-Dateien für ${locationCode} gefunden` },
         });
 
         return {
@@ -1434,7 +1434,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
           recordsImported: 0,
           recordsSkipped: 0,
           recordsFailed: 0,
-          errors: [`Keine ${fileType}-Dateien fuer ${locationCode} gefunden`],
+          errors: [`Keine ${fileType}-Dateien für ${locationCode} gefunden`],
           affectedMonths: [],
         };
       }
@@ -1448,7 +1448,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
         await updateImportLog(importLogId, {
           status: 'FAILED',
           completedAt: new Date(),
-          errorDetails: { message: `Keine ${fileType}-Dateien fuer ${locationCode} gefunden` },
+          errorDetails: { message: `Keine ${fileType}-Dateien für ${locationCode} gefunden` },
         });
 
         return {
@@ -1457,7 +1457,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
           recordsImported: 0,
           recordsSkipped: 0,
           recordsFailed: 0,
-          errors: [`Keine ${fileType}-Dateien fuer ${locationCode} gefunden`],
+          errors: [`Keine ${fileType}-Dateien für ${locationCode} gefunden`],
           affectedMonths: [],
         };
       }
@@ -1512,7 +1512,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
         recordsSkipped: 0,
         recordsFailed: 0,
         errorDetails: {
-          message: `Alle ${filesToScan.length} Dateien fuer ${locationCode} wurden bereits importiert. Keine neuen Daten.`,
+          message: `Alle ${filesToScan.length} Dateien für ${locationCode} wurden bereits importiert. Keine neuen Daten.`,
         },
       });
 
@@ -1551,8 +1551,8 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
         status: 'FAILED',
         completedAt: new Date(),
         errorDetails: {
-          message: `Keine aktiven Turbine-Mappings fuer ${locationCode} im Mandanten ${tenantId} gefunden. ` +
-            'Bitte zuerst ScadaTurbineMapping-Eintraege anlegen.',
+          message: `Keine aktiven Turbine-Mappings für ${locationCode} im Mandanten ${tenantId} gefunden. ` +
+            'Bitte zuerst ScadaTurbineMapping-Einträge anlegen.',
         },
       });
 
@@ -1562,7 +1562,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
         recordsImported: 0,
         recordsSkipped: 0,
         recordsFailed: 0,
-        errors: [`Keine aktiven Turbine-Mappings fuer ${locationCode} gefunden`],
+        errors: [`Keine aktiven Turbine-Mappings für ${locationCode} gefunden`],
         affectedMonths: [],
       };
     }
@@ -1601,15 +1601,15 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
           totalSkipped += writeResult.skipped;
           totalFailed += writeResult.failed;
 
-          // Warnung fuer nicht zugeordnete Anlagen
+          // Warnung für nicht zugeordnete Anlagen
           if (writeResult.unmappedPlants.size > 0) {
             const plantList = Array.from(writeResult.unmappedPlants).join(', ');
             errors.push(
-              `Datei ${filePath}: PlantNo ${plantList} ohne Turbine-Mapping - Records uebersprungen`,
+              `Datei ${filePath}: PlantNo ${plantList} ohne Turbine-Mapping - Records übersprungen`,
             );
           }
 
-          // Letztes Datum fuer inkrementellen Import merken
+          // Letztes Datum für inkrementellen Import merken
           const lastRecord = records[records.length - 1];
           if (lastRecord) {
             await updateImportLog(importLogId, {
@@ -1629,11 +1629,11 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
           totalSkipped += writeResult.skipped;
           totalFailed += writeResult.failed;
 
-          // Warnung fuer nicht zugeordnete Anlagen
+          // Warnung für nicht zugeordnete Anlagen
           if (writeResult.unmappedPlants.size > 0) {
             const plantList = Array.from(writeResult.unmappedPlants).join(', ');
             errors.push(
-              `Datei ${filePath}: PlantNo ${plantList} ohne Turbine-Mapping - Records uebersprungen`,
+              `Datei ${filePath}: PlantNo ${plantList} ohne Turbine-Mapping - Records übersprungen`,
             );
           }
 
@@ -1668,7 +1668,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
       }
     }
 
-    // 4. Monatliche Aggregation fuer alle betroffenen Monate (nur WSD)
+    // 4. Monatliche Aggregation für alle betroffenen Monate (nur WSD)
     if (fileType === 'WSD' && allAffectedMonths.length > 0) {
       // Aggregation pro Turbine und Monat
       const turbineIds = Array.from(turbineMappings.values());
@@ -1695,7 +1695,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
           } catch (err) {
             const errorMsg = err instanceof Error ? err.message : String(err);
             errors.push(
-              `Aggregationsfehler fuer Turbine ${turbineId}, ${year}-${String(month).padStart(2, '0')}: ${errorMsg}`,
+              `Aggregationsfehler für Turbine ${turbineId}, ${year}-${String(month).padStart(2, '0')}: ${errorMsg}`,
             );
           }
         }

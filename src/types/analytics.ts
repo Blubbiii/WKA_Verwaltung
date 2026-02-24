@@ -277,22 +277,22 @@ export const ANALYTICS_MODULES = {
   turbineRanking: { label: "Turbinen-Ranking", group: "Performance" },
   yearOverYear: { label: "Jahresvergleich", group: "Performance" },
   // Availability modules
-  availabilityBreakdown: { label: "Verfuegbarkeit T1-T6", group: "Verfuegbarkeit" },
-  availabilityTrend: { label: "Verfuegbarkeits-Trend", group: "Verfuegbarkeit" },
-  availabilityHeatmap: { label: "Verfuegbarkeits-Heatmap", group: "Verfuegbarkeit" },
-  downtimePareto: { label: "Ausfallzeiten-Pareto", group: "Verfuegbarkeit" },
+  availabilityBreakdown: { label: "Verfügbarkeit T1-T6", group: "Verfügbarkeit" },
+  availabilityTrend: { label: "Verfügbarkeits-Trend", group: "Verfügbarkeit" },
+  availabilityHeatmap: { label: "Verfügbarkeits-Heatmap", group: "Verfügbarkeit" },
+  downtimePareto: { label: "Ausfallzeiten-Pareto", group: "Verfügbarkeit" },
   // Comparison modules
   turbineComparison: { label: "Turbinen-Vergleich", group: "Vergleich" },
   powerCurveOverlay: { label: "Leistungskurven-Overlay", group: "Vergleich" },
   // Fault modules
-  faultPareto: { label: "Stoerungen-Pareto", group: "Stoerungen" },
-  warningTrend: { label: "Warnungs-Trend", group: "Stoerungen" },
+  faultPareto: { label: "Störungen-Pareto", group: "Störungen" },
+  warningTrend: { label: "Warnungs-Trend", group: "Störungen" },
   // Environment modules
   windDistribution: { label: "Windverteilung", group: "Wind & Umwelt" },
   environmentalData: { label: "Umweltdaten", group: "Wind & Umwelt" },
   // Financial modules
-  financialOverview: { label: "Finanz-Uebersicht", group: "Finanzen" },
-  revenueComparison: { label: "Erloesvergleich", group: "Finanzen" },
+  financialOverview: { label: "Finanz-Übersicht", group: "Finanzen" },
+  revenueComparison: { label: "Erlösvergleich", group: "Finanzen" },
 } as const;
 
 export type AnalyticsModuleType = keyof typeof ANALYTICS_MODULES;
@@ -304,7 +304,7 @@ export const T_CATEGORIES = {
   t2: { label: "Windstille", color: "#60a5fa" },
   t3: { label: "Umweltstopp", color: "#f59e0b" },
   t4: { label: "Wartung", color: "#a855f7" },
-  t5: { label: "Stoerung", color: "#ef4444" },
+  t5: { label: "Störung", color: "#ef4444" },
   t6: { label: "Sonstige", color: "#6b7280" },
 } as const;
 

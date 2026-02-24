@@ -4,7 +4,7 @@ import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../util
 import { prisma } from "@/lib/prisma";
 
 /**
- * Generiert ein PDF fuer ein Abstimmungsergebnis
+ * Generiert ein PDF für ein Abstimmungsergebnis
  */
 export async function generateVoteResultPdf(
   voteId: string,
@@ -52,7 +52,7 @@ export async function generateVoteResultPdf(
   }
 
   if (vote.status !== "CLOSED") {
-    throw new Error("PDF-Export ist nur fuer abgeschlossene Abstimmungen moeglich");
+    throw new Error("PDF-Export ist nur für abgeschlossene Abstimmungen moeglich");
   }
 
   // Alle stimmberechtigten Gesellschafter laden
@@ -115,7 +115,7 @@ export async function generateVoteResultPdf(
         : "0",
   }));
 
-  // Quorum pruefen
+  // Quorum prüfen
   const quorumMet =
     !vote.quorumPercentage ||
     (totalCapitalVoted / totalCapital) * 100 >= vote.quorumPercentage.toNumber();
@@ -135,7 +135,7 @@ export async function generateVoteResultPdf(
     null // Kein park-spezifisches Template
   );
 
-  // Daten fuer PDF aufbereiten
+  // Daten für PDF aufbereiten
   const pdfData: VoteResultPdfData = {
     voteId: vote.id,
     title: vote.title,
@@ -191,7 +191,7 @@ export async function generateVoteResultPdf(
 }
 
 /**
- * Generiert ein PDF als Base64-String (fuer Vorschau)
+ * Generiert ein PDF als Base64-String (für Vorschau)
  */
 export async function generateVoteResultPdfBase64(
   voteId: string,

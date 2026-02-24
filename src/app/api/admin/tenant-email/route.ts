@@ -24,11 +24,11 @@ import { apiLogger as logger } from "@/lib/logger";
 
 const smtpConfigSchema = z.object({
   smtpHost: z.string().min(1, "SMTP Host ist erforderlich"),
-  smtpPort: z.string().regex(/^(25|465|587|2525)$/, "Ungueltiger SMTP Port"),
+  smtpPort: z.string().regex(/^(25|465|587|2525)$/, "Ungültiger SMTP Port"),
   smtpUser: z.string().min(1, "SMTP Benutzer ist erforderlich"),
   smtpPassword: z.string().optional(),
   smtpSecure: z.boolean(),
-  fromAddress: z.string().email("Ungueltige E-Mail-Adresse"),
+  fromAddress: z.string().email("Ungültige E-Mail-Adresse"),
   fromName: z.string().max(100).optional(),
 });
 
@@ -204,7 +204,7 @@ export async function DELETE(_request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "[Tenant Email API] DELETE error");
     return NextResponse.json(
-      { error: "Fehler beim Zuruecksetzen der E-Mail-Konfiguration" },
+      { error: "Fehler beim Zurücksetzen der E-Mail-Konfiguration" },
       { status: 500 }
     );
   }

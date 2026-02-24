@@ -361,7 +361,7 @@ function AddShareholderDialog({
         throw new Error(error.error || "Fehler beim Speichern");
       }
 
-      toast.success("Gesellschafter wurde hinzugefuegt");
+      toast.success("Gesellschafter wurde hinzugefügt");
       setIsOpen(false);
       onSuccess();
     } catch (err) {
@@ -375,7 +375,7 @@ function AddShareholderDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Gesellschafter hinzufuegen</DialogTitle>
+          <DialogTitle>Gesellschafter hinzufügen</DialogTitle>
           <DialogDescription>
             Fuegen Sie einen neuen Gesellschafter zu {fundName} hinzu.
           </DialogDescription>
@@ -635,7 +635,7 @@ function AddShareholderDialog({
                 <p>
                   <strong>Zusammenfassung:</strong> {getPersonName(selectedPerson)} wird mit einer
                   Einlage von {formatCurrency(parseFloat(capitalContribution))} als Gesellschafter
-                  hinzugefuegt. Das entspricht einem Anteil von ca. {calculatedPercentage}%.
+                  hinzugefügt. Das entspricht einem Anteil von ca. {calculatedPercentage}%.
                 </p>
               </div>
             )}
@@ -649,7 +649,7 @@ function AddShareholderDialog({
           {step === "enter-details" && (
             <Button onClick={handleSave} disabled={isSaving || !selectedPerson}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Gesellschafter hinzufuegen
+              Gesellschafter hinzufügen
             </Button>
           )}
         </DialogFooter>
@@ -741,7 +741,7 @@ function EditShareholderDialog({
         throw new Error(error.error || "Fehler beim Speichern");
       }
 
-      toast.success("Aenderungen wurden gespeichert");
+      toast.success("Änderungen wurden gespeichert");
       setIsOpen(false);
       onSuccess();
     } catch (err) {
@@ -937,8 +937,8 @@ function EditShareholderDialog({
         open={archiveDialogOpen}
         onOpenChange={setArchiveDialogOpen}
         onConfirm={handleConfirmArchive}
-        title="Archivieren bestaetigen"
-        description="Moechten Sie diesen Gesellschafter wirklich archivieren?"
+        title="Archivieren bestätigen"
+        description="Möchten Sie diesen Gesellschafter wirklich archivieren?"
       />
     </Dialog>
   );

@@ -41,7 +41,7 @@ export async function GET(
     // Validate format parameter
     if (!["xrechnung", "zugferd"].includes(format)) {
       return NextResponse.json(
-        { error: "Ungueltiges Format. Erlaubt: xrechnung, zugferd" },
+        { error: "Ungültiges Format. Erlaubt: xrechnung, zugferd" },
         { status: 400 }
       );
     }
@@ -90,7 +90,7 @@ export async function GET(
     // Check invoice status - only generate for non-draft invoices (or allow drafts with warning)
     if (invoice.status === "CANCELLED") {
       return NextResponse.json(
-        { error: "Fuer stornierte Rechnungen kann keine XRechnung erstellt werden" },
+        { error: "Für stornierte Rechnungen kann keine XRechnung erstellt werden" },
         { status: 400 }
       );
     }
@@ -105,7 +105,7 @@ export async function GET(
 
     if (!invoice.recipientName) {
       return NextResponse.json(
-        { error: "Empfaengername ist erforderlich fuer XRechnung-Generierung" },
+        { error: "Empfängername ist erforderlich für XRechnung-Generierung" },
         { status: 400 }
       );
     }

@@ -127,7 +127,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     const parsed = proxyUpdateSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungueltige Eingabedaten", details: parsed.error.flatten().fieldErrors },
+        { error: "Ungültige Eingabedaten", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }

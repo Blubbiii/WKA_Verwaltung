@@ -22,8 +22,8 @@ const turbineUpdateSchema = z.object({
   longitude: z.number().optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).optional(),
   technicalData: z.record(z.any()).optional(),
-  technischeBetriebsfuehrung: z.string().optional().nullable(),
-  kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
+  technischeBetriebsführung: z.string().optional().nullable(),
+  kaufmaennischeBetriebsführung: z.string().optional().nullable(),
   operatorFundId: z.string().uuid().optional().nullable(),
 });
 
@@ -146,7 +146,7 @@ export async function PUT(
     // Extract operatorFundId before passing to prisma (not a Turbine field)
     const { operatorFundId, ...turbineData } = validatedData;
 
-    // Turbine update + Operator-Historie-Aenderungen atomar in einer Transaktion
+    // Turbine update + Operator-Historie-Änderungen atomar in einer Transaktion
     const turbine = await prisma.$transaction(async (tx) => {
       const updatedTurbine = await tx.turbine.update({
         where: { id },

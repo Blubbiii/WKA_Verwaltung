@@ -89,7 +89,7 @@ export async function PATCH(
       );
     }
 
-    // Wenn isDefault auf true gesetzt, andere Defaults zuruecksetzen
+    // Wenn isDefault auf true gesetzt, andere Defaults zurücksetzen
     if (data.isDefault === true) {
       await prisma.documentTemplate.updateMany({
         where: {
@@ -140,7 +140,7 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/admin/document-templates/[id] - Vorlage loeschen
+// DELETE /api/admin/document-templates/[id] - Vorlage löschen
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -176,11 +176,11 @@ export async function DELETE(
       data: { isActive: false },
     });
 
-    return NextResponse.json({ message: "Vorlage geloescht" });
+    return NextResponse.json({ message: "Vorlage gelöscht" });
   } catch (error) {
     logger.error({ err: error }, "Error deleting document template");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Vorlage" },
+      { error: "Fehler beim Löschen der Vorlage" },
       { status: 500 }
     );
   }

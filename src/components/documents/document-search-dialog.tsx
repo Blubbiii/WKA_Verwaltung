@@ -279,7 +279,7 @@ export function DocumentSearchDialog({
           {query && loading && results.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-3" />
-              <p>Suche laeuft...</p>
+              <p>Suche läuft...</p>
             </div>
           )}
 
@@ -289,7 +289,7 @@ export function DocumentSearchDialog({
               <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
               <p className="font-medium">Keine Ergebnisse</p>
               <p className="text-sm mt-1">
-                Keine Dokumente gefunden fuer &quot;{query}&quot;
+                Keine Dokumente gefunden für &quot;{query}&quot;
               </p>
             </div>
           )}

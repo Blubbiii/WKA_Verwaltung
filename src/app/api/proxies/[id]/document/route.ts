@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { uploadFile, getSignedUrl, deleteFile } from "@/lib/storage";
 import { apiLogger as logger } from "@/lib/logger";
 
-// Maximale Dateigroesse: 10MB
+// Maximale Dateigröße: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 // Erlaubte MIME-Types
@@ -13,7 +13,7 @@ const ALLOWED_MIME_TYPES = ["application/pdf"];
 
 /**
  * GET /api/proxies/[id]/document
- * Gibt eine Presigned URL fuer den Download des Vollmachts-Dokuments zurueck
+ * Gibt eine Presigned URL für den Download des Vollmachts-Dokuments zurück
  */
 export async function GET(
   request: NextRequest,
@@ -25,7 +25,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
 
     const { id } = await params;
 
-    // Lade Proxy mit Tenant-Pruefung
+    // Lade Proxy mit Tenant-Prüfung
     const proxy = await prisma.voteProxy.findFirst({
       where: {
         id,
@@ -60,7 +60,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
       );
     }
 
-    // Generiere Presigned URL (gueltig fuer 1 Stunde)
+    // Generiere Presigned URL (gültig für 1 Stunde)
     const signedUrl = await getSignedUrl(proxy.documentUrl, 3600);
 
     return NextResponse.json({
@@ -93,7 +93,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
 
     const { id } = await params;
 
-    // Lade Proxy mit Tenant-Pruefung
+    // Lade Proxy mit Tenant-Prüfung
     const proxy = await prisma.voteProxy.findFirst({
       where: {
         id,
@@ -126,7 +126,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
       );
     }
 
-    // Berechtigungspruefung: Vollmachtgeber selbst (Admin-Zugriff durch requirePermission abgedeckt)
+    // Berechtigungsprüfung: Vollmachtgeber selbst (Admin-Zugriff durch requirePermission abgedeckt)
     const isGrantor = proxy.grantor.userId === check.userId;
 
     if (!isGrantor) {
@@ -155,7 +155,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
       );
     }
 
-    // Validierung: Dateigroesse
+    // Validierung: Dateigröße
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: "Die Datei darf maximal 10MB gross sein" },
@@ -167,13 +167,13 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Altes Dokument loeschen falls vorhanden
+    // Altes Dokument löschen falls vorhanden
     if (proxy.documentUrl) {
       try {
         await deleteFile(proxy.documentUrl);
       } catch (deleteError) {
-        logger.warn({ err: deleteError }, "Konnte altes Dokument nicht loeschen");
-        // Fortfahren, auch wenn das Loeschen fehlschlaegt
+        logger.warn({ err: deleteError }, "Konnte altes Dokument nicht löschen");
+        // Fortfahren, auch wenn das Löschen fehlschlaegt
       }
     }
 
@@ -181,8 +181,8 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const storageKey = `proxies/${id}/${sanitizedFileName}`;
 
-    // In MinIO hochladen (mit tenantId fuer Ordnerstruktur)
-    // Wir verwenden einen speziellen Pfad fuer Vollmachten
+    // In MinIO hochladen (mit tenantId für Ordnerstruktur)
+    // Wir verwenden einen speziellen Pfad für Vollmachten
     const key = await uploadFile(
       buffer,
       `proxies/${id}/${sanitizedFileName}`,
@@ -232,7 +232,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
 
     const { id } = await params;
 
-    // Lade Proxy mit Tenant-Pruefung
+    // Lade Proxy mit Tenant-Prüfung
     const proxy = await prisma.voteProxy.findFirst({
       where: {
         id,
@@ -260,12 +260,12 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
       );
     }
 
-    // Berechtigungspruefung: Vollmachtgeber selbst (Admin-Zugriff durch requirePermission abgedeckt)
+    // Berechtigungsprüfung: Vollmachtgeber selbst (Admin-Zugriff durch requirePermission abgedeckt)
     const isGrantor = proxy.grantor.userId === check.userId;
 
     if (!isGrantor) {
       return NextResponse.json(
-        { error: "Keine Berechtigung zum Loeschen" },
+        { error: "Keine Berechtigung zum Löschen" },
         { status: 403 }
       );
     }
@@ -277,12 +277,12 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
       );
     }
 
-    // Datei aus MinIO loeschen
+    // Datei aus MinIO löschen
     try {
       await deleteFile(proxy.documentUrl);
     } catch (deleteError) {
-      logger.warn({ err: deleteError }, "Konnte Datei nicht aus Storage loeschen");
-      // Fortfahren, auch wenn das Loeschen fehlschlaegt
+      logger.warn({ err: deleteError }, "Konnte Datei nicht aus Storage löschen");
+      // Fortfahren, auch wenn das Löschen fehlschlaegt
     }
 
     // documentUrl auf null setzen
@@ -294,12 +294,12 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     });
 
     return NextResponse.json({
-      message: "Dokument erfolgreich geloescht",
+      message: "Dokument erfolgreich gelöscht",
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting proxy document");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen des Dokuments" },
+      { error: "Fehler beim Löschen des Dokuments" },
       { status: 500 }
     );
   }

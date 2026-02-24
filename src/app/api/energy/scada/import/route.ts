@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     if (!fileType || !isValidFileType(fileType)) {
       return NextResponse.json(
-        { error: "fileType ungueltig. Erlaubt: WSD, UID, AVR, AVW, AVM, AVY, SSM, SWM, PES, PEW, PET, WSR, WSW, WSM, WSY" },
+        { error: "fileType ungültig. Erlaubt: WSD, UID, AVR, AVW, AVM, AVY, SSM, SWM, PES, PEW, PET, WSR, WSW, WSM, WSY" },
         { status: 400 }
       );
     }
@@ -76,15 +76,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sicherheitspruefung
+    // Sicherheitsprüfung
     if (basePath.includes("..") || basePath.includes("\0")) {
       return NextResponse.json(
-        { error: "Ungueltiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
+        { error: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
         { status: 400 }
       );
     }
 
-    // Pruefung: Laeuft bereits ein Import fuer diesen Standort?
+    // Prüfung: Läuft bereits ein Import für diesen Standort?
     const runningImport = await prisma.scadaImportLog.findFirst({
       where: {
         tenantId: check.tenantId!,
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
     if (runningImport) {
       return NextResponse.json(
         {
-          error: "Import laeuft bereits",
-          details: `Fuer ${locationCode} (${fileType}) laeuft bereits ein Import (ID: ${runningImport.id})`,
+          error: "Import läuft bereits",
+          details: `Für ${locationCode} (${fileType}) läuft bereits ein Import (ID: ${runningImport.id})`,
         },
         { status: 409 }
       );

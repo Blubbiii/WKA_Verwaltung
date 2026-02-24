@@ -170,7 +170,7 @@ type CalculationResult = AdvanceCalculation | FinalCalculation;
 
 const STEPS = [
   { id: "park", title: "Park & Jahr", description: "Grunddaten" },
-  { id: "revenue", title: "Umsatzdaten", description: "Erloese" },
+  { id: "revenue", title: "Umsatzdaten", description: "Erlöse" },
   { id: "calculation", title: "Berechnung", description: "Vorschau" },
   { id: "summary", title: "Abschluss", description: "Zusammenfassung" },
 ];
@@ -209,7 +209,7 @@ function getStatusBadge(status: string) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
     OPEN: { label: "Offen", variant: "outline" },
     IN_PROGRESS: { label: "In Bearbeitung", variant: "default" },
-    PENDING_REVIEW: { label: "Pruefung", variant: "secondary" },
+    PENDING_REVIEW: { label: "Prüfung", variant: "secondary" },
     APPROVED: { label: "Genehmigt", variant: "default" },
     CLOSED: { label: "Abgeschlossen", variant: "secondary" },
   };
@@ -253,7 +253,7 @@ export function LeaseSettlementWizard() {
   const [revenueSources, setRevenueSources] = useState<
     Array<{ category: string; productionKwh: string; revenueEur: string }>
   >([
-    { category: "EEG-Verguetung", productionKwh: "", revenueEur: "" },
+    { category: "EEG-Vergütung", productionKwh: "", revenueEur: "" },
     { category: "Direktvermarktung", productionKwh: "", revenueEur: "" },
   ]);
 
@@ -321,7 +321,7 @@ export function LeaseSettlementWizard() {
           setLeases(data.leases || data.data || []);
         }
       } catch {
-        if (!cancelled) toast.error("Fehler beim Laden der Pachtvertraege");
+        if (!cancelled) toast.error("Fehler beim Laden der Pachtverträge");
       } finally {
         if (!cancelled) setLoadingLeases(false);
       }
@@ -396,7 +396,7 @@ export function LeaseSettlementWizard() {
 
     const sources: Array<{ category: string; productionKwh: string; revenueEur: string }> = [];
     if (eegEur > 0 || eegKwh > 0) {
-      sources.push({ category: "EEG-Verguetung", productionKwh: String(eegKwh), revenueEur: String(eegEur) });
+      sources.push({ category: "EEG-Vergütung", productionKwh: String(eegKwh), revenueEur: String(eegEur) });
     }
     if (dvEur > 0 || dvKwh > 0) {
       sources.push({ category: "Direktvermarktung", productionKwh: String(dvKwh), revenueEur: String(dvEur) });
@@ -404,7 +404,7 @@ export function LeaseSettlementWizard() {
     if (sources.length === 0 && energySettlements.length > 0) {
       const totalKwh = energySettlements.reduce((s, es) => s + Number(es.totalProductionKwh || 0), 0);
       const totalEur = energySettlements.reduce((s, es) => s + Number(es.netOperatorRevenueEur || 0), 0);
-      sources.push({ category: "Stromerloes gesamt", productionKwh: String(totalKwh), revenueEur: String(totalEur) });
+      sources.push({ category: "Stromerlös gesamt", productionKwh: String(totalKwh), revenueEur: String(totalEur) });
     }
     if (sources.length > 0) {
       setRevenueSources(sources);
@@ -671,7 +671,7 @@ export function LeaseSettlementWizard() {
       eegProductionKwh: "", eegRevenueEur: "", dvProductionKwh: "", dvRevenueEur: "",
     })));
     setRevenueSources([
-      { category: "EEG-Verguetung", productionKwh: "", revenueEur: "" },
+      { category: "EEG-Vergütung", productionKwh: "", revenueEur: "" },
       { category: "Direktvermarktung", productionKwh: "", revenueEur: "" },
     ]);
     setCreatedPeriodId(null);
@@ -773,7 +773,7 @@ export function LeaseSettlementWizard() {
                     </Label>
                     <p className="text-sm text-muted-foreground">
                       Berechnet die tatsaechliche Pacht basierend auf dem Jahresumsatz und
-                      verrechnet bereits gezahlte Vorschuesse.
+                      verrechnet bereits gezahlte Vorschüsse.
                     </p>
                   </div>
                 </div>
@@ -885,25 +885,25 @@ export function LeaseSettlementWizard() {
         {selectedParkId && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Pachtvertraege</CardTitle>
+              <CardTitle className="text-base">Pachtverträge</CardTitle>
             </CardHeader>
             <CardContent>
               {loadingLeases ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Pachtvertraege werden geladen...
+                  Pachtverträge werden geladen...
                 </div>
               ) : leaseSummary.leaseCount === 0 ? (
                 <div className="flex items-center gap-2 text-sm text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
-                  Keine aktiven Pachtvertraege fuer diesen Park gefunden.
+                  Keine aktiven Pachtverträge für diesen Park gefunden.
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-sm">
                   <Check className="h-4 w-4 text-green-600" />
                   <span>
                     <strong>{leaseSummary.leaseCount}</strong> aktive
-                    Pachtvertraege mit{" "}
+                    Pachtverträge mit{" "}
                     <strong>{leaseSummary.plotCount}</strong> Fluerstuecken und{" "}
                     <strong>
                       {leaseSummary.totalArea.toLocaleString("de-DE")} m²
@@ -931,8 +931,8 @@ export function LeaseSettlementWizard() {
                 Vorschussberechnung
               </CardTitle>
               <CardDescription>
-                Vorschuesse basieren auf der Mindestpacht - ein
-                Umsatz ist hierfuer nicht erforderlich.
+                Vorschüsse basieren auf der Mindestpacht - ein
+                Umsatz ist hierfür nicht erforderlich.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -988,7 +988,7 @@ export function LeaseSettlementWizard() {
               Umsatzdaten {year}
             </CardTitle>
             <CardDescription>
-              Monatliche EEG- und Direktvermarktungs-Erloese als Grundlage fuer
+              Monatliche EEG- und Direktvermarktungs-Erlöse als Grundlage für
               die Pachtberechnung.
             </CardDescription>
           </CardHeader>
@@ -1003,7 +1003,7 @@ export function LeaseSettlementWizard() {
                 <RadioGroupItem value="auto" id="revenue-auto" className="mt-0.5" />
                 <div className="flex-1 space-y-2">
                   <Label htmlFor="revenue-auto" className="font-medium cursor-pointer">
-                    Aus Energieabrechnungen uebernehmen
+                    Aus Energieabrechnungen übernehmen
                   </Label>
                   <p className="text-sm text-muted-foreground">
                     Verwendet die bereits erfassten und abgeschlossenen Stromabrechnungen.
@@ -1034,7 +1034,7 @@ export function LeaseSettlementWizard() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Jahresuebersicht {year}
+                Jahresübersicht {year}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1051,7 +1051,7 @@ export function LeaseSettlementWizard() {
                       Keine abgeschlossenen Energieabrechnungen gefunden
                     </p>
                     <p className="text-xs">
-                      Fuer {year} liegen keine finalisierten Stromabrechnungen vor.
+                      Für {year} liegen keine finalisierten Stromabrechnungen vor.
                       Bitte wechseln Sie zu &quot;Manuell erfassen&quot; oder erstellen
                       Sie zuerst die Stromabrechnungen.
                     </p>
@@ -1061,7 +1061,7 @@ export function LeaseSettlementWizard() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="p-3 bg-muted/50 rounded-lg">
-                      <p className="text-xs text-muted-foreground">Gesamterloes</p>
+                      <p className="text-xs text-muted-foreground">Gesamterlös</p>
                       <p className="text-lg font-bold">{formatEur(finalizedTotalRevenue)}</p>
                     </div>
                     {autoEegRevenueEur > 0 && (
@@ -1079,7 +1079,7 @@ export function LeaseSettlementWizard() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Basierend auf {finalizedSettlements.length} abgeschlossenen
-                    Energieabrechnung(en) fuer {year}.
+                    Energieabrechnung(en) für {year}.
                   </p>
                 </div>
               )}
@@ -1093,11 +1093,11 @@ export function LeaseSettlementWizard() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Monatliche Ertraege {year}
+                Monatliche Erträge {year}
               </CardTitle>
               <CardDescription>
-                Erfassen Sie fuer jeden Monat die EEG- und DV-Einspeisung (kWh) sowie
-                die jeweiligen Erloese (EUR). Bereits vorhandene Daten sind vorausgefuellt.
+                Erfassen Sie für jeden Monat die EEG- und DV-Einspeisung (kWh) sowie
+                die jeweiligen Erlöse (EUR). Bereits vorhandene Daten sind vorausgefuellt.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1217,7 +1217,7 @@ export function LeaseSettlementWizard() {
               {finalizedMonths.size > 0 && (
                 <p className="text-xs text-muted-foreground mt-2">
                   Monate mit &quot;fest&quot;-Badge haben bereits finalisierte Stromabrechnungen
-                  und koennen hier nicht geaendert werden.
+                  und können hier nicht geändert werden.
                 </p>
               )}
             </CardContent>
@@ -1240,7 +1240,7 @@ export function LeaseSettlementWizard() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Die genaue Aufteilung zwischen Mindestpacht und
-                  Umsatzbeteiligung wird im naechsten Schritt berechnet
+                  Umsatzbeteiligung wird im nächsten Schritt berechnet
                   (MAX-Regel: es greift der jeweils hoehere Betrag).
                 </p>
               </div>
@@ -1264,12 +1264,12 @@ export function LeaseSettlementWizard() {
               </CardTitle>
               <CardDescription>
                 {periodType === "FINAL"
-                  ? `Jahresendabrechnung fuer ${year} mit ${formatEur(effectiveRevenue)} Umsatz`
+                  ? `Jahresendabrechnung für ${year} mit ${formatEur(effectiveRevenue)} Umsatz`
                   : advanceInterval === "YEARLY"
-                    ? `Jahresvorschuss fuer ${year}`
+                    ? `Jahresvorschuss für ${year}`
                     : advanceInterval === "QUARTERLY"
-                      ? `Quartalsvorschuss fuer ${selectedQuarter}. Quartal ${year}`
-                      : `Monatsvorschuss fuer ${MONTH_NAMES[selectedMonth - 1]} ${year}`}
+                      ? `Quartalsvorschuss für ${selectedQuarter}. Quartal ${year}`
+                      : `Monatsvorschuss für ${MONTH_NAMES[selectedMonth - 1]} ${year}`}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1282,7 +1282,7 @@ export function LeaseSettlementWizard() {
                 {calculating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Berechnung laeuft...
+                    Berechnung läuft...
                   </>
                 ) : (
                   <>
@@ -1331,7 +1331,7 @@ export function LeaseSettlementWizard() {
           <CardDescription>
             {calc.parkName} | Umsatz: {formatEur(calc.totalRevenue)}
             {calc.revenuePhasePercentage !== null &&
-              ` | Erloesphase: ${calc.revenuePhasePercentage}%`}
+              ` | Erlösphase: ${calc.revenuePhasePercentage}%`}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1340,10 +1340,10 @@ export function LeaseSettlementWizard() {
               <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-medium">
-                  Achtung: Ueberzahlung bei mindestens einem Verpacheter
+                  Achtung: Überzahlung bei mindestens einem Verpacheter
                 </p>
                 <p className="text-xs">
-                  Ein negativer Restbetrag bedeutet, dass mehr Vorschuesse gezahlt
+                  Ein negativer Restbetrag bedeutet, dass mehr Vorschüsse gezahlt
                   wurden als die tatsaechliche Pacht betraegt.
                 </p>
               </div>
@@ -1357,7 +1357,7 @@ export function LeaseSettlementWizard() {
                   <TableHead>Verpacheter</TableHead>
                   <TableHead className="text-right">Mindestpacht</TableHead>
                   <TableHead className="text-right">Umsatzbeteiligung</TableHead>
-                  <TableHead className="text-right">Gez. Vorschuesse</TableHead>
+                  <TableHead className="text-right">Gez. Vorschüsse</TableHead>
                   <TableHead className="text-right">Restbetrag</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1385,7 +1385,7 @@ export function LeaseSettlementWizard() {
                 ))}
                 {/* Sum row */}
                 <TableRow className="border-t-2 font-bold">
-                  <TableCell>Gesamt ({calc.totals.leaseCount} Vertraege)</TableCell>
+                  <TableCell>Gesamt ({calc.totals.leaseCount} Verträge)</TableCell>
                   <TableCell className="text-right">
                     {formatEur(calc.totals.totalMinimumRent)}
                   </TableCell>
@@ -1453,7 +1453,7 @@ export function LeaseSettlementWizard() {
                 ))}
                 {/* Sum row */}
                 <TableRow className="border-t-2 font-bold">
-                  <TableCell>Gesamt ({calc.totals.leaseCount} Vertraege)</TableCell>
+                  <TableCell>Gesamt ({calc.totals.leaseCount} Verträge)</TableCell>
                   <TableCell />
                   <TableCell className="text-right">
                     {formatEur(calc.totals.totalMonthlyMinimumRent)}
@@ -1533,7 +1533,7 @@ export function LeaseSettlementWizard() {
                 </div>
               )}
               <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground">Vertraege</p>
+                <p className="text-xs text-muted-foreground">Verträge</p>
                 <p className="font-medium">
                   {calculationResult
                     ? (calculationResult as FinalCalculation | AdvanceCalculation).totals
@@ -1553,9 +1553,9 @@ export function LeaseSettlementWizard() {
                   <div>
                     <p className="text-sm font-medium">Gutschriften erstellen</p>
                     <p className="text-xs">
-                      Gutschriften werden als ENTWURF erstellt und koennen vor dem
+                      Gutschriften werden als ENTWURF erstellt und können vor dem
                       Versand noch bearbeitet werden. MwSt-Saetze und Buchungskonten
-                      werden aus den Park-Einstellungen uebernommen.
+                      werden aus den Park-Einstellungen übernommen.
                     </p>
                   </div>
                 </div>
@@ -1631,7 +1631,7 @@ export function LeaseSettlementWizard() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Gutschrift-Nr.</TableHead>
-                          <TableHead>Empfaenger</TableHead>
+                          <TableHead>Empfänger</TableHead>
                           <TableHead className="text-right">Bruttobetrag</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1669,13 +1669,13 @@ export function LeaseSettlementWizard() {
                 <Button variant="outline" asChild>
                   <Link href="/invoices">
                     <FileText className="mr-2 h-4 w-4" />
-                    Zur Rechnungsuebersicht
+                    Zur Rechnungsübersicht
                   </Link>
                 </Button>
               )}
               <Button variant="outline" asChild>
                 <Link href="/leases">
-                  Zur Pachtuebersicht
+                  Zur Pachtübersicht
                 </Link>
               </Button>
             </div>
@@ -1713,7 +1713,7 @@ export function LeaseSettlementWizard() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/leases" aria-label="Zurueck zur Pachtuebersicht">
+          <Link href="/leases" aria-label="Zurück zur Pachtübersicht">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -1755,7 +1755,7 @@ export function LeaseSettlementWizard() {
                 onClick={() => setCurrentStep((prev) => prev - 1)}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Zurueck
+                Zurück
               </Button>
             )}
           </div>
@@ -1817,7 +1817,7 @@ export function LeaseSettlementWizard() {
                     </div>
                   ) : existingPeriods.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">
-                      Keine bisherigen Abrechnungen fuer diesen Park vorhanden.
+                      Keine bisherigen Abrechnungen für diesen Park vorhanden.
                     </p>
                   ) : (
                     <div className="overflow-x-auto">

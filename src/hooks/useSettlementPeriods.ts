@@ -158,7 +158,7 @@ export async function deleteSettlementPeriod(id: string) {
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.error || "Fehler beim Loeschen");
+    throw new Error(error.error || "Fehler beim Löschen");
   }
 
   return res.json();
@@ -226,13 +226,13 @@ export async function approveSettlementPeriod(
 export const settlementStatusLabels: Record<string, string> = {
   OPEN: "Offen",
   IN_PROGRESS: "In Bearbeitung",
-  PENDING_REVIEW: "Zur Pruefung",
+  PENDING_REVIEW: "Zur Prüfung",
   APPROVED: "Genehmigt",
   CLOSED: "Abgeschlossen",
 };
 
 /**
- * Status-Farben fuer Badges
+ * Status-Farben für Badges
  */
 export const settlementStatusColors: Record<string, string> = {
   OPEN: "bg-gray-100 text-gray-800",

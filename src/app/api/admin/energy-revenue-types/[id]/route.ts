@@ -1,8 +1,8 @@
 /**
  * API Route: /api/admin/energy-revenue-types/[id]
- * GET: Einzelne Verguetungsart abrufen
- * PATCH: Verguetungsart aktualisieren
- * DELETE: Verguetungsart loeschen (Hard-Delete oder Soft-Delete via isActive)
+ * GET: Einzelne Vergütungsart abrufen
+ * PATCH: Vergütungsart aktualisieren
+ * DELETE: Vergütungsart löschen (Hard-Delete oder Soft-Delete via isActive)
  *
  * Multi-Tenancy: Filtert automatisch nach tenantId aus der Session
  * Berechtigung: Nur ADMIN und SUPERADMIN
@@ -19,7 +19,7 @@ import { apiLogger as logger } from "@/lib/logger";
 // ============================================================================
 
 /**
- * Schema fuer das Aktualisieren einer Verguetungsart
+ * Schema für das Aktualisieren einer Vergütungsart
  * Alle Felder sind optional (Partial Update)
  */
 const updateEnergyRevenueTypeSchema = z.object({
@@ -46,7 +46,7 @@ const updateEnergyRevenueTypeSchema = z.object({
 // ============================================================================
 
 /**
- * Ruft eine einzelne Verguetungsart anhand der ID ab
+ * Ruft eine einzelne Vergütungsart anhand der ID ab
  */
 export async function GET(
   request: NextRequest,
@@ -60,7 +60,7 @@ export async function GET(
     // ID aus URL-Parametern extrahieren
     const { id } = await params;
 
-    // Verguetungsart abrufen mit Tenant-Filter
+    // Vergütungsart abrufen mit Tenant-Filter
     const energyRevenueType = await prisma.energyRevenueType.findUnique({
       where: {
         id,
@@ -71,7 +71,7 @@ export async function GET(
     // Nicht gefunden?
     if (!energyRevenueType) {
       return NextResponse.json(
-        { error: "Verguetungsart nicht gefunden" },
+        { error: "Vergütungsart nicht gefunden" },
         { status: 404 }
       );
     }
@@ -93,7 +93,7 @@ export async function GET(
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy revenue type");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Verguetungsart" },
+      { error: "Fehler beim Laden der Vergütungsart" },
       { status: 500 }
     );
   }
@@ -104,10 +104,10 @@ export async function GET(
 // ============================================================================
 
 /**
- * Aktualisiert eine Verguetungsart
+ * Aktualisiert eine Vergütungsart
  *
  * Validierung:
- * - Bei Code-Aenderung: Neuer Code muss eindeutig sein
+ * - Bei Code-Änderung: Neuer Code muss eindeutig sein
  */
 export async function PATCH(
   request: NextRequest,
@@ -125,7 +125,7 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = updateEnergyRevenueTypeSchema.parse(body);
 
-    // Pruefen ob Verguetungsart existiert
+    // Prüfen ob Vergütungsart existiert
     const existingType = await prisma.energyRevenueType.findUnique({
       where: {
         id,
@@ -135,12 +135,12 @@ export async function PATCH(
 
     if (!existingType) {
       return NextResponse.json(
-        { error: "Verguetungsart nicht gefunden" },
+        { error: "Vergütungsart nicht gefunden" },
         { status: 404 }
       );
     }
 
-    // Bei Code-Aenderung: Pruefen ob neuer Code bereits existiert
+    // Bei Code-Änderung: Prüfen ob neuer Code bereits existiert
     if (validatedData.code && validatedData.code !== existingType.code) {
       const codeExists = await prisma.energyRevenueType.findFirst({
         where: {
@@ -152,7 +152,7 @@ export async function PATCH(
 
       if (codeExists) {
         return NextResponse.json(
-          { error: `Eine Verguetungsart mit dem Code "${validatedData.code}" existiert bereits` },
+          { error: `Eine Vergütungsart mit dem Code "${validatedData.code}" existiert bereits` },
           { status: 409 } // Conflict
         );
       }
@@ -188,7 +188,7 @@ export async function PATCH(
       updateData.sortOrder = validatedData.sortOrder;
     }
 
-    // Verguetungsart aktualisieren
+    // Vergütungsart aktualisieren
     const updatedType = await prisma.energyRevenueType.update({
       where: { id },
       data: updateData,
@@ -219,7 +219,7 @@ export async function PATCH(
 
     logger.error({ err: error }, "Error updating energy revenue type");
     return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Verguetungsart" },
+      { error: "Fehler beim Aktualisieren der Vergütungsart" },
       { status: 500 }
     );
   }
@@ -230,10 +230,10 @@ export async function PATCH(
 // ============================================================================
 
 /**
- * Loescht eine Verguetungsart
+ * Loescht eine Vergütungsart
  *
  * Standardverhalten: Soft-Delete (setzt isActive auf false)
- * Mit Query-Parameter ?hard=true: Permanentes Loeschen
+ * Mit Query-Parameter ?hard=true: Permanentes Löschen
  *
  * ACHTUNG: Hard-Delete nur moeglich wenn keine Referenzen existieren!
  */
@@ -249,11 +249,11 @@ export async function DELETE(
     // ID aus URL-Parametern extrahieren
     const { id } = await params;
 
-    // Query-Parameter fuer Hard-Delete pruefen
+    // Query-Parameter für Hard-Delete prüfen
     const { searchParams } = new URL(request.url);
     const hardDelete = searchParams.get("hard") === "true";
 
-    // Pruefen ob Verguetungsart existiert
+    // Prüfen ob Vergütungsart existiert
     const existingType = await prisma.energyRevenueType.findUnique({
       where: {
         id,
@@ -263,13 +263,13 @@ export async function DELETE(
 
     if (!existingType) {
       return NextResponse.json(
-        { error: "Verguetungsart nicht gefunden" },
+        { error: "Vergütungsart nicht gefunden" },
         { status: 404 }
       );
     }
 
     if (hardDelete) {
-      // Hard-Delete: Permanent loeschen
+      // Hard-Delete: Permanent löschen
       // Hinweis: Falls Referenzen existieren (z.B. in Rechnungen),
       // wird Prisma einen Fehler werfen
       try {
@@ -279,7 +279,7 @@ export async function DELETE(
 
         return NextResponse.json({
           success: true,
-          message: "Verguetungsart permanent geloescht",
+          message: "Vergütungsart permanent gelöscht",
         });
       } catch (deleteError: unknown) {
         // Foreign Key Constraint Violation
@@ -292,7 +292,7 @@ export async function DELETE(
           return NextResponse.json(
             {
               error:
-                "Verguetungsart kann nicht geloescht werden, da sie noch in Verwendung ist. Nutzen Sie stattdessen die Deaktivierung.",
+                "Vergütungsart kann nicht gelöscht werden, da sie noch in Verwendung ist. Nutzen Sie stattdessen die Deaktivierung.",
             },
             { status: 409 }
           );
@@ -308,13 +308,13 @@ export async function DELETE(
 
       return NextResponse.json({
         success: true,
-        message: "Verguetungsart deaktiviert",
+        message: "Vergütungsart deaktiviert",
       });
     }
   } catch (error) {
     logger.error({ err: error }, "Error deleting energy revenue type");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Verguetungsart" },
+      { error: "Fehler beim Löschen der Vergütungsart" },
       { status: 500 }
     );
   }

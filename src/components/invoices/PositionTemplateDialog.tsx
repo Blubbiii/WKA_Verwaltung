@@ -124,7 +124,7 @@ export function PositionTemplateDialog({
         <DialogHeader>
           <DialogTitle>Positionsvorlage auswaehlen</DialogTitle>
           <DialogDescription>
-            Waehlen Sie eine Vorlage fuer die Rechnungsposition. Platzhalter werden automatisch aufgeloest.
+            Waehlen Sie eine Vorlage für die Rechnungsposition. Platzhalter werden automatisch aufgeloest.
           </DialogDescription>
         </DialogHeader>
 

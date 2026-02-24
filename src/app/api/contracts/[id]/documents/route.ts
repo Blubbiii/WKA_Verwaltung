@@ -5,9 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
-// Schema fuer das Verknuepfen eines existierenden Dokuments
+// Schema für das Verknuepfen eines existierenden Dokuments
 const linkDocumentSchema = z.object({
-  documentId: z.string().uuid("Ungueltige Dokument-ID"),
+  documentId: z.string().uuid("Ungültige Dokument-ID"),
 });
 
 // GET /api/contracts/[id]/documents - Liste aller Dokumente eines Vertrags
@@ -178,7 +178,7 @@ export async function POST(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Ungueltige Daten", details: error.errors },
+        { error: "Ungültige Daten", details: error.errors },
         { status: 400 }
       );
     }

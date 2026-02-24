@@ -140,7 +140,7 @@ export function CreatePortalAccessDialog({
           <AlertDialogDescription asChild>
             <div className="space-y-3">
               <p>
-                Fuer <span className="font-semibold text-foreground">{name}</span> wird
+                Für <span className="font-semibold text-foreground">{name}</span> wird
                 ein Portal-Benutzerkonto erstellt. Die Zugangsdaten werden angezeigt.
               </p>
               {email ? (
@@ -247,7 +247,7 @@ export function RemovePortalAccessDialog({
           <AlertDialogDescription asChild>
             <div className="space-y-3">
               <p>
-                Moechten Sie den Portal-Zugang fuer{" "}
+                Möchten Sie den Portal-Zugang für{" "}
                 <span className="font-semibold text-foreground">{name}</span>{" "}
                 wirklich entfernen?
               </p>
@@ -325,7 +325,7 @@ export function PasswordDisplayDialog({
             Portal-Zugang erstellt
           </DialogTitle>
           <DialogDescription>
-            Die Zugangsdaten fuer den Gesellschafter wurden erstellt.
+            Die Zugangsdaten für den Gesellschafter wurden erstellt.
           </DialogDescription>
         </DialogHeader>
 

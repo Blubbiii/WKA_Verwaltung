@@ -109,9 +109,9 @@ export function BillingTable({
           <TableHead>Dienstleister</TableHead>
           <TableHead>Park</TableHead>
           <TableHead className="text-right">Basisumsatz</TableHead>
-          <TableHead className="text-right">Gebuehr %</TableHead>
-          <TableHead className="text-right">Gebuehr netto</TableHead>
-          <TableHead className="text-right">Gebuehr brutto</TableHead>
+          <TableHead className="text-right">Gebühr %</TableHead>
+          <TableHead className="text-right">Gebühr netto</TableHead>
+          <TableHead className="text-right">Gebühr brutto</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="w-[60px]">
             <span className="sr-only">Aktionen</span>

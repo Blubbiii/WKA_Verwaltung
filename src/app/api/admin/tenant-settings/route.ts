@@ -56,8 +56,8 @@ const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   defaultTaxRate: 19,
   taxExempt: false,
   taxExemptNote: "Steuerfrei gem. \u00a74 Nr.12 UStG",
-  invoicePaymentText: "Bitte ueberweisen Sie den Betrag bis zum {dueDate} auf das unten angegebene Konto. Geben Sie als Verwendungszweck bitte die Rechnungsnummer {invoiceNumber} an.",
-  creditNotePaymentText: "Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto ueberwiesen. Referenz: Gutschriftsnummer {invoiceNumber}.",
+  invoicePaymentText: "Bitte überweisen Sie den Betrag bis zum {dueDate} auf das unten angegebene Konto. Geben Sie als Verwendungszweck bitte die Rechnungsnummer {invoiceNumber} an.",
+  creditNotePaymentText: "Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto überwiesen. Referenz: Gutschriftsnummer {invoiceNumber}.",
 
   // Skonto defaults
   defaultSkontoPercent: 2,
@@ -158,7 +158,7 @@ const tenantSettingsSchema = z.object({
     .optional(),
   portalContactEmail: z
     .string()
-    .email("Ungueltige E-Mail-Adresse")
+    .email("Ungültige E-Mail-Adresse")
     .or(z.literal(""))
     .optional(),
   portalContactPhone: z
@@ -194,7 +194,7 @@ const tenantSettingsSchema = z.object({
     .optional(),
   companyEmail: z
     .string()
-    .email("Ungueltige E-Mail-Adresse")
+    .email("Ungültige E-Mail-Adresse")
     .or(z.literal(""))
     .optional(),
   companyWebsite: z
@@ -331,7 +331,7 @@ export async function PUT(request: NextRequest) {
       const firstError = parsed.error.errors[0];
       return NextResponse.json(
         {
-          error: firstError?.message || "Ungueltige Eingabedaten",
+          error: firstError?.message || "Ungültige Eingabedaten",
           details: parsed.error.errors.map((e) => ({
             field: e.path.join("."),
             message: e.message,

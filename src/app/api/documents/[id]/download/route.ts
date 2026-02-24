@@ -9,19 +9,19 @@ import { apiLogger as logger } from "@/lib/logger";
 /**
  * GET /api/documents/[id]/download
  *
- * Generiert eine signierte URL fuer den Download/Preview eines Dokuments.
- * Die URL ist standardmaessig 1 Stunde gueltig.
+ * Generiert eine signierte URL für den Download/Preview eines Dokuments.
+ * Die URL ist standardmaessig 1 Stunde gültig.
  *
  * Query Parameters:
  * - redirect: wenn "true", wird direkt zur signierten URL weitergeleitet
- * - expiresIn: Gueltigkeitsdauer in Sekunden (Standard: 3600)
+ * - expiresIn: Gültigkeitsdauer in Sekunden (Standard: 3600)
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Berechtigungspruefung
+    // Berechtigungsprüfung
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_READ);
     if (!check.authorized) return check.error;
 

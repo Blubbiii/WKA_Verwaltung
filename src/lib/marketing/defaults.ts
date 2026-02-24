@@ -8,7 +8,7 @@ export const DEFAULT_MARKETING_CONFIG: MarketingConfig = {
   hero: {
     title: "Die Zukunft der Windpark-Verwaltung",
     subtitle:
-      "Optimieren Sie Ihre Ertraege mit intelligenter Verwaltungssoftware. Von SCADA-Anbindung bis zur automatisierten Abrechnung - alles in einer Plattform.",
+      "Optimieren Sie Ihre Erträge mit intelligenter Verwaltungssoftware. Von SCADA-Anbindung bis zur automatisierten Abrechnung - alles in einer Plattform.",
   },
   features: [
     {
@@ -20,19 +20,19 @@ export const DEFAULT_MARKETING_CONFIG: MarketingConfig = {
     {
       title: "Automatisierte Abrechnung",
       description:
-        "Stromerloes-Abrechnungen, Gutschriften und Gesellschafter-Ausschuettungen auf Knopfdruck.",
+        "Stromerlös-Abrechnungen, Gutschriften und Gesellschafter-Ausschuettungen auf Knopfdruck.",
       icon: "credit-card",
     },
     {
       title: "Gesellschafter-Portal",
       description:
-        "Selbstbedienungsportal fuer Gesellschafter mit Dokumentenzugang, Abstimmungen und Berichten.",
+        "Selbstbedienungsportal für Gesellschafter mit Dokumentenzugang, Abstimmungen und Berichten.",
       icon: "users",
     },
     {
       title: "GoBD-konforme Archivierung",
       description:
-        "Revisionssichere Dokumentenarchivierung mit Integritaetspruefung und Audit-Trail.",
+        "Revisionssichere Dokumentenarchivierung mit Integritaetsprüfung und Audit-Trail.",
       icon: "shield",
     },
     {
@@ -57,7 +57,7 @@ export const DEFAULT_MARKETING_CONFIG: MarketingConfig = {
     maxUsers: 50,
   },
   cta: {
-    title: "Bereit fuer die Zukunft?",
+    title: "Bereit für die Zukunft?",
     subtitle:
       "WindparkManager wurde von Branchenexperten entwickelt und wird bereits von zahlreichen Betreibergesellschaften eingesetzt. Starten Sie jetzt Ihre kostenlose Testphase.",
   },

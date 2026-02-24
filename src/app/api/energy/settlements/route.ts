@@ -11,14 +11,14 @@ import { invalidate } from "@/lib/cache/invalidation";
 // =============================================================================
 
 /**
- * Schema fuer neue Stromabrechnung
- * Validiert alle erforderlichen Felder fuer einen EnergySettlement-Eintrag
+ * Schema für neue Stromabrechnung
+ * Validiert alle erforderlichen Felder für einen EnergySettlement-Eintrag
  */
 const settlementCreateSchema = z.object({
-  parkId: z.string().uuid("Ungueltige Park-ID"),
+  parkId: z.string().uuid("Ungültige Park-ID"),
   year: z.number().int().min(2000).max(2100),
   month: z.number().int().min(1).max(12).optional().nullable(),
-  netOperatorRevenueEur: z.number().nonnegative("Erloes muss >= 0 sein"),
+  netOperatorRevenueEur: z.number().nonnegative("Erlös muss >= 0 sein"),
   netOperatorReference: z.string().max(100).optional().nullable(),
   totalProductionKwh: z.number().nonnegative("Produktion muss >= 0 sein"),
   eegProductionKwh: z.number().nonnegative().optional().nullable(),
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       tenantId: check.tenantId!,
     };
 
-    // Optionale Filter hinzufuegen
+    // Optionale Filter hinzufügen
     if (year) {
       where.year = parseInt(year, 10);
     }
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
       prisma.energySettlement.count({ where }),
     ]);
 
-    // Aggregationen berechnen (Summen fuer gefilterte Daten)
+    // Aggregationen berechnen (Summen für gefilterte Daten)
     const aggregations = await prisma.energySettlement.aggregate({
       where,
       _sum: {
@@ -189,13 +189,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Pruefung auf Duplikat (unique constraint: parkId + year + month + tenantId)
+    // Prüfung auf Duplikat (unique constraint: parkId + year + month + tenantId)
     const existing = await prisma.energySettlement.findUnique({
       where: {
         parkId_year_month_tenantId: {
           parkId: validatedData.parkId,
           year: validatedData.year,
-          month: validatedData.month ?? 0, // 0 fuer Jahresabrechnungen
+          month: validatedData.month ?? 0, // 0 für Jahresabrechnungen
           tenantId: check.tenantId!,
         },
       },
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Duplikat erkannt",
-          details: `Fuer Park ${park.name} existiert bereits eine Stromabrechnung fuer ${periodLabel}`,
+          details: `Für Park ${park.name} existiert bereits eine Stromabrechnung für ${periodLabel}`,
         },
         { status: 409 }
       );
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
       park.defaultDistributionMode ||
       "SMOOTHED") as DistributionMode;
 
-    // tolerancePercentage: Explizit angegeben > Park-Default (nur fuer TOLERATED)
+    // tolerancePercentage: Explizit angegeben > Park-Default (nur für TOLERATED)
     const effectiveTolerancePercent =
       validatedData.tolerancePercentage ??
       (effectiveDistributionMode === "TOLERATED" && park.defaultTolerancePercent

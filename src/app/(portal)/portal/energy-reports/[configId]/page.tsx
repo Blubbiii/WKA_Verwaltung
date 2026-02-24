@@ -159,17 +159,17 @@ const MODULE_LABELS: Record<string, string> = {
   productionHeatmap: "Produktions-Heatmap",
   turbineRanking: "Turbinen-Ranking",
   yearOverYear: "Jahresvergleich",
-  availabilityBreakdown: "Verfuegbarkeit T1-T6",
-  availabilityTrend: "Verfuegbarkeits-Trend",
-  availabilityHeatmap: "Verfuegbarkeits-Heatmap",
+  availabilityBreakdown: "Verfügbarkeit T1-T6",
+  availabilityTrend: "Verfügbarkeits-Trend",
+  availabilityHeatmap: "Verfügbarkeits-Heatmap",
   downtimePareto: "Ausfallzeiten-Pareto",
   powerCurveOverlay: "Leistungskurven-Overlay",
-  faultPareto: "Stoerungen-Pareto",
+  faultPareto: "Störungen-Pareto",
   warningTrend: "Warnungs-Trend",
   windDistribution: "Windverteilung",
   environmentalData: "Umweltdaten",
-  financialOverview: "Finanz-Uebersicht",
-  revenueComparison: "Erloesvergleich",
+  financialOverview: "Finanz-Übersicht",
+  revenueComparison: "Erlösvergleich",
 };
 
 // =============================================================================
@@ -461,7 +461,7 @@ export default function EnergyReportDetailPage() {
               </CardHeader>
               <CardContent>
                 {reportData.production.length === 0 ? (
-                  <EmptyModuleState text="Keine Produktionsdaten verfuegbar" />
+                  <EmptyModuleState text="Keine Produktionsdaten verfügbar" />
                 ) : (
                   <ProductionChart
                     data={reportData.production}
@@ -485,7 +485,7 @@ export default function EnergyReportDetailPage() {
               </CardHeader>
               <CardContent>
                 {reportData.turbineComparison.length === 0 ? (
-                  <EmptyModuleState text="Keine Anlagendaten verfuegbar" />
+                  <EmptyModuleState text="Keine Anlagendaten verfügbar" />
                 ) : (
                   <TurbineComparisonTable
                     data={reportData.turbineComparison}
@@ -508,7 +508,7 @@ export default function EnergyReportDetailPage() {
               <CardContent>
                 {reportData.powerCurve.scatter.length === 0 &&
                 reportData.powerCurve.curve.length === 0 ? (
-                  <EmptyModuleState text="Keine Leistungskurvendaten verfuegbar" />
+                  <EmptyModuleState text="Keine Leistungskurvendaten verfügbar" />
                 ) : (
                   <PowerCurveChart
                     scatter={reportData.powerCurve.scatter}
@@ -530,7 +530,7 @@ export default function EnergyReportDetailPage() {
               </CardHeader>
               <CardContent>
                 {!reportData.windRose.data || reportData.windRose.data.length === 0 ? (
-                  <EmptyModuleState text="Keine Windrosendaten verfuegbar" />
+                  <EmptyModuleState text="Keine Windrosendaten verfügbar" />
                 ) : (
                   <WindRoseChart
                     data={reportData.windRose.data}
@@ -552,7 +552,7 @@ export default function EnergyReportDetailPage() {
               </CardHeader>
               <CardContent>
                 {reportData.dailyProfile.length === 0 ? (
-                  <EmptyModuleState text="Keine Tagesverlaufsdaten verfuegbar" />
+                  <EmptyModuleState text="Keine Tagesverlaufsdaten verfügbar" />
                 ) : (
                   <DailyChart
                     data={reportData.dailyProfile}
@@ -623,8 +623,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("availabilityBreakdown") && reportData.availabilityBreakdown && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Verfuegbarkeit T1-T6</CardTitle>
-                <CardDescription>IEC 61400-26 Verfuegbarkeitsklassen pro Anlage</CardDescription>
+                <CardTitle>Verfügbarkeit T1-T6</CardTitle>
+                <CardDescription>IEC 61400-26 Verfügbarkeitsklassen pro Anlage</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsAvailTable data={reportData.availabilityBreakdown} />
@@ -636,8 +636,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("availabilityTrend") && reportData.availabilityTrend && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Verfuegbarkeits-Trend</CardTitle>
-                <CardDescription>Monatliche technische Verfuegbarkeit</CardDescription>
+                <CardTitle>Verfügbarkeits-Trend</CardTitle>
+                <CardDescription>Monatliche technische Verfügbarkeit</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsTrendTable data={reportData.availabilityTrend} valueKey="avgAvailability" unit="%" />
@@ -649,8 +649,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("availabilityHeatmap") && reportData.availabilityHeatmap && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Verfuegbarkeits-Heatmap</CardTitle>
-                <CardDescription>Monatliche Verfuegbarkeit pro Anlage (%)</CardDescription>
+                <CardTitle>Verfügbarkeits-Heatmap</CardTitle>
+                <CardDescription>Monatliche Verfügbarkeit pro Anlage (%)</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsHeatmapTable data={reportData.availabilityHeatmap} unit="%" />
@@ -675,7 +675,7 @@ export default function EnergyReportDetailPage() {
           {hasModule("faultPareto") && reportData.faultPareto && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Stoerungen-Pareto</CardTitle>
+                <CardTitle>Störungen-Pareto</CardTitle>
                 <CardDescription>Top-Zustandscodes nach Gesamtdauer</CardDescription>
               </CardHeader>
               <CardContent>
@@ -727,8 +727,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("financialOverview") && reportData.financialOverview && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Finanz-Uebersicht</CardTitle>
-                <CardDescription>Erloese und Finanz-Kennzahlen</CardDescription>
+                <CardTitle>Finanz-Übersicht</CardTitle>
+                <CardDescription>Erlöse und Finanz-Kennzahlen</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsFinancialTable data={reportData.financialOverview} />
@@ -740,8 +740,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("revenueComparison") && reportData.revenueComparison && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Erloesvergleich</CardTitle>
-                <CardDescription>Geschaetzter Erloesverlust durch Ausfallzeiten</CardDescription>
+                <CardTitle>Erlösvergleich</CardTitle>
+                <CardDescription>Geschaetzter Erlösverlust durch Ausfallzeiten</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsLostRevenue data={reportData.revenueComparison} />
@@ -1024,7 +1024,7 @@ function AnalyticsYoyTable({ data }: { data: any[] }) {
 }
 
 function AnalyticsAvailTable({ data }: { data: any[] }) {
-  if (!data || data.length === 0) return <EmptyModuleState text="Keine Verfuegbarkeitsdaten" />;
+  if (!data || data.length === 0) return <EmptyModuleState text="Keine Verfügbarkeitsdaten" />;
 
   const tLabels: Record<string, string> = { t1: "Prod.", t2: "Still.", t3: "Umw.", t4: "Wart.", t5: "Stoer.", t6: "Sonst." };
 
@@ -1209,7 +1209,7 @@ function AnalyticsFinancialTable({ data }: { data: any }) {
       {summary && (
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Gesamterloese</p>
+            <p className="text-xs text-muted-foreground">Gesamterlöse</p>
             <p className="text-lg font-bold">{formatNumber(summary.totalRevenueEur || 0, 2)} EUR</p>
           </div>
           <div className="rounded-lg border p-3">
@@ -1228,7 +1228,7 @@ function AnalyticsFinancialTable({ data }: { data: any }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Monat</TableHead>
-                <TableHead className="text-right">Erloese (EUR)</TableHead>
+                <TableHead className="text-right">Erlöse (EUR)</TableHead>
                 <TableHead className="text-right">Produktion (kWh)</TableHead>
                 <TableHead className="text-right">EUR/kWh</TableHead>
               </TableRow>
@@ -1251,7 +1251,7 @@ function AnalyticsFinancialTable({ data }: { data: any }) {
 }
 
 function AnalyticsLostRevenue({ data }: { data: any }) {
-  if (!data) return <EmptyModuleState text="Keine Erloesverlustdaten" />;
+  if (!data) return <EmptyModuleState text="Keine Erlösverlustdaten" />;
 
   return (
     <div className="grid gap-3 sm:grid-cols-3">
@@ -1260,7 +1260,7 @@ function AnalyticsLostRevenue({ data }: { data: any }) {
         <p className="text-lg font-bold">{formatNumber((data.totalLostKwh || 0) / 1000, 1)} MWh</p>
       </div>
       <div className="rounded-lg border p-3">
-        <p className="text-xs text-muted-foreground">Geschaetzter Erloesverlust</p>
+        <p className="text-xs text-muted-foreground">Geschaetzter Erlösverlust</p>
         <p className="text-lg font-bold text-red-600">{formatNumber(data.estimatedLostEur || 0, 2)} EUR</p>
       </div>
       <div className="rounded-lg border p-3">

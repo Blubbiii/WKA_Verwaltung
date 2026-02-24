@@ -89,7 +89,7 @@ interface ImportResult {
 const STEPS = [
   { id: "upload", title: "Datei-Upload", description: "CSV/Excel hochladen" },
   { id: "mapping", title: "Spalten-Mapping", description: "Spalten zuordnen" },
-  { id: "validation", title: "Validierung", description: "Daten pruefen" },
+  { id: "validation", title: "Validierung", description: "Daten prüfen" },
   { id: "import", title: "Import", description: "Daten importieren" },
 ];
 
@@ -105,9 +105,9 @@ const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
   turbineName: "WKA-Bezeichnung",
   year: "Jahr",
   month: "Monat",
-  remunerationType: "Verguetungsart",
+  remunerationType: "Vergütungsart",
   production: "Produktion (kWh)",
-  revenue: "Erloes (EUR)",
+  revenue: "Erlös (EUR)",
 };
 
 const REMUNERATION_CODES = ["EEG", "DIRECT", "PPA", "SPOT", "OTHER"];
@@ -252,14 +252,14 @@ function FileUploadStep({
   const validateAndSelectFile = (selectedFile: File) => {
     // Check file size
     if (selectedFile.size > MAX_FILE_SIZE) {
-      toast.error("Datei zu gross. Maximale Groesse: 10MB");
+      toast.error("Datei zu gross. Maximale Größe: 10MB");
       return;
     }
 
     // Check file type
     const extension = "." + selectedFile.name.split(".").pop()?.toLowerCase();
     if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-      toast.error("Ungueltiges Dateiformat. Erlaubt: CSV, XLSX");
+      toast.error("Ungültiges Dateiformat. Erlaubt: CSV, XLSX");
       return;
     }
 
@@ -595,7 +595,7 @@ function ValidationStep({
                 onCheckedChange={(checked) => onSkipErrorsChange(checked as boolean)}
               />
               <Label htmlFor="skipErrors" className="cursor-pointer">
-                Fehlerhafte Zeilen beim Import ueberspringen ({errorCount} Zeilen)
+                Fehlerhafte Zeilen beim Import überspringen ({errorCount} Zeilen)
               </Label>
             </div>
           </CardContent>
@@ -733,7 +733,7 @@ function ImportStep({ isImporting, importProgress, importResult, onRetry }: Impo
             </div>
             <div className="bg-amber-50 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-amber-700">{importResult.skipped}</p>
-              <p className="text-sm text-amber-600">Uebersprungen</p>
+              <p className="text-sm text-amber-600">Übersprungen</p>
             </div>
             <div className="bg-red-50 rounded-lg p-4 text-center">
               <p className="text-2xl font-bold text-red-700">{importResult.errors}</p>
@@ -832,7 +832,7 @@ export default function ProductionDataImportPage() {
         const parsed = parseCSV(text);
 
         if (parsed.headers.length === 0) {
-          setFileError("Die Datei enthaelt keine gueltigen Daten");
+          setFileError("Die Datei enthaelt keine gültigen Daten");
           return;
         }
 
@@ -931,7 +931,7 @@ export default function ProductionDataImportPage() {
         if (columnMapping.year) {
           const year = Number(row[columnMapping.year]);
           if (isNaN(year) || year < 2000 || year > 2100) {
-            messages.push("Ungueltiges Jahr");
+            messages.push("Ungültiges Jahr");
             status = "error";
           }
         }
@@ -939,7 +939,7 @@ export default function ProductionDataImportPage() {
         if (columnMapping.month) {
           const month = Number(row[columnMapping.month]);
           if (isNaN(month) || month < 1 || month > 12) {
-            messages.push("Ungueltiger Monat (1-12)");
+            messages.push("Ungültiger Monat (1-12)");
             status = "error";
           }
         }
@@ -947,10 +947,10 @@ export default function ProductionDataImportPage() {
         if (columnMapping.production) {
           const prod = Number(row[columnMapping.production]);
           if (isNaN(prod) || prod < 0) {
-            messages.push("Ungueltige Produktionsmenge");
+            messages.push("Ungültige Produktionsmenge");
             status = "error";
           } else if (prod > 50000000) {
-            messages.push("Sehr hohe Produktionsmenge - bitte pruefen");
+            messages.push("Sehr hohe Produktionsmenge - bitte prüfen");
             if (status === "success") status = "warning";
           }
         }
@@ -958,7 +958,7 @@ export default function ProductionDataImportPage() {
         if (columnMapping.remunerationType) {
           const code = String(row[columnMapping.remunerationType]).toUpperCase();
           if (!REMUNERATION_CODES.includes(code)) {
-            messages.push(`Unbekannte Verguetungsart: ${code}`);
+            messages.push(`Unbekannte Vergütungsart: ${code}`);
             if (status === "success") status = "warning";
           }
         }
@@ -1100,9 +1100,9 @@ export default function ProductionDataImportPage() {
       {/* Notice banner */}
       <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
         <p className="text-sm text-blue-800">
-          Der CSV-Import ist auch direkt ueber die Netzbetreiber-Daten Seite erreichbar.
+          Der CSV-Import ist auch direkt über die Netzbetreiber-Daten Seite erreichbar.
           <Link href="/energy/settlements" className="underline ml-1 font-medium">
-            Zur Uebersicht
+            Zur Übersicht
           </Link>
         </p>
       </div>
@@ -1181,7 +1181,7 @@ export default function ProductionDataImportPage() {
             disabled={currentStep === 0 || isValidating || isImporting}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Zurueck
+            Zurück
           </Button>
 
           <Button

@@ -607,7 +607,7 @@ export function MonthlyReportTemplate({
             <Text style={styles.kpiUnit}>MWh</Text>
           </View>
           <View style={[styles.kpiCard, styles.kpiCardAccent]}>
-            <Text style={styles.kpiLabel}>Verfuegbarkeit</Text>
+            <Text style={styles.kpiLabel}>Verfügbarkeit</Text>
             <Text style={styles.kpiValue}>
               {data.avgAvailabilityPct != null
                 ? formatNumber(data.avgAvailabilityPct, 1)
@@ -638,7 +638,7 @@ export function MonthlyReportTemplate({
           </View>
           {hasRevenue && (
             <View style={[styles.kpiCard, styles.kpiCardAccent]}>
-              <Text style={styles.kpiLabel}>Erloese</Text>
+              <Text style={styles.kpiLabel}>Erlöse</Text>
               <Text style={styles.kpiValue}>
                 {formatCurrency(data.totalRevenueEur!)}
               </Text>
@@ -691,7 +691,7 @@ export function MonthlyReportTemplate({
               </Text>
             </View>
             <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonLabel}>Verfuegbarkeit</Text>
+              <Text style={styles.comparisonLabel}>Verfügbarkeit</Text>
               <Text style={styles.comparisonCurrent}>
                 {formatPercent1(data.avgAvailabilityPct)}
               </Text>
@@ -732,7 +732,7 @@ export function MonthlyReportTemplate({
             </View>
             {hasRevenue && data.prevYearRevenueEur != null && (
               <View style={styles.comparisonRow}>
-                <Text style={styles.comparisonLabel}>Erloese</Text>
+                <Text style={styles.comparisonLabel}>Erlöse</Text>
                 <Text style={styles.comparisonCurrent}>
                   {formatCurrency(data.totalRevenueEur!)}
                 </Text>
@@ -779,7 +779,7 @@ export function MonthlyReportTemplate({
                 <Text style={[styles.tableHeaderText, styles.colProduction]}>Produktion</Text>
                 <Text style={[styles.tableHeaderText, styles.colHours]}>Betriebsstd.</Text>
                 <Text style={[styles.tableHeaderText, styles.colAvailability]}>
-                  Verfuegbarkeit
+                  Verfügbarkeit
                 </Text>
                 <Text style={[styles.tableHeaderText, styles.colCf]}>CF %</Text>
               </View>
@@ -826,7 +826,7 @@ export function MonthlyReportTemplate({
           </>
         ) : (
           <Text style={styles.noData}>
-            Keine Produktionsdaten fuer diesen Monat vorhanden.
+            Keine Produktionsdaten für diesen Monat vorhanden.
           </Text>
         )}
       </PageWrapper>
@@ -840,7 +840,7 @@ export function MonthlyReportTemplate({
           companyName={data.operatorName ?? undefined}
         >
           <Text style={styles.sectionTitle}>
-            Verfuegbarkeit - {data.monthName} {data.year}
+            Verfügbarkeit - {data.monthName} {data.year}
           </Text>
 
           {/* Availability table */}
@@ -851,7 +851,7 @@ export function MonthlyReportTemplate({
               <Text style={[styles.tableHeaderText, styles.colAvT2]}>T2 (Wind)</Text>
               <Text style={[styles.tableHeaderText, styles.colAvT3]}>T3 (Umwelt)</Text>
               <Text style={[styles.tableHeaderText, styles.colAvT4]}>T4 (Wartung)</Text>
-              <Text style={[styles.tableHeaderText, styles.colAvT5]}>T5 (Stoerung)</Text>
+              <Text style={[styles.tableHeaderText, styles.colAvT5]}>T5 (Störung)</Text>
               <Text style={[styles.tableHeaderText, styles.colAvT6]}>T6 (Sonstige)</Text>
               <Text style={[styles.tableHeaderText, styles.colAvPct]}>Verfueg. %</Text>
             </View>

@@ -39,7 +39,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: "Abschliessen nicht moeglich",
-          details: `Nur abgerechnete oder freigegebene Abrechnungen koennen abgeschlossen werden. Aktueller Status: ${settlement.status}`,
+          details: `Nur abgerechnete oder freigegebene Abrechnungen können abgeschlossen werden. Aktueller Status: ${settlement.status}`,
         },
         { status: 400 }
       );

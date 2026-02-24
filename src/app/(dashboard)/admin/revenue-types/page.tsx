@@ -13,7 +13,7 @@ export default function AdminRevenueTypesPage() {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground gap-2">
         <AlertTriangle className="h-8 w-8" />
-        <p>Nur SuperAdmins koennen Verguetungsarten verwalten.</p>
+        <p>Nur SuperAdmins können Vergütungsarten verwalten.</p>
       </div>
     );
   }
@@ -21,8 +21,8 @@ export default function AdminRevenueTypesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Verguetungsarten"
-        description="Verguetungsarten fuer Energieabrechnungen verwalten"
+        title="Vergütungsarten"
+        description="Vergütungsarten für Energieabrechnungen verwalten"
       />
       <Card>
         <CardContent className="pt-6">

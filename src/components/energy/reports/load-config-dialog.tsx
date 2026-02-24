@@ -83,12 +83,12 @@ export function LoadConfigDialog({
       const res = await fetch(`/api/energy/reports/configs/${deleteId}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Fehler beim Loeschen");
+      if (!res.ok) throw new Error("Fehler beim Löschen");
 
       setConfigs((prev) => prev.filter((c) => c.id !== deleteId));
-      toast.success("Konfiguration geloescht");
+      toast.success("Konfiguration gelöscht");
     } catch {
-      toast.error("Fehler beim Loeschen der Konfiguration");
+      toast.error("Fehler beim Löschen der Konfiguration");
     } finally {
       setDeleteId(null);
     }
@@ -164,7 +164,7 @@ export function LoadConfigDialog({
                         size="icon"
                         className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
                         onClick={() => setDeleteId(config.id)}
-                        aria-label={`${config.name} loeschen`}
+                        aria-label={`${config.name} löschen`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -183,8 +183,8 @@ export function LoadConfigDialog({
           if (!value) setDeleteId(null);
         }}
         onConfirm={handleDelete}
-        title="Konfiguration loeschen"
-        description="Moechten Sie diese Konfiguration wirklich loeschen?"
+        title="Konfiguration löschen"
+        description="Möchten Sie diese Konfiguration wirklich löschen?"
       />
     </>
   );

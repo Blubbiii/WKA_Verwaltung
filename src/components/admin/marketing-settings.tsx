@@ -211,7 +211,7 @@ export function MarketingSettings() {
         throw new Error(error.error || "Fehler beim Speichern");
       }
 
-      const label = page === "impressum" ? "Impressum" : "Datenschutzerklaerung";
+      const label = page === "impressum" ? "Impressum" : "Datenschutzerklärung";
       toast.success(`${label} gespeichert`);
     } catch (error) {
       toast.error(
@@ -350,7 +350,7 @@ export function MarketingSettings() {
               </div>
               <Textarea
                 id="hero-subtitle"
-                placeholder="z.B. Die zentrale Plattform fuer Betreiber, Investoren und Dienstleister"
+                placeholder="z.B. Die zentrale Plattform für Betreiber, Investoren und Dienstleister"
                 value={config.hero.subtitle}
                 maxLength={500}
                 rows={3}
@@ -397,7 +397,7 @@ export function MarketingSettings() {
                 size="sm"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Feature hinzufuegen
+                Feature hinzufügen
               </Button>
             </div>
           </CardHeader>
@@ -407,7 +407,7 @@ export function MarketingSettings() {
                 <LayoutGrid className="mx-auto h-12 w-12 mb-4 opacity-50" />
                 <p className="text-lg font-medium">Keine Features vorhanden</p>
                 <p className="text-sm">
-                  Klicke auf &quot;Feature hinzufuegen&quot; um loszulegen.
+                  Klicke auf &quot;Feature hinzufügen&quot; um loszulegen.
                 </p>
               </div>
             ) : (
@@ -427,7 +427,7 @@ export function MarketingSettings() {
                             size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => removeFeature(feature.id)}
-                            aria-label={`Feature ${index + 1} loeschen`}
+                            aria-label={`Feature ${index + 1} löschen`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -531,7 +531,7 @@ export function MarketingSettings() {
               Preisrechner-Konfiguration
             </CardTitle>
             <CardDescription>
-              Parameter fuer den Preiskalkulator auf der Landingpage
+              Parameter für den Preiskalkulator auf der Landingpage
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -715,7 +715,7 @@ export function MarketingSettings() {
               </div>
               <Input
                 id="cta-title"
-                placeholder="z.B. Bereit fuer effizientes Windpark-Management?"
+                placeholder="z.B. Bereit für effizientes Windpark-Management?"
                 value={config.cta.title}
                 maxLength={200}
                 onChange={(e) =>
@@ -800,7 +800,7 @@ export function MarketingSettings() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Markdown-Formatierung wird unterstuetzt: **fett**, *kursiv*,
-                  # Ueberschriften, - Listen
+                  # Überschriften, - Listen
                 </p>
                 <div className="flex justify-end">
                   <Button
@@ -821,16 +821,16 @@ export function MarketingSettings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Scale className="h-5 w-5" />
-                  Datenschutzerklaerung
+                  Datenschutzerklärung
                 </CardTitle>
                 <CardDescription>
-                  Datenschutzerklaerung (Markdown wird unterstuetzt)
+                  Datenschutzerklärung (Markdown wird unterstuetzt)
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Textarea
                   id="legal-datenschutz"
-                  placeholder="# Datenschutzerklaerung&#10;&#10;## 1. Datenschutz auf einen Blick&#10;&#10;### Allgemeine Hinweise&#10;..."
+                  placeholder="# Datenschutzerklärung&#10;&#10;## 1. Datenschutz auf einen Blick&#10;&#10;### Allgemeine Hinweise&#10;..."
                   value={legal.datenschutz}
                   rows={12}
                   className="font-mono text-sm"
@@ -843,7 +843,7 @@ export function MarketingSettings() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Markdown-Formatierung wird unterstuetzt: **fett**, *kursiv*,
-                  # Ueberschriften, - Listen
+                  # Überschriften, - Listen
                 </p>
                 <div className="flex justify-end">
                   <Button
@@ -853,7 +853,7 @@ export function MarketingSettings() {
                     {savingLegal === "datenschutz" && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
-                    Datenschutzerklaerung speichern
+                    Datenschutzerklärung speichern
                   </Button>
                 </div>
               </CardContent>

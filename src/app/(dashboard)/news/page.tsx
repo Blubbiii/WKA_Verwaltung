@@ -416,7 +416,7 @@ export default function NewsPage() {
                             onClick={() => handlePublish(item.id, false)}
                           >
                             <Clock className="mr-2 h-4 w-4" />
-                            Zurueck zu Entwurf
+                            Zurück zu Entwurf
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem
@@ -432,7 +432,7 @@ export default function NewsPage() {
                           onClick={() => setDeleteId(item.id)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Loeschen
+                          Löschen
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -490,7 +490,7 @@ export default function NewsPage() {
         open={!!deleteId}
         onOpenChange={(open) => { if (!open) setDeleteId(null); }}
         onConfirm={handleDelete}
-        title="Meldung loeschen"
+        title="Meldung löschen"
       />
     </div>
   );

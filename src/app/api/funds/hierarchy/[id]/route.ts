@@ -10,8 +10,8 @@ import { apiLogger as logger } from "@/lib/logger";
 // =============================================================================
 
 /**
- * Schema fuer Aktualisierung von FundHierarchy-Eintraegen
- * Parent/Child Fund sind NICHT aenderbar - dafuer neuen Eintrag anlegen
+ * Schema für Aktualisierung von FundHierarchy-Einträgen
+ * Parent/Child Fund sind NICHT aenderbar - dafür neuen Eintrag anlegen
  */
 const fundHierarchyUpdateSchema = z.object({
   ownershipPercentage: z
@@ -21,11 +21,11 @@ const fundHierarchyUpdateSchema = z.object({
     .optional(),
   validFrom: z
     .string()
-    .datetime({ message: "Ungueltiges Datum (ISO 8601 Format erwartet)" })
+    .datetime({ message: "Ungültiges Datum (ISO 8601 Format erwartet)" })
     .optional(),
   validTo: z
     .string()
-    .datetime({ message: "Ungueltiges Datum (ISO 8601 Format erwartet)" })
+    .datetime({ message: "Ungültiges Datum (ISO 8601 Format erwartet)" })
     .optional()
     .nullable(),
   notes: z.string().max(1000).optional().nullable(),
@@ -40,7 +40,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Berechtigungspruefung
+    // Berechtigungsprüfung
     const check = await requirePermission(["funds:read"]);
     if (!check.authorized) return check.error;
 
@@ -113,7 +113,7 @@ export async function GET(
       );
     }
 
-    // Multi-Tenancy Pruefung ueber Parent Fund -> Tenant
+    // Multi-Tenancy Prüfung über Parent Fund -> Tenant
     if (hierarchy.parentFund.tenantId !== check.tenantId!) {
       return NextResponse.json(
         { error: "Keine Berechtigung" },
@@ -121,7 +121,7 @@ export async function GET(
       );
     }
 
-    // Lade auch historische Eintraege fuer diese Beziehung
+    // Lade auch historische Einträge für diese Beziehung
     const historyEntries = await prisma.fundHierarchy.findMany({
       where: {
         parentFundId: hierarchy.parentFundId,
@@ -164,7 +164,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Berechtigungspruefung: MANAGER+ fuer Funds-Modul
+    // Berechtigungsprüfung: MANAGER+ für Funds-Modul
     const check = await requirePermission(["funds:update"]);
     if (!check.authorized) return check.error;
 
@@ -172,7 +172,7 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = fundHierarchyUpdateSchema.parse(body);
 
-    // Existenz und Tenant pruefen
+    // Existenz und Tenant prüfen
     const existing = await prisma.fundHierarchy.findUnique({
       where: { id },
       include: {
@@ -195,7 +195,7 @@ export async function PATCH(
       );
     }
 
-    // Multi-Tenancy Pruefung
+    // Multi-Tenancy Prüfung
     if (existing.parentFund.tenantId !== check.tenantId!) {
       return NextResponse.json(
         { error: "Keine Berechtigung" },
@@ -216,14 +216,14 @@ export async function PATCH(
     if (newValidTo && newValidFrom >= newValidTo) {
       return NextResponse.json(
         {
-          error: "Ungueltige Datumsangabe",
+          error: "Ungültige Datumsangabe",
           details: "Das Startdatum (validFrom) muss vor dem Enddatum (validTo) liegen",
         },
         { status: 400 }
       );
     }
 
-    // Pruefung: Gesamtanteil am Parent Fund darf nicht > 100% sein (bei Aenderung des Anteils)
+    // Prüfung: Gesamtanteil am Parent Fund darf nicht > 100% sein (bei Änderung des Anteils)
     if (validatedData.ownershipPercentage !== undefined) {
       const otherHierarchies = await prisma.fundHierarchy.findMany({
         where: {
@@ -242,7 +242,7 @@ export async function PATCH(
       if (othersTotal + validatedData.ownershipPercentage > 100) {
         return NextResponse.json(
           {
-            error: "Anteil uebersteigt 100%",
+            error: "Anteil übersteigt 100%",
             details: `Andere Gesellschafter: ${othersTotal.toFixed(2)}%. ` +
               `Mit neuem Anteil (${validatedData.ownershipPercentage}%) waeren es ${(othersTotal + validatedData.ownershipPercentage).toFixed(2)}%`,
           },
@@ -251,7 +251,7 @@ export async function PATCH(
       }
     }
 
-    // Alte Werte fuer Audit-Log speichern
+    // Alte Werte für Audit-Log speichern
     const oldValues = {
       ownershipPercentage: Number(existing.ownershipPercentage),
       validFrom: existing.validFrom.toISOString(),
@@ -327,7 +327,7 @@ export async function PATCH(
 }
 
 // =============================================================================
-// DELETE /api/funds/hierarchy/[id] - Fund-Hierarchie loeschen
+// DELETE /api/funds/hierarchy/[id] - Fund-Hierarchie löschen
 // =============================================================================
 
 export async function DELETE(
@@ -335,11 +335,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Berechtigungspruefung: MANAGER+ fuer Funds-Modul
+    // Berechtigungsprüfung: MANAGER+ für Funds-Modul
     const check = await requirePermission(["funds:delete"]);
     if (!check.authorized) return check.error;
 
-    // Zusaetzliche Pruefung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen loeschen
+    // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
     const user = await prisma.user.findUnique({
       where: { id: check.userId! },
       select: { role: true },
@@ -347,14 +347,14 @@ export async function DELETE(
 
     if (!user || !["MANAGER", "ADMIN", "SUPERADMIN"].includes(user.role)) {
       return NextResponse.json(
-        { error: "Keine Berechtigung zum Loeschen von Fund-Hierarchien" },
+        { error: "Keine Berechtigung zum Löschen von Fund-Hierarchien" },
         { status: 403 }
       );
     }
 
     const { id } = await params;
 
-    // Existenz und Tenant pruefen
+    // Existenz und Tenant prüfen
     const existing = await prisma.fundHierarchy.findUnique({
       where: { id },
       include: {
@@ -377,7 +377,7 @@ export async function DELETE(
       );
     }
 
-    // Multi-Tenancy Pruefung
+    // Multi-Tenancy Prüfung
     if (existing.parentFund.tenantId !== check.tenantId!) {
       return NextResponse.json(
         { error: "Keine Berechtigung" },
@@ -385,7 +385,7 @@ export async function DELETE(
       );
     }
 
-    // Loeschen
+    // Löschen
     await prisma.fundHierarchy.delete({ where: { id } });
 
     // Audit Log
@@ -399,12 +399,12 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: `Fund-Hierarchie "${existing.childFund.name}" -> "${existing.parentFund.name}" geloescht`,
+      message: `Fund-Hierarchie "${existing.childFund.name}" -> "${existing.parentFund.name}" gelöscht`,
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting fund hierarchy");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Fund-Hierarchie" },
+      { error: "Fehler beim Löschen der Fund-Hierarchie" },
       { status: 500 }
     );
   }

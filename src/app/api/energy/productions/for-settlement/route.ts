@@ -5,7 +5,7 @@ import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
 // GET /api/energy/productions/for-settlement
-// Aggregiert Produktionsdaten fuer eine Stromabrechnung
+// Aggregiert Produktionsdaten für eine Stromabrechnung
 //
 // Query-Parameter:
 //   parkId (required) - UUID des Windparks
@@ -13,10 +13,10 @@ import { apiLogger as logger } from "@/lib/logger";
 //   month  (optional) - Abrechnungsmonat (1-12, leer = Jahresabrechnung)
 //   status (optional) - Nur Produktionen mit diesem Status (default: DRAFT)
 //
-// Gibt zurueck:
+// Gibt zurück:
 //   - totalProductionKwh: Summe aller Turbinen-Produktionen
-//   - totalRevenueEur: Summe aller Erloese (falls gepflegt)
-//   - productions: Liste der einzelnen TurbineProduction-Eintraege
+//   - totalRevenueEur: Summe aller Erlöse (falls gepflegt)
+//   - productions: Liste der einzelnen TurbineProduction-Einträge
 //   - turbineCount: Anzahl der Turbinen mit Daten
 // =============================================================================
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     const year = parseInt(yearStr, 10);
     if (isNaN(year) || year < 2000 || year > 2100) {
       return NextResponse.json(
-        { error: "Ungueltiges Jahr (2000-2100)" },
+        { error: "Ungültiges Jahr (2000-2100)" },
         { status: 400 }
       );
     }
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     const month = monthStr ? parseInt(monthStr, 10) : null;
     if (month !== null && (isNaN(month) || month < 1 || month > 12)) {
       return NextResponse.json(
-        { error: "Ungueltiger Monat (1-12)" },
+        { error: "Ungültiger Monat (1-12)" },
         { status: 400 }
       );
     }
@@ -59,12 +59,12 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "DRAFT";
     if (!["DRAFT", "CONFIRMED", "INVOICED"].includes(status)) {
       return NextResponse.json(
-        { error: "Ungueltiger Status (DRAFT, CONFIRMED, INVOICED)" },
+        { error: "Ungültiger Status (DRAFT, CONFIRMED, INVOICED)" },
         { status: 400 }
       );
     }
 
-    // Park-Zugehoerigkeit pruefen
+    // Park-Zugehoerigkeit prüfen
     const park = await prisma.park.findFirst({
       where: {
         id: parkId,
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Where-Clause fuer TurbineProduction
+    // Where-Clause für TurbineProduction
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
       tenantId: check.tenantId!,
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
     // Unique Turbinen zaehlen
     const uniqueTurbineIds = new Set(productions.map((p) => p.turbineId));
 
-    // Zusammenfassung pro Turbine (fuer UI-Anzeige)
+    // Zusammenfassung pro Turbine (für UI-Anzeige)
     const turbineSummary: Record<
       string,
       {
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Error fetching productions for settlement");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Produktionsdaten fuer Abrechnung" },
+      { error: "Fehler beim Laden der Produktionsdaten für Abrechnung" },
       { status: 500 }
     );
   }

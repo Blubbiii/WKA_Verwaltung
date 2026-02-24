@@ -91,15 +91,15 @@ interface BillingRule {
 const RULE_TYPE_LABELS: Record<string, string> = {
   LEASE_PAYMENT: "Pachtzahlung",
   DISTRIBUTION: "Ausschuettung",
-  MANAGEMENT_FEE: "Verwaltungsgebuehr",
+  MANAGEMENT_FEE: "Verwaltungsgebühr",
   CUSTOM: "Benutzerdefiniert",
 };
 
 const FREQUENCY_LABELS: Record<string, string> = {
   MONTHLY: "Monatlich",
-  QUARTERLY: "Vierteljaehrlich",
-  SEMI_ANNUAL: "Halbjaehrlich",
-  ANNUAL: "Jaehrlich",
+  QUARTERLY: "Vierteljährlich",
+  SEMI_ANNUAL: "Halbjährlich",
+  ANNUAL: "Jährlich",
   CUSTOM_CRON: "Benutzerdefiniert",
 };
 
@@ -209,10 +209,10 @@ export default function BillingRulesPage() {
           fetchRules();
         }
       } else {
-        toast.error(result.errorMessage || "Ausfuehrung fehlgeschlagen");
+        toast.error(result.errorMessage || "Ausführung fehlgeschlagen");
       }
     } catch (error) {
-      toast.error("Fehler bei der Ausfuehrung");
+      toast.error("Fehler bei der Ausführung");
     }
   };
 
@@ -363,8 +363,8 @@ export default function BillingRulesPage() {
                   <TableHead>Typ</TableHead>
                   <TableHead>Frequenz</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Letzte Ausfuehrung</TableHead>
-                  <TableHead>Naechste Ausfuehrung</TableHead>
+                  <TableHead>Letzte Ausführung</TableHead>
+                  <TableHead>Nächste Ausführung</TableHead>
                   <TableHead className="w-[100px]">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
@@ -506,7 +506,7 @@ export default function BillingRulesPage() {
             disabled={pagination.page === 1}
             onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
           >
-            Zurueck
+            Zurück
           </Button>
           <span className="flex items-center px-4 text-sm text-muted-foreground">
             Seite {pagination.page} von {pagination.totalPages}
@@ -527,7 +527,7 @@ export default function BillingRulesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Regel deaktivieren</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechten Sie diese Abrechnungsregel wirklich deaktivieren? Die Regel wird nicht mehr automatisch ausgefuehrt.
+              Möchten Sie diese Abrechnungsregel wirklich deaktivieren? Die Regel wird nicht mehr automatisch ausgeführt.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

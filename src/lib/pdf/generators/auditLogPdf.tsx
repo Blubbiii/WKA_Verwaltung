@@ -5,7 +5,7 @@ import {
 } from "../templates/AuditLogTemplate";
 
 /**
- * Generiert ein PDF fuer den Audit-Log Export
+ * Generiert ein PDF für den Audit-Log Export
  *
  * @param data - Die Audit-Log Daten inklusive Logs, Filter und Statistiken
  * @returns Promise<Buffer> - PDF als Buffer
@@ -22,7 +22,7 @@ export async function generateAuditLogPdf(
 }
 
 /**
- * Generiert ein PDF fuer den Audit-Log Export als Base64
+ * Generiert ein PDF für den Audit-Log Export als Base64
  *
  * @param data - Die Audit-Log Daten inklusive Logs, Filter und Statistiken
  * @returns Promise<string> - PDF als Base64 String

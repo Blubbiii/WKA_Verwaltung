@@ -123,8 +123,8 @@ interface RecurringInvoicesResponse {
 const FREQUENCY_LABELS: Record<string, string> = {
   MONTHLY: "Monatlich",
   QUARTERLY: "Quartalweise",
-  SEMI_ANNUAL: "Halbjaehrlich",
-  ANNUAL: "Jaehrlich",
+  SEMI_ANNUAL: "Halbjährlich",
+  ANNUAL: "Jährlich",
 };
 
 const RECIPIENT_TYPE_LABELS: Record<string, string> = {
@@ -282,7 +282,7 @@ function CreateEditDialog({
       return;
     }
     if (!formData.recipientName.trim()) {
-      toast.error("Empfaengername ist erforderlich");
+      toast.error("Empfängername ist erforderlich");
       return;
     }
     if (formData.positions.length === 0) {
@@ -380,7 +380,7 @@ function CreateEditDialog({
             <Label htmlFor="ri-name">Name *</Label>
             <Input
               id="ri-name"
-              placeholder="z.B. Monatliche Verwaltungsgebuehr"
+              placeholder="z.B. Monatliche Verwaltungsgebühr"
               value={formData.name}
               onChange={(e) => updateField("name", e.target.value)}
             />
@@ -389,7 +389,7 @@ function CreateEditDialog({
           {/* Recipient */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Empfaengertyp</Label>
+              <Label>Empfängertyp</Label>
               <Select
                 value={formData.recipientType}
                 onValueChange={(v) => updateField("recipientType", v)}
@@ -424,10 +424,10 @@ function CreateEditDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="ri-recipient-name">Empfaenger *</Label>
+              <Label htmlFor="ri-recipient-name">Empfänger *</Label>
               <Input
                 id="ri-recipient-name"
-                placeholder="Name des Empfaengers"
+                placeholder="Name des Empfängers"
                 value={formData.recipientName}
                 onChange={(e) => updateField("recipientName", e.target.value)}
               />
@@ -561,8 +561,8 @@ function CreateEditDialog({
                 <SelectContent>
                   <SelectItem value="MONTHLY">Monatlich</SelectItem>
                   <SelectItem value="QUARTERLY">Quartalweise</SelectItem>
-                  <SelectItem value="SEMI_ANNUAL">Halbjaehrlich</SelectItem>
-                  <SelectItem value="ANNUAL">Jaehrlich</SelectItem>
+                  <SelectItem value="SEMI_ANNUAL">Halbjährlich</SelectItem>
+                  <SelectItem value="ANNUAL">Jährlich</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -598,7 +598,7 @@ function CreateEditDialog({
                 onChange={(e) => updateField("endDate", e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Leer lassen fuer unbefristete Laufzeit
+                Leer lassen für unbefristete Laufzeit
               </p>
             </div>
             <div className="flex items-center gap-3 pt-6">
@@ -714,14 +714,14 @@ export function RecurringInvoicesManager() {
       );
 
       if (!response.ok) {
-        throw new Error("Fehler beim Loeschen");
+        throw new Error("Fehler beim Löschen");
       }
 
       toast.success("Wiederkehrende Rechnung deaktiviert");
       setDeleteId(null);
       invalidate(["recurring-invoices"]);
     } catch (error) {
-      toast.error("Fehler beim Loeschen der wiederkehrenden Rechnung");
+      toast.error("Fehler beim Löschen der wiederkehrenden Rechnung");
     }
   }
 
@@ -779,10 +779,10 @@ export function RecurringInvoicesManager() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Empfaenger</TableHead>
+                  <TableHead>Empfänger</TableHead>
                   <TableHead className="text-right">Betrag (Netto)</TableHead>
                   <TableHead>Frequenz</TableHead>
-                  <TableHead>Naechste Ausfuehrung</TableHead>
+                  <TableHead>Nächste Ausführung</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Generiert</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
@@ -932,7 +932,7 @@ export function RecurringInvoicesManager() {
           {/* Last run info */}
           {recurringInvoices.some((ri) => ri.lastRunAt) && (
             <div className="mt-3 text-xs text-muted-foreground">
-              Letzte Ausfuehrung:{" "}
+              Letzte Ausführung:{" "}
               {(() => {
                 const lastRun = recurringInvoices
                   .filter((ri) => ri.lastRunAt)

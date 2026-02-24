@@ -75,7 +75,7 @@ export function GeneralConfigForm({
   );
   const [maintenanceMessage, setMaintenanceMessage] = useState(
     getConfigValue("general.maintenance.message") ||
-      "Das System wird gewartet. Bitte versuchen Sie es spaeter erneut."
+      "Das System wird gewartet. Bitte versuchen Sie es später erneut."
   );
 
   // UI state
@@ -185,7 +185,7 @@ export function GeneralConfigForm({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              Zeitzone fuer Datums- und Zeitanzeigen
+              Zeitzone für Datums- und Zeitanzeigen
             </p>
           </div>
         </div>
@@ -221,7 +221,7 @@ export function GeneralConfigForm({
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               <strong>Achtung:</strong> Der Wartungsmodus ist aktiviert! Normale
-              Benutzer koennen das System nicht verwenden.
+              Benutzer können das System nicht verwenden.
             </AlertDescription>
           </Alert>
         )}

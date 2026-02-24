@@ -46,7 +46,7 @@ export function DocumentSharedEmail({
       <Paragraph>Hallo {recipientName},</Paragraph>
 
       <Paragraph>
-        ein neues Dokument wurde fuer Sie bereitgestellt.
+        ein neues Dokument wurde für Sie bereitgestellt.
       </Paragraph>
 
       <InfoBox borderColor={primaryColor}>

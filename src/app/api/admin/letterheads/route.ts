@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createLetterheadSchema.parse(body);
 
-    // Wenn parkId gesetzt, pruefen ob Park existiert
+    // Wenn parkId gesetzt, prüfen ob Park existiert
     if (data.parkId) {
       const park = await prisma.park.findFirst({
         where: { id: data.parkId, tenantId: check.tenantId! },
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Wenn fundId gesetzt, pruefen ob Fund existiert
+    // Wenn fundId gesetzt, prüfen ob Fund existiert
     if (data.fundId) {
       const fund = await prisma.fund.findFirst({
         where: { id: data.fundId, tenantId: check.tenantId! },
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Wenn isDefault, andere Defaults im gleichen Scope zuruecksetzen
+    // Wenn isDefault, andere Defaults im gleichen Scope zurücksetzen
     if (data.isDefault) {
       await prisma.letterhead.updateMany({
         where: {

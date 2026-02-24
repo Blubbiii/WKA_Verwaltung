@@ -8,13 +8,13 @@ import { apiLogger as logger } from "@/lib/logger";
 /**
  * GET /api/portal/my-reports/[id]/download
  *
- * Generiert eine signierte URL fuer den Download eines Berichts.
+ * Generiert eine signierte URL für den Download eines Berichts.
  * Prueft ob der angemeldete Gesellschafter Zugriff auf das Dokument hat.
- * Erstellt einen Audit-Log-Eintrag fuer den Download.
+ * Erstellt einen Audit-Log-Eintrag für den Download.
  *
  * Query Parameters:
  * - redirect: wenn "true", wird direkt zur signierten URL weitergeleitet
- * - expiresIn: Gueltigkeitsdauer in Sekunden (Standard: 3600)
+ * - expiresIn: Gültigkeitsdauer in Sekunden (Standard: 3600)
  */
 export async function GET(
   request: NextRequest,

@@ -267,7 +267,7 @@ export function ParkMap({
         style={{ height }}
       >
         <div className="text-center text-muted-foreground">
-          <p className="text-sm">Keine Koordinaten verfuegbar</p>
+          <p className="text-sm">Keine Koordinaten verfügbar</p>
           <p className="text-xs mt-1">
             Fuegen Sie Koordinaten hinzu, um die Karte anzuzeigen
           </p>

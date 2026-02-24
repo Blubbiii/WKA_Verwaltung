@@ -99,7 +99,7 @@ export function HeatmapChart({
         )}
         <CardContent>
           <p className="text-sm text-muted-foreground text-center py-8">
-            Keine Daten verfuegbar
+            Keine Daten verfügbar
           </p>
         </CardContent>
       </Card>
@@ -184,7 +184,7 @@ export function HeatmapChart({
                             }}
                             aria-label={
                               onCellClick && hasData
-                                ? `${row.designation} - ${MONTH_LABELS[m - 1]}: ${valueFormatter(cell!.value)}. Klicken fuer Details.`
+                                ? `${row.designation} - ${MONTH_LABELS[m - 1]}: ${valueFormatter(cell!.value)}. Klicken für Details.`
                                 : undefined
                             }
                           />

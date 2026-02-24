@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     if (!contentValidation.valid) {
       return NextResponse.json(
         {
-          error: `Dateiinhalt ungueltig: ${contentValidation.reason || "Dateityp stimmt nicht mit dem Inhalt ueberein"}`,
+          error: `Dateiinhalt ungültig: ${contentValidation.reason || "Dateityp stimmt nicht mit dem Inhalt überein"}`,
         },
         { status: 400 }
       );

@@ -94,7 +94,7 @@ export function Header({ letterhead, layout, companyName }: HeaderProps) {
         </Text>
       )}
 
-      {/* Absenderzeile (unter dem Logo, ueber dem Adressfenster) */}
+      {/* Absenderzeile (unter dem Logo, über dem Adressfenster) */}
       {letterhead.senderAddress && (
         <Text style={[styles.senderLine, { marginLeft: letterhead.marginLeft }]}>
           {letterhead.senderAddress}

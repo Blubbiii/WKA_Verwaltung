@@ -150,8 +150,8 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
   if (data.overdueInvoices.count > 0) {
     actionItems.push({
       label: data.overdueInvoices.count === 1
-        ? "Rechnung ueberfaellig"
-        : "Rechnungen ueberfaellig",
+        ? "Rechnung überfällig"
+        : "Rechnungen überfällig",
       count: data.overdueInvoices.count,
       criticalCount: data.overdueInvoices.criticalCount,
       amount: data.overdueInvoices.totalAmount,
@@ -163,8 +163,8 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
   if (data.expiringContracts.count > 0) {
     actionItems.push({
       label: data.expiringContracts.count === 1
-        ? "Vertrag laeuft aus"
-        : "Vertraege laufen aus",
+        ? "Vertrag läuft aus"
+        : "Verträge laufen aus",
       count: data.expiringContracts.count,
       criticalCount: data.expiringContracts.criticalCount,
       href: "/contracts?status=EXPIRING",
@@ -187,7 +187,7 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
   if (data.expiringDocuments.count > 0) {
     actionItems.push({
       label: data.expiringDocuments.count === 1
-        ? "Dokument laeuft ab"
+        ? "Dokument läuft ab"
         : "Dokumente laufen ab",
       count: data.expiringDocuments.count,
       criticalCount: data.expiringDocuments.criticalCount,

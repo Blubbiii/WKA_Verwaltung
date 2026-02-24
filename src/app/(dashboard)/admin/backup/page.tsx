@@ -112,8 +112,8 @@ const exportTables = [
   { id: "shareholders", label: "Gesellschafter" },
   { id: "persons", label: "Personen" },
   { id: "plots", label: "Flurstuecke" },
-  { id: "leases", label: "Pachtvertraege" },
-  { id: "contracts", label: "Vertraege" },
+  { id: "leases", label: "Pachtverträge" },
+  { id: "contracts", label: "Verträge" },
   { id: "documents", label: "Dokumente" },
   { id: "invoices", label: "Rechnungen" },
   { id: "votes", label: "Abstimmungen" },
@@ -208,12 +208,12 @@ export default function BackupStoragePage() {
       });
 
       if (!response.ok) {
-        throw new Error("Fehler beim Loeschen des Backups");
+        throw new Error("Fehler beim Löschen des Backups");
       }
 
       await fetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler beim Loeschen des Backups");
+      setError(err instanceof Error ? err.message : "Fehler beim Löschen des Backups");
     } finally {
       setDeletingBackup(null);
     }
@@ -295,13 +295,13 @@ export default function BackupStoragePage() {
       });
 
       if (!response.ok) {
-        throw new Error("Fehler beim Loeschen temporaerer Dateien");
+        throw new Error("Fehler beim Löschen temporaerer Dateien");
       }
 
       const result = await response.json();
-      toast.info(`Geloeschte temporaere Dateien: ${result.deletedCount || 0}`);
+      toast.info(`Gelöschte temporaere Dateien: ${result.deletedCount || 0}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler beim Loeschen temporaerer Dateien");
+      setError(err instanceof Error ? err.message : "Fehler beim Löschen temporaerer Dateien");
     } finally {
       setDeletingTemp(false);
     }
@@ -486,7 +486,7 @@ export default function BackupStoragePage() {
                       <TableRow>
                         <TableHead>Datum/Zeit</TableHead>
                         <TableHead>Typ</TableHead>
-                        <TableHead>Groesse</TableHead>
+                        <TableHead>Größe</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Aktionen</TableHead>
                       </TableRow>
@@ -688,7 +688,7 @@ export default function BackupStoragePage() {
                         </p>
                       </div>
                       <div className="rounded-lg border p-4">
-                        <p className="text-sm text-muted-foreground">Durchschnittliche Groesse</p>
+                        <p className="text-sm text-muted-foreground">Durchschnittliche Größe</p>
                         <p className="text-2xl font-bold">
                           {formatBytes(data.storageStats.averageFileSizeBytes)}
                         </p>
@@ -698,7 +698,7 @@ export default function BackupStoragePage() {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <HardDrive className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Keine Daten verfuegbar</p>
+                    <p>Keine Daten verfügbar</p>
                   </div>
                 )}
               </CardContent>
@@ -726,7 +726,7 @@ export default function BackupStoragePage() {
                       <TableRow>
                         <TableHead>Kategorie</TableHead>
                         <TableHead className="text-right">Anzahl</TableHead>
-                        <TableHead className="text-right">Groesse</TableHead>
+                        <TableHead className="text-right">Größe</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -817,7 +817,7 @@ export default function BackupStoragePage() {
                     <div className="flex items-start gap-3">
                       <Trash2 className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div className="flex-1">
-                        <h4 className="font-medium">Temporaere Dateien loeschen</h4>
+                        <h4 className="font-medium">Temporaere Dateien löschen</h4>
                         <p className="text-sm text-muted-foreground mb-3">
                           Entfernt temporaere Uploads
                         </p>
@@ -832,7 +832,7 @@ export default function BackupStoragePage() {
                           ) : (
                             <Trash2 className="mr-2 h-4 w-4" />
                           )}
-                          Loeschen
+                          Löschen
                         </Button>
                       </div>
                     </div>
@@ -852,7 +852,7 @@ export default function BackupStoragePage() {
                 Datenexport
               </CardTitle>
               <CardDescription>
-                Exportieren Sie Ihre Daten fuer DSGVO-Compliance oder Backup-Zwecke
+                Exportieren Sie Ihre Daten für DSGVO-Compliance oder Backup-Zwecke
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -873,7 +873,7 @@ export default function BackupStoragePage() {
                       <div>
                         <p className="font-medium">JSON</p>
                         <p className="text-sm text-muted-foreground">
-                          Strukturiertes Format, ideal fuer Entwickler
+                          Strukturiertes Format, ideal für Entwickler
                         </p>
                       </div>
                     </div>
@@ -889,7 +889,7 @@ export default function BackupStoragePage() {
                       <div>
                         <p className="font-medium">CSV</p>
                         <p className="text-sm text-muted-foreground">
-                          Tabellenformat, ideal fuer Excel
+                          Tabellenformat, ideal für Excel
                         </p>
                       </div>
                     </div>

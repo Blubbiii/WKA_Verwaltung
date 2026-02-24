@@ -2,7 +2,7 @@
 
 /**
  * ExecutionLog Component
- * Zeigt die Ausfuehrungshistorie einer Billing Rule
+ * Zeigt die Ausführungshistorie einer Billing Rule
  */
 
 import { useState } from "react";
@@ -218,7 +218,7 @@ function ExecutionRow({ execution }: { execution: ExecutionData }) {
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Uebersprungen</p>
+                      <p className="text-muted-foreground">Übersprungen</p>
                       <p className="font-medium text-gray-600">
                         {execution.details.summary.skipped}
                       </p>
@@ -235,7 +235,7 @@ function ExecutionRow({ execution }: { execution: ExecutionData }) {
                         <TableHeader>
                           <TableRow>
                             <TableHead className="w-[100px]">Status</TableHead>
-                            <TableHead>Empfaenger</TableHead>
+                            <TableHead>Empfänger</TableHead>
                             <TableHead>Rechnungsnr.</TableHead>
                             <TableHead className="text-right">Betrag</TableHead>
                           </TableRow>
@@ -292,7 +292,7 @@ export function ExecutionLog({ executions, isLoading, statistics }: ExecutionLog
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Ausfuehrungshistorie</CardTitle>
+          <CardTitle>Ausführungshistorie</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -308,7 +308,7 @@ export function ExecutionLog({ executions, isLoading, statistics }: ExecutionLog
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Ausfuehrungshistorie</CardTitle>
+        <CardTitle>Ausführungshistorie</CardTitle>
         {statistics && (
           <div className="flex gap-4 text-sm">
             <div className="flex items-center gap-1">
@@ -330,8 +330,8 @@ export function ExecutionLog({ executions, isLoading, statistics }: ExecutionLog
         {executions.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Keine Ausfuehrungen vorhanden</p>
-            <p className="text-sm">Diese Regel wurde noch nicht ausgefuehrt.</p>
+            <p>Keine Ausführungen vorhanden</p>
+            <p className="text-sm">Diese Regel wurde noch nicht ausgeführt.</p>
           </div>
         ) : (
           <>

@@ -211,7 +211,7 @@ function getDefaultSubject(
     case 'welcome':
       return `Willkommen bei ${tenantName}`;
     case 'password-reset':
-      return `Passwort zuruecksetzen - ${tenantName}`;
+      return `Passwort zurücksetzen - ${tenantName}`;
     case 'new-invoice':
       return `Neue Rechnung ${props.invoiceNumber || ''} - ${tenantName}`;
     case 'vote-invitation':
@@ -381,7 +381,7 @@ export function getSampleData(templateName: SupportedTemplateName): Record<strin
         shareholderName: 'Max Mustermann',
         voteName: 'Jahresabschluss 2025',
         voteDescription:
-          'Abstimmung ueber die Feststellung des Jahresabschlusses 2025 und die Verwendung des Ergebnisses.',
+          'Abstimmung über die Feststellung des Jahresabschlusses 2025 und die Verwendung des Ergebnisses.',
         deadline: '31.03.2026, 18:00 Uhr',
         voteUrl: `${baseUrl}/portal/votes/sample-vote`,
       };
@@ -402,7 +402,7 @@ export function getSampleData(templateName: SupportedTemplateName): Record<strin
       return {
         shareholderName: 'Max Mustermann',
         voteName: 'Jahresabschluss 2025',
-        voteDescription: 'Abstimmung ueber die Feststellung des Jahresabschlusses 2025.',
+        voteDescription: 'Abstimmung über die Feststellung des Jahresabschlusses 2025.',
         deadline: '31.03.2026, 18:00 Uhr',
         voteUrl: `${baseUrl}/portal/votes/sample-vote`,
       };

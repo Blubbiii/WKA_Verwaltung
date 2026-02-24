@@ -105,7 +105,7 @@ export function PropertiesPanel({
 
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Schriftgroesse</Label>
+            <Label className="text-[10px] text-muted-foreground">Schriftgröße</Label>
             <Input
               type="number"
               min={6}
@@ -207,7 +207,7 @@ export function PropertiesPanel({
         <>
           <Separator />
           <div className="space-y-2">
-            <Label className="text-xs font-medium">Verfuegbare Platzhalter</Label>
+            <Label className="text-xs font-medium">Verfügbare Platzhalter</Label>
             <div className="flex flex-wrap gap-1">
               {mergeVars.map((v) => (
                 <Badge key={v.key} variant="outline" className="text-[10px] font-mono cursor-help" title={v.label}>
@@ -368,7 +368,7 @@ function LayoutProperties({
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Standard-Schriftgroesse</Label>
+            <Label className="text-[10px] text-muted-foreground">Standard-Schriftgröße</Label>
             <Input
               type="number"
               min={8}
@@ -458,7 +458,7 @@ function BlockConfigEditor({
     case "RECIPIENT_ADDRESS":
       return (
         <div className="space-y-2">
-          <Label className="text-xs font-medium">Empfaenger</Label>
+          <Label className="text-xs font-medium">Empfänger</Label>
           <ConfigSwitch label="Fensterumschlag (DIN 5008)" value={config.showWindow as boolean} onChange={(v) => updateConfig("showWindow", v)} />
         </div>
       );
@@ -469,7 +469,7 @@ function BlockConfigEditor({
           <Label className="text-xs font-medium">Angezeigte Felder</Label>
           <ConfigSwitch label="Rechnungsnummer" value={config.showInvoiceNumber as boolean} onChange={(v) => updateConfig("showInvoiceNumber", v)} />
           <ConfigSwitch label="Rechnungsdatum" value={config.showDate as boolean} onChange={(v) => updateConfig("showDate", v)} />
-          <ConfigSwitch label="Faelligkeitsdatum" value={config.showDueDate as boolean} onChange={(v) => updateConfig("showDueDate", v)} />
+          <ConfigSwitch label="Fälligkeitsdatum" value={config.showDueDate as boolean} onChange={(v) => updateConfig("showDueDate", v)} />
           <ConfigSwitch label="Leistungszeitraum" value={config.showServicePeriod as boolean} onChange={(v) => updateConfig("showServicePeriod", v)} />
           <ConfigSwitch label="Kundennummer" value={config.showCustomerNumber as boolean} onChange={(v) => updateConfig("showCustomerNumber", v)} />
           <ConfigSwitch label="Zahlungsreferenz" value={config.showPaymentReference as boolean} onChange={(v) => updateConfig("showPaymentReference", v)} />

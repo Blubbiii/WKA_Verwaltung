@@ -11,7 +11,7 @@ const BCRYPT_SALT_ROUNDS = 12;
 
 // Validation Schema
 const resetPasswordSchema = z.object({
-  token: z.string().uuid("Ungueltiger Token"),
+  token: z.string().uuid("Ungültiger Token"),
   password: z
     .string()
     .min(PASSWORD_MIN_LENGTH, `Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen lang sein`)
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "Ungueltiger oder abgelaufener Token. Bitte fordern Sie einen neuen Reset-Link an.",
+          error: "Ungültiger oder abgelaufener Token. Bitte fordern Sie einen neuen Reset-Link an.",
         },
         { status: 400 }
       );
@@ -141,7 +141,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: true,
-        message: "Passwort wurde erfolgreich zurueckgesetzt. Sie koennen sich jetzt anmelden.",
+        message: "Passwort wurde erfolgreich zurückgesetzt. Sie können sich jetzt anmelden.",
       },
       { status: 200 }
     );
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es spaeter erneut.",
+        error: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
       },
       { status: 500 }
     );

@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     // Validate format
     if (!["json", "xlsx", "csv"].includes(format)) {
       return NextResponse.json(
-        { error: `Ungueltiges Format: ${format}. Unterstuetzte Formate: json, xlsx, csv` },
+        { error: `Ungültiges Format: ${format}. Unterstuetzte Formate: json, xlsx, csv` },
         { status: 400 }
       );
     }

@@ -165,7 +165,7 @@ export async function POST(
       },
     });
 
-    // Cache invalidieren da sich die Permissions des Users geaendert haben
+    // Cache invalidieren da sich die Permissions des Users geändert haben
     invalidateUser(id);
 
     return NextResponse.json(assignment, { status: 201 });
@@ -249,7 +249,7 @@ export async function DELETE(
       where: { id: assignment.id },
     });
 
-    // Cache invalidieren da sich die Permissions des Users geaendert haben
+    // Cache invalidieren da sich die Permissions des Users geändert haben
     invalidateUser(id);
 
     return NextResponse.json({ success: true });

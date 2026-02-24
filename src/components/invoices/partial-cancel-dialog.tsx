@@ -136,12 +136,12 @@ export function PartialCancelDialog({
       const cancelQty = parseFloat(positions[i].cancelQuantity);
 
       if (isNaN(cancelQty) || cancelQty <= 0) {
-        validationError = `Position ${item.position}: Ungueltige Menge`;
+        validationError = `Position ${item.position}: Ungültige Menge`;
         continue;
       }
 
       if (cancelQty > item.quantity) {
-        validationError = `Position ${item.position}: Menge (${cancelQty}) uebersteigt Original (${item.quantity})`;
+        validationError = `Position ${item.position}: Menge (${cancelQty}) übersteigt Original (${item.quantity})`;
         continue;
       }
 
@@ -243,7 +243,7 @@ export function PartialCancelDialog({
         <DialogHeader>
           <DialogTitle>Teilstorno erstellen</DialogTitle>
           <DialogDescription>
-            Erstellen Sie eine Teilstornierung fuer {invoiceNumber}. Waehlen Sie die
+            Erstellen Sie eine Teilstornierung für {invoiceNumber}. Waehlen Sie die
             zu stornierenden Positionen und optional eine reduzierte Menge.
           </DialogDescription>
         </DialogHeader>

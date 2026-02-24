@@ -111,7 +111,7 @@ const ACTION_OPTIONS: { value: string; label: string }[] = [
   { value: "ALL", label: "Alle Aktionen" },
   { value: "CREATE", label: "Erstellt" },
   { value: "UPDATE", label: "Bearbeitet" },
-  { value: "DELETE", label: "Geloescht" },
+  { value: "DELETE", label: "Gelöscht" },
   { value: "VIEW", label: "Angesehen" },
   { value: "EXPORT", label: "Exportiert" },
   { value: "DOCUMENT_DOWNLOAD", label: "Heruntergeladen" },
@@ -503,7 +503,7 @@ function AuditLogsContent() {
               {hasActiveFilters && (
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
                   <X className="mr-2 h-4 w-4" />
-                  Filter zuruecksetzen
+                  Filter zurücksetzen
                 </Button>
               )}
             </div>
@@ -560,7 +560,7 @@ function AuditLogsContent() {
                       type="button"
                       onClick={() => setSearchText("")}
                       className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Suche loeschen"
+                      aria-label="Suche löschen"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -706,11 +706,11 @@ function AuditLogsContent() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Protokolleintraege</CardTitle>
+              <CardTitle>Protokolleinträge</CardTitle>
               <CardDescription>
                 {pagination
-                  ? `${pagination.totalCount} Eintraege gefunden`
-                  : "Lade Eintraege..."}
+                  ? `${pagination.totalCount} Einträge gefunden`
+                  : "Lade Einträge..."}
               </CardDescription>
             </div>
           </div>
@@ -789,7 +789,7 @@ function AuditLogsContent() {
                           onClick={clearFilters}
                           className="mt-2"
                         >
-                          Filter zuruecksetzen
+                          Filter zurücksetzen
                         </Button>
                       )}
                     </TableCell>
@@ -864,7 +864,7 @@ function AuditLogsContent() {
             <div className="flex items-center justify-between border-t pt-4 mt-4">
               <p className="text-sm text-muted-foreground">
                 Seite {pagination.page} von {pagination.totalPages} (
-                {pagination.totalCount} Eintraege)
+                {pagination.totalCount} Einträge)
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -874,7 +874,7 @@ function AuditLogsContent() {
                   disabled={!pagination.hasPrevPage || loading}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Zurueck
+                  Zurück
                 </Button>
                 <Button
                   variant="outline"
@@ -969,7 +969,7 @@ function AuditLogsContent() {
                   <div>
                     <span className="text-muted-foreground">IP-Adresse:</span>{" "}
                     <span className="font-mono">
-                      {selectedLog.ipAddress || "Nicht verfuegbar"}
+                      {selectedLog.ipAddress || "Nicht verfügbar"}
                     </span>
                   </div>
                   <div>
@@ -1009,7 +1009,7 @@ function AuditLogsContent() {
               {/* No data message */}
               {!selectedLog.oldValues && !selectedLog.newValues && (
                 <div className="text-center text-muted-foreground py-4">
-                  <p>Keine Aenderungsdaten verfuegbar</p>
+                  <p>Keine Änderungsdaten verfügbar</p>
                 </div>
               )}
             </div>

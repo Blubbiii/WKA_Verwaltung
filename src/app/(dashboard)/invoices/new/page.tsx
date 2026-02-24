@@ -121,7 +121,7 @@ function NewInvoiceContent() {
   const [templateTargetItemId, setTemplateTargetItemId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Lade Parks und Gesellschaften fuer Dropdown
+    // Lade Parks und Gesellschaften für Dropdown
     fetch("/api/parks?limit=100")
       .then((res) => res.json())
       .then((data) => setParks(data.data || []))
@@ -207,7 +207,7 @@ function NewInvoiceContent() {
 
     // Validierung
     if (!formData.recipientName.trim()) {
-      toast.error("Empfaengername erforderlich");
+      toast.error("Empfängername erforderlich");
       return;
     }
 
@@ -334,12 +334,12 @@ function NewInvoiceContent() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Linke Spalte: Empfaenger & Datum */}
+        {/* Linke Spalte: Empfänger & Datum */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Empfaenger */}
+          {/* Empfänger */}
           <Card>
             <CardHeader>
-              <CardTitle>Empfaenger</CardTitle>
+              <CardTitle>Empfänger</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -369,7 +369,7 @@ function NewInvoiceContent() {
                       onChange={(e) =>
                         setFormData({ ...formData, recipientName: e.target.value })
                       }
-                      placeholder="Name des Empfaengers"
+                      placeholder="Name des Empfängers"
                       required
                       className="pr-10"
                     />
@@ -618,7 +618,7 @@ function NewInvoiceContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dueDate">Faelligkeitsdatum</Label>
+                <Label htmlFor="dueDate">Fälligkeitsdatum</Label>
                 <Input
                   id="dueDate"
                   type="date"

@@ -102,14 +102,14 @@ interface Fund {
 const REPORT_TYPE_LABELS: Record<string, string> = {
   MONTHLY_PRODUCTION: "Monatliche Produktion",
   QUARTERLY_FINANCIAL: "Quartalsweise Finanzen",
-  ANNUAL_SUMMARY: "Jahresuebersicht",
+  ANNUAL_SUMMARY: "Jahresübersicht",
   CUSTOM: "Benutzerdefiniert",
 };
 
 const SCHEDULE_LABELS: Record<string, string> = {
   MONTHLY: "Monatlich",
   QUARTERLY: "Quartalsweise",
-  ANNUALLY: "Jaehrlich",
+  ANNUALLY: "Jährlich",
 };
 
 // ===========================================
@@ -217,7 +217,7 @@ export function ScheduledReportsManager() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const invalidEmails = recipientList.filter((e) => !emailRegex.test(e));
     if (invalidEmails.length > 0) {
-      toast.error(`Ungueltige E-Mail-Adresse(n): ${invalidEmails.join(", ")}`);
+      toast.error(`Ungültige E-Mail-Adresse(n): ${invalidEmails.join(", ")}`);
       return;
     }
 
@@ -308,15 +308,15 @@ export function ScheduledReportsManager() {
       );
 
       if (!response.ok) {
-        throw new Error("Fehler beim Loeschen");
+        throw new Error("Fehler beim Löschen");
       }
 
-      toast.success("Geplanter Bericht wurde geloescht");
+      toast.success("Geplanter Bericht wurde gelöscht");
       setDeleteDialogOpen(false);
       setDeletingReport(null);
       fetchReports();
     } catch {
-      toast.error("Fehler beim Loeschen des geplanten Berichts");
+      toast.error("Fehler beim Löschen des geplanten Berichts");
     }
   }
 
@@ -374,7 +374,7 @@ export function ScheduledReportsManager() {
             </CardTitle>
             <CardDescription>
               Automatische Berichterstellung nach Zeitplan. Berichte werden
-              generiert und per E-Mail an die Empfaenger versendet.
+              generiert und per E-Mail an die Empfänger versendet.
             </CardDescription>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -488,7 +488,7 @@ export function ScheduledReportsManager() {
                 {/* Recipients */}
                 <div className="grid gap-2">
                   <Label htmlFor="recipients">
-                    Empfaenger (E-Mail-Adressen, kommagetrennt)
+                    Empfänger (E-Mail-Adressen, kommagetrennt)
                   </Label>
                   <Input
                     id="recipients"
@@ -552,9 +552,9 @@ export function ScheduledReportsManager() {
                   <TableHead>Typ</TableHead>
                   <TableHead>Zeitplan</TableHead>
                   <TableHead>Park</TableHead>
-                  <TableHead>Empfaenger</TableHead>
-                  <TableHead>Letzte Ausfuehrung</TableHead>
-                  <TableHead>Naechste Ausfuehrung</TableHead>
+                  <TableHead>Empfänger</TableHead>
+                  <TableHead>Letzte Ausführung</TableHead>
+                  <TableHead>Nächste Ausführung</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
@@ -596,7 +596,7 @@ export function ScheduledReportsManager() {
                         </div>
                       ) : (
                         <span className="text-muted-foreground/60">
-                          Noch nicht ausgefuehrt
+                          Noch nicht ausgeführt
                         </span>
                       )}
                     </TableCell>
@@ -656,8 +656,8 @@ export function ScheduledReportsManager() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        title="Geplanten Bericht loeschen"
-        description={`Moechten Sie den geplanten Bericht "${deletingReport?.name}" wirklich loeschen? Diese Aktion kann nicht rueckgaengig gemacht werden.`}
+        title="Geplanten Bericht löschen"
+        description={`Möchten Sie den geplanten Bericht "${deletingReport?.name}" wirklich löschen? Diese Aktion kann nicht rueckgaengig gemacht werden.`}
       />
     </Card>
   );

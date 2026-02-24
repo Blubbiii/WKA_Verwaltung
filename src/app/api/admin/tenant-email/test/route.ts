@@ -26,7 +26,7 @@ const testRequestSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("email"),
-    recipient: z.string().email("Ungueltige Empfaenger-E-Mail-Adresse"),
+    recipient: z.string().email("Ungültige Empfänger-E-Mail-Adresse"),
   }),
 ]);
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         success,
         message: success
           ? "SMTP-Verbindung erfolgreich hergestellt"
-          : "SMTP-Verbindung fehlgeschlagen. Bitte pruefen Sie die Zugangsdaten.",
+          : "SMTP-Verbindung fehlgeschlagen. Bitte prüfen Sie die Zugangsdaten.",
       });
     }
 

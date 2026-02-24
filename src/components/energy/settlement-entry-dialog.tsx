@@ -355,14 +355,14 @@ export function SettlementEntryDialog({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Leer lassen fuer eine Jahresabrechnung
+                Leer lassen für eine Jahresabrechnung
               </p>
             </div>
           </div>
 
           {/* EEG */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">EEG-Verguetung</Label>
+            <Label className="text-sm font-semibold">EEG-Vergütung</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="sett-eeg-prod" className="text-xs text-muted-foreground">
@@ -380,7 +380,7 @@ export function SettlementEntryDialog({
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sett-eeg-rev" className="text-xs text-muted-foreground">
-                  Erloese EUR (EEG)
+                  Erlöse EUR (EEG)
                 </Label>
                 <Input
                   id="sett-eeg-rev"
@@ -415,7 +415,7 @@ export function SettlementEntryDialog({
               </div>
               <div className="space-y-1">
                 <Label htmlFor="sett-dv-rev" className="text-xs text-muted-foreground">
-                  Erloese EUR (DV)
+                  Erlöse EUR (DV)
                 </Label>
                 <Input
                   id="sett-dv-rev"
@@ -438,7 +438,7 @@ export function SettlementEntryDialog({
                 <span className="font-medium">{totalProductionKwh.toLocaleString('de-DE')} kWh</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Gesamt Erloese:</span>
+                <span className="text-muted-foreground">Gesamt Erlöse:</span>
                 <span className="font-medium">{totalRevenueEur.toLocaleString('de-DE', { minimumFractionDigits: 2 })} EUR</span>
               </div>
             </div>

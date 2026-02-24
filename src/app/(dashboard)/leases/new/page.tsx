@@ -1359,7 +1359,7 @@ export default function NewLeaseWizardPage() {
               <div>
                 <Label className="text-base">Abrechnungsintervall</Label>
                 <p className="text-sm text-muted-foreground">
-                  Bestimmt wie oft Mindestpacht-Vorschuesse erstellt werden
+                  Bestimmt wie oft Mindestpacht-Vorschüsse erstellt werden
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -1378,7 +1378,7 @@ export default function NewLeaseWizardPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ANNUAL">Jaehrlich</SelectItem>
+                      <SelectItem value="ANNUAL">Jährlich</SelectItem>
                       <SelectItem value="QUARTERLY">Quartalsweise</SelectItem>
                       <SelectItem value="MONTHLY">Monatlich</SelectItem>
                     </SelectContent>
@@ -1449,7 +1449,7 @@ export default function NewLeaseWizardPage() {
               <div>
                 <Label className="text-base">Nutzungsart der Flaechen</Label>
                 <p className="text-sm text-muted-foreground">
-                  Waehlen Sie die Art der Flaechennutzung und geben Sie die jeweilige Groesse ein
+                  Waehlen Sie die Art der Flaechennutzung und geben Sie die jeweilige Größe ein
                 </p>
               </div>
               <div className="space-y-3">
@@ -1660,7 +1660,7 @@ export default function NewLeaseWizardPage() {
                         ? "einmalig"
                         : contractData.waitingMoneySchedule === "monthly"
                           ? "monatlich"
-                          : "jaehrlich"}
+                          : "jährlich"}
                     </p>
                   </div>
                 )}
@@ -1669,7 +1669,7 @@ export default function NewLeaseWizardPage() {
                   <p className="text-xs text-muted-foreground">Abrechnungsintervall</p>
                   <p className="font-medium">
                     {contractData.billingInterval === "ANNUAL"
-                      ? "Jaehrlich"
+                      ? "Jährlich"
                       : contractData.billingInterval === "QUARTERLY"
                         ? "Quartalsweise"
                         : "Monatlich"}

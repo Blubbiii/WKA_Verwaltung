@@ -14,7 +14,7 @@ export const INVOICE_STATUS: Record<string, BadgeVariant> = {
   SENT: { label: "Versendet", className: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200" },
   PAID: { label: "Bezahlt", className: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200" },
   CANCELLED: { label: "Storniert", className: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200" },
-  OVERDUE: { label: "Ueberfaellig", className: "bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200" },
+  OVERDUE: { label: "Überfällig", className: "bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200" },
 };
 
 // ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ export const INVOICE_STATUS: Record<string, BadgeVariant> = {
 export const CONTRACT_STATUS: Record<string, BadgeVariant> = {
   DRAFT: { label: "Entwurf", className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200" },
   ACTIVE: { label: "Aktiv", className: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200" },
-  EXPIRING: { label: "Laeuft aus", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200" },
+  EXPIRING: { label: "Läuft aus", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200" },
   EXPIRED: { label: "Abgelaufen", className: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200" },
   TERMINATED: { label: "Gekuendigt", className: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200" },
 };
@@ -51,7 +51,7 @@ export const VOTE_STATUS: Record<string, BadgeVariant> = {
 // ---------------------------------------------------------------------------
 export const DISTRIBUTION_STATUS: Record<string, BadgeVariant> = {
   DRAFT: { label: "Entwurf", className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200" },
-  EXECUTED: { label: "Ausgefuehrt", className: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200" },
+  EXECUTED: { label: "Ausgeführt", className: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200" },
   CANCELLED: { label: "Storniert", className: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200" },
 };
 
@@ -61,7 +61,7 @@ export const DISTRIBUTION_STATUS: Record<string, BadgeVariant> = {
 export const PAYMENT_STATUS: Record<string, BadgeVariant> = {
   pending: { label: "Offen", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200" },
   paid: { label: "Bezahlt", className: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200" },
-  overdue: { label: "Ueberfaellig", className: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200" },
+  overdue: { label: "Überfällig", className: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200" },
 };
 
 // ---------------------------------------------------------------------------

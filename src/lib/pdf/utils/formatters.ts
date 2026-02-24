@@ -1,5 +1,5 @@
 /**
- * Formatierungsfunktionen fuer PDF-Dokumente
+ * Formatierungsfunktionen für PDF-Dokumente
  */
 
 // Re-export centralized formatCurrency
@@ -65,7 +65,7 @@ export function formatAddress(
 }
 
 /**
- * Generiert die Absenderzeile fuer das Adressfenster
+ * Generiert die Absenderzeile für das Adressfenster
  */
 export function formatSenderLine(
   companyName: string,

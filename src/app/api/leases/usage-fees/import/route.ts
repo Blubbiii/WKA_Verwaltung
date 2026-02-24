@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     if (existing) {
       return NextResponse.json(
         {
-          error: "Fuer diesen Park und dieses Jahr existiert bereits eine Abrechnung",
+          error: "Für diesen Park und dieses Jahr existiert bereits eine Abrechnung",
         },
         { status: 409 }
       );

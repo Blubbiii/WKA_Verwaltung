@@ -186,7 +186,7 @@ export function TopologyToolbar({
         </Button>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onZoomReset}>
           <Maximize className="h-4 w-4" />
-          <span className="sr-only">Zoom zuruecksetzen</span>
+          <span className="sr-only">Zoom zurücksetzen</span>
         </Button>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onZoomIn}>
           <ZoomIn className="h-4 w-4" />

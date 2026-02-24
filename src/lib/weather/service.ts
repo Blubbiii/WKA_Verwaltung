@@ -226,7 +226,7 @@ async function getWeatherFromDatabase(
 
   if (!latestData) {
     throw new WeatherApiError(
-      "Keine Wetterdaten verfuegbar. Bitte stellen Sie sicher, dass ein API-Schluessel konfiguriert ist.",
+      "Keine Wetterdaten verfügbar. Bitte stellen Sie sicher, dass ein API-Schluessel konfiguriert ist.",
       503,
       { code: WeatherErrorCode.API_ERROR }
     );

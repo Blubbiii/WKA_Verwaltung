@@ -58,7 +58,7 @@ export interface Distribution {
 }
 
 /**
- * Hook fuer alle Ausschuettungen einer Gesellschaft
+ * Hook für alle Ausschuettungen einer Gesellschaft
  */
 export function useDistributions(fundId: string | null) {
   const { data, error, isLoading, mutate } = useSWR<Distribution[]>(
@@ -77,7 +77,7 @@ export function useDistributions(fundId: string | null) {
 }
 
 /**
- * Hook fuer eine einzelne Ausschuettung
+ * Hook für eine einzelne Ausschuettung
  */
 export function useDistribution(fundId: string | null, distributionId: string | null) {
   const { data, error, isLoading, mutate } = useSWR<Distribution>(
@@ -161,7 +161,7 @@ export async function deleteDistribution(
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.error || "Fehler beim Loeschen");
+    throw new Error(error.error || "Fehler beim Löschen");
   }
 }
 
@@ -173,7 +173,7 @@ export const distributionStatusLabels: Record<string, string> = Object.fromEntri
 );
 
 /**
- * Status-Farben fuer Badges (re-exported from central config for backward compatibility)
+ * Status-Farben für Badges (re-exported from central config for backward compatibility)
  */
 export const distributionStatusColors: Record<string, string> = Object.fromEntries(
   Object.entries(DISTRIBUTION_STATUS).map(([key, value]) => [key, value.className])

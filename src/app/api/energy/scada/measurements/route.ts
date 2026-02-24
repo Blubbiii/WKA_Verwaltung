@@ -5,7 +5,7 @@ import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
 // GET /api/energy/scada/measurements - SCADA-Messdaten abfragen
-// Liefert Zeitreihen-Daten fuer Analyse-Charts im Frontend
+// Liefert Zeitreihen-Daten für Analyse-Charts im Frontend
 // =============================================================================
 
 export async function GET(request: NextRequest) {
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       const fromDate = new Date(from);
       if (isNaN(fromDate.getTime())) {
         return NextResponse.json(
-          { error: "Ungueltiges Datum fuer 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
+          { error: "Ungültiges Datum für 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
           { status: 400 }
         );
       }
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       const toDate = new Date(to);
       if (isNaN(toDate.getTime())) {
         return NextResponse.json(
-          { error: "Ungueltiges Datum fuer 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
+          { error: "Ungültiges Datum für 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
           { status: 400 }
         );
       }

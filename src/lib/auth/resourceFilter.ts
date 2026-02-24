@@ -27,16 +27,16 @@ export interface FilteredResult<T> {
  * Filtert eine Liste von Items basierend auf User-Zugriffsrechten
  *
  * Logik:
- * 1. Prueft ob User globale Permission hat -> alle Items zurueck
+ * 1. Prueft ob User globale Permission hat -> alle Items zurück
  * 2. Wenn ressourcenbeschraenkt -> filtert nach erlaubten IDs aus Rolle
- * 3. Zusaetzlich: Items mit direktem ResourceAccess werden hinzugefuegt
+ * 3. Zusätzlich: Items mit direktem ResourceAccess werden hinzugefügt
  *
  * @param userId - ID des Benutzers
  * @param items - Liste der zu filternden Items
  * @param resourceType - Typ der Ressource (PARK, FUND, etc.)
  * @param idField - Name des ID-Felds in den Items (default: "id")
- * @param permission - Benoetigte Permission (z.B. "parks:read")
- * @param minAccessLevel - Mindest-Level fuer direkten ResourceAccess
+ * @param permission - Benötigte Permission (z.B. "parks:read")
+ * @param minAccessLevel - Mindest-Level für direkten ResourceAccess
  */
 export async function filterByResourceAccess<T extends Record<string, unknown>>(
   userId: string,
@@ -75,7 +75,7 @@ export async function filterByResourceAccess<T extends Record<string, unknown>>(
 
   // 3. Kombiniere erlaubte IDs
   if (hasGlobalAccess) {
-    // Globaler Zugriff - alle zurueck
+    // Globaler Zugriff - alle zurück
     return {
       items,
       totalCount,
@@ -105,7 +105,7 @@ export async function filterByResourceAccess<T extends Record<string, unknown>>(
 }
 
 /**
- * Prueft fuer ein einzelnes Item ob Zugriff erlaubt ist
+ * Prueft für ein einzelnes Item ob Zugriff erlaubt ist
  */
 export async function hasAccessToItem(
   userId: string,
@@ -170,7 +170,7 @@ export async function getAllAccessibleIds(
 // ============================================================================
 
 /**
- * Erstellt eine Prisma WHERE-Clause fuer ressourcenbasierte Filterung
+ * Erstellt eine Prisma WHERE-Clause für ressourcenbasierte Filterung
  *
  * Kann direkt in Prisma-Queries verwendet werden:
  *
@@ -225,7 +225,7 @@ export async function extendWhereWithResourceFilter(
   );
 
   if (!resourceWhere) {
-    // Keine Einschraenkung - Original zurueckgeben
+    // Keine Einschraenkung - Original zurückgeben
     return existingWhere;
   }
 
@@ -241,7 +241,7 @@ export async function extendWhereWithResourceFilter(
 
 /**
  * Prueft ob ein User Admin-Level Zugriff auf eine Ressource hat
- * (fuer Bearbeiten/Loeschen Operationen)
+ * (für Bearbeiten/Löschen Operationen)
  */
 export async function hasWriteAccess(
   userId: string,
@@ -254,7 +254,7 @@ export async function hasWriteAccess(
 
 /**
  * Prueft ob ein User Admin-Level Zugriff auf eine Ressource hat
- * (fuer Verwalten/Admin Operationen)
+ * (für Verwalten/Admin Operationen)
  */
 export async function hasAdminAccess(
   userId: string,
@@ -295,7 +295,7 @@ export async function filterAccessibleIds(
 // ============================================================================
 
 /**
- * Prueft Zugriff auf uebergeordnete Ressource
+ * Prueft Zugriff auf übergeordnete Ressource
  * z.B. Turbine gehoert zu Park - Zugriff auf Park = Zugriff auf Turbine
  *
  * @param userId - ID des Benutzers
@@ -303,7 +303,7 @@ export async function filterAccessibleIds(
  * @param childResourceId - ID der Kind-Ressource
  * @param parentResourceType - Typ der Eltern-Ressource (z.B. PARK)
  * @param getParentId - Funktion um Parent-ID zu ermitteln
- * @param permission - Optional: Permission fuer Parent
+ * @param permission - Optional: Permission für Parent
  */
 export async function hasAccessViaParent(
   userId: string,
@@ -317,7 +317,7 @@ export async function hasAccessViaParent(
   const directAccess = await hasAccessToItem(userId, childResourceType, childResourceId, permission);
   if (directAccess) return true;
 
-  // 2. Pruefe Zugriff ueber Parent
+  // 2. Pruefe Zugriff über Parent
   const parentId = await getParentId(childResourceId);
   if (!parentId) return false;
 
@@ -325,7 +325,7 @@ export async function hasAccessViaParent(
 }
 
 /**
- * Beispiel-Implementierung fuer Turbine -> Park Hierarchie
+ * Beispiel-Implementierung für Turbine -> Park Hierarchie
  */
 export async function hasTurbineAccessViaPark(
   userId: string,

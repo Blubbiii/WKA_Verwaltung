@@ -11,13 +11,13 @@ import { apiLogger as logger } from "@/lib/logger";
 // =============================================================================
 
 /**
- * Schema fuer Aktualisierung von Produktionsdaten
+ * Schema für Aktualisierung von Produktionsdaten
  * Alle Felder sind optional - nur mitgeschickte Felder werden aktualisiert
  */
 const productionUpdateSchema = z.object({
   productionKwh: z.number().nonnegative("Produktion muss >= 0 sein").optional(),
   operatingHours: z.number().nonnegative("Betriebsstunden muessen >= 0 sein").optional().nullable(),
-  availabilityPct: z.number().min(0).max(100, "Verfuegbarkeit muss zwischen 0 und 100 liegen").optional().nullable(),
+  availabilityPct: z.number().min(0).max(100, "Verfügbarkeit muss zwischen 0 und 100 liegen").optional().nullable(),
   source: z.enum(["MANUAL", "CSV_IMPORT", "EXCEL_IMPORT", "SCADA"]).optional(),
   status: z.enum(["DRAFT", "CONFIRMED", "INVOICED"]).optional(),
   notes: z.string().max(1000).optional().nullable(),
@@ -69,7 +69,7 @@ export async function GET(
       );
     }
 
-    // Multi-Tenancy Pruefung
+    // Multi-Tenancy Prüfung
     if (production.tenantId !== check.tenantId!) {
       return NextResponse.json(
         { error: "Keine Berechtigung" },
@@ -103,7 +103,7 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = productionUpdateSchema.parse(body);
 
-    // Existenz und Tenant pruefen
+    // Existenz und Tenant prüfen
     const existing = await prisma.turbineProduction.findUnique({
       where: { id },
       select: {
@@ -130,11 +130,11 @@ export async function PATCH(
       );
     }
 
-    // Status-Pruefung: INVOICED-Eintraege koennen nicht bearbeitet werden
+    // Status-Prüfung: INVOICED-Einträge können nicht bearbeitet werden
     if (existing.status === "INVOICED") {
       return NextResponse.json(
         {
-          error: "Bereits abgerechnete Produktionsdaten koennen nicht bearbeitet werden",
+          error: "Bereits abgerechnete Produktionsdaten können nicht bearbeitet werden",
           details: "Status ist INVOICED - bitte zuerst die zugehoerige Rechnung stornieren"
         },
         { status: 400 }
@@ -194,7 +194,7 @@ export async function PATCH(
 }
 
 // =============================================================================
-// DELETE /api/energy/productions/[id] - Produktionsdaten loeschen
+// DELETE /api/energy/productions/[id] - Produktionsdaten löschen
 // =============================================================================
 
 export async function DELETE(
@@ -205,7 +205,7 @@ export async function DELETE(
     const check = await requirePermission("energy:delete");
     if (!check.authorized) return check.error;
 
-    // Zusaetzliche Pruefung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen loeschen
+    // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
     const user = await prisma.user.findUnique({
       where: { id: check.userId! },
       select: { role: true },
@@ -213,14 +213,14 @@ export async function DELETE(
 
     if (!user || !["MANAGER", "ADMIN", "SUPERADMIN"].includes(user.role)) {
       return NextResponse.json(
-        { error: "Keine Berechtigung zum Loeschen von Produktionsdaten" },
+        { error: "Keine Berechtigung zum Löschen von Produktionsdaten" },
         { status: 403 }
       );
     }
 
     const { id } = await params;
 
-    // Existenz und Tenant pruefen
+    // Existenz und Tenant prüfen
     const existing = await prisma.turbineProduction.findUnique({
       where: { id },
       select: {
@@ -250,18 +250,18 @@ export async function DELETE(
       );
     }
 
-    // Status-Pruefung: INVOICED-Eintraege koennen nicht geloescht werden
+    // Status-Prüfung: INVOICED-Einträge können nicht gelöscht werden
     if (existing.status === "INVOICED") {
       return NextResponse.json(
         {
-          error: "Bereits abgerechnete Produktionsdaten koennen nicht geloescht werden",
+          error: "Bereits abgerechnete Produktionsdaten können nicht gelöscht werden",
           details: "Status ist INVOICED - bitte zuerst die zugehoerige Rechnung stornieren"
         },
         { status: 400 }
       );
     }
 
-    // Loeschen
+    // Löschen
     await prisma.turbineProduction.delete({ where: { id } });
 
     // Audit Log
@@ -273,12 +273,12 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: `Produktionsdaten fuer ${existing.turbine.designation} (${existing.month}/${existing.year}) geloescht`,
+      message: `Produktionsdaten für ${existing.turbine.designation} (${existing.month}/${existing.year}) gelöscht`,
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting production");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Produktionsdaten" },
+      { error: "Fehler beim Löschen der Produktionsdaten" },
       { status: 500 }
     );
   }

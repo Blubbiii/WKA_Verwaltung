@@ -225,7 +225,7 @@ export function CorrectionDialog({
     }
 
     if (!preview.hasChanges) {
-      toast.error("Keine Aenderungen vorgenommen");
+      toast.error("Keine Änderungen vorgenommen");
       return;
     }
 
@@ -285,7 +285,7 @@ export function CorrectionDialog({
         <DialogHeader>
           <DialogTitle>Korrektur erstellen</DialogTitle>
           <DialogDescription>
-            Erstellen Sie eine Rechnungskorrektur fuer {invoiceNumber}. Klicken Sie auf
+            Erstellen Sie eine Rechnungskorrektur für {invoiceNumber}. Klicken Sie auf
             das Bearbeiten-Symbol bei den zu korrigierenden Positionen und aendern Sie die Werte.
           </DialogDescription>
         </DialogHeader>
@@ -478,7 +478,7 @@ export function CorrectionDialog({
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Es werden zwei Dokumente erstellt: Eine Korrekturgutschrift (negativer Betrag fuer die
+                Es werden zwei Dokumente erstellt: Eine Korrekturgutschrift (negativer Betrag für die
                 alten Werte) und eine Korrekturrechnung (neuer Betrag mit den korrigierten Werten).
               </p>
             </div>

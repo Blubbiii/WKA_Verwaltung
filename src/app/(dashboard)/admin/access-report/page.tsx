@@ -98,7 +98,7 @@ const MODULE_LABELS: Record<string, string> = {
   shareholders: "Gesellschafter",
   plots: "Flaechen",
   leases: "Pacht",
-  contracts: "Vertraege",
+  contracts: "Verträge",
   documents: "Dokumente",
   invoices: "Abrechnungen",
   votes: "Abstimmungen",
@@ -255,7 +255,7 @@ export default function AccessReportPage() {
             Zugriffsreport
           </h1>
           <p className="text-muted-foreground mt-1">
-            Uebersicht aller Benutzer und ihrer effektiven Berechtigungen
+            Übersicht aller Benutzer und ihrer effektiven Berechtigungen
           </p>
         </div>
 
@@ -571,7 +571,7 @@ export default function AccessReportPage() {
       {reportData && (
         <p className="text-xs text-muted-foreground text-center">
           Report generiert am{" "}
-          {new Date(reportData.generatedAt).toLocaleString("de-DE")} fuer{" "}
+          {new Date(reportData.generatedAt).toLocaleString("de-DE")} für{" "}
           {reportData.tenantName}
         </p>
       )}

@@ -423,9 +423,9 @@ export async function runAutoImport(
 
     const duration = Date.now() - startTime.getTime();
     const summary =
-      `${result.locationsChecked} Standort(e) geprueft, ` +
+      `${result.locationsChecked} Standort(e) geprüft, ` +
       `${result.imported} Datensaetze importiert, ` +
-      `${result.skipped} uebersprungen` +
+      `${result.skipped} übersprungen` +
       (hasErrors ? `, ${result.errors.length} Fehler` : '') +
       ` (${Math.round(duration / 1000)}s)`;
 

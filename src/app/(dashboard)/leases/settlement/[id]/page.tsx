@@ -303,7 +303,7 @@ export default function SettlementDetailPage({
         throw new Error(err.error || `HTTP ${res.status}`);
       }
 
-      toast.success("Aktion erfolgreich ausgefuehrt");
+      toast.success("Aktion erfolgreich ausgeführt");
       await loadSettlement();
     } catch (err) {
       toast.error(
@@ -326,11 +326,11 @@ export default function SettlementDetailPage({
           .catch(() => ({ error: "Unbekannter Fehler" }));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
-      toast.success("Abrechnung geloescht");
+      toast.success("Abrechnung gelöscht");
       router.push("/leases/settlement");
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Loeschen"
+        err instanceof Error ? err.message : "Fehler beim Löschen"
       );
     } finally {
       setActionLoading(null);
@@ -438,7 +438,7 @@ export default function SettlementDetailPage({
         throw new Error(err.error || `HTTP ${res.status}`);
       }
       const result = await res.json();
-      toast.success(`E-Mail versendet an ${result.emailedTo || "Empfaenger"}`);
+      toast.success(`E-Mail versendet an ${result.emailedTo || "Empfänger"}`);
       await loadSettlement();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Fehler beim E-Mail-Versand");
@@ -499,7 +499,7 @@ export default function SettlementDetailPage({
           <Button variant="ghost" size="icon" asChild>
             <Link
               href="/leases/settlement"
-              aria-label="Zurueck zur Uebersicht"
+              aria-label="Zurück zur Übersicht"
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -623,7 +623,7 @@ export default function SettlementDetailPage({
             disabled={!!actionLoading}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Loeschen
+            Löschen
           </Button>
         );
         break;
@@ -689,7 +689,7 @@ export default function SettlementDetailPage({
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            Zur Pruefung vorlegen
+            Zur Prüfung vorlegen
           </Button>
         );
         break;
@@ -735,7 +735,7 @@ export default function SettlementDetailPage({
             ) : (
               <XCircle className="mr-2 h-4 w-4" />
             )}
-            Zurueckweisen
+            Zurückweisen
           </Button>
         );
         break;
@@ -1053,7 +1053,7 @@ export default function SettlementDetailPage({
             <TableHeader>
               <TableRow>
                 <TableHead>Gutschrift-Nr.</TableHead>
-                <TableHead>Empfaenger</TableHead>
+                <TableHead>Empfänger</TableHead>
                 <TableHead className="text-right">Betrag</TableHead>
                 <TableHead className="text-center">Gedruckt</TableHead>
                 <TableHead className="text-center">Gemailt</TableHead>
@@ -1141,7 +1141,7 @@ export default function SettlementDetailPage({
         <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
           <Info className="h-5 w-5 text-muted-foreground shrink-0" />
           <p className="text-sm text-muted-foreground">
-            Kostenumlagen sind nur fuer Endabrechnungen verfuegbar.
+            Kostenumlagen sind nur für Endabrechnungen verfügbar.
           </p>
         </div>
       );
@@ -1239,7 +1239,7 @@ export default function SettlementDetailPage({
   }
 
   // ---------------------------------------------------------------------------
-  // Tab: Vorschuesse
+  // Tab: Vorschüsse
   // ---------------------------------------------------------------------------
   function renderAdvancesTab() {
     if (!settlement) return null;
@@ -1248,7 +1248,7 @@ export default function SettlementDetailPage({
         <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
           <Info className="h-5 w-5 text-muted-foreground shrink-0" />
           <p className="text-sm text-muted-foreground">
-            Vorschuss-Uebersicht ist nur fuer Endabrechnungen verfuegbar.
+            Vorschuss-Übersicht ist nur für Endabrechnungen verfügbar.
           </p>
         </div>
       );
@@ -1269,7 +1269,7 @@ export default function SettlementDetailPage({
         <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
           <Info className="h-5 w-5 text-muted-foreground shrink-0" />
           <p className="text-sm text-muted-foreground">
-            Keine Vorschussabrechnungen fuer {parkName} im Jahr{" "}
+            Keine Vorschussabrechnungen für {parkName} im Jahr{" "}
             {settlement.year} gefunden.
           </p>
         </div>
@@ -1326,7 +1326,7 @@ export default function SettlementDetailPage({
               {/* Summary row */}
               <TableRow className="border-t-2 font-bold bg-muted/30">
                 <TableCell colSpan={3}>
-                  Gezahlte Vorschuesse gesamt
+                  Gezahlte Vorschüsse gesamt
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   {formatCurrency(advanceTotalPaid)}
@@ -1380,21 +1380,21 @@ export default function SettlementDetailPage({
           </CardContent>
         </Card>
 
-        {/* Faelligkeiten */}
+        {/* Fälligkeiten */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Faelligkeiten</CardTitle>
+            <CardTitle className="text-base">Fälligkeiten</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                Vorschuss-Faelligkeit
+                Vorschuss-Fälligkeit
               </span>
               <span>{formatDate(settlement.advanceDueDate)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                Abrechnungs-Faelligkeit
+                Abrechnungs-Fälligkeit
               </span>
               <span>{formatDate(settlement.settlementDueDate)}</span>
             </div>
@@ -1443,29 +1443,29 @@ export default function SettlementDetailPage({
           </CardContent>
         </Card>
 
-        {/* Pruefung & Freigabe */}
+        {/* Prüfung & Freigabe */}
         {(status === "PENDING_REVIEW" ||
           status === "APPROVED" ||
           status === "CLOSED") && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">
-                Pruefung & Freigabe
+                Prüfung & Freigabe
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Geprueft von</span>
+                <span className="text-muted-foreground">Geprüft von</span>
                 <span>{settlement.reviewedBy?.name || "-"}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Geprueft am</span>
+                <span className="text-muted-foreground">Geprüft am</span>
                 <span>{formatDateTime(settlement.reviewedAt)}</span>
               </div>
               {settlement.reviewNotes && (
                 <div className="text-sm">
                   <span className="text-muted-foreground block mb-1">
-                    Pruefungsnotizen
+                    Prüfungsnotizen
                   </span>
                   <p className="p-2 bg-muted/50 rounded text-sm">
                     {settlement.reviewNotes}
@@ -1506,7 +1506,7 @@ export default function SettlementDetailPage({
           <Button variant="ghost" size="icon" asChild className="mt-1">
             <Link
               href="/leases/settlement"
-              aria-label="Zurueck zur Uebersicht"
+              aria-label="Zurück zur Übersicht"
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -1545,11 +1545,11 @@ export default function SettlementDetailPage({
 
       {/* KPI Cards */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
-        {/* 1. Jahreserloese */}
+        {/* 1. Jahreserlöse */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Jahreserloese
+              Jahreserlöse
             </CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -1658,7 +1658,7 @@ export default function SettlementDetailPage({
             </TabsTrigger>
           )}
           {isFinal && (
-            <TabsTrigger value="advances">Vorschuesse</TabsTrigger>
+            <TabsTrigger value="advances">Vorschüsse</TabsTrigger>
           )}
           <TabsTrigger value="details">Details</TabsTrigger>
         </TabsList>
@@ -1693,9 +1693,9 @@ export default function SettlementDetailPage({
           <TabsContent value="advances">
             <Card>
               <CardHeader>
-                <CardTitle>Vorschuesse</CardTitle>
+                <CardTitle>Vorschüsse</CardTitle>
                 <CardDescription>
-                  Vorschussabrechnungen fuer {parkName} im Jahr{" "}
+                  Vorschussabrechnungen für {parkName} im Jahr{" "}
                   {settlement.year}
                 </CardDescription>
               </CardHeader>
@@ -1716,7 +1716,7 @@ export default function SettlementDetailPage({
             <AlertDialogTitle>Abrechnung stornieren</AlertDialogTitle>
             <AlertDialogDescription>
               Sind Sie sicher, dass Sie diese Pachtabrechnung stornieren
-              moechten? Bitte geben Sie einen Grund an.
+              möchten? Bitte geben Sie einen Grund an.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Textarea
@@ -1755,11 +1755,11 @@ export default function SettlementDetailPage({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Abrechnung loeschen</AlertDialogTitle>
+            <AlertDialogTitle>Abrechnung löschen</AlertDialogTitle>
             <AlertDialogDescription>
               Sind Sie sicher, dass Sie diese Pachtabrechnung unwiderruflich
-              loeschen moechten? Alle zugehoerigen Positionen werden ebenfalls
-              geloescht.
+              löschen möchten? Alle zugehoerigen Positionen werden ebenfalls
+              gelöscht.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1774,7 +1774,7 @@ export default function SettlementDetailPage({
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Endgueltig loeschen
+              Endgültig löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -115,7 +115,7 @@ export function BasePage({
       {/* Seitenzahl */}
       <PageNumber />
 
-      {/* Wasserzeichen (ueber allem, auf jeder Seite) */}
+      {/* Wasserzeichen (über allem, auf jeder Seite) */}
       {watermark && (
         <Watermark
           type={watermark.type}

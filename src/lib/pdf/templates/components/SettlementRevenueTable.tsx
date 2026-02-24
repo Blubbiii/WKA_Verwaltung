@@ -73,7 +73,7 @@ export function SettlementRevenueTable({ entries, total }: SettlementRevenueTabl
       {/* Header */}
       <View style={styles.tableHeader}>
         <Text style={[styles.colCategory, styles.headerText]}>Kategorie</Text>
-        <Text style={[styles.colRate, styles.headerText]}>Verguetung</Text>
+        <Text style={[styles.colRate, styles.headerText]}>Vergütung</Text>
         <Text style={[styles.colProduction, styles.headerText]}>Einspeisung</Text>
         <Text style={[styles.colRevenue, styles.headerText]}>Ertrag</Text>
       </View>

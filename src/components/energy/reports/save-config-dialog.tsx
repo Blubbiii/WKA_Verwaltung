@@ -111,7 +111,7 @@ export function SaveConfigDialog({
             Konfiguration speichern
           </DialogTitle>
           <DialogDescription>
-            Speichern Sie die aktuelle Berichtskonfiguration zur spaeteren
+            Speichern Sie die aktuelle Berichtskonfiguration zur späteren
             Wiederverwendung.
           </DialogDescription>
         </DialogHeader>

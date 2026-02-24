@@ -120,7 +120,7 @@ interface AnomalyConfig {
 
 const ANOMALY_TYPE_LABELS: Record<string, string> = {
   PERFORMANCE_DROP: "Leistungsabfall",
-  LOW_AVAILABILITY: "Niedrige Verfuegbarkeit",
+  LOW_AVAILABILITY: "Niedrige Verfügbarkeit",
   CURVE_DEVIATION: "Kennlinien-Abweichung",
   DATA_QUALITY: "Datenqualitaet",
   EXTENDED_DOWNTIME: "Langzeit-Stillstand",
@@ -395,7 +395,7 @@ export default function ScadaAnomaliesPage() {
       {/* Header */}
       <PageHeader
         title="Anomalie-Erkennung"
-        description="Automatische Erkennung von Leistungsabfaellen, Verfuegbarkeitsproblemen und Datenqualitaet aus SCADA-Messdaten"
+        description="Automatische Erkennung von Leistungsabfaellen, Verfügbarkeitsproblemen und Datenqualitaet aus SCADA-Messdaten"
         actions={
           <Button
             onClick={handleRunDetection}
@@ -404,7 +404,7 @@ export default function ScadaAnomaliesPage() {
             <RefreshCw
               className={`mr-2 h-4 w-4 ${runningDetection ? "animate-spin" : ""}`}
             />
-            {runningDetection ? "Analyse laeuft..." : "Analyse starten"}
+            {runningDetection ? "Analyse läuft..." : "Analyse starten"}
           </Button>
         }
       />
@@ -420,7 +420,7 @@ export default function ScadaAnomaliesPage() {
             <div className="text-2xl font-bold">
               {loading ? <Skeleton className="h-8 w-12" /> : stats.openCount}
             </div>
-            <p className="text-xs text-muted-foreground">Nicht bestaetigt</p>
+            <p className="text-xs text-muted-foreground">Nicht bestätigt</p>
           </CardContent>
         </Card>
 
@@ -533,7 +533,7 @@ export default function ScadaAnomaliesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="open">Offen</SelectItem>
-                  <SelectItem value="acknowledged">Bestaetigt</SelectItem>
+                  <SelectItem value="acknowledged">Bestätigt</SelectItem>
                   <SelectItem value="resolved">Geloest</SelectItem>
                   <SelectItem value="all">Alle</SelectItem>
                 </SelectContent>
@@ -624,7 +624,7 @@ export default function ScadaAnomaliesPage() {
                             </Badge>
                           ) : anomaly.acknowledged ? (
                             <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-                              Bestaetigt
+                              Bestätigt
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
@@ -648,7 +648,7 @@ export default function ScadaAnomaliesPage() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                title="Bestaetigen"
+                                title="Bestätigen"
                                 onClick={() => handleAcknowledge(anomaly)}
                               >
                                 <Check className="h-4 w-4" />
@@ -675,7 +675,7 @@ export default function ScadaAnomaliesPage() {
                       disabled={page <= 1}
                       onClick={() => setPage(page - 1)}
                     >
-                      Zurueck
+                      Zurück
                     </Button>
                     <Button
                       variant="outline"
@@ -711,7 +711,7 @@ export default function ScadaAnomaliesPage() {
             )}
           </div>
           <CardDescription>
-            Schwellwerte und Benachrichtigungen fuer die automatische Anomalie-Erkennung
+            Schwellwerte und Benachrichtigungen für die automatische Anomalie-Erkennung
           </CardDescription>
         </CardHeader>
 
@@ -764,7 +764,7 @@ export default function ScadaAnomaliesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Verfuegbarkeits-Schwellwert (%)</Label>
+                    <Label>Verfügbarkeits-Schwellwert (%)</Label>
                     <input
                       type="number"
                       min="1"
@@ -779,7 +779,7 @@ export default function ScadaAnomaliesPage() {
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Warnung wenn die Tagesverfuegbarkeit unter X% faellt
+                      Warnung wenn die Tagesverfügbarkeit unter X% faellt
                     </p>
                   </div>
 
@@ -799,7 +799,7 @@ export default function ScadaAnomaliesPage() {
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Kritische Meldung bei zusammenhaengendem Stillstand ueber X Stunden
+                      Kritische Meldung bei zusammenhaengendem Stillstand über X Stunden
                     </p>
                   </div>
 
@@ -942,7 +942,7 @@ export default function ScadaAnomaliesPage() {
                   </div>
                   {selectedAnomaly.acknowledgedAt && (
                     <div>
-                      <Label className="text-xs text-muted-foreground">Bestaetigt am</Label>
+                      <Label className="text-xs text-muted-foreground">Bestätigt am</Label>
                       <p className="text-sm mt-1">
                         {format(
                           new Date(selectedAnomaly.acknowledgedAt),
@@ -1019,7 +1019,7 @@ export default function ScadaAnomaliesPage() {
                     }}
                   >
                     <Check className="mr-2 h-4 w-4" />
-                    Bestaetigen
+                    Bestätigen
                   </Button>
                 )}
 

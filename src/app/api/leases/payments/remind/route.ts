@@ -11,10 +11,10 @@ import { de } from "date-fns/locale";
 // Validation schema for remind request
 const remindSchema = z.object({
   paymentId: z.string().min(1, "Payment ID ist erforderlich"),
-  leaseId: z.string().uuid("Ungueltige Lease ID"),
+  leaseId: z.string().uuid("Ungültige Lease ID"),
   lessorName: z.string().min(1),
   amount: z.number().positive("Betrag muss positiv sein"),
-  dueDate: z.string().min(1, "Faelligkeitsdatum ist erforderlich"),
+  dueDate: z.string().min(1, "Fälligkeitsdatum ist erforderlich"),
   parkName: z.string().nullable().optional(),
   contractInfo: z.string().optional(),
 });
@@ -81,7 +81,7 @@ function buildReminderHtml(params: {
 
       <p style="font-size:16px;line-height:26px;color:#4b5563;margin:0 0 16px;">
         wir erlauben uns, Sie an die ausstehende Pachtzahlung zu erinnern.
-        Die nachfolgende Zahlung ist faellig bzw. ueberfaellig:
+        Die nachfolgende Zahlung ist fällig bzw. überfällig:
       </p>
 
       <!-- Payment Details -->
@@ -97,7 +97,7 @@ function buildReminderHtml(params: {
             <td style="padding:4px 0;font-size:14px;color:#1f2937;font-weight:500;">${parkName}</td>
           </tr>` : ""}
           <tr>
-            <td style="padding:4px 0;font-size:14px;color:#6b7280;">Faellig am:</td>
+            <td style="padding:4px 0;font-size:14px;color:#6b7280;">Fällig am:</td>
             <td style="padding:4px 0;font-size:14px;color:#991b1b;font-weight:600;">${dueDate}</td>
           </tr>
           <tr>
@@ -128,7 +128,7 @@ function buildReminderHtml(params: {
       </div>` : ""}
 
       <p style="font-size:16px;line-height:26px;color:#4b5563;margin:0 0 16px;">
-        Bitte ueberweisen Sie den ausstehenden Betrag unter Angabe des Vertragsbezugs
+        Bitte überweisen Sie den ausstehenden Betrag unter Angabe des Vertragsbezugs
         als Verwendungszweck. Sollte die Zahlung bereits veranlasst sein, betrachten
         Sie diese Erinnerung bitte als gegenstandslos.
       </p>
@@ -164,12 +164,12 @@ Sehr geehrte/r ${lessorName},
 wir erlauben uns, Sie an die ausstehende Pachtzahlung zu erinnern.
 
 Vertrag / Flurstueck: ${contractInfo}
-${parkName ? `Windpark: ${parkName}\n` : ""}Faellig am: ${dueDate}
+${parkName ? `Windpark: ${parkName}\n` : ""}Fällig am: ${dueDate}
 Betrag: ${amount}
 
 ${bankName || iban ? `Bankverbindung:
 ${bankName ? `Bank: ${bankName}\n` : ""}${iban ? `IBAN: ${iban}\n` : ""}${bic ? `BIC: ${bic}\n` : ""}` : ""}
-Bitte ueberweisen Sie den ausstehenden Betrag unter Angabe des Vertragsbezugs als Verwendungszweck. Sollte die Zahlung bereits veranlasst sein, betrachten Sie diese Erinnerung bitte als gegenstandslos.
+Bitte überweisen Sie den ausstehenden Betrag unter Angabe des Vertragsbezugs als Verwendungszweck. Sollte die Zahlung bereits veranlasst sein, betrachten Sie diese Erinnerung bitte als gegenstandslos.
 
 Bei Fragen stehen wir Ihnen gerne zur Verfuegung.
 
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
     const parsed = remindSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungueltige Eingabedaten", details: parsed.error.flatten() },
+        { error: "Ungültige Eingabedaten", details: parsed.error.flatten() },
         { status: 400 }
       );
     }
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Fuer diesen Verpaechter ist keine E-Mail-Adresse hinterlegt. Bitte ergaenzen Sie die E-Mail-Adresse in den Kontaktdaten.",
+            "Für diesen Verpaechter ist keine E-Mail-Adresse hinterlegt. Bitte ergaenzen Sie die E-Mail-Adresse in den Kontaktdaten.",
         },
         { status: 422 }
       );
@@ -292,7 +292,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "E-Mail konnte nicht gesendet werden. Bitte pruefen Sie die E-Mail-Konfiguration.",
+            "E-Mail konnte nicht gesendet werden. Bitte prüfen Sie die E-Mail-Konfiguration.",
         },
         { status: 500 }
       );

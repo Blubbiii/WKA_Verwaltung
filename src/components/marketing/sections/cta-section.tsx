@@ -20,7 +20,7 @@ export function CtaSection() {
         <div className="text-center max-w-3xl mx-auto relative z-10">
           {/* Headline */}
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white">
-            Bereit fuer die Zukunft der Windpark-Verwaltung?
+            Bereit für die Zukunft der Windpark-Verwaltung?
           </h2>
 
           {/* Subtitle */}

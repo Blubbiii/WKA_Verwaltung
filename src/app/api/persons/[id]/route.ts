@@ -164,7 +164,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
   }
 }
 
-// DELETE /api/persons/[id] - Person unwiderruflich loeschen (nur ADMIN/SUPERADMIN)
+// DELETE /api/persons/[id] - Person unwiderruflich löschen (nur ADMIN/SUPERADMIN)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -207,13 +207,13 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     if (totalReferences > 0) {
       return NextResponse.json(
         {
-          error: `Person kann nicht geloescht werden, da sie noch verwendet wird (${existingPerson._count.shareholders} Beteiligungen, ${existingPerson._count.leases} Pachtvertraege, ${existingPerson._count.contracts} Vertraege)`
+          error: `Person kann nicht gelöscht werden, da sie noch verwendet wird (${existingPerson._count.shareholders} Beteiligungen, ${existingPerson._count.leases} Pachtverträge, ${existingPerson._count.contracts} Verträge)`
         },
         { status: 400 }
       );
     }
 
-    // Hard-delete: Person unwiderruflich loeschen
+    // Hard-delete: Person unwiderruflich löschen
     await prisma.person.delete({ where: { id } });
 
     // Log deletion for audit trail
@@ -223,7 +223,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
   } catch (error) {
     logger.error({ err: error }, "Error deleting person");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Person" },
+      { error: "Fehler beim Löschen der Person" },
       { status: 500 }
     );
   }

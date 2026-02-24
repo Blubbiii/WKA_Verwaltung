@@ -14,7 +14,7 @@ export interface MaintenanceStatus {
 }
 
 const DEFAULT_MESSAGE =
-  "Das System befindet sich im Wartungsmodus. Bitte versuchen Sie es spaeter erneut.";
+  "Das System befindet sich im Wartungsmodus. Bitte versuchen Sie es später erneut.";
 
 // GET /api/admin/maintenance - Get maintenance mode status
 // Accessible to all authenticated users (needed for the banner)
@@ -57,7 +57,7 @@ export async function PUT(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungueltige Daten", details: parsed.error.errors },
+        { error: "Ungültige Daten", details: parsed.error.errors },
         { status: 400 }
       );
     }

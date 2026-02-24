@@ -1,6 +1,6 @@
 /**
- * PDF-Merge Utility: Legt Content-PDF ueber ein Briefpapier-Hintergrund-PDF.
- * Nutzt pdf-lib fuer verlustfreies Vektor-Merging.
+ * PDF-Merge Utility: Legt Content-PDF über ein Briefpapier-Hintergrund-PDF.
+ * Nutzt pdf-lib für verlustfreies Vektor-Merging.
  */
 
 import { PDFDocument } from "pdf-lib";
@@ -10,9 +10,9 @@ import { getFileBuffer } from "@/lib/storage";
  * Merged ein Content-PDF auf ein Briefpapier-Hintergrund-PDF.
  *
  * Das Briefpapier-PDF kann 1-2 Seiten haben:
- * - Seite 1: Hintergrund fuer die erste Content-Seite
- * - Seite 2 (optional): Hintergrund fuer alle Folgeseiten
- * - Nur 1 Seite: Wird fuer ALLE Content-Seiten verwendet
+ * - Seite 1: Hintergrund für die erste Content-Seite
+ * - Seite 2 (optional): Hintergrund für alle Folgeseiten
+ * - Nur 1 Seite: Wird für ALLE Content-Seiten verwendet
  *
  * @param contentBuffer - Content-PDF (von @react-pdf/renderer)
  * @param letterheadPdfKey - S3-Key des Briefpapier-PDFs
@@ -37,7 +37,7 @@ export async function mergeWithLetterhead(
 
   for (let i = 0; i < contentPageCount; i++) {
     // Briefpapier-Seite waehlen:
-    // Seite 0 fuer erste Content-Seite, Seite 1 fuer Folgeseiten (Fallback: Seite 0)
+    // Seite 0 für erste Content-Seite, Seite 1 für Folgeseiten (Fallback: Seite 0)
     const letterheadPageIndex = i === 0 ? 0 : Math.min(1, letterheadPageCount - 1);
 
     // Seiten einbetten
@@ -71,7 +71,7 @@ export async function mergeWithLetterhead(
     });
   }
 
-  // 4. Serialisieren und zurueckgeben
+  // 4. Serialisieren und zurückgeben
   const mergedBytes = await mergedDoc.save();
   return Buffer.from(mergedBytes);
 }

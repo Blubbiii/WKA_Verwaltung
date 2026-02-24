@@ -31,7 +31,7 @@ export async function GET() {
     const baseHours = 720; // approx hours per month
 
     const lines: string[] = [];
-    lines.push("WKA-Nr;Anlage;Jahr;Monat;Produktion_kWh;Betriebsstunden;Verfuegbarkeit_Pct;Bemerkungen");
+    lines.push("WKA-Nr;Anlage;Jahr;Monat;Produktion_kWh;Betriebsstunden;Verfügbarkeit_Pct;Bemerkungen");
 
     // Use up to 3 turbines for the example
     const sampleTurbines = turbines.slice(0, 3);
@@ -52,7 +52,7 @@ export async function GET() {
 
         // Add occasional remarks
         let remark = "";
-        if (month === 3) remark = "Wartung durchgefuehrt";
+        if (month === 3) remark = "Wartung durchgeführt";
         if (month === 8 && turbine === sampleTurbines[0])
           remark = "Kurzzeitige Abschaltung wg. Fledermausschutz";
 

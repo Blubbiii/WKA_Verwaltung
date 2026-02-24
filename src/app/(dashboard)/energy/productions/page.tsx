@@ -119,7 +119,7 @@ const sourceBadgeColors: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   DRAFT: "Entwurf",
-  CONFIRMED: "Bestaetigt",
+  CONFIRMED: "Bestätigt",
   INVOICED: "Abgerechnet",
 };
 
@@ -417,7 +417,7 @@ export default function ProductionDataPage() {
                   {pagination?.total ?? 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Gefilterte Eintraege
+                  Gefilterte Einträge
                 </p>
               </>
             )}
@@ -481,7 +481,7 @@ export default function ProductionDataPage() {
                 options: [
                   { value: "all", label: "Alle Status" },
                   { value: "DRAFT", label: "Entwurf" },
-                  { value: "CONFIRMED", label: "Bestaetigt" },
+                  { value: "CONFIRMED", label: "Bestätigt" },
                   { value: "INVOICED", label: "Abgerechnet" },
                 ],
               },
@@ -570,7 +570,7 @@ export default function ProductionDataPage() {
                     onClick={() => handleSort("availability")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Verfuegbarkeit
+                      Verfügbarkeit
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -632,7 +632,7 @@ export default function ProductionDataPage() {
                       <div className="flex flex-col items-center gap-2">
                         <FileSpreadsheet className="h-8 w-8 text-muted-foreground" />
                         <p className="text-muted-foreground">
-                          Keine Produktionsdaten fuer den ausgewaehlten Zeitraum
+                          Keine Produktionsdaten für den ausgewaehlten Zeitraum
                         </p>
                         <div className="flex gap-2">
                           <Button
@@ -724,7 +724,7 @@ export default function ProductionDataPage() {
                   currentPage * (pagination.limit || 25),
                   pagination.total
                 )}{" "}
-                von {pagination.total} Eintraegen
+                von {pagination.total} Einträgen
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -744,7 +744,7 @@ export default function ProductionDataPage() {
                   size="sm"
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
-                  aria-label="Naechste Seite"
+                  aria-label="Nächste Seite"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>

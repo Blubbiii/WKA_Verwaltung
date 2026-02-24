@@ -7,21 +7,21 @@ import { apiLogger as logger } from "@/lib/logger";
 // =============================================================================
 // GET /api/energy/scada/comparison
 // Vergleicht SCADA-gemessene Produktion mit gemeldeter/abgerechneter Produktion
-// aus TurbineProduction. Nutzt SQL-Aggregation fuer effiziente Berechnung.
+// aus TurbineProduction. Nutzt SQL-Aggregation für effiziente Berechnung.
 // =============================================================================
 
 /**
- * Berechnet die erwartete Anzahl an 10-Minuten-Datenpunkten fuer einen Monat.
+ * Berechnet die erwartete Anzahl an 10-Minuten-Datenpunkten für einen Monat.
  * Formel: Tage im Monat * 24 Stunden * 6 Intervalle pro Stunde
  */
 function expectedDataPoints(year: number, month: number): number {
-  // new Date(year, month, 0) gibt den letzten Tag des Vormonats zurueck,
+  // new Date(year, month, 0) gibt den letzten Tag des Vormonats zurück,
   // also new Date(year, month, 0).getDate() = Tage im Monat 'month'
   const daysInMonth = new Date(year, month, 0).getDate();
   return daysInMonth * 24 * 6;
 }
 
-/** Ergebnis-Typ fuer die SCADA-Aggregation per SQL */
+/** Ergebnis-Typ für die SCADA-Aggregation per SQL */
 interface ScadaAggRow {
   turbineId: string;
   month: number;
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     const year = parseInt(yearParam, 10);
     if (isNaN(year) || year < 2000 || year > 2100) {
       return NextResponse.json(
-        { error: "Ungueltiges Jahr (erwartet: 2000-2100)" },
+        { error: "Ungültiges Jahr (erwartet: 2000-2100)" },
         { status: 400 }
       );
     }
@@ -93,9 +93,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // --- Zeitraum fuer SCADA-Abfrage ---
+    // --- Zeitraum für SCADA-Abfrage ---
     const startOfYear = new Date(Date.UTC(year, 0, 1)); // 1. Januar 00:00 UTC
-    const startOfNextYear = new Date(Date.UTC(year + 1, 0, 1)); // 1. Januar naechstes Jahr
+    const startOfNextYear = new Date(Date.UTC(year + 1, 0, 1)); // 1. Januar nächstes Jahr
 
     // --- Turbine-IDs ermitteln (gefiltert nach Park/Turbine und Tenant) ---
     const turbineWhere: Record<string, unknown> = {
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
 
     const turbineIds = turbines.map((t) => t.id);
 
-    // Turbine-Lookup-Map fuer schnellen Zugriff
+    // Turbine-Lookup-Map für schnellen Zugriff
     const turbineMap = new Map(
       turbines.map((t) => [
         t.id,
@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
     }
 
     // --- Ergebnisse zusammenfuehren ---
-    // Fuer jede Turbine und jeden Monat mit Daten (SCADA oder Reported)
+    // Für jede Turbine und jeden Monat mit Daten (SCADA oder Reported)
     const allKeys = new Set<string>();
     for (const key of scadaMap.keys()) allKeys.add(key);
     for (const key of reportedMap.keys()) allKeys.add(key);

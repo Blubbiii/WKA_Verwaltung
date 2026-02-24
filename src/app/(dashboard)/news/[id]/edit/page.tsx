@@ -232,7 +232,7 @@ export default function EditNewsPage({
                       />
                     </FormControl>
                     <FormDescription>
-                      Nutzen Sie die Toolbar fuer Formatierungen wie Ueberschriften, Listen und Links
+                      Nutzen Sie die Toolbar für Formatierungen wie Überschriften, Listen und Links
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -263,7 +263,7 @@ export default function EditNewsPage({
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Kategorisieren Sie die Meldung fuer bessere Filterbarkeit
+                      Kategorisieren Sie die Meldung für bessere Filterbarkeit
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

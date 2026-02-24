@@ -240,7 +240,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/documents/[id] - Dokument unwiderruflich loeschen (nur ADMIN/SUPERADMIN)
+// DELETE /api/documents/[id] - Dokument unwiderruflich löschen (nur ADMIN/SUPERADMIN)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -256,7 +256,7 @@ export async function DELETE(
       (session?.user?.role && ["ADMIN", "SUPERADMIN"].includes(session.user.role));
     if (!isAdmin) {
       return NextResponse.json(
-        { error: "Keine Berechtigung. Nur Administratoren koennen Dokumente loeschen." },
+        { error: "Keine Berechtigung. Nur Administratoren können Dokumente löschen." },
         { status: 403 }
       );
     }
@@ -285,9 +285,9 @@ export async function DELETE(
         await deleteFile(documentToDelete.fileUrl);
       } catch (storageError) {
         // Log den Fehler, aber fahre mit DB-Loeschung fort
-        // Die Datei koennte bereits geloescht sein oder nie existiert haben
+        // Die Datei könnte bereits gelöscht sein oder nie existiert haben
         logger.error({ err: storageError }, "Failed to delete file from S3");
-        // Optional: Warnung im Response zurueckgeben
+        // Optional: Warnung im Response zurückgeben
       }
     }
 
@@ -336,7 +336,7 @@ export async function DELETE(
   } catch (error) {
     logger.error({ err: error }, "Error deleting document");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen des Dokuments" },
+      { error: "Fehler beim Löschen des Dokuments" },
       { status: 500 }
     );
   }

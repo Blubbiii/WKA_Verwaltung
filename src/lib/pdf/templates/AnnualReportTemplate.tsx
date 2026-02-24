@@ -712,7 +712,7 @@ export function AnnualReportTemplate({
         template={template}
         companyName={data.operatorName ?? undefined}
       >
-        <Text style={styles.title}>Jahresuebersicht {data.year}</Text>
+        <Text style={styles.title}>Jahresübersicht {data.year}</Text>
         <Text style={styles.subtitle}>{data.parkName}</Text>
 
         {/* Annual KPIs */}
@@ -725,7 +725,7 @@ export function AnnualReportTemplate({
             <Text style={styles.kpiUnit}>MWh</Text>
           </View>
           <View style={[styles.kpiCard, styles.kpiCardAccent]}>
-            <Text style={styles.kpiLabel}>Verfuegbarkeit (Mittel)</Text>
+            <Text style={styles.kpiLabel}>Verfügbarkeit (Mittel)</Text>
             <Text style={styles.kpiValue}>
               {data.avgAvailabilityPct != null
                 ? formatNumber(data.avgAvailabilityPct, 1)
@@ -756,7 +756,7 @@ export function AnnualReportTemplate({
           </View>
           {hasRevenue && (
             <View style={[styles.kpiCard, styles.kpiCardAccent]}>
-              <Text style={styles.kpiLabel}>Gesamterloese</Text>
+              <Text style={styles.kpiLabel}>Gesamterlöse</Text>
               <Text style={styles.kpiValue}>{formatCurrency(data.totalRevenueEur!)}</Text>
               <Text style={styles.kpiUnit}>EUR</Text>
             </View>
@@ -814,7 +814,7 @@ export function AnnualReportTemplate({
               </Text>
             </View>
             <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonLabel}>Verfuegbarkeit</Text>
+              <Text style={styles.comparisonLabel}>Verfügbarkeit</Text>
               <Text style={styles.comparisonCurrent}>
                 {formatPercent1(data.avgAvailabilityPct)}
               </Text>
@@ -862,7 +862,7 @@ export function AnnualReportTemplate({
             </View>
             {hasRevenue && data.prevYear.totalRevenueEur != null && (
               <View style={styles.comparisonRow}>
-                <Text style={styles.comparisonLabel}>Erloese</Text>
+                <Text style={styles.comparisonLabel}>Erlöse</Text>
                 <Text style={styles.comparisonCurrent}>
                   {formatCurrency(data.totalRevenueEur!)}
                 </Text>
@@ -911,7 +911,7 @@ export function AnnualReportTemplate({
                 <Text style={[styles.tableHeaderText, styles.colMAvail]}>Verfueg. %</Text>
                 <Text style={[styles.tableHeaderText, styles.colMHours]}>Betriebsstd.</Text>
                 {hasRevenue && (
-                  <Text style={[styles.tableHeaderText, styles.colMRevenue]}>Erloese</Text>
+                  <Text style={[styles.tableHeaderText, styles.colMRevenue]}>Erlöse</Text>
                 )}
               </View>
 
@@ -977,7 +977,7 @@ export function AnnualReportTemplate({
           </>
         ) : (
           <Text style={styles.noData}>
-            Keine Monatsdaten fuer dieses Jahr vorhanden.
+            Keine Monatsdaten für dieses Jahr vorhanden.
           </Text>
         )}
       </PageWrapper>
@@ -1087,7 +1087,7 @@ export function AnnualReportTemplate({
           </>
         ) : (
           <Text style={styles.noData}>
-            Keine Anlagen-Performance-Daten fuer dieses Jahr vorhanden.
+            Keine Anlagen-Performance-Daten für dieses Jahr vorhanden.
           </Text>
         )}
       </PageWrapper>
@@ -1105,12 +1105,12 @@ export function AnnualReportTemplate({
           {/* Revenue KPIs */}
           <View style={styles.kpiRow}>
             <View style={[styles.kpiCard, styles.kpiCardAccent]}>
-              <Text style={styles.kpiLabel}>Gesamterloese</Text>
+              <Text style={styles.kpiLabel}>Gesamterlöse</Text>
               <Text style={styles.kpiValue}>{formatCurrency(data.totalRevenueEur!)}</Text>
               <Text style={styles.kpiUnit}>EUR</Text>
             </View>
             <View style={styles.kpiCard}>
-              <Text style={styles.kpiLabel}>Erloese pro kWh</Text>
+              <Text style={styles.kpiLabel}>Erlöse pro kWh</Text>
               <Text style={styles.kpiValue}>
                 {data.avgRevenuePerKwh != null
                   ? `${formatNumber(data.avgRevenuePerKwh * 100, 2)} ct`
@@ -1128,17 +1128,17 @@ export function AnnualReportTemplate({
           </View>
 
           {/* Revenue per month table */}
-          <Text style={styles.subSectionTitle}>Monatliche Erloese</Text>
+          <Text style={styles.subSectionTitle}>Monatliche Erlöse</Text>
           <View style={styles.table}>
             <View style={styles.tableHeader}>
               <Text style={[styles.tableHeaderText, styles.colFMonth]}>Monat</Text>
-              <Text style={[styles.tableHeaderText, styles.colFRevenue]}>Erloese (EUR)</Text>
+              <Text style={[styles.tableHeaderText, styles.colFRevenue]}>Erlöse (EUR)</Text>
               <Text style={[styles.tableHeaderText, styles.colFProduction]}>
                 Produktion (MWh)
               </Text>
               <Text style={[styles.tableHeaderText, styles.colFRevPerKwh]}>ct/kWh</Text>
               <Text style={[styles.tableHeaderText, styles.colFCumulative]}>
-                Kumul. Erloese
+                Kumul. Erlöse
               </Text>
             </View>
 

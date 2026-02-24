@@ -14,7 +14,7 @@ import {
 
 // Category display names for document storage stats
 const categoryDisplayNames: Record<string, string> = {
-  CONTRACT: "Vertraege",
+  CONTRACT: "Verträge",
   PROTOCOL: "Protokolle",
   REPORT: "Berichte",
   INVOICE: "Rechnungen",
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         const validTypes = ["daily", "weekly", "monthly", "manual"] as const;
         if (!validTypes.includes(type)) {
           return NextResponse.json(
-            { error: `Ungueltiger Backup-Typ: ${type}` },
+            { error: `Ungültiger Backup-Typ: ${type}` },
             { status: 400 }
           );
         }
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json(
             {
               error:
-                "pg_dump ist nicht verfuegbar. Backups koennen nur in der Docker-Umgebung erstellt werden.",
+                "pg_dump ist nicht verfügbar. Backups können nur in der Docker-Umgebung erstellt werden.",
             },
             { status: 503 }
           );
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
           success: true,
           deleted: result.deleted,
           kept: result.kept,
-          message: `Retention angewendet: ${result.deleted.length} Backup(s) geloescht`,
+          message: `Retention angewendet: ${result.deleted.length} Backup(s) gelöscht`,
         });
       }
 
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: true,
           deletedCount,
-          message: `${deletedCount} temporaere Datei(en) geloescht`,
+          message: `${deletedCount} temporaere Datei(en) gelöscht`,
         });
       }
 
@@ -332,7 +332,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error || "Backup konnte nicht geloescht werden" },
+        { error: result.error || "Backup konnte nicht gelöscht werden" },
         { status: 404 }
       );
     }
@@ -341,12 +341,12 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Backup erfolgreich geloescht",
+      message: "Backup erfolgreich gelöscht",
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting backup");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen des Backups" },
+      { error: "Fehler beim Löschen des Backups" },
       { status: 500 }
     );
   }

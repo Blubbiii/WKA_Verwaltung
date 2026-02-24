@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     if (!stakeholder.billingEnabled) {
       return NextResponse.json(
-        { error: "Abrechnung fuer diesen Stakeholder nicht aktiviert" },
+        { error: "Abrechnung für diesen Stakeholder nicht aktiviert" },
         { status: 400 }
       );
     }

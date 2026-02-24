@@ -17,7 +17,7 @@ export async function GET(
 
     const { id } = await params;
 
-    // Rechnung pruefen
+    // Rechnung prüfen
     const invoice = await prisma.invoice.findUnique({
       where: { id },
       select: {
@@ -75,7 +75,7 @@ export async function GET(
     }
     filename += ".pdf";
 
-    // Response mit PDF (Buffer zu Uint8Array konvertieren fuer Web API Kompatibilitaet)
+    // Response mit PDF (Buffer zu Uint8Array konvertieren für Web API Kompatibilitaet)
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         "Content-Type": "application/pdf",

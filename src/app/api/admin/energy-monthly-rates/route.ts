@@ -1,9 +1,9 @@
 /**
  * API Route: /api/admin/energy-monthly-rates
- * GET: Liste aller monatlichen Verguetungssaetze (filterbar nach year, month, revenueTypeId)
- * POST: Neuen monatlichen Verguetungssatz erstellen
+ * GET: Liste aller monatlichen Vergütungssaetze (filterbar nach year, month, revenueTypeId)
+ * POST: Neuen monatlichen Vergütungssatz erstellen
  *
- * Nur fuer ADMIN und SUPERADMIN zugaenglich.
+ * Nur für ADMIN und SUPERADMIN zugaenglich.
  * Multi-Tenancy: Alle Abfragen sind auf tenantId beschraenkt.
  */
 
@@ -19,14 +19,14 @@ import { apiLogger as logger } from "@/lib/logger";
 // ============================================================================
 
 /**
- * Validation Schema fuer neue monatliche Verguetungssaetze
+ * Validation Schema für neue monatliche Vergütungssaetze
  * - year: 4-stelliges Jahr
  * - month: 1-12
  * - ratePerKwh: Hauptsatz in ct/kWh (erforderlich)
  * - marketValue: Marktwert in ct/kWh (optional)
- * - managementFee: Management-Gebuehr in ct/kWh (optional)
+ * - managementFee: Management-Gebühr in ct/kWh (optional)
  * - notes: Bemerkungen (optional)
- * - revenueTypeId: UUID des Verguetungstyps (erforderlich)
+ * - revenueTypeId: UUID des Vergütungstyps (erforderlich)
  */
 const createMonthlyRateSchema = z.object({
   year: z
@@ -41,8 +41,8 @@ const createMonthlyRateSchema = z.object({
     .max(12, "Monat muss zwischen 1 und 12 liegen"),
   ratePerKwh: z
     .number()
-    .min(0, "Verguetungssatz muss positiv sein")
-    .max(100, "Verguetungssatz erscheint unrealistisch hoch"),
+    .min(0, "Vergütungssatz muss positiv sein")
+    .max(100, "Vergütungssatz erscheint unrealistisch hoch"),
   marketValue: z
     .number()
     .min(0, "Marktwert muss positiv sein")
@@ -51,12 +51,12 @@ const createMonthlyRateSchema = z.object({
     .nullable(),
   managementFee: z
     .number()
-    .min(0, "Management-Gebuehr muss positiv sein")
-    .max(10, "Management-Gebuehr erscheint unrealistisch hoch")
+    .min(0, "Management-Gebühr muss positiv sein")
+    .max(10, "Management-Gebühr erscheint unrealistisch hoch")
     .optional()
     .nullable(),
   notes: z.string().max(1000, "Bemerkungen duerfen maximal 1000 Zeichen haben").optional().nullable(),
-  revenueTypeId: z.string().uuid("Ungueltige Verguetungstyp-ID"),
+  revenueTypeId: z.string().uuid("Ungültige Vergütungstyp-ID"),
 });
 
 // ============================================================================
@@ -64,14 +64,14 @@ const createMonthlyRateSchema = z.object({
 // ============================================================================
 
 /**
- * Listet alle monatlichen Verguetungssaetze mit optionalen Filtern.
+ * Listet alle monatlichen Vergütungssaetze mit optionalen Filtern.
  *
  * Query-Parameter:
  * - year: Filter nach Jahr (number)
  * - month: Filter nach Monat (1-12)
- * - revenueTypeId: Filter nach Verguetungstyp (UUID)
+ * - revenueTypeId: Filter nach Vergütungstyp (UUID)
  * - page: Seitennummer (default: 1)
- * - limit: Eintraege pro Seite (default: 50)
+ * - limit: Einträge pro Seite (default: 50)
  *
  * Sortierung: year DESC, month DESC (neueste zuerst)
  */
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy monthly rates");
     return NextResponse.json(
-      { error: "Fehler beim Laden der monatlichen Verguetungssaetze" },
+      { error: "Fehler beim Laden der monatlichen Vergütungssaetze" },
       { status: 500 }
     );
   }
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
 // ============================================================================
 
 /**
- * Erstellt einen neuen monatlichen Verguetungssatz.
+ * Erstellt einen neuen monatlichen Vergütungssatz.
  *
  * Validierungen:
  * - Alle Pflichtfelder muessen vorhanden sein
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createMonthlyRateSchema.parse(body);
 
-    // Pruefe ob der Verguetungstyp existiert und zum Tenant gehoert
+    // Pruefe ob der Vergütungstyp existiert und zum Tenant gehoert
     const revenueType = await prisma.energyRevenueType.findFirst({
       where: {
         id: validatedData.revenueTypeId,
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
 
     if (!revenueType) {
       return NextResponse.json(
-        { error: "Verguetungstyp nicht gefunden oder nicht berechtigt" },
+        { error: "Vergütungstyp nicht gefunden oder nicht berechtigt" },
         { status: 404 }
       );
     }
@@ -210,13 +210,13 @@ export async function POST(request: NextRequest) {
     if (existingRate) {
       return NextResponse.json(
         {
-          error: `Fuer diesen Verguetungstyp existiert bereits ein Satz fuer ${validatedData.month}/${validatedData.year}`,
+          error: `Für diesen Vergütungstyp existiert bereits ein Satz für ${validatedData.month}/${validatedData.year}`,
         },
         { status: 409 }
       );
     }
 
-    // Erstelle den neuen Verguetungssatz
+    // Erstelle den neuen Vergütungssatz
     const newRate = await prisma.energyMonthlyRate.create({
       data: {
         year: validatedData.year,
@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
         return NextResponse.json(
-          { error: "Ein Verguetungssatz fuer diesen Monat/Jahr existiert bereits" },
+          { error: "Ein Vergütungssatz für diesen Monat/Jahr existiert bereits" },
           { status: 409 }
         );
       }
@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
 
     logger.error({ err: error }, "Error creating energy monthly rate");
     return NextResponse.json(
-      { error: "Fehler beim Erstellen des monatlichen Verguetungssatzes" },
+      { error: "Fehler beim Erstellen des monatlichen Vergütungssatzes" },
       { status: 500 }
     );
   }

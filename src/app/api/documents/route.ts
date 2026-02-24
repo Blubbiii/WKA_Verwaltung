@@ -21,7 +21,7 @@ import {
   ROLE_HIERARCHY,
 } from "@/lib/auth/permissions";
 
-// Schema fuer JSON-basierte Dokument-Erstellung (ohne Datei-Upload)
+// Schema für JSON-basierte Dokument-Erstellung (ohne Datei-Upload)
 const documentCreateSchema = z.object({
   title: z.string().min(1, "Titel ist erforderlich"),
   description: z.string().optional(),
@@ -40,7 +40,7 @@ const documentCreateSchema = z.object({
   parentId: z.string().optional().nullable(), // For versioning
 });
 
-// Erlaubte MIME-Types fuer Dokumente
+// Erlaubte MIME-Types für Dokumente
 const ALLOWED_MIME_TYPES = [
   "application/pdf",
   "application/msword",
@@ -57,7 +57,7 @@ const ALLOWED_MIME_TYPES = [
   "text/csv",
 ];
 
-// Maximale Dateigroesse: 50 MB
+// Maximale Dateigröße: 50 MB
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 // GET /api/documents - Liste aller Dokumente
@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
       return handleFileUpload(request, check.tenantId, check.userId);
     }
 
-    // JSON: Dokument ohne Datei-Upload erstellen (z.B. fuer externe URLs)
+    // JSON: Dokument ohne Datei-Upload erstellen (z.B. für externe URLs)
     return handleJsonCreate(request, check.tenantId, check.userId);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -296,7 +296,7 @@ async function handleFileUpload(
   } catch (bucketError) {
     logger.error({ err: bucketError }, "Bucket initialization failed");
     return NextResponse.json(
-      { error: "Storage-System nicht verfuegbar. Bitte versuchen Sie es spaeter erneut." },
+      { error: "Storage-System nicht verfügbar. Bitte versuchen Sie es später erneut." },
       { status: 503 }
     );
   }
@@ -313,7 +313,7 @@ async function handleFileUpload(
     );
   }
 
-  // Validiere Dateigroesse
+  // Validiere Dateigröße
   if (file.size > MAX_FILE_SIZE) {
     return NextResponse.json(
       { error: `Datei zu gross. Maximum: ${MAX_FILE_SIZE / 1024 / 1024} MB` },
@@ -329,7 +329,7 @@ async function handleFileUpload(
   if (!allowed) {
     return NextResponse.json(
       {
-        error: `Speicherlimit erreicht. Verwendet: ${storageInfo.usedFormatted} von ${storageInfo.limitFormatted}. Die Datei (${(file.size / 1024 / 1024).toFixed(1)} MB) ueberschreitet das Limit.`,
+        error: `Speicherlimit erreicht. Verwendet: ${storageInfo.usedFormatted} von ${storageInfo.limitFormatted}. Die Datei (${(file.size / 1024 / 1024).toFixed(1)} MB) überschreitet das Limit.`,
         code: "STORAGE_LIMIT_EXCEEDED",
         storageInfo,
       },
@@ -383,12 +383,12 @@ async function handleFileUpload(
   const validCategories = ["CONTRACT", "PROTOCOL", "REPORT", "INVOICE", "PERMIT", "CORRESPONDENCE", "OTHER"];
   if (!validCategories.includes(category)) {
     return NextResponse.json(
-      { error: "Ungueltige Kategorie", validCategories },
+      { error: "Ungültige Kategorie", validCategories },
       { status: 400 }
     );
   }
 
-  // Konvertiere File zu Buffer fuer S3 Upload
+  // Konvertiere File zu Buffer für S3 Upload
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 

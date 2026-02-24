@@ -92,7 +92,7 @@ interface ImportRowResult {
 const WIZARD_STEPS = [
   { id: 'upload', title: 'Hochladen', description: 'CSV/Excel-Datei' },
   { id: 'mapping', title: 'Zuordnung', description: 'Spalten zuordnen' },
-  { id: 'preview', title: 'Vorschau', description: 'Daten pruefen' },
+  { id: 'preview', title: 'Vorschau', description: 'Daten prüfen' },
   { id: 'import', title: 'Import', description: 'Daten importieren' },
 ]
 
@@ -110,7 +110,7 @@ const COLUMN_PATTERNS: Record<keyof ColumnMapping, RegExp> = {
   year: /^(jahr|year|j|abrechnungsjahr)$/i,
   month: /^(monat|month|m|abrechnungsmonat)$/i,
   productionKwh: /^(produktion[_-]?kwh|production[_-]?kwh|einspeisung[_-]?kwh|einspeisung|kwh|menge)$/i,
-  revenueEur: /^(erloes[_-]?eur|revenue[_-]?eur|erloes|revenue|betrag|netto|verguetung|eur)$/i,
+  revenueEur: /^(erlös[_-]?eur|revenue[_-]?eur|erlös|revenue|betrag|netto|vergütung|eur)$/i,
   reference: /^(referenz|reference|ref|beleg[_-]?nr|belegnummer|rechnungs?[_-]?nr)$/i,
   notes: /^(bemerkungen|notes|notizen|kommentar|anmerkung)$/i,
 }
@@ -292,7 +292,7 @@ export function SettlementImportSheet({
       try {
         if (selectedFile.size > MAX_FILE_SIZE) {
           throw new Error(
-            'Datei ist groesser als 10 MB. Bitte eine kleinere Datei verwenden.'
+            'Datei ist größer als 10 MB. Bitte eine kleinere Datei verwenden.'
           )
         }
 
@@ -419,7 +419,7 @@ export function SettlementImportSheet({
         // Year
         const year = mapping.year ? Number(row[mapping.year]) : NaN
         if (isNaN(year) || year < 2000 || year > 2100) {
-          messages.push(`Ungueltiges Jahr: ${mapping.year ? row[mapping.year] : '(leer)'}`)
+          messages.push(`Ungültiges Jahr: ${mapping.year ? row[mapping.year] : '(leer)'}`)
           status = 'error'
         }
 
@@ -429,7 +429,7 @@ export function SettlementImportSheet({
           if (monthRaw !== null && monthRaw !== undefined && monthRaw !== '') {
             const month = parseMonth(monthRaw)
             if (month === null) {
-              messages.push(`Ungueltiger Monat: ${monthRaw}`)
+              messages.push(`Ungültiger Monat: ${monthRaw}`)
               if (status === 'success') status = 'warning'
             }
           }
@@ -441,7 +441,7 @@ export function SettlementImportSheet({
           : null
         if (production === null || production < 0) {
           messages.push(
-            `Ungueltige Produktion: ${mapping.productionKwh ? row[mapping.productionKwh] : '(leer)'}`
+            `Ungültige Produktion: ${mapping.productionKwh ? row[mapping.productionKwh] : '(leer)'}`
           )
           status = 'error'
         }
@@ -452,7 +452,7 @@ export function SettlementImportSheet({
           : null
         if (revenue === null || revenue < 0) {
           messages.push(
-            `Ungueltiger Erloes: ${mapping.revenueEur ? row[mapping.revenueEur] : '(leer)'}`
+            `Ungültiger Erlös: ${mapping.revenueEur ? row[mapping.revenueEur] : '(leer)'}`
           )
           status = 'error'
         }
@@ -777,9 +777,9 @@ export function SettlementImportSheet({
       },
       {
         key: 'revenueEur',
-        label: 'Erloes EUR',
+        label: 'Erlös EUR',
         required: true,
-        description: 'Verguetungsbetrag vom Netzbetreiber',
+        description: 'Vergütungsbetrag vom Netzbetreiber',
       },
       {
         key: 'reference',
@@ -791,7 +791,7 @@ export function SettlementImportSheet({
         key: 'notes',
         label: 'Bemerkungen',
         required: false,
-        description: 'Zusaetzliche Notizen (optional)',
+        description: 'Zusätzliche Notizen (optional)',
       },
     ]
 
@@ -799,7 +799,7 @@ export function SettlementImportSheet({
       <div className="flex-1 overflow-y-auto py-4">
         <p className="text-sm text-muted-foreground mb-4">
           Ordnen Sie die Spalten Ihrer Datei den entsprechenden Feldern zu. Park, Jahr,
-          Produktion und Erloes muessen zugeordnet werden.
+          Produktion und Erlös muessen zugeordnet werden.
         </p>
 
         <div className="space-y-4">
@@ -837,7 +837,7 @@ export function SettlementImportSheet({
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
               <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                Bitte ordnen Sie mindestens Park, Jahr, Produktion und Erloes zu.
+                Bitte ordnen Sie mindestens Park, Jahr, Produktion und Erlös zu.
               </p>
             </div>
           </div>
@@ -894,7 +894,7 @@ export function SettlementImportSheet({
         <div className="flex gap-3 mb-4 flex-shrink-0 flex-wrap">
           <Badge variant="default" className="bg-green-600 hover:bg-green-600">
             <CheckCircle2 className="h-3 w-3 mr-1" />
-            {validCount} gueltig
+            {validCount} gültig
           </Badge>
           {warningCount > 0 && (
             <Badge variant="secondary" className="bg-yellow-500 text-white hover:bg-yellow-500">
@@ -922,7 +922,7 @@ export function SettlementImportSheet({
                 <TableHead className="text-xs">Park</TableHead>
                 <TableHead className="text-xs">Zeitraum</TableHead>
                 <TableHead className="text-xs text-right">Produktion kWh</TableHead>
-                <TableHead className="text-xs text-right">Erloes EUR</TableHead>
+                <TableHead className="text-xs text-right">Erlös EUR</TableHead>
                 <TableHead className="text-xs">Hinweise</TableHead>
               </TableRow>
             </TableHeader>
@@ -1042,7 +1042,7 @@ export function SettlementImportSheet({
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-2xl font-bold text-yellow-600">{importResults.skipped}</p>
-            <p className="text-xs text-muted-foreground">Uebersprungen</p>
+            <p className="text-xs text-muted-foreground">Übersprungen</p>
           </div>
           <div className="rounded-lg border p-4">
             <p className="text-2xl font-bold text-destructive">{importResults.errors}</p>
@@ -1110,7 +1110,7 @@ export function SettlementImportSheet({
               {currentStep > 0 && currentStep < 3 && (
                 <Button variant="outline" onClick={handleBack}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurueck
+                  Zurück
                 </Button>
               )}
             </div>

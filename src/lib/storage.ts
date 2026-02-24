@@ -1,5 +1,5 @@
 /**
- * S3-kompatibler Storage Service fuer WindparkManager
+ * S3-kompatibler Storage Service für WindparkManager
  * Unterstuetzt MinIO (Entwicklung) und AWS S3 (Produktion)
  */
 
@@ -15,7 +15,7 @@ import { getSignedUrl as awsGetSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
 
-// Environment-Variablen mit Defaults fuer lokale Entwicklung (MinIO)
+// Environment-Variablen mit Defaults für lokale Entwicklung (MinIO)
 const S3_ENDPOINT = process.env.S3_ENDPOINT || "http://localhost:9000";
 const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY || "minioadmin";
 const S3_SECRET_KEY = process.env.S3_SECRET_KEY || "minioadmin";
@@ -24,7 +24,7 @@ const S3_REGION = process.env.S3_REGION || "us-east-1";
 
 /**
  * S3 Client Singleton
- * Konfiguriert fuer MinIO (lokal) oder AWS S3 (Produktion)
+ * Konfiguriert für MinIO (lokal) oder AWS S3 (Produktion)
  */
 const s3Client = new S3Client({
   endpoint: S3_ENDPOINT,
@@ -33,7 +33,7 @@ const s3Client = new S3Client({
     accessKeyId: S3_ACCESS_KEY,
     secretAccessKey: S3_SECRET_KEY,
   },
-  // Wichtig fuer MinIO: Path-Style statt Virtual-Hosted-Style
+  // Wichtig für MinIO: Path-Style statt Virtual-Hosted-Style
   forcePathStyle: true,
 });
 
@@ -54,7 +54,7 @@ function generateS3Key(fileName: string, tenantId: string): string {
  * @param file - Der Datei-Buffer
  * @param fileName - Originaler Dateiname
  * @param mimeType - MIME-Type der Datei (z.B. "application/pdf")
- * @param tenantId - ID des Mandanten (fuer Ordnerstruktur)
+ * @param tenantId - ID des Mandanten (für Ordnerstruktur)
  * @returns Der S3-Key unter dem die Datei gespeichert wurde
  */
 export async function uploadFile(
@@ -71,7 +71,7 @@ export async function uploadFile(
       Key: key,
       Body: file,
       ContentType: mimeType,
-      // Metadaten fuer spaetere Referenz
+      // Metadaten für spätere Referenz
       Metadata: {
         "original-filename": fileName,
         "tenant-id": tenantId,
@@ -88,12 +88,12 @@ export async function uploadFile(
 }
 
 /**
- * Generiert eine signierte URL fuer den Dateizugriff
- * Die URL ist zeitlich begrenzt gueltig (Standard: 1 Stunde)
+ * Generiert eine signierte URL für den Dateizugriff
+ * Die URL ist zeitlich begrenzt gültig (Standard: 1 Stunde)
  *
  * @param key - Der S3-Key der Datei
- * @param expiresIn - Gueltigkeitsdauer in Sekunden (Standard: 3600 = 1 Stunde)
- * @returns Signierte URL fuer Download/Preview
+ * @param expiresIn - Gültigkeitsdauer in Sekunden (Standard: 3600 = 1 Stunde)
+ * @returns Signierte URL für Download/Preview
  */
 export async function getSignedUrl(
   key: string,
@@ -115,7 +115,7 @@ export async function getSignedUrl(
 
 /**
  * Laedt eine Datei als Buffer direkt aus S3/MinIO.
- * Fuer serverseitige Verarbeitung (z.B. PDF-Merge) wo keine signierte URL benoetigt wird.
+ * Für serverseitige Verarbeitung (z.B. PDF-Merge) wo keine signierte URL benötigt wird.
  */
 export async function getFileBuffer(key: string): Promise<Buffer> {
   try {
@@ -147,7 +147,7 @@ export async function getFileBuffer(key: string): Promise<Buffer> {
 /**
  * Loescht eine Datei aus S3/MinIO
  *
- * @param key - Der S3-Key der zu loeschenden Datei
+ * @param key - Der S3-Key der zu löschenden Datei
  */
 export async function deleteFile(key: string): Promise<void> {
   try {
@@ -158,7 +158,7 @@ export async function deleteFile(key: string): Promise<void> {
 
     await s3Client.send(command);
   } catch (error) {
-    logger.error({ err: error }, "Fehler beim Loeschen der Datei");
+    logger.error({ err: error }, "Fehler beim Löschen der Datei");
     throw new Error(`Datei-Loeschung fehlgeschlagen: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`);
   }
 }
@@ -201,26 +201,26 @@ export async function ensureBucket(): Promise<void> {
       }
     } else {
       // Anderer Fehler (z.B. Verbindungsproblem)
-      logger.error({ err: error }, "Fehler beim Pruefen des Buckets");
+      logger.error({ err: error }, "Fehler beim Prüfen des Buckets");
       throw new Error(
-        `Bucket-Pruefung fehlgeschlagen: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`
+        `Bucket-Prüfung fehlgeschlagen: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`
       );
     }
   }
 }
 
 /**
- * Gibt Informationen ueber die aktuelle Storage-Konfiguration zurueck
- * Nuetzlich fuer Debugging und Health-Checks
+ * Gibt Informationen über die aktuelle Storage-Konfiguration zurück
+ * Nützlich für Debugging und Health-Checks
  */
 export function getStorageConfig() {
   return {
     endpoint: S3_ENDPOINT,
     bucket: S3_BUCKET,
     region: S3_REGION,
-    // Credentials werden aus Sicherheitsgruenden nicht zurueckgegeben
+    // Credentials werden aus Sicherheitsgruenden nicht zurückgegeben
   };
 }
 
-// Exportiere den Client fuer fortgeschrittene Anwendungsfaelle
+// Exportiere den Client für fortgeschrittene Anwendungsfaelle
 export { s3Client, S3_BUCKET };

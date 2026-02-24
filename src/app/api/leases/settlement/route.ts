@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
               {
                 error: "Validierungsfehler",
-                details: "Bei quartalsweisen oder monatlichen Vorschuessen muss der Monat (month) angegeben werden",
+                details: "Bei quartalsweisen oder monatlichen Vorschüssen muss der Monat (month) angegeben werden",
               },
               { status: 400 }
             );
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: "Duplikat erkannt",
-            details: `Fuer Park "${park.name}" existiert bereits eine abgeschlossene Abrechnung fuer diesen Zeitraum (${validatedData.year}, ${validatedData.periodType || "FINAL"}, Monat: ${validatedData.month ?? "ganzjaehrig"})`,
+            details: `Für Park "${park.name}" existiert bereits eine abgeschlossene Abrechnung für diesen Zeitraum (${validatedData.year}, ${validatedData.periodType || "FINAL"}, Monat: ${validatedData.month ?? "ganzjaehrig"})`,
           },
           { status: 409 }
         );

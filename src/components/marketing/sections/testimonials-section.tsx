@@ -16,14 +16,14 @@ const testimonials = [
     name: "Sabine Weber",
     role: "Kaufm. Leitung, Energiepark Mittelland",
     quote:
-      "Endlich eine Software, die von Windpark-Praktikern entwickelt wurde. Besonders das Gesellschafter-Portal spart uns unzaehlige Rueckfragen.",
+      "Endlich eine Software, die von Windpark-Praktikern entwickelt wurde. Besonders das Gesellschafter-Portal spart uns unzaehlige Rückfragen.",
   },
   {
     initials: "KB",
     name: "Dr. Klaus Bergmann",
     role: "Vorstand, Wind Invest AG",
     quote:
-      "Die SCADA-Integration und das automatische Reporting geben uns volle Transparenz ueber alle 12 Parks -- in Echtzeit.",
+      "Die SCADA-Integration und das automatische Reporting geben uns volle Transparenz über alle 12 Parks -- in Echtzeit.",
   },
 ] as const;
 

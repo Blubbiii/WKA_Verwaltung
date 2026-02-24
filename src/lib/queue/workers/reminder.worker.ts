@@ -1,15 +1,15 @@
 /**
  * Reminder Worker - Verarbeitet Jobs aus der "reminder" Queue
  *
- * Dieser Worker ist verantwortlich fuer automatische Erinnerungen:
- * - Ueberfaellige Rechnungen (SENT status, dueDate < today)
- * - Auslaufende Vertraege (endDate innerhalb 30/14/7 Tagen)
+ * Dieser Worker ist verantwortlich für automatische Erinnerungen:
+ * - Überfällige Rechnungen (SENT status, dueDate < today)
+ * - Auslaufende Verträge (endDate innerhalb 30/14/7 Tagen)
  * - Offene Abrechnungsperioden (offen seit >30 Tagen)
  * - Ablaufende Dokumente (wenn expiryDate vorhanden)
  *
  * Verwendet:
  *   - src/lib/reminders/reminder-service.ts (checkAndSendReminders)
- *   - src/lib/queue/queues/email.queue.ts (fuer E-Mail-Versand)
+ *   - src/lib/queue/queues/email.queue.ts (für E-Mail-Versand)
  *   - Prisma models: Invoice, Contract, LeaseSettlementPeriod, ReminderLog
  */
 

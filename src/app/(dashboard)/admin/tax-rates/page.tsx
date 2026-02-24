@@ -88,7 +88,7 @@ const TAX_TYPE_ORDER: TaxType[] = ["STANDARD", "REDUCED", "EXEMPT"];
 
 const MODULE_LABELS: Record<string, string> = {
   lease: "Pacht",
-  management: "Betriebsfuehrung",
+  management: "Betriebsführung",
   billing: "Abrechnung",
 };
 
@@ -159,7 +159,7 @@ export default function AdminTaxRatesPage() {
       setError(null);
       const res = await fetch("/api/admin/tax-rates");
       if (!res.ok) {
-        throw new Error("Fehler beim Laden der Steuersaetze");
+        throw new Error("Fehler beim Laden der Steuersätze");
       }
       const json = await res.json();
       setTaxRates(Array.isArray(json) ? json : json.data ?? []);
@@ -235,7 +235,7 @@ export default function AdminTaxRatesPage() {
   async function handleSave() {
     // Validation
     if (!formData.rate || isNaN(Number(formData.rate))) {
-      toast.error("Bitte geben Sie einen gueltigen Steuersatz ein");
+      toast.error("Bitte geben Sie einen gültigen Steuersatz ein");
       return;
     }
     if (!formData.validFrom) {
@@ -315,14 +315,14 @@ export default function AdminTaxRatesPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Loeschen des Steuersatzes");
+        throw new Error(err.error || "Fehler beim Löschen des Steuersatzes");
       }
-      toast.success("Steuersatz geloescht");
+      toast.success("Steuersatz gelöscht");
       setDeletingRate(null);
       await fetchTaxRates();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Loeschen"
+        err instanceof Error ? err.message : "Fehler beim Löschen"
       );
       throw err; // re-throw so DeleteConfirmDialog stays open on error
     }
@@ -443,7 +443,7 @@ export default function AdminTaxRatesPage() {
               variant="ghost"
               size="icon"
               onClick={() => openDelete(rate)}
-              aria-label="Steuersatz loeschen"
+              aria-label="Steuersatz löschen"
               className="text-destructive hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" />
@@ -462,8 +462,8 @@ export default function AdminTaxRatesPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Steuersaetze"
-          description="Verwalten Sie hier die gesetzlichen Steuersaetze mit Gueltigkeitszeitraum."
+          title="Steuersätze"
+          description="Verwalten Sie hier die gesetzlichen Steuersätze mit Gültigkeitszeitraum."
         />
         <Card>
           <CardContent className="pt-6">
@@ -487,8 +487,8 @@ export default function AdminTaxRatesPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Steuersaetze"
-          description="Verwalten Sie hier die gesetzlichen Steuersaetze mit Gueltigkeitszeitraum."
+          title="Steuersätze"
+          description="Verwalten Sie hier die gesetzlichen Steuersätze mit Gültigkeitszeitraum."
         />
         <div className="p-4 text-red-600 bg-red-50 dark:bg-red-950/20 dark:text-red-400 rounded-md">
           {error}
@@ -506,8 +506,8 @@ export default function AdminTaxRatesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Steuersaetze"
-        description="Verwalten Sie hier die gesetzlichen Steuersaetze mit Gueltigkeitszeitraum."
+        title="Steuersätze"
+        description="Verwalten Sie hier die gesetzlichen Steuersätze mit Gültigkeitszeitraum."
         actions={
           <Button onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />
@@ -522,7 +522,7 @@ export default function AdminTaxRatesPage() {
             <div className="text-center py-12 text-muted-foreground">
               <Percent className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium">
-                Keine Steuersaetze vorhanden
+                Keine Steuersätze vorhanden
               </p>
               <p className="text-sm mt-2">
                 Erstellen Sie den ersten Steuersatz, um loszulegen.
@@ -550,8 +550,8 @@ export default function AdminTaxRatesPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Satz (%)</TableHead>
-                        <TableHead>Gueltig ab</TableHead>
-                        <TableHead>Gueltig bis</TableHead>
+                        <TableHead>Gültig ab</TableHead>
+                        <TableHead>Gültig bis</TableHead>
                         <TableHead>Bezeichnung</TableHead>
                         <TableHead className="w-[100px]">Aktionen</TableHead>
                       </TableRow>
@@ -580,7 +580,7 @@ export default function AdminTaxRatesPage() {
                     Zuordnung Positionskategorien
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Legen Sie fest, welcher Steuersatz fuer welche Abrechnungsposition gilt.
+                    Legen Sie fest, welcher Steuersatz für welche Abrechnungsposition gilt.
                   </p>
                 </div>
                 {hasMappingChanges && (
@@ -670,7 +670,7 @@ export default function AdminTaxRatesPage() {
             <DialogDescription>
               {editingRate
                 ? "Bearbeiten Sie die Daten des Steuersatzes."
-                : "Erstellen Sie einen neuen Steuersatz mit Gueltigkeitszeitraum."}
+                : "Erstellen Sie einen neuen Steuersatz mit Gültigkeitszeitraum."}
             </DialogDescription>
           </DialogHeader>
 
@@ -718,7 +718,7 @@ export default function AdminTaxRatesPage() {
 
             {/* Valid From */}
             <div className="space-y-2">
-              <Label htmlFor="validFrom">Gueltig ab *</Label>
+              <Label htmlFor="validFrom">Gültig ab *</Label>
               <Input
                 id="validFrom"
                 type="date"
@@ -732,7 +732,7 @@ export default function AdminTaxRatesPage() {
             {/* Valid To */}
             <div className="space-y-2">
               <Label htmlFor="validTo">
-                Gueltig bis{" "}
+                Gültig bis{" "}
                 <span className="text-muted-foreground font-normal">
                   (leer = unbegrenzt)
                 </span>
@@ -787,8 +787,8 @@ export default function AdminTaxRatesPage() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         onConfirm={handleDelete}
-        title="Steuersatz loeschen"
-        description="Moechten Sie diesen Steuersatz wirklich loeschen?"
+        title="Steuersatz löschen"
+        description="Möchten Sie diesen Steuersatz wirklich löschen?"
         itemName={
           deletingRate
             ? `${deletingRate.rate}% (${TAX_TYPE_SELECT_LABELS[deletingRate.taxType]})`

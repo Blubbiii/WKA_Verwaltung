@@ -1,7 +1,7 @@
 /**
  * SCADA-Integration Module
  *
- * Zentrale Einstiegsdatei fuer alle SCADA-bezogenen Services.
+ * Zentrale Einstiegsdatei für alle SCADA-bezogenen Services.
  * Ermoeglicht den Import und die Verarbeitung von Enercon SCADA-Daten
  * (dBASE III / DBF-Dateien) in das WindparkManager-System.
  *

@@ -251,7 +251,7 @@ export function InvoiceTemplateEditor({
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onBack} className="h-8">
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Zurueck
+            Zurück
           </Button>
           <div className="space-y-0.5">
             <Label className="text-[10px] text-muted-foreground">Vorlagenname</Label>
@@ -274,7 +274,7 @@ export function InvoiceTemplateEditor({
             className="h-8 text-xs"
           >
             <RotateCcw className="h-3 w-3 mr-1" />
-            Zuruecksetzen
+            Zurücksetzen
           </Button>
           <Button
             size="sm"

@@ -12,7 +12,7 @@ import { z } from "zod";
 import { validateRuleParameters, calculateNextRun, BillingRuleType, BillingRuleFrequency } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
 
-// Validation Schema fuer neue Regel
+// Validation Schema für neue Regel
 const createRuleSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").max(200),
   description: z.string().max(1000).optional(),
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       prisma.billingRule.count({ where }),
     ]);
 
-    // Transformiere Regeln fuer Response
+    // Transformiere Regeln für Response
     const transformedRules = rules.map((rule) => ({
       id: rule.id,
       name: rule.name,
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     // Validiere Cron-Pattern wenn CUSTOM_CRON
     if (validatedData.frequency === "CUSTOM_CRON" && !validatedData.cronPattern) {
       return NextResponse.json(
-        { error: "Cron-Pattern ist erforderlich fuer CUSTOM_CRON Frequenz" },
+        { error: "Cron-Pattern ist erforderlich für CUSTOM_CRON Frequenz" },
         { status: 400 }
       );
     }
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     if (!paramValidation.valid) {
       return NextResponse.json(
-        { error: paramValidation.error || "Ungueltige Parameter" },
+        { error: paramValidation.error || "Ungültige Parameter" },
         { status: 400 }
       );
     }

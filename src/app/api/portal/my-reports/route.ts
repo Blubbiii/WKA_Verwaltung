@@ -6,8 +6,8 @@ import { apiLogger as logger } from "@/lib/logger";
 /**
  * GET /api/portal/my-reports
  *
- * Gibt alle Berichte zurueck, auf die der angemeldete Gesellschafter Zugriff hat.
- * Berichte koennen dem Gesellschafter direkt zugeordnet sein (shareholderId)
+ * Gibt alle Berichte zurück, auf die der angemeldete Gesellschafter Zugriff hat.
+ * Berichte können dem Gesellschafter direkt zugeordnet sein (shareholderId)
  * oder zu einer Gesellschaft gehoeren, an der der Gesellschafter beteiligt ist (fundId).
  *
  * Query Parameters:

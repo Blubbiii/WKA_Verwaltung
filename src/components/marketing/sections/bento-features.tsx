@@ -64,7 +64,7 @@ const defaultFeatures: Array<{
   {
     title: "Gesellschafter-Portal",
     description:
-      "Transparente Beteiligungsuebersicht, digitale Abstimmungen und sicherer Dokumentenzugang fuer Ihre Investoren.",
+      "Transparente Beteiligungsübersicht, digitale Abstimmungen und sicherer Dokumentenzugang für Ihre Investoren.",
     icon: "users",
     gridClass: "lg:col-span-1",
   },
@@ -99,7 +99,7 @@ const defaultFeatures: Array<{
   {
     title: "Energiedaten-Import",
     description:
-      "Flexible Import-Formate fuer Netzbetreiber-Abrechnungen und Direktvermarkter-Daten.",
+      "Flexible Import-Formate für Netzbetreiber-Abrechnungen und Direktvermarkter-Daten.",
     icon: "upload",
     gridClass: "lg:col-span-1",
   },
@@ -148,7 +148,7 @@ export function BentoFeatures({ features }: BentoFeaturesProps) {
           </h2>
           <p className="mt-4 text-muted-foreground md:text-lg max-w-2xl mx-auto">
             Von der Betriebsdatenerfassung bis zur Gutschrift -- eine Plattform
-            fuer den gesamten Windpark-Lebenszyklus.
+            für den gesamten Windpark-Lebenszyklus.
           </p>
         </div>
 

@@ -9,7 +9,7 @@ const productLinks = [
 ];
 
 const companyLinks = [
-  { href: "#about", label: "Ueber uns" },
+  { href: "#about", label: "Über uns" },
   { href: "#testimonials", label: "Referenzen" },
 ];
 
@@ -30,7 +30,7 @@ export function MarketingFooter() {
               WindparkManager
             </Link>
             <p className="text-sm leading-relaxed mb-4">
-              Die moderne Plattform fuer professionelle Windpark-Verwaltung.
+              Die moderne Plattform für professionelle Windpark-Verwaltung.
             </p>
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true" />

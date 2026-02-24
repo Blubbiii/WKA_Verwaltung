@@ -1,6 +1,6 @@
 /**
  * Management Fee Rule Handler
- * Implementiert die Logik fuer Verwaltungsgebuehren
+ * Implementiert die Logik für Verwaltungsgebühren
  */
 
 import { prisma } from "@/lib/prisma";
@@ -19,7 +19,7 @@ import {
 } from "../types";
 
 /**
- * Berechnet den Basiswert fuer prozentuale Verwaltungsgebuehren
+ * Berechnet den Basiswert für prozentuale Verwaltungsgebühren
  */
 async function getBaseValue(
   tenantId: string,
@@ -131,7 +131,7 @@ async function getBaseValue(
 }
 
 /**
- * Handler fuer Verwaltungsgebuehren
+ * Handler für Verwaltungsgebühren
  */
 export class ManagementFeeHandler implements RuleHandler {
   readonly ruleType = BillingRuleType.MANAGEMENT_FEE;
@@ -170,7 +170,7 @@ export class ManagementFeeHandler implements RuleHandler {
       }
     }
 
-    // Optionale Felder pruefen
+    // Optionale Felder prüfen
     if (params.fundId !== undefined && typeof params.fundId !== "string") {
       return false;
     }
@@ -332,14 +332,14 @@ export class ManagementFeeHandler implements RuleHandler {
         InvoiceType.INVOICE
       );
 
-      // Ermittle aktuelles Quartal oder Monat fuer Beschreibung
+      // Ermittle aktuelles Quartal oder Monat für Beschreibung
       const now = new Date();
       const quarter = Math.floor(now.getMonth() / 3) + 1;
       const year = now.getFullYear();
 
       const description =
         params.description ||
-        `Verwaltungsgebuehr Q${quarter}/${year}`;
+        `Verwaltungsgebühr Q${quarter}/${year}`;
 
       // Rechnung erstellen
       const invoice = await prisma.invoice.create({

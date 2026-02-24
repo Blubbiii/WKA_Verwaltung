@@ -33,7 +33,7 @@ export async function GET(
 
     if (!revenueType) {
       return NextResponse.json(
-        { error: "Verguetungsart nicht gefunden" },
+        { error: "Vergütungsart nicht gefunden" },
         { status: 404 }
       );
     }
@@ -42,7 +42,7 @@ export async function GET(
   } catch (error) {
     logger.error({ err: error }, "Error fetching revenue type");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Verguetungsart" },
+      { error: "Fehler beim Laden der Vergütungsart" },
       { status: 500 }
     );
   }
@@ -65,7 +65,7 @@ export async function PATCH(
 
     if (!existing) {
       return NextResponse.json(
-        { error: "Verguetungsart nicht gefunden" },
+        { error: "Vergütungsart nicht gefunden" },
         { status: 404 }
       );
     }
@@ -75,7 +75,7 @@ export async function PATCH(
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.errors[0]?.message || "Ungueltige Eingabe" },
+        { error: parsed.error.errors[0]?.message || "Ungültige Eingabe" },
         { status: 400 }
       );
     }
@@ -106,7 +106,7 @@ export async function PATCH(
   } catch (error) {
     logger.error({ err: error }, "Error updating revenue type");
     return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Verguetungsart" },
+      { error: "Fehler beim Aktualisieren der Vergütungsart" },
       { status: 500 }
     );
   }
@@ -129,7 +129,7 @@ export async function DELETE(
 
     if (!existing) {
       return NextResponse.json(
-        { error: "Verguetungsart nicht gefunden" },
+        { error: "Vergütungsart nicht gefunden" },
         { status: 404 }
       );
     }
@@ -147,7 +147,7 @@ export async function DELETE(
       });
       return NextResponse.json({
         success: true,
-        message: `Verguetungsart deaktiviert (${usageCount} Monatssaetze referenzieren diese)`,
+        message: `Vergütungsart deaktiviert (${usageCount} Monatssaetze referenzieren diese)`,
       });
     }
 
@@ -158,7 +158,7 @@ export async function DELETE(
   } catch (error) {
     logger.error({ err: error }, "Error deleting revenue type");
     return NextResponse.json(
-      { error: "Fehler beim Loeschen der Verguetungsart" },
+      { error: "Fehler beim Löschen der Vergütungsart" },
       { status: 500 }
     );
   }

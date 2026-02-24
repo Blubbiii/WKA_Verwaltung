@@ -8,7 +8,7 @@ import { getAllPositionTaxMappings } from "@/lib/tax/position-tax-mapping";
 const createSchema = z.object({
   taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]),
   rate: z.number().min(0).max(100),
-  validFrom: z.string().min(1, "Gueltig-ab-Datum erforderlich"),
+  validFrom: z.string().min(1, "Gültig-ab-Datum erforderlich"),
   validTo: z.string().optional().nullable(),
   label: z.string().optional().nullable(),
 });
@@ -56,7 +56,7 @@ export async function GET() {
   } catch (error) {
     logger.error({ err: error }, "Error fetching tax rates");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Steuersaetze" },
+      { error: "Fehler beim Laden der Steuersätze" },
       { status: 500 }
     );
   }
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.errors[0]?.message || "Ungueltige Eingabe" },
+        { error: parsed.error.errors[0]?.message || "Ungültige Eingabe" },
         { status: 400 }
       );
     }

@@ -393,17 +393,17 @@ export default function EmailConfigPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Zuruecksetzen");
+        throw new Error(error.error || "Fehler beim Zurücksetzen");
       }
 
-      toast.success("Vorlage auf Standard zurueckgesetzt");
+      toast.success("Vorlage auf Standard zurückgesetzt");
       setShowTemplateDialog(false);
       loadTemplates();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Zuruecksetzen"
+          : "Fehler beim Zurücksetzen"
       );
     } finally {
       setTemplateSaving(false);
@@ -511,7 +511,7 @@ export default function EmailConfigPage() {
                 E-Mail-Vorlagen
               </CardTitle>
               <CardDescription>
-                Verwalten und bearbeiten Sie die Vorlagen fuer System-E-Mails
+                Verwalten und bearbeiten Sie die Vorlagen für System-E-Mails
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -604,7 +604,7 @@ export default function EmailConfigPage() {
                     System-E-Mails aktiviert
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Haupt-Schalter fuer alle E-Mail-Benachrichtigungen
+                    Haupt-Schalter für alle E-Mail-Benachrichtigungen
                   </p>
                 </div>
                 <Switch
@@ -630,7 +630,7 @@ export default function EmailConfigPage() {
                 />
                 <NotificationSwitch
                   label="Passwort-Reset"
-                  description="E-Mail zum Zuruecksetzen des Passworts"
+                  description="E-Mail zum Zurücksetzen des Passworts"
                   checked={notificationSettings.passwordReset}
                   disabled={!notificationSettings.systemEmailsEnabled}
                   onCheckedChange={(checked) =>
@@ -666,7 +666,7 @@ export default function EmailConfigPage() {
                 />
                 <NotificationSwitch
                   label="Vertragsfrist-Warnung"
-                  description="Warnung wenn eine Vertragsfrist bald ablaeuft"
+                  description="Warnung wenn eine Vertragsfrist bald abläuft"
                   checked={notificationSettings.contractWarning}
                   disabled={!notificationSettings.systemEmailsEnabled}
                   onCheckedChange={(checked) =>
@@ -696,14 +696,14 @@ export default function EmailConfigPage() {
                 Test-E-Mail senden
               </CardTitle>
               <CardDescription>
-                Ueberpruefen Sie die SMTP-Konfiguration durch Senden einer
+                Überprüfen Sie die SMTP-Konfiguration durch Senden einer
                 Test-E-Mail
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4">
                 <div className="flex-1 space-y-2">
-                  <Label htmlFor="test-email">Empfaenger-Adresse</Label>
+                  <Label htmlFor="test-email">Empfänger-Adresse</Label>
                   <Input
                     id="test-email"
                     type="email"
@@ -780,7 +780,7 @@ export default function EmailConfigPage() {
 
               {/* Placeholders */}
               <div className="space-y-2">
-                <Label>Verfuegbare Platzhalter</Label>
+                <Label>Verfügbare Platzhalter</Label>
                 <div className="flex flex-wrap gap-2">
                   {templateDetail.placeholders.map((placeholder) => (
                     <Badge
@@ -813,7 +813,7 @@ export default function EmailConfigPage() {
                       onClick={() => setShowPreview(false)}
                     >
                       <Pencil className="mr-2 h-4 w-4" />
-                      Zurueck zum Editor
+                      Zurück zum Editor
                     </Button>
                   </div>
                   <div className="rounded-md border bg-white p-0 min-h-[400px]">
@@ -861,13 +861,13 @@ export default function EmailConfigPage() {
                   <AlertDialogTrigger asChild>
                     <Button variant="outline">
                       <RotateCcw className="mr-2 h-4 w-4" />
-                      Auf Standard zuruecksetzen
+                      Auf Standard zurücksetzen
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>
-                        Vorlage zuruecksetzen?
+                        Vorlage zurücksetzen?
                       </AlertDialogTitle>
                       <AlertDialogDescription>
                         Alle Anpassungen an dieser Vorlage werden entfernt. Die
@@ -881,7 +881,7 @@ export default function EmailConfigPage() {
                         onClick={handleTemplateReset}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        Zuruecksetzen
+                        Zurücksetzen
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

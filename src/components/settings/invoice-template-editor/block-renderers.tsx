@@ -92,7 +92,7 @@ function InvoiceMetaBlock({ block }: { block: TemplateBlock }) {
 
   if (config.showInvoiceNumber) rows.push({ label: "Rechnungsnr.", value: sample.invoiceNumber });
   if (config.showDate) rows.push({ label: "Datum", value: sample.invoiceDate });
-  if (config.showDueDate) rows.push({ label: "Faellig", value: sample.dueDate });
+  if (config.showDueDate) rows.push({ label: "Fällig", value: sample.dueDate });
   if (config.showServicePeriod) rows.push({ label: "Zeitraum", value: sample.servicePeriod });
   if (config.showCustomerNumber) rows.push({ label: "Kd.-Nr.", value: sample.customerNumber });
   if (config.showPaymentReference) rows.push({ label: "Referenz", value: sample.paymentReference });
@@ -258,7 +258,7 @@ function BankDetailsBlock({ block }: { block: TemplateBlock }) {
 
 function NotesBlock({ block }: { block: TemplateBlock }) {
   const config = block.config as Record<string, unknown>;
-  const text = (config.defaultText as string) || "Hier koennen Notizen und Bemerkungen stehen...";
+  const text = (config.defaultText as string) || "Hier können Notizen und Bemerkungen stehen...";
   return (
     <div className="text-[10px] text-muted-foreground italic" style={blockStyleToCSS(block.style)}>
       {text}

@@ -153,18 +153,18 @@ export default function ParksPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Fehler beim Loeschen" }));
-        throw new Error(error.error || "Fehler beim Loeschen");
+        const error = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
+        throw new Error(error.error || "Fehler beim Löschen");
       }
       return response.json();
     },
     {
       onSuccess: () => {
-        toast.success("Park wurde unwiderruflich geloescht");
+        toast.success("Park wurde unwiderruflich gelöscht");
         invalidate(["parks"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Loeschen");
+        toast.error(error.message || "Fehler beim Löschen");
       },
     }
   );
@@ -443,7 +443,7 @@ export default function ParksPage() {
                                 className="text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Loeschen
+                                Löschen
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -509,8 +509,8 @@ export default function ParksPage() {
         open={archiveDialogOpen}
         onOpenChange={setArchiveDialogOpen}
         onConfirm={handleConfirmArchive}
-        title="Archivieren bestaetigen"
-        description="Moechten Sie diesen Park wirklich archivieren?"
+        title="Archivieren bestätigen"
+        description="Möchten Sie diesen Park wirklich archivieren?"
       />
 
       {/* Delete Confirmation Dialog */}
@@ -523,7 +523,7 @@ export default function ParksPage() {
             setParkToDelete(null);
           }
         }}
-        title="Park loeschen"
+        title="Park löschen"
         itemName={parkToDelete?.name}
       />
     </div>

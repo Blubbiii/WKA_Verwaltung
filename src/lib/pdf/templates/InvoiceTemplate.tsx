@@ -139,7 +139,7 @@ export function InvoiceTemplate({ invoice, template, letterhead, watermark, comp
     }
   };
 
-  // Items fuer Tabelle vorbereiten
+  // Items für Tabelle vorbereiten
   const tableItems: InvoiceItem[] = invoice.items.map((item, index) => ({
     position: index + 1,
     description: item.description,
@@ -158,10 +158,10 @@ export function InvoiceTemplate({ invoice, template, letterhead, watermark, comp
     }))
   );
 
-  // Steuerbefreiung pruefen (alle Items mit 0% MwSt)
+  // Steuerbefreiung prüfen (alle Items mit 0% MwSt)
   const isTaxExempt = invoice.items.every((item) => item.taxRate === 0);
 
-  // Empfaenger-Daten
+  // Empfänger-Daten
   // Address is stored as newline-separated: "Strasse 5\n27246 Borstel"
   // Fallback: also handle comma-separated legacy format
   const rawAddress = invoice.recipientAddress ?? "";
@@ -254,7 +254,7 @@ export function InvoiceTemplate({ invoice, template, letterhead, watermark, comp
     <Document>
       {/* Seite 1: Gutschrift */}
       <BasePage {...pageProps}>
-        {/* Empfaengerblock */}
+        {/* Empfängerblock */}
         <RecipientBlock
           recipient={recipient}
           layout={layout}
@@ -280,7 +280,7 @@ export function InvoiceTemplate({ invoice, template, letterhead, watermark, comp
             </View>
             {layout.sections.metadata.showDueDate && invoice.dueDate && (
               <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Faellig bis:</Text>
+                <Text style={styles.metaLabel}>Fällig bis:</Text>
                 <Text style={styles.metaValue}>{formatDate(invoice.dueDate)}</Text>
               </View>
             )}

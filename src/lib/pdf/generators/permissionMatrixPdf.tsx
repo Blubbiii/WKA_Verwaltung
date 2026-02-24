@@ -5,7 +5,7 @@ import {
 } from "../templates/PermissionMatrixTemplate";
 
 /**
- * Generiert ein PDF fuer die Berechtigungs-Matrix
+ * Generiert ein PDF für die Berechtigungs-Matrix
  */
 export async function generatePermissionMatrixPdf(
   data: PermissionMatrixPdfData
@@ -19,7 +19,7 @@ export async function generatePermissionMatrixPdf(
 }
 
 /**
- * Generiert ein PDF fuer die Berechtigungs-Matrix als Base64
+ * Generiert ein PDF für die Berechtigungs-Matrix als Base64
  */
 export async function generatePermissionMatrixPdfBase64(
   data: PermissionMatrixPdfData

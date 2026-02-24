@@ -97,7 +97,7 @@ export function NodeDetailPanel({ node, onClose }: NodeDetailPanelProps) {
           )}
 
           <div>
-            <p className="text-xs text-muted-foreground mb-0.5">Geraetetyp</p>
+            <p className="text-xs text-muted-foreground mb-0.5">Gerätetyp</p>
             <p className="text-sm">{node.turbine.deviceType}</p>
           </div>
 

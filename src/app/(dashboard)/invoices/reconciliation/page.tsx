@@ -155,7 +155,7 @@ function YearSelector({
         size="icon"
         className="h-8 w-8"
         onClick={() => onChange(year + 1)}
-        aria-label="Naechstes Jahr"
+        aria-label="Nächstes Jahr"
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
@@ -199,13 +199,13 @@ function FundTable({ data, isLoading }: { data: FundEntry[]; isLoading: boolean 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Abgleich nach Gesellschaft</CardTitle>
-          <CardDescription>Vorschuesse und Abrechnungen pro Beteiligungsgesellschaft</CardDescription>
+          <CardDescription>Vorschüsse und Abrechnungen pro Beteiligungsgesellschaft</CardDescription>
         </CardHeader>
         <CardContent>
           <EmptyState
             icon={Scale}
             title="Keine Daten vorhanden"
-            description="Es wurden keine Vorschuesse oder Abrechnungen fuer diesen Zeitraum gefunden."
+            description="Es wurden keine Vorschüsse oder Abrechnungen für diesen Zeitraum gefunden."
           />
         </CardContent>
       </Card>
@@ -217,7 +217,7 @@ function FundTable({ data, isLoading }: { data: FundEntry[]; isLoading: boolean 
       <CardHeader>
         <CardTitle className="text-base">Abgleich nach Gesellschaft</CardTitle>
         <CardDescription>
-          Vorschuesse und Abrechnungen pro Beteiligungsgesellschaft
+          Vorschüsse und Abrechnungen pro Beteiligungsgesellschaft
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -226,7 +226,7 @@ function FundTable({ data, isLoading }: { data: FundEntry[]; isLoading: boolean 
             <TableHeader>
               <TableRow>
                 <TableHead>Gesellschaft</TableHead>
-                <TableHead className="text-right">Vorschuesse</TableHead>
+                <TableHead className="text-right">Vorschüsse</TableHead>
                 <TableHead className="text-right">Abrechnungen</TableHead>
                 <TableHead className="text-right">Differenz</TableHead>
                 <TableHead className="text-right">Differenz %</TableHead>
@@ -292,7 +292,7 @@ function FundTable({ data, isLoading }: { data: FundEntry[]; isLoading: boolean 
                           variant="secondary"
                           className="bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
                         >
-                          Ueberschuss
+                          Überschuss
                         </Badge>
                       ) : (
                         <Badge
@@ -384,14 +384,14 @@ function TimelineSection({
         <CardHeader>
           <CardTitle className="text-base">Zahlungs-Verlauf</CardTitle>
           <CardDescription>
-            Chronologische Uebersicht aller Zahlungen
+            Chronologische Übersicht aller Zahlungen
           </CardDescription>
         </CardHeader>
         <CardContent>
           <EmptyState
             icon={Receipt}
             title="Noch keine Zahlungen"
-            description="Es wurden noch keine Vorschuesse oder Abrechnungen erfasst."
+            description="Es wurden noch keine Vorschüsse oder Abrechnungen erfasst."
           />
         </CardContent>
       </Card>
@@ -405,7 +405,7 @@ function TimelineSection({
       <CardHeader>
         <CardTitle className="text-base">Zahlungs-Verlauf</CardTitle>
         <CardDescription>
-          Chronologische Uebersicht aller Zahlungen ({data.length} Eintraege)
+          Chronologische Übersicht aller Zahlungen ({data.length} Einträge)
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -537,7 +537,7 @@ export default function ReconciliationPage() {
       <div className="space-y-6">
         <PageHeader
           title="Zahlungs-Abgleich"
-          description="Vorschuesse und Abrechnungen vergleichen"
+          description="Vorschüsse und Abrechnungen vergleichen"
         />
         <Card>
           <CardContent className="py-12 text-center">
@@ -564,7 +564,7 @@ export default function ReconciliationPage() {
       {/* Page header */}
       <PageHeader
         title="Zahlungs-Abgleich"
-        description="Vorschuesse und Abrechnungen vergleichen"
+        description="Vorschüsse und Abrechnungen vergleichen"
       />
 
       {/* Filter bar */}
@@ -605,13 +605,13 @@ export default function ReconciliationPage() {
       {/* KPI Cards */}
       <KPICardGrid>
         <KPICard
-          title="Vorschuesse gesamt"
+          title="Vorschüsse gesamt"
           value={
             isLoading ? "..." : formatCurrency(summary?.totalAdvances ?? 0)
           }
           icon={Banknote}
           isLoading={isLoading}
-          description={`Gezahlte Vorschuesse ${year}`}
+          description={`Gezahlte Vorschüsse ${year}`}
         />
         <KPICard
           title="Abrechnungen gesamt"
@@ -636,7 +636,7 @@ export default function ReconciliationPage() {
           trend={summary?.differencePercent}
           trendLabel={
             summary
-              ? (summary.difference >= 0 ? "Ueberschuss" : "Nachzahlung")
+              ? (summary.difference >= 0 ? "Überschuss" : "Nachzahlung")
               : undefined
           }
           className={

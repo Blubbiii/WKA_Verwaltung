@@ -13,9 +13,9 @@ interface StepDocumentsProps {
 
 const DOCUMENT_SLOTS = [
   {
-    label: "Beitrittserklaerung",
+    label: "Beitrittserklärung",
     category: "CONTRACT",
-    description: "Unterzeichnete Beitrittserklaerung des Gesellschafters",
+    description: "Unterzeichnete Beitrittserklärung des Gesellschafters",
   },
   {
     label: "Gesellschaftsvertrag",
@@ -25,7 +25,7 @@ const DOCUMENT_SLOTS = [
   {
     label: "Personalausweis-Kopie",
     category: "OTHER",
-    description: "Kopie des Personalausweises zur Identitaetspruefung",
+    description: "Kopie des Personalausweises zur Identitaetsprüfung",
   },
 ];
 
@@ -172,7 +172,7 @@ export function StepDocuments({ data, onChange }: StepDocumentsProps) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Erlaubte Dateitypen: PDF, JPG, PNG, WebP, DOC, DOCX. Maximale Groesse: {MAX_SIZE_MB} MB pro Datei.
+        Erlaubte Dateitypen: PDF, JPG, PNG, WebP, DOC, DOCX. Maximale Größe: {MAX_SIZE_MB} MB pro Datei.
       </p>
     </div>
   );

@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       // WEA: turbineId is required and must exist in the park
       if (!turbineId || typeof turbineId !== "string") {
         return NextResponse.json(
-          { error: "turbineId ist erforderlich fuer WEA-Zuordnungen" },
+          { error: "turbineId ist erforderlich für WEA-Zuordnungen" },
           { status: 400 }
         );
       }
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       resolvedTurbineId = virtualTurbine.id;
     }
 
-    // Duplikat-Pruefung (unique constraint: tenantId + locationCode + plantNo)
+    // Duplikat-Prüfung (unique constraint: tenantId + locationCode + plantNo)
     const existing = await prisma.scadaTurbineMapping.findUnique({
       where: {
         tenantId_locationCode_plantNo: {
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Duplikat erkannt",
-          details: `Zuordnung fuer ${locationCode} / Anlage ${plantNo} existiert bereits`,
+          details: `Zuordnung für ${locationCode} / Anlage ${plantNo} existiert bereits`,
         },
         { status: 409 }
       );

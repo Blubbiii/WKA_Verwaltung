@@ -11,7 +11,7 @@ import { apiLogger as logger } from "@/lib/logger";
  * - Monitoring Tools
  *
  * Prueft:
- * - App laeuft
+ * - App läuft
  * - Datenbank-Verbindung
  */
 
@@ -41,7 +41,7 @@ export async function GET() {
     (health.checks as Record<string, string>).database = "error";
     health.status = "degraded";
 
-    // In Production nicht den vollen Error zurueckgeben
+    // In Production nicht den vollen Error zurückgeben
     logger.error({ err: error }, "[Health Check] Database connection failed");
   }
 
@@ -51,7 +51,7 @@ export async function GET() {
   return NextResponse.json(health, { status: statusCode });
 }
 
-// HEAD Request fuer einfache Checks
+// HEAD Request für einfache Checks
 export async function HEAD() {
   try {
     await prisma.$queryRaw`SELECT 1`;

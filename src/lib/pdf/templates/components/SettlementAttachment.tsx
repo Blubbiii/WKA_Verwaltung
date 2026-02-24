@@ -179,7 +179,7 @@ export function SettlementAttachment({ invoiceNumber, details }: SettlementAttac
   const subtitleText = details.subtitle
     ? details.subtitle
         .replace("Nutzungsentgelt / ", "Berechnungsnachweis / ")
-        .replace("Stromerloes / ", "Berechnungsnachweis / ")
+        .replace("Stromerlös / ", "Berechnungsnachweis / ")
     : undefined;
 
   return (
@@ -192,10 +192,10 @@ export function SettlementAttachment({ invoiceNumber, details }: SettlementAttac
         <Text style={styles.subtitle}>{subtitleText}</Text>
       )}
 
-      {/* 1. Ertragsuebersicht (Revenue table by tariff) */}
+      {/* 1. Ertragsübersicht (Revenue table by tariff) */}
       {hasRevenue && (
         <>
-          <Text style={styles.sectionTitle}>{sectionNum++}. Ertragsuebersicht</Text>
+          <Text style={styles.sectionTitle}>{sectionNum++}. Ertragsübersicht</Text>
           <SettlementRevenueTable
             entries={details.revenueTable!}
             total={details.revenueTableTotal ?? 0}
@@ -213,11 +213,11 @@ export function SettlementAttachment({ invoiceNumber, details }: SettlementAttac
         </>
       )}
 
-      {/* 2b. Berechnungsuebersicht (Lease only) */}
+      {/* 2b. Berechnungsübersicht (Lease only) */}
       {hasCalculation && (
         <>
           <Text style={styles.sectionTitle}>
-            {sectionNum++}. Berechnungsuebersicht
+            {sectionNum++}. Berechnungsübersicht
           </Text>
           <SettlementCalculationSummary
             summary={details.calculationSummary!}
@@ -281,7 +281,7 @@ function renderEnergyDistribution(dist: EnergyDistributionSummary) {
 
       {/* Park totals */}
       <View style={styles.distRow}>
-        <Text style={styles.distLabel}>Gesamterloes Park</Text>
+        <Text style={styles.distLabel}>Gesamterlös Park</Text>
         <Text style={styles.distValue}>{formatCurrency(dist.netOperatorRevenueEur)}</Text>
       </View>
       <View style={styles.distRow}>
@@ -308,7 +308,7 @@ function renderEnergyDistribution(dist: EnergyDistributionSummary) {
         </Text>
       </View>
       <View style={styles.distHighlightRow}>
-        <Text style={styles.distHighlightLabel}>Zugewiesener Erloes</Text>
+        <Text style={styles.distHighlightLabel}>Zugewiesener Erlös</Text>
         <Text style={styles.distHighlightValue}>{formatCurrency(dist.recipientRevenueEur)}</Text>
       </View>
     </View>
@@ -330,7 +330,7 @@ function renderEnergyTurbineTable(details: SettlementPdfDetails) {
         <Text style={[styles.colEnergyDesignation, styles.headerText]}>Anlage</Text>
         <Text style={[styles.colEnergyProduction, styles.headerText]}>Produktion kWh</Text>
         <Text style={[styles.colEnergyShare, styles.headerText]}>Anteil %</Text>
-        <Text style={[styles.colEnergyRevenue, styles.headerText]}>Erloes</Text>
+        <Text style={[styles.colEnergyRevenue, styles.headerText]}>Erlös</Text>
       </View>
 
       {turbines.map((turbine, idx) => (
@@ -375,7 +375,7 @@ function renderLeaseTurbineTable(details: SettlementPdfDetails, totalProductionK
         <Text style={[styles.colDesignation, styles.headerText]}>Anlage</Text>
         <Text style={[styles.colProduction, styles.headerText]}>Produktion kWh</Text>
         <Text style={[styles.colHours, styles.headerText]}>Betriebsstunden</Text>
-        <Text style={[styles.colAvailability, styles.headerText]}>Verfuegbarkeit %</Text>
+        <Text style={[styles.colAvailability, styles.headerText]}>Verfügbarkeit %</Text>
       </View>
 
       {turbines.map((turbine, idx) => (

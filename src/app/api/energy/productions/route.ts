@@ -10,16 +10,16 @@ import { apiLogger as logger } from "@/lib/logger";
 // =============================================================================
 
 /**
- * Schema fuer neue Produktionsdaten
- * Validiert alle erforderlichen Felder fuer einen TurbineProduction-Eintrag
+ * Schema für neue Produktionsdaten
+ * Validiert alle erforderlichen Felder für einen TurbineProduction-Eintrag
  */
 const productionCreateSchema = z.object({
-  turbineId: z.string().uuid("Ungueltige Turbinen-ID"),
+  turbineId: z.string().uuid("Ungültige Turbinen-ID"),
   year: z.number().int().min(2000).max(2100),
   month: z.number().int().min(1).max(12),
   productionKwh: z.number().nonnegative("Produktion muss >= 0 sein"),
   operatingHours: z.number().nonnegative("Betriebsstunden muessen >= 0 sein").optional().nullable(),
-  availabilityPct: z.number().min(0).max(100, "Verfuegbarkeit muss zwischen 0 und 100 liegen").optional().nullable(),
+  availabilityPct: z.number().min(0).max(100, "Verfügbarkeit muss zwischen 0 und 100 liegen").optional().nullable(),
   source: z.enum(["MANUAL", "CSV_IMPORT", "EXCEL_IMPORT", "SCADA"]).default("MANUAL"),
   status: z.enum(["DRAFT", "CONFIRMED", "INVOICED"]).default("DRAFT"),
   notes: z.string().max(1000).optional().nullable(),
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       tenantId: check.tenantId!,
     };
 
-    // Optionale Filter hinzufuegen
+    // Optionale Filter hinzufügen
     if (year) {
       where.year = parseInt(year, 10);
     }
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       where.status = status as ProductionStatus;
     }
 
-    // Park-Filter erfordert Join ueber Turbine
+    // Park-Filter erfordert Join über Turbine
     if (parkId) {
       where.turbine = {
         parkId: parkId,
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       prisma.turbineProduction.count({ where }),
     ]);
 
-    // Aggregationen berechnen (Summen fuer gefilterte Daten)
+    // Aggregationen berechnen (Summen für gefilterte Daten)
     const aggregations = await prisma.turbineProduction.aggregate({
       where,
       _sum: {
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Pruefung auf Duplikat (unique constraint: turbineId + year + month + tenantId)
+    // Prüfung auf Duplikat (unique constraint: turbineId + year + month + tenantId)
     const existing = await prisma.turbineProduction.findUnique({
       where: {
         turbineId_year_month_tenantId: {
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Duplikat erkannt",
-          details: `Fuer Turbine ${turbine.designation} existieren bereits Produktionsdaten fuer ${validatedData.month}/${validatedData.year}`,
+          details: `Für Turbine ${turbine.designation} existieren bereits Produktionsdaten für ${validatedData.month}/${validatedData.year}`,
         },
         { status: 409 }
       );

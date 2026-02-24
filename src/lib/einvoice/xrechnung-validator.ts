@@ -137,7 +137,7 @@ export function validateXRechnungXml(xml: string): ValidationResult {
   } else if (!["380", "381", "384", "389", "751"].includes(typeCode)) {
     errors.push({
       code: "BT3_INVALID",
-      message: `Ungueltiger Rechnungstyp-Code: ${typeCode}. Erlaubt: 380 (Rechnung), 381 (Gutschrift)`,
+      message: `Ungültiger Rechnungstyp-Code: ${typeCode}. Erlaubt: 380 (Rechnung), 381 (Gutschrift)`,
       field: "cbc:InvoiceTypeCode",
     });
   }
@@ -147,7 +147,7 @@ export function validateXRechnungXml(xml: string): ValidationResult {
   if (!currencyCode) {
     errors.push({
       code: "BT5_MISSING",
-      message: "Waehrungscode (cbc:DocumentCurrencyCode) fehlt",
+      message: "Währungscode (cbc:DocumentCurrencyCode) fehlt",
       field: "cbc:DocumentCurrencyCode",
     });
   }
@@ -157,7 +157,7 @@ export function validateXRechnungXml(xml: string): ValidationResult {
   if (!buyerRef) {
     errors.push({
       code: "BT10_MISSING",
-      message: "Kaeufer-Referenz (cbc:BuyerReference) fehlt - fuer XRechnung Pflicht",
+      message: "Kaeufer-Referenz (cbc:BuyerReference) fehlt - für XRechnung Pflicht",
       field: "cbc:BuyerReference",
     });
   }
@@ -347,7 +347,7 @@ export function validateXRechnungData(data: {
   if (!data.customerName) {
     errors.push({
       code: "DATA_NO_CUSTOMER",
-      message: "Empfaengername ist erforderlich",
+      message: "Empfängername ist erforderlich",
       field: "customer.name",
     });
   }

@@ -1,8 +1,8 @@
 /**
  * Weather Worker - Verarbeitet Jobs aus der "weather" Queue
  *
- * Dieser Worker ist verantwortlich fuer Wetterdaten-Abfragen:
- * - Aktuelle Wetterdaten fuer Windparks
+ * Dieser Worker ist verantwortlich für Wetterdaten-Abfragen:
+ * - Aktuelle Wetterdaten für Windparks
  * - Wettervorhersagen
  * - Speichern in Datenbank und Cache
  */
@@ -242,7 +242,7 @@ export function startWeatherWorker(): Worker<WeatherJobData, WeatherJobResult> {
       connection,
       concurrency: 5,
       useWorkerThreads: false,
-      // Rate-Limiting fuer OpenWeatherMap API (60 requests/minute free tier)
+      // Rate-Limiting für OpenWeatherMap API (60 requests/minute free tier)
       limiter: {
         max: 60,
         duration: 60000,
@@ -304,14 +304,14 @@ export async function stopWeatherWorker(): Promise<void> {
 }
 
 /**
- * Prueft ob der Worker laeuft
+ * Prueft ob der Worker läuft
  */
 export function isWeatherWorkerRunning(): boolean {
   return weatherWorker !== null && weatherWorker.isRunning();
 }
 
 /**
- * Gibt den Worker zurueck (fuer Health-Checks)
+ * Gibt den Worker zurück (für Health-Checks)
  */
 export function getWeatherWorker(): Worker<
   WeatherJobData,

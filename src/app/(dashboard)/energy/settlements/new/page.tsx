@@ -104,7 +104,7 @@ export default function NewSettlementPage() {
 
       if (data.recordCount === 0) {
         toast.info(
-          "Keine Produktionsdaten im Status DRAFT fuer diesen Zeitraum gefunden"
+          "Keine Produktionsdaten im Status DRAFT für diesen Zeitraum gefunden"
         );
         return;
       }
@@ -116,7 +116,7 @@ export default function NewSettlementPage() {
       }));
 
       toast.success(
-        `Produktionsdaten uebernommen: ${data.turbineCount} Turbinen, ${data.recordCount} Eintraege`
+        `Produktionsdaten übernommen: ${data.turbineCount} Turbinen, ${data.recordCount} Einträge`
       );
     } catch (error) {
       toast.error(
@@ -138,11 +138,11 @@ export default function NewSettlementPage() {
       return;
     }
     if (!formData.netOperatorRevenueEur || parseFloat(formData.netOperatorRevenueEur) < 0) {
-      toast.error("Bitte geben Sie einen gueltigen Erloesbetrag ein");
+      toast.error("Bitte geben Sie einen gültigen Erlösbetrag ein");
       return;
     }
     if (!formData.totalProductionKwh || parseFloat(formData.totalProductionKwh) < 0) {
-      toast.error("Bitte geben Sie eine gueltige Produktionsmenge ein");
+      toast.error("Bitte geben Sie eine gültige Produktionsmenge ein");
       return;
     }
 
@@ -322,9 +322,9 @@ export default function NewSettlementPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Produktion & Erloes</CardTitle>
+                  <CardTitle>Produktion & Erlös</CardTitle>
                   <CardDescription>
-                    Daten vom Netzbetreiber eintragen oder aus Produktionsdaten uebernehmen
+                    Daten vom Netzbetreiber eintragen oder aus Produktionsdaten übernehmen
                   </CardDescription>
                 </div>
                 <Button
@@ -336,7 +336,7 @@ export default function NewSettlementPage() {
                   title={
                     !formData.parkId
                       ? "Bitte zuerst einen Park auswaehlen"
-                      : "Produktionsdaten (DRAFT) fuer den gewaehlten Zeitraum laden"
+                      : "Produktionsdaten (DRAFT) für den gewaehlten Zeitraum laden"
                   }
                 >
                   {autoFilling ? (
@@ -353,7 +353,7 @@ export default function NewSettlementPage() {
                 {/* Revenue */}
                 <div className="space-y-2">
                   <Label htmlFor="netOperatorRevenueEur">
-                    Netzeinspeisung Erloes (EUR) *
+                    Netzeinspeisung Erlös (EUR) *
                   </Label>
                   <Input
                     id="netOperatorRevenueEur"
@@ -408,7 +408,7 @@ export default function NewSettlementPage() {
               {autoFillData && autoFillData.recordCount > 0 && (
                 <div className="rounded-lg border border-green-200 bg-green-50 p-4 space-y-2">
                   <p className="text-sm font-medium text-green-800">
-                    Produktionsdaten uebernommen
+                    Produktionsdaten übernommen
                   </p>
                   <div className="text-sm text-green-700 space-y-1">
                     <p>
@@ -428,7 +428,7 @@ export default function NewSettlementPage() {
                     ))}
                   </div>
                   <p className="text-xs text-green-600">
-                    Der Erloesbetrag muss ggf. manuell vom Netzbetreiber-Beleg uebernommen werden.
+                    Der Erlösbetrag muss ggf. manuell vom Netzbetreiber-Beleg übernommen werden.
                   </p>
                 </div>
               )}
@@ -457,7 +457,7 @@ export default function NewSettlementPage() {
             <CardHeader>
               <CardTitle>Verteilung</CardTitle>
               <CardDescription>
-                Wie soll der Erloes verteilt werden?
+                Wie soll der Erlös verteilt werden?
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -538,7 +538,7 @@ export default function NewSettlementPage() {
             <CardContent className="pt-6">
               <p className="text-sm text-blue-800">
                 Die Abrechnung wird als <strong>Entwurf</strong> erstellt.
-                Nach der Erstellung koennen Sie die Berechnung starten, um
+                Nach der Erstellung können Sie die Berechnung starten, um
                 die Abrechnungspositionen zu generieren.
               </p>
             </CardContent>

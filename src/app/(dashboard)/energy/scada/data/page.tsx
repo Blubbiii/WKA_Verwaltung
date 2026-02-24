@@ -389,7 +389,7 @@ export default function ScadaDataPage() {
               {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Seite {page} von {totalPages} ({total.toLocaleString("de-DE")} Eintraege)
+                    Seite {page} von {totalPages} ({total.toLocaleString("de-DE")} Einträge)
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -399,7 +399,7 @@ export default function ScadaDataPage() {
                       disabled={page <= 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      Zurueck
+                      Zurück
                     </Button>
                     <Button
                       variant="outline"

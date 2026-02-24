@@ -125,7 +125,7 @@ const categoryConfig: Record<string, { label: string; color: string }> = {
 
 const approvalStatusConfig: Record<string, { label: string; color: string }> = {
   DRAFT: { label: "Entwurf", color: "bg-gray-100 text-gray-800" },
-  PENDING_REVIEW: { label: "In Pruefung", color: "bg-amber-100 text-amber-800" },
+  PENDING_REVIEW: { label: "In Prüfung", color: "bg-amber-100 text-amber-800" },
   APPROVED: { label: "Genehmigt", color: "bg-blue-100 text-blue-800" },
   PUBLISHED: { label: "Veroeffentlicht", color: "bg-green-100 text-green-800" },
   REJECTED: { label: "Abgelehnt", color: "bg-red-100 text-red-800" },
@@ -268,8 +268,8 @@ export default function DocumentsPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: "Fehler beim Loeschen" }));
-        throw new Error(data.error || "Fehler beim Loeschen des Dokuments");
+        const data = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
+        throw new Error(data.error || "Fehler beim Löschen des Dokuments");
       }
       return response.json();
     },
@@ -279,7 +279,7 @@ export default function DocumentsPage() {
         invalidate(["documents-search"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Loeschen des Dokuments");
+        toast.error(error.message || "Fehler beim Löschen des Dokuments");
       },
     }
   );
@@ -320,9 +320,9 @@ export default function DocumentsPage() {
     invalidate(["documents-search"]);
 
     if (failCount === 0) {
-      toast.success(`${successCount} Dokument(e) erfolgreich geloescht`);
+      toast.success(`${successCount} Dokument(e) erfolgreich gelöscht`);
     } else {
-      toast.warning(`${successCount} geloescht, ${failCount} fehlgeschlagen`);
+      toast.warning(`${successCount} gelöscht, ${failCount} fehlgeschlagen`);
     }
   }
 
@@ -409,7 +409,7 @@ export default function DocumentsPage() {
     invalidate(["documents-search"]);
 
     const actionLabels = {
-      submit: "zur Pruefung eingereicht",
+      submit: "zur Prüfung eingereicht",
       approve: "genehmigt",
       publish: "veroeffentlicht",
     };
@@ -499,7 +499,7 @@ export default function DocumentsPage() {
                 <button
                   onClick={clearSearch}
                   className="absolute right-12 top-2.5 text-muted-foreground hover:text-foreground"
-                  title="Suche loeschen"
+                  title="Suche löschen"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -560,7 +560,7 @@ export default function DocumentsPage() {
                 <Search className="h-4 w-4" />
               )}
               <span>
-                {searchResultCount} {searchResultCount === 1 ? "Ergebnis" : "Ergebnisse"} fuer &quot;{debouncedSearch}&quot;
+                {searchResultCount} {searchResultCount === 1 ? "Ergebnis" : "Ergebnisse"} für &quot;{debouncedSearch}&quot;
                 {categoryFilter !== "all" && (
                   <span> in {categoryConfig[categoryFilter]?.label || categoryFilter}</span>
                 )}
@@ -569,7 +569,7 @@ export default function DocumentsPage() {
                 onClick={clearSearch}
                 className="text-primary hover:underline ml-2"
               >
-                Suche loeschen
+                Suche löschen
               </button>
             </div>
           )}
@@ -596,7 +596,7 @@ export default function DocumentsPage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Zuordnung</TableHead>
                   <TableHead>Version</TableHead>
-                  <TableHead>Groesse</TableHead>
+                  <TableHead>Größe</TableHead>
                   <TableHead>Hochgeladen</TableHead>
                   <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
@@ -760,7 +760,7 @@ export default function DocumentsPage() {
                                   className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Loeschen
+                                  Löschen
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -789,7 +789,7 @@ export default function DocumentsPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Zurueck
+                  Zurück
                 </Button>
                 <Button
                   variant="outline"
@@ -822,7 +822,7 @@ export default function DocumentsPage() {
             setDocumentToDelete(null);
           }
         }}
-        title="Dokument loeschen"
+        title="Dokument löschen"
         itemName={documentToDelete?.title}
       />
 
@@ -838,7 +838,7 @@ export default function DocumentsPage() {
           <DialogHeader>
             <DialogTitle>Kategorie aendern</DialogTitle>
             <DialogDescription>
-              Waehlen Sie die neue Kategorie fuer die {selectedCount} ausgewaehlten Dokumente.
+              Waehlen Sie die neue Kategorie für die {selectedCount} ausgewaehlten Dokumente.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -886,7 +886,7 @@ export default function DocumentsPage() {
         onClearSelection={clearSelection}
         actions={[
           {
-            label: "Zur Pruefung einreichen",
+            label: "Zur Prüfung einreichen",
             icon: <SendHorizontal className="h-4 w-4" />,
             onClick: () => handleBatchApprove("submit"),
             disabled: isBatchProcessing,
@@ -910,7 +910,7 @@ export default function DocumentsPage() {
             disabled: isBatchProcessing,
           },
           {
-            label: "Loeschen",
+            label: "Löschen",
             icon: isBatchProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />,
             onClick: handleBatchDelete,
             variant: "destructive",

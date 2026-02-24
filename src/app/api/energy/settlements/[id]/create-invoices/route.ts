@@ -107,7 +107,7 @@ export async function POST(
     if (settlement.status !== "CALCULATED") {
       return NextResponse.json(
         {
-          error: "Gutschriften koennen nur aus berechneten Abrechnungen erstellt werden",
+          error: "Gutschriften können nur aus berechneten Abrechnungen erstellt werden",
           details: `Aktuelle Status: ${settlement.status}. Fuehre zuerst die Berechnung durch.`,
         },
         { status: 400 }
@@ -119,26 +119,26 @@ export async function POST(
     if (existingInvoices.length > 0) {
       return NextResponse.json(
         {
-          error: "Es existieren bereits Gutschriften fuer diese Abrechnung",
+          error: "Es existieren bereits Gutschriften für diese Abrechnung",
           details: `${existingInvoices.length} von ${settlement.items.length} Items haben bereits Gutschriften.`,
         },
         { status: 400 }
       );
     }
 
-    // Items ohne Empfaenger-Fund pruefen
+    // Items ohne Empfänger-Fund prüfen
     const itemsWithoutFund = settlement.items.filter((item) => !item.recipientFundId);
     if (itemsWithoutFund.length > 0) {
       return NextResponse.json(
         {
-          error: "Nicht alle Items haben einen Empfaenger",
-          details: `${itemsWithoutFund.length} Items ohne Empfaenger-Gesellschaft.`,
+          error: "Nicht alle Items haben einen Empfänger",
+          details: `${itemsWithoutFund.length} Items ohne Empfänger-Gesellschaft.`,
         },
         { status: 400 }
       );
     }
 
-    // Periodenbezeichnung fuer Gutschriften
+    // Periodenbezeichnung für Gutschriften
     const periodLabel = settlement.month
       ? `${settlement.month.toString().padStart(2, "0")}/${settlement.year}`
       : `${settlement.year}`;
@@ -151,7 +151,7 @@ export async function POST(
       ? new Date(settlement.year, settlement.month, 0) // Letzter Tag des Monats
       : new Date(settlement.year, 11, 31);
 
-    // EEG/DV-Aufschluesselung pruefen
+    // EEG/DV-Aufschluesselung prüfen
     const totalRevenue = Number(settlement.netOperatorRevenueEur);
     const eegRevenue = settlement.eegRevenueEur ? Number(settlement.eegRevenueEur) : null;
     const dvRevenue = settlement.dvRevenueEur ? Number(settlement.dvRevenueEur) : null;
@@ -214,7 +214,7 @@ export async function POST(
           "CREDIT_NOTE"
         );
 
-        // Empfaengeradresse aus Fund
+        // Empfängeradresse aus Fund
         const recipientAddress = item.recipientFund.address || "";
         const recipientName = item.recipientFund.name;
 
@@ -253,8 +253,8 @@ export async function POST(
               position++;
               const eegTax = calculateTaxAmounts(eegShare, eegTaxType);
               const eegDesc = item.turbine
-                ? `Stromerloes EEG ${periodLabel} - ${settlement.park.name} - WKA ${item.turbine.designation}`
-                : `Stromerloes EEG ${periodLabel} - ${settlement.park.name}`;
+                ? `Stromerlös EEG ${periodLabel} - ${settlement.park.name} - WKA ${item.turbine.designation}`
+                : `Stromerlös EEG ${periodLabel} - ${settlement.park.name}`;
 
               invoiceItems.push({
                 position,
@@ -288,8 +288,8 @@ export async function POST(
               position++;
               const dvTax = calculateTaxAmounts(dvShare, dvTaxType);
               const dvDesc = item.turbine
-                ? `Stromerloes Marktpraemie ${periodLabel} - ${settlement.park.name} - WKA ${item.turbine.designation}`
-                : `Stromerloes Marktpraemie ${periodLabel} - ${settlement.park.name}`;
+                ? `Stromerlös Marktpraemie ${periodLabel} - ${settlement.park.name} - WKA ${item.turbine.designation}`
+                : `Stromerlös Marktpraemie ${periodLabel} - ${settlement.park.name}`;
 
               invoiceItems.push({
                 position,
@@ -335,8 +335,8 @@ export async function POST(
           const { taxRate, taxAmount, grossAmount } = calculateTaxAmounts(revenueEur, taxType);
 
           const description = item.turbine
-            ? `Stromerloes ${periodLabel} - ${settlement.park.name} - WKA ${item.turbine.designation}`
-            : `Stromerloes ${periodLabel} - ${settlement.park.name}`;
+            ? `Stromerlös ${periodLabel} - ${settlement.park.name} - WKA ${item.turbine.designation}`
+            : `Stromerlös ${periodLabel} - ${settlement.park.name}`;
 
           invoiceItems.push({
             position,
@@ -588,7 +588,7 @@ function buildEnergyCalculationDetails(params: {
   }
   if (revenueTable.length === 0 && totalProduction > 0) {
     revenueTable.push({
-      category: `Stromerloes ${params.periodLabel}`,
+      category: `Stromerlös ${params.periodLabel}`,
       rateCtPerKwh: (totalRevenue / totalProduction) * 100,
       productionKwh: totalProduction,
       revenueEur: totalRevenue,
@@ -639,7 +639,7 @@ function buildEnergyCalculationDetails(params: {
 
   return {
     type: "ENERGY",
-    subtitle: `Stromerloes / ${settlement.park.name} / ${periodStr}`,
+    subtitle: `Stromerlös / ${settlement.park.name} / ${periodStr}`,
     revenueTable,
     revenueTableTotal: totalRevenue,
     energyDistribution,

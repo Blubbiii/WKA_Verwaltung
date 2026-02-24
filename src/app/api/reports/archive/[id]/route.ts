@@ -1,8 +1,8 @@
 /**
- * API Routes fuer einzelne archivierte Reports
+ * API Routes für einzelne archivierte Reports
  *
  * GET    /api/reports/archive/[id] - Report mit Download-URL abrufen
- * DELETE /api/reports/archive/[id] - Report loeschen
+ * DELETE /api/reports/archive/[id] - Report löschen
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // ===========================================
-// DELETE - Report loeschen
+// DELETE - Report löschen
 // ===========================================
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
@@ -84,7 +84,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error({ err: error }, "Fehler beim Loeschen des Reports");
+    logger.error({ err: error }, "Fehler beim Löschen des Reports");
     return NextResponse.json(
       { error: "Interner Serverfehler" },
       { status: 500 }

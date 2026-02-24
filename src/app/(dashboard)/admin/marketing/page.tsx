@@ -11,7 +11,7 @@ export default function AdminMarketingPage() {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground gap-2">
         <AlertTriangle className="h-8 w-8" />
-        <p>Nur SuperAdmins koennen Marketing-Einstellungen verwalten.</p>
+        <p>Nur SuperAdmins können Marketing-Einstellungen verwalten.</p>
       </div>
     );
   }

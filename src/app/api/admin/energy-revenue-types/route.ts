@@ -1,7 +1,7 @@
 /**
  * API Route: /api/admin/energy-revenue-types
- * GET: Liste aller Verguetungsarten (sortiert nach sortOrder)
- * POST: Neue Verguetungsart erstellen
+ * GET: Liste aller Vergütungsarten (sortiert nach sortOrder)
+ * POST: Neue Vergütungsart erstellen
  *
  * Multi-Tenancy: Filtert automatisch nach tenantId aus der Session
  * Berechtigung: Nur ADMIN und SUPERADMIN
@@ -18,7 +18,7 @@ import { apiLogger as logger } from "@/lib/logger";
 // ============================================================================
 
 /**
- * Schema fuer das Erstellen einer neuen Verguetungsart
+ * Schema für das Erstellen einer neuen Vergütungsart
  * - name: Pflichtfeld, max 200 Zeichen
  * - code: Pflichtfeld, eindeutig, max 50 Zeichen (z.B. "EEG_2023", "MARKET_DIRECT")
  * - calculationType: Art der Berechnung (FIXED_RATE, MARKET_PRICE, MANUAL)
@@ -57,7 +57,7 @@ const createEnergyRevenueTypeSchema = z.object({
 // ============================================================================
 
 /**
- * Listet alle Verguetungsarten fuer den aktuellen Tenant
+ * Listet alle Vergütungsarten für den aktuellen Tenant
  *
  * Query-Parameter:
  * - isActive: Filter nach aktivem Status (true/false)
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       }),
     };
 
-    // Verguetungsarten abrufen
+    // Vergütungsarten abrufen
     const energyRevenueTypes = await prisma.energyRevenueType.findMany({
       where,
       orderBy: [
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy revenue types");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Verguetungsarten" },
+      { error: "Fehler beim Laden der Vergütungsarten" },
       { status: 500 }
     );
   }
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
 // ============================================================================
 
 /**
- * Erstellt eine neue Verguetungsart
+ * Erstellt eine neue Vergütungsart
  *
  * Validierung:
  * - Code muss eindeutig sein (innerhalb des Tenants)
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createEnergyRevenueTypeSchema.parse(body);
 
-    // Pruefen ob Code bereits existiert (innerhalb des Tenants)
+    // Prüfen ob Code bereits existiert (innerhalb des Tenants)
     const existingType = await prisma.energyRevenueType.findFirst({
       where: {
         code: validatedData.code,
@@ -154,12 +154,12 @@ export async function POST(request: NextRequest) {
 
     if (existingType) {
       return NextResponse.json(
-        { error: `Eine Verguetungsart mit dem Code "${validatedData.code}" existiert bereits` },
+        { error: `Eine Vergütungsart mit dem Code "${validatedData.code}" existiert bereits` },
         { status: 409 } // Conflict
       );
     }
 
-    // Neue Verguetungsart erstellen
+    // Neue Vergütungsart erstellen
     const energyRevenueType = await prisma.energyRevenueType.create({
       data: {
         name: validatedData.name,
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
 
     logger.error({ err: error }, "Error creating energy revenue type");
     return NextResponse.json(
-      { error: "Fehler beim Erstellen der Verguetungsart" },
+      { error: "Fehler beim Erstellen der Vergütungsart" },
       { status: 500 }
     );
   }

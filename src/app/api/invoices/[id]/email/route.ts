@@ -25,7 +25,7 @@ export async function POST(
       // Leerer Body ist OK
     }
 
-    // Rechnung laden mit allen Relationen fuer PDF und E-Mail-Ermittlung
+    // Rechnung laden mit allen Relationen für PDF und E-Mail-Ermittlung
     const invoice = await prisma.invoice.findFirst({
       where: { id, ...(check.tenantId ? { tenantId: check.tenantId } : {}) },
       include: {
