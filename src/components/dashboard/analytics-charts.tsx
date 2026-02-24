@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import {
   BarChart,
   Bar,
@@ -64,43 +64,13 @@ const DONUT_COLORS_DARK = [
 ];
 
 function useChartColors() {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const checkTheme = () => {
-      setIsDark(document.documentElement.classList.contains("dark"));
-    };
-    checkTheme();
-
-    // Listen for theme changes via MutationObserver on <html> class
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  return isDark ? DARK_COLORS : LIGHT_COLORS;
+  const { resolvedTheme } = useTheme();
+  return resolvedTheme === "dark" ? DARK_COLORS : LIGHT_COLORS;
 }
 
 function useDonutColors() {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const checkTheme = () => {
-      setIsDark(document.documentElement.classList.contains("dark"));
-    };
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  return isDark ? DONUT_COLORS_DARK : DONUT_COLORS_LIGHT;
+  const { resolvedTheme } = useTheme();
+  return resolvedTheme === "dark" ? DONUT_COLORS_DARK : DONUT_COLORS_LIGHT;
 }
 
 // =============================================================================
