@@ -9,8 +9,8 @@ const productLinks = [
 ];
 
 const companyLinks = [
-  { href: "#about", label: "Über uns" },
   { href: "#testimonials", label: "Referenzen" },
+  { href: "#workflow", label: "So funktioniert es" },
 ];
 
 const legalLinks = [

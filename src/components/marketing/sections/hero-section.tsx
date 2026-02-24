@@ -102,8 +102,8 @@ export function HeroSection({ config }: HeroSectionProps) {
             aria-hidden="true"
           >
             <div className="w-full max-w-lg" style={{ perspective: "1200px" }}>
+              <div className="animate-float">
               <div
-                className="animate-float"
                 style={{ transform: "rotateY(-6deg) rotateX(2deg)" }}
               >
                 {/* Browser frame */}
@@ -162,6 +162,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                     </div>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>
