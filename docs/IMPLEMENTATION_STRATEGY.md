@@ -1,6 +1,6 @@
 # WPM Implementation Strategy
 
-> Umsetzungsstrategie für neue Features — Stand: 25.02.2025
+> Umsetzungsstrategie für neue Features — Stand: 26.02.2026
 
 ---
 
@@ -263,134 +263,24 @@ src/app/(dashboard)/energy/analytics/power-curve/page.tsx
 
 ---
 
-## K2: Serienbriefe / Mailing
+## K2: Serienbriefe / Mailing ✅ FERTIG
 
 **Ziel:** Vorlagen-basierte Massenkommunikation an Gesellschafter
-**Aufwand:** 2-3 Tage | **Impact:** Hoch
+**Aufwand:** 2-3 Tage | **Impact:** Hoch | **Umgesetzt:** 26.02.2026
 
-### Prisma Schema
+### Umgesetzt
 
-```prisma
-model MailingTemplate {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  name        String               // "Einladung GV 2025"
-  category    MailingCategory      // GV_EINLADUNG, QUARTALSBERICHT, MAHNUNG, ...
-  subject     String               // E-Mail-Betreff mit Platzhaltern
-  bodyHtml    String   @db.Text    // HTML-Body mit Platzhaltern
-  bodyText    String?  @db.Text    // Klartext-Alternative
-  variables   Json                 // Verfügbare Platzhalter: [{key, label, example}]
-  isDefault   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  mailings    Mailing[]
-
-  @@map("mailing_templates")
-}
-
-model Mailing {
-  id            String   @id @default(cuid())
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id])
-  templateId    String
-  template      MailingTemplate @relation(fields: [templateId], references: [id])
-  fundId        String?
-  fund          Fund?    @relation(fields: [fundId], references: [id])
-  title         String               // "GV-Einladung WP Nord 2025"
-  status        MailingStatus        // DRAFT → SENDING → SENT → PARTIALLY_FAILED
-  recipientCount Int     @default(0)
-  sentCount     Int      @default(0)
-  failedCount   Int      @default(0)
-  scheduledAt   DateTime?            // Optional: zeitversetzter Versand
-  sentAt        DateTime?
-  createdBy     String?
-  createdAt     DateTime @default(now())
-  recipients    MailingRecipient[]
-
-  @@map("mailings")
-}
-
-model MailingRecipient {
-  id          String   @id @default(cuid())
-  mailingId   String
-  mailing     Mailing  @relation(fields: [mailingId], references: [id])
-  shareholderId String?
-  shareholder   Shareholder? @relation(fields: [shareholderId], references: [id])
-  email       String
-  name        String
-  variables   Json                 // Aufgelöste Platzhalter für diesen Empfänger
-  status      String   @default("PENDING") // PENDING → SENT → FAILED
-  sentAt      DateTime?
-  error       String?
-  createdAt   DateTime @default(now())
-
-  @@map("mailing_recipients")
-}
-
-enum MailingCategory {
-  GV_EINLADUNG
-  QUARTALSBERICHT
-  JAHRESABSCHLUSS
-  MAHNUNG
-  INFORMATION
-  CUSTOM
-}
-
-enum MailingStatus {
-  DRAFT
-  SENDING
-  SENT
-  PARTIALLY_FAILED
-  CANCELLED
-}
-```
-
-### Platzhalter-System
-
-Standard-Platzhalter (automatisch aufgelöst):
-
-| Platzhalter | Beschreibung | Beispiel |
-|-------------|--------------|----------|
-| `{anrede}` | Herr/Frau + Nachname | "Sehr geehrter Herr Müller" |
-| `{vorname}` | Vorname | "Hans" |
-| `{nachname}` | Nachname | "Müller" |
-| `{gesellschaft}` | Fund-Name | "Windpark Nord GmbH & Co. KG" |
-| `{anteil}` | Beteiligungsquote | "5,25%" |
-| `{einlage}` | Kapitaleinlage | "25.000,00 EUR" |
-| `{datum}` | Aktuelles Datum | "25.02.2025" |
-| `{gesellschafternr}` | Kommanditisten-Nr. | "K-0042" |
-
-### Ablauf
-
-```
-1. Template erstellen/auswählen (Admin)
-2. Fund + Empfänger wählen (alle Gesellschafter oder Auswahl)
-3. Vorschau: ein Muster-Brief mit echten Daten
-4. "Senden" → BullMQ-Jobs pro Empfänger (bestehende Email-Queue)
-5. Status-Tracking: wer hat erhalten, wer ist fehlgeschlagen
-6. Optional: PDF-Export aller Briefe (für postalischen Versand)
-```
-
-### Frontend
-
-```
-src/app/(dashboard)/mailings/
-  ├── page.tsx                    # Übersicht versendeter Mailings
-  ├── templates/page.tsx          # Template-Verwaltung
-  └── create/page.tsx             # Neues Mailing erstellen (Wizard)
-
-src/components/mailings/
-  ├── template-editor.tsx         # WYSIWYG-Editor mit Platzhalter-Auswahl
-  ├── recipient-selector.tsx      # Fund → Gesellschafter Auswahl
-  ├── mailing-preview.tsx         # Vorschau mit echten Daten
-  └── mailing-status-table.tsx    # Versand-Status pro Empfänger
-```
-
-### Sidebar
-- Neuer Haupteintrag "Kommunikation" (`/mailings`, icon: `Mail`)
-- Children: "Serienbriefe" + "Vorlagen"
-- Permission: `mailings:read`
+- **3 Prisma Models:** `MailingTemplate`, `Mailing`, `MailingRecipient` + 2 Enums (`MailingCategory`, `MailingStatus`)
+- **6 API Routes:** Templates CRUD, Mailings CRUD, Send, Preview
+- **Platzhalter-Service:** `src/lib/mailings/placeholder-service.ts` — 8 Standard-Platzhalter (anrede, vorname, nachname, gesellschaft, anteil, einlage, datum, gesellschafternr)
+- **3-Schritt Wizard:** `src/app/(dashboard)/mailings/create/page.tsx` (Template → Empfänger → Vorschau+Senden)
+- **Template-Editor:** `src/components/mailings/template-editor.tsx` (Rich-Text, Platzhalter-Insert)
+- **Template-Verwaltung:** `src/app/(dashboard)/mailings/templates/page.tsx`
+- **Mailing-Übersicht:** `src/app/(dashboard)/mailings/page.tsx` (Status-Badges, Empfänger-Tracking)
+- **BullMQ-Integration:** Versand über bestehende Email-Queue
+- **Sidebar:** "Serienbriefe" (Mail Icon) mit Children "Übersicht" + "Vorlagen"
+- **Permissions:** `mailings:read`, `mailings:create`, `mailings:send`, `mailings:delete`
+- **i18n:** DE + EN Keys
 
 ---
 
@@ -521,85 +411,21 @@ src/app/(dashboard)/parks/[id]/turbines/[turbineId]/
 
 ---
 
-## U2: Benachrichtigungs-Center
+## U2: Benachrichtigungs-Center ✅ FERTIG
 
 **Ziel:** In-App Benachrichtigungen statt nur Toast-Meldungen
-**Aufwand:** 1-2 Tage | **Impact:** Mittel
+**Aufwand:** 1-2 Tage | **Impact:** Mittel | **Umgesetzt:** 26.02.2026
 
-### Prisma Schema
+### Umgesetzt
 
-```prisma
-model Notification {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  type        NotificationType
-  title       String
-  message     String
-  link        String?              // z.B. "/invoices/inv-123"
-  read        Boolean  @default(false)
-  readAt      DateTime?
-  metadata    Json?                // Zusätzliche Daten (entityId, entityType, etc.)
-  createdAt   DateTime @default(now())
-
-  @@index([userId, read])
-  @@index([tenantId, createdAt])
-  @@map("notifications")
-}
-
-enum NotificationType {
-  INVOICE_OVERDUE      // Rechnung überfällig
-  CONTRACT_EXPIRING    // Vertrag läuft aus
-  MAINTENANCE_DUE      // Wartung fällig
-  DOCUMENT_SHARED      // Dokument geteilt
-  VOTE_STARTED         // Abstimmung gestartet
-  SETTLEMENT_READY     // Abrechnung fertig
-  SCADA_ANOMALY        // SCADA Anomalie erkannt
-  SYSTEM               // Systemmeldung
-}
-```
-
-### API Routes
-
-| Methode | Route | Funktion |
-|---------|-------|----------|
-| GET | `/api/notifications` | Eigene Benachrichtigungen (paginiert) |
-| GET | `/api/notifications/unread-count` | Anzahl ungelesener (für Badge) |
-| PATCH | `/api/notifications/[id]/read` | Als gelesen markieren |
-| POST | `/api/notifications/mark-all-read` | Alle als gelesen |
-
-### Frontend
-
-```
-src/components/layout/notification-bell.tsx   # Bell-Icon im Header mit Badge
-src/components/layout/notification-panel.tsx   # Dropdown-Panel mit Liste
-```
-
-**Integration in bestehenden Header:**
-- Bell-Icon mit rotem Badge (unread count)
-- Klick → Dropdown-Panel mit neuesten Notifications
-- "Alle anzeigen" → eigene Seite `/notifications`
-- SWR mit `refreshInterval: 30000` (alle 30s prüfen)
-
-### Integration mit bestehendem Reminder-Service
-
-Der Reminder-Worker erstellt bisher nur E-Mails. Erweitern um:
-```typescript
-// In reminder-service.ts:
-// Nach jeder gefundenen Fälligkeit:
-await prisma.notification.create({
-  data: {
-    tenantId,
-    userId: assignedUserId,
-    type: "INVOICE_OVERDUE",
-    title: "Rechnung überfällig",
-    message: `Rechnung ${invoice.invoiceNumber} ist seit ${days} Tagen überfällig`,
-    link: `/invoices/${invoice.id}`,
-  },
-});
-```
+- **Prisma Model:** `Notification` mit 5 Typen (DOCUMENT, VOTE, CONTRACT, INVOICE, SYSTEM)
+- **4 API Routes:** GET list (paginiert), GET unread-count, PATCH mark-read, POST mark-all-read
+- **Shared UI:** `src/lib/notifications/notification-ui.ts` (TYPE_ICON, TYPE_COLOR, TYPE_LABEL, formatRelativeTime)
+- **Bell-Icon:** `src/components/layout/notification-bell.tsx` mit Badge + Popover (15 neueste)
+- **Vollständige Seite:** `src/app/(dashboard)/notifications/page.tsx` mit Typ-Filter, Paginierung, "Alle gelesen"
+- **Reminder-Integration:** `reminder-service.ts` erstellt Notifications bei Fälligkeiten
+- **Sidebar:** Bell-Icon, `/notifications`, `nav.notifications`
+- **i18n:** DE + EN Keys
 
 ---
 
@@ -871,6 +697,57 @@ src/app/(dashboard)/invoices/reconciliation/  # Existiert bereits teilweise
 
 ---
 
+## Bereits umgesetzte Erweiterungen (nicht in ursprünglicher Strategie)
+
+### Paperless-ngx Integration ✅ FERTIG
+
+**Feature-Flag-gesteuertes Addon für Dokumenten-Archivierung**
+- API-Client (`src/lib/paperless/client.ts`) für Paperless-ngx REST API
+- 7 API-Routes: Dokumente (CRUD, Preview, Download), Metadaten, Sync + Status
+- Browser-Seite (`/documents/paperless`), Sync-Button, Auto-Archive Hooks
+- Config-Form in System-Einstellungen (URL, Token, Auto-Archive)
+- BullMQ Queue/Worker für Synchronisation
+- Feature-Flag: `paperless` (muss aktiviert werden)
+
+### Onboarding Product Tour ✅ FERTIG
+
+**driver.js Integration für interaktive Produktführung**
+- Tour-Definitionen (`src/lib/onboarding/tour-definitions.ts`) mit rollenbasierten Steps
+- `useOnboarding` Hook mit Tour-State-Persistence via API
+- Auto-Trigger für neue Benutzer, Tour-Versionierung
+- Custom-Theme (`src/styles/driver-theme.css`)
+- i18n-Support (DE/EN)
+
+### Park-Wizard Vereinfachung ✅ FERTIG
+
+- **Reduziert von 3 auf 2 Schritte:** Stammdaten → Abrechnung
+- Standort-/Betreiber-Schritt entfernt (Felder bei Bedarf direkt am Park)
+- Feld-Name-Fix: Unicode ü → ASCII ue (`technischeBetriebsfuehrung`) in allen APIs
+
+### Per-Turbine Pacht-Overrides ✅ FERTIG
+
+- **3 neue Felder am Turbine-Model:** `minimumRent`, `weaSharePercentage`, `poolSharePercentage`
+- Überschreiben Park-Defaults wenn gesetzt, sonst Fallback auf Park-Wert
+- Tooltip-Hinweise an allen 3 Feldern in Create/Edit Dialogen
+- **Beide Calculatoren aktualisiert:**
+  - `src/lib/lease-revenue/calculator.ts` — gewichteter Durchschnitt mit Fallback
+  - `src/lib/settlement/calculator.ts` — gleiche Logik in beiden Funktionen
+
+### Dashboard Footer ✅ FERTIG
+
+- Version-Anzeige, Copyright, Links zu Impressum/Datenschutz/Cookies
+- `src/components/layout/dashboard-footer.tsx`
+
+### Cookie-Einstellungen ✅ FERTIG
+
+- Cookie-Settings-Seite, Legal Pages um Cookies-Feld erweitert
+
+### Scrollbar-Theming ✅ FERTIG
+
+- Scrollbar passt sich an Dark/Light Mode an
+
+---
+
 ## Technische Schulden
 
 ### T1: Worker-Service Container (Prio: Hoch für Produktion)
@@ -950,7 +827,7 @@ Priorisiert nach Risiko:
 
 ```
 Sprint 1 (Woche 1-2):    K1 Ausschüttungen + A1 Leistungskurven
-Sprint 2 (Woche 3-4):    K2 Serienbriefe + U2 Benachrichtigungen
+Sprint 2 (Woche 3-4):    K2 Serienbriefe ✅ + U2 Benachrichtigungen ✅
 Sprint 3 (Woche 5-6):    A2 Komponenten/Wartung + K3 Redispatch
 Sprint 4 (Woche 7-8):    A4 Live-Status + U1 Mobile Inspektion
 Parallel (laufend):       T1-T8 Technische Schulden nach Bedarf

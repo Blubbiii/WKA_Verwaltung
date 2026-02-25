@@ -26,6 +26,18 @@ AUDIT & FIX      UX & WIZARDS     FINAL POLISH     SHP & KARTE      BF-ABRECHNUN
 • DATEV/Batch    • Berichte Hub   • Admin Konsol.   • Park-Zuordn.   • Feature-Flags  • Webhook-System
 • Unit Tests     • Dashboard UX   • Duplikat-Clean  • Vertragspartn. • PDF/Rechnungen • Turbopack-Fix
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Phase 14
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+KOMMUNIKATION & UX
+✅ FERTIG
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+• Benachrichtigungscenter (U2)     • Serienbriefe / Mailing (K2)
+• Paperless-ngx Integration        • Onboarding Product Tour (driver.js)
+• Park-Wizard Vereinfachung         • Per-Turbine Pacht-Overrides
+• Cookie-Einstellungen              • Dashboard Footer
+• Scrollbar-Theming                 • Error-Detail-Surfacing
+──────────────────────────────────────────────────────────────────────────────────────────────────────
 ```
 
 ---
@@ -200,6 +212,10 @@ prisma/
 | **SHP-Import** | Leases, Plots, Persons | Park-Karte Polygone |
 | **E-Invoicing** | Invoices | XRechnung/ZUGFeRD Compliance |
 | **GoBD-Archiv** | Invoices, Documents | Betriebspruefungs-Export |
+| **Notifications** | Reminder-Service, Auth | Bell-Icon, /notifications |
+| **Mailings** | Shareholders, Funds, Email-Queue | Serienbriefe, Templates |
+| **Paperless-ngx** | Feature-Flags, Documents, Config | Dokumenten-Archivierung |
+| **Onboarding** | Auth, i18n | Interaktive Produktfuehrung |
 
 ---
 
@@ -433,6 +449,52 @@ prisma/
 - Integration in 6 bestehende Routes (non-blocking, fehlertolerant)
 </details>
 
+<details>
+<summary><strong>Phase 14: Kommunikation & UX</strong> ✅ — Benachrichtigungen, Serienbriefe, Paperless, Onboarding, Park-Verbesserungen</summary>
+
+**U2: Benachrichtigungs-Center:**
+- Notification Model (5 Typen: DOCUMENT, VOTE, CONTRACT, INVOICE, SYSTEM)
+- 4 API-Routes (Liste, Unread-Count, Mark-Read, Mark-All-Read)
+- Bell-Icon im Header mit Badge + Popover (15 neueste)
+- Vollstaendige `/notifications`-Seite mit Typ-Filter + Paginierung
+- Shared UI-Utilities (`notification-ui.ts`: Icons, Farben, Labels, Relative Time)
+- Reminder-Service Integration (erzeugt Notifications bei Faelligkeiten)
+
+**K2: Serienbriefe / Mailing:**
+- 3 neue Prisma-Models: `MailingTemplate`, `Mailing`, `MailingRecipient`
+- 2 Enums: `MailingCategory` (6 Werte), `MailingStatus` (5 Werte)
+- 6 API-Routes: Templates CRUD, Mailings CRUD, Send, Preview
+- Platzhalter-Service mit 8 Standard-Platzhaltern
+- 3-Schritt Wizard: Template → Empfaenger → Vorschau+Senden
+- Template-Editor mit Rich-Text + Platzhalter-Insert
+- BullMQ-Integration fuer Massenversand
+- Sidebar: "Serienbriefe" mit Children "Uebersicht" + "Vorlagen"
+
+**Paperless-ngx Integration:**
+- Feature-Flag-gesteuertes Addon fuer Dokumenten-Archivierung
+- API-Client + 7 API-Routes (Dokumente, Metadaten, Sync)
+- Browser-Seite, Sync-Button, Auto-Archive Hooks
+- Config-Form in System-Einstellungen (verschluesselt)
+
+**Onboarding Product Tour:**
+- driver.js Integration mit rollenbasierten Steps
+- Tour-State-Persistence via API, Auto-Trigger fuer neue Benutzer
+- Custom-Theme, i18n-Support (DE/EN)
+
+**Park & Turbinen Verbesserungen:**
+- Park-Wizard von 3 auf 2 Schritte vereinfacht
+- Feld-Name-Fix: Unicode ue → ASCII ue in allen APIs
+- Per-Turbine Pacht-Overrides: 3 Felder (minimumRent, weaSharePercentage, poolSharePercentage)
+- Tooltip-Hinweise an Override-Feldern
+- Beide Calculatoren (lease-revenue + settlement) nutzen Per-Turbine-Werte
+
+**Sonstiges:**
+- Cookie-Einstellungen-Seite + Legal Pages erweitert
+- Dashboard Footer (Version, Copyright, Legal Links)
+- Scrollbar-Theming (Dark/Light Mode)
+- Error-Detail-Surfacing fuer System-Config API
+</details>
+
 ---
 
 ## Meilensteine
@@ -474,7 +536,13 @@ prisma/
 | M33 | ICS-Kalenderexport: RFC 5545, Vertragsfristen + Pachttermine | ✅ |
 | M34 | Webhook-System: 13 Events, HMAC-SHA256, Admin-UI, BullMQ-Worker | ✅ |
 | M35 | Worker-Thread-Fix: Turbopack + BullMQ Kompatibilitaet | ✅ |
-| M36 | Release: Production Deployment | ⏳ |
+| M36 | Benachrichtigungs-Center: Bell-Icon, /notifications, Reminder-Integration | ✅ |
+| M37 | Serienbriefe: 3 Models, Platzhalter-Service, 3-Schritt Wizard, 6 API-Routes | ✅ |
+| M38 | Paperless-ngx: Feature-Flag Addon, 7 API-Routes, Sync-Worker | ✅ |
+| M39 | Onboarding Tour: driver.js, rollenbasierte Steps, Auto-Trigger | ✅ |
+| M40 | Park-Wizard Vereinfachung + ü/ue Feld-Fix + Per-Turbine Pacht-Overrides | ✅ |
+| M41 | Cookie-Einstellungen, Dashboard Footer, Scrollbar-Theming | ✅ |
+| M42 | Release: Production Deployment | ⏳ |
 
 ---
 
@@ -536,6 +604,14 @@ prisma/
 | Erinnerungen | 4 Kategorien (Rechnungen, Vertraege, Settlements, Dokumente) | ✅ 100% |
 | Geplante Berichte | ScheduledReport, Cron, E-Mail-Versand | ✅ 100% |
 
+### Kommunikation & Benachrichtigungen
+
+| Kategorie | Umfang | Status |
+|-----------|--------|--------|
+| Benachrichtigungs-Center | Bell-Icon, Popover, /notifications, 5 Typen, Reminder-Integration | ✅ 100% |
+| Serienbriefe (Mailing) | 3 Models, Platzhalter-Service, 3-Schritt Wizard, Template-Editor | ✅ 100% |
+| Massen-E-Mail | Ad-hoc Massen-E-Mails, BullMQ-Queue, 5 concurrent, 100/min | ✅ 100% |
+
 ### Integrationen & Export
 
 | Kategorie | Umfang | Status |
@@ -544,6 +620,7 @@ prisma/
 | Webhook-System | 13 Events, HMAC-SHA256, BullMQ, Admin-UI, Delivery-Log | ✅ 100% |
 | CSV/Excel-Export | Alle Entitaeten exportierbar | ✅ 100% |
 | SHP-Import | Shapefile → Fluerstuecke + Eigentuemer + Vertraege | ✅ 100% |
+| Paperless-ngx | Feature-Flag Addon, 7 API-Routes, Sync-Worker, Auto-Archive | ✅ 100% |
 
 ### UI/UX & Design
 
@@ -552,10 +629,13 @@ prisma/
 | Dashboard | 27 Widgets, 12-Column Grid, 4 Rollen-Layouts, Drag&Drop | ✅ 100% |
 | Brand Identity | Warm Navy (#335E99), CSS-Variablen, konsistente Farbgebung | ✅ 100% |
 | Design-System | Animations, Glassmorphism, Micro-Interactions, Dark Mode | ✅ 100% |
-| 5 Workflow-Wizards | Settlement, Park, Lease, Contract, Tenant | ✅ 100% |
+| 5 Workflow-Wizards | Settlement, Park (2-Step), Lease, Contract, Tenant | ✅ 100% |
 | Marketing CMS | Admin-konfigurierbar (Hero, Features, Preisrechner, CTA) | ✅ 100% |
 | i18n | Deutsch + Englisch (next-intl, Cookie-basiert) | ✅ 100% |
 | Kommanditisten-Portal | Dashboard, Beteiligungen, Dokumente, Berichte, Analytics | ✅ 100% |
+| Onboarding Tour | driver.js, rollenbasierte Steps, Auto-Trigger, i18n | ✅ 100% |
+| Dashboard Footer | Version, Copyright, Legal Links (Impressum, Datenschutz, Cookies) | ✅ 100% |
+| Cookie-Einstellungen | Cookie-Settings-Seite, Legal Pages erweitert | ✅ 100% |
 
 ### Betriebsfuehrung & Cross-Tenant
 
@@ -582,19 +662,19 @@ prisma/
 
 | Metrik | Wert |
 |--------|------|
-| Seiten (Pages) | 126 (107 Dashboard + 12 Portal + 7 Auth/Marketing) |
-| API Route Files | 286 (475 HTTP-Endpoints) |
-| Prisma-Models | 88 |
-| Prisma-Enums | 34 |
-| Relations | 225 |
-| Components | 163 in 22 Verzeichnissen |
+| Seiten (Pages) | 132 (112 Dashboard + 12 Portal + 8 Auth/Marketing) |
+| API Route Files | 299 (490+ HTTP-Endpoints) |
+| Prisma-Models | 91 (+MailingTemplate, Mailing, MailingRecipient) |
+| Prisma-Enums | 36 (+MailingCategory, MailingStatus) |
+| Relations | 230+ |
+| Components | 170+ in 24 Verzeichnissen |
 | BullMQ Queues + Worker | 8 + 8 |
 | Dashboard-Widgets | 27 (12 KPI, 6 Chart, 5 List, 2 Utility, 4 Admin) |
-| Sidebar-Navigation Items | 35+ in 6 Gruppen |
-| Permissions | 75 in 15 Kategorien |
+| Sidebar-Navigation Items | 38+ in 7 Gruppen |
+| Permissions | 79 in 16 Kategorien (+mailings) |
 | System-Rollen | 6 (SUPERADMIN → PORTAL) |
 | Webhook-Event-Typen | 13 in 6 Kategorien |
-| Workflow-Wizards | 5 |
+| Workflow-Wizards | 5 (+Mailing-Wizard) |
 | i18n-Sprachen | 2 (DE/EN) |
 | E-Mail-Templates | 14+ |
 | PDF-Templates | 5+ |
@@ -607,10 +687,20 @@ prisma/
 
 ## Offene Punkte
 
+### Naechste Features (aus Implementation Strategy)
+
+- [ ] K1: Ausschuettungsmodul (Gewinnverteilung an Gesellschafter)
+- [ ] A1: Leistungskurven-Analyse (Soll vs. Ist SCADA-Daten)
+- [ ] A2: Komponentenverwaltung + Wartung (Turbinenteile + Historie)
+- [ ] K3: Redispatch 2.0 (Abregelungen + Entschaedigungen)
+- [ ] A4: Echtzeit-Status-Dashboard (Live-Karte mit Turbinen-Markern)
+- [ ] U1: Mobile Inspektion (Vor-Ort-Checklisten per Smartphone)
+- [ ] I2: Banking / SEPA (SEPA-XML Export + Kontoauszug-Import)
+
 ### Zurueckgestellt
 
 - [ ] Staging-Umgebung (separate DB, Preview Deployments)
-- [ ] Production Deployment (M36)
+- [ ] Production Deployment (M42)
 
 ### Keine bekannten Bugs
 
@@ -618,6 +708,8 @@ Alle bekannten Bugs wurden behoben:
 - ~~Worker-Thread-Error~~ → Behoben via `serverExternalPackages` (Phase 13)
 - ~~Cost-Allocation API-Mismatch~~ → Behoben (Phase 9)
 - ~~Dashboard Stats N+1~~ → Behoben (Phase 9)
+- ~~Park-Wizard 500 Error~~ → Behoben (ue/ue Feld-Fix, Phase 14)
+- ~~System-Config 500 Error~~ → Behoben (EMAIL_ENCRYPTION_KEY, Phase 14)
 
 ---
 
@@ -662,11 +754,45 @@ Das Rechnungssystem ist funktional komplett mit anpassbaren Vorlagen:
 | Feature-Flag pro Mandant (Self-Service Modul-Aktivierung) | ~20h/Jahr |
 | ICS-Kalenderexport (Fristen direkt im Kalender-Tool) | ~30h/Jahr |
 | Webhook-Benachrichtigungen (keine manuelle Weiterleitung) | ~40h/Jahr |
-| **Gesamt** | **~1334h/Jahr (~167 Arbeitstage)** |
+| In-App Benachrichtigungen (kein manuelles Nachfragen) | ~50h/Jahr |
+| Serienbriefe (Massen-Kommunikation mit Platzhaltern) | ~100h/Jahr |
+| Paperless-ngx (automatische Dokumenten-Archivierung) | ~80h/Jahr |
+| Onboarding Tour (weniger Support-Anfragen) | ~30h/Jahr |
+| Per-Turbine Pacht-Overrides (individuelle Abrechnungsanpassung) | ~20h/Jahr |
+| **Gesamt** | **~1614h/Jahr (~202 Arbeitstage)** |
 
 ---
 
 ## Aenderungshistorie
+
+### 26. Februar 2026 — Phase 14: Kommunikation & UX
+
+**U2: Benachrichtigungs-Center:**
+- Notification Model (5 Typen), 4 API-Routes, Bell-Icon + Popover
+- Vollstaendige `/notifications`-Seite mit Typ-Filter + Paginierung
+- Shared UI-Utilities, Reminder-Service Integration
+
+**K2: Serienbriefe / Mailing:**
+- 3 neue Prisma-Models, 6 API-Routes, Platzhalter-Service (8 Platzhalter)
+- 3-Schritt Wizard, Template-Editor, BullMQ-Integration
+- Sidebar "Serienbriefe" mit Children, `mailings:read/create/send/delete`
+
+**Paperless-ngx Integration:**
+- Feature-Flag Addon, API-Client, 7 API-Routes, Sync-Worker
+- Browser-Seite, Config-Form (verschluesselt), Auto-Archive Hooks
+
+**Onboarding Product Tour:**
+- driver.js, rollenbasierte Steps, Tour-Persistence, Auto-Trigger, i18n
+
+**Park & Turbinen:**
+- Park-Wizard vereinfacht (3 → 2 Schritte)
+- Feld-Name-Fix (ue/ue) in 6 Dateien
+- Per-Turbine Pacht-Overrides (3 Felder, Tooltip-Hints)
+- Beide Calculatoren (lease-revenue + settlement) aktualisiert
+
+**UX & Fixes:**
+- Cookie-Einstellungen, Dashboard Footer, Scrollbar-Theming
+- Error-Detail-Surfacing fuer System-Config, EMAIL_ENCRYPTION_KEY Fix
 
 ### 25. Februar 2026 — Performance-Audit + Workflow Quick-Wins
 
