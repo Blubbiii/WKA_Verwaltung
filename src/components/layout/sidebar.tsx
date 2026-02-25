@@ -408,6 +408,13 @@ const navGroups: NavGroup[] = [
         icon: Building2,
         permission: "system:fund-categories",
       },
+      {
+        title: "Webhooks",
+        titleKey: "webhooks",
+        href: "/admin/webhooks",
+        icon: Radio,
+        permission: "admin:manage",
+      },
     ],
   },
 ];

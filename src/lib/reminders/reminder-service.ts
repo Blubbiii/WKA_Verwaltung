@@ -8,6 +8,7 @@
  */
 
 import { jobLogger } from "@/lib/logger";
+import { dispatchWebhook } from "@/lib/webhooks";
 import type {
   ReminderCategory,
   ReminderItem,
@@ -152,6 +153,16 @@ export async function checkAndSendReminders(
           tenantId,
         },
       });
+
+      // Fire-and-forget webhook for expiring contracts
+      if (item.category === "EXPIRING_CONTRACT") {
+        dispatchWebhook(tenantId, "contract.expiring", {
+          id: item.entityId,
+          title: item.title,
+          endDate: item.referenceDate?.toISOString(),
+          daysRemaining: item.daysRemaining,
+        }).catch(() => {});
+      }
     } catch (error) {
       const msg =
         error instanceof Error ? error.message : "Unknown error";

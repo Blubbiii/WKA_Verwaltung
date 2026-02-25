@@ -5,6 +5,8 @@ import type { NextConfig } from "next";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  // Prevent Turbopack from bundling packages that use worker threads or native bindings
+  serverExternalPackages: ["bullmq", "ioredis", "pino", "pino-pretty"],
   async headers() {
     return [
       {

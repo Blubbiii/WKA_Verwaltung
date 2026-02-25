@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 const serviceEventSchema = z.object({
   turbineId: z.string().uuid("Ungültige Anlagen-ID"),
@@ -206,6 +207,13 @@ const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
         },
       },
     });
+
+    // Fire-and-forget webhook dispatch
+    dispatchWebhook(check.tenantId!, "service_event.created", {
+      id: event.id,
+      type: event.eventType,
+      description: event.description,
+    }).catch(() => {});
 
     return NextResponse.json(event, { status: 201 });
   } catch (error) {

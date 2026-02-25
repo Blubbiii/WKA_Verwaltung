@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 // POST /api/invoices/[id]/send - Rechnung als versendet markieren
 export async function POST(
@@ -62,6 +63,13 @@ export async function POST(
         items: { orderBy: { position: "asc" } },
       },
     });
+
+    // Fire-and-forget webhook dispatch
+    dispatchWebhook(check.tenantId!, "invoice.sent", {
+      id: updated.id,
+      invoiceNumber: updated.invoiceNumber,
+      sentAt: new Date().toISOString(),
+    }).catch(() => {});
 
     return NextResponse.json(updated);
   } catch (error) {

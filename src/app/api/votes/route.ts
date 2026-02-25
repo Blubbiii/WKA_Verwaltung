@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 const voteCreateSchema = z.object({
   fundId: z.string().min(1, "Gesellschaft ist erforderlich"),
@@ -184,6 +185,14 @@ const check = await requirePermission(PERMISSIONS.VOTES_CREATE);
         },
       },
     });
+
+    // Fire-and-forget webhook dispatch
+    dispatchWebhook(check.tenantId!, "vote.created", {
+      id: vote.id,
+      title: vote.title,
+      startDate: vote.startDate?.toISOString(),
+      endDate: vote.endDate?.toISOString(),
+    }).catch(() => {});
 
     return NextResponse.json(vote, { status: 201 });
   } catch (error) {

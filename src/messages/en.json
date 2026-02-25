@@ -106,7 +106,8 @@
     "managementBillingOverview": "Overview",
     "managementStakeholders": "BF Contracts",
     "managementBillings": "Billings",
-    "taxRates": "Tax Rates"
+    "taxRates": "Tax Rates",
+    "webhooks": "Webhooks"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",

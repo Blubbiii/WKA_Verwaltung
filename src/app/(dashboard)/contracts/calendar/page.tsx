@@ -24,6 +24,7 @@ import {
   Calendar as CalendarIcon,
   AlertTriangle,
   Clock,
+  Download,
   FileText,
   List,
 } from "lucide-react";
@@ -162,12 +163,23 @@ export default function ContractsCalendarPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/contracts">
-            <List className="mr-2 h-4 w-4" />
-            Listenansicht
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.location.href = "/api/export/calendar?type=contracts";
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Kalender exportieren
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/contracts">
+              <List className="mr-2 h-4 w-4" />
+              Listenansicht
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

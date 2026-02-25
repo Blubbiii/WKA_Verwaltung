@@ -16,6 +16,7 @@ import {
 import {
   checkStorageLimit,
 } from "@/lib/storage-tracking";
+import { dispatchWebhook } from "@/lib/webhooks";
 import {
   getUserHighestHierarchy,
   ROLE_HIERARCHY,
@@ -479,6 +480,13 @@ async function handleFileUpload(
     return doc;
   });
 
+  // Fire-and-forget webhook dispatch
+  dispatchWebhook(tenantId, "document.uploaded", {
+    id: document.id,
+    title: document.title,
+    category: document.category,
+  }).catch(() => {});
+
   return NextResponse.json({
     ...document,
     fileSizeBytes: document.fileSizeBytes ? Number(document.fileSizeBytes) : null,
@@ -567,6 +575,13 @@ async function handleJsonCreate(
 
     return doc;
   });
+
+  // Fire-and-forget webhook dispatch
+  dispatchWebhook(tenantId, "document.uploaded", {
+    id: document.id,
+    title: document.title,
+    category: document.category,
+  }).catch(() => {});
 
   // Convert BigInt to Number for JSON serialization
   return NextResponse.json({

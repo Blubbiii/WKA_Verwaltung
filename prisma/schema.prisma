@@ -89,6 +89,7 @@ model Tenant {
   positionTaxMappings       PositionTaxMapping[]
   users                     User[]
   votes                     Vote[]
+  webhooks                  Webhook[]
 
   @@map("tenants")
 }
@@ -141,6 +142,7 @@ model User {
   userRoleAssignments                                                     UserRoleAssignment[]
   tenant                                                                  Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdVotes                                                            Vote[]                      @relation("VoteCreatedBy")
+  createdWebhooks                                                         Webhook[]                   @relation("WebhookCreatedBy")
 
   @@index([tenantId])
   @@index([email])
@@ -2545,4 +2547,47 @@ model PositionTaxMapping {
   @@unique([tenantId, category])
   @@index([tenantId, module])
   @@map("position_tax_mappings")
+}
+
+// ─── Webhooks ────────────────────────────────────────────
+
+model Webhook {
+  id          String            @id @default(uuid())
+  url         String
+  secret      String
+  events      String[]
+  description String?
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  tenantId    String
+  createdById String?
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy   User?             @relation("WebhookCreatedBy", fields: [createdById], references: [id])
+  deliveries  WebhookDelivery[]
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id            String   @id @default(uuid())
+  event         String
+  payload       Json
+  statusCode    Int?
+  responseBody  String?
+  duration      Int?
+  attempts      Int      @default(1)
+  lastAttemptAt DateTime @default(now())
+  success       Boolean  @default(false)
+  error         String?
+  createdAt     DateTime @default(now())
+  webhookId     String
+  webhook       Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([webhookId, createdAt])
+  @@index([createdAt])
+  @@map("webhook_deliveries")
 }

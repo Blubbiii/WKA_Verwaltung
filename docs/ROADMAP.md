@@ -374,21 +374,14 @@ FOUNDATION       CORE MODULES     ADVANCED         AUTOMATION       OPTIMIZATION
 **Bekannt (nicht blockierend):**
 - [ ] Worker-Thread-Error im Dev-Server (Next.js 15.5.9 + Node v24.13.0 Inkompatibilitaet) — Seiten laden trotzdem korrekt, nur Error-Spam in der Konsole
 
-### Fehlende Features (nach Prioritaet)
+### Optionale Features
 
-**Prioritaet 4 — Nice-to-Have:**
-- [ ] OpenAPI/Swagger Dokumentation (/api/docs)
+**Nice-to-Have:**
 - [ ] ICS-Export fuer Kalender (Vertragsfristen, Kuendigungstermine)
-- [ ] Portfolio-Verlauf/Timeline im Portal
-- [ ] Favoriten/Lesezeichen (eigenes DB-Model)
-- [ ] Mobile-optimiertes Layout (responsive Sidebar, Touch-Interaktionen)
-- [ ] PWA-Support (Offline, Push-Notifications)
-
-**Prioritaet 6 — Testing & Qualitaet:**
-- [ ] Staging-Umgebung (separate DB, Preview Deployments)
-- [ ] API-Versionierung (/api/v2/)
-- [ ] API-Keys fuer externe Zugriffe
 - [ ] Webhook-Support (Events an externe URLs)
+
+**Zurueckgestellt:**
+- [ ] Staging-Umgebung (separate DB, Preview Deployments)
 
 ---
 

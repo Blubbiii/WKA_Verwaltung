@@ -9,6 +9,7 @@ import { TaxType } from "@prisma/client";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 // Schema für Invoice-Items
 const invoiceItemSchema = z.object({
@@ -247,6 +248,14 @@ async function postHandler(request: NextRequest) {
     invalidate.onInvoiceChange(check.tenantId!, invoice.id, 'create').catch((err) => {
       logger.warn({ err }, '[Invoices] Cache invalidation error after create');
     });
+
+    // Fire-and-forget webhook dispatch
+    dispatchWebhook(check.tenantId!, "invoice.created", {
+      id: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      type: invoice.invoiceType,
+      grossAmount: invoice.grossAmount?.toString(),
+    }).catch(() => {});
 
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {

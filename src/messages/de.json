@@ -106,7 +106,8 @@
     "managementBillingOverview": "Übersicht",
     "managementStakeholders": "BF-Verträge",
     "managementBillings": "Abrechnungen",
-    "taxRates": "Steuersätze"
+    "taxRates": "Steuersätze",
+    "webhooks": "Webhooks"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",

@@ -55,6 +55,7 @@ export { WEATHER_QUEUE_NAME } from './queues/weather.queue';
 export { REPORT_QUEUE_NAME } from './queues/report.queue';
 export { REMINDER_QUEUE_NAME } from './queues/reminder.queue';
 export { SCADA_AUTO_IMPORT_QUEUE_NAME } from './queues/scada-auto-import.queue';
+export { WEBHOOK_QUEUE_NAME } from './queues/webhook.queue';
 
 /**
  * All queue names as a constant object for easy reference
@@ -67,6 +68,7 @@ export const QUEUE_NAMES = {
   REPORT: 'report',
   REMINDER: 'reminder',
   SCADA_AUTO_IMPORT: 'scada-auto-import',
+  WEBHOOK: 'webhook',
 } as const;
 
 export type QueueName = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];
@@ -198,6 +200,21 @@ export type {
 } from './queues/scada-auto-import.queue';
 
 // ============================================
+// Webhook Queue
+// ============================================
+
+export {
+  getWebhookQueue,
+  enqueueWebhookDelivery,
+  closeWebhookQueue,
+} from './queues/webhook.queue';
+
+export type {
+  WebhookJobData,
+  WebhookJobResult,
+} from './queues/webhook.queue';
+
+// ============================================
 // Utility Functions
 // ============================================
 
@@ -213,6 +230,7 @@ export const closeAllQueues = async (): Promise<void> => {
   const { closeReportQueue } = await import('./queues/report.queue');
   const { closeReminderQueue } = await import('./queues/reminder.queue');
   const { closeScadaAutoImportQueue } = await import('./queues/scada-auto-import.queue');
+  const { closeWebhookQueue } = await import('./queues/webhook.queue');
   const { closeConnections } = await import('./connection');
 
   logger.info('[Queue] Closing all queues...');
@@ -226,6 +244,7 @@ export const closeAllQueues = async (): Promise<void> => {
     closeReportQueue(),
     closeReminderQueue(),
     closeScadaAutoImportQueue(),
+    closeWebhookQueue(),
   ]);
 
   // Then close Redis connections
@@ -250,6 +269,7 @@ export const getQueueHealth = async (): Promise<{
   const { getReportQueue } = await import('./queues/report.queue');
   const { getReminderQueue } = await import('./queues/reminder.queue');
   const { getScadaAutoImportQueue } = await import('./queues/scada-auto-import.queue');
+  const { getWebhookQueue } = await import('./queues/webhook.queue');
 
   const redisHealthy = await isRedisHealthy();
 
@@ -273,6 +293,7 @@ export const getQueueHealth = async (): Promise<{
     checkQueue(QUEUE_NAMES.REPORT, getReportQueue),
     checkQueue(QUEUE_NAMES.REMINDER, getReminderQueue),
     checkQueue(QUEUE_NAMES.SCADA_AUTO_IMPORT, getScadaAutoImportQueue),
+    checkQueue(QUEUE_NAMES.WEBHOOK, getWebhookQueue),
   ]);
 
   return {
