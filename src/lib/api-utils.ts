@@ -1,10 +1,81 @@
 /**
- * API utility functions for validated query parameter parsing.
+ * API utility functions for validated query parameter parsing and
+ * standardised error/success responses.
  *
  * These helpers enforce whitelisting on sort fields and clamping on
  * pagination limits to prevent arbitrary field access and unbounded
  * result sets.
  */
+
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { apiLogger as logger } from "@/lib/logger";
+
+// ---------------------------------------------------------------------------
+// Standardised API Responses
+// ---------------------------------------------------------------------------
+
+/** 400 Bad Request */
+export function badRequest(error: string, details?: unknown) {
+  return NextResponse.json(
+    { error, ...(details ? { details } : {}) },
+    { status: 400 },
+  );
+}
+
+/** 404 Not Found */
+export function notFound(entity = "Ressource") {
+  return NextResponse.json(
+    { error: `${entity} nicht gefunden` },
+    { status: 404 },
+  );
+}
+
+/** 403 Forbidden */
+export function forbidden(message = "Keine Berechtigung") {
+  return NextResponse.json({ error: message }, { status: 403 });
+}
+
+/** 500 Internal Server Error */
+export function serverError(message = "Interner Serverfehler") {
+  return NextResponse.json({ error: message }, { status: 500 });
+}
+
+/**
+ * Handle common catch-block patterns: Zod validation errors + generic errors.
+ * Use at the end of a try/catch in API routes.
+ *
+ * @example
+ * } catch (error) {
+ *   return handleApiError(error, "Fehler beim Laden");
+ * }
+ */
+export function handleApiError(error: unknown, fallbackMessage: string) {
+  if (error instanceof z.ZodError) {
+    return NextResponse.json(
+      { error: "Validierungsfehler", details: error.errors },
+      { status: 400 },
+    );
+  }
+  logger.error({ err: error }, fallbackMessage);
+  return serverError(fallbackMessage);
+}
+
+/**
+ * Build a paginated JSON response with consistent shape.
+ */
+export function paginatedResponse<T>(
+  data: T[],
+  pagination: { page: number; limit: number; total: number },
+) {
+  return NextResponse.json({
+    data,
+    pagination: {
+      ...pagination,
+      totalPages: Math.ceil(pagination.total / pagination.limit),
+    },
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Pagination

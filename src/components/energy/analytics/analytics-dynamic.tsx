@@ -58,3 +58,19 @@ export const FinancialAnalysis = dynamic(
     ),
   { ssr: false, loading: () => <ChartSkeleton /> }
 );
+
+export const DrillDownDaily = dynamic(
+  () =>
+    import("@/components/energy/analytics/drill-down-daily").then(
+      (mod) => mod.DrillDownDaily
+    ),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+
+export const DrillDownMonthly = dynamic(
+  () =>
+    import("@/components/energy/analytics/drill-down-monthly").then(
+      (mod) => mod.DrillDownMonthly
+    ),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);

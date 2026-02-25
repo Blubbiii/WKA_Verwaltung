@@ -2,18 +2,49 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { dashboardCache, DASHBOARD_CACHE_KEYS } from "@/lib/cache/dashboard";
+import { CACHE_TTL } from "@/lib/cache/types";
 
 // =============================================================================
 // GET /api/dashboard/energy-kpis
-// Aggregated energy KPIs for dashboard widgets
+// Aggregated energy KPIs for dashboard widgets (Redis-cached, 5 min TTL)
 // =============================================================================
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const check = await requireAuth();
     if (!check.authorized) return check.error;
 
     const tenantId = check.tenantId!;
+
+    // Check for cache bypass
+    const { searchParams } = new URL(request.url);
+    const fresh = searchParams.get("fresh") === "true";
+
+    // Use Redis cache (5 min TTL) — energy data changes infrequently
+    const { data: response, fromCache } = await dashboardCache.getOrFetchWidgetData(
+      tenantId,
+      DASHBOARD_CACHE_KEYS.ENERGY_STATS,
+      () => fetchEnergyKpis(tenantId),
+      fresh ? 0 : CACHE_TTL.ENERGY_DATA,
+    );
+
+    return NextResponse.json(response, {
+      headers: {
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+        "X-Cache": fromCache ? "HIT" : "MISS",
+      },
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Error fetching energy KPIs");
+    return NextResponse.json(
+      { error: "Fehler beim Laden der Energie-KPIs" },
+      { status: 500 }
+    );
+  }
+}
+
+async function fetchEnergyKpis(tenantId: string) {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
@@ -215,16 +246,5 @@ export async function GET(_request: NextRequest) {
       generatedAt: new Date().toISOString(),
     };
 
-    return NextResponse.json(response, {
-      headers: {
-        "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
-      },
-    });
-  } catch (error) {
-    logger.error({ err: error }, "Error fetching energy KPIs");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Energie-KPIs" },
-      { status: 500 }
-    );
-  }
+    return response;
 }

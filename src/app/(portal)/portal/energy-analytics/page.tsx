@@ -1,6 +1,6 @@
 "use client";
 
-import { PortalEnergyAnalytics } from "@/components/portal/portal-energy-analytics";
+import { PortalEnergyAnalytics } from "@/components/portal/portal-energy-analytics-dynamic";
 
 export default function PortalEnergyAnalyticsPage() {
   return (

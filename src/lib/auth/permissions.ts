@@ -33,8 +33,8 @@ export interface PermissionCheck {
  * Verwendet Caching um wiederholte DB-Abfragen zu vermeiden
  */
 export async function getUserPermissions(userId: string): Promise<UserPermissions> {
-  // 1. Pruefe zuerst den Cache
-  const cached = getCachedPermissions(userId);
+  // 1. Pruefe zuerst den Cache (async — Redis-backed)
+  const cached = await getCachedPermissions(userId);
   if (cached) {
     return cached;
   }

@@ -31,46 +31,49 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
       );
     }
 
-    // Get all active shareholders in this fund
-    const shareholders = await prisma.shareholder.findMany({
-      where: {
-        fundId,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-        capitalContribution: true,
-      },
-    });
+    // Atomic recalculation: read + update all shareholders in single transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const shareholders = await tx.shareholder.findMany({
+        where: {
+          fundId,
+          status: "ACTIVE",
+        },
+        select: {
+          id: true,
+          capitalContribution: true,
+        },
+      });
 
-    // Calculate total capital
-    const totalCapital = shareholders.reduce(
-      (sum, sh) => sum + (Number(sh.capitalContribution) || 0),
-      0
-    );
+      const totalCapital = shareholders.reduce(
+        (sum, sh) => sum + (Number(sh.capitalContribution) || 0),
+        0
+      );
 
-    // Update each shareholder's ownership percentage
-    if (totalCapital > 0) {
-      for (const sh of shareholders) {
-        const contribution = Number(sh.capitalContribution) || 0;
-        const percentage = (contribution / totalCapital) * 100;
-        const roundedPercentage = Math.round(percentage * 100) / 100;
+      if (totalCapital > 0) {
+        await Promise.all(
+          shareholders.map((sh) => {
+            const contribution = Number(sh.capitalContribution) || 0;
+            const percentage = (contribution / totalCapital) * 100;
+            const roundedPercentage = Math.round(percentage * 100) / 100;
 
-        await prisma.shareholder.update({
-          where: { id: sh.id },
-          data: {
-            ownershipPercentage: roundedPercentage,
-            votingRightsPercentage: roundedPercentage,
-            distributionPercentage: roundedPercentage,
-          },
-        });
+            return tx.shareholder.update({
+              where: { id: sh.id },
+              data: {
+                ownershipPercentage: roundedPercentage,
+                votingRightsPercentage: roundedPercentage,
+                distributionPercentage: roundedPercentage,
+              },
+            });
+          })
+        );
       }
-    }
+
+      return { totalCapital, shareholdersUpdated: shareholders.length };
+    });
 
     return NextResponse.json({
       success: true,
-      totalCapital,
-      shareholdersUpdated: shareholders.length,
+      ...result,
     });
   } catch (error) {
     logger.error({ err: error }, "Error recalculating fund shares");

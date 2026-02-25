@@ -8,8 +8,10 @@ import { BarChart3, Clock, GitCompare, AlertTriangle, Cloud, CreditCard, Search,
 import { AnalyticsFilterBar } from "@/components/energy/analytics/analytics-filter-bar";
 import { CreateReportDialog } from "@/components/energy/analytics/create-report-dialog";
 import { DrillDownBreadcrumb } from "@/components/energy/analytics/drill-down-breadcrumb";
-import { DrillDownMonthly } from "@/components/energy/analytics/drill-down-monthly";
-import { DrillDownDaily } from "@/components/energy/analytics/drill-down-daily";
+import {
+  DrillDownMonthly,
+  DrillDownDaily,
+} from "@/components/energy/analytics/analytics-dynamic";
 import { useDrillDown } from "@/hooks/useDrillDown";
 import { DataExplorerTab } from "@/components/energy/analytics/data-explorer-tab";
 import { DataComparisonTab } from "@/components/energy/analytics/data-comparison-tab";
