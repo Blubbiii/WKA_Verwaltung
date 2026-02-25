@@ -21,6 +21,7 @@ import { useKeyboardContext } from "@/components/providers/keyboard-provider";
 import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { TourTriggerMenuItem } from "@/components/onboarding/tour-trigger-button";
 
 interface ImpersonationData {
   originalUserId: string;
@@ -145,7 +146,7 @@ export function Header() {
 
       <header className="flex items-center justify-between h-16 px-6 border-b border-border/50 bg-background/95 backdrop-blur-sm shadow-sm sticky top-0 z-30">
         {/* Search */}
-        <div className="flex items-center gap-4 flex-1 max-w-md">
+        <div data-tour="header-search" className="flex items-center gap-4 flex-1 max-w-md">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -169,7 +170,7 @@ export function Header() {
           )}
 
           {/* Theme Toggle - only render icon after mount to prevent hydration mismatch */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="transition-all duration-200 hover:bg-accent" title={mounted ? (resolvedTheme === "dark" ? t("common.lightMode") : t("common.darkMode")) : undefined} aria-label="Toggle theme">
+          <Button data-tour="header-theme-toggle" variant="ghost" size="icon" onClick={toggleTheme} className="transition-all duration-200 hover:bg-accent" title={mounted ? (resolvedTheme === "dark" ? t("common.lightMode") : t("common.darkMode")) : undefined} aria-label="Toggle theme">
             {mounted ? (resolvedTheme === "dark" ? <Sun className="h-5 w-5 transition-transform duration-200 hover:rotate-12" /> : <Moon className="h-5 w-5 transition-transform duration-200 hover:-rotate-12" />) : <div className="h-5 w-5" />}
           </Button>
 
@@ -194,7 +195,7 @@ export function Header() {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 px-2 transition-all duration-200 hover:bg-accent">
+              <Button data-tour="header-user-menu" variant="ghost" className="gap-2 px-2 transition-all duration-200 hover:bg-accent">
                 <Avatar className="h-8 w-8">
                   {avatarUrl && (
                     <AvatarImage src={avatarUrl} alt={session?.user?.name || "User"} />
@@ -236,6 +237,7 @@ export function Header() {
                   {t("common.settings")}
                 </Link>
               </DropdownMenuItem>
+              <TourTriggerMenuItem />
               {impersonation && (
                 <>
                   <DropdownMenuSeparator />

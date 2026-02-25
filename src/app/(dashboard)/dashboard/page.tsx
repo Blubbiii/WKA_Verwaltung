@@ -54,7 +54,7 @@ export default function DashboardPage() {
               />
               Aktualisieren
             </Button>
-            <Button variant="outline" size="sm" onClick={handleStartEditing}>
+            <Button data-tour="dashboard-customize" variant="outline" size="sm" onClick={handleStartEditing}>
               <Settings2 className="mr-2 h-4 w-4" />
               Dashboard anpassen
             </Button>

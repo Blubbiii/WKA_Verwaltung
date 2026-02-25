@@ -1,0 +1,101 @@
+/* driver.js custom theme for WindparkManager */
+/* Uses CSS variables from globals.css for automatic dark mode support */
+
+.driver-popover {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 400px;
+  z-index: 100001;
+}
+
+.driver-popover .driver-popover-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+.driver-popover .driver-popover-description {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.5;
+}
+
+.driver-popover .driver-popover-progress-text {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Navigation buttons */
+.driver-popover .driver-popover-navigation-btns {
+  gap: 0.5rem;
+}
+
+.driver-popover .driver-popover-prev-btn {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.driver-popover .driver-popover-prev-btn:hover {
+  background-color: hsl(var(--accent));
+}
+
+.driver-popover .driver-popover-next-btn,
+.driver-popover .driver-popover-close-btn-text {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.driver-popover .driver-popover-next-btn:hover,
+.driver-popover .driver-popover-close-btn-text:hover {
+  opacity: 0.9;
+}
+
+/* Close X button */
+.driver-popover .driver-popover-close-btn {
+  color: hsl(var(--muted-foreground));
+}
+
+.driver-popover .driver-popover-close-btn:hover {
+  color: hsl(var(--foreground));
+}
+
+/* Overlay */
+.driver-overlay {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* Arrow colors matching card background */
+.driver-popover-arrow-side-right .driver-popover-arrow {
+  border-right-color: hsl(var(--card)) !important;
+}
+
+.driver-popover-arrow-side-left .driver-popover-arrow {
+  border-left-color: hsl(var(--card)) !important;
+}
+
+.driver-popover-arrow-side-bottom .driver-popover-arrow {
+  border-bottom-color: hsl(var(--card)) !important;
+}
+
+.driver-popover-arrow-side-top .driver-popover-arrow {
+  border-top-color: hsl(var(--card)) !important;
+}
+
+/* Highlighted element border */
+.driver-active-element {
+  box-shadow: 0 0 0 3px hsl(var(--primary)) !important;
+  border-radius: var(--radius);
+}

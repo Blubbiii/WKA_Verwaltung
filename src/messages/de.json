@@ -215,5 +215,12 @@
     "forbidden": "Zugriff verweigert",
     "validation": "Ungültige Eingabedaten",
     "network": "Netzwerkfehler"
+  },
+  "onboarding": {
+    "startTour": "Tour starten",
+    "nextStep": "Weiter",
+    "prevStep": "Zurück",
+    "finish": "Fertig",
+    "skipTour": "Tour überspringen"
   }
 }

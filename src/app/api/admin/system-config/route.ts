@@ -24,12 +24,12 @@ import {
 // VALIDATION SCHEMAS
 // =============================================================================
 
-const getCategoriesSchema = z.enum(["email", "weather", "storage", "general", "features"]);
+const getCategoriesSchema = z.enum(["email", "weather", "storage", "general", "features", "paperless"]);
 
 const setConfigSchema = z.object({
   key: z.string().min(1, "Key ist erforderlich"),
   value: z.string(),
-  category: z.enum(["email", "weather", "storage", "general", "features"]),
+  category: z.enum(["email", "weather", "storage", "general", "features", "paperless"]),
   encrypted: z.boolean().optional(),
   label: z.string().optional(),
   tenantId: z.string().uuid().nullable().optional(),
@@ -40,7 +40,7 @@ const bulkSetConfigSchema = z.object({
     z.object({
       key: z.string().min(1),
       value: z.string(),
-      category: z.enum(["email", "weather", "storage", "general", "features"]),
+      category: z.enum(["email", "weather", "storage", "general", "features", "paperless"]),
       encrypted: z.boolean().optional(),
       label: z.string().optional(),
     })

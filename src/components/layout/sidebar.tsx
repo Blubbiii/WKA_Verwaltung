@@ -556,7 +556,7 @@ export function Sidebar() {
     const itemTitle = getTitle(item);
 
     return (
-      <li key={item.href}>
+      <li key={item.href} data-tour={item.titleKey ? `sidebar-${item.titleKey}` : undefined}>
         {hasChildren ? (
           <>
             <button
@@ -650,6 +650,7 @@ export function Sidebar() {
 
   return (
     <aside
+      data-tour="sidebar"
       className={cn(
         "flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300",
         collapsed ? "w-16" : "w-64"
@@ -725,7 +726,7 @@ export function Sidebar() {
           const groupExpanded = isGroupExpanded(group, visibleItems);
 
           return (
-            <div key={group.label ?? `group-${groupIdx}`} className={cn("mb-4", groupIdx > 0 && group.label && !group.showSeparator && !collapsed && "pt-2")}>
+            <div key={group.label ?? `group-${groupIdx}`} data-tour={group.labelKey ? `sidebar-group-${group.labelKey}` : undefined} className={cn("mb-4", groupIdx > 0 && group.label && !group.showSeparator && !collapsed && "pt-2")}>
               {/* Separator before Administration and System groups */}
               {group.showSeparator && (
                 <div className="mx-3 mb-3 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />

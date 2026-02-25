@@ -3,6 +3,7 @@
 // ===========================================
 
 import { UserRole } from "@prisma/client";
+import type { OnboardingState } from "@/lib/onboarding/tour-config";
 
 /**
  * Widget position and size in the dashboard grid
@@ -82,6 +83,7 @@ export interface WidgetDefinition {
  */
 export interface UserSettings {
   dashboard?: DashboardConfig;
+  onboarding?: OnboardingState;
   /** Other settings can be added here */
   [key: string]: unknown;
 }

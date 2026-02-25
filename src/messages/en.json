@@ -215,5 +215,12 @@
     "forbidden": "Access denied",
     "validation": "Invalid input data",
     "network": "Network error"
+  },
+  "onboarding": {
+    "startTour": "Start Tour",
+    "nextStep": "Next",
+    "prevStep": "Previous",
+    "finish": "Done",
+    "skipTour": "Skip Tour"
   }
 }
