@@ -17,13 +17,14 @@ RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 # Package files kopieren
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 
 # Dependencies installieren
 # npm install statt npm ci: Lockfile wird auf Windows generiert und enthaelt
 # keine Linux/Alpine-spezifischen optionalen Dependencies (SWC, Parcel, Rollup).
 # npm install loest diese automatisch fuer die aktuelle Plattform auf.
-RUN npm install
+# Retry bei transient npm registry errors (403/429/5xx).
+RUN npm install || (sleep 5 && npm install) || (sleep 15 && npm install)
 
 # -----------------------------------------------------------------------------
 # Stage 2: Builder
