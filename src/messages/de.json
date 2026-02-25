@@ -222,5 +222,11 @@
     "prevStep": "Zurück",
     "finish": "Fertig",
     "skipTour": "Tour überspringen"
+  },
+  "footer": {
+    "impressum": "Impressum",
+    "datenschutz": "Datenschutz",
+    "cookies": "Cookie-Einstellungen",
+    "allRightsReserved": "Alle Rechte vorbehalten"
   }
 }
