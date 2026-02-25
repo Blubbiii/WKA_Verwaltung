@@ -87,10 +87,10 @@ export async function POST(
       );
     }
 
-    // Handle Skonto application
+    // Handle Skonto: auto-apply if eligible and not explicitly set
     let skontoPaid = false;
     if (applySkonto) {
-      // Verify Skonto is configured
+      // Explicit request to apply Skonto
       if (!invoice.skontoPercent || !invoice.skontoDeadline) {
         return NextResponse.json(
           { error: "Kein Skonto für diese Rechnung konfiguriert" },
@@ -98,7 +98,6 @@ export async function POST(
         );
       }
 
-      // Verify Skonto deadline has not expired (check against paidAt date)
       if (!isSkontoValid(invoice.skontoDeadline, paidAt)) {
         return NextResponse.json(
           { error: "Skonto-Frist ist abgelaufen. Zahlung nach dem Stichtag." },
@@ -107,6 +106,17 @@ export async function POST(
       }
 
       skontoPaid = true;
+    } else if (
+      // Auto-apply: Skonto configured, deadline not passed, payment within window
+      invoice.skontoPercent &&
+      invoice.skontoDeadline &&
+      isSkontoValid(invoice.skontoDeadline, paidAt)
+    ) {
+      skontoPaid = true;
+      logger.info(
+        { invoiceId: id, skontoPercent: Number(invoice.skontoPercent) },
+        "Skonto auto-applied (payment within deadline)"
+      );
     }
 
     const updated = await prisma.invoice.update({
