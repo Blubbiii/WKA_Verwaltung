@@ -113,8 +113,8 @@ export function PaperlessConfigForm({
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        const errData = await response.json();
+        throw new Error(errData.details || errData.error || "Fehler beim Speichern");
       }
 
       toast.success("Paperless-ngx Konfiguration gespeichert");

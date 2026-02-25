@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
     const errMsg = error instanceof Error ? error.message : String(error);
     logger.error({ err: error }, "[System Config API] POST error: " + errMsg);
     return NextResponse.json(
-      { error: "Fehler beim Speichern der Konfiguration" },
+      { error: "Fehler beim Speichern der Konfiguration", details: errMsg },
       { status: 500 }
     );
   }
