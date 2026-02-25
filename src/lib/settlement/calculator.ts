@@ -266,7 +266,10 @@ export async function calculateSettlement(
     include: {
       turbines: {
         where: { status: "ACTIVE" },
-        select: { id: true, designation: true },
+        select: {
+          id: true, designation: true,
+          minimumRent: true, weaSharePercentage: true, poolSharePercentage: true,
+        },
       },
       revenuePhases: {
         orderBy: { phaseNumber: "asc" },
@@ -353,17 +356,24 @@ export async function calculateSettlement(
     },
   });
 
-  // 6. Park-Konfiguration
-  const minimumRentPerTurbine = park.minimumRentPerTurbine
-    ? Number(park.minimumRentPerTurbine)
-    : null;
-  const weaSharePercentage = park.weaSharePercentage
-    ? Number(park.weaSharePercentage)
-    : null;
-  const poolSharePercentage = park.poolSharePercentage
-    ? Number(park.poolSharePercentage)
-    : null;
+  // 6. Park-Konfiguration (mit per-turbine Overrides)
+  const parkMinRent = park.minimumRentPerTurbine ? Number(park.minimumRentPerTurbine) : null;
+  const parkWeaShare = park.weaSharePercentage ? Number(park.weaSharePercentage) : null;
+  const parkPoolShare = park.poolSharePercentage ? Number(park.poolSharePercentage) : null;
   const turbineCount = park.turbines.length;
+
+  // Per-turbine overrides: use turbine value if set, otherwise park default
+  let totalMinRent = 0;
+  let totalWeaShare = 0;
+  let totalPoolShare = 0;
+  for (const t of park.turbines) {
+    totalMinRent += t.minimumRent != null ? Number(t.minimumRent) : (parkMinRent ?? 0);
+    totalWeaShare += t.weaSharePercentage != null ? Number(t.weaSharePercentage) : (parkWeaShare ?? 0);
+    totalPoolShare += t.poolSharePercentage != null ? Number(t.poolSharePercentage) : (parkPoolShare ?? 0);
+  }
+  const minimumRentPerTurbine = turbineCount > 0 ? totalMinRent / turbineCount : parkMinRent;
+  const weaSharePercentage = turbineCount > 0 ? totalWeaShare / turbineCount : parkWeaShare;
+  const poolSharePercentage = turbineCount > 0 ? totalPoolShare / turbineCount : parkPoolShare;
 
   // Entschaedigungssaetze für Sonderflaechentypen
   const wegRate = park.wegCompensationPerSqm ? Number(park.wegCompensationPerSqm) : 0;
@@ -612,7 +622,10 @@ export async function calculateMonthlyAdvance(
     include: {
       turbines: {
         where: { status: "ACTIVE" },
-        select: { id: true, designation: true },
+        select: {
+          id: true, designation: true,
+          minimumRent: true, weaSharePercentage: true, poolSharePercentage: true,
+        },
       },
     },
   });
@@ -625,17 +638,24 @@ export async function calculateMonthlyAdvance(
     throw new Error("Keine Berechtigung für diesen Park");
   }
 
-  // 2. Park-Konfiguration
-  const minimumRentPerTurbine = park.minimumRentPerTurbine
-    ? Number(park.minimumRentPerTurbine)
-    : 0;
-  const weaSharePercentage = park.weaSharePercentage
-    ? Number(park.weaSharePercentage)
-    : 10; // Default: 10% für WEA-Standorte
-  const poolSharePercentage = park.poolSharePercentage
-    ? Number(park.poolSharePercentage)
-    : 90; // Default: 90% für Pool/Flaechen
+  // 2. Park-Konfiguration (mit per-turbine Overrides)
+  const parkMinRent = park.minimumRentPerTurbine ? Number(park.minimumRentPerTurbine) : 0;
+  const parkWeaShare = park.weaSharePercentage ? Number(park.weaSharePercentage) : 10;
+  const parkPoolShare = park.poolSharePercentage ? Number(park.poolSharePercentage) : 90;
   const turbineCount = park.turbines.length;
+
+  // Per-turbine overrides: use turbine value if set, otherwise park default
+  let totalMinRent = 0;
+  let totalWeaShare = 0;
+  let totalPoolShare = 0;
+  for (const t of park.turbines) {
+    totalMinRent += t.minimumRent != null ? Number(t.minimumRent) : parkMinRent;
+    totalWeaShare += t.weaSharePercentage != null ? Number(t.weaSharePercentage) : parkWeaShare;
+    totalPoolShare += t.poolSharePercentage != null ? Number(t.poolSharePercentage) : parkPoolShare;
+  }
+  const minimumRentPerTurbine = turbineCount > 0 ? totalMinRent / turbineCount : parkMinRent;
+  const weaSharePercentage = turbineCount > 0 ? totalWeaShare / turbineCount : parkWeaShare;
+  const poolSharePercentage = turbineCount > 0 ? totalPoolShare / turbineCount : parkPoolShare;
 
   // Entschaedigungssaetze für WEG/AUSGLEICH/KABEL
   const wegRate = park.wegCompensationPerSqm ? Number(park.wegCompensationPerSqm) : 0;

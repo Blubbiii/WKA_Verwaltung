@@ -335,7 +335,14 @@ export async function loadSettlementData(
       revenuePhases: { orderBy: { phaseNumber: "asc" } },
       turbines: {
         where: { status: "ACTIVE" },
-        select: { id: true, designation: true, ratedPowerKw: true },
+        select: {
+          id: true,
+          designation: true,
+          ratedPowerKw: true,
+          minimumRent: true,
+          weaSharePercentage: true,
+          poolSharePercentage: true,
+        },
       },
       plots: {
         where: { status: "ACTIVE" },
@@ -479,14 +486,33 @@ export async function loadSettlementData(
     }
   }
 
+  // Calculate effective values considering per-turbine overrides
+  // If a turbine has its own value set, use it; otherwise use park default
+  const parkMinRent = Number(park.minimumRentPerTurbine);
+  const parkWeaShare = Number(park.weaSharePercentage);
+  const parkPoolShare = Number(park.poolSharePercentage);
+
+  let totalMinRent = 0;
+  let totalWeaShare = 0;
+  let totalPoolShare = 0;
+  for (const turbine of park.turbines) {
+    totalMinRent += turbine.minimumRent != null ? Number(turbine.minimumRent) : parkMinRent;
+    totalWeaShare += turbine.weaSharePercentage != null ? Number(turbine.weaSharePercentage) : parkWeaShare;
+    totalPoolShare += turbine.poolSharePercentage != null ? Number(turbine.poolSharePercentage) : parkPoolShare;
+  }
+  // Effective averages (so minimumRentPerTurbine * totalWEACount = correct total)
+  const effectiveMinRent = totalWEACount > 0 ? round2(totalMinRent / totalWEACount) : parkMinRent;
+  const effectiveWeaShare = totalWEACount > 0 ? round4(totalWeaShare / totalWEACount) : parkWeaShare;
+  const effectivePoolShare = totalWEACount > 0 ? round4(totalPoolShare / totalWEACount) : parkPoolShare;
+
   return {
     parkId,
     year,
     totalParkRevenueEur,
     revenueSharePercent: activePhase.revenueSharePercentage,
-    minimumRentPerTurbine: Number(park.minimumRentPerTurbine),
-    weaSharePercentage: Number(park.weaSharePercentage),
-    poolSharePercentage: Number(park.poolSharePercentage),
+    minimumRentPerTurbine: effectiveMinRent,
+    weaSharePercentage: effectiveWeaShare,
+    poolSharePercentage: effectivePoolShare,
     totalWEACount,
     totalPoolAreaSqm: round2(totalPoolAreaSqm),
     leases: Array.from(leaseDataMap.values()),

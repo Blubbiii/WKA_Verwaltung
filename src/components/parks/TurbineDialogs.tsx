@@ -15,6 +15,7 @@ import {
   Upload,
   Download,
   Eye,
+  Info,
 } from "lucide-react";
 import Link from "next/link";
 import { DocumentPreviewDialog } from "@/components/documents";
@@ -53,6 +54,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 interface Turbine {
@@ -607,49 +614,78 @@ function AddTurbineDialog({
           {/* Pacht-Konfiguration (Override) */}
           <div className="space-y-4">
             <h4 className="font-medium">Pacht-Konfiguration (optional)</h4>
-            <p className="text-xs text-muted-foreground">
-              Leer lassen, um die Werte vom Windpark zu übernehmen. Ein gesetzter Wert überschreibt den Parkstandard für diese Anlage.
-            </p>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="minimumRent">Mindestpacht (EUR)</Label>
-                <Input
-                  id="minimumRent"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Park-Standard"
-                  value={formData.minimumRent}
-                  onChange={(e) => setFormData({ ...formData, minimumRent: e.target.value })}
-                />
+            <TooltipProvider delayDuration={200}>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="minimumRent">Mindestpacht (EUR)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[220px]">
+                        <p>Optional. Überschreibt die Mindestpacht des Windparks für diese Anlage. Leer = Park-Standard.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="minimumRent"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Park-Standard"
+                    value={formData.minimumRent}
+                    onChange={(e) => setFormData({ ...formData, minimumRent: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="weaSharePercentage">WEA-Anteil (%)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[220px]">
+                        <p>Optional. Überschreibt den WEA-Anteil des Windparks für diese Anlage. Leer = Park-Standard.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="weaSharePercentage"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="Park-Standard"
+                    value={formData.weaSharePercentage}
+                    onChange={(e) => setFormData({ ...formData, weaSharePercentage: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="poolSharePercentage">Pool-Anteil (%)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[220px]">
+                        <p>Optional. Überschreibt den Pool-Anteil des Windparks für diese Anlage. Leer = Park-Standard.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="poolSharePercentage"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="Park-Standard"
+                    value={formData.poolSharePercentage}
+                    onChange={(e) => setFormData({ ...formData, poolSharePercentage: e.target.value })}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="weaSharePercentage">WEA-Anteil (%)</Label>
-                <Input
-                  id="weaSharePercentage"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  placeholder="Park-Standard"
-                  value={formData.weaSharePercentage}
-                  onChange={(e) => setFormData({ ...formData, weaSharePercentage: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="poolSharePercentage">Pool-Anteil (%)</Label>
-                <Input
-                  id="poolSharePercentage"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  placeholder="Park-Standard"
-                  value={formData.poolSharePercentage}
-                  onChange={(e) => setFormData({ ...formData, poolSharePercentage: e.target.value })}
-                />
-              </div>
-            </div>
+            </TooltipProvider>
           </div>
 
           <Separator />
@@ -1303,49 +1339,78 @@ function EditTurbineDialog({
           {/* Pacht-Konfiguration (Override) */}
           <div className="space-y-4">
             <h4 className="font-medium">Pacht-Konfiguration (optional)</h4>
-            <p className="text-xs text-muted-foreground">
-              Leer lassen, um die Werte vom Windpark zu übernehmen. Ein gesetzter Wert überschreibt den Parkstandard für diese Anlage.
-            </p>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-minimumRent">Mindestpacht (EUR)</Label>
-                <Input
-                  id="edit-minimumRent"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Park-Standard"
-                  value={formData.minimumRent}
-                  onChange={(e) => setFormData({ ...formData, minimumRent: e.target.value })}
-                />
+            <TooltipProvider delayDuration={200}>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="edit-minimumRent">Mindestpacht (EUR)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[220px]">
+                        <p>Optional. Überschreibt die Mindestpacht des Windparks für diese Anlage. Leer = Park-Standard.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="edit-minimumRent"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Park-Standard"
+                    value={formData.minimumRent}
+                    onChange={(e) => setFormData({ ...formData, minimumRent: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="edit-weaSharePercentage">WEA-Anteil (%)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[220px]">
+                        <p>Optional. Überschreibt den WEA-Anteil des Windparks für diese Anlage. Leer = Park-Standard.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="edit-weaSharePercentage"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="Park-Standard"
+                    value={formData.weaSharePercentage}
+                    onChange={(e) => setFormData({ ...formData, weaSharePercentage: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="edit-poolSharePercentage">Pool-Anteil (%)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[220px]">
+                        <p>Optional. Überschreibt den Pool-Anteil des Windparks für diese Anlage. Leer = Park-Standard.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    id="edit-poolSharePercentage"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="Park-Standard"
+                    value={formData.poolSharePercentage}
+                    onChange={(e) => setFormData({ ...formData, poolSharePercentage: e.target.value })}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-weaSharePercentage">WEA-Anteil (%)</Label>
-                <Input
-                  id="edit-weaSharePercentage"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  placeholder="Park-Standard"
-                  value={formData.weaSharePercentage}
-                  onChange={(e) => setFormData({ ...formData, weaSharePercentage: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-poolSharePercentage">Pool-Anteil (%)</Label>
-                <Input
-                  id="edit-poolSharePercentage"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  placeholder="Park-Standard"
-                  value={formData.poolSharePercentage}
-                  onChange={(e) => setFormData({ ...formData, poolSharePercentage: e.target.value })}
-                />
-              </div>
-            </div>
+            </TooltipProvider>
           </div>
 
           <Separator />
