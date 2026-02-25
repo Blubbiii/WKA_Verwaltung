@@ -345,7 +345,7 @@ function ResetPasswordFormFallback() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-teal-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <Suspense fallback={<ResetPasswordFormFallback />}>
         <ResetPasswordForm />
       </Suspense>

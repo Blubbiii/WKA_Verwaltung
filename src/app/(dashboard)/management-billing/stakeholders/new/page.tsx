@@ -742,9 +742,9 @@ export default function NewStakeholderPage() {
           </Card>
 
           {/* Info Box */}
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-teal-200 bg-teal-50">
             <CardContent className="pt-6">
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-teal-800">
                 Nach dem Erstellen können Sie den Vertrag jederzeit bearbeiten
                 und die Gebührenhistorie einsehen.
               </p>

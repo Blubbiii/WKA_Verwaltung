@@ -551,7 +551,7 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full",
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-primary"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground border-l-2 border-transparent"
               )}
               title={collapsed ? itemTitle : undefined}
@@ -584,7 +584,7 @@ export function Sidebar() {
                         className={cn(
                           "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
                           isChildItemActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary"
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-primary"
                             : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground border-l-2 border-transparent"
                         )}
                         aria-current={isChildItemActive ? "page" : undefined}
@@ -606,7 +606,7 @@ export function Sidebar() {
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
               isActive
-                ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-primary"
                 : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground border-l-2 border-transparent"
             )}
             title={collapsed ? itemTitle : undefined}

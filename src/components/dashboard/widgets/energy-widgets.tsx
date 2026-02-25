@@ -40,7 +40,7 @@ function useChartColors() {
   const isDark = resolvedTheme === "dark";
 
   return {
-    primary: isDark ? "#60a5fa" : "#3b82f6",
+    primary: isDark ? "#2dd4bf" : "#0d9488",
     secondary: isDark ? "#4ade80" : "#22c55e",
     tertiary: isDark ? "#fbbf24" : "#f59e0b",
     destructive: isDark ? "#f87171" : "#ef4444",

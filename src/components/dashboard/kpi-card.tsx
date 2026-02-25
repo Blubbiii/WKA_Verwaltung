@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 export const KPI_ACCENT_COLORS: Record<string, string> = {
   "kpi-parks": "text-cyan-600 dark:text-cyan-400",
-  "kpi-turbines": "text-blue-600 dark:text-blue-400",
+  "kpi-turbines": "text-teal-600 dark:text-teal-400",
   "kpi-shareholders": "text-violet-600 dark:text-violet-400",
   "kpi-fund-capital": "text-emerald-600 dark:text-emerald-400",
   "kpi-open-invoices": "text-amber-600 dark:text-amber-400",
@@ -27,7 +27,7 @@ export const KPI_ACCENT_COLORS: Record<string, string> = {
 
 export const KPI_ICON_COLORS: Record<string, string> = {
   "kpi-parks": "text-cyan-500/40 dark:text-cyan-400/30",
-  "kpi-turbines": "text-blue-500/40 dark:text-blue-400/30",
+  "kpi-turbines": "text-teal-500/40 dark:text-teal-400/30",
   "kpi-shareholders": "text-violet-500/40 dark:text-violet-400/30",
   "kpi-fund-capital": "text-emerald-500/40 dark:text-emerald-400/30",
   "kpi-open-invoices": "text-amber-500/40 dark:text-amber-400/30",
@@ -132,7 +132,7 @@ export function KPICard({
       </CardHeader>
       <CardContent className="p-4 pt-1">
         <div className={cn(
-          "text-2xl font-bold truncate leading-tight",
+          "text-2xl font-bold font-mono truncate leading-tight",
           isAlert ? "text-destructive" : accentColor || "text-foreground"
         )}>
           {value}

@@ -534,9 +534,9 @@ export default function NewSettlementPage() {
           </Card>
 
           {/* Info Box */}
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-teal-200 bg-teal-50">
             <CardContent className="pt-6">
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-teal-800">
                 Die Abrechnung wird als <strong>Entwurf</strong> erstellt.
                 Nach der Erstellung können Sie die Berechnung starten, um
                 die Abrechnungspositionen zu generieren.

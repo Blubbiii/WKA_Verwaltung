@@ -79,7 +79,7 @@ const EMPTY_TENANT: TenantFormData = {
   houseNumber: "",
   postalCode: "",
   city: "",
-  primaryColor: "#3b82f6",
+  primaryColor: "#0d9488",
   secondaryColor: "#1e40af",
 };
 

@@ -31,7 +31,7 @@ import type {
 // =============================================================================
 
 const LIGHT_COLORS = {
-  primary: "#3b82f6",
+  primary: "#0d9488",
   secondary: "#22c55e",
   tertiary: "#f59e0b",
   muted: "#94a3b8",
@@ -42,7 +42,7 @@ const LIGHT_COLORS = {
 };
 
 const DARK_COLORS = {
-  primary: "#60a5fa",
+  primary: "#2dd4bf",
   secondary: "#4ade80",
   tertiary: "#fbbf24",
   muted: "#64748b",
@@ -54,13 +54,13 @@ const DARK_COLORS = {
 
 // Vibrant donut/pie colors for both themes
 const DONUT_COLORS_LIGHT = [
-  "#3b82f6", "#22c55e", "#f59e0b", "#8b5cf6", "#ef4444",
+  "#0d9488", "#22c55e", "#f59e0b", "#8b5cf6", "#ef4444",
   "#06b6d4", "#ec4899", "#14b8a6", "#f97316", "#6366f1",
 ];
 
 const DONUT_COLORS_DARK = [
-  "#60a5fa", "#4ade80", "#fbbf24", "#a78bfa", "#f87171",
-  "#22d3ee", "#f472b6", "#2dd4bf", "#fb923c", "#818cf8",
+  "#2dd4bf", "#4ade80", "#fbbf24", "#a78bfa", "#f87171",
+  "#22d3ee", "#f472b6", "#5eead4", "#fb923c", "#818cf8",
 ];
 
 function useChartColors() {

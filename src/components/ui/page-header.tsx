@@ -38,7 +38,7 @@ export function PageHeader({
           )}
         </div>
       </div>
-      <div className="h-px bg-gradient-to-r from-border via-border/50 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-primary/40 via-border/50 to-transparent" />
     </div>
   );
 }
