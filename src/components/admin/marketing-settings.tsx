@@ -88,6 +88,7 @@ const DEFAULT_CONFIG: AdminConfig = {
 const DEFAULT_LEGAL: LegalPages = {
   impressum: "",
   datenschutz: "",
+  cookies: "",
 };
 
 // ---------------------------------------------------------------------------
@@ -109,7 +110,7 @@ export function MarketingSettings() {
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [loadingLegal, setLoadingLegal] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
-  const [savingLegal, setSavingLegal] = useState<"impressum" | "datenschutz" | null>(null);
+  const [savingLegal, setSavingLegal] = useState<"impressum" | "datenschutz" | "cookies" | null>(null);
 
   // -----------------------------------------------------------------------
   // Data fetching
@@ -149,6 +150,7 @@ export function MarketingSettings() {
         setLegal({
           impressum: data.impressum ?? "",
           datenschutz: data.datenschutz ?? "",
+          cookies: data.cookies ?? "",
         });
       }
     } catch {
@@ -196,7 +198,7 @@ export function MarketingSettings() {
     }
   }
 
-  async function saveLegalPage(page: "impressum" | "datenschutz") {
+  async function saveLegalPage(page: "impressum" | "datenschutz" | "cookies") {
     try {
       setSavingLegal(page);
       // Send both fields because the API schema requires them
@@ -211,7 +213,7 @@ export function MarketingSettings() {
         throw new Error(error.error || "Fehler beim Speichern");
       }
 
-      const label = page === "impressum" ? "Impressum" : "Datenschutzerklärung";
+      const label = page === "impressum" ? "Impressum" : page === "datenschutz" ? "Datenschutzerklärung" : "Cookie-Richtlinie";
       toast.success(`${label} gespeichert`);
     } catch (error) {
       toast.error(
@@ -854,6 +856,48 @@ export function MarketingSettings() {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     Datenschutzerklärung speichern
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Scale className="h-5 w-5" />
+                  Cookie-Richtlinie
+                </CardTitle>
+                <CardDescription>
+                  Cookie-Einstellungen und -Richtlinie (Markdown wird unterstuetzt)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  id="legal-cookies"
+                  placeholder="# Cookie-Richtlinie&#10;&#10;## Was sind Cookies?&#10;&#10;Cookies sind kleine Textdateien...&#10;..."
+                  value={legal.cookies}
+                  rows={12}
+                  className="font-mono text-sm"
+                  onChange={(e) =>
+                    setLegal((prev) => ({
+                      ...prev,
+                      cookies: e.target.value,
+                    }))
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Markdown-Formatierung wird unterstuetzt: **fett**, *kursiv*,
+                  # Überschriften, - Listen
+                </p>
+                <div className="flex justify-end">
+                  <Button
+                    onClick={() => saveLegalPage("cookies")}
+                    disabled={savingLegal === "cookies"}
+                  >
+                    {savingLegal === "cookies" && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Cookie-Richtlinie speichern
                   </Button>
                 </div>
               </CardContent>

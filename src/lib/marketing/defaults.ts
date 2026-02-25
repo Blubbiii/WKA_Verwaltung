@@ -70,4 +70,5 @@ export const DEFAULT_MARKETING_CONFIG: MarketingConfig = {
 export const DEFAULT_LEGAL_PAGES: LegalPages = {
   impressum: "",
   datenschutz: "",
+  cookies: "",
 };

@@ -16,6 +16,7 @@ const companyLinks = [
 const legalLinks = [
   { href: "/impressum", label: "Impressum" },
   { href: "/datenschutz", label: "Datenschutz" },
+  { href: "/cookies", label: "Cookie-Einstellungen" },
 ];
 
 export function MarketingFooter() {
