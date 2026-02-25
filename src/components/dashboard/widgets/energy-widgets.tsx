@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useTheme } from "next-themes";
 import {
   PieChart,
   Pie,
@@ -32,21 +31,18 @@ import { formatCurrency } from "@/lib/format";
 import type { EnergyDashboardData } from "@/hooks/useEnergyDashboard";
 
 // =============================================================================
-// SHARED: Theme-aware colors (reuse pattern from analytics-charts)
+// SHARED: Chart colors — driven by CSS variables (auto-adapt to theme)
 // =============================================================================
 
 function useChartColors() {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
-
   return {
-    primary: isDark ? "#598ACF" : "#335E99",
-    secondary: isDark ? "#4ade80" : "#22c55e",
-    tertiary: isDark ? "#fbbf24" : "#f59e0b",
-    destructive: isDark ? "#f87171" : "#ef4444",
-    muted: isDark ? "#64748b" : "#94a3b8",
-    grid: isDark ? "#1e293b" : "#e2e8f0",
-    text: isDark ? "#94a3b8" : "#64748b",
+    primary: "hsl(var(--chart-1))",
+    secondary: "hsl(var(--chart-3))",
+    tertiary: "hsl(var(--chart-2))",
+    destructive: "hsl(var(--chart-5))",
+    muted: "hsl(var(--muted-foreground))",
+    grid: "hsl(var(--border))",
+    text: "hsl(var(--muted-foreground))",
     tooltipBg: "hsl(var(--card))",
     tooltipBorder: "hsl(var(--border))",
   };

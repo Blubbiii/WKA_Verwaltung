@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import {
   BarChart,
   Bar,
@@ -27,50 +26,33 @@ import type {
 } from "@/lib/analytics/kpis";
 
 // =============================================================================
-// THEME-AWARE CHART COLORS
+// CHART COLORS — driven by CSS variables (auto-adapt to light/dark theme)
 // =============================================================================
 
-const LIGHT_COLORS = {
-  primary: "#335E99",
-  secondary: "#22c55e",
-  tertiary: "#f59e0b",
-  muted: "#94a3b8",
-  grid: "#e2e8f0",
-  text: "#64748b",
+const CHART_COLORS = {
+  primary: "hsl(var(--chart-1))",
+  secondary: "hsl(var(--chart-3))",
+  tertiary: "hsl(var(--chart-2))",
+  muted: "hsl(var(--muted-foreground))",
+  grid: "hsl(var(--border))",
+  text: "hsl(var(--muted-foreground))",
   tooltipBg: "hsl(var(--card))",
   tooltipBorder: "hsl(var(--border))",
 };
 
-const DARK_COLORS = {
-  primary: "#598ACF",
-  secondary: "#4ade80",
-  tertiary: "#fbbf24",
-  muted: "#64748b",
-  grid: "#1e293b",
-  text: "#94a3b8",
-  tooltipBg: "hsl(var(--card))",
-  tooltipBorder: "hsl(var(--border))",
-};
-
-// Vibrant donut/pie colors for both themes
-const DONUT_COLORS_LIGHT = [
-  "#335E99", "#22c55e", "#f59e0b", "#8b5cf6", "#ef4444",
-  "#06b6d4", "#ec4899", "#4075BF", "#f97316", "#6366f1",
-];
-
-const DONUT_COLORS_DARK = [
-  "#598ACF", "#4ade80", "#fbbf24", "#a78bfa", "#f87171",
-  "#22d3ee", "#f472b6", "#5eead4", "#fb923c", "#818cf8",
+const DONUT_COLORS = [
+  "hsl(var(--chart-1))",  "hsl(var(--chart-3))",  "hsl(var(--chart-2))",
+  "hsl(var(--chart-4))",  "hsl(var(--chart-5))",  "hsl(var(--chart-6))",
+  "hsl(var(--chart-7))",  "hsl(var(--chart-8))",  "hsl(var(--chart-9))",
+  "hsl(var(--chart-10))",
 ];
 
 function useChartColors() {
-  const { resolvedTheme } = useTheme();
-  return resolvedTheme === "dark" ? DARK_COLORS : LIGHT_COLORS;
+  return CHART_COLORS;
 }
 
 function useDonutColors() {
-  const { resolvedTheme } = useTheme();
-  return resolvedTheme === "dark" ? DONUT_COLORS_DARK : DONUT_COLORS_LIGHT;
+  return DONUT_COLORS;
 }
 
 // =============================================================================
@@ -335,7 +317,7 @@ export function DocumentsByTypeChart({
               }
               innerRadius="45%"
               outerRadius="70%"
-              fill="#8884d8"
+              fill="hsl(var(--chart-1))"
               dataKey="value"
               strokeWidth={2}
               stroke="hsl(var(--card))"

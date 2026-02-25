@@ -51,18 +51,18 @@ interface TurbineComparisonProps {
 // =============================================================================
 
 const TURBINE_COLORS = [
-  "#3b82f6",
-  "#ef4444",
-  "#22c55e",
-  "#f59e0b",
-  "#a855f7",
-  "#06b6d4",
-  "#ec4899",
-  "#84cc16",
-  "#f97316",
-  "#6366f1",
-  "#4075BF",
-  "#e11d48",
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-5))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-6))",
+  "hsl(var(--chart-7))",
+  "hsl(var(--chart-11))",
+  "hsl(var(--chart-9))",
+  "hsl(var(--chart-10))",
+  "hsl(var(--chart-8))",
+  "hsl(var(--chart-12))",
 ];
 
 // =============================================================================
@@ -364,12 +364,12 @@ export function TurbineComparison({
                   width={90}
                 />
                 <Tooltip content={<DeviationTooltip />} />
-                <ReferenceLine x={0} stroke="#6b7280" strokeDasharray="3 3" />
+                <ReferenceLine x={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
                 <Bar dataKey="deviation" name="Abweichung" radius={[0, 4, 4, 0]}>
                   {deviationData.map((entry, idx) => (
                     <Cell
                       key={idx}
-                      fill={entry.deviation >= 0 ? "#22c55e" : "#ef4444"}
+                      fill={entry.deviation >= 0 ? "hsl(var(--chart-3))" : "hsl(var(--chart-5))"}
                     />
                   ))}
                 </Bar>
