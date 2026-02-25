@@ -49,7 +49,7 @@ const TYPE_ICON: Record<NotificationType, typeof Bell> = {
 };
 
 const TYPE_COLOR: Record<NotificationType, string> = {
-  DOCUMENT: "text-teal-500",
+  DOCUMENT: "text-blue-500",
   VOTE: "text-purple-500",
   CONTRACT: "text-amber-500",
   INVOICE: "text-green-500",

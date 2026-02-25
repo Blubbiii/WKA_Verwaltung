@@ -40,7 +40,7 @@ function useChartColors() {
   const isDark = resolvedTheme === "dark";
 
   return {
-    primary: isDark ? "#2dd4bf" : "#0d9488",
+    primary: isDark ? "#598ACF" : "#335E99",
     secondary: isDark ? "#4ade80" : "#22c55e",
     tertiary: isDark ? "#fbbf24" : "#f59e0b",
     destructive: isDark ? "#f87171" : "#ef4444",
@@ -130,9 +130,9 @@ export function AvailabilityKPI({ className }: { className?: string }) {
 
   return (
     <div className={cn("flex items-start gap-3", className)}>
-      <Activity className="h-8 w-8 text-teal-500/40 dark:text-teal-400/30 shrink-0 mt-1" />
+      <Activity className="h-8 w-8 text-blue-500/40 dark:text-blue-400/30 shrink-0 mt-1" />
       <div className="min-w-0">
-        <p className={cn("text-2xl font-bold truncate", isGood ? "text-teal-600 dark:text-teal-400" : "text-amber-600 dark:text-amber-400")}>
+        <p className={cn("text-2xl font-bold truncate", isGood ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")}>
           {pct > 0 ? `${pct.toFixed(1)} %` : "–"}
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">Durchschnittliche Verfügbarkeit</p>

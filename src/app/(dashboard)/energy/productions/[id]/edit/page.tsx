@@ -171,8 +171,8 @@ export default function EditProductionPage({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Notice banner */}
-      <div className="rounded-md border border-teal-200 bg-teal-50 p-4">
-        <p className="text-sm text-teal-800">
+      <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
+        <p className="text-sm text-blue-800">
           Die Bearbeitung ist auch direkt über die Produktionsdaten-Seite erreichbar.
           <Link href="/energy/productions" className="underline ml-1 font-medium">
             Zur Übersicht

@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
         name: "Vermarktung",
         code: "VERMARKTUNG",
         description: "Direktvermarkter",
-        color: "#14b8a6",
+        color: "#335E99",
         sortOrder: 3,
       },
       {

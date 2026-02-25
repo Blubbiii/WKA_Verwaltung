@@ -34,7 +34,7 @@ function getWeatherIcon(condition: WeatherData["condition"]) {
     case "rainy":
       return <CloudRain className="h-6 w-6 text-blue-500" />;
     case "windy":
-      return <Wind className="h-6 w-6 text-teal-500" />;
+      return <Wind className="h-6 w-6 text-blue-500" />;
     default:
       return <Cloud className="h-6 w-6 text-gray-400" />;
   }

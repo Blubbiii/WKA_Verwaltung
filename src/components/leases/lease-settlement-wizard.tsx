@@ -1548,7 +1548,7 @@ export function LeaseSettlementWizard() {
             {/* Gutschriften-Generierung */}
             {!generatedInvoices ? (
               <div className="space-y-4">
-                <div className="flex items-start gap-2 p-3 bg-teal-50 border border-teal-200 rounded-lg text-teal-800">
+                <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
                   <Info className="h-5 w-5 mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm font-medium">Gutschriften erstellen</p>

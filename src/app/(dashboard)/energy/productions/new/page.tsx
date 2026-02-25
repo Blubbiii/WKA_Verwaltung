@@ -171,8 +171,8 @@ export default function NewProductionPage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Notice banner */}
-      <div className="rounded-md border border-teal-200 bg-teal-50 p-4">
-        <p className="text-sm text-teal-800">
+      <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
+        <p className="text-sm text-blue-800">
           Die manuelle Erfassung ist auch direkt über die Produktionsdaten-Seite erreichbar.
           <Link href="/energy/productions" className="underline ml-1 font-medium">
             Zur Übersicht
@@ -446,13 +446,13 @@ export default function NewProductionPage() {
 
         {/* Right Column: Info */}
         <div className="space-y-6">
-          <Card className="border-teal-200 bg-teal-50">
+          <Card className="border-blue-200 bg-blue-50">
             <CardContent className="pt-6 space-y-3">
-              <p className="text-sm text-teal-800">
+              <p className="text-sm text-blue-800">
                 Der Datensatz wird als <strong>Entwurf</strong> mit der Quelle{" "}
                 <strong>Manuell</strong> erstellt.
               </p>
-              <p className="text-sm text-teal-800">
+              <p className="text-sm text-blue-800">
                 Pro Anlage, Monat und Vergütungsart kann nur ein Eintrag
                 existieren.
               </p>

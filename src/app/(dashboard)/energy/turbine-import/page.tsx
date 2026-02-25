@@ -1438,8 +1438,8 @@ export default function TurbineDataImportPage() {
   return (
     <div className="space-y-6">
       {/* Notice banner */}
-      <div className="rounded-md border border-teal-200 bg-teal-50 p-4">
-        <p className="text-sm text-teal-800">
+      <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
+        <p className="text-sm text-blue-800">
           Der CSV-Import ist auch direkt über die Produktionsdaten-Seite erreichbar.
           <Link href="/energy/productions" className="underline ml-1 font-medium">
             Zur Übersicht

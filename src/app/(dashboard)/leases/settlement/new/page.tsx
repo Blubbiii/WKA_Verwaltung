@@ -1202,16 +1202,16 @@ export default function NewLeaseSettlementPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5 text-teal-600" />
+                <Info className="h-5 w-5 text-blue-600" />
                 Vorschussberechnung
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg space-y-2">
-                <p className="text-sm font-medium text-teal-800">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                <p className="text-sm font-medium text-blue-800">
                   Vorschüsse basieren auf der Mindestpacht. Kein Umsatz erforderlich.
                 </p>
-                <p className="text-sm text-teal-700">
+                <p className="text-sm text-blue-700">
                   {advanceInterval === "YEARLY"
                     ? `Der Jahresvorschuss für ${year} wird aus der vollen Jahresmindestpacht berechnet.`
                     : advanceInterval === "QUARTERLY"

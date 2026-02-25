@@ -114,7 +114,7 @@ const sourceBadgeColors: Record<string, string> = {
   MANUAL: "bg-blue-50 text-blue-700 border-blue-200",
   CSV_IMPORT: "bg-purple-50 text-purple-700 border-purple-200",
   EXCEL_IMPORT: "bg-purple-50 text-purple-700 border-purple-200",
-  SCADA: "bg-teal-50 text-teal-700 border-teal-200",
+  SCADA: "bg-blue-50 text-blue-700 border-blue-200",
 };
 
 const statusLabels: Record<string, string> = {

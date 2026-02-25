@@ -24,11 +24,11 @@ export function HeroSection({ config }: HeroSectionProps) {
 
       {/* Radial teal glow */}
       <div
-        className="absolute top-1/3 left-1/3 w-[800px] h-[600px] bg-teal-500/8 rounded-full blur-[120px] pointer-events-none"
+        className="absolute top-1/3 left-1/3 w-[800px] h-[600px] bg-blue-500/8 rounded-full blur-[120px] pointer-events-none"
         aria-hidden="true"
       />
       <div
-        className="absolute bottom-0 right-0 w-[500px] h-[400px] bg-teal-600/5 rounded-full blur-[100px] pointer-events-none"
+        className="absolute bottom-0 right-0 w-[500px] h-[400px] bg-blue-600/5 rounded-full blur-[100px] pointer-events-none"
         aria-hidden="true"
       />
 
@@ -38,8 +38,8 @@ export function HeroSection({ config }: HeroSectionProps) {
           <div className="flex flex-col gap-8">
             {/* Badge */}
             <div className="flex">
-              <span className="inline-flex items-center gap-2 rounded-full border border-teal-500/20 bg-teal-500/5 px-4 py-1.5 text-sm font-medium text-teal-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-glow-pulse" />
+              <span className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/5 px-4 py-1.5 text-sm font-medium text-blue-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-glow-pulse" />
                 Windpark-Management Software
               </span>
             </div>
@@ -66,7 +66,7 @@ export function HeroSection({ config }: HeroSectionProps) {
             <div className="flex flex-wrap items-center gap-4">
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center rounded-xl bg-[hsl(var(--m-primary))] px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-teal-500/20 transition-all hover:brightness-110 hover:shadow-teal-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                className="inline-flex items-center justify-center rounded-xl bg-[hsl(var(--m-primary))] px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:brightness-110 hover:shadow-blue-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 Kostenlos testen
               </Link>
@@ -88,7 +88,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                 <div key={stat.label} className="flex items-center gap-3">
                   {i > 0 && <span className="h-4 w-px bg-slate-700" aria-hidden="true" />}
                   <div>
-                    <span className="font-mono text-sm font-medium text-teal-400">{stat.value}</span>
+                    <span className="font-mono text-sm font-medium text-blue-400">{stat.value}</span>
                     <span className="ml-1.5 text-xs text-slate-500">{stat.label}</span>
                   </div>
                 </div>
@@ -107,7 +107,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                 style={{ transform: "rotateY(-6deg) rotateX(2deg)" }}
               >
                 {/* Browser frame */}
-                <div className="rounded-2xl border border-slate-800/80 bg-slate-900/90 overflow-hidden shadow-2xl shadow-teal-500/5">
+                <div className="rounded-2xl border border-slate-800/80 bg-slate-900/90 overflow-hidden shadow-2xl shadow-blue-500/5">
                   {/* Title bar */}
                   <div className="flex h-9 items-center bg-slate-800/80 px-4 gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-slate-600" />
@@ -121,8 +121,8 @@ export function HeroSection({ config }: HeroSectionProps) {
                     {/* KPI cards */}
                     <div className="grid grid-cols-3 gap-3">
                       {[
-                        { color: "bg-teal-500", width: "w-2/3" },
-                        { color: "bg-teal-400", width: "w-3/4" },
+                        { color: "bg-blue-500", width: "w-2/3" },
+                        { color: "bg-blue-400", width: "w-3/4" },
                         { color: "bg-amber-500", width: "w-1/2" },
                       ].map((card, i) => (
                         <div key={i} className="rounded-lg bg-slate-800/60 p-3">
@@ -140,7 +140,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                         {[45, 70, 55, 85, 60, 75, 50, 90, 65, 80].map((h, i) => (
                           <div
                             key={i}
-                            className="flex-1 rounded-t bg-teal-500/30"
+                            className="flex-1 rounded-t bg-blue-500/30"
                             style={{ height: `${h}%` }}
                           />
                         ))}
@@ -172,7 +172,7 @@ export function HeroSection({ config }: HeroSectionProps) {
       {/* Scroll indicator - animated line */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
         <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Scroll</span>
-        <div className="w-px h-8 bg-gradient-to-b from-teal-500/50 to-transparent animate-bounce-slow" />
+        <div className="w-px h-8 bg-gradient-to-b from-blue-500/50 to-transparent animate-bounce-slow" />
       </div>
     </section>
   );

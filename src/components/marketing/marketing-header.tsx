@@ -40,7 +40,7 @@ export function MarketingHeader() {
         >
           <Wind
             className={`h-5 w-5 transition-colors duration-300 ${
-              scrolled ? "text-[hsl(var(--m-primary))]" : "text-teal-400"
+              scrolled ? "text-[hsl(var(--m-primary))]" : "text-blue-400"
             }`}
             aria-hidden="true"
           />

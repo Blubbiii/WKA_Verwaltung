@@ -169,7 +169,7 @@ export function Header() {
           )}
 
           {/* Theme Toggle - only render icon after mount to prevent hydration mismatch */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="transition-all duration-200 hover:bg-accent" title={resolvedTheme === "dark" ? t("common.lightMode") : t("common.darkMode")} aria-label={resolvedTheme === "dark" ? t("common.lightMode") : t("common.darkMode")}>
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="transition-all duration-200 hover:bg-accent" title={mounted ? (resolvedTheme === "dark" ? t("common.lightMode") : t("common.darkMode")) : undefined} aria-label="Toggle theme">
             {mounted ? (resolvedTheme === "dark" ? <Sun className="h-5 w-5 transition-transform duration-200 hover:rotate-12" /> : <Moon className="h-5 w-5 transition-transform duration-200 hover:-rotate-12" />) : <div className="h-5 w-5" />}
           </Button>
 

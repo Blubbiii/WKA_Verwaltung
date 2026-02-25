@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 export const KPI_ACCENT_COLORS: Record<string, string> = {
   "kpi-parks": "text-cyan-600 dark:text-cyan-400",
-  "kpi-turbines": "text-teal-600 dark:text-teal-400",
+  "kpi-turbines": "text-slate-600 dark:text-slate-400",
   "kpi-shareholders": "text-violet-600 dark:text-violet-400",
   "kpi-fund-capital": "text-emerald-600 dark:text-emerald-400",
   "kpi-open-invoices": "text-amber-600 dark:text-amber-400",
@@ -20,14 +20,14 @@ export const KPI_ACCENT_COLORS: Record<string, string> = {
   "kpi-votes": "text-indigo-600 dark:text-indigo-400",
   // Energy widgets (planned)
   "kpi-energy-yield": "text-lime-600 dark:text-lime-400",
-  "kpi-availability": "text-teal-600 dark:text-teal-400",
+  "kpi-availability": "text-green-600 dark:text-green-400",
   "kpi-wind-speed": "text-sky-600 dark:text-sky-400",
   "kpi-lease-revenue": "text-rose-600 dark:text-rose-400",
 };
 
 export const KPI_ICON_COLORS: Record<string, string> = {
   "kpi-parks": "text-cyan-500/40 dark:text-cyan-400/30",
-  "kpi-turbines": "text-teal-500/40 dark:text-teal-400/30",
+  "kpi-turbines": "text-slate-500/40 dark:text-slate-400/30",
   "kpi-shareholders": "text-violet-500/40 dark:text-violet-400/30",
   "kpi-fund-capital": "text-emerald-500/40 dark:text-emerald-400/30",
   "kpi-open-invoices": "text-amber-500/40 dark:text-amber-400/30",
@@ -36,7 +36,7 @@ export const KPI_ICON_COLORS: Record<string, string> = {
   "kpi-votes": "text-indigo-500/40 dark:text-indigo-400/30",
   // Energy widgets (planned)
   "kpi-energy-yield": "text-lime-500/40 dark:text-lime-400/30",
-  "kpi-availability": "text-teal-500/40 dark:text-teal-400/30",
+  "kpi-availability": "text-green-500/40 dark:text-green-400/30",
   "kpi-wind-speed": "text-sky-500/40 dark:text-sky-400/30",
   "kpi-lease-revenue": "text-rose-500/40 dark:text-rose-400/30",
 };

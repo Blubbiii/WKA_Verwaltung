@@ -13,8 +13,8 @@ export function CtaSection() {
 
       {/* Teal glow elements */}
       <div aria-hidden="true">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-teal-500/8 rounded-full blur-[120px]" />
-        <div className="absolute top-0 right-1/4 w-72 h-72 bg-teal-600/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-500/8 rounded-full blur-[120px]" />
+        <div className="absolute top-0 right-1/4 w-72 h-72 bg-blue-600/5 rounded-full blur-3xl" />
       </div>
 
       {/* Content */}

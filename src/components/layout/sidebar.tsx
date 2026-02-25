@@ -551,20 +551,20 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full",
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-primary"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground border-l-2 border-transparent"
+                  ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
+                  : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
               )}
               title={collapsed ? itemTitle : undefined}
               aria-expanded={itemExpanded}
             >
-              <item.icon className="h-5 w-5 shrink-0" />
+              <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-sidebar-foreground/50")} />
               {!collapsed && (
                 <>
                   <span className="flex-1 text-left">{itemTitle}</span>
                   {itemExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className={cn("h-4 w-4", isActive ? "text-primary/70" : "text-sidebar-foreground/40")} />
                   ) : (
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className={cn("h-4 w-4", isActive ? "text-primary/70" : "text-sidebar-foreground/40")} />
                   )}
                 </>
               )}
@@ -584,13 +584,13 @@ export function Sidebar() {
                         className={cn(
                           "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
                           isChildItemActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-primary"
-                            : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground border-l-2 border-transparent"
+                            ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
+                            : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
                         )}
                         aria-current={isChildItemActive ? "page" : undefined}
                       >
                         {ChildIcon && (
-                          <ChildIcon className="h-4 w-4 shrink-0" />
+                          <ChildIcon className={cn("h-4 w-4 shrink-0", isChildItemActive ? "text-primary" : "text-sidebar-foreground/50")} />
                         )}
                         <span>{childTitle}</span>
                       </Link>
@@ -606,13 +606,13 @@ export function Sidebar() {
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
               isActive
-                ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-[3px] border-primary"
-                : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground border-l-2 border-transparent"
+                ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
+                : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
             )}
             title={collapsed ? itemTitle : undefined}
             aria-current={isActive ? "page" : undefined}
           >
-            <item.icon className="h-5 w-5 shrink-0" />
+            <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-sidebar-foreground/50")} />
             {!collapsed && (
               <>
                 <span className="flex-1">{itemTitle}</span>
@@ -713,20 +713,20 @@ export function Sidebar() {
             <div key={group.label ?? `group-${groupIdx}`} className={cn("mb-4", groupIdx > 0 && group.label && !group.showSeparator && !collapsed && "pt-2")}>
               {/* Separator before Administration and System groups */}
               {group.showSeparator && (
-                <div className="mx-3 mb-3 border-t border-sidebar-border/60" />
+                <div className="mx-3 mb-3 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
               )}
 
               {/* Section label - clickable to collapse/expand */}
               {group.label && !collapsed && (
                 <button
                   onClick={() => toggleGroup(group.label!)}
-                  className="flex items-center justify-between w-full px-4 mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center justify-between w-full px-4 mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <span>{getGroupLabel(group)}</span>
                   {groupExpanded ? (
-                    <ChevronDown className="h-3 w-3" />
+                    <ChevronDown className="h-3 w-3 text-primary/40" />
                   ) : (
-                    <ChevronRight className="h-3 w-3" />
+                    <ChevronRight className="h-3 w-3 text-primary/40" />
                   )}
                 </button>
               )}

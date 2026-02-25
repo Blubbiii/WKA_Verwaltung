@@ -37,7 +37,7 @@ const OWNER_PALETTE = [
   "#ec4899", // pink
   "#06b6d4", // cyan
   "#f97316", // orange
-  "#14b8a6", // teal
+  "#4075BF", // warm navy
   "#a855f7", // purple
   "#84cc16", // lime
   "#e11d48", // rose
