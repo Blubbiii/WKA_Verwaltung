@@ -13,6 +13,7 @@ import { getWeatherQueue, WEATHER_QUEUE_NAME } from './queues/weather.queue';
 import { getReportQueue, REPORT_QUEUE_NAME } from './queues/report.queue';
 import { getReminderQueue, REMINDER_QUEUE_NAME } from './queues/reminder.queue';
 import { getScadaAutoImportQueue, SCADA_AUTO_IMPORT_QUEUE_NAME } from './queues/scada-auto-import.queue';
+import { getPaperlessQueue, PAPERLESS_QUEUE_NAME } from './queues/paperless.queue';
 
 /**
  * Queue metadata for registry
@@ -85,6 +86,12 @@ const queueRegistry: QueueInfo[] = [
     displayName: 'SCADA Auto-Import Queue',
     description: 'Automatischer Import neuer SCADA-Daten nach Zeitplan (taeglich/stuendlich/woechentlich)',
     getQueue: getScadaAutoImportQueue as () => Queue,
+  },
+  {
+    name: PAPERLESS_QUEUE_NAME,
+    displayName: 'Paperless Queue',
+    description: 'Synchronisiert Dokumente mit Paperless-ngx zur Archivierung',
+    getQueue: getPaperlessQueue as () => Queue,
   },
 ];
 

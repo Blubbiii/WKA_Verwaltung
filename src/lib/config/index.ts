@@ -26,7 +26,7 @@ interface SystemConfigRecord {
 // TYPES
 // =============================================================================
 
-export type ConfigCategory = "email" | "weather" | "storage" | "general" | "features";
+export type ConfigCategory = "email" | "weather" | "storage" | "general" | "features" | "paperless";
 
 export interface ConfigValue {
   key: string;
@@ -198,6 +198,42 @@ export const CONFIG_KEYS = {
     encrypted: false,
     envFallback: "MANAGEMENT_BILLING_ENABLED",
     defaultValue: "false",
+  },
+  "paperless.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Paperless-ngx Integration",
+    encrypted: false,
+    envFallback: "PAPERLESS_ENABLED",
+    defaultValue: "false",
+  },
+
+  // Paperless-ngx Configuration
+  "paperless.url": {
+    category: "paperless" as ConfigCategory,
+    label: "Paperless-ngx Server URL",
+    encrypted: false,
+    envFallback: "PAPERLESS_URL",
+    defaultValue: "",
+  },
+  "paperless.token": {
+    category: "paperless" as ConfigCategory,
+    label: "API Token",
+    encrypted: true,
+    envFallback: "PAPERLESS_API_TOKEN",
+  },
+  "paperless.auto-archive": {
+    category: "paperless" as ConfigCategory,
+    label: "Automatische Archivierung",
+    encrypted: false,
+    envFallback: "PAPERLESS_AUTO_ARCHIVE",
+    defaultValue: "true",
+  },
+  "paperless.default-document-type": {
+    category: "paperless" as ConfigCategory,
+    label: "Standard-Dokumenttyp",
+    encrypted: false,
+    envFallback: "PAPERLESS_DEFAULT_DOCUMENT_TYPE",
+    defaultValue: "",
   },
 } as const;
 
@@ -545,7 +581,7 @@ export async function getAllConfigs(
   tenantId?: string | null,
   includeMasked: boolean = true
 ): Promise<ConfigValue[]> {
-  const categories: ConfigCategory[] = ["email", "weather", "storage", "general", "features"];
+  const categories: ConfigCategory[] = ["email", "weather", "storage", "general", "features", "paperless"];
   const allConfigs: ConfigValue[] = [];
 
   for (const category of categories) {
@@ -658,6 +694,34 @@ export async function getWeatherConfig(tenantId?: string | null): Promise<{
     apiKey,
     syncInterval,
     cacheTtl,
+  };
+}
+
+/**
+ * Get Paperless-ngx configuration
+ * Convenience function for Paperless integration
+ */
+export async function getPaperlessConfig(tenantId?: string | null): Promise<{
+  url: string;
+  token: string;
+  autoArchive: boolean;
+  defaultDocumentType: string;
+} | null> {
+  const enabled = await getConfigBoolean("paperless.enabled", tenantId, false);
+  if (!enabled) return null;
+
+  const url = await getConfig("paperless.url", tenantId);
+  const token = await getConfig("paperless.token", tenantId);
+  const autoArchive = await getConfigBoolean("paperless.auto-archive", tenantId, true);
+  const defaultDocumentType = await getConfig("paperless.default-document-type", tenantId) || "";
+
+  if (!url || !token) return null;
+
+  return {
+    url: url.replace(/\/+$/, ""), // Strip trailing slashes
+    token,
+    autoArchive,
+    defaultDocumentType,
   };
 }
 

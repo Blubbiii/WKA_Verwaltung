@@ -487,6 +487,11 @@ async function handleFileUpload(
     category: document.category,
   }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
+  // Auto-archive to Paperless-ngx (fire-and-forget)
+  import("@/lib/paperless")
+    .then(({ enqueuePaperlessSync }) => enqueuePaperlessSync(document.id, tenantId))
+    .catch(() => {});
+
   return NextResponse.json({
     ...document,
     fileSizeBytes: document.fileSizeBytes ? Number(document.fileSizeBytes) : null,
@@ -582,6 +587,11 @@ async function handleJsonCreate(
     title: document.title,
     category: document.category,
   }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
+
+  // Auto-archive to Paperless-ngx (fire-and-forget)
+  import("@/lib/paperless")
+    .then(({ enqueuePaperlessSync }) => enqueuePaperlessSync(document.id, tenantId))
+    .catch(() => {});
 
   // Convert BigInt to Number for JSON serialization
   return NextResponse.json({

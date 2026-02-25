@@ -9,6 +9,7 @@ import {
   Database,
   Cog,
   ToggleLeft,
+  FileArchive,
   Loader2,
   RefreshCw,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { WeatherConfigForm } from "@/components/admin/system-config/weather-conf
 import { StorageConfigForm } from "@/components/admin/system-config/storage-config-form";
 import { GeneralConfigForm } from "@/components/admin/system-config/general-config-form";
 import { FeaturesConfigForm } from "@/components/admin/system-config/features-config-form";
+import { PaperlessConfigForm } from "@/components/admin/system-config/paperless-config-form";
 
 // =============================================================================
 // TYPES
@@ -145,7 +147,7 @@ export default function SystemConfigPage() {
 
       {/* Configuration Tabs */}
       <Tabs defaultValue="email" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             E-Mail
@@ -157,6 +159,10 @@ export default function SystemConfigPage() {
           <TabsTrigger value="storage" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             Storage
+          </TabsTrigger>
+          <TabsTrigger value="paperless" className="flex items-center gap-2">
+            <FileArchive className="h-4 w-4" />
+            Paperless
           </TabsTrigger>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Cog className="h-4 w-4" />
@@ -228,6 +234,28 @@ export default function SystemConfigPage() {
               <StorageConfigForm
                 configs={getConfigsForCategory("storage")}
                 availableKeys={getKeysForCategory("storage")}
+                onSave={loadConfigs}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Paperless Configuration Tab */}
+        <TabsContent value="paperless">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileArchive className="h-5 w-5" />
+                Paperless-ngx Konfiguration
+              </CardTitle>
+              <CardDescription>
+                Anbindung an Paperless-ngx fuer automatische Dokumentenarchivierung
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PaperlessConfigForm
+                configs={getConfigsForCategory("paperless")}
+                availableKeys={getKeysForCategory("paperless")}
                 onSave={loadConfigs}
               />
             </CardContent>

@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSuperadmin } from "@/lib/auth/withPermission";
-import { getConfig, getEmailConfig, getWeatherConfig } from "@/lib/config";
+import { getConfig, getEmailConfig, getWeatherConfig, getPaperlessConfig } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
@@ -15,7 +15,7 @@ import { apiLogger as logger } from "@/lib/logger";
 // =============================================================================
 
 const testConfigSchema = z.object({
-  type: z.enum(["email", "weather", "storage"]),
+  type: z.enum(["email", "weather", "storage", "paperless"]),
   testParams: z.record(z.string()).optional(), // Additional test parameters
 });
 
@@ -49,6 +49,9 @@ export async function POST(request: NextRequest) {
 
       case "storage":
         return await testStorageConnection(check.tenantId);
+
+      case "paperless":
+        return await testPaperlessConnection(check.tenantId);
 
       default:
         return NextResponse.json(
@@ -332,6 +335,59 @@ async function testStorageConnection(
     return NextResponse.json({
       success: false,
       error: "Storage-Test fehlgeschlagen",
+      details: errorMessage,
+    });
+  }
+}
+
+/**
+ * Test Paperless-ngx connection
+ */
+async function testPaperlessConnection(
+  tenantId: string | undefined
+): Promise<NextResponse> {
+  try {
+    const config = await getPaperlessConfig(tenantId);
+
+    if (!config) {
+      return NextResponse.json({
+        success: false,
+        error: "Paperless-ngx-Konfiguration nicht vorhanden",
+        details: "URL und API Token muessen konfiguriert sein.",
+      });
+    }
+
+    const { PaperlessClient } = await import("@/lib/paperless/client");
+    const client = new PaperlessClient(config.url, config.token);
+    const result = await client.testConnection();
+
+    if (!result.success) {
+      return NextResponse.json({
+        success: false,
+        error: "Paperless-ngx-Verbindung fehlgeschlagen",
+        details: result.error,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Paperless-ngx-Verbindung erfolgreich.",
+      config: {
+        url: config.url,
+        autoArchive: config.autoArchive,
+      },
+      testData: {
+        documentCount: result.documentCount,
+      },
+    });
+  } catch (error) {
+    logger.error({ err: error }, "[Paperless Test] Error");
+
+    const errorMessage = error instanceof Error ? error.message : "Unbekannter Fehler";
+
+    return NextResponse.json({
+      success: false,
+      error: "Paperless-ngx-Test fehlgeschlagen",
       details: errorMessage,
     });
   }

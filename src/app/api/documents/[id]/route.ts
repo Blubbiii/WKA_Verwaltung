@@ -169,6 +169,9 @@ export async function GET(
           }
         : null,
       versions: allVersions,
+      paperlessSyncStatus: document.paperlessSyncStatus || null,
+      paperlessSyncError: document.paperlessSyncError || null,
+      paperlessDocumentId: document.paperlessDocumentId || null,
       createdAt: document.createdAt.toISOString(),
       updatedAt: document.updatedAt.toISOString(),
     });

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Briefcase, Loader2 } from "lucide-react";
+import { Briefcase, FileArchive, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -54,6 +54,9 @@ export function FeaturesConfigForm({
   const [managementBillingEnabled, setManagementBillingEnabled] = useState(
     getConfigValue("management-billing.enabled") === "true"
   );
+  const [paperlessEnabled, setPaperlessEnabled] = useState(
+    getConfigValue("paperless.enabled") === "true"
+  );
 
   // UI state
   const [saving, setSaving] = useState(false);
@@ -66,6 +69,11 @@ export function FeaturesConfigForm({
         {
           key: "management-billing.enabled",
           value: managementBillingEnabled ? "true" : "false",
+          category: "features",
+        },
+        {
+          key: "paperless.enabled",
+          value: paperlessEnabled ? "true" : "false",
           category: "features",
         },
       ];
@@ -120,6 +128,36 @@ export function FeaturesConfigForm({
             id="management-billing-enabled"
             checked={managementBillingEnabled}
             onCheckedChange={setManagementBillingEnabled}
+          />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Paperless-ngx */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <FileArchive className="h-4 w-4 text-muted-foreground" />
+          <h3 className="font-medium">Paperless-ngx</h3>
+        </div>
+
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div>
+            <Label
+              htmlFor="paperless-enabled"
+              className="cursor-pointer"
+            >
+              Paperless-ngx Integration aktivieren
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Aktiviert die Anbindung an Paperless-ngx für automatische
+              Dokumentenarchivierung und Suche
+            </p>
+          </div>
+          <Switch
+            id="paperless-enabled"
+            checked={paperlessEnabled}
+            onCheckedChange={setPaperlessEnabled}
           />
         </div>
       </div>

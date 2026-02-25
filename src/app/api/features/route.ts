@@ -19,12 +19,20 @@ export async function GET() {
       false
     );
 
+    const paperlessEnabled = await getConfigBoolean(
+      "paperless.enabled",
+      check.tenantId,
+      false
+    );
+
     return NextResponse.json({
       "management-billing": managementBillingEnabled,
+      "paperless": paperlessEnabled,
     });
   } catch {
     return NextResponse.json({
       "management-billing": false,
+      "paperless": false,
     });
   }
 }

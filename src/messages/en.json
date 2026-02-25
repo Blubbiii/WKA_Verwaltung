@@ -64,6 +64,8 @@
     "advances": "Advances",
     "payments": "Payments",
     "documents": "Documents",
+    "documentOverview": "Overview",
+    "paperless": "Paperless-ngx",
     "votes": "Votes",
     "news": "News",
     "reports": "Reports",

@@ -73,6 +73,14 @@ import {
 } from "./scada-auto-import.worker";
 import type { ScadaAutoImportJobData, ScadaAutoImportJobResult } from "../queues/scada-auto-import.queue";
 
+import {
+  startPaperlessWorker,
+  stopPaperlessWorker,
+  isPaperlessWorkerRunning,
+  getPaperlessWorker,
+} from "./paperless.worker";
+import type { PaperlessJobData, PaperlessJobResult } from "../queues/paperless.queue";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -88,6 +96,7 @@ export const WORKER_NAMES = {
   REPORT: "report",
   REMINDER: "reminder",
   SCADA_AUTO_IMPORT: "scada-auto-import",
+  PAPERLESS: "paperless",
 } as const;
 
 export type WorkerName = (typeof WORKER_NAMES)[keyof typeof WORKER_NAMES];
@@ -185,6 +194,14 @@ const workerRegistry: WorkerRegistryEntry[] = [
     stop: stopScadaAutoImportWorker,
     isRunning: isScadaAutoImportWorkerRunning,
     getWorker: getScadaAutoImportWorker as () => Worker<unknown, unknown> | null,
+  },
+  {
+    name: WORKER_NAMES.PAPERLESS,
+    displayName: "Paperless Worker",
+    start: startPaperlessWorker as () => Worker<unknown, unknown>,
+    stop: stopPaperlessWorker,
+    isRunning: isPaperlessWorkerRunning,
+    getWorker: getPaperlessWorker as () => Worker<unknown, unknown> | null,
   },
 ];
 
@@ -467,3 +484,12 @@ export {
   getScadaAutoImportWorker,
 };
 export type { ScadaAutoImportJobData, ScadaAutoImportJobResult };
+
+// Paperless Worker
+export {
+  startPaperlessWorker,
+  stopPaperlessWorker,
+  isPaperlessWorkerRunning,
+  getPaperlessWorker,
+};
+export type { PaperlessJobData, PaperlessJobResult };

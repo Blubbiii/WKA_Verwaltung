@@ -69,6 +69,8 @@ interface NavChild {
   titleKey?: string;
   href: string;
   icon?: React.ElementType;
+  /** Feature flag that must be enabled for this child to be visible */
+  featureFlag?: "management-billing" | "paperless";
 }
 
 interface NavItem {
@@ -82,7 +84,7 @@ interface NavItem {
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
   /** Feature flag that must be enabled for this item to be visible */
-  featureFlag?: "management-billing";
+  featureFlag?: "management-billing" | "paperless";
 }
 
 interface NavGroup {
@@ -224,6 +226,10 @@ const navGroups: NavGroup[] = [
         href: "/documents",
         icon: FolderOpen,
         permission: "documents:read",
+        children: [
+          { title: "Übersicht", titleKey: "documentOverview", href: "/documents" },
+          { title: "Paperless-ngx", titleKey: "paperless", href: "/documents/paperless", featureFlag: "paperless" },
+        ],
       },
       {
         title: "Abstimmungen",
@@ -578,7 +584,9 @@ export function Sidebar() {
             </button>
             {!collapsed && itemExpanded && (
               <ul className="mt-1 ml-4 space-y-1">
-                {item.children!.map((child) => {
+                {item.children!
+                  .filter((child) => !child.featureFlag || isFeatureEnabled(child.featureFlag))
+                  .map((child) => {
                   const isChildItemActive =
                     pathname === child.href ||
                     pathname.startsWith(child.href + "/");

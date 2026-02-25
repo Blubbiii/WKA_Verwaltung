@@ -28,6 +28,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { DocumentPreviewDialog } from "@/components/documents";
+import { PaperlessSyncButton } from "@/components/documents/paperless-sync-button";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -94,6 +95,9 @@ interface DocumentDetail {
   shareholder: { id: string; name: string } | null;
   uploadedBy: { name: string; email: string } | null;
   versions: DocumentVersion[];
+  paperlessSyncStatus: string | null;
+  paperlessSyncError: string | null;
+  paperlessDocumentId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -355,6 +359,13 @@ export default function DocumentDetailPage() {
             </Button>
           )}
 
+          <PaperlessSyncButton
+            documentId={document.id}
+            syncStatus={document.paperlessSyncStatus}
+            syncError={document.paperlessSyncError}
+            paperlessDocumentId={document.paperlessDocumentId}
+            onSyncStarted={fetchDocument}
+          />
           <Button variant="outline" onClick={() => setPreviewOpen(true)}>
             <Eye className="mr-2 h-4 w-4" />
             Vorschau
