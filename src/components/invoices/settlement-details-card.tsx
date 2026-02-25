@@ -334,14 +334,14 @@ function renderEnergyDistribution(dist: EnergyDistributionSummary) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-muted-foreground">Produktion</p>
-            <p className="font-medium tabular-nums">{formatNumber(dist.recipientProductionKwh)} kWh</p>
+            <p className="font-medium font-mono tabular-nums">{formatNumber(dist.recipientProductionKwh)} kWh</p>
             <p className="text-xs text-muted-foreground tabular-nums">
               {formatPercent(dist.recipientProductionSharePct)} Anteil
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Zugewiesener Erlös</p>
-            <p className="text-2xl font-bold tabular-nums">
+            <p className="text-2xl font-bold font-mono tabular-nums">
               {formatCurrency(dist.recipientRevenueEur)}
             </p>
           </div>
@@ -506,7 +506,7 @@ function renderCalculationSummary(summary: CalculationSummary) {
                   {usedMinimum ? "Minimum" : usedRevenue ? "Ertragsabhaengig" : "Berechnet"}
                 </Badge>
               </TableCell>
-              <TableCell className="text-right tabular-nums font-semibold text-lg">
+              <TableCell className="text-right tabular-nums font-semibold font-mono text-lg">
                 {formatCurrency(summary.actualAnnualFee)}
               </TableCell>
             </TableRow>
@@ -527,7 +527,7 @@ function renderCalculationSummary(summary: CalculationSummary) {
             <span className="text-sm font-medium">WEA-Standort</span>
             <Badge variant="secondary">{formatPercent(summary.weaSharePercentage, 0)}</Badge>
           </div>
-          <div className="text-2xl font-bold tabular-nums">
+          <div className="text-2xl font-bold font-mono tabular-nums">
             {formatCurrency(summary.weaShareAmount)}
           </div>
           <div className="text-xs text-muted-foreground">
@@ -541,7 +541,7 @@ function renderCalculationSummary(summary: CalculationSummary) {
             <span className="text-sm font-medium">Poolflaeche</span>
             <Badge variant="secondary">{formatPercent(summary.poolSharePercentage, 0)}</Badge>
           </div>
-          <div className="text-2xl font-bold tabular-nums">
+          <div className="text-2xl font-bold font-mono tabular-nums">
             {formatCurrency(summary.poolShareAmount)}
           </div>
           <div className="text-xs text-muted-foreground">

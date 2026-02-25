@@ -109,7 +109,7 @@ function MonthlyTooltip({
             style={{ backgroundColor: entry.color }}
           />
           <span>{entry.name}:</span>
-          <span className="font-medium">{formatCurrency(entry.value)}</span>
+          <span className="font-medium font-mono">{formatCurrency(entry.value)}</span>
         </div>
       ))}
     </div>

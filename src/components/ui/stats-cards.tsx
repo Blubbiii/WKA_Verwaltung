@@ -55,7 +55,7 @@ export function StatsCards({ stats, columns = 4 }: StatsCardsProps) {
             )}
           </CardHeader>
           <CardContent>
-            <div className={cn("text-2xl font-bold tracking-tight", stat.valueClassName)}>
+            <div className={cn("text-2xl font-bold tracking-tight font-mono", stat.valueClassName)}>
               {stat.value}
             </div>
             {stat.subtitle && (
