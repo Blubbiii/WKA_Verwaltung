@@ -49,7 +49,28 @@ export async function POST(request: Request) {
 
     const { token, password } = parsed.data;
 
-    // Find token in database
+    // Atomic token claim: mark as used ONLY if not yet used and not expired.
+    // This prevents race conditions where two concurrent requests both pass the check.
+    const claimed = await prisma.passwordResetToken.updateMany({
+      where: {
+        token,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      data: { usedAt: new Date() },
+    });
+
+    if (claimed.count === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Ungültiger, bereits verwendeter oder abgelaufener Token. Bitte fordern Sie einen neuen Reset-Link an.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Fetch token data for user reference (already claimed, safe to read)
     const resetToken = await prisma.passwordResetToken.findUnique({
       where: { token },
       include: {
@@ -59,47 +80,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // Check if token exists
-    if (!resetToken) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Ungültiger oder abgelaufener Token. Bitte fordern Sie einen neuen Reset-Link an.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check if token was already used
-    if (resetToken.usedAt !== null) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Dieser Token wurde bereits verwendet. Bitte fordern Sie einen neuen Reset-Link an.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check if token is expired
-    if (new Date() > resetToken.expiresAt) {
-      // Mark token as used (expired)
-      await prisma.passwordResetToken.update({
-        where: { id: resetToken.id },
-        data: { usedAt: new Date() },
-      });
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Dieser Token ist abgelaufen. Bitte fordern Sie einen neuen Reset-Link an.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check if user is still active
-    if (resetToken.user.status !== "ACTIVE") {
+    if (!resetToken || resetToken.user.status !== "ACTIVE") {
       return NextResponse.json(
         {
           success: false,
@@ -112,17 +93,11 @@ export async function POST(request: Request) {
     // Hash new password
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
-    // Update user password and mark token as used (in a transaction)
+    // Update user password and invalidate all other tokens
     await prisma.$transaction([
-      // Update user password
       prisma.user.update({
         where: { id: resetToken.userId },
         data: { passwordHash },
-      }),
-      // Mark token as used
-      prisma.passwordResetToken.update({
-        where: { id: resetToken.id },
-        data: { usedAt: new Date() },
       }),
       // Invalidate all other tokens for this user
       prisma.passwordResetToken.updateMany({

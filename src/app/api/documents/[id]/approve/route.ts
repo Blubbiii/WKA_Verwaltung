@@ -182,7 +182,7 @@ export async function POST(
         documentId: updatedDocument.id,
         title: document.title,
         approvedBy: check.userId,
-      }).catch(() => {});
+      }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
     }
 
     // TODO: Notification integration

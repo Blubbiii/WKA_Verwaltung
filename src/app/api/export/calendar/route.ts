@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
               | "TERMINATED",
           }),
           ...(!status && { status: { in: ["ACTIVE", "EXPIRING"] } }),
-          ...(parkId && { plots: { some: { parkId } } }),
+          ...(parkId && { leasePlots: { some: { plot: { parkId } } } }),
           endDate: { not: null },
         },
         select: {

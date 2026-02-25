@@ -192,7 +192,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_CREATE);
       title: vote.title,
       startDate: vote.startDate?.toISOString(),
       endDate: vote.endDate?.toISOString(),
-    }).catch(() => {});
+    }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
     return NextResponse.json(vote, { status: 201 });
   } catch (error) {

@@ -6,6 +6,7 @@
  */
 
 import { Queue, JobsOptions } from "bullmq";
+import crypto from "crypto";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import type { WebhookEventPayload } from "@/lib/webhooks/dispatcher";
@@ -60,7 +61,7 @@ export const enqueueWebhookDelivery = async (
 ) => {
   const queue = getWebhookQueue();
 
-  const jobId = `webhook-${jobData.webhookId}-${Date.now()}`;
+  const jobId = `webhook-${jobData.webhookId}-${crypto.randomUUID()}`;
 
   const job = await queue.add("deliver", jobData, {
     ...options,

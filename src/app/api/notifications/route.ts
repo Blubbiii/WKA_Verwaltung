@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
+import { apiLogger as logger } from "@/lib/logger";
 
 /**
  * GET /api/notifications
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[API] Error fetching notifications:", error);
+    logger.error({ err: error }, "[API] Error fetching notifications");
     return NextResponse.json(
       { error: "Fehler beim Laden der Benachrichtigungen" },
       { status: 500 }

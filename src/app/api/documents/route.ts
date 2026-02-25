@@ -485,7 +485,7 @@ async function handleFileUpload(
     id: document.id,
     title: document.title,
     category: document.category,
-  }).catch(() => {});
+  }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
   return NextResponse.json({
     ...document,
@@ -581,7 +581,7 @@ async function handleJsonCreate(
     id: document.id,
     title: document.title,
     category: document.category,
-  }).catch(() => {});
+  }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
   // Convert BigInt to Number for JSON serialization
   return NextResponse.json({

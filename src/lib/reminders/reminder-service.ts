@@ -162,7 +162,7 @@ export async function checkAndSendReminders(
           dueDate: item.referenceDate?.toISOString(),
           daysOverdue: item.daysRemaining ? -item.daysRemaining : 0,
           amount: item.amount,
-        }).catch(() => {});
+        }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
       }
 
       if (item.category === "EXPIRING_CONTRACT") {
@@ -171,7 +171,7 @@ export async function checkAndSendReminders(
           title: item.title,
           endDate: item.referenceDate?.toISOString(),
           daysRemaining: item.daysRemaining,
-        }).catch(() => {});
+        }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
       }
     } catch (error) {
       const msg =

@@ -132,7 +132,7 @@ export async function POST(
       paidAt: paidAt.toISOString(),
       skontoPaid,
       amount: Number(invoice.grossAmount),
-    }).catch(() => {});
+    }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
     return NextResponse.json(updated);
   } catch (error) {

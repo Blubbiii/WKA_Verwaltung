@@ -40,7 +40,7 @@ export async function GET(
     const { id } = await params;
 
     const invoice = await prisma.invoice.findFirst({
-      where: { id, deletedAt: null }, // Soft-deleted Rechnungen ausschließen
+      where: { id, tenantId: check.tenantId!, deletedAt: null },
       include: {
         items: {
           orderBy: { position: "asc" },

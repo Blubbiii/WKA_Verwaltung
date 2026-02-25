@@ -20,6 +20,21 @@ import crypto from "crypto";
 
 const validEventKeys = Object.keys(WEBHOOK_EVENTS) as [string, ...string[]];
 
+// SSRF protection: reject private/internal IP ranges
+function isPrivateUrl(urlStr: string): boolean {
+  try {
+    const parsed = new URL(urlStr);
+    const hostname = parsed.hostname.toLowerCase();
+    // Block localhost, private IPs, link-local, cloud metadata
+    return /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|fc|fd|fe80|::1|\[::1\])/.test(hostname)
+      || hostname === "metadata.google.internal"
+      || hostname.endsWith(".internal")
+      || hostname.endsWith(".local");
+  } catch {
+    return true; // Reject unparseable URLs
+  }
+}
+
 const createWebhookSchema = z.object({
   url: z.string().url("Ungueltige URL"),
   events: z
@@ -114,6 +129,14 @@ export async function POST(request: NextRequest) {
     }
 
     const { url, events, description } = parsed.data;
+
+    // SSRF protection: reject private/internal URLs
+    if (isPrivateUrl(url)) {
+      return NextResponse.json(
+        { error: "Private oder interne URLs sind nicht erlaubt" },
+        { status: 400 }
+      );
+    }
 
     // Auto-generate webhook secret
     const secret = crypto.randomBytes(32).toString("hex");

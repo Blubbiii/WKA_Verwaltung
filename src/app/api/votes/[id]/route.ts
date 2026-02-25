@@ -293,7 +293,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_UPDATE);
         title: vote.title,
         fundId: vote.fundId,
         fundName: vote.fund?.name ?? null,
-      }).catch(() => {});
+      }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
     }
 
     return NextResponse.json(vote);

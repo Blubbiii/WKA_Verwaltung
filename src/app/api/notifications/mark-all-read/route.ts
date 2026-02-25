@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
+import { apiLogger as logger } from "@/lib/logger";
 
 /**
  * POST /api/notifications/mark-all-read
@@ -24,7 +25,7 @@ export async function POST() {
       count: result.count,
     });
   } catch (error) {
-    console.error("[API] Error marking all notifications as read:", error);
+    logger.error({ err: error }, "[API] Error marking all notifications as read");
     return NextResponse.json(
       { error: "Fehler beim Markieren aller Benachrichtigungen" },
       { status: 500 }

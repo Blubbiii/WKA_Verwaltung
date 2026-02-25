@@ -213,7 +213,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
       id: event.id,
       type: event.eventType,
       description: event.description,
-    }).catch(() => {});
+    }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
     return NextResponse.json(event, { status: 201 });
   } catch (error) {

@@ -255,7 +255,7 @@ async function postHandler(request: NextRequest) {
       invoiceNumber: invoice.invoiceNumber,
       type: invoice.invoiceType,
       grossAmount: invoice.grossAmount?.toString(),
-    }).catch(() => {});
+    }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {

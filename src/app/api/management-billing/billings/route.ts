@@ -45,10 +45,14 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status;
     if (stakeholderId) where.stakeholderId = stakeholderId;
 
-    // Non-superadmin: filter to own tenant's stakeholders
-    if (check.tenantId) {
-      where.stakeholder = { stakeholderTenantId: check.tenantId };
+    // Always filter to own tenant's stakeholders (tenant context required)
+    if (!check.tenantId) {
+      return NextResponse.json(
+        { error: "Mandanten-Kontext erforderlich" },
+        { status: 403 }
+      );
     }
+    where.stakeholder = { stakeholderTenantId: check.tenantId };
 
     const billings = await prisma.managementBilling.findMany({
       where,

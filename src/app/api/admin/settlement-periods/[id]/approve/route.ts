@@ -99,7 +99,7 @@ export async function POST(
         year: updated.year,
         parkName: updated.park?.name ?? null,
         approvedBy: check.userId,
-      }).catch(() => {});
+      }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
       return NextResponse.json({
         ...updated,

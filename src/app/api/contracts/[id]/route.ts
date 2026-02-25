@@ -301,7 +301,7 @@ export async function PUT(
         contractId: contract.id,
         title: contract.title,
         endDate: contract.endDate?.toISOString() ?? null,
-      }).catch(() => {});
+      }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
     }
 
     // Transform partner to include name

@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       periodType,
       parkId,
       parkName: period.park?.name ?? null,
-    }).catch(() => {});
+    }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
     return NextResponse.json(period, { status: 201 });
   } catch (error) {

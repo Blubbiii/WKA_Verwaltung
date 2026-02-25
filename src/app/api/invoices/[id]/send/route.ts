@@ -69,7 +69,7 @@ export async function POST(
       id: updated.id,
       invoiceNumber: updated.invoiceNumber,
       sentAt: new Date().toISOString(),
-    }).catch(() => {});
+    }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
     return NextResponse.json(updated);
   } catch (error) {

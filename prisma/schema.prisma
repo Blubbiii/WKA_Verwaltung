@@ -778,6 +778,8 @@ model Invoice {
   @@index([parkId])
   @@index([settlementPeriodId])
   @@index([shareholderId])
+  @@index([tenantId, status, createdAt(sort: Desc)])
+  @@index([dueDate, status])
   @@map("invoices")
 }
 
@@ -869,6 +871,7 @@ model AuditLog {
   @@index([userId])
   @@index([entityType, entityId])
   @@index([createdAt])
+  @@index([tenantId, action, createdAt(sort: Desc)])
   @@map("audit_logs")
 }
 
@@ -1967,6 +1970,7 @@ model ScadaMeasurement {
   @@index([tenantId])
   @@index([tenantId, turbineId])
   @@index([turbineId, timestamp])
+  @@index([tenantId, timestamp(sort: Desc)])
   @@map("scada_measurements")
 }
 
@@ -2589,5 +2593,6 @@ model WebhookDelivery {
   @@index([webhookId])
   @@index([webhookId, createdAt])
   @@index([createdAt])
+  @@index([createdAt, success])
   @@map("webhook_deliveries")
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
+import { apiLogger as logger } from "@/lib/logger";
 
 /**
  * PATCH /api/notifications/[id]
@@ -42,7 +43,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error("[API] Error marking notification as read:", error);
+    logger.error({ err: error }, "[API] Error marking notification as read");
     return NextResponse.json(
       { error: "Fehler beim Aktualisieren der Benachrichtigung" },
       { status: 500 }
