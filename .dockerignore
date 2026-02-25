@@ -13,7 +13,6 @@ build
 .env
 .env.*
 !.env.example
-!.env.production.example
 
 # Git
 .git

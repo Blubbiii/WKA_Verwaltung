@@ -158,7 +158,7 @@ npm run dev
 ### 1. Umgebungsvariablen konfigurieren
 
 ```bash
-cp .env.production.example .env
+cp .env.example .env
 ```
 
 **Kritische Einstellungen:**
