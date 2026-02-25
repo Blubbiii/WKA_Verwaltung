@@ -3,23 +3,207 @@
 ## Status-Uebersicht
 
 ```
-Phase 1          Phase 2          Phase 3          Phase 4          Phase 5          Phase 6          Phase 7          Phase 8          Phase 9          Phase 10         Phase 11
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-FOUNDATION       CORE MODULES     ADVANCED         AUTOMATION       OPTIMIZATION     SCADA            AUDIT & FIX      UX & WIZARDS     FINAL POLISH     SHP & KARTE      BF-ABRECHNUNG
-✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-• Setup          • Parks          • Abstimmungen   • Auto-Billing   • Performance    • DBF-Import     • Security       • Wizards (5x)   • UI/UX Polish   • SHP-Import     • Cross-Tenant
-• Auth           • Anlagen        • Vollmachten    • E-Mail         • Caching        • Mapping-UI     • API-Auth       • Marketing CMS  • Permission Audit• Park-Karte    • Stakeholder
-• Multi-Tenant   • Beteiligungen  • Dokumente      • Wetter-API     • Dashboard      • Aggregation    • Konsistenz     • Analytics 8-Tab• Duplikat-Cleanup• Polygone      • Berechnung
-• Admin UI       • Pacht          • Vertraege      • Scheduled Jobs • Sicherheit     • Analyse        • Navigation     • Berichte-Hub   • Admin Konsol.  • Vertragspartner• Rechnungen
-• Basis Layout   • Abrechnungen   • Berichte       • Audit-Log      • Testing        • Analytics      • Datenfluss     • Dashboard UX   • Animations     • Park-Zuordn.  • Feature-Flags
-• Permissions    • Portal         • News           • PDF/Storage    • Monitoring     • Portal         • Cleanup        • Sidebar Logo   • Glassmorphism  • Eigentümer    • PDF/Batch
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Phase 1          Phase 2          Phase 3          Phase 4          Phase 5          Phase 6
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+FOUNDATION       CORE MODULES     ADVANCED         AUTOMATION       OPTIMIZATION     SCADA
+✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+• Setup/Auth     • Parks/Anlagen  • Abstimmungen   • Auto-Billing   • Performance    • DBF-Import
+• Multi-Tenant   • Beteiligungen  • Vollmachten    • E-Mail/Queue   • Dashboard 25W  • SCADA-Mapping
+• Admin UI       • Pacht/Flaechen • Dokumente      • Wetter-API     • Security       • Anomalien
+• Layout/Perms   • Rechnungen     • Vertraege      • BullMQ 8Q      • Testing/CI     • Analytics 8-Tab
+• 75 Permissions • Portal         • Berichte/News  • Audit/Storage  • Monitoring     • Berichte
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Phase 7          Phase 8          Phase 9          Phase 10         Phase 11         Phase 12/13
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+AUDIT & FIX      UX & WIZARDS     FINAL POLISH     SHP & KARTE      BF-ABRECHNUNG    VISUAL & INTEGR.
+✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG        ✅ FERTIG
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+• 43 Findings    • 5 Wizards      • Animations     • SHP-Import     • Cross-Tenant   • Brand Identity
+• API-Auth       • Marketing CMS  • Glassmorphism   • Park-Karte     • Stakeholder    • CSS Variables
+• Konsistenz     • Analytics Hub  • Permission Aud. • Polygone       • BF-Berechnung  • ICS-Export
+• DATEV/Batch    • Berichte Hub   • Admin Konsol.   • Park-Zuordn.   • Feature-Flags  • Webhook-System
+• Unit Tests     • Dashboard UX   • Duplikat-Clean  • Vertragspartn. • PDF/Rechnungen • Turbopack-Fix
+──────────────────────────────────────────────────────────────────────────────────────────────────────
 ```
 
 ---
 
-## Abgeschlossene Phasen (1-9)
+## Technologie-Stack
+
+| Kategorie | Technologie | Version |
+|-----------|-------------|---------|
+| Framework | Next.js (App Router, Turbopack) | 15.5 |
+| Sprache | TypeScript | 5.x |
+| UI | React, Tailwind CSS, shadcn/ui | 19.x |
+| Datenbank | PostgreSQL + Prisma ORM | Prisma 6.x |
+| Auth | NextAuth.js (JWT, Sessions) | 5.x |
+| Queue | BullMQ + Redis (8 Queues, 8 Worker) | - |
+| Storage | S3/MinIO (Presigned URLs) | - |
+| E-Mail | SMTP/SendGrid/SES (Templates, Queue) | - |
+| PDF | React-PDF (@react-pdf/renderer) | - |
+| Karten | Leaflet + GeoJSON | - |
+| Charts | Recharts (12 CSS-Variablen) | - |
+| Monitoring | Pino Logger, Sentry | - |
+| Testing | Vitest (Unit), Playwright (E2E) | - |
+| CI/CD | GitHub Actions | - |
+| Container | Docker, Traefik, Docker Compose | - |
+| i18n | next-intl (DE/EN) | - |
+
+---
+
+## Projektstruktur
+
+```
+src/
+├── app/
+│   ├── (dashboard)/              # 62 Seiten (auth-geschuetzt)
+│   │   ├── dashboard/            # Haupt-Dashboard mit Widget-Grid
+│   │   ├── parks/                # Windpark-Verwaltung
+│   │   ├── invoices/             # Rechnungswesen (3 Unter-Seiten)
+│   │   ├── contracts/            # Vertragsmanagement + Kalender
+│   │   ├── funds/                # Beteiligungen & Gesellschafter
+│   │   ├── energy/               # Energie (Produktion, SCADA, Analytics, Settlements)
+│   │   ├── leases/               # Pacht (Vertraege, Zahlungen, SHP-Import)
+│   │   ├── documents/            # Dokumentenmanagement
+│   │   ├── votes/                # Abstimmungssystem
+│   │   ├── news/                 # News & Kommunikation
+│   │   ├── reports/              # Berichte & Archiv
+│   │   ├── service-events/       # Wartung & Service
+│   │   ├── management-billing/   # BF-Abrechnung (Feature-Flag)
+│   │   ├── settings/             # Benutzer-Einstellungen
+│   │   └── admin/                # Administration (15+ Admin-Seiten)
+│   │       ├── webhooks/         # Webhook-Verwaltung
+│   │       ├── system-config/    # System-Konfiguration
+│   │       ├── tenants/          # Mandanten-Verwaltung
+│   │       └── ...               # Rollen, E-Mail, Backup, Audit, etc.
+│   ├── api/                      # 100+ API-Routes
+│   │   ├── auth/                 # NextAuth Endpoints
+│   │   ├── admin/                # Admin-APIs (45+ Routes)
+│   │   ├── energy/               # Energie/SCADA-APIs
+│   │   ├── export/               # Export (CSV, Excel, DATEV, ICS)
+│   │   ├── invoices/             # Rechnungs-APIs
+│   │   ├── management-billing/   # BF-Abrechnungs-APIs (12 Routes)
+│   │   ├── webhooks/             # Webhook-Endpunkte
+│   │   └── ...                   # Parks, Funds, Leases, etc.
+│   ├── (marketing)/              # Marketing-Seite (SSR, Admin-konfigurierbar)
+│   └── (portal)/                 # Kommanditisten-Portal
+│
+├── components/
+│   ├── layout/                   # Sidebar, Header, Breadcrumb
+│   ├── dashboard/                # Dashboard-Grid, 25 Widgets
+│   ├── maps/                     # Leaflet-Karten, GeoJSON-Layer
+│   ├── management-billing/       # BF-Abrechnungs-Komponenten
+│   └── ui/                       # shadcn/ui Basis-Komponenten
+│
+├── lib/
+│   ├── auth/                     # Permission-System (75+ Permissions)
+│   ├── queue/                    # BullMQ (8 Queues + 8 Worker)
+│   ├── webhooks/                 # Webhook-Dispatcher + Events
+│   ├── export/                   # CSV, Excel, DATEV, ICS-Generator
+│   ├── email/                    # E-Mail-Provider + Templates
+│   ├── pdf/                      # PDF-Generierung (DIN 5008)
+│   ├── invoices/                 # Nummernkreise, Skonto, Korrektur
+│   ├── einvoice/                 # XRechnung/ZUGFeRD
+│   ├── scada/                    # DBF-Reader, Import, Anomalien
+│   ├── shapefile/                # SHP-Parser, ALKIS-Mapping
+│   ├── management-billing/       # Cross-Tenant BF-Service
+│   ├── dashboard/                # Widget-Registry, Layouts
+│   ├── reminders/                # Erinnerungs-Service
+│   ├── archive/                  # GoBD-Archivierung
+│   ├── billing/                  # Auto-Billing Rules
+│   ├── cache/                    # Redis-Cache Layer
+│   └── ...                       # Weather, Analytics, Config, etc.
+│
+├── hooks/                        # React Hooks (useFeatureFlags, etc.)
+└── messages/                     # i18n (de.json, en.json)
+
+prisma/
+├── schema.prisma                 # 84 Datenbank-Models
+└── seed.ts                       # Seed-Daten + Permissions
+```
+
+---
+
+## Modul-Abhaengigkeiten
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           FOUNDATION (Phase 1)                          │
+│  Auth · Multi-Tenant · Permissions · Layout · Prisma · Redis · Docker  │
+└─────────────────────────────────┬────────────────────────────────────────┘
+                                  │ (alles haengt von Foundation ab)
+                ┌─────────────────┼─────────────────┐
+                ▼                 ▼                  ▼
+┌──────────────────────┐ ┌───────────────┐ ┌──────────────────┐
+│   CORE MODULES (P2)  │ │ AUTOMATION(P4)│ │ OPTIMIZATION (P5)│
+│ Parks · Turbines     │ │ BullMQ Queues │ │ Dashboard Widgets│
+│ Funds · Shareholders │ │ E-Mail System │ │ Redis Cache      │
+│ Leases · Plots       │ │ PDF Generator │ │ Performance      │
+│ Invoices · Portal    │ │ Audit-Log     │ │ Monitoring       │
+│ Service-Events       │ │ File Storage  │ │ CI/CD · Testing  │
+└──────────┬───────────┘ └──────┬────────┘ └────────┬─────────┘
+           │                    │                    │
+           ▼                    ▼                    │
+┌──────────────────────┐ ┌──────────────────────┐    │
+│  ADVANCED (Phase 3)  │ │   SCADA (Phase 6)    │    │
+│ Abstimmungen/Proxies │ │ Enercon DBF-Import   │    │
+│ Dokumente/Lifecycle  │ │ Turbine-Mapping      │    │
+│ Vertraege/Fristen    │ │ Anomalie-Erkennung   │    │
+│ Berichte/Export      │ │ Energy Analytics     │    │
+│ News/Kommunikation   │ │ Portal-Analytics     │    │
+└──────────┬───────────┘ └──────────┬───────────┘    │
+           │                        │                 │
+           ▼                        ▼                 ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    ERWEITERUNGEN (Phase 7-13)                │
+│                                                              │
+│  ┌─────────────────┐  ┌──────────────────┐  ┌────────────┐ │
+│  │ AUDIT & FIX (7) │  │ UX & WIZARDS (8) │  │ POLISH (9) │ │
+│  │ 43 Findings     │  │ 5 Wizards        │  │ Animations │ │
+│  │ Permission Fix  │  │ Marketing CMS    │  │ Admin Kons.│ │
+│  │ Zod Validation  │  │ Analytics Hub    │  │ Cleanup    │ │
+│  └────────┬────────┘  └────────┬─────────┘  └─────┬──────┘ │
+│           │                    │                   │        │
+│           ▼                    ▼                   ▼        │
+│  ┌─────────────────┐  ┌──────────────────┐  ┌────────────┐ │
+│  │ SHP & KARTE(10) │  │ BF-BILLING (11)  │  │ VISUAL &   │ │
+│  │ Shapefile-Import│  │ Cross-Tenant     │  │ INTEGR.(12)│ │
+│  │ Park-Karte      │  │ Fee-Calculation  │  │ Brand Color│ │
+│  │ Polygon-Layer   │  │ Feature-Flags    │  │ ICS Export │ │
+│  │ Park-Zuordnung  │  │ Invoice-Pipeline │  │ Webhooks   │ │
+│  └─────────────────┘  └──────────────────┘  └────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Abhaengigkeiten im Detail
+
+| Modul | Haengt ab von | Wird benoetigt fuer |
+|-------|---------------|---------------------|
+| **Auth/Permissions** | Prisma, NextAuth | Alle Module |
+| **Multi-Tenancy** | Auth | Alle datenbankbasierten Module |
+| **Parks & Turbines** | Foundation | SCADA, Energy, Leases, Contracts |
+| **Funds & Shareholders** | Foundation | Invoices, Distributions, Portal, BF-Billing |
+| **Invoices** | Funds, Parks | Distributions, E-Invoicing, DATEV, BF-Billing |
+| **Leases & Plots** | Parks, Persons | SHP-Import, Park-Karte, Cost-Allocation |
+| **Contracts** | Parks, Funds | ICS-Export, Reminders, Deadline-Widgets |
+| **Documents** | Storage (S3/MinIO) | GoBD-Archiv, Lifecycle, Portal |
+| **BullMQ Queues** | Redis | E-Mail, PDF, Billing, SCADA-Import, Webhooks, Weather, Reports, Reminders |
+| **SCADA-Integration** | Parks, Turbines, BullMQ | Energy Analytics, Portal-Analytics, Anomalien |
+| **Energy Settlements** | SCADA, Funds, Parks | Berichte, Analytics, BF-Billing (Basis-Revenue) |
+| **Dashboard** | Alle Core-Module | - (Endpunkt, konsumiert Daten) |
+| **Portal** | Funds, Shareholders | - (Endpunkt fuer Kommanditisten) |
+| **Webhook-System** | BullMQ, Prisma | Externe Integrationen |
+| **BF-Billing** | Funds, Parks, Invoices, Feature-Flags | Cross-Tenant Abrechnungen |
+| **ICS-Export** | Contracts, Leases | Kalender-Integration (Outlook, Google) |
+| **SHP-Import** | Leases, Plots, Persons | Park-Karte Polygone |
+| **E-Invoicing** | Invoices | XRechnung/ZUGFeRD Compliance |
+| **GoBD-Archiv** | Invoices, Documents | Betriebspruefungs-Export |
+
+---
+
+## Abgeschlossene Phasen (1-13)
 
 <details>
 <summary><strong>Phase 1: Foundation</strong> ✅ — Setup, Auth, Multi-Tenancy, Admin, Layout, Permissions</summary>
@@ -67,7 +251,7 @@ FOUNDATION       CORE MODULES     ADVANCED         AUTOMATION       OPTIMIZATION
 - Automatische Abrechnungen (BillingRule, Cron, Dry-Run)
 - E-Mail-Benachrichtigungen (SMTP/SendGrid/SES, Templates, Queue)
 - Wetter-Integration (OpenWeatherMap, Redis-Cache, Charts)
-- Background Jobs (BullMQ, 4 Queues, Retry, Dead Letter)
+- Background Jobs (BullMQ, 8 Queues, 8 Worker, Retry, Dead Letter)
 - Audit-Log (CRUD + Login/Export/Impersonate, Filter, Export)
 - Datei-Storage (S3/MinIO, Presigned URLs, Speicherplatz-Tracking)
 </details>
@@ -75,12 +259,12 @@ FOUNDATION       CORE MODULES     ADVANCED         AUTOMATION       OPTIMIZATION
 <details>
 <summary><strong>Phase 5: Optimization</strong> ✅ — Dashboard, Sicherheit, UX, Performance, Monitoring, CI/CD</summary>
 
-- Dashboard (19 Widgets, Drag & Drop, rollenbasierte Layouts, Redis-Cache)
+- Dashboard (25 Widgets, Drag & Drop, rollenbasierte Layouts, Redis-Cache)
 - Sicherheit (AES-256-GCM Verschluesselung, Rate Limiting, Security Headers)
 - Code-Qualitaet (React Query, formatCurrency, status-config, Loading States)
 - Performance (N+1 Fixes, Composite Indexes, Bundle Size, Redis)
 - Monitoring (Health-Check, Pino Logger, Sentry, Performance Metrics)
-- Testing (Vitest Unit Tests, GitHub Actions CI/CD)
+- Testing (Vitest Unit Tests, Playwright E2E Tests, GitHub Actions CI/CD)
 - UX-Konsistenz (Action-Icons, Labels, Row-Click, Formular-Konsistenz)
 - Admin-Struktur (Permission-basierte Sidebar, Settings, Keyboard-Shortcuts)
 - DATEV-Export, Batch-Operations, i18n (DE/EN)
@@ -89,10 +273,11 @@ FOUNDATION       CORE MODULES     ADVANCED         AUTOMATION       OPTIMIZATION
 <details>
 <summary><strong>Phase 6: SCADA-Integration</strong> ✅ — Import, Mapping, Analyse, Analytics, Portal, Berichte</summary>
 
-- Enercon DBF-Import (WSD/UID, 10-Min-Intervalle, 4 Standorte)
+- Enercon DBF-Import (WSD/UID/AVR/SSM, 10-Min-Intervalle, Auto-Import via BullMQ)
 - SCADA-Mapping UI (Loc_xxxx+PlantNo → Park+Turbine)
-- Analyse-Dashboards (Windrose, Produktion, Leistungskurve, Drill-Down)
-- Energy Analytics (6 Tabs: Performance, Verfuegbarkeit, Vergleich, Stoerungen, Umwelt, Finanzen)
+- Anomalie-Erkennung (4 Algorithmen: Performance-Drop, Verfuegbarkeit, Kurven-Abweichung, Datenqualitaet)
+- Netz-Topologie-Visualisierung (SVG-Canvas, Drag&Drop, Auto-Layout, Live-Status)
+- Energy Analytics (8 Tabs: Performance, Verfuegbarkeit, Vergleich, Stoerungen, Umwelt, Finanzen, Daten-Explorer, Datenabgleich)
 - Berichts-Konfigurator (22 Module, Portal-Sichtbarkeit)
 - Portal Analytics Dashboard (KPIs, Trends, Turbinen-Tabelle)
 </details>
@@ -110,174 +295,142 @@ FOUNDATION       CORE MODULES     ADVANCED         AUTOMATION       OPTIMIZATION
 <details>
 <summary><strong>Phase 8: UX-Optimierung & Workflow-Wizards</strong> ✅ — Marketing CMS, 5 Wizards, Analytics-Konsolidierung, Dashboard-UX</summary>
 
-- Marketing-Seite: Scroll-Fix (overflow-hidden nur im Dashboard-Layout statt global)
-- Admin-konfigurierbarer Marketing-Content (Hero, Features, Preisrechner, CTA ueber Tenant.settings)
-- Marketing-Admin-UI (4 Tabs: Hero, Features, Preisrechner, CTA mit Live-Vorschau)
-- Dynamische Marketing-Seite (SSR, Props statt hardcoded, Default-Fallbacks)
-- Dynamische Legal-Pages (Impressum, Datenschutz, AGB ueber Admin konfigurierbar)
+- Marketing-Seite: Admin-konfigurierbarer Content (Hero, Features, Preisrechner, CTA)
+- Marketing-Admin-UI (4 Tabs mit Live-Vorschau)
+- Dynamische Legal-Pages (Impressum, Datenschutz, AGB ueber Admin)
 - 5 Workflow-Wizards:
-  - Jahresendabrechnung/Settlement-Wizard (Park → Zeitraum → Datenquellen → Zusammenfassung → Erstellen)
+  - Jahresendabrechnung-Wizard (Park → Zeitraum → Datenquellen → Zusammenfassung → Erstellen)
   - Park-Einrichtungs-Wizard (Stammdaten → Turbinen → SCADA-Mapping → Topologie → Freigabe)
-  - Pachtabrechnung/Lease-Settlement-Wizard (Pachtvertrag → Zeitraum → Kosten → Vorschau → Erstellen)
+  - Pachtabrechnung-Wizard (Pachtvertrag → Zeitraum → Kosten → Vorschau → Erstellen)
   - Vertrags-Wizard (Vertragstyp → Parteien → Konditionen → Dokumente → Freigabe)
   - Tenant-Onboarding-Wizard (Mandant → Admin-User → Einstellungen → Datenimport → Freigabe)
-- Dashboard-Widget-Sizing: rowHeight 100→60px, alle Widget-Groessen recalculated
-- Sidebar-Logo: tenantLogoUrl durch Auth-Session-Flow (JWT → Session → Sidebar)
-- Analysen/Reports-Konsolidierung (10+ Seiten → 3 Seiten):
-  - Analytics: 8-Tab Hub (+ Daten-Explorer, + Datenabgleich)
-  - Berichte: 2-Tab Hub (Berichte & Export + Energie-Berichte)
-  - Berichtsarchiv: unveraendert
+- Dashboard-Widget-Sizing + Sidebar-Logo (Tenant-Logo via Session-Flow)
+- Analysen/Reports-Konsolidierung (10+ Seiten → 3 Seiten)
 </details>
 
 <details>
 <summary><strong>Phase 9: Final Polish & Hardening</strong> ✅ — UI/UX, Permission-Audit, Duplikat-Cleanup, Admin-Konsolidierung</summary>
 
-**UI/UX Design-System Polish (17+ Dateien):**
+**UI/UX Design-System Polish:**
 - Tailwind Animations: shimmer, fade-in, slide-in-right, scale-in, ease-out-expo
-- Glassmorphism Header: backdrop-blur-sm, semi-transparenter Hintergrund, sticky
-- Button Micro-Interactions: active:scale-[0.98], hover:shadow-md, smooth transitions
-- Skeleton Shimmer: Gradient-basierte Lade-Animation statt pulse
-- Dialog Backdrop-Blur: Weichgezeichneter Overlay, shadow-xl
-- Table Zebra-Striping: even:bg-muted/30, smooth hover transitions
-- Toast Animations: ease-out-expo Timing, rounded-lg, shadow-xl
-- Sidebar Active-Indicator: border-l-2 border-primary Akzentlinie
-- Stats-Cards Gradient: from-primary/5, border-l-4, Gradient-Icon-Container
-- Page-Header Gradient-Divider: h-px bg-gradient-to-r Trennlinie
-- Empty-State Animation: fade-in-0, Gradient-Icon-Kreis
-- Page-Loading Staggered: Gestaffelte Skeleton-Animation
-- Dashboard Widgets: hover:shadow-md, Edit-Mode ring-1 ring-primary/10
-- Card-Interactive CSS-Klasse: hover translateY(-1px), shadow-Uebergang
-- Glass CSS-Klasse: backdrop-blur-md, semi-transparenter Hintergrund
-- Badge Variants: success + warning Varianten mit passenden Farben
+- Glassmorphism Header, Button Micro-Interactions, Skeleton Shimmer
+- Table Zebra-Striping, Toast Animations, Sidebar Active-Indicator
+- Stats-Cards Gradient, Page-Header Divider, Empty-State Animation
+- CSS-Klassen: .card-interactive, .glass, .animate-shimmer
+- Badge success/warning Varianten
 
-**Permission-Audit & Security Hardening (9 API-Routes gefixt):**
-- 3 neue Permission-Konstanten: ADMIN_MANAGE, ENERGY_SCADA_IMPORT, ENERGY_SETTLEMENTS_FINALIZE
-- Export-API: Dynamische Permission-Map pro Export-Typ (parks→parks:read, invoices→invoices:read etc.)
-- Upload-API: documents:create Permission hinzugefuegt
-- News-API: POST/PATCH/DELETE erfordern admin:manage
-- Dashboard Stats: Resource-Level-Filtering mit getAllAccessibleIds() + robuster Fallback
-- Dashboard Analytics: POST (Cache-Clear) erfordert requireAdmin()
-- SCADA Import: Granulare energy:scada:import Permission
-- Settlement Invoice-Erstellung: energy:settlements:finalize Permission
-- SuperAdmin-Schutz auf Marketing, Verguetungsarten, Gesellschaftstypen Admin-Pages
+**Permission-Audit & Security Hardening:**
+- 3 neue Permissions: admin:manage, energy:scada:import, energy:settlements:finalize
+- 9 API-Routes gefixt, Resource-Level-Filtering, SuperAdmin-Schutz
 
-**Duplikat-Funktionen bereinigt (4 redundante Seiten geloescht):**
-- /energy/analysis/ geloescht → ersetzt durch Daten-Explorer Tab in Analytics
-- /energy/scada/comparison/ geloescht → ersetzt durch Datenabgleich Tab in Analytics
-- /energy/reports/ geloescht → ersetzt durch Energie-Berichte Tab in Reports
-- /documents/new/ geloescht → Duplikat von /documents/upload
-- Redirect von /energy/productions/comparison → /energy/analytics aktualisiert
-
-**Super-Admin-Bereich konsolidiert (12-Tab Mega-Page → 5 fokussierte Pages):**
-- Admin-Settings: Von 12 Tabs auf 3 reduziert (Allgemein, Portal, E-Mail)
-- Neues /admin/invoices: 4 Tabs (Nummernkreise, Rechnungen, Rechnungsvorlagen, Positionsvorlagen)
-- Neues /admin/templates: 2 Tabs (Dokumentvorlagen, Briefpapier)
-- Neues /admin/revenue-types: CRUD fuer Verguetungsarten
-- Neues /admin/fund-categories: CRUD fuer Gesellschaftstypen
-- E-Mail-Seite: SMTP-Duplizierung entfernt, Verweis auf System-Config
-- Sidebar: Marketing, Verguetungsarten, Gesellschaftstypen im System-Bereich (SUPERADMIN)
-- Sidebar: Rechnungseinstellungen, Vorlagen im Administration-Bereich (ADMIN)
-
-**i18n & Bug-Fixes:**
-- 4 neue Translation-Keys (invoiceSettings, templates, revenueTypes, fundCategories) in DE + EN
-- Cost-Allocation Page: API-Response-Format-Mismatch gefixt (data-Wrapper)
+**Duplikat-Cleanup & Admin-Konsolidierung:**
+- 4 redundante Seiten entfernt
+- Admin-Settings 12 → 3 Tabs, 4 neue fokussierte Admin-Pages
 </details>
 
 <details>
-<summary><strong>Phase 10: SHP-Import, Flurstücks-Karte & Pachtvertrags-Erweiterungen</strong> ✅ — Shapefile-Import, Park-Karte mit Polygonen, Vertragspartner, Park-Zuordnung</summary>
+<summary><strong>Phase 10: SHP-Import, Fluerstuecks-Karte & Pachtvertrags-Erweiterungen</strong> ✅</summary>
 
 **Shapefile (SHP) Import-System:**
-- SHP-Parser Library (`shpjs`): ZIP- und Einzeldatei-Verarbeitung, GeoJSON-Konvertierung
-- Feld-Mapping mit ALKIS-Auto-Detection: Plot-Felder (Gemarkung, Flur, Flurstück, Zähler/Nenner) + Eigentümer-Felder (Name, Adresse, Hausnummer, PLZ, Ort)
-- Multi-Owner-Erkennung (Anzahl-Feld, Semikolon-Trenner, Erbengemeinschaft/GbR)
-- Preview-API (`POST /api/plots/import-shp`): Parst SHP, erkennt Felder, gibt Vorschau zurück
-- Confirm-API (`POST /api/plots/import-shp/confirm`): Erstellt automatisch Personen, Flurstücke und Pachtverträge in einer Transaktion
-- Deduplizierung: Bestehende Personen werden wiederverwendet, Duplikat-Flurstücke übersprungen
-- Owner-Override-System: Eigentümer-Namen im Wizard korrigierbar, einzelne Eigentümer überspringbar
-- 5-Schritt Import-Wizard (`/leases/import-shp`): Upload → Feld-Mapping → Eigentümer-Review → Vertragsoptionen → Import & Ergebnis
+- SHP-Parser (`shpjs`): ZIP/Einzeldatei → GeoJSON
+- ALKIS-Auto-Detection: 9 Plot-Felder + 8 Eigentuemer-Felder
+- Multi-Owner-Erkennung (Semikolon-Trenner, Erbengemeinschaft/GbR)
+- Preview + Confirm API mit Deduplizierung
+- 5-Schritt Import-Wizard (/leases/import-shp)
 
-**Park-Karte mit Flurstücks-Polygonen:**
-- `geometry Json?` Feld im Plot-Model für GeoJSON-Polygone
-- PlotGeoJsonLayer: Polygone farbcodiert nach Eigentümer mit Semi-Transparenz
-- Vertragsstatus-Visualisierung: Aktiv=Eigentümer-Farbe, Entwurf=gestrichelt, Ohne Vertrag=Rot, Abgelaufen=Grau
-- MapLayerControl: Floating-Panel mit Layer-Toggles (WEA, Flurstücke, Beschriftungen) + Eigentümer-Legende + Status-Legende
-- Polygon-Popup: Flurstück-Details, Fläche, Eigentümer, Vertragsstatus mit Link
-- Plot-API erweitert: `includeGeometry=true` + `includeLeases=true` Parameter für optimierte Datenabfrage
+**Park-Karte mit Fluerstuecks-Polygonen:**
+- GeoJSON-Polygone farbcodiert nach Eigentuemer
+- Vertragsstatus-Visualisierung (Aktiv/Entwurf/Ohne Vertrag/Abgelaufen)
+- MapLayerControl: Layer-Toggles + Eigentuemer-Legende + Status-Legende
+- Polygon-Popup mit Fluerstueck-Details
 
-**Park-Zuordnung von Flurstücken & Verträgen:**
-- Inline Park-Selector auf Lease-Edit-Seite: Pro Flurstück direkt den Park ändern
-- Flurstücke-Tab auf Park-Detailseite: Gruppiert nach Vertrag (Lease → Flurstücke darunter)
-- Vertragsstatus-Badges, Verpächter-Info, Gesamtfläche pro Vertrag
-- "Flurstücke zuordnen" Dialog: Unzugeordnete Flurstücke mit Checkbox dem Park zuweisen
-- "Vertrag zuordnen" Dialog: Ganze Verträge (mit allen Flurstücken) dem Park zuweisen
-- Plot-API Filter: `noPark=true` für Flurstücke ohne Park-Zuordnung
+**Park-Zuordnung:**
+- Inline Park-Selector im Lease-Edit
+- Fluerstuecke-Tab auf Park-Detailseite
+- "Fluerstuecke zuordnen" + "Vertrag zuordnen" Dialoge
 
-**Vertragspartner-Feld (contractPartnerFundId):**
-- Neues Feld `contractPartnerFundId` auf dem Lease-Model (Referenz zu Fund)
-- API: Create + Update akzeptieren das Feld, GET inkludiert `contractPartnerFund { id, name, legalForm }`
-- UI: "Vertragspartner"-Card auf Lease-Edit-Seite mit Fund-Dropdown und Link zur Gesellschaft
-
-**PersonEditDialog:**
-- Inline-Bearbeitung von Verpächter-Daten (Name, Adresse, Bankdaten) direkt im Lease-Edit
+**Pachtvertrags-Erweiterungen:**
+- Vertragspartner-Feld (contractPartnerFundId)
+- PersonEditDialog: Inline-Bearbeitung von Verpaechter-Daten
 </details>
 
 <details>
 <summary><strong>Phase 11: Betriebsfuehrungs-Abrechnung (BF-Billing)</strong> ✅ — Cross-Tenant Stakeholder, Berechnung, Rechnungen, Feature-Flags</summary>
 
-**Datenmodell (3 neue Models, 2 neue Enums):**
-- `ParkStakeholder`: Cross-Tenant Verknuepfung (externe BF-Firma → Park → Rolle + Gebuehr)
-- `StakeholderFeeHistory`: Historische Gebuehren-Aenderungen mit Gueltigkeitszeitraum
-- `ManagementBilling`: Berechnete Abrechnung pro Stakeholder/Periode (DRAFT → CALCULATED → INVOICED)
-- Enums: `ParkStakeholderRole` (DEVELOPER, GRID_OPERATOR, TECHNICAL_BF, COMMERCIAL_BF, OPERATOR)
-- Enums: `ManagementBillingStatus` (DRAFT, CALCULATED, INVOICED, CANCELLED)
+**Datenmodell:**
+- `ParkStakeholder`: Cross-Tenant Verknuepfung (BF-Firma → Park → Rolle + Gebuehr)
+- `StakeholderFeeHistory`: Historische Gebuehren mit Gueltigkeitszeitraum
+- `ManagementBilling`: Abrechnung pro Stakeholder/Periode (DRAFT → CALCULATED → INVOICED)
 
-**Cross-Tenant Service (`src/lib/management-billing/`):**
-- `cross-tenant-access.ts`: Sicherer Zugriff auf fremde Mandanten-Daten (validiert aktiven Stakeholder-Eintrag)
-- `fee-resolver.ts`: Gebuehren-Aufloesung mit History-Fallback fuer Rueckwirkung
-- `calculator.ts`: Kern-Berechnung (baseRevenue × feePercentage, MwSt-Berechnung)
-- `types.ts`: TypeScript Interfaces fuer alle Management-Billing Typen
+**Cross-Tenant Service:**
+- Sicherer Zugriff auf fremde Mandanten-Daten
+- Fee-Resolution mit History-Fallback
+- Kern-Berechnung (baseRevenue × feePercentage, MwSt)
 
-**API-Routes (12 Endpoints unter `/api/management-billing/`):**
-- Stakeholder CRUD: Liste, Erstellen, Detail, Bearbeiten, Loeschen + Fee-History
-- Abrechnungen: Liste, Einzelberechnung, Batch-Berechnung aller aktiven Vertraege
-- Rechnungserstellung: Invoice im Provider-Mandant mit Nummernkreis-Integration
-- PDF-Download: Nutzt bestehende `generateInvoicePdf()`-Pipeline
-- Hilfs-Endpoints: available-tenants, available-parks, available-funds, overview (KPIs)
-
-**UI-Seiten (7 Seiten unter `/management-billing/`):**
-- Dashboard/Uebersicht: KPI-Cards (aktive Vertraege, offene Abrechnungen, Gesamtvolumen)
-- Stakeholders: Tabelle, Neu-Anlegen, Detail mit Fee-History, Bearbeiten
-- Abrechnungen: Tabelle mit Filter, Batch-Berechnung, Detail mit Berechnungs-Aufstellung
-
-**UI-Komponenten (6 unter `/components/management-billing/`):**
-- `stakeholder-form.tsx`: Cross-Tenant Mandant/Park/Rolle/Gebuehr-Formular
-- `stakeholder-table.tsx`: Tabelle mit Rollen-Badge, Gebuehr, Status
-- `billing-table.tsx`: Abrechnungen mit Betraegen, Status-Badge, Aktionen
-- `billing-calculation-card.tsx`: Berechnungs-Aufstellung (Basis → Gebuehr → MwSt → Brutto)
-- `fee-history-table.tsx`: Historische Gebuehren-Aenderungen
-- `tenant-park-selector.tsx`: Cross-Tenant Mandant/Park/Fund Picker
+**API + UI:**
+- 12 Endpoints, 7 UI-Seiten, 6 Komponenten
+- 6 neue Permissions: management-billing:read/create/update/delete/calculate/invoice
+- Rechnungsintegration mit bestehender Invoice-Pipeline + PDF
 
 **Feature-Flag-System (pro Mandant):**
-- `management-billing.enabled` in `SystemConfig` (tenant-spezifisch oder global)
-- Superadmin-Toggle in `/admin/system-config` → Tab "Features"
-- Mandanten-Admin-Toggle in `/settings` → Tab "Module" (nur sichtbar mit `settings:update` Permission)
-- Sidebar: Betriebsfuehrung-Eintrag nur sichtbar wenn Feature aktiviert
-- `/api/features` Endpoint + `useFeatureFlags` Hook fuer Client-Side Visibility
-- Alle 12 API-Routes pruefen tenant-spezifischen Feature-Flag
+- Superadmin + Mandanten-Admin Toggles
+- Sidebar: Items mit `featureFlag` automatisch ausgeblendet
+- `/api/features` Endpoint + `useFeatureFlags` Hook
+</details>
 
-**Permissions (6 neue):**
-- `management-billing:read`, `:create`, `:update`, `:delete`, `:calculate`, `:invoice`
+<details>
+<summary><strong>Phase 12: Visual Overhaul & Brand Identity</strong> ✅ — Warm Navy Design, CSS-Variablen, Marketing-Redesign</summary>
 
-**Rechnungsintegration:**
-- Erstellt Standard-`Invoice` im Provider-Mandant (nutzt bestehendes Rechnungssystem)
-- Automatische Nummernkreis-Integration (`InvoiceNumberSequence`)
-- Empfaenger-Daten via Cross-Tenant-Access (Fund-Name + Adresse)
-- PDF ueber bestehende `generateInvoicePdf()`-Pipeline
+**Brand Identity (Warm Navy #335E99):**
+- Primaerfarbe von Blau (#3b82f6) auf Warm Navy (#335E99) umgestellt
+- 44 Dateien aktualisiert: E-Mail-Templates, PDF-Templates, Charts, Maps, Settings
+- Domain-spezifische Farben beibehalten (Topologie-Spannungsebenen, Eigentuemer-Palette)
 
-**Sicherheitsgarantie:**
-- Kein bestehender Code modifiziert (nur neue Dateien + minimale Ergaenzungen)
-- Bestehende API-Routes, Seiten, Prisma-Models: unberuehrt
-- Feature standardmaessig deaktiviert → kein Impact auf bestehende Mandanten
+**CSS-Variablen-Zentralisierung:**
+- 12 Chart-Variablen (`--chart-1` bis `--chart-12`) in `globals.css`
+- Alle Recharts-Komponenten nutzen `hsl(var(--chart-N))` statt hardcoded Hex
+- Light + Dark Mode Farben zentral definiert
+
+**Marketing-Seite Redesign:**
+- "Precision Engineering" Aesthetik
+- Dashboard-Vorschau, Feature-Grid, Social Proof
+- Responsive Design, Dark Mode Support
+
+**Sidebar Dark Mode:**
+- Hintergrundfarbe auf Brand-Navy abgestimmt
+</details>
+
+<details>
+<summary><strong>Phase 13: Integrationen</strong> ✅ — Worker-Thread-Fix, ICS-Kalenderexport, Webhook-System</summary>
+
+**Worker-Thread-Fix (Turbopack-Kompatibilitaet):**
+- `serverExternalPackages: ["bullmq", "ioredis", "pino", "pino-pretty"]` in next.config.ts
+- Behebt `Cannot find module '.next\server\vendor-chunks\lib\worker.js'` Error-Spam
+- BullMQ-Worker laufen jetzt fehlerfrei im Dev-Server
+
+**ICS-Kalenderexport (RFC 5545):**
+- `GET /api/export/calendar?type=contracts|leases|all&status=ACTIVE&fundId=X&parkId=Y`
+- RFC 5545 Generator ohne externe Abhaengigkeiten (~100 Zeilen)
+- Pro Vertrag: Endtermin-Event + Kuendigungsfrist-Event + VALARM aus reminderDays[]
+- Pro Pachtvertrag: Endtermin-Event
+- Export-Button auf der Vertrags-Kalender-Seite
+- Importierbar in Outlook, Google Calendar, Apple Calendar
+
+**Webhook-System (Event-Driven HTTP Callbacks):**
+- 2 neue Prisma-Models: `Webhook` + `WebhookDelivery`
+- 13 Event-Typen in 6 Kategorien:
+  - Rechnungen: invoice.created, invoice.sent, invoice.paid, invoice.overdue
+  - Vertraege: contract.expiring, contract.expired
+  - Abrechnungen: settlement.created, settlement.finalized
+  - Abstimmungen: vote.created, vote.closed
+  - Dokumente: document.uploaded, document.approved
+  - Service-Events: service_event.created
+- Dispatcher: Fire-and-forget `dispatchWebhook(tenantId, event, data)`
+- BullMQ-Queue: 3 Retries, exponentieller Backoff (10s → 20s → 40s)
+- Worker: HMAC-SHA256 Signatur, 5s Timeout, Delivery-Log in DB
+- 4 Admin-API-Routes: CRUD, Test-Event, Delivery-Log (paginiert)
+- Admin-UI (`/admin/webhooks`): Tabelle, Create/Edit, Event-Checkboxes, Delivery-Log, Test-Button
+- Integration in 6 bestehende Routes (non-blocking, fehlertolerant)
 </details>
 
 ---
@@ -291,97 +444,174 @@ FOUNDATION       CORE MODULES     ADVANCED         AUTOMATION       OPTIMIZATION
 | M3 | Portal: Kommanditisten-Portal | ✅ |
 | M4 | Rechnungswesen: Invoicing mit PDF | ✅ |
 | M5 | Advanced: Abstimmungen, Dokumente, Vertraege | ✅ |
-| M6 | Automation: Billing, E-Mails, Wetter, Jobs | ✅ |
-| M7 | Dashboard: Analytics, KPIs, Widget-System | ✅ |
+| M6 | Automation: Billing, E-Mails, Wetter, 8 BullMQ-Queues | ✅ |
+| M7 | Dashboard: 25 Widgets, Drag & Drop, Redis-Cache | ✅ |
 | M8 | Security Hardening + UX-Konsistenz | ✅ |
 | M9 | Monitoring: Sentry, Pino, Metrics | ✅ |
-| M10 | SCADA: Import, Mapping, Analyse-Dashboards | ✅ |
-| M11 | Energy Analytics: 6-Tab Dashboard, Portal, Berichte | ✅ |
+| M10 | SCADA: Enercon-Import, Mapping, Anomalie-Erkennung | ✅ |
+| M11 | Energy Analytics: 8-Tab Dashboard, Portal, Berichte | ✅ |
 | M12 | Stabilisierung: Permissions, Validierung, Backups | ✅ |
 | M13 | Business-Features: DATEV, Audit-Filter, Batch-Ops | ✅ |
-| M14 | Testing & CI/CD: Vitest, GitHub Actions | ✅ |
-| M15 | i18n, Storage-Tracking, Dashboard-Caching | ✅ |
-| M16 | Billing-Worker, E-Invoicing, Mahnwesen | ✅ |
+| M14 | Testing & CI/CD: Vitest, Playwright, GitHub Actions | ✅ |
+| M15 | i18n (DE/EN), Storage-Tracking, Dashboard-Caching | ✅ |
+| M16 | Billing-Worker, E-Invoicing (XRechnung/ZUGFeRD), Mahnwesen | ✅ |
 | M17 | Workflow-Automation + Benachrichtigungen | ✅ |
 | M18 | Marketing CMS + Admin-konfigurierbar | ✅ |
 | M19 | 5 Workflow-Wizards (Settlement, Park, Lease, Contract, Tenant) | ✅ |
 | M20 | Dashboard-UX + Sidebar-Logo + Widget-Sizing | ✅ |
 | M21 | Analysen/Reports-Konsolidierung (10+ → 3 Seiten) | ✅ |
-| M22 | UI/UX Design-System Polish (Animations, Glassmorphism, Micro-Interactions) | ✅ |
-| M23 | Permission-Audit & Security Hardening (9 API-Routes, 3 neue Permissions) | ✅ |
-| M24 | Duplikat-Cleanup (4 redundante Seiten entfernt) | ✅ |
-| M25 | Admin-Bereich Konsolidierung (12-Tab → 5 fokussierte Pages) | ✅ |
-| M26 | SHP-Import: Parser, Feld-Mapping, ALKIS-Auto-Detection, 5-Schritt-Wizard | ✅ |
-| M27 | Park-Karte: Flurstücks-Polygone, Eigentümer-Farben, Vertragsstatus, Layer-Controls | ✅ |
-| M28 | Park-Zuordnung: Flurstücke + Verträge dem Park zuweisen (2 UIs) | ✅ |
-| M29 | Vertragspartner-Feld + PersonEditDialog auf Lease-Edit | ✅ |
+| M22 | UI/UX Design-System (Animations, Glassmorphism, Micro-Interactions) | ✅ |
+| M23 | Permission-Audit & Security Hardening (9 Routes, 3 Permissions) | ✅ |
+| M24 | Duplikat-Cleanup (4 Seiten entfernt) | ✅ |
+| M25 | Admin-Konsolidierung (12-Tab → 5 fokussierte Pages) | ✅ |
+| M26 | SHP-Import: Parser, ALKIS-Mapping, 5-Schritt-Wizard | ✅ |
+| M27 | Park-Karte: GeoJSON-Polygone, Eigentuemer-Farben, Layer-Controls | ✅ |
+| M28 | Park-Zuordnung: Fluerstuecke + Vertraege zuweisen | ✅ |
+| M29 | Vertragspartner-Feld + PersonEditDialog | ✅ |
 | M30 | BF-Abrechnung: Cross-Tenant Stakeholder, Berechnung, Rechnungen | ✅ |
-| M31 | Feature-Flag-System: Pro-Mandant Feature-Toggles, Sidebar-Integration | ✅ |
-| M32 | Release: Production Deployment | ⏳ |
+| M31 | Feature-Flag-System: Pro-Mandant Toggles, Sidebar-Integration | ✅ |
+| M32 | Visual Overhaul: Warm Navy Brand, CSS-Variablen, Marketing-Redesign | ✅ |
+| M33 | ICS-Kalenderexport: RFC 5545, Vertragsfristen + Pachttermine | ✅ |
+| M34 | Webhook-System: 13 Events, HMAC-SHA256, Admin-UI, BullMQ-Worker | ✅ |
+| M35 | Worker-Thread-Fix: Turbopack + BullMQ Kompatibilitaet | ✅ |
+| M36 | Release: Production Deployment | ⏳ |
 
 ---
 
-## Feature-Status
+## Feature-Status (Komplett-Uebersicht)
 
-| Kategorie | Status |
-|-----------|--------|
-| Auth & Authorization | ✅ 100% |
-| Parks & Turbines | ✅ 100% |
-| Service Events | ✅ 100% |
-| Funds & Shareholders | ✅ 100% |
-| Distributions | ✅ 100% |
-| Leases & Plots | ✅ 100% |
-| Contracts | ✅ 100% |
-| Documents | ✅ 100% |
-| Invoices | ✅ 100% |
-| Settlement Periods | ✅ 100% |
-| Voting + Proxies | ✅ 100% |
-| News | ✅ 100% |
-| PDF Generation | ✅ 100% |
-| Audit-Log | ✅ 100% |
-| Email System | ✅ 100% |
-| File Storage | ✅ 100% |
-| Background Jobs | ✅ 100% |
-| Auto-Billing | ✅ 100% |
-| Weather Integration | ✅ 100% |
-| Docker/DevOps | ✅ 100% |
-| Portal UI | ✅ 100% |
-| Reports/Export | ✅ 100% |
-| Dashboard/Analytics | ✅ 100% |
-| Sicherheit/Haertung | ✅ 100% |
-| SCADA-Integration | ✅ 100% |
-| Energy Analytics | ✅ 100% |
-| i18n (DE/EN) | ✅ 100% |
-| Testing/CI/CD | ✅ 100% |
-| Marketing CMS | ✅ 100% |
-| Workflow-Wizards (5x) | ✅ 100% |
-| UX/Dashboard-Optimierung | ✅ 100% |
-| UI/UX Design-System | ✅ 100% |
-| Permission-Granularitaet | ✅ 100% |
-| Admin-Struktur | ✅ 100% |
-| SHP-Import & GeoJSON | ✅ 100% |
-| Park-Karte (Polygone) | ✅ 100% |
-| Flurstücks-Zuordnung | ✅ 100% |
-| BF-Abrechnung (Cross-Tenant) | ✅ 100% |
-| Feature-Flag-System | ✅ 100% |
+### Kernmodule
+
+| Kategorie | Umfang | Status |
+|-----------|--------|--------|
+| Auth & Authorization | NextAuth, JWT, 75+ Permissions, 5 Rollen, Resource-Access | ✅ 100% |
+| Multi-Tenancy | Tenant-Isolation, Cross-Tenant (BF), Impersonation | ✅ 100% |
+| Parks & Turbines | CRUD, Karte, Erloesphasen, Topologie, MaStR | ✅ 100% |
+| Funds & Shareholders | CRUD, Quoten, Kapital, Hierarchie, Onboarding-Wizard | ✅ 100% |
+| Leases & Plots | CRUD, n:m, Kalender, Cost-Allocation, SHP-Import | ✅ 100% |
+| Contracts | CRUD, Fristen, Erinnerungen, ICS-Export, Kalender-View | ✅ 100% |
+| Invoices | CRUD, PDF, Gutschriften, Skonto, Teilstorno, Mahnwesen | ✅ 100% |
+| Documents | Upload, Versionen, Lifecycle, Volltext-Suche, GoBD-Archiv | ✅ 100% |
+| Voting + Proxies | Zeitraum, Optionen, Quorum, PDF-Export, Vollmachten | ✅ 100% |
+| Service Events | Wartung, Reparatur, Inspektion, Kosten-Tracking | ✅ 100% |
+| News | Rich-Text, Kategorien, Fonds-spezifisch | ✅ 100% |
+| Distributions | Verteilung nach Quote, Status-Workflow | ✅ 100% |
+
+### Energie & SCADA
+
+| Kategorie | Umfang | Status |
+|-----------|--------|--------|
+| SCADA-Import | Enercon DBF (WSD/UID/AVR/SSM), Auto-Import via BullMQ | ✅ 100% |
+| SCADA-Mapping | Loc_xxxx+PlantNo → Park+Turbine, Admin-UI | ✅ 100% |
+| Anomalie-Erkennung | 4 Algorithmen, konfigurierbare Schwellwerte | ✅ 100% |
+| Energy Analytics | 8-Tab Hub (Performance bis Datenabgleich) | ✅ 100% |
+| Energy Settlements | Netzbetreiber/Direktvermarkter, Status-Workflow | ✅ 100% |
+| Netz-Topologie | SVG-Canvas, Drag&Drop, Live-Status-Farben | ✅ 100% |
+| Portal-Analytics | KPIs, YoY-Chart, Turbinen-Tabelle | ✅ 100% |
+
+### Rechnungswesen (erweitert)
+
+| Kategorie | Umfang | Status |
+|-----------|--------|--------|
+| PDF-Generierung | DIN 5008, Branding, Wasserzeichen, Briefpapier | ✅ 100% |
+| E-Invoicing | XRechnung (UBL 2.1), ZUGFeRD 2.2 COMFORT, Validator | ✅ 100% |
+| Wiederkehrende Rechnungen | RecurringInvoice Model, Frequenz-Scheduling | ✅ 100% |
+| Abschlagsrechnungen | Pacht-Vorschuss, monatliche Auto-Generierung | ✅ 100% |
+| WYSIWYG-Editor | 15 Block-Typen, Drag&Drop, Live-Vorschau, Merge-Vars | ✅ 100% |
+| GoBD-Archivierung | SHA-256 Hash-Chain, 10-Jahre Retention, Audit-Export | ✅ 100% |
+| DATEV-Export | Standard-Buchungsformat | ✅ 100% |
+| Nummernkreise | {YEAR}/{NUMBER}, fuehrende Nullen, pro Typ | ✅ 100% |
+| Mahnwesen | 3 Stufen + Verzugsgebuehren im Billing-Worker | ✅ 100% |
+
+### Automation & Infrastruktur
+
+| Kategorie | Umfang | Status |
+|-----------|--------|--------|
+| BullMQ Queue-System | 8 Queues + 8 Worker (Email, PDF, Billing, Weather, Report, Reminder, SCADA, Webhook) | ✅ 100% |
+| E-Mail-System | SMTP/SendGrid/SES, Templates, Queue, Massen-Kommunikation | ✅ 100% |
+| Wetter-Integration | OpenWeatherMap, Redis-Cache, Charts | ✅ 100% |
+| Audit-Log | CRUD + Login/Export/Impersonate, Filter, CSV-Export | ✅ 100% |
+| File Storage | S3/MinIO, Presigned URLs, Speicherplatz-Tracking | ✅ 100% |
+| Auto-Billing | BillingRules, Cron, Dry-Run, 5 Prozessoren | ✅ 100% |
+| Erinnerungen | 4 Kategorien (Rechnungen, Vertraege, Settlements, Dokumente) | ✅ 100% |
+| Geplante Berichte | ScheduledReport, Cron, E-Mail-Versand | ✅ 100% |
+
+### Integrationen & Export
+
+| Kategorie | Umfang | Status |
+|-----------|--------|--------|
+| ICS-Kalenderexport | RFC 5545, Vertragsfristen + Pachttermine, VALARM | ✅ 100% |
+| Webhook-System | 13 Events, HMAC-SHA256, BullMQ, Admin-UI, Delivery-Log | ✅ 100% |
+| CSV/Excel-Export | Alle Entitaeten exportierbar | ✅ 100% |
+| SHP-Import | Shapefile → Fluerstuecke + Eigentuemer + Vertraege | ✅ 100% |
+
+### UI/UX & Design
+
+| Kategorie | Umfang | Status |
+|-----------|--------|--------|
+| Dashboard | 25 Widgets, 12-Column Grid, 4 Rollen-Layouts, Drag&Drop | ✅ 100% |
+| Brand Identity | Warm Navy (#335E99), CSS-Variablen, konsistente Farbgebung | ✅ 100% |
+| Design-System | Animations, Glassmorphism, Micro-Interactions, Dark Mode | ✅ 100% |
+| 5 Workflow-Wizards | Settlement, Park, Lease, Contract, Tenant | ✅ 100% |
+| Marketing CMS | Admin-konfigurierbar (Hero, Features, Preisrechner, CTA) | ✅ 100% |
+| i18n | Deutsch + Englisch (next-intl, Cookie-basiert) | ✅ 100% |
+| Kommanditisten-Portal | Dashboard, Beteiligungen, Dokumente, Berichte, Analytics | ✅ 100% |
+
+### Betriebsfuehrung & Cross-Tenant
+
+| Kategorie | Umfang | Status |
+|-----------|--------|--------|
+| BF-Abrechnung | Cross-Tenant Stakeholder, Fee-Calculation, Invoicing | ✅ 100% |
+| Feature-Flag-System | Pro-Mandant Toggles, Sidebar-Integration, API-Gating | ✅ 100% |
+
+### Sicherheit & Qualitaet
+
+| Kategorie | Umfang | Status |
+|-----------|--------|--------|
+| Verschluesselung | AES-256-GCM fuer sensible Daten | ✅ 100% |
+| Rate Limiting | API-Schutz gegen Missbrauch | ✅ 100% |
+| Security Headers | CSP, HSTS, X-Frame-Options | ✅ 100% |
+| Monitoring | Pino Logger, Sentry, Health-Check, Metrics | ✅ 100% |
+| Testing | Vitest (Unit, 35+ Cases), Playwright (E2E, 20+ Specs) | ✅ 100% |
+| CI/CD | GitHub Actions Pipeline | ✅ 100% |
+| Docker | Dev + Prod Compose, Traefik Reverse-Proxy | ✅ 100% |
+
+---
+
+## Kennzahlen
+
+| Metrik | Wert |
+|--------|------|
+| Seiten (Pages) | 62 |
+| API-Routes | 100+ |
+| Prisma-Models | 84 |
+| BullMQ Queues + Worker | 8 + 8 |
+| Dashboard-Widgets | 25 |
+| Sidebar-Navigation Items | 40+ |
+| Permissions | 75+ |
+| System-Rollen | 5 |
+| Webhook-Event-Typen | 13 |
+| Workflow-Wizards | 5 |
+| i18n-Sprachen | 2 (DE/EN) |
+| E-Mail-Templates | 14+ |
+| PDF-Templates | 5+ |
+| Chart CSS-Variablen | 12 |
 
 ---
 
 ## Offene Punkte
 
-### Bekannte Bugs
+### Zurueckgestellt
 
-**Bekannt (nicht blockierend):**
-- [ ] Worker-Thread-Error im Dev-Server (Next.js 15.5.9 + Node v24.13.0 Inkompatibilitaet) — Seiten laden trotzdem korrekt, nur Error-Spam in der Konsole
-
-### Optionale Features
-
-**Nice-to-Have:**
-- [ ] ICS-Export fuer Kalender (Vertragsfristen, Kuendigungstermine)
-- [ ] Webhook-Support (Events an externe URLs)
-
-**Zurueckgestellt:**
 - [ ] Staging-Umgebung (separate DB, Preview Deployments)
+- [ ] Production Deployment (M36)
+
+### Keine bekannten Bugs
+
+Alle bekannten Bugs wurden behoben:
+- ~~Worker-Thread-Error~~ → Behoben via `serverExternalPackages` (Phase 13)
+- ~~Cost-Allocation API-Mismatch~~ → Behoben (Phase 9)
+- ~~Dashboard Stats N+1~~ → Behoben (Phase 9)
 
 ---
 
@@ -389,24 +619,22 @@ FOUNDATION       CORE MODULES     ADVANCED         AUTOMATION       OPTIMIZATION
 
 Das Rechnungssystem ist funktional komplett mit anpassbaren Vorlagen:
 
-**Vorhanden:**
-- Einheitliches PDF-Template fuer Rechnungen + Gutschriften (`InvoiceTemplate.tsx`)
+- Einheitliches PDF-Template fuer Rechnungen + Gutschriften
 - Briefpapier-Verwaltung (Header/Footer-Bilder, Logo, Farben, DIN 5008)
-- Dokumentvorlagen-Config (Sichtbarkeit von Positionen, MwSt, Bankdaten etc.)
+- Dokumentvorlagen-Config (Sichtbarkeit von Positionen, MwSt, Bankdaten)
 - Nummernkreise mit Platzhaltern ({YEAR}, {NUMBER}) und fuehrenden Nullen
-- Rechnungsspezifische Texte (Zahlungsziel, MwSt-Befreiung, Storno-Hinweise)
 - Mandanten- ODER Park-spezifische Konfiguration (Fallback-Kette)
 - Wasserzeichen (ENTWURF, STORNIERT)
 - Storno-Gutschriften (automatisch mit negativen Betraegen)
-- DATEV-Export
-- XRechnung/ZUGFeRD (UBL 2.1, Validator, ZUGFeRD 2.2 COMFORT, Download-API)
+- XRechnung/ZUGFeRD (UBL 2.1, Validator, ZUGFeRD 2.2 COMFORT)
 - Skonto (Prozent + Frist, automatische Berechnung, PDF-Ausweis)
-- Teilstorno / Korrekturrechnungen (Positions-Auswahl, Teilmengen, Korrekturrechnung)
-- Mahnwesen (3 Mahnstufen + Verzugsgebuehren im Billing-Worker)
-- Wiederkehrende Rechnungen (RecurringInvoice Model, Frequenz-Scheduling, Admin-UI)
-- Abschlagsrechnungen (Pacht-Vorschussrechnungen, automatische monatliche Generierung)
-- WYSIWYG-Editor (Block-basiert, Drag&Drop, Live-Vorschau, 15 Block-Typen)
-- GoBD-konforme Archivierung (SHA-256 Hash-Chain, Integritaetspruefung, Betriebspruefungs-Export)
+- Teilstorno / Korrekturrechnungen (Positions-Auswahl, Teilmengen)
+- Mahnwesen (3 Mahnstufen + Verzugsgebuehren)
+- Wiederkehrende Rechnungen (Frequenz-Scheduling, Admin-UI)
+- Abschlagsrechnungen (Pacht-Vorschuss, monatliche Generierung)
+- WYSIWYG-Editor (15 Block-Typen, Drag&Drop, Live-Vorschau, Merge-Variablen)
+- GoBD-konforme Archivierung (SHA-256 Hash-Chain, 10-Jahre Retention)
+- DATEV-Export
 
 ---
 
@@ -422,246 +650,72 @@ Das Rechnungssystem ist funktional komplett mit anpassbaren Vorlagen:
 | 5 Workflow-Wizards (Settlement, Park, Lease, Contract, Tenant) | ~200h/Jahr |
 | Konsolidierte Analysen/Berichte (weniger Navigation) | ~80h/Jahr |
 | Admin-Marketing-CMS (keine Entwickler fuer Textaenderungen) | ~40h/Jahr |
-| SHP-Import (Flurstücke + Eigentümer + Verträge in einem Schritt) | ~120h/Jahr |
-| Park-Karte mit Vertragsstatus (sofortige Übersicht statt Excel-Listen) | ~60h/Jahr |
-| BF-Abrechnung (automatische Berechnung + Rechnungserstellung statt manuell) | ~150h/Jahr |
-| Feature-Flag pro Mandant (Self-Service Modul-Aktivierung ohne Entwickler) | ~20h/Jahr |
-| **Gesamt** | **~1264h/Jahr (~158 Arbeitstage)** |
+| SHP-Import (Fluerstuecke + Eigentuemer + Vertraege in einem Schritt) | ~120h/Jahr |
+| Park-Karte mit Vertragsstatus (sofortige Uebersicht) | ~60h/Jahr |
+| BF-Abrechnung (automatische Berechnung + Rechnungserstellung) | ~150h/Jahr |
+| Feature-Flag pro Mandant (Self-Service Modul-Aktivierung) | ~20h/Jahr |
+| ICS-Kalenderexport (Fristen direkt im Kalender-Tool) | ~30h/Jahr |
+| Webhook-Benachrichtigungen (keine manuelle Weiterleitung) | ~40h/Jahr |
+| **Gesamt** | **~1334h/Jahr (~167 Arbeitstage)** |
 
 ---
 
 ## Aenderungshistorie
 
-### 21. Februar 2026 — Phase 11: Betriebsfuehrungs-Abrechnung (BF-Billing) + Feature-Flag-System
+### 25. Februar 2026 — Phase 12+13: Visual Overhaul, ICS-Export, Webhooks
 
-**Betriebsfuehrungs-Abrechnung (komplett neues Modul):**
-- 3 neue Prisma-Models: `ParkStakeholder`, `StakeholderFeeHistory`, `ManagementBilling`
-- Cross-Tenant Service (`src/lib/management-billing/`): Sicherer Datenzugriff, Fee-Resolution, Berechnung
-- 12 API-Endpoints (`/api/management-billing/`): Stakeholder CRUD, Abrechnungen, Batch, Invoice, PDF
-- 7 UI-Seiten (`/management-billing/`): Dashboard, Stakeholders (CRUD), Abrechnungen (Liste + Detail)
-- 6 UI-Komponenten: Formulare, Tabellen, Berechnungs-Card, Fee-History, Tenant-Park-Selector
-- 6 neue Permissions: `management-billing:read/create/update/delete/calculate/invoice`
-- Rechnungsintegration: Erstellt Standard-Invoice im Provider-Mandant + PDF via bestehende Pipeline
+**Visual Overhaul & Brand Identity (Phase 12):**
+- Warm Navy (#335E99) als Primaerfarbe: 44 Dateien aktualisiert
+- 12 CSS-Variablen fuer Charts in globals.css zentralisiert
+- Marketing-Seite Redesign ("Precision Engineering" Aesthetik)
+- Sidebar Dark Mode auf Brand-Navy abgestimmt
 
-**Feature-Flag-System (pro Mandant):**
-- `management-billing.enabled` in `SystemConfig` mit tenant-spezifischer Auswertung
-- Superadmin: Toggle in System-Konfiguration → Tab "Features"
-- Mandanten-Admin: Toggle in `/settings` → Tab "Module" (permission-gated)
-- `/api/features` Endpoint + `useFeatureFlags` Hook fuer Client-Side Visibility
-- Sidebar: Items mit `featureFlag`-Eigenschaft werden automatisch ausgeblendet wenn deaktiviert
-- Alle 12 Management-Billing API-Routes pruefen tenant-spezifischen Feature-Flag
+**ICS-Kalenderexport (Phase 13):**
+- RFC 5545 Generator (`src/lib/export/ics.ts`), keine externen Deps
+- API: `GET /api/export/calendar?type=contracts|leases|all`
+- Export-Button auf Vertrags-Kalender-Seite
 
-**Neue Dateien (~35):**
-- `src/lib/management-billing/` (4 Dateien: types, cross-tenant-access, fee-resolver, calculator)
-- `src/app/api/management-billing/` (12 Route-Dateien)
-- `src/app/(dashboard)/management-billing/` (7 Seiten-Dateien)
-- `src/components/management-billing/` (6 Komponenten)
-- `src/app/api/features/route.ts`, `src/app/api/admin/features/route.ts`
-- `src/hooks/useFeatureFlags.ts`
-- `src/components/settings/TenantFeaturesSettings.tsx`
-- `src/components/admin/system-config/features-config-form.tsx`
+**Webhook-System (Phase 13):**
+- 2 neue Models: `Webhook`, `WebhookDelivery`
+- 13 Event-Typen in 6 Kategorien
+- Dispatcher + BullMQ-Queue + Worker (HMAC-SHA256)
+- Admin-UI (`/admin/webhooks`) mit CRUD, Test, Delivery-Log
+- Integration in 6 bestehende API-Routes
 
-**Geaenderte bestehende Dateien (minimal):**
-- `prisma/schema.prisma` (3 neue Models + Tenant-Relation)
-- `prisma/seed.ts` (6 neue Permissions)
-- `src/components/layout/sidebar.tsx` (neuer Menue-Punkt + featureFlag-Check)
-- `src/lib/config/index.ts` ("features" Kategorie + Config-Key)
-- `src/app/api/admin/system-config/route.ts` ("features" in Zod-Validation)
-- `src/app/(dashboard)/settings/page.tsx` (neuer "Module" Tab fuer Mandanten-Admins)
-- `src/app/(dashboard)/admin/system-config/page.tsx` (neuer "Features" Tab)
-- `src/messages/de.json` + `en.json` (4 neue i18n-Keys)
+**Worker-Thread-Fix (Phase 13):**
+- `serverExternalPackages` in next.config.ts → kein Error-Spam mehr
 
-### 20. Februar 2026 — Phase 10: SHP-Import, Flurstücks-Karte & Pachtvertrags-Erweiterungen
+### 21. Februar 2026 — Phase 11: BF-Billing + Feature-Flags
 
-**Shapefile-Import (komplett neues Feature):**
-- `shpjs` NPM-Paket fuer ZIP/SHP-Parsing → GeoJSON-Konvertierung
-- SHP-Parser Library (`src/lib/shapefile/`): Parser, Feld-Mapping, Auto-Detection
-- ALKIS Feld-Patterns: 9 Plot-Felder + 8 Eigentümer-Felder (inkl. Zähler/Nenner-Split, Hausnummer)
-- Multi-Owner-Erkennung: Anzahl-Feld, Semikolon/und-Trenner, Erbengemeinschaft/GbR-Keywords
-- Preview-API (`POST /api/plots/import-shp`): SHP parsen, Felder erkennen, Vorschau ohne Speicherung
-- Confirm-API (`POST /api/plots/import-shp/confirm`): Prisma-Transaktion erstellt Personen + Plots + Leases
-- Eigentümer-Deduplizierung (Name+Adresse Matching), Duplikat-Flurstücks-Erkennung
-- Owner-Override im Wizard: Namen korrigieren, Eigentümer überspringen
-- 5-Schritt Import-Wizard (`/leases/import-shp`): Upload → Mapping → Eigentümer-Review → Optionen → Ergebnis
+- 3 neue Prisma-Models, Cross-Tenant Service, 12 API-Endpoints
+- 7 UI-Seiten, 6 Komponenten, 6 neue Permissions
+- Feature-Flag-System: Pro-Mandant Toggles, Sidebar-Integration
 
-**Park-Karte mit Flurstücks-Polygonen:**
-- `geometry Json?` Feld im Prisma Plot-Model (Migration)
-- PlotGeoJsonLayer-Komponente: Polygone farbcodiert nach Eigentümer (deterministisches Hashing)
-- Vertragsstatus-Visualisierung: Aktiv=Farbe, Entwurf=gestrichelt, Ohne Vertrag=Rot, Abgelaufen=Grau
-- MapLayerControl: Floating-Panel mit Layer-Toggles + Eigentümer-Legende + Status-Legende
-- Polygon-Klick-Popup: Flurstück-Details, Fläche, Eigentümer-Name, Vertragsstatus + Link
-- Plot-API: `includeGeometry=true` und `includeLeases=true` für optimierte Kartenabfrage
+### 20. Februar 2026 — Phase 10: SHP-Import & Park-Karte
 
-**Park-Zuordnung (Flurstücke + Verträge):**
-- Inline Park-Selector im Lease-Edit: `<Select>` pro Flurstück für schnelle Park-Änderung
-- Neuer Flurstücke-Tab auf Park-Detailseite: Gruppierung nach Vertrag (Card pro Lease)
-- Vertragsstatus-Badges, Verpächter-Info, Flächen-Summen pro Vertrag
-- "Flurstücke zuordnen" Dialog: Bulk-Assign unzugeordneter Plots mit Checkbox
-- "Vertrag zuordnen" Dialog: Ganze Leases (mit allen Plots) dem Park zuweisen
-- Plot-API: `noPark=true` Filter für Flurstücke ohne Park
+- Shapefile-Import mit ALKIS-Auto-Detection, 5-Schritt-Wizard
+- Park-Karte: GeoJSON-Polygone, Eigentuemer-Farben, Layer-Controls
+- Park-Zuordnung: 2 Zuordnungs-Dialoge
+- Vertragspartner-Feld + PersonEditDialog
 
-**Pachtvertrags-Erweiterungen:**
-- `contractPartnerFundId` auf Lease-Model: Vertragspartner (Pächter-Gesellschaft)
-- API: Create/Update/GET unterstützen das Feld mit Fund-Include
-- "Vertragspartner"-Card im Lease-Edit mit Fund-Dropdown + Link zur Gesellschaft
-- PersonEditDialog: Inline-Bearbeitung von Verpächter-Daten im Lease-Edit
+### 18. Februar 2026 — Phase 8+9: UX, Wizards, Polish, Hardening
 
-**Neue Dateien (12):**
-- `src/lib/shapefile/shp-parser.ts`, `field-mapping.ts`, `index.ts`
-- `src/app/api/plots/import-shp/route.ts`, `confirm/route.ts`
-- `src/app/(dashboard)/leases/import-shp/page.tsx`, `loading.tsx`
-- `src/components/maps/PlotGeoJsonLayer.tsx`, `MapLayerControl.tsx`
-- `src/components/leases/PersonEditDialog.tsx`
+- Marketing CMS, 5 Wizards, Analytics-Konsolidierung
+- UI/UX Design-System: Animations, Glassmorphism, Micro-Interactions
+- Permission-Audit (9 Routes), Duplikat-Cleanup (4 Seiten)
+- Admin-Konsolidierung (12-Tab → 5 Pages)
 
-**Geänderte Dateien (10+):**
-- `prisma/schema.prisma` (Plot.geometry, Lease.contractPartnerFundId, Fund reverse relations)
-- `src/app/api/plots/route.ts` (includeGeometry, includeLeases, noPark Filter)
-- `src/app/api/leases/route.ts` + `[id]/route.ts` (contractPartnerFundId)
-- `src/app/(dashboard)/parks/[id]/page.tsx` (Flurstücke-Tab, Zuordnungs-Dialoge)
-- `src/app/(dashboard)/leases/[id]/edit/page.tsx` (Park-Selector, Vertragspartner, PersonEdit)
-- `src/components/maps/ParkMap.tsx`, `ParkMapContainer.tsx`, `index.ts`
-- `src/components/layout/sidebar.tsx`, `src/messages/de.json`, `src/messages/en.json`
+### 12.-18. Februar 2026 — Phase 4-7: Automation bis Audit
 
-### 18. Februar 2026 — Phase 9: Final Polish & Hardening
+- BullMQ-System, E-Invoicing, SCADA-Automation, Topologie
+- WYSIWYG-Editor, GoBD-Archivierung, Batch-APIs
+- Benachrichtigungszentrum, Wiederkehrende Rechnungen
+- 43 Audit-Findings gefixt, Testing (Vitest + Playwright)
 
-**UI/UX Design-System Polish:**
-- Tailwind Animations (shimmer, fade-in, slide-in-right, scale-in) + ease-out-expo Timing
-- Glassmorphism Header (backdrop-blur-sm, sticky, semi-transparent)
-- Button Micro-Interactions (active:scale-[0.98], hover:shadow-md)
-- Skeleton Shimmer-Gradient statt pulse, Dialog Backdrop-Blur
-- Table Zebra-Striping, Toast ease-out-expo, Sidebar border-l-2 Active-Indicator
-- Stats-Cards Gradient-Hintergrund + border-l-4, Page-Header Gradient-Divider
-- Empty-State + Page-Loading Animationen, Dashboard Widget hover:shadow-md
-- Neue CSS-Klassen: .card-interactive, .glass, .animate-shimmer
-- Badge success/warning Varianten
+### 5.-11. Februar 2026 — Phase 1-6: Foundation bis SCADA
 
-**Permission-Audit & Security:**
-- 3 neue granulare Permissions: admin:manage, energy:scada:import, energy:settlements:finalize
-- 9 API-Routes mit fehlenden/zu groben Permissions gefixt
-- Resource-Level-Filtering auf Dashboard Stats (getAllAccessibleIds + Fallback)
-- SuperAdmin-only Schutz auf Marketing, Verguetungsarten, Gesellschaftstypen Admin-Pages
-
-**Duplikat-Cleanup:**
-- 4 redundante Seiten geloescht (energy/analysis, energy/scada/comparison, energy/reports, documents/new)
-- Redirect-Referenzen aktualisiert
-
-**Admin-Bereich Konsolidierung:**
-- Admin-Settings von 12 auf 3 Tabs reduziert
-- 4 neue fokussierte Admin-Pages (invoices, templates, revenue-types, fund-categories)
-- E-Mail-Seite SMTP-Duplizierung entfernt
-- Sidebar-Reorganisation (Administration vs. System Gruppen)
-- 4 neue i18n-Keys in DE + EN
-
-**Bug-Fixes:**
-- Cost-Allocation Page: API-Response-Format-Mismatch (data-Wrapper) gefixt
-- Dashboard Stats: buildIdFilter robuster mit try/catch Fallback
-- Settlement Periods: Prisma Client regeneriert (reviewedById Spalte existierte in DB)
-
-### 18. Februar 2026 — Phase 8: UX-Optimierung, Wizards, Konsolidierung
-
-**Marketing CMS:**
-- Marketing-Seite Scroll-Fix (overflow-hidden nur im Dashboard-Layout)
-- Admin-konfigurierbarer Marketing-Content (Hero, Features, Preisrechner, CTA) ueber Tenant.settings JSON
-- Marketing-Admin-UI (`/admin/marketing`) mit 4 Tabs und Live-Vorschau
-- Dynamische Marketing-Seite (SSR, Props statt hardcoded, Default-Fallbacks)
-- Dynamische Legal-Pages (Impressum, Datenschutz, AGB ueber Admin konfigurierbar)
-
-**5 Workflow-Wizards:**
-- Jahresendabrechnung-Wizard: Park → Zeitraum → Datenquellen → Zusammenfassung → Erstellen
-- Park-Einrichtungs-Wizard: Stammdaten → Turbinen → SCADA-Mapping → Topologie → Freigabe
-- Pachtabrechnung-Wizard: Pachtvertrag → Zeitraum → Kosten → Vorschau → Erstellen
-- Vertrags-Wizard: Vertragstyp → Parteien → Konditionen → Dokumente → Freigabe
-- Tenant-Onboarding-Wizard: Mandant → Admin-User → Einstellungen → Datenimport → Freigabe
-
-**Dashboard & UX:**
-- Dashboard Widget-Sizing: rowHeight 100→60px, alle 4 Rollen-Layouts recalculated
-- Sidebar-Logo: tenantLogoUrl durch Auth-Session-Flow (authorize → JWT → session → Sidebar)
-- Logo-Darstellung: Next.js Image-Component, Fallback auf Wind-Icon + Tenant-Name
-
-**Analysen/Reports-Konsolidierung (10+ Seiten → 3 Seiten):**
-- Analytics-Seite: 8-Tab Hub (6 bestehende + Daten-Explorer + Datenabgleich)
-  - Daten-Explorer: SCADA-Analyse mit 4 Sub-Tabs (Produktion, Leistungskurve, Windrose, Tagesverlauf)
-  - Datenabgleich: SCADA vs. Netzbetreiber-Vergleich (KPIs, 3 Ansichten, Delta-Analyse)
-- Berichte-Seite: 2-Tab Hub (Berichte & Export + Energie-Berichte)
-  - Energie-Berichte: Konfigurierbarer SCADA-Berichtsersteller mit 6 Modulen
-- Berichtsarchiv: unveraendert
-- 3 neue Komponenten: DataExplorerTab, DataComparisonTab, EnergyReportBuilder
-
-### 18. Februar 2026 — Feature-Runde 6: Batch-APIs, Integration Tests, E2E Tests
-- Batch-APIs Backend (processBatch Utility, 4 Endpoints: Invoices, Settlements, Documents, Email + React Hook)
-- Integration Tests mit Vitest (Setup, Helpers, Auth-Tests, Batch-Invoices, Batch-Documents, Batch-Settlements, processBatch — 35+ Cases)
-- E2E Tests mit Playwright (Config, Auth-Fixture, 4 Page Objects, 5 Spec-Suites: Auth, Dashboard, Parks, Invoices, Navigation — 20+ Specs)
-
-### 12. Februar 2026 — Feature-Runde 5: SCADA-Automation, Topologie, WYSIWYG, GoBD
-- SCADA Auto-Import (Cron-Job, BullMQ, pro-Mapping Konfiguration, Import-Log-Tabelle)
-- Anomalie-Erkennung (4 Algorithmen: Performance-Drop, Verfuegbarkeit, Leistungskurven-Abweichung, Datenqualitaet)
-- Netz-Topologie-Visualisierung (SVG-Canvas, Drag&Drop, Auto-Layout, Live-Status-Farben, Verbindungs-Editor)
-- WYSIWYG Rechnungsvorlagen-Editor (15 Block-Typen, Drag&Drop, Live-Vorschau, Merge-Variablen, Template-CRUD)
-- GoBD-konforme Archivierung (SHA-256 Hash-Chain, Auto-Archive-Hooks, 10-Jahre Retention, Integritaetspruefung, Betriebspruefungs-Export)
-
-### 12. Februar 2026 — Feature-Runde 4: E-Invoicing, Kommunikation, Abgleich, Skonto, Teilstorno
-- XRechnung/ZUGFeRD E-Invoicing (UBL 2.1 XML, Validator, ZUGFeRD 2.2, Download-API, Leitweg-ID)
-- Massen-Kommunikation (Empfaenger-Filter, Vorschau, Test-Versand, Versandhistorie)
-- Zahlungs-Abgleich Dashboard (KPI-Cards, Monatsvergleich-Chart, Fund-Tabelle, Timeline, Donut)
-- Skonto/Zahlungsrabatt (Prozent + Frist, automatische Berechnung, PDF-Hinweis, Zahlungsabwicklung)
-- Teilstorno/Rechnungskorrektur (Partial-Cancel-Dialog, Correction-Dialog, Audit-Trail, Atomare Transaktionen)
-
-### 12. Februar 2026 — Feature-Runde 3: Benachrichtigungen, Rechnungen, Onboarding, Lifecycle
-- In-App Benachrichtigungszentrum (Bell-Icon, Unread-Count, Mark-Read API, 4 Notification-Endpoints)
-- Automatische Pacht-Vorschussrechnungen (Lease-Advance Billing-Rule, monatliche Generierung)
-- Gesellschafter-Onboarding-Wizard (5-Schritt-Wizard: Stammdaten → Beteiligung → Portal → Dokumente → Freigabe)
-- Wiederkehrende Rechnungen (RecurringInvoice Model, Frequenz-Scheduling, CRUD-API, Admin-UI)
-- Dokumenten-Lifecycle (DRAFT → PENDING_REVIEW → APPROVED → PUBLISHED → REJECTED, Approve/Reject API)
-
-### 12. Februar 2026 — Workflow-Automation + Bug-Fixes
-- ResizeObserver Debouncing (requestAnimationFrame statt direktem State-Update)
-- DB-Transaktionen ergaenzt (Invoice, Document, Settlement, Distribution atomare Ops)
-- Settlement-Freigabe-Workflow (PENDING_REVIEW Status, Approve/Reject API, Selbst-Genehmigung verhindert)
-- Automatische Erinnerungen (4 Kategorien: Rechnungen, Vertraege, Settlements, Dokumente)
-- Geplante Berichte (ScheduledReport Model, CRUD-API, Cron-Integration, E-Mail-Versand)
-
-### 12. Februar 2026 — Audit-Fixes: Billing-Worker, E-Mail, N+1, Code-Quality
-- Billing-Worker: 5 Prozessoren implementiert (Invoice, Settlement, Reminder, Fees, BulkInvoice)
-- Password-Reset + Pachtzahlung E-Mail angebunden
-- N+1 Queries gefixt (Resource-Access, Votes, Roles - 5 Dateien)
-- parseInt Radix auf ~50 Aufrufen in 22 API-Dateien
-- Management-Fee ANNUAL_REVENUE + NET_ASSET_VALUE echte DB-Queries
-- Console.log Cleanup (~100 Stellen bereinigt)
-
-### 12. Februar 2026 — i18n, Storage-Tracking, Dashboard-Caching
-- next-intl Integration (DE/EN, Cookie-basiert, Language-Switcher)
-- Speicherplatz-Tracking pro Mandant (storageUsedBytes/storageLimit, Admin-UI)
-- Dashboard Redis-Caching (60s Stats, 300s Analytics, Cache-Invalidierung)
-
-### 12. Februar 2026 — Massive Stabilisierung + Business-Features
-- requirePermission() auf allen ~30+ API-Routes, Zod-Validierung
-- DB-Backups (Retention 7d/4w/3m), Role-Hierarchie, Lease-Prorating
-- DATEV-Export, Audit-Log Filter, Batch-Operations, Keyboard-Shortcuts
-- Unit Tests (Vitest), CI/CD (GitHub Actions), PDF-Templates
-- SCADA Drill-Down, KPI-Cards, Phase 7 komplett (43/43 Findings)
-
-### 12. Februar 2026 — Portal-Analytics + Berichtsgenerator
-- Portal Analytics Dashboard mit KPI-Cards, YoY-Chart, Turbinen-Tabelle
-- Berichts-Konfigurator (22 Module, Portal-Sichtbarkeit)
-
-### 11. Februar 2026 — Energy Analytics Dashboard
-- 6-Tab Analytics (Performance, Verfuegbarkeit, Vergleich, Stoerungen, Umwelt, Finanzen)
-- Shared Infrastructure (Types, Query-Helpers, 17 Module-Fetchers)
-
-### 9. Februar 2026 — Park-Modell Umstrukturierung
-- operatorFundId, Betriebsfuehrung-Felder, MaStR-Nummer
-
-### 8. Februar 2026 — Projekt-Audit
-- 43 Findings identifiziert und gefixt (Phasen 6.2, 6.3, 7)
-
-### 7. Februar 2026 — Monitoring + SCADA Grundlagen
-- Phase 5.9-5.14, Phase 6.1 abgeschlossen
-
-### 5.-6. Februar 2026 — Dashboard, Automation, Security
-- Dashboard Grid, 19 Widgets, Phase 4 komplett, Security Hardening
-
-### Frueher — Phase 1-3
-- Foundation, Core Modules, Advanced Features vollstaendig
+- Komplettes Foundation bis Energy Analytics aufgebaut
+- Dashboard (25 Widgets), SCADA-Import, Analyse-Dashboards
 
 ---
 
@@ -669,12 +723,15 @@ Das Rechnungssystem ist funktional komplett mit anpassbaren Vorlagen:
 # Entwicklungsserver starten
 npm run dev
 
-# Datenbank-Migrationen ausfuehren
-npm run db:migrate
+# Datenbank-Schema synchronisieren
+npx prisma db push
 
 # Build ueberpruefen
 npm run build
 
 # Tests ausfuehren
 npx vitest run
+
+# E2E Tests
+npx playwright test
 ```
