@@ -22,8 +22,8 @@ const parkUpdateSchema = z.object({
   commissioningDate: z.string().optional().nullable(),
   totalCapacityKw: z.number().optional().nullable(),
   operatorFundId: z.string().uuid().optional().nullable(),
-  technischeBetriebsführung: z.string().optional().nullable(),
-  kaufmaennischeBetriebsführung: z.string().optional().nullable(),
+  technischeBetriebsfuehrung: z.string().optional().nullable(),
+  kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).optional(),
 
   // Pacht-Konfiguration

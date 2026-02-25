@@ -37,6 +37,7 @@ services:
       S3_PUBLIC_URL: http://192.168.178.101:3000/api/documents
       NODE_ENV: production
       LOG_LEVEL: info
+      EMAIL_ENCRYPTION_KEY: 91f05f5cd36be50d8487e40104084b36a4cab94b891a0610576c53d6f91877b1
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s

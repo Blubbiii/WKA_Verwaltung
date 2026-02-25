@@ -97,8 +97,8 @@ interface Turbine {
   warrantyEndDate: string | null;
   latitude: number | null;
   longitude: number | null;
-  technischeBetriebsführung: string | null;
-  kaufmaennischeBetriebsführung: string | null;
+  technischeBetriebsfuehrung: string | null;
+  kaufmaennischeBetriebsfuehrung: string | null;
   netzgesellschaftFundId: string | null;
   netzgesellschaftFund: { id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null; childHierarchies?: { ownershipPercentage: number | null; childFundId: string }[] } | null;
   operatorHistory?: {
@@ -107,6 +107,10 @@ interface Turbine {
     ownershipPercentage: number | null;
     operatorFund: { id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null };
   }[];
+  // Per-turbine lease overrides
+  minimumRent: number | null;
+  weaSharePercentage: number | null;
+  poolSharePercentage: number | null;
 }
 
 interface FundPark {
@@ -208,8 +212,8 @@ interface Park {
     legalForm: string | null;
     fundCategory?: { id: string; name: string; code: string; color: string | null } | null;
   } | null;
-  technischeBetriebsführung: string | null;
-  kaufmaennischeBetriebsführung: string | null;
+  technischeBetriebsfuehrung: string | null;
+  kaufmaennischeBetriebsfuehrung: string | null;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   createdAt: string;
   updatedAt: string;

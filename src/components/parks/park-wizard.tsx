@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Save,
   CalendarIcon,
-  MapPin,
   Building2,
   Settings2,
   ChevronDown,
@@ -53,18 +52,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // Types
-interface Fund {
-  id: string;
-  name: string;
-  legalForm: string | null;
-  fundCategory: {
-    id: string;
-    name: string;
-    code: string;
-    color: string | null;
-  } | null;
-}
-
 type ParkStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
 type DistributionMode = "PROPORTIONAL" | "SMOOTHED" | "TOLERATED";
 type LeaseSettlementMode = "NETWORK_COMPANY" | "OPERATOR_DIRECT";
@@ -72,7 +59,6 @@ type LeaseSettlementMode = "NETWORK_COMPANY" | "OPERATOR_DIRECT";
 // Wizard Steps
 const STEPS = [
   { id: "basics", title: "Stammdaten", description: "Name & Grunddaten" },
-  { id: "location", title: "Standort & Betreiber", description: "Adresse & Gesellschaften" },
   { id: "billing", title: "Abrechnung", description: "Verteilung & Vergütung" },
 ];
 
@@ -108,11 +94,7 @@ export function ParkWizard() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [loadingFunds, setLoadingFunds] = useState(true);
   const [showCompensation, setShowCompensation] = useState(false);
-
-  // Fund data for dropdowns
-  const [funds, setFunds] = useState<Fund[]>([]);
 
   // Step 1: Stammdaten
   const [name, setName] = useState("");
@@ -122,20 +104,7 @@ export function ParkWizard() {
   const [commissioningDate, setCommissioningDate] = useState<Date | undefined>(undefined);
   const [totalCapacityKw, setTotalCapacityKw] = useState("");
 
-  // Step 2: Standort & Betreiber
-  const [street, setStreet] = useState("");
-  const [houseNumber, setHouseNumber] = useState("");
-  const [city, setCity] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [country, setCountry] = useState("Deutschland");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [operatorFundId, setOperatorFundId] = useState("");
-  const [billingEntityFundId, setBillingEntityFundId] = useState("");
-  const [technischeBetriebsführung, setTechnischeBetriebsführung] = useState("");
-  const [kaufmaennischeBetriebsführung, setKaufmaennischeBetriebsführung] = useState("");
-
-  // Step 3: Abrechnungs-Konfiguration
+  // Step 2: Abrechnungs-Konfiguration
   const [defaultDistributionMode, setDefaultDistributionMode] = useState<DistributionMode>("PROPORTIONAL");
   const [defaultTolerancePercent, setDefaultTolerancePercent] = useState("");
   const [minimumRentPerTurbine, setMinimumRentPerTurbine] = useState("");
@@ -146,48 +115,16 @@ export function ParkWizard() {
   const [ausgleichCompensationPerSqm, setAusgleichCompensationPerSqm] = useState("");
   const [kabelCompensationPerM, setKabelCompensationPerM] = useState("");
 
-  // Load funds for dropdowns
-  useEffect(() => {
-    async function fetchFunds() {
-      try {
-        const res = await fetch("/api/funds?limit=500&status=ACTIVE");
-        if (res.ok) {
-          const data = await res.json();
-          setFunds(data.data || []);
-        }
-      } catch {
-        toast.error("Fehler beim Laden der Gesellschaften");
-      } finally {
-        setLoadingFunds(false);
-      }
-    }
-    fetchFunds();
-  }, []);
-
   // Validation per step
   function canProceed(): boolean {
     switch (currentStep) {
       case 0: // Stammdaten - only name is required
         return name.trim().length > 0;
-      case 1: // Standort - all optional
-        return true;
-      case 2: // Abrechnung - all optional, review included
+      case 1: // Abrechnung - all optional, review included
         return true;
       default:
         return false;
     }
-  }
-
-  // Helper: get fund label
-  function getFundLabel(fund: Fund): string {
-    const parts = [fund.name];
-    if (fund.legalForm) parts.push(fund.legalForm);
-    return parts.join(" ");
-  }
-
-  // Helper: get fund by id
-  function getFundById(id: string): Fund | undefined {
-    return funds.find((f) => f.id === id);
   }
 
   // Helper: format number for display
@@ -226,21 +163,6 @@ export function ParkWizard() {
           ? format(commissioningDate, "yyyy-MM-dd")
           : null,
         totalCapacityKw: totalCapacityKw ? parseFloat(totalCapacityKw) : null,
-
-        // Location
-        street: street.trim() || null,
-        houseNumber: houseNumber.trim() || null,
-        city: city.trim() || null,
-        postalCode: postalCode.trim() || null,
-        country: country.trim() || "Deutschland",
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
-
-        // Operator
-        operatorFundId: operatorFundId || null,
-        billingEntityFundId: billingEntityFundId || null,
-        technischeBetriebsführung: technischeBetriebsführung.trim() || null,
-        kaufmaennischeBetriebsführung: kaufmaennischeBetriebsführung.trim() || null,
 
         // Billing config
         defaultDistributionMode,
@@ -299,8 +221,6 @@ export function ParkWizard() {
       case 0:
         return renderStammdaten();
       case 1:
-        return renderStandort();
-      case 2:
         return renderAbrechnung();
       default:
         return null;
@@ -429,204 +349,7 @@ export function ParkWizard() {
   }
 
   // ==========================================
-  // Step 2: Standort & Betreiber
-  // ==========================================
-  function renderStandort() {
-    return (
-      <div className="space-y-6">
-        {/* Address Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Standort
-            </CardTitle>
-            <CardDescription>
-              Adresse und Koordinaten des Windparks
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-8 space-y-2">
-                <Label htmlFor="park-street">Strasse</Label>
-                <Input
-                  id="park-street"
-                  value={street}
-                  onChange={(e) => setStreet(e.target.value)}
-                  placeholder="Musterstrasse"
-                />
-              </div>
-              <div className="col-span-4 space-y-2">
-                <Label htmlFor="park-houseNumber">Hausnummer</Label>
-                <Input
-                  id="park-houseNumber"
-                  value={houseNumber}
-                  onChange={(e) => setHouseNumber(e.target.value)}
-                  placeholder="1a"
-                />
-              </div>
-              <div className="col-span-4 space-y-2">
-                <Label htmlFor="park-postalCode">PLZ</Label>
-                <Input
-                  id="park-postalCode"
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  placeholder="z.B. 26831"
-                />
-              </div>
-              <div className="col-span-8 space-y-2">
-                <Label htmlFor="park-city">Stadt</Label>
-                <Input
-                  id="park-city"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="z.B. Bunde"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="park-country">Land</Label>
-              <Input
-                id="park-country"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                placeholder="Deutschland"
-              />
-            </div>
-
-            <Separator />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="park-lat">Breitengrad</Label>
-                <Input
-                  id="park-lat"
-                  type="number"
-                  step="0.00000001"
-                  value={latitude}
-                  onChange={(e) => setLatitude(e.target.value)}
-                  placeholder="z.B. 53.1800"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="park-lng">Laengengrad</Label>
-                <Input
-                  id="park-lng"
-                  type="number"
-                  step="0.00000001"
-                  value={longitude}
-                  onChange={(e) => setLongitude(e.target.value)}
-                  placeholder="z.B. 7.2700"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Operator Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Betreiber & Verwaltung
-            </CardTitle>
-            <CardDescription>
-              Gesellschaften und Betriebsführung
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Betreiber-Gesellschaft</Label>
-                <Select
-                  value={operatorFundId || "none"}
-                  onValueChange={(v) => setOperatorFundId(v === "none" ? "" : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Gesellschaft waehlen..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Keine Zuordnung</SelectItem>
-                    {funds.map((fund) => (
-                      <SelectItem key={fund.id} value={fund.id}>
-                        <span className="flex items-center gap-2">
-                          {fund.fundCategory?.color && (
-                            <span
-                              className="inline-block w-2 h-2 rounded-full"
-                              style={{ backgroundColor: fund.fundCategory.color }}
-                            />
-                          )}
-                          {getFundLabel(fund)}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Abrechnungs-Gesellschaft</Label>
-                <Select
-                  value={billingEntityFundId || "none"}
-                  onValueChange={(v) => setBillingEntityFundId(v === "none" ? "" : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Gesellschaft waehlen..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Keine Zuordnung</SelectItem>
-                    {funds.map((fund) => (
-                      <SelectItem key={fund.id} value={fund.id}>
-                        <span className="flex items-center gap-2">
-                          {fund.fundCategory?.color && (
-                            <span
-                              className="inline-block w-2 h-2 rounded-full"
-                              style={{ backgroundColor: fund.fundCategory.color }}
-                            />
-                          )}
-                          {getFundLabel(fund)}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Netz GbR / Umspannwerk GmbH, die die NB-Gutschrift empfaengt
-                </p>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="park-tbf">Technische Betriebsführung</Label>
-                <Input
-                  id="park-tbf"
-                  value={technischeBetriebsführung}
-                  onChange={(e) => setTechnischeBetriebsführung(e.target.value)}
-                  placeholder="z.B. Enercon Service GmbH"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="park-kbf">Kaufmaennische Betriebsführung</Label>
-                <Input
-                  id="park-kbf"
-                  value={kaufmaennischeBetriebsführung}
-                  onChange={(e) => setKaufmaennischeBetriebsführung(e.target.value)}
-                  placeholder="z.B. WPM Verwaltung GmbH"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // ==========================================
-  // Step 3: Abrechnungs-Konfiguration + Review
+  // Step 2: Abrechnungs-Konfiguration + Review
   // ==========================================
   function renderAbrechnung() {
     return (
@@ -913,66 +636,6 @@ export function ParkWizard() {
               </div>
             </div>
 
-            {/* Standort */}
-            {(street || houseNumber || city || postalCode || latitude || longitude) && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                  Standort
-                </h3>
-                <div className="p-3 bg-muted rounded-lg space-y-1 text-sm">
-                  {(street || houseNumber || city || postalCode) && (
-                    <p>
-                      {[[street, houseNumber].filter(Boolean).join(" "), postalCode, city, country]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </p>
-                  )}
-                  {(latitude || longitude) && (
-                    <p className="text-muted-foreground">
-                      Koordinaten: {latitude || "-"}, {longitude || "-"}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Betreiber */}
-            {(operatorFundId || billingEntityFundId || technischeBetriebsführung || kaufmaennischeBetriebsführung) && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                  Betreiber & Verwaltung
-                </h3>
-                <div className="p-3 bg-muted rounded-lg space-y-1 text-sm">
-                  {operatorFundId && (
-                    <p>
-                      Betreiber:{" "}
-                      <span className="font-medium">
-                        {getFundById(operatorFundId)
-                          ? getFundLabel(getFundById(operatorFundId)!)
-                          : "-"}
-                      </span>
-                    </p>
-                  )}
-                  {billingEntityFundId && (
-                    <p>
-                      Abrechnungs-Gesellschaft:{" "}
-                      <span className="font-medium">
-                        {getFundById(billingEntityFundId)
-                          ? getFundLabel(getFundById(billingEntityFundId)!)
-                          : "-"}
-                      </span>
-                    </p>
-                  )}
-                  {technischeBetriebsführung && (
-                    <p>TBF: {technischeBetriebsführung}</p>
-                  )}
-                  {kaufmaennischeBetriebsführung && (
-                    <p>KBF: {kaufmaennischeBetriebsführung}</p>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Abrechnung */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">
@@ -1068,15 +731,6 @@ export function ParkWizard() {
     );
   }
 
-  // Loading state for funds
-  if (loadingFunds) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1090,7 +744,7 @@ export function ParkWizard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Neuer Windpark</h1>
           <p className="text-muted-foreground">
-            Erstellen Sie einen neuen Windpark in 3 Schritten
+            Erstellen Sie einen neuen Windpark in 2 Schritten
           </p>
         </div>
       </div>

@@ -22,9 +22,14 @@ const turbineUpdateSchema = z.object({
   longitude: z.number().optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).optional(),
   technicalData: z.record(z.any()).optional(),
-  technischeBetriebsführung: z.string().optional().nullable(),
-  kaufmaennischeBetriebsführung: z.string().optional().nullable(),
+  technischeBetriebsfuehrung: z.string().optional().nullable(),
+  kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
   operatorFundId: z.string().uuid().optional().nullable(),
+
+  // Per-turbine lease overrides
+  minimumRent: z.number().optional().nullable(),
+  weaSharePercentage: z.number().min(0).max(100).optional().nullable(),
+  poolSharePercentage: z.number().min(0).max(100).optional().nullable(),
 });
 
 // GET /api/turbines/[id] - Einzelne Anlage laden

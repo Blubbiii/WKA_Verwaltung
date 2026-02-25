@@ -271,6 +271,12 @@ model Turbine {
   technischeBetriebsfuehrung     String?
   kaufmaennischeBetriebsfuehrung String?
   netzgesellschaftFundId         String?
+
+  // Per-turbine lease overrides (override park defaults if set)
+  minimumRent                    Decimal?                  @db.Decimal(15, 2)
+  weaSharePercentage             Decimal?                  @db.Decimal(5, 2)
+  poolSharePercentage            Decimal?                  @db.Decimal(5, 2)
+
   contracts                      Contract[]
   documents                      Document[]
   energyReportConfigs            EnergyReportConfig[]

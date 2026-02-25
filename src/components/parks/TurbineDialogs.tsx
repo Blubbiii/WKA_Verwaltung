@@ -71,11 +71,15 @@ interface Turbine {
   latitude: number | null;
   longitude: number | null;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
-  technischeBetriebsführung: string | null;
-  kaufmaennischeBetriebsführung: string | null;
+  technischeBetriebsfuehrung: string | null;
+  kaufmaennischeBetriebsfuehrung: string | null;
   netzgesellschaftFundId: string | null;
   netzgesellschaftFund: { id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null } | null;
   operatorHistory?: { id: string; operatorFundId: string; operatorFund: { id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null } }[];
+  // Per-turbine lease overrides
+  minimumRent: number | null;
+  weaSharePercentage: number | null;
+  poolSharePercentage: number | null;
 }
 
 interface ServiceEvent {
@@ -220,9 +224,12 @@ function AddTurbineDialog({
     longitude: string;
     status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
     operatorFundId: string;
-    technischeBetriebsführung: string;
-    kaufmaennischeBetriebsführung: string;
+    technischeBetriebsfuehrung: string;
+    kaufmaennischeBetriebsfuehrung: string;
     netzgesellschaftFundId: string;
+    minimumRent: string;
+    weaSharePercentage: string;
+    poolSharePercentage: string;
   }>({
     designation: "",
     serialNumber: "",
@@ -236,9 +243,12 @@ function AddTurbineDialog({
     longitude: "",
     status: "ACTIVE",
     operatorFundId: "",
-    technischeBetriebsführung: "",
-    kaufmaennischeBetriebsführung: "",
+    technischeBetriebsfuehrung: "",
+    kaufmaennischeBetriebsfuehrung: "",
     netzgesellschaftFundId: "",
+    minimumRent: "",
+    weaSharePercentage: "",
+    poolSharePercentage: "",
   });
   const [commissioningDate, setCommissioningDate] = useState<Date | undefined>();
   const [warrantyEndDate, setWarrantyEndDate] = useState<Date | undefined>();
@@ -352,9 +362,12 @@ function AddTurbineDialog({
       longitude: "",
       status: "ACTIVE",
       operatorFundId: "",
-      technischeBetriebsführung: "",
-      kaufmaennischeBetriebsführung: "",
+      technischeBetriebsfuehrung: "",
+      kaufmaennischeBetriebsfuehrung: "",
       netzgesellschaftFundId: "",
+      minimumRent: "",
+      weaSharePercentage: "",
+      poolSharePercentage: "",
     });
     setCommissioningDate(undefined);
     setWarrantyEndDate(undefined);
@@ -389,9 +402,12 @@ function AddTurbineDialog({
           warrantyEndDate: warrantyEndDate?.toISOString() || null,
           status: formData.status,
           operatorFundId: formData.operatorFundId || null,
-          technischeBetriebsführung: formData.technischeBetriebsführung || null,
-          kaufmaennischeBetriebsführung: formData.kaufmaennischeBetriebsführung || null,
+          technischeBetriebsfuehrung: formData.technischeBetriebsfuehrung || null,
+          kaufmaennischeBetriebsfuehrung: formData.kaufmaennischeBetriebsfuehrung || null,
           netzgesellschaftFundId: formData.netzgesellschaftFundId || null,
+          minimumRent: formData.minimumRent ? parseFloat(formData.minimumRent) : null,
+          weaSharePercentage: formData.weaSharePercentage ? parseFloat(formData.weaSharePercentage) : null,
+          poolSharePercentage: formData.poolSharePercentage ? parseFloat(formData.poolSharePercentage) : null,
         }),
       });
 
@@ -520,21 +536,21 @@ function AddTurbineDialog({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="technischeBetriebsführung">Technische Betriebsführung</Label>
+                <Label htmlFor="technischeBetriebsfuehrung">Technische Betriebsführung</Label>
                 <Input
-                  id="technischeBetriebsführung"
+                  id="technischeBetriebsfuehrung"
                   placeholder="z.B. Enercon GmbH"
-                  value={formData.technischeBetriebsführung}
-                  onChange={(e) => setFormData({ ...formData, technischeBetriebsführung: e.target.value })}
+                  value={formData.technischeBetriebsfuehrung}
+                  onChange={(e) => setFormData({ ...formData, technischeBetriebsfuehrung: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="kaufmaennischeBetriebsführung">Kaufmaennische Betriebsführung</Label>
+                <Label htmlFor="kaufmaennischeBetriebsfuehrung">Kaufmaennische Betriebsführung</Label>
                 <Input
-                  id="kaufmaennischeBetriebsführung"
+                  id="kaufmaennischeBetriebsfuehrung"
                   placeholder="z.B. Windpark Service GmbH"
-                  value={formData.kaufmaennischeBetriebsführung}
-                  onChange={(e) => setFormData({ ...formData, kaufmaennischeBetriebsführung: e.target.value })}
+                  value={formData.kaufmaennischeBetriebsfuehrung}
+                  onChange={(e) => setFormData({ ...formData, kaufmaennischeBetriebsfuehrung: e.target.value })}
                 />
               </div>
             </div>
@@ -583,6 +599,56 @@ function AddTurbineDialog({
                   </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Pacht-Konfiguration (Override) */}
+          <div className="space-y-4">
+            <h4 className="font-medium">Pacht-Konfiguration (optional)</h4>
+            <p className="text-xs text-muted-foreground">
+              Leer lassen, um die Werte vom Windpark zu übernehmen. Ein gesetzter Wert überschreibt den Parkstandard für diese Anlage.
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="minimumRent">Mindestpacht (EUR)</Label>
+                <Input
+                  id="minimumRent"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Park-Standard"
+                  value={formData.minimumRent}
+                  onChange={(e) => setFormData({ ...formData, minimumRent: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="weaSharePercentage">WEA-Anteil (%)</Label>
+                <Input
+                  id="weaSharePercentage"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  placeholder="Park-Standard"
+                  value={formData.weaSharePercentage}
+                  onChange={(e) => setFormData({ ...formData, weaSharePercentage: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="poolSharePercentage">Pool-Anteil (%)</Label>
+                <Input
+                  id="poolSharePercentage"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  placeholder="Park-Standard"
+                  value={formData.poolSharePercentage}
+                  onChange={(e) => setFormData({ ...formData, poolSharePercentage: e.target.value })}
+                />
+              </div>
             </div>
           </div>
 
@@ -861,9 +927,12 @@ function EditTurbineDialog({
     longitude: "",
     status: "ACTIVE" as "ACTIVE" | "INACTIVE" | "ARCHIVED",
     operatorFundId: "",
-    technischeBetriebsführung: "",
-    kaufmaennischeBetriebsführung: "",
+    technischeBetriebsfuehrung: "",
+    kaufmaennischeBetriebsfuehrung: "",
     netzgesellschaftFundId: "",
+    minimumRent: "",
+    weaSharePercentage: "",
+    poolSharePercentage: "",
   });
   const [commissioningDate, setCommissioningDate] = useState<Date | undefined>();
   const [warrantyEndDate, setWarrantyEndDate] = useState<Date | undefined>();
@@ -940,9 +1009,12 @@ function EditTurbineDialog({
         longitude: turbine.longitude?.toString() || "",
         status: turbine.status,
         operatorFundId: activeOperator?.operatorFundId || "",
-        technischeBetriebsführung: turbine.technischeBetriebsführung || "",
-        kaufmaennischeBetriebsführung: turbine.kaufmaennischeBetriebsführung || "",
+        technischeBetriebsfuehrung: turbine.technischeBetriebsfuehrung || "",
+        kaufmaennischeBetriebsfuehrung: turbine.kaufmaennischeBetriebsfuehrung || "",
         netzgesellschaftFundId: turbine.netzgesellschaftFundId || "",
+        minimumRent: turbine.minimumRent?.toString() || "",
+        weaSharePercentage: turbine.weaSharePercentage?.toString() || "",
+        poolSharePercentage: turbine.poolSharePercentage?.toString() || "",
       });
       const cDate = turbine.commissioningDate ? new Date(turbine.commissioningDate) : undefined;
       const wDate = turbine.warrantyEndDate ? new Date(turbine.warrantyEndDate) : undefined;
@@ -1018,9 +1090,12 @@ function EditTurbineDialog({
           warrantyEndDate: warrantyEndDate?.toISOString() || null,
           status: formData.status,
           operatorFundId: formData.operatorFundId || null,
-          technischeBetriebsführung: formData.technischeBetriebsführung || null,
-          kaufmaennischeBetriebsführung: formData.kaufmaennischeBetriebsführung || null,
+          technischeBetriebsfuehrung: formData.technischeBetriebsfuehrung || null,
+          kaufmaennischeBetriebsfuehrung: formData.kaufmaennischeBetriebsfuehrung || null,
           netzgesellschaftFundId: formData.netzgesellschaftFundId || null,
+          minimumRent: formData.minimumRent ? parseFloat(formData.minimumRent) : null,
+          weaSharePercentage: formData.weaSharePercentage ? parseFloat(formData.weaSharePercentage) : null,
+          poolSharePercentage: formData.poolSharePercentage ? parseFloat(formData.poolSharePercentage) : null,
         }),
       });
 
@@ -1157,21 +1232,21 @@ function EditTurbineDialog({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-technischeBetriebsführung">Technische Betriebsführung</Label>
+                <Label htmlFor="edit-technischeBetriebsfuehrung">Technische Betriebsführung</Label>
                 <Input
-                  id="edit-technischeBetriebsführung"
+                  id="edit-technischeBetriebsfuehrung"
                   placeholder="z.B. Enercon GmbH"
-                  value={formData.technischeBetriebsführung}
-                  onChange={(e) => setFormData({ ...formData, technischeBetriebsführung: e.target.value })}
+                  value={formData.technischeBetriebsfuehrung}
+                  onChange={(e) => setFormData({ ...formData, technischeBetriebsfuehrung: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-kaufmaennischeBetriebsführung">Kaufmaennische Betriebsführung</Label>
+                <Label htmlFor="edit-kaufmaennischeBetriebsfuehrung">Kaufmaennische Betriebsführung</Label>
                 <Input
-                  id="edit-kaufmaennischeBetriebsführung"
+                  id="edit-kaufmaennischeBetriebsfuehrung"
                   placeholder="z.B. Windpark Service GmbH"
-                  value={formData.kaufmaennischeBetriebsführung}
-                  onChange={(e) => setFormData({ ...formData, kaufmaennischeBetriebsführung: e.target.value })}
+                  value={formData.kaufmaennischeBetriebsfuehrung}
+                  onChange={(e) => setFormData({ ...formData, kaufmaennischeBetriebsfuehrung: e.target.value })}
                 />
               </div>
             </div>
@@ -1220,6 +1295,56 @@ function EditTurbineDialog({
                   </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Pacht-Konfiguration (Override) */}
+          <div className="space-y-4">
+            <h4 className="font-medium">Pacht-Konfiguration (optional)</h4>
+            <p className="text-xs text-muted-foreground">
+              Leer lassen, um die Werte vom Windpark zu übernehmen. Ein gesetzter Wert überschreibt den Parkstandard für diese Anlage.
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-minimumRent">Mindestpacht (EUR)</Label>
+                <Input
+                  id="edit-minimumRent"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Park-Standard"
+                  value={formData.minimumRent}
+                  onChange={(e) => setFormData({ ...formData, minimumRent: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-weaSharePercentage">WEA-Anteil (%)</Label>
+                <Input
+                  id="edit-weaSharePercentage"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  placeholder="Park-Standard"
+                  value={formData.weaSharePercentage}
+                  onChange={(e) => setFormData({ ...formData, weaSharePercentage: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-poolSharePercentage">Pool-Anteil (%)</Label>
+                <Input
+                  id="edit-poolSharePercentage"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  placeholder="Park-Standard"
+                  value={formData.poolSharePercentage}
+                  onChange={(e) => setFormData({ ...formData, poolSharePercentage: e.target.value })}
+                />
+              </div>
             </div>
           </div>
 
@@ -1634,11 +1759,11 @@ function TurbineDetailDialog({
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <p className="text-sm text-muted-foreground">Technische Betriebsführung</p>
-                          <p className="font-medium">{turbineDetail?.technischeBetriebsführung || "-"}</p>
+                          <p className="font-medium">{turbineDetail?.technischeBetriebsfuehrung || "-"}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Kaufmaennische Betriebsführung</p>
-                          <p className="font-medium">{turbineDetail?.kaufmaennischeBetriebsführung || "-"}</p>
+                          <p className="font-medium">{turbineDetail?.kaufmaennischeBetriebsfuehrung || "-"}</p>
                         </div>
                       </div>
                     </div>
@@ -1670,6 +1795,41 @@ function TurbineDetailDialog({
                   </div>
                 </div>
               </div>
+
+              {/* Pacht-Konfiguration */}
+              {(turbineDetail?.minimumRent != null || turbineDetail?.weaSharePercentage != null || turbineDetail?.poolSharePercentage != null) && (
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2">
+                    Pacht-Konfiguration (Anlagen-Override)
+                  </h4>
+                  <div className="grid grid-cols-3 gap-4 rounded-lg border p-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Mindestpacht</p>
+                      <p className="font-medium">
+                        {turbineDetail.minimumRent != null
+                          ? `${Number(turbineDetail.minimumRent).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}`
+                          : "Park-Standard"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">WEA-Anteil</p>
+                      <p className="font-medium">
+                        {turbineDetail.weaSharePercentage != null
+                          ? `${Number(turbineDetail.weaSharePercentage).toLocaleString("de-DE")} %`
+                          : "Park-Standard"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pool-Anteil</p>
+                      <p className="font-medium">
+                        {turbineDetail.poolSharePercentage != null
+                          ? `${Number(turbineDetail.poolSharePercentage).toLocaleString("de-DE")} %`
+                          : "Park-Standard"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Termine */}
               <div className="space-y-3">
