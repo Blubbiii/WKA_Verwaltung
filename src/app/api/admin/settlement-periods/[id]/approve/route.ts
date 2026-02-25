@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 const approveSchema = z.object({
   action: z.enum(["approve", "reject"]),
@@ -91,6 +92,14 @@ export async function POST(
         { periodId: id, userId: check.userId, action: "approve" },
         "Settlement period approved"
       );
+
+      // Fire-and-forget webhook for settlement finalization
+      dispatchWebhook(check.tenantId!, "settlement.finalized", {
+        periodId: updated.id,
+        year: updated.year,
+        parkName: updated.park?.name ?? null,
+        approvedBy: check.userId,
+      }).catch(() => {});
 
       return NextResponse.json({
         ...updated,

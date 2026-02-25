@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 const voteUpdateSchema = z.object({
   title: z.string().min(1).optional(),
@@ -284,6 +285,16 @@ const check = await requirePermission(PERMISSIONS.VOTES_UPDATE);
         },
       },
     });
+
+    // Fire-and-forget webhook when vote is closed
+    if (validatedData.status === "CLOSED") {
+      dispatchWebhook(check.tenantId!, "vote.closed", {
+        voteId: vote.id,
+        title: vote.title,
+        fundId: vote.fundId,
+        fundName: vote.fund?.name ?? null,
+      }).catch(() => {});
+    }
 
     return NextResponse.json(vote);
   } catch (error) {

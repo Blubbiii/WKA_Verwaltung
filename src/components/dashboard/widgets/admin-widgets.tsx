@@ -14,6 +14,7 @@ import {
   ScrollText,
   Clock,
   ArrowRight,
+  Webhook,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -518,6 +519,165 @@ export function BillingJobsWidget({ className }: { className?: string }) {
       </div>
     </div>
   );
+}
+
+// =============================================================================
+// WEBHOOK STATUS WIDGET
+// =============================================================================
+
+interface WebhookStatsResponse {
+  totalDeliveries24h: number;
+  successCount: number;
+  failureCount: number;
+  successRate: number;
+  recentDeliveries: {
+    id: string;
+    event: string;
+    url: string;
+    success: boolean;
+    statusCode: number | null;
+    duration: number | null;
+    createdAt: string;
+  }[];
+}
+
+export function WebhookStatusWidget({ className }: { className?: string }) {
+  const [stats, setStats] = useState<WebhookStatsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/webhooks/stats");
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchStats, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchStats]);
+
+  if (isLoading) {
+    return (
+      <div className={cn("flex items-center justify-center h-full", className)}>
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className={cn("flex flex-col items-center justify-center h-full gap-2", className)}>
+        <Webhook className="h-8 w-8 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Webhook-Status nicht verfuegbar</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("flex flex-col h-full", className)}>
+      {/* KPI Summary */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="text-center p-2 bg-muted/30 rounded">
+          <p className="text-lg font-bold">{stats.totalDeliveries24h}</p>
+          <p className="text-[10px] text-muted-foreground">Zustellungen (24h)</p>
+        </div>
+        <div className="text-center p-2 bg-muted/30 rounded">
+          <p className={cn(
+            "text-lg font-bold",
+            stats.successRate >= 90 ? "text-green-600 dark:text-green-400" :
+            stats.successRate >= 70 ? "text-amber-600 dark:text-amber-400" :
+            "text-red-600 dark:text-red-400"
+          )}>
+            {stats.successRate}%
+          </p>
+          <p className="text-[10px] text-muted-foreground">Erfolgsrate</p>
+        </div>
+        <div className="text-center p-2 bg-muted/30 rounded">
+          <p className={cn(
+            "text-lg font-bold",
+            stats.failureCount > 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+          )}>
+            {stats.failureCount}
+          </p>
+          <p className="text-[10px] text-muted-foreground">Fehler</p>
+        </div>
+      </div>
+
+      {/* Recent Deliveries List */}
+      {stats.recentDeliveries.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-2">
+          <Webhook className="h-6 w-6 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">Keine Zustellungen vorhanden</p>
+        </div>
+      ) : (
+        <div className="flex-1 space-y-1 overflow-auto">
+          {stats.recentDeliveries.map((delivery) => {
+            const timeAgo = formatTimeAgo(new Date(delivery.createdAt));
+            // Truncate URL to domain + path start
+            const urlShort = truncateUrl(delivery.url);
+
+            return (
+              <div key={delivery.id} className="flex items-center gap-2 py-1.5 px-1 text-xs">
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-[10px] px-1.5 py-0 font-medium shrink-0",
+                    delivery.success
+                      ? "bg-green-500/10 text-green-700 dark:text-green-400"
+                      : "bg-red-500/10 text-red-700 dark:text-red-400"
+                  )}
+                >
+                  {delivery.success ? delivery.statusCode || "OK" : delivery.statusCode || "Fehler"}
+                </Badge>
+                <span className="font-medium shrink-0">{delivery.event}</span>
+                <span className="truncate text-muted-foreground" title={delivery.url}>
+                  {urlShort}
+                </span>
+                {delivery.duration != null && (
+                  <span className="shrink-0 text-muted-foreground/60">{delivery.duration}ms</span>
+                )}
+                <span className="ml-auto shrink-0 text-muted-foreground/60">{timeAgo}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Footer link */}
+      <Link
+        href="/admin/webhooks"
+        className="flex items-center justify-center gap-1 pt-2 mt-2 border-t text-xs text-primary hover:underline"
+      >
+        Alle Webhooks <ArrowRight className="h-3 w-3" />
+      </Link>
+    </div>
+  );
+}
+
+// =============================================================================
+// HELPER: Truncate URL to domain
+// =============================================================================
+
+function truncateUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname.length > 15
+      ? parsed.pathname.slice(0, 15) + "..."
+      : parsed.pathname;
+    return parsed.hostname + path;
+  } catch {
+    return url.length > 30 ? url.slice(0, 30) + "..." : url;
+  }
 }
 
 // =============================================================================

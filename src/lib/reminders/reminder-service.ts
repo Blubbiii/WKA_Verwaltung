@@ -154,7 +154,17 @@ export async function checkAndSendReminders(
         },
       });
 
-      // Fire-and-forget webhook for expiring contracts
+      // Fire-and-forget webhooks for detected reminder items
+      if (item.category === "OVERDUE_INVOICE") {
+        dispatchWebhook(tenantId, "invoice.overdue", {
+          invoiceId: item.entityId,
+          title: item.title,
+          dueDate: item.referenceDate?.toISOString(),
+          daysOverdue: item.daysRemaining ? -item.daysRemaining : 0,
+          amount: item.amount,
+        }).catch(() => {});
+      }
+
       if (item.category === "EXPIRING_CONTRACT") {
         dispatchWebhook(tenantId, "contract.expiring", {
           id: item.entityId,

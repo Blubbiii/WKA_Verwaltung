@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 const contractUpdateSchema = z.object({
   contractType: z
@@ -293,6 +294,15 @@ export async function PUT(
         partner: { select: { id: true, firstName: true, lastName: true, companyName: true, personType: true } },
       },
     });
+
+    // Fire-and-forget webhook when contract status changes to EXPIRED
+    if (validatedData.status === "EXPIRED") {
+      dispatchWebhook(check.tenantId!, "contract.expired", {
+        contractId: contract.id,
+        title: contract.title,
+        endDate: contract.endDate?.toISOString() ?? null,
+      }).catch(() => {});
+    }
 
     // Transform partner to include name
     const response = {

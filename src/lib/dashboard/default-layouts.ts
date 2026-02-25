@@ -121,6 +121,9 @@ export const SUPERADMIN_DEFAULT_LAYOUT: DashboardWidget[] = [
   { id: "chart-documents-by-type", x: 4, y: 16, w: 4, h: 5 },
   { id: "admin-audit-log",         x: 0, y: 21, w: 6, h: 6 },
   { id: "admin-billing-jobs",      x: 6, y: 21, w: 6, h: 6 },
+
+  // Row 27-31: webhook status (4x5)
+  { id: "admin-webhook-status",    x: 0, y: 27, w: 4, h: 5 },
 ];
 
 /**

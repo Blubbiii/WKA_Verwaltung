@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 const createPeriodSchema = z.object({
   year: z.number().int().min(2000).max(2100),
@@ -171,6 +172,16 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Fire-and-forget webhook for settlement period creation
+    dispatchWebhook(check.tenantId!, "settlement.created", {
+      periodId: period.id,
+      year,
+      month: month ?? null,
+      periodType,
+      parkId,
+      parkName: period.park?.name ?? null,
+    }).catch(() => {});
 
     return NextResponse.json(period, { status: 201 });
   } catch (error) {

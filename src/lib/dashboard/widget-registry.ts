@@ -341,6 +341,21 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     icon: "Clock",
     resizable: true,
   },
+  {
+    id: "admin-webhook-status",
+    name: "Webhook-Status",
+    description: "Letzte Webhook-Zustellungen und Erfolgsrate",
+    category: "admin",
+    minRole: "ADMIN",
+    defaultWidth: 4,
+    defaultHeight: 5,
+    minWidth: 3,
+    minHeight: 3,
+    maxWidth: 8,
+    maxHeight: 8,
+    icon: "Webhook",
+    resizable: true,
+  },
 
   // ===========================================
   // ENERGY WIDGETS (planned for future implementation)

@@ -29,6 +29,7 @@ import {
   PendingActionsWidget,
   AuditLogWidget,
   BillingJobsWidget,
+  WebhookStatusWidget,
   EnergyYieldKPI,
   AvailabilityKPI,
   WindSpeedKPI,
@@ -76,6 +77,7 @@ const WIDGET_TITLES: Record<string, string> = {
   "quick-actions": "Schnellzugriff",
   "admin-system-status": "System-Status",
   "admin-user-stats": "Benutzer-Statistiken",
+  "admin-webhook-status": "Webhook-Status",
   // Energy widgets (planned)
   "kpi-energy-yield": "Energieertrag",
   "kpi-availability": "Verfügbarkeit",
@@ -408,6 +410,18 @@ export function WidgetRenderer({
           onRemove={onRemove}
         >
           <BillingJobsWidget />
+        </WidgetWrapper>
+      );
+    }
+
+    if (widgetId === "admin-webhook-status") {
+      return (
+        <WidgetWrapper
+          title={widgetTitle}
+          isEditing={isEditing}
+          onRemove={onRemove}
+        >
+          <WebhookStatusWidget />
         </WidgetWrapper>
       );
     }

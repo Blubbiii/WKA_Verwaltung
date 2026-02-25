@@ -5,6 +5,7 @@ import { isSkontoValid } from "@/lib/invoices/skonto";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 const markPaidSchema = z.object({
   paidAt: z.string().optional(), // ISO date string, defaults to now
@@ -124,6 +125,14 @@ export async function POST(
     invalidate.onInvoiceChange(check.tenantId!, id, 'update').catch((err) => {
       logger.warn({ err }, '[Invoices] Cache invalidation error after mark-paid');
     });
+
+    // Fire-and-forget webhook for invoice payment
+    dispatchWebhook(check.tenantId!, "invoice.paid", {
+      invoiceId: updated.id,
+      paidAt: paidAt.toISOString(),
+      skontoPaid,
+      amount: Number(invoice.grossAmount),
+    }).catch(() => {});
 
     return NextResponse.json(updated);
   } catch (error) {

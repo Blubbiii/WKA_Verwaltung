@@ -8,6 +8,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 // Valid state transitions for the document approval workflow
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -174,6 +175,15 @@ export async function POST(
         },
       },
     });
+
+    // Fire-and-forget webhook when document is approved
+    if (action.approve && targetStatus === "APPROVED") {
+      dispatchWebhook(check.tenantId!, "document.approved", {
+        documentId: updatedDocument.id,
+        title: document.title,
+        approvedBy: check.userId,
+      }).catch(() => {});
+    }
 
     // TODO: Notification integration
     // When document is submitted for review -> notify admins
