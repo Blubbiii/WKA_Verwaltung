@@ -338,7 +338,7 @@ export function FinancialAnalysis({
                   yAxisId="mwh"
                   dataKey="productionMwh"
                   name="Produktion (MWh)"
-                  fill="#3b82f6"
+                  fill="hsl(var(--chart-1))"
                   radius={[4, 4, 0, 0]}
                 />
                 <Line

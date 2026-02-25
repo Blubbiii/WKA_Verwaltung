@@ -24,7 +24,7 @@ import { formatCurrency } from "@/lib/format";
 
 const COLORS = {
   primary: "#1E3A5F",
-  secondary: "#3B82F6",
+  secondary: "#335E99",
   accent: "#10B981",
   warning: "#F59E0B",
   danger: "#DC2626",

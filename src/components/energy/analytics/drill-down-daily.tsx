@@ -349,7 +349,7 @@ export function DrillDownDaily({
                 type="monotone"
                 dataKey="windSpeed"
                 name="Wind (m/s)"
-                stroke="#3b82f6"
+                stroke="hsl(var(--chart-1))"
                 strokeWidth={1.5}
                 dot={false}
               />

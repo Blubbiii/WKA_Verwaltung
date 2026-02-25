@@ -264,9 +264,9 @@ export function AvailabilityChart({
                     type="monotone"
                     dataKey="cumulative"
                     name="Kumulativ"
-                    stroke="#3b82f6"
+                    stroke="hsl(var(--chart-1))"
                     strokeWidth={2}
-                    dot={{ r: 3, fill: "#3b82f6" }}
+                    dot={{ r: 3, fill: "hsl(var(--chart-1))" }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>

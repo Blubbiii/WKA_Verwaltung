@@ -275,7 +275,7 @@ export function PortalEnergyAnalytics() {
                     value === "currentYear" ? String(selectedYear) : String(selectedYear - 1)
                   }
                 />
-                <Bar dataKey="currentYear" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="currentYear" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="previousYear" fill="#d1d5db" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

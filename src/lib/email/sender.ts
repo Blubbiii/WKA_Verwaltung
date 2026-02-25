@@ -416,7 +416,7 @@ export async function testEmailConfiguration(
     subject: `Test-E-Mail von ${tenantName}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #3b82f6;">E-Mail-Konfiguration erfolgreich!</h1>
+        <h1 style="color: #335E99;">E-Mail-Konfiguration erfolgreich!</h1>
         <p>Diese Test-E-Mail bestätigt, dass die E-Mail-Einstellungen für <strong>${tenantName}</strong> korrekt konfiguriert sind.</p>
         <p style="color: #6b7280; font-size: 14px;">Gesendet am: ${new Date().toLocaleString('de-DE')}</p>
       </div>

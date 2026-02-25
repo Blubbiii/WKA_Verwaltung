@@ -28,7 +28,7 @@ export interface BaseLayoutProps {
   appName?: string;
   /** Optional logo URL */
   tenantLogoUrl?: string;
-  /** Primary brand color (default: #3b82f6) */
+  /** Primary brand color (default: #335E99) */
   primaryColor?: string;
   /** Current year for copyright */
   currentYear?: number;
@@ -46,7 +46,7 @@ export function BaseLayout({
   tenantName,
   appName,
   tenantLogoUrl,
-  primaryColor = '#3b82f6',
+  primaryColor = '#335E99',
   currentYear = new Date().getFullYear(),
   unsubscribeUrl,
   children,
@@ -115,7 +115,7 @@ export interface ButtonProps {
   color?: string;
 }
 
-export function Button({ href, children, color = '#3b82f6' }: ButtonProps) {
+export function Button({ href, children, color = '#335E99' }: ButtonProps) {
   return (
     <Link href={href} style={{ ...styles.button, backgroundColor: color }}>
       {children}
@@ -154,7 +154,7 @@ export interface InfoBoxProps {
   borderColor?: string;
 }
 
-export function InfoBox({ children, borderColor = '#3b82f6' }: InfoBoxProps) {
+export function InfoBox({ children, borderColor = '#335E99' }: InfoBoxProps) {
   return (
     <Section style={{ ...styles.infoBox, borderLeftColor: borderColor }}>
       {children}

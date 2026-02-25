@@ -550,7 +550,7 @@ export function TopologyCanvas({
               cy={pos.y}
               r={node.type === "CABLE_JUNCTION" ? JUNCTION_RADIUS + 6 : NODE_RADIUS + 6}
               fill="none"
-              stroke="#3b82f6"
+              stroke="#335E99"
               strokeWidth={2}
               strokeDasharray="4 2"
               className="animate-pulse"

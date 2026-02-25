@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 3,
     borderLeftWidth: 3,
-    borderLeftColor: "#3B82F6",
+    borderLeftColor: "#335E99",
   },
   configLabel: {
     fontSize: 8,

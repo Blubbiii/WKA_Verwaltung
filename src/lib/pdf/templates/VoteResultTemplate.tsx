@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#9CA3AF",
   },
   progressBarDefault: {
-    backgroundColor: "#3B82F6",
+    backgroundColor: "#335E99",
   },
 
   // Quorum Section

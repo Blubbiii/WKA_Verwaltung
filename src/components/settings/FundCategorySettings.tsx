@@ -58,7 +58,7 @@ const EMPTY_FORM: FormData = {
   name: "",
   code: "",
   description: "",
-  color: "#3B82F6",
+  color: "#335E99",
   isActive: true,
   sortOrder: 0,
 };
@@ -113,7 +113,7 @@ export function FundCategorySettings() {
       name: item.name,
       code: item.code,
       description: item.description || "",
-      color: item.color || "#3B82F6",
+      color: item.color || "#335E99",
       isActive: item.isActive,
       sortOrder: item.sortOrder,
     });
@@ -380,7 +380,7 @@ export function FundCategorySettings() {
                     onChange={(e) =>
                       setFormData({ ...formData, color: e.target.value })
                     }
-                    placeholder="#3B82F6"
+                    placeholder="#335E99"
                     className="flex-1"
                   />
                 </div>

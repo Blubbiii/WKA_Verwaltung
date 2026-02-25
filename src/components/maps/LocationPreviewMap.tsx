@@ -22,7 +22,7 @@ const createLocationIcon = () =>
       justify-content: center;
       width: 32px;
       height: 32px;
-      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      background: linear-gradient(135deg, #335E99 0%, #1d4ed8 100%);
       border: 3px solid white;
       border-radius: 50%;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);

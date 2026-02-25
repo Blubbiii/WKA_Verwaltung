@@ -639,7 +639,7 @@ export default function ParkWeatherPage({
                   period={historyPeriod}
                   dataKey="windSpeedMs"
                   label="Windgeschwindigkeit (m/s)"
-                  color="#3b82f6"
+                  color="hsl(var(--chart-1))"
                 />
               ) : (
                 <p className="py-8 text-center text-muted-foreground">

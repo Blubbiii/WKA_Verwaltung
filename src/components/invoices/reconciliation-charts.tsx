@@ -28,7 +28,7 @@ import { formatCurrency } from "@/lib/format";
 // =============================================================================
 
 const COLORS = {
-  advances: "#3b82f6", // blue-500
+  advances: "hsl(var(--chart-1))", // Navy (primary chart color)
   settled: "#22c55e", // green-500
   differencePlus: "#16a34a", // green-600
   differenceMinus: "#dc2626", // red-600
@@ -36,7 +36,7 @@ const COLORS = {
 
 const PIE_COLORS: Record<string, string> = {
   PAID: "#22c55e", // green
-  SENT: "#3b82f6", // blue
+  SENT: "#335E99", // warm navy
   DRAFT: "#94a3b8", // slate
   CANCELLED: "#ef4444", // red
   OVERDUE: "#f97316", // orange

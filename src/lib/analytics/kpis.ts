@@ -161,7 +161,7 @@ export function serializeKPIs(kpis: DashboardKPIs): DashboardKPIsResponse {
 // =============================================================================
 
 export const DOCUMENT_CATEGORY_COLORS: Record<string, string> = {
-  CONTRACT: "#3b82f6", // Blue
+  CONTRACT: "#335E99", // Warm Navy
   PROTOCOL: "#8b5cf6", // Purple
   REPORT: "#06b6d4", // Cyan
   INVOICE: "#22c55e", // Green

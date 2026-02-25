@@ -47,7 +47,7 @@ const SPEED_RANGE_COLORS: Record<string, string> = {
   "0-3": "#bfdbfe",
   "3-6": "#93c5fd",
   "6-9": "#60a5fa",
-  "9-12": "#3b82f6",
+  "9-12": "#335E99",
   "12-15": "#2563eb",
   "15+": "#1d4ed8",
 };

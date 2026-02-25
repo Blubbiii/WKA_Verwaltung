@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
     });
 
     const tenantName = tenant?.name || "WindparkManager";
-    const primaryColor = tenant?.primaryColor || "#3b82f6";
+    const primaryColor = tenant?.primaryColor || "#335E99";
 
     // Format the due date for display
     const formattedDueDate = format(new Date(dueDate), "dd.MM.yyyy", {

@@ -285,7 +285,7 @@ export function EnvironmentChart({
                 <Bar
                   dataKey="percentage"
                   name="Anteil"
-                  fill="#3b82f6"
+                  fill="hsl(var(--chart-1))"
                   radius={[4, 4, 0, 0]}
                 />
                 {/* Hidden bar for tooltip count display */}
@@ -341,7 +341,7 @@ export function EnvironmentChart({
                     yAxisId="left"
                     dataKey="avgPowerKw"
                     name="Leistung (kW)"
-                    fill="#3b82f6"
+                    fill="hsl(var(--chart-1))"
                     radius={[4, 4, 0, 0]}
                   />
                   <Line
@@ -384,8 +384,8 @@ export function EnvironmentChart({
                   <Radar
                     name="Leistung (kW)"
                     dataKey="avgPowerKw"
-                    stroke="#3b82f6"
-                    fill="#3b82f6"
+                    stroke="hsl(var(--chart-1))"
+                    fill="hsl(var(--chart-1))"
                     fillOpacity={0.3}
                   />
                 </RadarChart>

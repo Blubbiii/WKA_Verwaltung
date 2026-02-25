@@ -152,8 +152,8 @@ export function DailyChart({ data, chartType = "area" }: DailyChartProps) {
       <ComposedChart data={chartData}>
         <defs>
           <linearGradient id="powerGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+            <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
@@ -200,7 +200,7 @@ export function DailyChart({ data, chartType = "area" }: DailyChartProps) {
             yAxisId="power"
             dataKey="avgPowerKw"
             name="Leistung (kW)"
-            fill="#3b82f6"
+            fill="hsl(var(--chart-1))"
             radius={[2, 2, 0, 0]}
           />
         ) : chartType === "line" ? (
@@ -209,7 +209,7 @@ export function DailyChart({ data, chartType = "area" }: DailyChartProps) {
             type="monotone"
             dataKey="avgPowerKw"
             name="Leistung (kW)"
-            stroke="#3b82f6"
+            stroke="hsl(var(--chart-1))"
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4, strokeWidth: 0 }}
@@ -220,7 +220,7 @@ export function DailyChart({ data, chartType = "area" }: DailyChartProps) {
             type="monotone"
             dataKey="avgPowerKw"
             name="Leistung (kW)"
-            stroke="#3b82f6"
+            stroke="hsl(var(--chart-1))"
             strokeWidth={2}
             fill="url(#powerGradient)"
             activeDot={{ r: 4, strokeWidth: 0 }}

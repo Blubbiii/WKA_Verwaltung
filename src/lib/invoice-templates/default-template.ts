@@ -162,7 +162,7 @@ export function createDefaultLayout(): TemplateLayout {
     defaultFont: "Inter",
     defaultFontSize: 10,
     primaryColor: "#1a1a1a",
-    accentColor: "#3b82f6",
+    accentColor: "#335E99",
   };
 }
 

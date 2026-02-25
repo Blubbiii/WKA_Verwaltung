@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5E7EB",
   },
   badgeSystem: {
-    backgroundColor: "#3B82F6",
+    backgroundColor: "#335E99",
     color: "#FFFFFF",
   },
   badgeCustom: {

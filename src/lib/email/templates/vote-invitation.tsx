@@ -24,7 +24,7 @@ export function VoteInvitationEmail({
   tenantName,
   appName,
   tenantLogoUrl,
-  primaryColor = '#3b82f6',
+  primaryColor = '#335E99',
   currentYear = new Date().getFullYear(),
   unsubscribeUrl,
 }: VoteInvitationEmailProps) {
@@ -110,7 +110,7 @@ export function VoteInvitationEmail({
 }
 
 const bannerStyle = {
-  backgroundColor: '#3b82f6',
+  backgroundColor: '#335E99',
   borderRadius: '6px',
   padding: '8px 16px',
   marginBottom: '24px',

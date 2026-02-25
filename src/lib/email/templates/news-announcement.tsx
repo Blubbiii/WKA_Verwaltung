@@ -24,7 +24,7 @@ export function NewsAnnouncementEmail({
   tenantName,
   appName,
   tenantLogoUrl,
-  primaryColor = '#3b82f6',
+  primaryColor = '#335E99',
   currentYear = new Date().getFullYear(),
   unsubscribeUrl,
 }: NewsAnnouncementEmailProps) {

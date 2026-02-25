@@ -831,7 +831,7 @@ export function LetterheadSettings() {
                           onChange={(e) =>
                             setFormData({ ...formData, primaryColor: e.target.value })
                           }
-                          placeholder="#3b82f6"
+                          placeholder="#335E99"
                         />
                         {formData.primaryColor && (
                           <div

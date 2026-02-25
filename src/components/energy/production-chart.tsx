@@ -58,7 +58,7 @@ const MONTH_NAMES: Record<number, string> = {
 };
 
 const TURBINE_COLORS = [
-  "#3b82f6",
+  "hsl(var(--chart-1))",
   "#10b981",
   "#f59e0b",
   "#ef4444",
@@ -325,7 +325,7 @@ export function ProductionChart({
             type="monotone"
             dataKey="produktionKwh"
             name="Produktion (kWh)"
-            stroke="#3b82f6"
+            stroke="hsl(var(--chart-1))"
             strokeWidth={2}
             dot={{ r: 3 }}
             activeDot={{ r: 5, strokeWidth: 0 }}
@@ -336,8 +336,8 @@ export function ProductionChart({
           <>
             <defs>
               <linearGradient id="prodGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
               </linearGradient>
             </defs>
             <Area
@@ -345,7 +345,7 @@ export function ProductionChart({
               type="monotone"
               dataKey="produktionKwh"
               name="Produktion (kWh)"
-              stroke="#3b82f6"
+              stroke="hsl(var(--chart-1))"
               fill="url(#prodGradient)"
               strokeWidth={2}
               activeDot={{ r: 4, strokeWidth: 0 }}
@@ -358,7 +358,7 @@ export function ProductionChart({
             yAxisId="kwh"
             dataKey="produktionKwh"
             name="Produktion (kWh)"
-            fill="#3b82f6"
+            fill="hsl(var(--chart-1))"
             radius={[4, 4, 0, 0]}
           />
         );

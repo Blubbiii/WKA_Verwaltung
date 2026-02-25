@@ -124,7 +124,7 @@ async function testEmailConnection(
         text: `Dies ist eine Test-E-Mail von WindparkManager.\n\nDie E-Mail-Konfiguration funktioniert korrekt.\n\nZeitstempel: ${new Date().toISOString()}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #3b82f6;">WindparkManager - Test-E-Mail</h2>
+            <h2 style="color: #335E99;">WindparkManager - Test-E-Mail</h2>
             <p>Dies ist eine Test-E-Mail von WindparkManager.</p>
             <p style="color: #22c55e; font-weight: bold;">Die E-Mail-Konfiguration funktioniert korrekt.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />

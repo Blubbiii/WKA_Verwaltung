@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
           postalCode: validatedData.postalCode || null,
           city: validatedData.city || null,
           logoUrl: validatedData.logoUrl || null,
-          primaryColor: validatedData.primaryColor || "#3b82f6",
+          primaryColor: validatedData.primaryColor || "#335E99",
           secondaryColor: validatedData.secondaryColor || "#1e40af",
           status: validatedData.status,
         },

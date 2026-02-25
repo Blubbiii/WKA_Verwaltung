@@ -166,7 +166,7 @@ export function WeatherChart({
   period,
   dataKey,
   label,
-  color = "#3b82f6",
+  color = "hsl(var(--chart-1))",
   showArea = true,
   height = 300,
 }: WeatherChartProps) {

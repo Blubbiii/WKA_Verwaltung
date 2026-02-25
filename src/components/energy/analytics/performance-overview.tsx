@@ -317,7 +317,7 @@ export function PerformanceOverview({
                 <Bar
                   dataKey={String(year)}
                   name={String(year)}
-                  fill="#3b82f6"
+                  fill="hsl(var(--chart-1))"
                   radius={[4, 4, 0, 0]}
                 />
                 <Bar

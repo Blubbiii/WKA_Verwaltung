@@ -35,7 +35,7 @@ const createParkIcon = (status: string) =>
       justify-content: center;
       width: 32px;
       height: 32px;
-      background: linear-gradient(135deg, ${status === "ACTIVE" ? "#3b82f6 0%, #1d4ed8" : "#9ca3af 0%, #6b7280"} 100%);
+      background: linear-gradient(135deg, ${status === "ACTIVE" ? "#335E99 0%, #1d4ed8" : "#9ca3af 0%, #6b7280"} 100%);
       border: 3px solid white;
       border-radius: 50%;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
