@@ -109,7 +109,11 @@
     "managementStakeholders": "BF Contracts",
     "managementBillings": "Billings",
     "taxRates": "Tax Rates",
-    "webhooks": "Webhooks"
+    "webhooks": "Webhooks",
+    "communication": "Communication",
+    "mailings": "Mailings",
+    "mailingsOverview": "Overview",
+    "mailingTemplates": "Templates"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",

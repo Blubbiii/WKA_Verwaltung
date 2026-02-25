@@ -90,6 +90,8 @@ model Tenant {
   users                     User[]
   votes                     Vote[]
   webhooks                  Webhook[]
+  mailingTemplates          MailingTemplate[]
+  mailings                  Mailing[]
 
   @@map("tenants")
 }
@@ -360,6 +362,7 @@ model Fund {
   operatedTurbines                                      TurbineOperator[]
   turbines                                              Turbine[]
   votes                                                 Vote[]
+  mailings                                              Mailing[]
 
   @@index([tenantId])
   @@index([fundCategoryId])
@@ -442,6 +445,7 @@ model Shareholder {
   voteProxiesReceived    VoteProxy[]          @relation("ProxyGrantee")
   voteProxiesGiven       VoteProxy[]          @relation("ProxyGrantor")
   voteResponses          VoteResponse[]
+  mailingRecipients      MailingRecipient[]
 
   @@index([fundId])
   @@index([personId])
@@ -809,6 +813,72 @@ model Notification {
   @@index([userId, isRead])
   @@index([userId, createdAt])
   @@map("notifications")
+}
+
+// =============================================================================
+// Mailing / Serienbriefe (K2)
+// =============================================================================
+
+model MailingTemplate {
+  id        String          @id @default(cuid())
+  tenantId  String
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  category  MailingCategory
+  subject   String
+  bodyHtml  String          @db.Text
+  bodyText  String?         @db.Text
+  variables Json            @default("[]")
+  isDefault Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  mailings  Mailing[]
+
+  @@index([tenantId])
+  @@map("mailing_templates")
+}
+
+model Mailing {
+  id             String            @id @default(cuid())
+  tenantId       String
+  tenant         Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId     String
+  template       MailingTemplate   @relation(fields: [templateId], references: [id])
+  fundId         String?
+  fund           Fund?             @relation(fields: [fundId], references: [id])
+  title          String
+  status         MailingStatus     @default(DRAFT)
+  recipientCount Int               @default(0)
+  sentCount      Int               @default(0)
+  failedCount    Int               @default(0)
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  createdBy      String?
+  createdAt      DateTime          @default(now())
+  recipients     MailingRecipient[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("mailings")
+}
+
+model MailingRecipient {
+  id            String       @id @default(cuid())
+  mailingId     String
+  mailing       Mailing      @relation(fields: [mailingId], references: [id], onDelete: Cascade)
+  shareholderId String?
+  shareholder   Shareholder? @relation(fields: [shareholderId], references: [id])
+  email         String
+  name          String
+  variables     Json         @default("{}")
+  status        String       @default("PENDING")
+  sentAt        DateTime?
+  error         String?
+  createdAt     DateTime     @default(now())
+
+  @@index([mailingId])
+  @@index([mailingId, status])
+  @@map("mailing_recipients")
 }
 
 model News {
@@ -2343,6 +2413,23 @@ enum NotificationType {
   CONTRACT
   INVOICE
   SYSTEM
+}
+
+enum MailingCategory {
+  GV_EINLADUNG
+  QUARTALSBERICHT
+  JAHRESABSCHLUSS
+  MAHNUNG
+  INFORMATION
+  CUSTOM
+}
+
+enum MailingStatus {
+  DRAFT
+  SENDING
+  SENT
+  PARTIALLY_FAILED
+  CANCELLED
 }
 
 enum BillingRuleFrequency {

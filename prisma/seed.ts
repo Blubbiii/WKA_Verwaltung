@@ -139,6 +139,9 @@ const permissionsData = [
   { name: "admin:settlement-periods", displayName: "Abrechnungsperioden verwalten", module: "admin", action: "settlement-periods", sortOrder: 206 },
   { name: "admin:access-report", displayName: "Zugriffsreport anzeigen", module: "admin", action: "access-report", sortOrder: 207 },
   { name: "admin:mass-communication", displayName: "Massen-Kommunikation", module: "admin", action: "mass-communication", sortOrder: 208 },
+  { name: "mailings:read", displayName: "Serienbriefe anzeigen", module: "mailings", action: "read", sortOrder: 180 },
+  { name: "mailings:write", displayName: "Serienbriefe erstellen/bearbeiten", module: "mailings", action: "write", sortOrder: 181 },
+  { name: "mailings:send", displayName: "Serienbriefe versenden", module: "mailings", action: "send", sortOrder: 182 },
   { name: "admin:invoice-settings", displayName: "Rechnungseinstellungen", module: "admin", action: "invoice-settings", sortOrder: 209 },
   { name: "admin:templates", displayName: "Vorlagen verwalten", module: "admin", action: "templates", sortOrder: 210 },
   { name: "admin:impersonate", displayName: "Benutzer impersonieren", module: "admin", action: "impersonate", sortOrder: 211 },
@@ -220,6 +223,8 @@ const systemRolesData = [
       "news:read", "news:create", "news:update",
       // Reports - full access
       "reports:read", "reports:create", "reports:export",
+      // Mailings - full access
+      "mailings:read", "mailings:write", "mailings:send",
       // Settings - read only
       "settings:read",
     ],

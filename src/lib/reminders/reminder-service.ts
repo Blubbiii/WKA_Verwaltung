@@ -9,6 +9,7 @@
 
 import { jobLogger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { notifyAdmins } from "@/lib/notifications";
 import type {
   ReminderCategory,
   ReminderItem,
@@ -138,6 +139,31 @@ export async function checkAndSendReminders(
                 : "Unknown error",
           },
           "Failed to send reminder email"
+        );
+      }
+
+      // Create in-app notification for admins
+      const categoryToType: Record<string, string> = {
+        OVERDUE_INVOICE: "INVOICE",
+        EXPIRING_CONTRACT: "CONTRACT",
+        OPEN_SETTLEMENT: "INVOICE",
+        EXPIRING_DOCUMENT: "DOCUMENT",
+      };
+      const notificationLink = categoryConfig
+        ? `${categoryConfig.linkPath}/${item.entityId}`
+        : undefined;
+      try {
+        await notifyAdmins({
+          tenantId,
+          type: categoryToType[item.category] ?? "SYSTEM",
+          title: item.title,
+          message: item.description,
+          link: notificationLink,
+        });
+      } catch (notifyError) {
+        logger.warn(
+          { tenantId, entityId: item.entityId, err: notifyError instanceof Error ? notifyError.message : "Unknown" },
+          "Failed to create in-app notification for reminder"
         );
       }
 

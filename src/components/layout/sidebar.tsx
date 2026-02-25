@@ -8,6 +8,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import {
+  Bell,
   LayoutDashboard,
   Wind,
   Wrench,
@@ -111,6 +112,12 @@ const navGroups: NavGroup[] = [
         titleKey: "dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
+      },
+      {
+        title: "Benachrichtigungen",
+        titleKey: "notifications",
+        href: "/notifications",
+        icon: Bell,
       },
     ],
   },
@@ -254,6 +261,25 @@ const navGroups: NavGroup[] = [
         children: [
           { title: "Berichte erstellen", titleKey: "createReports", href: "/reports", icon: BarChart3 },
           { title: "Berichtsarchiv", titleKey: "reportArchive", href: "/reports/archive", icon: Archive },
+        ],
+      },
+    ],
+  },
+
+  // ---- Kommunikation ----
+  {
+    label: "Kommunikation",
+    labelKey: "communication",
+    items: [
+      {
+        title: "Serienbriefe",
+        titleKey: "mailings",
+        href: "/mailings",
+        icon: Mail,
+        permission: "mailings:read",
+        children: [
+          { title: "Übersicht", titleKey: "mailingsOverview", href: "/mailings", icon: Mail },
+          { title: "Vorlagen", titleKey: "mailingTemplates", href: "/mailings/templates", icon: FileText },
         ],
       },
     ],

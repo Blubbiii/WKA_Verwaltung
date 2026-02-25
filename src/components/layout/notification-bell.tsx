@@ -4,13 +4,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
-  FileText,
-  Vote,
-  FileSignature,
-  Receipt,
-  Info,
   CheckCheck,
   Loader2,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,69 +15,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type NotificationType = "DOCUMENT" | "VOTE" | "CONTRACT" | "INVOICE" | "SYSTEM";
-
-interface Notification {
-  id: string;
-  type: NotificationType;
-  title: string;
-  message: string | null;
-  link: string | null;
-  isRead: boolean;
-  createdAt: string;
-}
-
-// ---------------------------------------------------------------------------
-// Icon mapping by notification type
-// ---------------------------------------------------------------------------
-
-const TYPE_ICON: Record<NotificationType, typeof Bell> = {
-  DOCUMENT: FileText,
-  VOTE: Vote,
-  CONTRACT: FileSignature,
-  INVOICE: Receipt,
-  SYSTEM: Info,
-};
-
-const TYPE_COLOR: Record<NotificationType, string> = {
-  DOCUMENT: "text-blue-500",
-  VOTE: "text-purple-500",
-  CONTRACT: "text-amber-500",
-  INVOICE: "text-green-500",
-  SYSTEM: "text-muted-foreground",
-};
-
-// ---------------------------------------------------------------------------
-// Relative time formatting (German)
-// ---------------------------------------------------------------------------
-
-function relativeTime(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diffMs = now - then;
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  if (diffSec < 60) return "gerade eben";
-  if (diffMin < 60) return `vor ${diffMin} Min.`;
-  if (diffHour < 24) return `vor ${diffHour} Std.`;
-  if (diffDay === 1) return "gestern";
-  if (diffDay < 7) return `vor ${diffDay} Tagen`;
-
-  // Fallback: formatted date
-  return new Date(dateStr).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
+import {
+  TYPE_ICON,
+  TYPE_COLOR,
+  formatRelativeTime,
+  type NotificationItem,
+} from "@/lib/notifications/notification-ui";
 
 // ---------------------------------------------------------------------------
 // Polling interval (ms)
@@ -96,7 +35,7 @@ const POLL_INTERVAL = 60_000; // 60 seconds
 export function NotificationBell() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
@@ -129,7 +68,7 @@ export function NotificationBell() {
         setNotifications(data.notifications ?? []);
         // Also update unread count from the full list
         const unread = (data.notifications ?? []).filter(
-          (n: Notification) => !n.isRead
+          (n: NotificationItem) => !n.isRead
         ).length;
         // Use the server count if available, else count from list
         fetchUnreadCount();
@@ -149,7 +88,7 @@ export function NotificationBell() {
   // Mark single notification as read
   // -----------------------------------------------------------------------
   const markAsRead = useCallback(
-    async (notification: Notification) => {
+    async (notification: NotificationItem) => {
       if (!notification.isRead) {
         // Optimistic update
         setNotifications((prev) =>
@@ -338,7 +277,7 @@ export function NotificationBell() {
                           </p>
                         )}
                         <p className="mt-1 text-[11px] text-muted-foreground/70">
-                          {relativeTime(notification.createdAt)}
+                          {formatRelativeTime(notification.createdAt)}
                         </p>
                       </div>
                     </button>
