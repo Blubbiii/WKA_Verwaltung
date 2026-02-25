@@ -58,7 +58,7 @@ AUDIT & FIX      UX & WIZARDS     FINAL POLISH     SHP & KARTE      BF-ABRECHNUN
 ```
 src/
 ├── app/
-│   ├── (dashboard)/              # 62 Seiten (auth-geschuetzt)
+│   ├── (dashboard)/              # 107 Seiten (auth-geschuetzt)
 │   │   ├── dashboard/            # Haupt-Dashboard mit Widget-Grid
 │   │   ├── parks/                # Windpark-Verwaltung
 │   │   ├── invoices/             # Rechnungswesen (3 Unter-Seiten)
@@ -78,9 +78,9 @@ src/
 │   │       ├── system-config/    # System-Konfiguration
 │   │       ├── tenants/          # Mandanten-Verwaltung
 │   │       └── ...               # Rollen, E-Mail, Backup, Audit, etc.
-│   ├── api/                      # 100+ API-Routes
+│   ├── api/                      # 286 Route Files (475 Endpoints)
 │   │   ├── auth/                 # NextAuth Endpoints
-│   │   ├── admin/                # Admin-APIs (45+ Routes)
+│   │   ├── admin/                # Admin-APIs (94 Routes)
 │   │   ├── energy/               # Energie/SCADA-APIs
 │   │   ├── export/               # Export (CSV, Excel, DATEV, ICS)
 │   │   ├── invoices/             # Rechnungs-APIs
@@ -92,7 +92,7 @@ src/
 │
 ├── components/
 │   ├── layout/                   # Sidebar, Header, Breadcrumb
-│   ├── dashboard/                # Dashboard-Grid, 25 Widgets
+│   ├── dashboard/                # Dashboard-Grid, 27 Widgets
 │   ├── maps/                     # Leaflet-Karten, GeoJSON-Layer
 │   ├── management-billing/       # BF-Abrechnungs-Komponenten
 │   └── ui/                       # shadcn/ui Basis-Komponenten
@@ -120,7 +120,7 @@ src/
 └── messages/                     # i18n (de.json, en.json)
 
 prisma/
-├── schema.prisma                 # 84 Datenbank-Models
+├── schema.prisma                 # 88 Datenbank-Models, 34 Enums
 └── seed.ts                       # Seed-Daten + Permissions
 ```
 
@@ -549,7 +549,7 @@ prisma/
 
 | Kategorie | Umfang | Status |
 |-----------|--------|--------|
-| Dashboard | 25 Widgets, 12-Column Grid, 4 Rollen-Layouts, Drag&Drop | ✅ 100% |
+| Dashboard | 27 Widgets, 12-Column Grid, 4 Rollen-Layouts, Drag&Drop | ✅ 100% |
 | Brand Identity | Warm Navy (#335E99), CSS-Variablen, konsistente Farbgebung | ✅ 100% |
 | Design-System | Animations, Glassmorphism, Micro-Interactions, Dark Mode | ✅ 100% |
 | 5 Workflow-Wizards | Settlement, Park, Lease, Contract, Tenant | ✅ 100% |
@@ -582,20 +582,26 @@ prisma/
 
 | Metrik | Wert |
 |--------|------|
-| Seiten (Pages) | 62 |
-| API-Routes | 100+ |
-| Prisma-Models | 84 |
+| Seiten (Pages) | 126 (107 Dashboard + 12 Portal + 7 Auth/Marketing) |
+| API Route Files | 286 (475 HTTP-Endpoints) |
+| Prisma-Models | 88 |
+| Prisma-Enums | 34 |
+| Relations | 225 |
+| Components | 163 in 22 Verzeichnissen |
 | BullMQ Queues + Worker | 8 + 8 |
-| Dashboard-Widgets | 25 |
-| Sidebar-Navigation Items | 40+ |
-| Permissions | 75+ |
-| System-Rollen | 5 |
-| Webhook-Event-Typen | 13 |
+| Dashboard-Widgets | 27 (12 KPI, 6 Chart, 5 List, 2 Utility, 4 Admin) |
+| Sidebar-Navigation Items | 35+ in 6 Gruppen |
+| Permissions | 75 in 15 Kategorien |
+| System-Rollen | 6 (SUPERADMIN → PORTAL) |
+| Webhook-Event-Typen | 13 in 6 Kategorien |
 | Workflow-Wizards | 5 |
 | i18n-Sprachen | 2 (DE/EN) |
 | E-Mail-Templates | 14+ |
 | PDF-Templates | 5+ |
 | Chart CSS-Variablen | 12 |
+| Cache Prefixes | 8 |
+| Security Headers | 9 |
+| Rate Limit Presets | 4 |
 
 ---
 
@@ -661,6 +667,22 @@ Das Rechnungssystem ist funktional komplett mit anpassbaren Vorlagen:
 ---
 
 ## Aenderungshistorie
+
+### 25. Februar 2026 — Performance-Audit + Workflow Quick-Wins
+
+**Performance & Audit Fixes (Medium):**
+- Permission-Cache: Migration von In-Memory zu Redis-basiert (TTL 300s)
+- Energy KPIs: Redis-Caching (5 Min TTL, `?fresh=true` Bypass)
+- Recharts Lazy Loading: DrillDown-Charts via `next/dynamic` mit `ssr: false`
+- Shareholder Recalculation: Atomisch via `prisma.$transaction` + `Promise.all`
+- API Error Helpers: `badRequest()`, `notFound()`, `forbidden()`, `serverError()`, `handleApiError()`
+
+**Workflow Quick-Wins:**
+- Batch Invoice Send: `/api/invoices/batch-send` (bis 50 gleichzeitig)
+- Settlement Send-All: `/api/admin/settlement-periods/[id]/send-all-invoices`
+- Skonto Auto-Apply: Automatisch bei Zahlung innerhalb Frist (keine manuelle Eingabe)
+- Contract Auto-Renewal: `/api/admin/contracts/auto-renew` fuer autoRenewal-Vertraege
+- Combined Calculate+Invoice: `/api/management-billing/billings/calculate-and-invoice`
 
 ### 25. Februar 2026 — Phase 12+13: Visual Overhaul, ICS-Export, Webhooks
 

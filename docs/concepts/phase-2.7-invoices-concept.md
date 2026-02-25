@@ -1,6 +1,25 @@
 # Konzept: Phase 2.7 - Abrechnungen / Invoices
 
-## Zusammenfassung
+> **Status:** ✅ IMPLEMENTIERT (Stand: Februar 2026)
+> **Hinweis:** Dieses Dokument war die urspruengliche Planungsgrundlage. Alle beschriebenen Features
+> sind vollstaendig implementiert. Fuer den aktuellen Ist-Zustand siehe:
+> - `docs/architecture/system-architecture.md` (Abschnitt 5.5 Rechnungswesen)
+> - `docs/requirements/feature-specifications.md` (Modul 8: Abrechnungssystem)
+>
+> **Zusaetzlich implementiert (ueber dieses Konzept hinaus):**
+> - XRechnung (UBL 2.1) + ZUGFeRD 2.2 COMFORT
+> - Skonto (Auto-Apply bei Zahlung innerhalb Frist)
+> - Teilstorno / Korrekturrechnungen
+> - Mahnwesen (3 Stufen + Verzugsgebuehren, Billing-Worker)
+> - Wiederkehrende Rechnungen (RecurringInvoice, Frequenz-Scheduling)
+> - WYSIWYG-Editor fuer Rechnungsvorlagen (15 Block-Typen)
+> - GoBD-Archivierung (SHA-256 Hash-Chain, 10-Jahre Retention)
+> - Batch-Versand (bis 50 Rechnungen gleichzeitig)
+> - Sammelrechnungen (Consolidated Invoices)
+> - BF-Abrechnung (Cross-Tenant ManagementBilling)
+> - Combined Calculate-and-Invoice Endpoint
+
+## Zusammenfassung (Original-Plan)
 
 Dieses Dokument beschreibt das erweiterte Abrechnungssystem fuer den WindparkManager, das folgende Kernfunktionen umfasst:
 

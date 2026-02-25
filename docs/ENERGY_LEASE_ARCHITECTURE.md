@@ -1,8 +1,24 @@
 # Architekturplan: Stromabrechnung & Erweiterte Pachtabrechnung
 
-> **Status:** Design-Phase
+> **Status:** ✅ IMPLEMENTIERT (Stand: Februar 2026)
 > **Erstellt:** 2026-02-05
 > **Autor:** Solution Architect
+>
+> **Hinweis:** Dieses Dokument war die urspruengliche Design-Grundlage fuer das Energie-
+> und Pachtabrechnungsmodul. Alle beschriebenen Kernfeatures sind implementiert:
+> - 15 SCADA-Models (ScadaMeasurement, ScadaAnomaly, etc.)
+> - TurbineProduction (Monatssummen ohne Revenue)
+> - EnergySettlement + EnergySettlementItem (NB-Abrechnung mit Verteilung)
+> - FundHierarchy (Mutter-/Tochtergesellschaften)
+> - TurbineOperator (WKA-zu-Fund Zuordnung, zeitlich)
+> - FundCategory (Gesellschaftstypen)
+> - 3 Verteilmodi: PROPORTIONAL, SMOOTHED, TOLERATED
+> - Pachtabrechnung: LeaseSettlementPeriod + LeaseRevenueSettlement
+> - Energy Analytics: 8-Tab Dashboard
+> - Anomalie-Erkennung: 4 Algorithmen
+> - Netz-Topologie: SVG-Canvas mit Live-Status
+>
+> Fuer den aktuellen Ist-Zustand siehe `docs/architecture/system-architecture.md`.
 
 ---
 

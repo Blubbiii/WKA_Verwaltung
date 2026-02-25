@@ -1,9 +1,12 @@
 # Deployment Guide: WindparkManager (WPM)
 
+> **Stand:** 25. Februar 2026
+> **Version:** 2.0 (aktualisiert auf aktuelle Infrastruktur)
+
 ## Voraussetzungen
 
 ### Server-Anforderungen
-- **OS**: Ubuntu 22.04 LTS oder Debian 12
+- **OS**: Ubuntu 22.04 LTS, Debian 12, oder Windows (Portainer)
 - **CPU**: 4+ Cores
 - **RAM**: 8+ GB
 - **Storage**: 100+ GB SSD
@@ -11,409 +14,480 @@
 - **Docker Compose**: 2.20+
 
 ### Domain & DNS
-- Domain für die Anwendung (z.B. `wpm.example.com`)
+- Domain fuer die Anwendung (z.B. `wpm.example.com`)
 - DNS A-Record zeigt auf Server-IP
-- Optional: Subdomain für Storage (`storage.wpm.example.com`)
+- Optional: Subdomains fuer Storage (`storage.wpm.example.com`) und MinIO Console (`minio.wpm.example.com`)
 
-## Quick Start
+---
 
-### 1. Server vorbereiten
+## Deployment-Architektur
 
-```bash
-# System aktualisieren
-sudo apt update && sudo apt upgrade -y
-
-# Docker installieren
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-
-# Docker Compose installieren (falls nicht enthalten)
-sudo apt install docker-compose-plugin
-
-# Neuanmeldung für Docker-Gruppe
-newgrp docker
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    GitHub Actions CI/CD                     │
+├─────────────────────────────────────────────────────────────┤
+│  1. Lint & Type-Check (eslint, tsc --noEmit)               │
+│  2. Next.js Build (standalone output)                       │
+│  3. Tests (Vitest, optional)                                │
+│  4. Docker Build & Push → ghcr.io/blubbiii/wka_verwaltung   │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│             Production Server (Portainer Stack)             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Traefik v3.0 (Reverse Proxy + SSL)                 │  │
+│  │  - Port 80 → HTTPS Redirect                         │  │
+│  │  - Port 443 → TLS (Let's Encrypt)                   │  │
+│  │  - Security Headers + Rate Limiting                  │  │
+│  └───────────┬──────────────────┬──────────────────┬───┘  │
+│              │                  │                  │       │
+│         ┌────▼────┐  ┌──────────▼────┐  ┌────────▼──┐   │
+│         │ Next.js │  │  MinIO (S3)   │  │  Traefik  │   │
+│         │ App     │  │  :9000/:9001  │  │ Dashboard │   │
+│         │ :3000   │  │  (Dokumente)  │  │  :8080    │   │
+│         └────┬────┘  └───────────────┘  └───────────┘   │
+│              │                                           │
+│         ┌────▼──────────────────────────┐               │
+│         │  PostgreSQL 16 + Redis 7      │               │
+│         │  (nicht extern exponiert)      │               │
+│         └────┬──────────────────────────┘               │
+│              │                                           │
+│         ┌────▼──────────────────────────┐               │
+│         │ Worker (2+ Replicas)          │               │
+│         │ BullMQ Job Processing         │               │
+│         │ (START_MODE=worker)           │               │
+│         └───────────────────────────────┘               │
+│              │                                           │
+│         ┌────▼──────────────────────────┐               │
+│         │ Backup (Cron)                 │               │
+│         │ Daily 02:00, Weekly, Monthly  │               │
+│         └───────────────────────────────┘               │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### 2. Projekt klonen
+---
 
-```bash
-# Projektverzeichnis erstellen
-mkdir -p /opt/windparkmanager
-cd /opt/windparkmanager
+## Docker Multi-Stage Dockerfile
 
-# Repository klonen (oder Dateien kopieren)
-git clone https://github.com/your-org/windparkmanager.git .
+Das Dockerfile nutzt 4 Stages fuer optimale Image-Groesse (~150MB):
+
+```
+Stage 1: deps        → Alpine Node 20, npm install (alle Dependencies)
+Stage 2: builder     → Next.js Build (standalone Output, 4GB Memory Limit)
+Stage 2b: prisma-cli → Isolierte Prisma CLI in /prisma-cli/ (KRITISCH!)
+Stage 3: runner      → Production Image (Non-Root User nextjs:1001)
 ```
 
-### 3. Umgebungsvariablen konfigurieren
+### KRITISCH: Prisma CLI Isolation
 
+Die Prisma CLI **MUSS** in `/prisma-cli/` installiert sein (NICHT in `/app/node_modules/`), weil:
+- Next.js Standalone Output bindet `@prisma/config` ein
+- `@prisma/config` hat `effect` als transitive Dependency
+- Next.js Standalone kopiert `@prisma/config` OHNE `effect`
+- Ergebnis: `Cannot find module 'effect'` beim Start
+
+**prisma-cli Stage installiert:**
+- prisma@6, tsx, typescript, bcryptjs, @prisma/client@6
+
+**Seed-Befehl im Container:**
 ```bash
-# .env Datei erstellen
-cp .env.example .env
-
-# Datei bearbeiten
-nano .env
+NODE_PATH=/prisma-cli/node_modules /prisma-cli/node_modules/.bin/tsx prisma/seed.ts
 ```
 
-**Wichtige Einstellungen:**
+---
+
+## Docker Compose Konfigurationen
+
+### Verfuegbare Compose-Dateien
+
+| Datei | Zweck |
+|-------|-------|
+| `docker-compose.yml` | Generisches Production-Template mit Traefik |
+| `docker-compose.dev.yml` | Lokale Entwicklung (DB, Redis, MinIO, Mailhog) |
+| `docker-compose.prod.yml` | Vollstaendiges Production-Setup mit Ressourcen-Limits |
+| `docker-compose.portainer.yml` | Portainer Stack fuer 192.168.178.101 |
+
+### Services
+
+| Service | Image | Ports | Beschreibung |
+|---------|-------|-------|--------------|
+| app | ghcr.io/blubbiii/wka_verwaltung:latest | 3000 | Next.js Application |
+| worker | (gleich wie app) | - | BullMQ Worker (START_MODE=worker) |
+| postgres | postgres:16-alpine | 5432 (intern) | Datenbank |
+| redis | redis:7-alpine | 6379 (intern) | Cache + BullMQ |
+| minio | minio/minio | 9000/9001 | S3-kompatibler Storage |
+| minio-init | minio/mc | - | Bucket-Erstellung (One-Shot) |
+| traefik | traefik:v3.0 | 80/443 | Reverse Proxy + SSL |
+| backup | prodrigestivill/postgres-backup-local:15 | - | Automatische Backups |
+
+---
+
+## Schnellstart: Lokale Entwicklung
+
+```bash
+# 1. Infrastruktur starten
+docker compose -f docker-compose.dev.yml up -d
+
+# 2. Dependencies installieren
+npm install
+
+# 3. Datenbank synchronisieren (NICHT migrate deploy!)
+npx prisma db push
+
+# 4. Seed-Daten laden
+npx tsx prisma/seed.ts
+
+# 5. Entwicklungsserver starten
+npm run dev
+```
+
+**Verfuegbare lokale Services:**
+- App: http://localhost:3000
+- PostgreSQL: localhost:5432 (wpm/devpassword)
+- Redis: localhost:6379
+- MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
+- Mailhog: http://localhost:8025 (SMTP: localhost:1025)
+
+---
+
+## Production Deployment
+
+### 1. Umgebungsvariablen konfigurieren
+
+```bash
+cp .env.production.example .env
+```
+
+**Kritische Einstellungen:**
 
 ```env
-# Domain
+# Application
 APP_DOMAIN=wpm.example.com
+NODE_ENV=production
 
-# Sichere Passwörter generieren
-POSTGRES_PASSWORD=$(openssl rand -base64 32)
-REDIS_PASSWORD=$(openssl rand -base64 32)
-NEXTAUTH_SECRET=$(openssl rand -base64 32)
-MINIO_ROOT_PASSWORD=$(openssl rand -base64 32)
+# Database
+POSTGRES_USER=wpm
+POSTGRES_PASSWORD=<sicheres-passwort>
+POSTGRES_DB=windparkmanager
+DATABASE_URL=postgresql://wpm:<passwort>@postgres:5432/windparkmanager
 
-# E-Mail für SSL-Zertifikate
+# Auth (BEIDE setzen fuer Kompatibilitaet!)
+AUTH_SECRET=<mindestens-32-zeichen>
+NEXTAUTH_SECRET=<gleicher-wert>
+NEXTAUTH_URL=https://wpm.example.com
+
+# Redis
+REDIS_URL=redis://redis:6379
+
+# MinIO
+S3_ENDPOINT=http://minio:9000
+S3_ACCESS_KEY=<access-key>
+S3_SECRET_KEY=<secret-key>
+S3_BUCKET=wpm-documents
+
+# SSL
 ACME_EMAIL=admin@example.com
 ```
 
-### 4. Anwendung starten
+### 2. Container starten
 
 ```bash
-# Container bauen und starten
-docker compose up -d
-
-# Logs prüfen
-docker compose logs -f app
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-### 5. Erste Einrichtung
+### 3. Datenbank initialisieren
 
 ```bash
-# Datenbank initialisieren (falls nicht automatisch)
-docker compose exec app npm run db:migrate
+# Schema synchronisieren (NICHT migrate deploy!)
+docker compose exec app node /prisma-cli/node_modules/prisma/build/index.js db push --skip-generate
 
-# Superadmin erstellen
-docker compose exec app npm run create-admin
+# Seed-Daten laden (optional)
+docker compose exec app bash -c "NODE_PATH=/prisma-cli/node_modules /prisma-cli/node_modules/.bin/tsx prisma/seed.ts"
 ```
 
-## Detaillierte Konfiguration
+### 4. Erster Login
 
-### SSL/TLS mit Let's Encrypt
+Default-Superadmin: `admin@windparkmanager.de` / `admin123` (sofort aendern!)
 
-Traefik holt automatisch SSL-Zertifikate. Voraussetzungen:
-- Port 80 und 443 offen
-- DNS zeigt auf Server
-- ACME_EMAIL konfiguriert
+---
 
-```bash
-# SSL-Status prüfen
-docker compose exec traefik cat /letsencrypt/acme.json
+## CI/CD Pipeline (GitHub Actions)
+
+### CI Pipeline (`.github/workflows/ci.yml`)
+
+```
+Push/PR → main
+  │
+  ├── lint (10min)
+  │   ├── npm ci
+  │   ├── npx prisma generate
+  │   ├── npm run lint
+  │   └── npx tsc --noEmit
+  │
+  ├── build (15min, nach lint)
+  │   ├── .env mit Dummy-Werten
+  │   ├── npm run build
+  │   └── Artifact Upload (.next/standalone, .next/static, public)
+  │
+  └── test (10min, optional, nach lint)
+      └── npm run test (Vitest)
 ```
 
-### Datenbank-Zugriff
+### Deploy Pipeline (`.github/workflows/deploy.yml`)
+
+```
+Push → main
+  │
+  ├── build-and-push (20min)
+  │   ├── Docker Buildx Setup
+  │   ├── Login ghcr.io
+  │   ├── Tags: latest, SHA, Datum
+  │   └── Push → ghcr.io/blubbiii/wka_verwaltung
+  │
+  └── deploy (optional, Template)
+      ├── SSH → Server
+      ├── docker compose pull
+      └── docker compose up -d --no-deps
+```
+
+---
+
+## Auth-Konfiguration (KRITISCH)
+
+### trustHost
+
+`trustHost: true` **MUSS** im Code stehen (NextAuthConfig), NICHT als Umgebungsvariable:
+
+```typescript
+// src/auth.config.ts
+export const authConfig = {
+  trustHost: true,  // Edge Middleware kann keine env vars lesen!
+  // ...
+}
+```
+
+### Cookies
+
+```typescript
+// HTTP (lokales Netzwerk):
+cookies: { secure: false }
+
+// HTTPS (Production mit SSL):
+cookies: { secure: true }
+```
+
+Automatisch via `NEXTAUTH_URL.startsWith('https://')`.
+
+### AUTH_SECRET vs NEXTAUTH_SECRET
+
+NextAuth v5 verwendet `AUTH_SECRET`, aber fuer Rueckwaertskompatibilitaet **BEIDE** setzen:
+
+```env
+AUTH_SECRET=WindparkManager-Secret-Key-Mindestens-32-Zeichen-Lang
+NEXTAUTH_SECRET=WindparkManager-Secret-Key-Mindestens-32-Zeichen-Lang
+```
+
+---
+
+## Datenbank-Management
+
+### WICHTIG: prisma db push (NICHT migrate deploy!)
+
+Es existiert keine vollstaendige Migration-History. Schema-Aenderungen werden via `prisma db push` synchronisiert.
 
 ```bash
-# PostgreSQL CLI
-docker compose exec db psql -U wpm -d windparkmanager
+# Schema synchronisieren
+docker compose exec app node /prisma-cli/node_modules/prisma/build/index.js db push --skip-generate
 
-# Datenbank-Dump erstellen
-docker compose exec db pg_dump -U wpm windparkmanager > backup.sql
+# NIEMALS:
+# prisma db pull     → ueberschreibt schema.prisma komplett!
+# prisma migrate dev → erstellt Migration die nicht zu deploy passt
+```
+
+### PostgreSQL Backup
+
+**Automatisch** (via backup-Container):
+- Taeglich: 02:00 (7 Tage Retention)
+- Woechentlich: Sonntag 03:00 (4 Wochen Retention)
+- Monatlich: 1. des Monats 04:00 (3 Monate Retention)
+- Optional: S3-Upload
+
+**Manuell:**
+```bash
+# Dump erstellen
+docker compose exec -T postgres pg_dump -U wpm windparkmanager > backup.sql
 
 # Dump importieren
-docker compose exec -T db psql -U wpm windparkmanager < backup.sql
+docker compose exec -T postgres psql -U wpm windparkmanager < backup.sql
 ```
 
-### MinIO (S3 Storage) einrichten
+### PostgreSQL Passwort-Aenderung
+
+**ACHTUNG:** PostgreSQL ignoriert `POSTGRES_PASSWORD` auf existierenden Volumes! Bei Passwort-Aenderung einen NEUEN Volume-Namen verwenden.
+
+---
+
+## Traefik Konfiguration
+
+### Statisch (`traefik/traefik.yml`)
+
+- Entry Points: web (80), websecure (443), traefik (8080)
+- HTTP → HTTPS Redirect (permanent)
+- Let's Encrypt ACME (HTTP Challenge)
+- Docker Provider (Auto-Discovery via Labels)
+- TLS 1.2+ mit starken Ciphern
+
+### Dynamisch (`traefik/dynamic.yml`)
+
+| Middleware | Beschreibung |
+|-----------|--------------|
+| security-headers | HSTS, X-Frame-Options, CSP |
+| compress | Gzip/Brotli |
+| rate-limit | 100/s avg, 200/s burst |
+| rate-limit-api | 50/s avg, 100/s burst |
+| circuit-breaker | >50% Fehler → Trip |
+| body-limit | 10MB max Request |
+
+---
+
+## Monitoring & Health Checks
+
+### Health Endpoints
 
 ```bash
-# MinIO Console öffnen (Port 9001)
-# https://storage.wpm.example.com
-
-# Bucket erstellen
-docker compose exec minio mc alias set local http://localhost:9000 minioadmin $MINIO_ROOT_PASSWORD
-docker compose exec minio mc mb local/wpm-documents
-docker compose exec minio mc policy set download local/wpm-documents
-```
-
-### E-Mail-Konfiguration testen
-
-```bash
-# Test-E-Mail senden
-docker compose exec app npm run test-email
-```
-
-## Backup-Strategie
-
-### Automatische Backups
-
-Der `backup`-Container erstellt täglich Datenbank-Backups:
-
-```
-/opt/windparkmanager/backups/
-├── daily/
-│   ├── windparkmanager-20260125-020000.sql.gz
-│   └── ...
-├── weekly/
-└── monthly/
-```
-
-### Manuelles Backup
-
-```bash
-# Vollständiges Backup (DB + Dateien)
-./scripts/backup.sh
-
-# Backup-Inhalt
-# - PostgreSQL Dump
-# - MinIO Daten
-# - .env Konfiguration
-```
-
-### Backup-Skript
-
-```bash
-#!/bin/bash
-# scripts/backup.sh
-
-BACKUP_DIR="/opt/backups/wpm/$(date +%Y%m%d_%H%M%S)"
-mkdir -p $BACKUP_DIR
-
-# Datenbank
-docker compose exec -T db pg_dump -U wpm windparkmanager | gzip > $BACKUP_DIR/db.sql.gz
-
-# MinIO Daten
-docker compose exec minio mc mirror local/wpm-documents $BACKUP_DIR/files/
-
-# Konfiguration
-cp .env $BACKUP_DIR/
-
-# Komprimieren
-tar -czf $BACKUP_DIR.tar.gz -C /opt/backups/wpm $(basename $BACKUP_DIR)
-rm -rf $BACKUP_DIR
-
-echo "Backup erstellt: $BACKUP_DIR.tar.gz"
-```
-
-### Restore
-
-```bash
-#!/bin/bash
-# scripts/restore.sh BACKUP_FILE
-
-BACKUP_FILE=$1
-TEMP_DIR="/tmp/wpm-restore"
-
-# Entpacken
-mkdir -p $TEMP_DIR
-tar -xzf $BACKUP_FILE -C $TEMP_DIR
-
-# Datenbank wiederherstellen
-gunzip -c $TEMP_DIR/*/db.sql.gz | docker compose exec -T db psql -U wpm windparkmanager
-
-# MinIO Daten wiederherstellen
-docker compose exec minio mc mirror $TEMP_DIR/*/files/ local/wpm-documents
-
-# Aufräumen
-rm -rf $TEMP_DIR
-```
-
-## Monitoring
-
-### Health Checks
-
-```bash
-# Anwendung
+# Application Health
 curl -f https://wpm.example.com/api/health
 
-# Datenbank
-docker compose exec db pg_isready -U wpm
+# PostgreSQL
+docker compose exec postgres pg_isready -U wpm
 
 # Redis
 docker compose exec redis redis-cli ping
 ```
 
-### Logs
+### Docker Health Checks
+
+Alle Services haben integrierte Health Checks:
+- App: `/api/health` (30s Interval, 60s Startup)
+- PostgreSQL: `pg_isready`
+- Redis: `redis-cli ping`
+- MinIO: `curl http://localhost:9000/minio/health/live`
+
+### Logging
+
+- **App**: Pino JSON-Logging (Slow-Query-Warnung >100ms)
+- **Traefik**: JSON Access-Logs (200-299, 400-599)
+- **Sentry**: Error-Tracking + Performance (Production only)
 
 ```bash
 # Alle Logs
 docker compose logs -f
 
-# Nur App-Logs
-docker compose logs -f app
-
-# Nur Fehler
+# Nur App-Fehler
 docker compose logs -f app 2>&1 | grep -i error
 ```
 
-### Prometheus Metrics (optional)
-
-```yaml
-# docker-compose.override.yml
-services:
-  prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
-    networks:
-      - wpm-network
-
-  grafana:
-    image: grafana/grafana:latest
-    volumes:
-      - grafana_data:/var/lib/grafana
-    ports:
-      - "3001:3000"
-    networks:
-      - wpm-network
-```
-
-## Updates
-
-### Anwendung aktualisieren
-
-```bash
-# Neueste Version holen
-git pull origin main
-
-# Container neu bauen
-docker compose build app
-
-# Mit minimaler Downtime aktualisieren
-docker compose up -d --no-deps app
-
-# Migrationen ausführen (falls nötig)
-docker compose exec app npm run db:migrate
-```
-
-### Zero-Downtime Deployment
-
-```bash
-# Blue-Green Deployment
-docker compose -f docker-compose.blue-green.yml up -d app-new
-# Testen...
-docker compose -f docker-compose.blue-green.yml stop app-old
-```
+---
 
 ## Sicherheit
 
 ### Firewall (UFW)
 
 ```bash
-# Nur benötigte Ports öffnen
 sudo ufw allow 22/tcp   # SSH
-sudo ufw allow 80/tcp   # HTTP
+sudo ufw allow 80/tcp   # HTTP → Redirect
 sudo ufw allow 443/tcp  # HTTPS
 sudo ufw enable
 ```
 
-### Fail2Ban
+### Security Headers (next.config.ts + Traefik)
 
-```bash
-sudo apt install fail2ban
+- X-Frame-Options: DENY
+- X-Content-Type-Options: nosniff
+- Strict-Transport-Security: 2 Jahre + Preload
+- Content-Security-Policy: Restriktiv (self + Sentry)
+- Permissions-Policy: Kamera/Mikro deaktiviert
+- Referrer-Policy: strict-origin-when-cross-origin
 
-# Konfiguration für Traefik-Logs
-cat > /etc/fail2ban/jail.d/traefik.conf << EOF
-[traefik-auth]
-enabled = true
-filter = traefik-auth
-logpath = /var/log/traefik/access.log
-maxretry = 5
-bantime = 3600
-EOF
-```
+### Rate Limiting
 
-### Regelmäßige Updates
+| Typ | Requests | Fenster |
+|-----|----------|---------|
+| Auth (Login, Reset) | 5 | 15 Min |
+| File Upload | 20 | 1 Min |
+| PDF Generation | 10 | 1 Min |
+| General API | 100 | 1 Min |
 
-```bash
-# System-Updates automatisieren
-sudo apt install unattended-upgrades
-sudo dpkg-reconfigure unattended-upgrades
-```
+### Container-Sicherheit
 
-## Troubleshooting
+- Non-Root User (`nextjs:1001`)
+- Minimal Alpine Base Image
+- Health Checks integriert
+- Resource Limits (Memory/CPU) in prod Compose
+- PostgreSQL/Redis nicht extern exponiert
 
-### Container startet nicht
-
-```bash
-# Logs prüfen
-docker compose logs app
-
-# Container-Status
-docker compose ps
-
-# Ressourcen prüfen
-docker stats
-```
-
-### Datenbank-Verbindungsfehler
-
-```bash
-# Verbindung testen
-docker compose exec app nc -zv db 5432
-
-# PostgreSQL-Logs
-docker compose logs db
-```
-
-### SSL-Zertifikat-Probleme
-
-```bash
-# Zertifikat-Status
-docker compose exec traefik cat /letsencrypt/acme.json | jq
-
-# Traefik-Logs
-docker compose logs traefik | grep -i acme
-```
-
-### Speicherplatz voll
-
-```bash
-# Docker aufräumen
-docker system prune -a --volumes
-
-# Alte Backups löschen
-find /opt/backups -mtime +30 -delete
-```
+---
 
 ## Skalierung
 
-### Horizontal (mehrere App-Instanzen)
+### Worker-Replicas
 
 ```yaml
-# docker-compose.override.yml
+# docker-compose.prod.yml
+services:
+  worker:
+    deploy:
+      replicas: ${WORKER_REPLICAS:-2}
+      resources:
+        limits:
+          memory: 512M
+```
+
+### Horizontale App-Skalierung
+
+```yaml
 services:
   app:
     deploy:
       replicas: 3
 ```
 
-### Vertikal (mehr Ressourcen)
+Voraussetzung: Redis fuer Session-/Permission-Cache (bereits implementiert).
 
-```yaml
-# docker-compose.override.yml
-services:
-  app:
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
-```
+---
 
-### Externe Datenbank
+## Troubleshooting
 
-Für Produktion empfohlen: Managed PostgreSQL (z.B. Supabase, AWS RDS)
+### "Cannot find module 'effect'"
+→ Prisma CLI nicht korrekt isoliert. Pruefen: `/prisma-cli/node_modules/effect` muss existieren.
 
-```env
-DATABASE_URL=postgresql://user:pass@external-db.example.com:5432/windparkmanager
-```
+### Worker-Thread Error im Dev-Server
+→ `serverExternalPackages: ['bullmq', 'ioredis', 'pino', 'pino-pretty']` in `next.config.ts` pruefen.
 
-## Checkliste für Produktion
+### PostgreSQL Passwort funktioniert nicht
+→ Neuen Volume-Namen verwenden (PostgreSQL ignoriert Passwort-Aenderungen auf existierenden Volumes).
 
-- [ ] Sichere Passwörter für alle Services
-- [ ] SSL/TLS aktiviert
+### Auth-Cookie funktioniert nicht
+→ `trustHost: true` im Code (nicht env), Cookie `secure: false` fuer HTTP.
+
+### Prisma Schema-Sync
+→ `prisma db push` (NIEMALS `prisma db pull` oder `prisma migrate deploy`).
+
+---
+
+## Checkliste fuer Production
+
+- [ ] Sichere Passwoerter fuer alle Services (NICHT die Defaults!)
+- [ ] SSL/TLS via Traefik aktiviert
 - [ ] Backups konfiguriert und getestet
-- [ ] Monitoring eingerichtet
-- [ ] Firewall konfiguriert
-- [ ] Fail2Ban aktiviert
+- [ ] Monitoring eingerichtet (Sentry Token)
+- [ ] Firewall konfiguriert (nur 22/80/443)
 - [ ] E-Mail-Versand getestet
 - [ ] Health Checks funktionieren
 - [ ] Logging funktioniert
-- [ ] Update-Prozess dokumentiert
+- [ ] Worker-Service laeuft (2+ Replicas)
+- [ ] MinIO Bucket erstellt (wpm-documents)
+- [ ] Default-Passwoerter geaendert

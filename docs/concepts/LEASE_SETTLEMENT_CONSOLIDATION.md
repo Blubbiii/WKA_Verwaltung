@@ -1,5 +1,16 @@
 # Konzept: Zusammenlegung Nutzungsentgelt & Pachtabrechnung
 
+> **Status:** ⏳ NOCH NICHT UMGESETZT (Konzept-Phase)
+> **Hinweis:** Dieses Dokument beschreibt ein geplantes Refactoring zur Zusammenlegung
+> der zwei existierenden Pachtabrechnungs-Systeme. Beide Systeme sind funktional
+> und in Betrieb, aber noch nicht konsolidiert.
+>
+> **Aktuelle Systeme:**
+> - `/leases/usage-fees` — Nutzungsentgelt (LeaseRevenueSettlement mit KPIs, Steuersplit, Kostenumlage)
+> - `/leases/settlement` — Pachtabrechnung (LeaseSettlementPeriod mit 4-Schritt-Wizard, flexible Vorschuesse)
+>
+> **Prioritaet:** Niedrig (beide Systeme funktionieren, Konsolidierung ist Verbesserung)
+
 ## Ausgangslage
 
 Aktuell gibt es zwei getrennte Systeme fuer die Pachtabrechnung:

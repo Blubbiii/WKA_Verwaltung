@@ -1,66 +1,69 @@
 # UI/UX Konzept: WindparkManager (WPM)
 
+> **Stand:** 25. Februar 2026
+> **Version:** 2.0 (aktualisiert auf Ist-Zustand)
+
 ## 1. Seitenstruktur / Sitemap
 
 ```
 WindparkManager
 │
-├── 🔐 AUTH (öffentlich)
+├── AUTH (oeffentlich)
 │   ├── /login
 │   ├── /forgot-password
 │   └── /reset-password
 │
-├── 👑 ADMIN-BEREICH (/admin)
-│   ├── /admin/dashboard
-│   ├── /admin/tenants
-│   │   ├── /admin/tenants/new
-│   │   └── /admin/tenants/[id]
-│   ├── /admin/users
-│   │   ├── /admin/users/new
-│   │   └── /admin/users/[id]
-│   └── /admin/settings
+├── MARKETING (oeffentlich)
+│   ├── / (Startseite — Admin-konfigurierbar)
+│   ├── /impressum
+│   └── /datenschutz
 │
-└── 📊 USER-PORTAL (/app)
-    ├── /app/dashboard
-    │
-    ├── /app/parks
-    │   ├── /app/parks/[id]
-    │   └── /app/parks/[id]/turbines/[turbineId]
-    │
-    ├── /app/funds
-    │   ├── /app/funds/[id]
-    │   └── /app/funds/[id]/shareholders
-    │
-    ├── /app/shareholders
-    │   └── /app/shareholders/[id]
-    │
-    ├── /app/leases
-    │   ├── /app/leases/[id]
-    │   └── /app/leases/plots
-    │
-    ├── /app/contracts
-    │   └── /app/contracts/[id]
-    │
-    ├── /app/documents
-    │   └── /app/documents/[id]
-    │
-    ├── /app/invoices
-    │   ├── /app/invoices/new
-    │   └── /app/invoices/[id]
-    │
-    ├── /app/votes
-    │   ├── /app/votes/new
-    │   └── /app/votes/[id]
-    │
-    ├── /app/reports
-    │   └── /app/reports/[type]
-    │
-    ├── /app/news
-    │
-    └── /app/settings
-        ├── /app/settings/profile
-        ├── /app/settings/branding
-        └── /app/settings/notifications
+├── DASHBOARD (/dashboard) — 107 Seiten
+│   ├── /dashboard ─── Hauptdashboard (27 Widgets, Drag & Drop)
+│   │
+│   ├── /parks ─── Windparks (Liste, Karte, Detail, Wetter)
+│   ├── /service-events ─── Wartung & Service
+│   │
+│   ├── /invoices ─── Rechnungen (Uebersicht, Versand, Abgleich)
+│   ├── /contracts ─── Vertraege (Liste, Detail, Kalender, ICS-Export)
+│   ├── /funds ─── Beteiligungen (Liste, Detail, Onboarding)
+│   ├── /energy ─── Energie (12+ Seiten: Produktion, SCADA, Analytics, Topologie)
+│   ├── /management-billing ─── BF-Abrechnung (Feature-Flag)
+│   │
+│   ├── /leases ─── Pacht (Vertraege, Abrechnung, Vorschuesse, Zahlungen, SHP, Umlagen)
+│   ├── /documents ─── Dokumente (Liste, Upload, Detail)
+│   ├── /votes ─── Abstimmungen (Liste, Neu, Detail, Vollmachten)
+│   ├── /news ─── Meldungen (Liste, Neu, Detail)
+│   ├── /reports ─── Berichte (Erstellen, Archiv)
+│   ├── /settings ─── Benutzer-Einstellungen
+│   │
+│   └── /admin ─── Administration (23+ Seiten)
+│       ├── /admin/roles ─── Rollen & Rechte
+│       ├── /admin/settlement-periods ─── Abrechnungsperioden
+│       ├── /admin/billing-rules ─── Abrechnungsregeln
+│       ├── /admin/tax-rates ─── Steuersaetze
+│       ├── /admin/webhooks ─── Webhook-Verwaltung
+│       ├── /admin/email ─── E-Mail-Vorlagen
+│       ├── /admin/templates ─── Dokumentvorlagen
+│       ├── /admin/archive ─── GoBD-Archiv
+│       ├── /admin/audit-logs ─── Audit-Logs
+│       ├── /admin/tenants ─── Mandanten
+│       ├── /admin/system ─── System-Gesundheit
+│       ├── /admin/backup ─── Backup & Speicher
+│       └── ... (weitere Admin-Seiten)
+│
+└── PORTAL (/portal) — 12 Seiten
+    ├── /portal ─── Startseite
+    ├── /portal/profile ─── Profil
+    ├── /portal/participations ─── Beteiligungen
+    ├── /portal/distributions ─── Ausschuettungen
+    ├── /portal/votes ─── Abstimmungen
+    ├── /portal/proxies ─── Vollmachten
+    ├── /portal/documents ─── Dokumente
+    ├── /portal/reports ─── Berichte
+    ├── /portal/energy-reports ─── Energieberichte
+    ├── /portal/energy-analytics ─── Energy-Analytics
+    └── /portal/settings ─── Einstellungen
 ```
 
 ## 2. Layout-Struktur
@@ -69,340 +72,163 @@ WindparkManager
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ HEADER                                                    [🔔] [👤 User ▼] │
-│ [Logo/Branding]  [Suche...]                                                │
+│ HEADER (Glassmorphism)                                      [🔔] [👤 User ▼]│
+│ [Tenant-Logo]  [Suche... Cmd+K]                          [🌙/☀] [DE/EN]    │
 ├────────────────┬────────────────────────────────────────────────────────────┤
 │                │                                                            │
 │   SIDEBAR      │                    MAIN CONTENT                           │
-│                │                                                            │
-│ 📊 Dashboard   │  ┌─────────────────────────────────────────────────────┐  │
-│ 🏭 Windparks   │  │  Page Header                          [+ Neu] [⚙]  │  │
-│ 💰 Fonds       │  ├─────────────────────────────────────────────────────┤  │
-│ 👥 Gesellsch.  │  │                                                     │  │
+│   (Brand Navy) │                                                            │
+│                │  ┌─────────────────────────────────────────────────────┐  │
+│ 📊 Dashboard   │  │  Page Header                    [+ Neu] [Export ⬇] │  │
+│ 🏭 Windparks   │  ├─────────────────────────────────────────────────────┤  │
+│ ⚡ Energie     │  │                                                     │  │
+│ 💶 Rechnungen  │  │              Content Area                           │  │
+│ 📄 Vertraege   │  │                                                     │  │
+│ 💰 Beteil.     │  │                                                     │  │
 │ 📍 Pacht       │  │                                                     │  │
-│ 📄 Verträge    │  │              Content Area                           │  │
 │ 📁 Dokumente   │  │                                                     │  │
-│ 💶 Abrechnungen│  │                                                     │  │
-│ 🗳️ Abstimmungen│  │                                                     │  │
-│ 📰 Aktuelles   │  │                                                     │  │
-│ 📈 Berichte    │  └─────────────────────────────────────────────────────┘  │
-│                │                                                            │
+│ 🗳️ Abstimmungen│  └─────────────────────────────────────────────────────┘  │
+│ 📰 Meldungen   │                                                            │
+│ 📈 Berichte    │                                                            │
 │ ─────────────  │                                                            │
-│ ⚙️ Einstellungen│                                                            │
-│                │                                                            │
+│ ⚙ Administration│                                                            │
+│ 🔧 System      │                                                            │
 └────────────────┴────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Mobile Layout
+### 2.2 6 Layout-Dateien
 
-```
-┌─────────────────────────┐
-│ [☰]  [Logo]    [🔔] [👤]│
-├─────────────────────────┤
-│                         │
-│     MAIN CONTENT        │
-│                         │
-│                         │
-│                         │
-│                         │
-│                         │
-│                         │
-├─────────────────────────┤
-│ [📊] [🏭] [💰] [📁] [≡] │
-│  Nav   Nav  Nav  Nav More│
-└─────────────────────────┘
-```
+| Layout | Pfad | Zweck |
+|--------|------|-------|
+| Root | `src/app/layout.tsx` | Basis-Layout, Providers, i18n |
+| Dashboard | `src/app/(dashboard)/layout.tsx` | Sidebar + Header (auth-geschuetzt) |
+| Admin | `src/app/(dashboard)/admin/layout.tsx` | Admin-spezifische Navigation |
+| Energy | `src/app/(dashboard)/energy/layout.tsx` | Energie-Unternavigation |
+| Portal | `src/app/(portal)/layout.tsx` | Portal-Layout (vereinfacht) |
+| Marketing | `src/app/(marketing)/layout.tsx` | Oeffentliche Seiten |
 
-## 3. Wireframes
-
-### 3.1 Dashboard
+## 3. Dashboard (27 Widgets)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  Dashboard                                               📅 Jan 2026   │
+│  Dashboard                                      [Widget hinzufuegen ⊕] │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐  │
-│  │ 🏭 Windparks │ │ ⚡ Anlagen   │ │ 👥 Gesellsch.│ │ 📄 Verträge  │  │
-│  │              │ │              │ │              │ │              │  │
+│  │ 🏭 Parks     │ │ ⚡ Anlagen   │ │ 👥 Gesellsch.│ │ 📄 Vertraege │  │
 │  │     12       │ │     48       │ │    156       │ │     23       │  │
 │  │   aktiv      │ │   in Betrieb │ │   aktiv      │ │   auslaufend │  │
 │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘  │
 │                                                                         │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐  │
+│  │ ⚡ Ertrag    │ │ 📊 Verfuegb.│ │ 🌬️ Wind     │ │ 💶 Pacht     │  │
+│  │  12.450 MWh  │ │    97.3%     │ │   8.5 m/s    │ │   142.000€   │  │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘  │
+│                                                                         │
 │  ┌─────────────────────────────────┐ ┌─────────────────────────────┐   │
-│  │ 📊 Produktion (letzte 30 Tage) │ │ 🌤️ Wetter Übersicht        │   │
-│  │                                 │ │                             │   │
-│  │    ▁▂▃▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇       │ │  Windpark Nord: 8.5 m/s    │   │
-│  │                                 │ │  Windpark Süd:  6.2 m/s    │   │
-│  │    Gesamt: 12.450 MWh          │ │  Windpark Ost:  7.8 m/s    │   │
+│  │ 📊 Monatliche Rechnungen       │ │ 🌤️ Wetter Uebersicht       │   │
+│  │ (12 Monate Balkendiagramm)     │ │ (pro Park)                  │   │
 │  └─────────────────────────────────┘ └─────────────────────────────┘   │
 │                                                                         │
 │  ┌─────────────────────────────────┐ ┌─────────────────────────────┐   │
-│  │ ⚠️ Anstehende Fristen          │ │ 📰 Neueste Aktivitäten      │   │
-│  │                                 │ │                             │   │
-│  │ • Pachtvertrag #12 - 30 Tage   │ │ • Dokument hochgeladen      │   │
-│  │ • Wartung WKA-05 - 14 Tage     │ │ • Abstimmung gestartet      │   │
-│  │ • Versicherung - 60 Tage       │ │ • Gutschrift erstellt       │   │
+│  │ ⚠️ Anstehende Fristen          │ │ 📰 Letzte Aktivitaeten      │   │
 │  └─────────────────────────────────┘ └─────────────────────────────┘   │
 │                                                                         │
+│  Widget-Grid: 12 Spalten, rowHeight 100px, Drag & Drop zum Umordnen    │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Daten-Tabelle (z.B. Windparks)
+### Widget-Kategorien (27 Widgets)
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  Windparks                                              [+ Neuer Park]  │
-├─────────────────────────────────────────────────────────────────────────┤
-│  🔍 [Suche...          ]  [Filter ▼]  [Sortieren ▼]     📥 Export      │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │ □  Name              Standort         Anlagen   Leistung  Status│   │
-│  ├─────────────────────────────────────────────────────────────────┤   │
-│  │ □  Windpark Nord     Schleswig-Holst.    12    36.000 kW  🟢    │   │
-│  │ □  Windpark Süd      Bayern               8    24.000 kW  🟢    │   │
-│  │ □  Windpark Ost      Brandenburg         15    45.000 kW  🟡    │   │
-│  │ □  Windpark West     NRW                 10    30.000 kW  🟢    │   │
-│  │ □  Offshore Alpha    Nordsee             20    80.000 kW  🟢    │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-│  ◀ 1 2 3 ... 5 ▶                              Zeige 1-5 von 23         │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+| Kategorie | Widgets | Groesse |
+|-----------|---------|---------|
+| KPI | 12 (Parks, Turbines, Shareholders, Capital, Invoices, Contracts, Documents, Votes, Energy-Yield, Availability, Wind-Speed, Lease-Revenue) | 3x2 |
+| Chart | 6 (Monthly-Invoices, Capital-Development, Documents-By-Type, Turbine-Status, Production-Forecast, Revenue-By-Park) | 4x3 |
+| List | 5 (Deadlines, Activities, Expiring-Contracts, Pending-Actions, Lease-Overview) | 4x3 |
+| Utility | 2 (Weather, Quick-Actions) | 3x2 |
+| Admin | 4 (System-Status, Audit-Log, Billing-Jobs, Webhook-Status) | 4x3 |
 
-### 3.3 Detail-Ansicht (z.B. Windpark)
+## 4. Design-System
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  ← Zurück    Windpark Nord                    [Bearbeiten] [⋮ Mehr]    │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │ [Übersicht] [Anlagen] [Verträge] [Dokumente] [Historie]         │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-│  ┌────────────────────────────┐  ┌──────────────────────────────────┐  │
-│  │ 📍 Stammdaten              │  │ 🗺️ Standort                     │  │
-│  │                            │  │                                  │  │
-│  │ Name:      Windpark Nord   │  │    ┌────────────────────────┐   │  │
-│  │ Standort:  24937 Flensburg │  │    │                        │   │  │
-│  │ Inbetr.:   15.03.2018      │  │    │     [Karten-Widget]    │   │  │
-│  │ Betreiber: Windenergie GmbH│  │    │                        │   │  │
-│  │ Leistung:  36.000 kW       │  │    └────────────────────────┘   │  │
-│  │ Status:    🟢 Aktiv        │  │                                  │  │
-│  └────────────────────────────┘  └──────────────────────────────────┘  │
-│                                                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │ ⚡ Anlagen (12)                                    [+ Hinzufügen]│   │
-│  ├─────────────────────────────────────────────────────────────────┤   │
-│  │ WKA-01  │ Vestas V110  │ 3.000 kW │ 🟢 Online  │ [Details →]   │   │
-│  │ WKA-02  │ Vestas V110  │ 3.000 kW │ 🟢 Online  │ [Details →]   │   │
-│  │ WKA-03  │ Vestas V110  │ 3.000 kW │ 🟡 Wartung │ [Details →]   │   │
-│  │ ...                                                              │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### 3.4 Formular (z.B. Neuer Vertrag)
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  ← Zurück    Neuer Vertrag                                             │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │ Schritt 1 von 3: Vertragsdaten                                  │   │
-│  │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━●━━━━━━━━━━━━━━━━━○━━━━━━━━━━━○   │   │
-│  │                                                                  │   │
-│  │   Vertragstyp *                                                 │   │
-│  │   ┌─────────────────────────────────────────────────────────┐   │   │
-│  │   │ Wartungsvertrag                                       ▼ │   │   │
-│  │   └─────────────────────────────────────────────────────────┘   │   │
-│  │                                                                  │   │
-│  │   Bezeichnung *                                                 │   │
-│  │   ┌─────────────────────────────────────────────────────────┐   │   │
-│  │   │ Vollwartungsvertrag WKA 01-12                           │   │   │
-│  │   └─────────────────────────────────────────────────────────┘   │   │
-│  │                                                                  │   │
-│  │   ┌─────────────────────────┐  ┌─────────────────────────┐      │   │
-│  │   │ Beginn *                │  │ Ende                     │      │   │
-│  │   │ 📅 01.01.2026           │  │ 📅 31.12.2030           │      │   │
-│  │   └─────────────────────────┘  └─────────────────────────┘      │   │
-│  │                                                                  │   │
-│  │   Vertragspartner *                                             │   │
-│  │   ┌─────────────────────────────────────────────────────────┐   │   │
-│  │   │ 🔍 Suche oder auswählen...                            ▼ │   │   │
-│  │   └─────────────────────────────────────────────────────────┘   │   │
-│  │                                                                  │   │
-│  │                                        [Abbrechen]  [Weiter →]  │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-## 4. shadcn/ui Komponenten
-
-### Basis-Komponenten
-- `Button` - Aktionen, Submit
-- `Input` - Texteingaben
-- `Label` - Formular-Labels
-- `Textarea` - Mehrzeilige Eingaben
-- `Select` - Dropdown-Auswahl
-- `Checkbox` - Mehrfachauswahl
-- `Radio Group` - Einzelauswahl
-- `Switch` - Toggle
-- `Slider` - Bereichsauswahl
-
-### Layout-Komponenten
-- `Card` - Content-Container
-- `Separator` - Trennlinien
-- `Tabs` - Tab-Navigation
-- `Accordion` - Ausklappbare Sektionen
-- `Collapsible` - Einklappbare Bereiche
-- `Resizable` - Anpassbare Panels
-
-### Daten-Anzeige
-- `Table` - Datentabellen
-- `Data Table` - Erweiterte Tabellen mit Sorting/Filtering
-- `Badge` - Status-Labels
-- `Avatar` - Benutzer-Bilder
-- `Progress` - Fortschrittsanzeige
-
-### Feedback
-- `Alert` - Hinweise, Warnungen
-- `Toast` - Benachrichtigungen
-- `Skeleton` - Ladezustand
-- `Spinner` - Lade-Animation
-
-### Overlay
-- `Dialog` - Modale Dialoge
-- `Sheet` - Seitliche Panels
-- `Dropdown Menu` - Kontextmenüs
-- `Popover` - Tooltips mit Inhalt
-- `Command` - Suchfeld mit Ergebnissen
-- `Context Menu` - Rechtsklick-Menü
-
-### Navigation
-- `Navigation Menu` - Hauptnavigation
-- `Breadcrumb` - Pfad-Navigation
-- `Pagination` - Seitennavigation
-
-### Formulare
-- `Form` - React Hook Form Integration
-- `Calendar` - Datumsauswahl
-- `Date Picker` - Datum mit Popover
-- `Combobox` - Autocomplete
-
-## 5. Farbschema
-
-### Standard-Farben (Default Theme)
+### 4.1 Brand Identity: Warm Navy
 
 ```css
 :root {
-  /* Basis */
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-
-  /* Primär (Blau) */
-  --primary: 221.2 83.2% 53.3%;
+  /* Brand-Farbe: Warm Navy */
+  --primary: 215 50% 40%;         /* #335E99 (Light Mode) */
   --primary-foreground: 210 40% 98%;
 
-  /* Sekundär */
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
+  /* Dark Mode */
+  .dark {
+    --primary: 215 55% 58%;       /* #598ACF (Dark Mode) */
+  }
 
-  /* Akzent */
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-
-  /* Status */
-  --success: 142.1 76.2% 36.3%;
-  --warning: 38 92% 50%;
-  --destructive: 0 84.2% 60.2%;
-
-  /* Neutral */
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-
-  /* Border & Input */
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
+  /* 12 Chart-Variablen */
+  --chart-1: 215 50% 40%;
+  --chart-2: 215 45% 55%;
+  --chart-3: 25 85% 55%;
+  --chart-4: 142 45% 42%;
+  --chart-5: 350 60% 55%;
+  /* ... bis --chart-12 */
 }
 ```
 
-### Tenant-Anpassung (CSS Variables)
+### 4.2 shadcn/ui Komponenten (41 Basis-Komponenten)
 
-```css
-/* Dynamisch pro Mandant */
-:root {
-  --tenant-primary: var(--tenant-color, #1e40af);
-  --tenant-logo: url(var(--tenant-logo-url));
-}
+**Basis:** Button, Input, Label, Textarea, Select, Checkbox, Radio, Switch, Slider
+**Layout:** Card, Separator, Tabs, Accordion, Collapsible, Resizable
+**Daten:** Table, Data Table, Badge, Avatar, Progress
+**Feedback:** Alert, Toast, Skeleton (Shimmer-Animation)
+**Overlay:** Dialog, Sheet, Dropdown Menu, Popover, Command, Context Menu
+**Navigation:** Navigation Menu, Breadcrumb, Pagination
+**Formulare:** Form, Calendar, Date Picker, Combobox
 
-/* Anwendung */
-.tenant-header {
-  background-color: hsl(var(--tenant-primary));
-}
+### 4.3 Animations & Micro-Interactions
 
-.tenant-logo {
-  background-image: var(--tenant-logo);
-}
-```
+- `shimmer` — Skeleton Loading Animation
+- `fade-in` — Elemente einblenden
+- `slide-in-right` — Seitliche Einblendung
+- `scale-in` — Skalierungs-Animation
+- Glassmorphism Header (`backdrop-blur`)
+- Button Micro-Interactions (hover scale)
+- Table Zebra-Striping
+- Sidebar Active-Indicator
+- Stats-Cards Gradient
+- `.card-interactive` — Hover-Effekt fuer klickbare Cards
 
-### Dark Mode
+## 5. Navigation (Sidebar)
 
-```css
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --primary: 217.2 91.2% 59.8%;
-  /* ... weitere Anpassungen */
-}
-```
+### 5.1 Desktop Sidebar (6 Gruppen, 35+ Items)
 
-## 6. Navigation-Konzept
+| Gruppe | Items | Permission |
+|--------|-------|------------|
+| **Dashboard** | Dashboard | Alle |
+| **Windparks** | Parks, Service-Events | parks:read, service-events:read |
+| **Finanzen** | Rechnungen (3 Sub), Vertraege, Beteiligungen, Energie (8 Sub), BF (3 Sub) | invoices:read, contracts:read, funds:read, energy:read |
+| **Verwaltung** | Pacht (5 Sub), Dokumente, Abstimmungen, Meldungen, Berichte (2 Sub) | leases:read, documents:read, votes:read, reports:read |
+| **Administration** | Einstellungen, Rollen, Perioden, Regeln, Zugriff, E-Mail, Vorlagen, GoBD | settings:read, roles:read, admin:* |
+| **System** | Mandanten, System-Settings, Wartung, Config, Audit, Backup, Marketing, Revenue-Types, Tax-Rates, Fund-Categories, Webhooks | system:*, admin:manage |
 
-### Desktop Sidebar
+### 5.2 Features
+- Collapsible Groups (expandieren bei aktiver Seite)
+- Permission-basierte Sichtbarkeit
+- Feature-Flag-Integration (z.B. management-billing)
+- Tenant-Logo im Sidebar-Header
+- Dark Mode: Brand Navy Hintergrund
+- Active-Indicator Animation
 
-| Icon | Label | Route | Rolle |
-|------|-------|-------|-------|
-| 📊 | Dashboard | /app/dashboard | Alle |
-| 🏭 | Windparks | /app/parks | Alle |
-| 💰 | Fonds | /app/funds | Alle |
-| 👥 | Gesellschafter | /app/shareholders | Alle |
-| 📍 | Pacht & Flächen | /app/leases | Manager+ |
-| 📄 | Verträge | /app/contracts | Manager+ |
-| 📁 | Dokumente | /app/documents | Alle |
-| 💶 | Abrechnungen | /app/invoices | Manager+ |
-| 🗳️ | Abstimmungen | /app/votes | Alle |
-| 📰 | Aktuelles | /app/news | Alle |
-| 📈 | Berichte | /app/reports | Manager+ |
-| ⚙️ | Einstellungen | /app/settings | Admin |
-
-### Breadcrumb-Beispiel
-
-```
-Dashboard > Windparks > Windpark Nord > Anlagen > WKA-05
-```
-
-### Keyboard Shortcuts
+### 5.3 Keyboard Shortcuts
 
 | Shortcut | Aktion |
 |----------|--------|
-| `Cmd/Ctrl + K` | Globale Suche öffnen |
+| `Cmd/Ctrl + K` | Globale Suche oeffnen |
 | `Cmd/Ctrl + N` | Neuer Eintrag (kontextbezogen) |
 | `Cmd/Ctrl + S` | Speichern |
-| `Esc` | Dialog/Modal schließen |
-| `?` | Hilfe anzeigen |
+| `Esc` | Dialog/Modal schliessen |
 
-## 7. Responsive Breakpoints
+## 6. Responsive Breakpoints
 
 ```css
-/* Tailwind Default Breakpoints */
 sm: 640px   /* Mobile Landscape */
 md: 768px   /* Tablet */
 lg: 1024px  /* Desktop */
@@ -410,20 +236,37 @@ xl: 1280px  /* Large Desktop */
 2xl: 1536px /* Extra Large */
 ```
 
-### Verhalten pro Breakpoint
+| Breakpoint | Sidebar | Tabellen | Cards | Dashboard |
+|------------|---------|----------|-------|-----------|
+| < 768px | Hidden (Hamburger) | Horizontal Scroll | 1 Spalte | 1 Spalte |
+| 768-1024px | Collapsed (Icons) | Responsive | 2 Spalten | 2 Spalten |
+| > 1024px | Expanded | Full | 3-4 Spalten | 12-Spalten Grid |
 
-| Breakpoint | Sidebar | Tabellen | Cards |
-|------------|---------|----------|-------|
-| < 768px | Hidden (Hamburger) | Horizontal Scroll | 1 Spalte |
-| 768-1024px | Collapsed (Icons) | Responsive | 2 Spalten |
-| > 1024px | Expanded | Full | 3-4 Spalten |
+## 7. Workflow-Wizards (5 Stueck)
+
+| Wizard | Schritte | Route |
+|--------|----------|-------|
+| Jahresendabrechnung | Park → Zeitraum → Datenquellen → Zusammenfassung → Erstellen | /energy/settlements/wizard |
+| Park-Einrichtung | Stammdaten → Turbinen → SCADA-Mapping → Topologie → Freigabe | /parks/new (Wizard-Modus) |
+| Pachtabrechnung | Pachtvertrag → Zeitraum → Kosten → Vorschau → Erstellen | /leases/settlement/new |
+| Vertrags-Wizard | Vertragstyp → Parteien → Konditionen → Dokumente → Freigabe | /contracts/new (Wizard-Modus) |
+| SHP-Import | Datei-Upload → Vorschau → Zuordnung → Bestaetigung → Ergebnis | /leases/import-shp |
 
 ## 8. Accessibility (A11y)
 
 - **WCAG 2.1 AA** Compliance
-- Keyboard-Navigation für alle interaktiven Elemente
-- ARIA-Labels für Icons und Buttons
-- Fokus-Indikatoren sichtbar
-- Kontrastverhältnis mindestens 4.5:1
-- Skip-Links für Hauptinhalt
+- Keyboard-Navigation fuer alle interaktiven Elemente
+- ARIA-Labels fuer Icons und Buttons
+- Fokus-Indikatoren sichtbar (ring-2 ring-offset-2)
+- Kontrast mindestens 4.5:1
+- Skip-Links fuer Hauptinhalt
 - Screenreader-freundliche Tabellen
+- Dark Mode unterstuetzt
+
+## 9. i18n (Internationalisierung)
+
+- **next-intl** Bibliothek
+- 2 Sprachen: Deutsch (Standard), Englisch
+- Cookie-basierter Sprachwechsel
+- Alle UI-Texte in `src/messages/de.json` und `en.json`
+- Sidebar-Navigation ueber `titleKey` (z.B. `nav.parks`)

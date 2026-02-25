@@ -1,11 +1,14 @@
 # System-Architektur: WindparkManager (WPM)
 
+> **Stand:** 25. Februar 2026
+> **Version:** 2.0 (komplette Ueberarbeitung)
+
 ## 1. System-Uebersicht
 
 ```
                                     ┌─────────────────────────────────────┐
-                                    │           LOAD BALANCER             │
-                                    │         (Traefik/Nginx)             │
+                                    │         TRAEFIK v3.0                │
+                                    │   (Reverse Proxy, SSL, Rate Limit) │
                                     └─────────────┬───────────────────────┘
                                                   │
                     ┌─────────────────────────────┼─────────────────────────────┐
@@ -15,12 +18,14 @@
         │   ADMIN-PORTAL    │       │  GESELLSCHAFTER-  │       │   API-ENDPOINTS   │
         │   (Next.js 15)    │       │    PORTAL         │       │   (Next.js API)   │
         │                   │       │   (Next.js 15)    │       │                   │
-        │ • Mandanten       │       │                   │       │ • 177+ REST-      │
+        │ • Mandanten       │       │                   │       │ • 475 REST-       │
         │ • User-Verwaltung │       │ • Beteiligungen   │       │   Endpunkte       │
         │ • System-Config   │       │ • Ausschuettungen │       │ • SCADA-Import    │
         │ • Rollen/Rechte   │       │ • Abstimmungen    │       │ • PDF-Export      │
-        │ • Abrechnungen    │       │ • Dokumente       │       │ • E-Mail-Versand  │
-        │ • Impersonation   │       │ • Energieberichte │       │ • Billing-Worker  │
+        │ • Abrechnungen    │       │ • Dokumente       │       │ • Webhook-System  │
+        │ • Webhooks        │       │ • Energieberichte │       │ • Batch-Ops       │
+        │ • Feature-Flags   │       │ • Energy-Analysen │       │ • ICS-Export      │
+        │ • Impersonation   │       │ • Berichte        │       │ • E-Mail-Queue    │
         └─────────┬─────────┘       └─────────┬─────────┘       └─────────┬─────────┘
                   │                           │                           │
                   └───────────────────────────┼───────────────────────────┘
@@ -31,12 +36,13 @@
                               │                               │
                               │  ┌──────────┐  ┌──────────┐  │
                               │  │NextAuth  │  │  Prisma  │  │
-                              │  │  v5      │  │   ORM    │  │
+                              │  │  v5      │  │  6 ORM   │  │
                               │  └────┬─────┘  └────┬─────┘  │
                               │       │             │         │
                               │  ┌────▼─────────────▼─────┐  │
                               │  │      PostgreSQL 16     │  │
-                              │  │   (via Prisma Client)  │  │
+                              │  │    (88 Models, 34 Enums,│  │
+                              │  │     225 Relations)      │  │
                               │  └────────────────────────┘  │
                               └───────────────────────────────┘
                                               │
@@ -44,10 +50,21 @@
                     │                         │                         │
                     ▼                         ▼                         ▼
         ┌───────────────────┐   ┌───────────────────┐   ┌───────────────────┐
-        │   MAIL-SERVICE    │   │   REDIS / CACHE   │   │   FILE STORAGE    │
-        │  (React Email +   │   │  (BullMQ, Cache,  │   │  (Lokal / MinIO   │
-        │   Nodemailer)     │   │   Sessions)       │   │   S3-kompatibel)  │
+        │   MAIL-SERVICE    │   │   REDIS 7          │   │   FILE STORAGE    │
+        │  (React Email +   │   │  (BullMQ 8 Queues, │   │  (MinIO S3)       │
+        │   Nodemailer)     │   │   Cache, Sessions,  │   │  Presigned URLs   │
+        │                   │   │   Permission-Cache) │   │                   │
         └───────────────────┘   └───────────────────┘   └───────────────────┘
+                                        │
+                                        ▼
+                              ┌───────────────────┐
+                              │  BullMQ WORKER    │
+                              │  (8 Queues/Worker)│
+                              │  Email, PDF,      │
+                              │  Billing, Weather,│
+                              │  Report, Reminder,│
+                              │  SCADA, Webhook   │
+                              └───────────────────┘
 ```
 
 ## 2. Komponenten-Beschreibung
@@ -57,43 +74,49 @@
 | Komponente | Technologie | Beschreibung |
 |------------|-------------|--------------|
 | Admin-Portal | Next.js 15 + App Router | Superadmin-Bereich fuer Mandanten-, User- und System-Verwaltung |
-| Gesellschafter-Portal | Next.js 15 + App Router | Readonly-Portal fuer Kommanditisten (Beteiligungen, Abstimmungen, Dokumente, Energieberichte) |
-| Hauptanwendung | Next.js 15 + App Router | Komplette Windpark-Verwaltung fuer interne Benutzer |
-| UI-Bibliothek | shadcn/ui + Tailwind CSS | Konsistente, barrierefreie Komponenten |
-| Charts | Recharts | Diagramme fuer SCADA-Analyse, Energieberichte, Dashboard |
-| Rich Text | TipTap | WYSIWYG-Editor fuer News, Beschreibungen |
-| State Management | TanStack Query (React Query) + React Hooks | Server-State-Caching und Client-State |
+| Gesellschafter-Portal | Next.js 15 + App Router | Portal fuer Kommanditisten (Beteiligungen, Abstimmungen, Dokumente, Energieberichte, Analytics) |
+| Hauptanwendung | Next.js 15 + App Router | Komplette Windpark-Verwaltung fuer interne Benutzer (107 Seiten) |
+| UI-Bibliothek | shadcn/ui + Tailwind CSS | 41 Basis-Komponenten, Brand Identity "Warm Navy" |
+| Charts | Recharts | 12 CSS-Variablen, Diagramme fuer SCADA-Analyse, Energieberichte, Dashboard |
+| Rich Text | TipTap | WYSIWYG-Editor (15 Block-Typen) fuer News, Rechnungen, Beschreibungen |
+| State Management | TanStack Query + React Hooks | Server-State-Caching und Client-State |
 | Formulare | React Hook Form + Zod | Formularverwaltung mit Schema-Validierung |
 | Tabellen | TanStack Table | Sortierbare, filterbare Datentabellen |
-| Karten | Leaflet + React-Leaflet | Kartendarstellung fuer Windparks und Flurstuecke |
-| Dashboard | react-grid-layout | Konfigurierbares Widget-Grid (12-Spalten, drag & drop) |
+| Karten | Leaflet + React-Leaflet | Kartendarstellung mit GeoJSON-Polygonen fuer Parks und Flurstuecke |
+| Dashboard | react-grid-layout | Konfigurierbares Widget-Grid (12-Spalten, 27 Widgets, drag & drop) |
+| i18n | next-intl | Deutsch + Englisch (Cookie-basiert) |
+| PDF | @react-pdf/renderer | DIN 5008, Branding, Wasserzeichen, XRechnung/ZUGFeRD |
 
 ### 2.2 Backend-Schicht
 
 | Komponente | Technologie | Beschreibung |
 |------------|-------------|--------------|
-| API Routes | Next.js 15 Route Handlers (App Router) | 177+ REST-Endpoints fuer CRUD und Business-Logik |
-| Auth | NextAuth.js v5 mit Credentials Provider | JWT-basierte Authentifizierung mit Session-Strategie |
-| ORM | Prisma (mit @prisma/client) | Type-safe Database Client mit Migrations |
-| Database | PostgreSQL 16 | Relationale Datenbank mit 38 Modellen |
+| API Routes | Next.js 15 Route Handlers | 286 Route-Dateien, 475 HTTP-Endpoints |
+| Auth | NextAuth.js v5 (Credentials) | JWT-Sessions, 6-stufige Rollen-Hierarchie |
+| ORM | Prisma 6 | 88 Models, 34 Enums, 225 Relations |
+| Database | PostgreSQL 16 | Multi-Tenant mit tenantId-Isolation |
 | Validation | Zod | Schema-Validierung fuer alle API-Eingaben |
-| Background Jobs | BullMQ + ioredis | Asynchrone Aufgaben (E-Mail, Reports, Billing) |
-| Caching | Redis + In-Memory | Permission-Cache, Query-Cache, Session-Cache |
-| Logging | Pino (+ pino-pretty fuer Development) | Strukturiertes JSON-Logging |
+| Background Jobs | BullMQ + ioredis | 8 Queues + 8 Worker (Email, PDF, Billing, Weather, Report, Reminder, SCADA, Webhook) |
+| Caching | Redis 7 | Permission-Cache, Dashboard-Cache, Query-Cache (8 Prefixes, 10 TTL-Stufen) |
+| Webhooks | Dispatcher + BullMQ | 13 Event-Typen, HMAC-SHA256, Exponential Backoff |
+| Logging | Pino (+ pino-pretty) | Strukturiertes JSON-Logging, Slow-Query-Warnung |
 | Error Tracking | Sentry (@sentry/nextjs) | Fehler-Monitoring und Performance-Tracking |
-| File Storage | Lokales Dateisystem / MinIO (S3-kompatibel) | Dokumente, Logos, Anhaenge via @aws-sdk/client-s3 |
-| E-Mail | React Email + Nodemailer | Template-basierter E-Mail-Versand (konfigurierbar pro Mandant) |
-| PDF | @react-pdf/renderer | PDF-Generierung fuer Rechnungen, Gutschriften, Berichte |
-| SCADA-Parser | dbase (npm) | dBASE III Parser fuer Enercon WSD/UID-Dateien |
+| File Storage | MinIO (S3-kompatibel) | Dokumente, Logos, Anhaenge via @aws-sdk/client-s3 |
+| E-Mail | React Email + Nodemailer | SMTP/SendGrid/SES, Template-basiert, Queue-basierter Versand |
+| PDF | @react-pdf/renderer + pdf-lib | Rechnungen, Gutschriften, Berichte, DIN 5008, Wasserzeichen |
+| SCADA-Parser | dbffile | dBASE III Parser fuer Enercon WSD/UID-Dateien |
+| Shapefile | shpjs | SHP-Import mit ALKIS-Auto-Detection |
+| E-Invoicing | Eigene Implementierung | XRechnung (UBL 2.1), ZUGFeRD 2.2 COMFORT |
 
 ### 2.3 Externe Services
 
 | Service | Zweck |
 |---------|-------|
-| SMTP (konfigurierbar pro Mandant) | E-Mail-Versand (Benachrichtigungen, Berichte) |
-| OpenWeatherMap API | Wetterdaten fuer Korrelationsanalysen |
+| SMTP (konfigurierbar pro Mandant) | E-Mail-Versand (Benachrichtigungen, Berichte, Rechnungen) |
+| OpenWeatherMap API | Wetterdaten fuer Windpark-Standorte |
 | MinIO (S3-kompatibel) | Objektspeicher fuer Dokumente in Production |
 | Sentry | Error-Tracking und Performance-Monitoring |
+| GitHub Container Registry | Docker-Image-Registry (ghcr.io) |
 
 ## 3. Multi-Tenancy Konzept
 
@@ -112,63 +135,70 @@
 │  │          APPLICATION-LEVEL TENANT ISOLATION              │     │
 │  │                                                          │     │
 │  │  Prisma Queries: .where({ tenantId: session.tenantId })  │     │
-│  │  Jeder User sieht NUR Daten seines Mandanten             │     │
+│  │  57 von 88 Models haben tenantId (onDelete: Cascade)     │     │
+│  │  Cross-Tenant: Nur BF-Abrechnung (ParkStakeholder)       │     │
 │  └──────────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-Die Mandanten-Isolation wird auf Application-Level durch Prisma-Queries mit `tenantId`-Filter sichergestellt. Jede Tabelle, die mandantenspezifische Daten enthaelt, hat eine `tenantId`-Spalte mit Foreign Key auf die `tenants`-Tabelle. API-Routen extrahieren die `tenantId` aus dem JWT-Token der NextAuth-Session und filtern alle Queries entsprechend.
-
 ### Branding pro Mandant
-- Logo (Header, Berichte, Rechnungen)
+- Logo (Header, Berichte, Rechnungen, Marketing-Seite)
 - Primaerfarbe / Akzentfarbe
 - Firmenname und Kontaktdaten
 - E-Mail-Konfiguration (eigener SMTP-Server)
-- Eigene Briefkoepfe und Dokumentvorlagen
+- Eigene Briefkoepfe und Dokumentvorlagen (Letterheads)
+- Feature-Flags (Module pro Mandant ein-/ausschalten)
 
 ## 4. Berechtigungssystem
 
-### 4.1 Rollen-Hierarchie
+### 4.1 Rollen-Hierarchie (6 Stufen)
 
 ```
-SUPERADMIN (3) ─── Zugriff auf alle Mandanten, System-Konfiguration
+SUPERADMIN (100) ── Zugriff auf alle Mandanten, System-Konfiguration, Impersonation
      │
-  ADMIN (2) ────── Mandanten-Admin, User-/Rollen-Verwaltung, Abrechnungsregeln
+  ADMIN (80) ────── Mandanten-Admin, User-/Rollen-Verwaltung, Abrechnungsregeln
      │
-  MANAGER (1) ──── Daten bearbeiten (Parks, Vertraege, Rechnungen, Energie)
+  MANAGER (60) ──── Daten bearbeiten (Parks, Vertraege, Rechnungen, Energie)
      │
-  VIEWER (0) ───── Nur Lesezugriff
+  MITARBEITER (50)─ Eingeschraenkte Bearbeitung
+     │
+  NUR_LESEN (40) ── Nur Lesezugriff
+     │
+  PORTAL (20) ───── Gesellschafter-Portal (eigene Daten)
 ```
 
-### 4.2 Granulares Permission-System
-
-Rollen bestehen aus granularen Berechtigungen, die pro Modul und Aktion definiert sind:
+### 4.2 Granulares Permission-System (75 Permissions)
 
 | Modul | Berechtigungen |
 |-------|---------------|
-| `parks` | read, create, update, delete |
-| `funds` | read, create, update, delete |
-| `invoices` | read, create, update, delete |
-| `contracts` | read, create, update, delete |
-| `leases` | read, create, update, delete |
-| `documents` | read, create, update, delete |
-| `energy` | read, create, update, delete |
-| `votes` | read, create, update, delete |
-| `reports` | read, create |
-| `settings` | read, write |
-| `service-events` | read, create, update, delete |
-| `admin` | users, tenants, system |
+| `parks` | read, create, update, delete, export |
+| `turbines` | read, create, update, delete, export |
+| `funds` | read, create, update, delete, export |
+| `shareholders` | read, create, update, delete, export |
+| `plots` | read, create, update, delete, export |
+| `leases` | read, create, update, delete, export |
+| `contracts` | read, create, update, delete, export |
+| `documents` | read, create, update, delete, download, export |
+| `invoices` | read, create, update, delete, export |
+| `votes` | read, create, update, delete, manage |
+| `service-events` | read, create, update, delete, export |
+| `energy` | read, create, update, delete, export, scada:import, settlements:finalize |
+| `reports` | read, create, export |
+| `settings` | read, update |
+| `users` | read, create, update, delete, impersonate |
+| `roles` | read, create, update, delete, assign |
+| `admin` | manage, tenants, system, impersonate, audit |
 
 - **Rollen sind editierbar** (SuperAdmin kann Rollen erstellen/aendern)
 - **Resource Access**: Datensatz-Level Berechtigungen (z.B. Zugriff nur auf bestimmte Parks)
-- **Permission-Cache**: In-Memory-Cache fuer schnelle Berechtigungspruefungen
+- **Permission-Cache**: Redis-basiert (TTL 300s, automatische Invalidierung)
 
 ### 4.3 Gesellschafter-Portal Zugriff
 
-Gesellschafter (Kommanditisten) koennen einen Portal-Zugang erhalten:
 - Verknuepfung `Shareholder.userId` mit einem Portal-User
 - Eigene Portal-Rolle mit eingeschraenkten Berechtigungen
 - Sieht nur eigene Beteiligungen, Ausschuettungen, Abstimmungen, Dokumente
+- Energy-Analytics Dashboard (KPIs, Trends, Turbinen-Tabelle)
 
 ## 5. Fachliche Module
 
@@ -179,30 +209,32 @@ Park
  ├── Turbine (1:n) ─── Anlagen mit technischen Daten
  │    ├── ServiceEvent ─── Wartungen, Stoerungen
  │    ├── ScadaMeasurement ─── 10-Min SCADA-Rohdaten
- │    └── TurbineProduction ─── Monatliche Produktionsdaten
+ │    ├── TurbineProduction ─── Monatliche Produktionsdaten
+ │    └── TurbineOperator ─── Welche Gesellschaft betreibt (zeitlich)
  ├── Plot (1:n) ─── Flurstuecke mit Teilflaechen
- │    └── PlotArea ─── WEA-Standort, Pool, Weg, Ausgleich, Kabel
+ │    └── PlotArea ─── WEA_STANDORT, POOL, WEG, AUSGLEICH, KABEL
  ├── Contract (1:n) ─── Vertraege (Service, Versicherung, Netz, ...)
  ├── Document (1:n) ─── Dokumente mit Versionierung
- ├── WeatherData ─── Wetterdaten (OpenWeatherMap)
- └── ParkRevenuePhase ─── Erloesphasen (Verguetungssaetze ueber Zeit)
+ ├── WeatherData ─── Wetterdaten (OpenWeatherMap, Redis-Cache)
+ ├── ParkRevenuePhase ─── Erloesphasen (Verguetungssaetze ueber Zeit)
+ ├── NetworkNode / NetworkConnection ─── Netz-Topologie (SVG-Canvas)
+ └── ParkCostAllocation ─── Umlageverfahren pro Park
 ```
 
 ### 5.2 Gesellschaften & Beteiligungen (Funds)
 
 ```
 Fund (Gesellschaft)
- ├── FundType: BETREIBER | NETZGESELLSCHAFT | UMSPANNWERK | VERMARKTUNG | SONSTIGE
+ ├── FundCategory ─── BETREIBER | NETZGESELLSCHAFT | UMSPANNWERK | VERMARKTUNG | ...
  ├── Shareholder (1:n) ─── Gesellschafter mit Kapitalanteil
- │    ├── ownershipPercentage ─── Beteiligungsquote
- │    ├── distributionPercentage ─── Ausschuettungsquote
+ │    ├── ownershipPercentage, distributionPercentage, votingRightsPercentage
  │    └── userId (optional) ─── Portal-Zugang
  ├── FundPark (n:m) ─── Beteiligung an Parks
- ├── FundHierarchy ─── Mutter-/Tochtergesellschaften
- │    (Fund ← → Fund mit validFrom/validTo)
- ├── Vote (1:n) ─── Abstimmungen
+ ├── FundHierarchy ─── Mutter-/Tochtergesellschaften (validFrom/validTo)
+ ├── Vote (1:n) ─── Gesellschafterbeschluesse
  ├── Distribution (1:n) ─── Ausschuettungen
- └── TurbineOperator ─── Welche Gesellschaft betreibt welche Turbine (zeitlich)
+ ├── ParkStakeholder ─── Cross-Tenant BF-Abrechnung
+ └── Letterhead ─── Briefkopf-Konfiguration fuer Rechnungen
 ```
 
 ### 5.3 Pacht & Flaechen
@@ -213,18 +245,22 @@ Lease (Pachtvertrag)
  ├── LeasePlot (n:m) ─── Verknuepfung zu Flurstuecken
  │    └── Plot (Flurstueck)
  │         ├── county / municipality / cadastralDistrict / fieldNumber / plotNumber
+ │         ├── geometry (GeoJSON) ─── SHP-Import, Karten-Darstellung
  │         └── PlotArea (1:n) ─── Teilflaechen
  │              ├── WEA_STANDORT ─── % vom Ertrag
  │              ├── POOL ─── % vom Ertrag (Pool-Flaeche)
  │              ├── WEG ─── Fixbetrag pro qm (Zuwegung)
  │              ├── AUSGLEICH ─── Fixbetrag pro qm
  │              └── KABEL ─── Fixbetrag pro Meter (Kabeltrasse)
- └── LeaseSettlementPeriod ─── Pachtabrechnungen (Vorschuss / Endabrechnung)
+ ├── LeaseSettlementPeriod ─── Pachtabrechnungen (Vorschuss / Endabrechnung)
+ │    └── LeaseRevenueSettlement ─── Pro Verpaechter Abrechnung
+ │         └── LeaseRevenueSettlementItem ─── Positionen (pro Flaeche/Typ)
+ └── contractPartnerFundId ─── Vertragspartner-Gesellschaft
 ```
 
 ### 5.4 Energie-Modul (SCADA + Abrechnungen)
 
-#### Datenmodell-Trennung (KRITISCH)
+#### Datenmodell-Trennung
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -243,38 +279,32 @@ Lease (Pachtvertrag)
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **ScadaMeasurement**: 10-Minuten-Rohdaten aus Enercon WSD/UID-Dateien
-- **TurbineProduction**: Reine Produktionsdaten (kWh, Betriebsstunden, Verfuegbarkeit) - KEIN Umsatz!
-- **EnergySettlement**: Netzbetreiber-/Direktvermarkter-Abrechnungsdaten (Einspeisung + Erloes)
-- **Invoice** (geplant): Gutschriften an Gesellschafter - komplexes Modul, spaeterer Meilenstein
-
-#### SCADA-Integration (Enercon)
+#### SCADA-Subsystem (15 Models)
 
 ```
-Enercon SCADA-Verzeichnis:
-  Loc_XXXX/              ─── Standort (Location Code)
-   └── YYYY/             ─── Jahr
-       └── MM/           ─── Monat
-           └── YYYYMMDD.wsd  ─── Tages-Datei (dBASE III Format)
-               YYYYMMDD.uid  ─── Elektrische Daten
-
-ScadaTurbineMapping:
-  locationCode + plantNo ──► turbineId
-  (Zuordnung Enercon-Kennung zu DB-Turbine)
+ScadaTurbineMapping ─── Loc_xxxx + PlantNo → Turbine-Zuordnung
+ScadaMeasurement ────── 10-Min-Rohdaten
+ScadaImportLog ─────── Import-Protokoll
+ScadaAutoImportLog ──── Auto-Import via BullMQ (taeglich 02:00)
+ScadaAnomaly ────────── Erkannte Anomalien
+ScadaAnomalyConfig ──── Konfig pro Park (4 Algorithmen)
+ScadaAvailability ───── Verfuegbarkeitsdaten
+ScadaStateEvent ─────── Betriebszustandswechsel
+ScadaStateSummary ───── Aggregierte Zustandszeiten
+ScadaTextEvent ──────── Textuelle Ereignisse
+ScadaWarningEvent ───── Warnmeldungen
+ScadaWarningSummary ─── Aggregierte Warnungen
+ScadaWindSummary ────── Wind-Zusammenfassungen
 ```
 
-Wichtige WSD-Feldnamen:
-- `Date` + `Hour` + `Minute` + `Second` = Zeitstempel (muessen kombiniert werden!)
-- `mrwSmpVWi` = Windgeschwindigkeit (m/s)
-- `mrwSmpP` = Leistung in **kW** (nicht Watt!)
-- `mrwSmpNRot` = Rotor-Drehzahl (U/min)
-- `mrwAbGoPos` = Gondel-Position / Windrichtung (Grad)
-- Ungueltige Werte: 32767, 65535, 6553.5
+#### Energy Analytics (8 Tabs)
+- Performance, Verfuegbarkeit, Turbinenvergleich, Stoerungen
+- Umwelt, Finanzen, Daten-Explorer, Datenabgleich
 
-#### Strom-Verteilungskonzept (DULDUNG)
+#### Strom-Verteilungskonzept
 
 ```
-NB-Gutschrift (Netzbetreiber)
+NB-Gutschrift (Netzbetreiber/Direktvermarkter)
      │
      ▼
 Netz GbR / Umspannwerk GmbH        ◄── Park.billingEntityFundId
@@ -291,12 +321,6 @@ Betreibergesellschaften (Funds)
           productionShareKwh + revenueShareEur
 ```
 
-**DULDUNGS-Formel:**
-- Ausgleich = (Ist-Produktion - Durchschnitt) × Verguetungssatz
-- Positiv = Abzug (WKA produzierte mehr als Durchschnitt)
-- Negativ = Zuschlag (WKA produzierte weniger)
-- Bei TOLERATED: Nur Abweichungen ueber der Toleranzgrenze werden ausgeglichen
-
 ### 5.5 Rechnungswesen
 
 ```
@@ -305,10 +329,16 @@ Invoice (Rechnung / Gutschrift)
  ├── InvoiceItem (1:n) ─── Positionen mit DATEV-Konten
  │    ├── datevKonto, datevGegenkonto, datevKostenstelle
  │    └── taxType: STANDARD (19%) | REDUCED (7%) | EXEMPT (0%)
- ├── Storno: cancelledInvoiceId (Self-Relation)
- ├── PDF-Generierung mit Briefkopf (Letterhead)
+ ├── Storno: cancelledInvoiceId (Self-Relation) + Teilstorno
+ ├── Skonto: skontoPercent, skontoDeadline (Auto-Apply bei Zahlung)
+ ├── Mahnwesen: 3 Stufen + Verzugsgebuehren (Billing-Worker)
+ ├── PDF-Generierung mit Briefkopf (Letterhead), DIN 5008, Wasserzeichen
+ ├── E-Invoicing: XRechnung (UBL 2.1), ZUGFeRD 2.2 COMFORT
  ├── InvoiceNumberSequence ─── Fortlaufende Nummern pro Typ/Mandant
- └── Soft-Delete: deletedAt (10-Jahre Aufbewahrungspflicht, AO §147 / HGB §257)
+ ├── RecurringInvoice ─── Wiederkehrende Rechnungen (Frequenz-Scheduling)
+ ├── GoBD-Archivierung: SHA-256 Hash-Chain, 10-Jahre Retention
+ ├── DATEV-Export: Standard-Buchungsformat
+ └── Soft-Delete: deletedAt (Aufbewahrungspflicht, AO §147 / HGB §257)
 
 Distribution (Ausschuettung)
  ├── DistributionItem (1:n) ─── pro Gesellschafter
@@ -316,10 +346,11 @@ Distribution (Ausschuettung)
  │    └── invoiceId ─── generierte Gutschrift (1:1)
  └── status: DRAFT → EXECUTED → (CANCELLED)
 
-LeaseSettlementPeriod (Pachtabrechnung)
- ├── periodType: ADVANCE | FINAL
- ├── totalRevenue, totalMinimumRent, totalActualRent
- └── linkedEnergySettlementId ─── Verknuepfung zu Strom-Abrechnung
+ManagementBilling (BF-Abrechnung)
+ ├── ParkStakeholder ─── Cross-Tenant Verknuepfung
+ ├── StakeholderFeeHistory ─── Historische Gebuehren
+ ├── status: DRAFT → CALCULATED → INVOICED
+ └── baseRevenue × feePercentage + MwSt
 ```
 
 ### 5.6 Abstimmungen (Votes)
@@ -330,7 +361,8 @@ Vote (Gesellschafterbeschluss)
  ├── quorumPercentage + requiresCapitalMajority
  ├── status: DRAFT → ACTIVE → CLOSED
  ├── VoteResponse (1:n) ─── Stimmabgabe pro Gesellschafter
- └── VoteProxy ─── Stimmrechtsvertretung (mit validFrom/validUntil)
+ ├── VoteProxy ─── Stimmrechtsvertretung (mit validFrom/validUntil, Dokument)
+ └── PDF-Export: Ergebnisbericht
 ```
 
 ### 5.7 Dokumente
@@ -340,180 +372,197 @@ Document
  ├── category: CONTRACT | PROTOCOL | REPORT | INVOICE | PERMIT | CORRESPONDENCE | OTHER
  ├── Versionierung: parentId (Self-Relation) + versions[]
  ├── Tags-Array fuer Kategorisierung
+ ├── Approval: DocumentApprovalStatus (PENDING/APPROVED/REJECTED)
  ├── Optionale Zuordnung: Park, Turbine, Fund, Contract, Shareholder, ServiceEvent
- └── isArchived (Soft-Archive)
+ ├── Volltext-Suche ueber Metadaten
+ └── GoBD-Archivierung: ArchivedDocument + ArchiveVerificationLog
 
-DocumentTemplate ─── Dokumentvorlagen pro Typ/Park
-Letterhead ─── Briefkoepfe pro Park (Logo, Absender, Fusszeile)
-```
-
-## 6. Datenfluss
-
-### 6.1 Authentifizierung
-```
-User → Login-Form → NextAuth.js Credentials Provider → bcrypt-Vergleich
-→ JWT mit tenantId/role → Session → Datenzugriff via Prisma
+DocumentTemplate ─── Dokumentvorlagen pro Typ/Park (WYSIWYG-Editor)
+Letterhead ─── Briefkoepfe pro Fund (Logo, Absender, Fusszeile, DIN 5008)
 ```
 
-### 6.2 SCADA-Import
+## 6. Background-Processing
+
+### 6.1 BullMQ Queue-System (8 Queues)
+
+| Queue | Worker | Zweck | Retries | Backoff |
+|-------|--------|-------|---------|---------|
+| email | processEmailJob | E-Mail-Versand (SMTP/SendGrid/SES) | 3 | Exp. 2s |
+| pdf | processPdfJob | PDF-Generierung (Rechnungen, Berichte) | 3 | Exp. 5s |
+| billing | processBillingJob | Auto-Billing, Recurring Invoices, Mahnungen | 3 | Exp. 10s |
+| weather | processWeatherJob | OpenWeatherMap Sync | 3 | Exp. 3s |
+| report | processReportJob | Geplante Berichte (taeglich 06:00) | 2 | Exp. 30s |
+| reminder | processReminderJob | Erinnerungen (taeglich 08:00) | 2 | Exp. 30s |
+| scada-auto-import | processScadaAutoImportJob | SCADA-Import (taeglich 02:00) | 3 | Exp. 60s |
+| webhook | processWebhookDelivery | HTTP-POST an externe URLs | 3 | Exp. 10s |
+
+### 6.2 Webhook-System
+
+13 Event-Typen in 6 Kategorien:
+- **Rechnungen**: invoice.created, invoice.sent, invoice.paid, invoice.overdue
+- **Vertraege**: contract.expiring, contract.expired
+- **Abrechnungen**: settlement.created, settlement.finalized
+- **Abstimmungen**: vote.created, vote.closed
+- **Dokumente**: document.uploaded, document.approved
+- **Service-Events**: service_event.created
+
+Sicherheit: HMAC-SHA256 Signatur (`X-Webhook-Signature`), 5s Timeout, Delivery-Log
+
+## 7. Cache-System (Redis)
+
+### 7.1 Cache-Architektur
+
 ```
-Admin waehlt Verzeichnis → Browse-API liest Enercon-Ordnerstruktur
-→ Preview zeigt Dateien + Zuordnung → Import-API parst dBASE III (.wsd/.uid)
-→ ScadaTurbineMapping ordnet PlantNo → Turbine zu
-→ ScadaMeasurement-Eintraege (10-Min) → Aggregation zu TurbineProduction (Monat)
+Redis 7 (ioredis)
+ ├── Permission-Cache ─── user:permissions:{userId} (TTL 300s)
+ ├── Dashboard-Cache ──── dashboard:{tenantId}:{key} (TTL 60-300s)
+ ├── Tenant-Settings ──── tenant:{tenantId}:settings (TTL 600s)
+ ├── Energy-Data ──────── energy:{tenantId}:{key} (TTL 300s)
+ ├── Analytics ─────────── analytics:{tenantId}:{key} (TTL 300s)
+ └── BullMQ Queues ─────── 8 Queue-Datenstrukturen
 ```
 
-### 6.3 Energie-Abrechnung
-```
-TurbineProduction-Daten vorhanden → Neue EnergySettlement anlegen (Park/Jahr/Monat)
-→ NB-Gutschrift-Betrag eingeben → Berechnung nach Verteilmodus
-→ EnergySettlementItems pro Betreibergesellschaft
-→ (zukuenftig: automatische Gutschrift-Erzeugung pro Fund)
-```
+### 7.2 TTL-Stufen
 
-### 6.4 Pachtabrechnung
-```
-LeaseSettlementPeriod anlegen → Produktionsdaten aggregieren
-→ Pachtberechnung pro Flurstueck (WEA-%, Pool-%, Fixbetraege)
-→ Mindestpacht-Pruefung → Invoice-Generierung → PDF → E-Mail
-```
+| Stufe | TTL | Verwendung |
+|-------|-----|------------|
+| SHORT | 30s | Volatile Daten |
+| DASHBOARD | 60s | Dashboard-Statistiken |
+| MEDIUM | 300s | Allgemeine Daten, Permissions, Energy |
+| TENANT_SETTINGS | 600s | Mandanten-Konfiguration |
+| LONG | 3600s | Stabile Referenzdaten |
 
-### 6.5 Dokumenten-Upload
-```
-User → Upload-Form → API-Route → Validierung → Dateisystem/MinIO (S3)
-→ Prisma DB-Eintrag → Audit-Log
-```
+### 7.3 Cache-Invalidierung
 
-## 7. Sicherheitskonzept
+Automatische Invalidierung bei Entity-Aenderungen:
+- Park/Turbine → Park-Stats + Widget-Caches
+- Fund/Shareholder → Fund-Stats + Widget-Caches
+- Invoice → Invoice-Stats Widget
+- Energy → Energy/SCADA Widgets
+- Tenant → Alle Caches des Mandanten
 
-### 7.1 Authentifizierung & Autorisierung
-- **JWT-Token** (NextAuth.js v5) mit 24h Laufzeit
-- **Application-Level Tenant Isolation** durch tenantId-Filter in allen Prisma-Queries
-- **RBAC** mit editierbaren Rollen und granularen Permissions
+## 8. Sicherheitskonzept
+
+### 8.1 Authentifizierung & Autorisierung
+- **JWT-Token** (NextAuth.js v5) mit Session-Strategie
+- **Application-Level Tenant Isolation** (57 Models mit tenantId)
+- **RBAC** mit 6-stufiger Hierarchie und 75 granularen Permissions
 - **Resource Access**: Datensatz-Level Berechtigungen
-- **Permission-Cache**: In-Memory-Cache
+- **Permission-Cache**: Redis-basiert (nicht mehr In-Memory)
 - **Impersonation**: SuperAdmin kann als anderer User agieren (mit Audit-Log)
 
-### 7.2 Datensicherheit
-- **Verschluesselung**: TLS 1.3 fuer Transport
-- **Passwort-Hashing**: bcryptjs
-- **Audit-Log**: Alle Aenderungen werden protokolliert (AuditLog-Tabelle)
-- **Backup**: PostgreSQL-Backups mit pg_dump (on-demand und automatisch)
-- **DSGVO-konform**: Datenexport, Loeschfunktion
-- **Aufbewahrungspflicht**: Rechnungen mit Soft-Delete (10 Jahre, AO §147)
+### 8.2 HTTP-Sicherheit
 
-### 7.3 Input-Validierung
+| Header | Wert |
+|--------|------|
+| X-Frame-Options | DENY |
+| X-Content-Type-Options | nosniff |
+| Strict-Transport-Security | max-age=63072000; includeSubDomains; preload |
+| Content-Security-Policy | default-src 'self'; connect-src 'self' https://*.sentry.io |
+| Permissions-Policy | camera=(), microphone=(), geolocation=(self) |
+| X-XSS-Protection | 1; mode=block |
+| Referrer-Policy | strict-origin-when-cross-origin |
+
+### 8.3 Rate Limiting
+
+| Typ | Requests | Fenster | Einsatz |
+|-----|----------|---------|---------|
+| AUTH | 5 | 15 Min | Login, Passwort-Reset |
+| UPLOAD | 20 | 1 Min | Datei-Uploads |
+| PDF | 10 | 1 Min | PDF-Generierung |
+| API | 100 | 1 Min | Allgemeine API |
+
+### 8.4 Datensicherheit
+- **Verschluesselung**: AES-256-GCM fuer sensible Daten, TLS 1.2+ fuer Transport
+- **Passwort-Hashing**: bcryptjs
+- **Audit-Log**: Alle Aenderungen protokolliert (AuditLog-Tabelle)
+- **Backup**: Automatisch (taeglich/woechentlich/monatlich), optional S3-Upload
+- **DSGVO-konform**: Datenexport, Loeschfunktion, Soft-Delete
+- **Aufbewahrungspflicht**: Rechnungen mit Soft-Delete (10 Jahre, AO §147)
+- **GoBD**: SHA-256 Hash-Chain, 10-Jahre Retention, Audit-Export
+
+### 8.5 Input-Validierung
 - Server-seitige Validierung mit Zod-Schemas in jeder API-Route
 - Prisma Parameterized Queries (SQL Injection Prevention)
-- XSS-Schutz durch React-Escaping + isomorphic-dompurify fuer HTML-Content
-- CSRF-Schutz durch NextAuth.js
+- XSS-Schutz durch React-Escaping + isomorphic-dompurify
+- CSRF-Schutz durch NextAuth.js / SameSite Cookies
 
-## 8. Datenmodell
+## 9. Datenmodell
 
-### 8.1 Entity-Relationship Uebersicht
-
-```
-┌──────────┐    1:n    ┌──────────┐    1:n    ┌──────────┐    1:n    ┌─────────────────┐
-│  Tenant  │──────────▶│   Park   │──────────▶│ Turbine  │──────────▶│ScadaMeasurement │
-└──────────┘           └────┬─────┘           └────┬─────┘           └─────────────────┘
-                            │                      │
-                            │ 1:n                  │ 1:n
-                            ▼                      ▼
-                     ┌──────────┐          ┌──────────────────┐
-                     │   Plot   │          │TurbineProduction │
-                     │(Flurstk.)│          │ (Monatsdaten)    │
-                     └────┬─────┘          └──────────────────┘
-                          │
-                ┌─────────┼─────────┐
-                │ n:m               │ 1:n
-                ▼                   ▼
-         ┌──────────┐       ┌──────────┐
-         │  Lease   │       │ PlotArea │
-         │ (Pacht)  │       │(Teilfl.) │
-         └────┬─────┘       └──────────┘
-              │ n:1
-              ▼
-         ┌──────────┐
-         │  Person  │
-         │(Verpaech)│
-         └──────────┘
-
-┌──────────┐    1:n    ┌──────────────┐    1:n    ┌──────────────────────┐
-│   Fund   │──────────▶│ Shareholder  │──────────▶│    VoteResponse      │
-│(Gesellsch│           └──────┬───────┘           └──────────────────────┘
-│  aft)    │                  │ opt.
-└────┬─────┘                  ▼
-     │                 ┌──────────┐
-     │ 1:n             │   User   │ (Portal-Zugang)
-     ▼                 └──────────┘
-┌──────────────────┐
-│EnergySettlement  │    1:n    ┌──────────────────────┐
-│(NB-Abrechnung)   │──────────▶│EnergySettlementItem  │
-└──────────────────┘           │(pro Betreiber-Fund)  │
-                               └──────────────────────┘
-
-n:m Beziehungen:
-  Fund ◄──FundPark──► Park
-  Lease ◄──LeasePlot──► Plot
-  Role ◄──RolePermission──► Permission
-  Fund ◄──FundHierarchy──► Fund (Mutter/Tochter)
-```
-
-### 8.2 Alle Modelle (38 Stueck)
+### 9.1 Alle Modelle (88 Stueck)
 
 | Bereich | Modelle |
 |---------|---------|
-| Kern | Tenant, User, Account, Session, VerificationToken, PasswordResetToken |
-| Parks & Anlagen | Park, Turbine, ParkRevenuePhase, ServiceEvent |
-| Gesellschaften | Fund, FundPark, FundHierarchy, Person, Shareholder |
-| Pacht & Flaechen | Lease, LeasePlot, Plot, PlotArea |
-| Vertraege & Dokumente | Contract, Document, DocumentTemplate |
-| Rechnungswesen | Invoice, InvoiceItem, InvoiceNumberSequence, Distribution, DistributionItem |
-| Abstimmungen | Vote, VoteResponse, VoteProxy |
-| Energie | EnergySettlement, EnergySettlementItem, EnergyRevenueType, EnergyMonthlyRate, TurbineProduction, TurbineOperator, ScadaTurbineMapping |
-| SCADA | ScadaMeasurement, ScadaImportLog |
-| System | Notification, News, WeatherData, AuditLog, GeneratedReport, EnergyReportConfig, LeaseSettlementPeriod |
-| Berechtigungen | Permission, Role, RolePermission, UserRoleAssignment, ResourceAccess |
-| Admin | Letterhead, EmailTemplate, BillingRule, BillingRuleExecution, SystemConfig, InvoiceItemTemplate |
+| **Kern** (6) | Tenant, User, Account, Session, VerificationToken, PasswordResetToken |
+| **Parks & Anlagen** (4) | Park, Turbine, ParkRevenuePhase, ServiceEvent |
+| **Gesellschaften** (7) | Fund, FundPark, FundHierarchy, FundCategory, Person, Shareholder, ParkStakeholder |
+| **Pacht & Flaechen** (9) | Lease, LeasePlot, Plot, PlotArea, LeaseSettlementPeriod, LeaseRevenueSettlement, LeaseRevenueSettlementItem, ParkCostAllocation, ParkCostAllocationItem |
+| **Vertraege & Dokumente** (5) | Contract, Document, DocumentTemplate, ArchivedDocument, ArchiveVerificationLog |
+| **Rechnungswesen** (12) | Invoice, InvoiceItem, InvoiceTemplate, InvoiceItemTemplate, InvoiceNumberSequence, RecurringInvoice, Distribution, DistributionItem, ManagementBilling, StakeholderFeeHistory, TaxRateConfig, PositionTaxMapping |
+| **Abstimmungen** (3) | Vote, VoteResponse, VoteProxy |
+| **Energie** (6) | EnergySettlement, EnergySettlementItem, EnergyRevenueType, EnergyMonthlyRate, TurbineProduction, TurbineOperator |
+| **SCADA** (15) | ScadaTurbineMapping, ScadaMeasurement, ScadaImportLog, ScadaAutoImportLog, ScadaAnomaly, ScadaAnomalyConfig, ScadaAvailability, ScadaStateEvent, ScadaStateSummary, ScadaTextEvent, ScadaWarningEvent, ScadaWarningSummary, ScadaWindSummary, NetworkNode, NetworkConnection |
+| **System** (6) | Notification, News, WeatherData, AuditLog, SystemConfig, MassCommunication |
+| **Berechtigungen** (5) | Permission, Role, RolePermission, UserRoleAssignment, ResourceAccess |
+| **Admin** (6) | Letterhead, EmailTemplate, BillingRule, BillingRuleExecution, EnergyReportConfig, ScheduledReport |
+| **Berichte** (1) | GeneratedReport |
+| **Webhooks** (2) | Webhook, WebhookDelivery |
 
-### 8.3 Wichtige Enums (17 Stueck)
+### 9.2 Alle Enums (34 Stueck)
 
 | Enum | Werte |
 |------|-------|
-| UserRole | SUPERADMIN, ADMIN, MANAGER, VIEWER |
+| UserRole | SUPERADMIN, ADMIN, MANAGER, MITARBEITER, NUR_LESEN, PORTAL |
 | EntityStatus | ACTIVE, INACTIVE, ARCHIVED |
-| FundType | BETREIBER, NETZGESELLSCHAFT, UMSPANNWERK, VERMARKTUNG, SONSTIGE |
-| DistributionMode | PROPORTIONAL, SMOOTHED, TOLERATED |
 | ContractType | LEASE, SERVICE, INSURANCE, GRID_CONNECTION, MARKETING, OTHER |
 | ContractStatus | DRAFT, ACTIVE, EXPIRING, EXPIRED, TERMINATED |
 | InvoiceType | INVOICE, CREDIT_NOTE |
 | InvoiceStatus | DRAFT, SENT, PAID, CANCELLED |
 | TaxType | STANDARD (19%), REDUCED (7%), EXEMPT (0%) |
+| DistributionMode | PROPORTIONAL, SMOOTHED, TOLERATED |
+| DistributionStatus | DRAFT, EXECUTED, CANCELLED |
+| PlotAreaType | WEA_STANDORT, POOL, WEG, AUSGLEICH, KABEL |
 | ProductionDataSource | MANUAL, CSV_IMPORT, EXCEL_IMPORT, SCADA |
 | ProductionStatus | DRAFT, CONFIRMED, INVOICED |
 | EnergySettlementStatus | DRAFT, CALCULATED, INVOICED, CLOSED |
+| EnergyCalculationType | ... |
 | SettlementPeriodStatus | OPEN, IN_PROGRESS, CLOSED |
-| DistributionStatus | DRAFT, EXECUTED, CANCELLED |
-| PlotAreaType | WEA_STANDORT, POOL, WEG, AUSGLEICH, KABEL |
+| LeaseSettlementMode | ... |
+| LeaseRevenueSettlementStatus | ... |
+| ManagementBillingStatus | DRAFT, CALCULATED, INVOICED |
+| ParkCostAllocationStatus | ... |
+| ParkStakeholderRole | ... |
+| CompensationType | ... |
+| BillingRuleType | LEASE_PAYMENT, DISTRIBUTION, MANAGEMENT_FEE, CUSTOM |
 | BillingRuleFrequency | MONTHLY, QUARTERLY, SEMI_ANNUAL, ANNUAL, CUSTOM_CRON |
-| ReportType | MONTHLY, ANNUAL, SHAREHOLDERS, SETTLEMENT, CONTRACTS, INVOICES, ... |
+| DocumentCategory | CONTRACT, PROTOCOL, REPORT, INVOICE, PERMIT, CORRESPONDENCE, OTHER |
+| DocumentType | ... |
+| DocumentApprovalStatus | PENDING, APPROVED, REJECTED |
+| VoteStatus | DRAFT, ACTIVE, CLOSED |
+| NotificationType | ... |
+| NewsCategory | GENERAL, FINANCIAL, TECHNICAL, ... |
+| ReportType | MONTHLY, ANNUAL, SHAREHOLDERS, SETTLEMENT, ... |
+| ReportFormat | PDF, EXCEL, CSV |
+| ScheduledReportSchedule / ScheduledReportType | ... |
+| ReminderCategory | ... |
 
-### 8.4 Wichtige Datenmuster
+### 9.3 Wichtige Datenmuster
 
-- **Multi-Tenancy**: Jede Kerntabelle hat `tenantId` FK mit `onDelete: Cascade`
+- **Multi-Tenancy**: 57 Models mit `tenantId` FK mit `onDelete: Cascade`
 - **Soft-Delete bei Rechnungen**: `deletedAt` fuer 10-Jahre Aufbewahrungspflicht
-- **Historische Nachverfolgung**: TurbineOperator und FundHierarchy mit `validFrom`/`validTo`
+- **Historische Nachverfolgung**: TurbineOperator, FundHierarchy, StakeholderFeeHistory mit `validFrom`/`validTo`
 - **Dokumenten-Versionierung**: Self-Relation ueber `parentId`
 - **Composite Unique Keys**: z.B. `[turbineId, year, month, tenantId]` bei TurbineProduction
 - **Dezimal-Praezision**: Finanzen `Decimal(15,2)`, Prozente `Decimal(5,2)`, Koordinaten `Decimal(10,8)`
 - **DATEV-Integration**: Felder fuer Buchungsschluessel, Konten, Kostenstellen auf InvoiceItem
+- **GeoJSON**: Plot.geometry fuer Karten-Darstellung (SHP-Import)
 
-## 9. Navigation & Seitenstruktur
+## 10. Navigation & Seitenstruktur
 
-### 9.1 Hauptanwendung (Dashboard)
+### 10.1 Hauptanwendung (107 Dashboard-Seiten)
 
 ```
-Sidebar-Navigation
+Sidebar-Navigation (6 Gruppen, 35+ Items)
 ├── Dashboard (/dashboard)
 │
 ├── Windparks
@@ -521,23 +570,33 @@ Sidebar-Navigation
 │   └── Service-Events (/service-events) ─── service-events:read
 │
 ├── Finanzen
-│   ├── Rechnungen (/invoices) ─── invoices:read
+│   ├── Rechnungen (/invoices) ─── invoices:read [aufklappbar]
+│   │   ├── Uebersicht (/invoices)
+│   │   ├── Versanduebersicht (/invoices/dispatch)
+│   │   └── Zahlungs-Abgleich (/invoices/reconciliation)
 │   ├── Vertraege (/contracts) ─── contracts:read
 │   ├── Beteiligungen (/funds) ─── funds:read
-│   └── Energie (/energy) ─── energy:read [aufklappbar]
-│       ├── Uebersicht (/energy)
-│       ├── Produktionsdaten (/energy/productions)
-│       ├── Netzbetreiber-Daten (/energy/settlements)
-│       ├── SCADA-Messdaten (/energy/scada/data)
-│       ├── SCADA-Analyse (/energy/analysis)
-│       ├── SCADA-Vergleich (/energy/scada/comparison)
-│       ├── SCADA-Zuordnung (/energy/scada)
-│       └── Berichte (/energy/reports)
+│   ├── Energie (/energy) ─── energy:read [aufklappbar]
+│   │   ├── Uebersicht (/energy)
+│   │   ├── Produktionsdaten (/energy/productions)
+│   │   ├── Netzbetreiber-Daten (/energy/settlements)
+│   │   ├── SCADA-Messdaten (/energy/scada/data)
+│   │   ├── SCADA-Zuordnung (/energy/scada)
+│   │   ├── Netz-Topologie (/energy/topology)
+│   │   ├── Analysen (/energy/analytics)
+│   │   └── Anomalie-Erkennung (/energy/scada/anomalies)
+│   └── Betriebsfuehrung (/management-billing) ─── [Feature-Flag] [aufklappbar]
+│       ├── Uebersicht (/management-billing)
+│       ├── BF-Vertraege (/management-billing/stakeholders)
+│       └── Abrechnungen (/management-billing/billings)
 │
 ├── Verwaltung
 │   ├── Pacht (/leases) ─── leases:read [aufklappbar]
 │   │   ├── Pachtvertraege (/leases)
-│   │   └── Zahlungen (/leases/payments)
+│   │   ├── Pachtabrechnung (/leases/settlement)
+│   │   ├── Vorschuesse (/leases/advances)
+│   │   ├── Zahlungen (/leases/payments)
+│   │   └── SHP-Import (/leases/import-shp)
 │   ├── Dokumente (/documents) ─── documents:read
 │   ├── Abstimmungen (/votes) ─── votes:read
 │   ├── Meldungen (/news)
@@ -545,25 +604,33 @@ Sidebar-Navigation
 │       ├── Berichte erstellen (/reports)
 │       └── Berichtsarchiv (/reports/archive)
 │
-├── Administration (ab ADMIN)
+├── Administration
 │   ├── Einstellungen (/settings) ─── settings:read
+│   ├── Rollen & Rechte (/admin/roles) ─── roles:read
 │   ├── Abrechnungsperioden (/admin/settlement-periods)
 │   ├── Abrechnungsregeln (/admin/billing-rules)
 │   ├── Zugriffsreport (/admin/access-report)
-│   └── E-Mail-Vorlagen (/admin/email)
+│   ├── E-Mail-Vorlagen (/admin/email)
+│   ├── Massen-Kommunikation (/admin/mass-communication)
+│   ├── Rechnungseinstellungen (/admin/invoices)
+│   ├── Vorlagen (/admin/templates)
+│   └── GoBD-Archiv (/admin/archive)
 │
-└── System (nur SUPERADMIN)
-    ├── Admin-Uebersicht (/admin)
-    ├── Benutzer (/admin/settings)
-    ├── System-Gesundheit (/admin/system)
+└── System (SUPERADMIN)
+    ├── Mandanten (/admin/tenants)
+    ├── Einstellungen (/admin/system-settings)
+    ├── System & Wartung (/admin/system)
     ├── System-Konfiguration (/admin/system-config)
     ├── Audit-Logs (/admin/audit-logs)
-    ├── Rollen & Rechte (/admin/roles)
     ├── Backup & Speicher (/admin/backup)
-    └── SuperAdmin-Einstellungen (/admin/system-settings)
+    ├── Marketing (/admin/marketing)
+    ├── Verguetungsarten (/admin/revenue-types)
+    ├── Steuersaetze (/admin/tax-rates)
+    ├── Gesellschaftstypen (/admin/fund-categories)
+    └── Webhooks (/admin/webhooks)
 ```
 
-### 9.2 Gesellschafter-Portal
+### 10.2 Gesellschafter-Portal (12 Seiten)
 
 ```
 Portal (/portal)
@@ -578,124 +645,119 @@ Portal (/portal)
 ├── Berichte (/portal/reports)
 ├── Energieberichte (/portal/energy-reports)
 │   └── Report (/portal/energy-reports/[configId])
+├── Energy-Analytics (/portal/energy-analytics)
 └── Einstellungen (/portal/settings)
 ```
 
-## 10. API-Uebersicht
-
-177+ REST-Endpunkte, organisiert in 27+ Module:
-
-| Modul | Endpunkte | Beschreibung |
-|-------|-----------|--------------|
-| `/api/parks` | 2 Routes | CRUD fuer Windparks |
-| `/api/turbines` | 2 Routes | CRUD fuer Turbinen |
-| `/api/funds` | 8 Routes | Gesellschaften, Hierarchie, Ausschuettungen |
-| `/api/shareholders` | 2 Routes | Gesellschafter inkl. Portal-Zugang |
-| `/api/persons` | 2 Routes | Natuerliche/juristische Personen |
-| `/api/leases` | 4 Routes | Pachtvertraege, Flurstueck-Zuordnung, Zahlungen |
-| `/api/plots` | 3 Routes | Flurstuecke mit Teilflaechen |
-| `/api/contracts` | 3 Routes | Vertraege mit Dokumenten |
-| `/api/documents` | 6 Routes | Dokumente, Versionen, Download, Suche |
-| `/api/invoices` | 8 Routes | Rechnungen, Positionen, PDF, Storno, Versand |
-| `/api/energy/productions` | 5 Routes | Produktionsdaten, Import, CSV-Vorlagen |
-| `/api/energy/settlements` | 4 Routes | NB-Abrechnungen, Berechnung, Gutschriften |
-| `/api/energy/scada` | 10 Routes | Browse, Scan, Import, Mappings, Messdaten, Analyse |
-| `/api/energy/reports` | 3 Routes | Energieberichte, Konfigurationen |
-| `/api/votes` | 3 Routes | Abstimmungen mit Export |
-| `/api/proxies` | 3 Routes | Stimmrechtsvertretung |
-| `/api/news` | 2 Routes | Meldungen |
-| `/api/service-events` | 2 Routes | Wartungsereignisse |
-| `/api/reports` | 3 Routes | Berichte, Archiv |
-| `/api/weather` | 2 Routes | Wetterdaten pro Park |
-| `/api/portal` | 9 Routes | Gesellschafter-Portal (readonly) |
-| `/api/admin` | 40+ Routes | User-, Rollen-, System-Verwaltung, Billing, Backup |
-| `/api/auth` | 4 Routes | Login, Passwort-Reset, Berechtigungen |
-| `/api/user` | 5 Routes | Profil, Einstellungen, Avatar, Dashboard-Config |
-| `/api/dashboard` | 3 Routes | Dashboard-Statistiken und Widgets |
-
-## 11. Skalierbarkeit & Performance
-
-### Horizontale Skalierung
+### 10.3 Oeffentliche Seiten
 
 ```
-                    ┌─────────────┐
-                    │   Traefik   │
-                    │   (LB)      │
-                    └──────┬──────┘
-           ┌───────────────┼───────────────┐
-           ▼               ▼               ▼
-      ┌─────────┐    ┌─────────┐    ┌─────────┐
-      │ App #1  │    │ App #2  │    │ App #3  │
-      └─────────┘    └─────────┘    └─────────┘
-           │               │               │
-           └───────────────┼───────────────┘
-                           ▼
-           ┌───────────────────────────────┐
-           │       PostgreSQL 16           │
-           │   (Connection Pooling via     │
-           │    Prisma)                    │
-           └───────────────────────────────┘
+Marketing (/):  Startseite, Impressum, Datenschutz
+Auth:           Login, Passwort vergessen, Passwort zuruecksetzen
 ```
 
-### Performance-Optimierungen
-- **Caching**: Redis fuer Permission-Cache und haeufige Abfragen
-- **Database**: Connection Pooling via Prisma, umfangreiche Indexierung (50+ Indexes im Schema)
-- **Lazy Loading**: Code-Splitting via Next.js + dynamische Imports fuer schwere Komponenten
-- **Background Processing**: BullMQ Worker fuer rechenintensive Aufgaben
-- **Pagination**: Alle Listen-Endpunkte mit Offset/Limit-Pagination
-- **Aggregationen**: Prisma aggregate() fuer Summen/Statistiken statt Client-Berechnung
+## 11. API-Uebersicht
+
+286 Route-Dateien, 475 HTTP-Endpoints:
+
+| Modul | Routes | Endpoints | Beschreibung |
+|-------|--------|-----------|--------------|
+| `/api/admin` | 94 | ~186 | Users, Roles, Settings, Billing, Webhooks, System |
+| `/api/energy` | 43 | ~80 | Productions, SCADA, Settlements, Analytics, Topology |
+| `/api/leases` | 25 | ~48 | Pachtvertraege, Settlement, Usage-Fees, Cost-Allocation |
+| `/api/invoices` | 15 | ~33 | CRUD, Send, Mark-Paid, Batch, PDF, XRechnung |
+| `/api/management-billing` | 13 | ~24 | Billings, Stakeholders, Calculate-and-Invoice |
+| `/api/portal` | 13 | ~26 | My-Profile, My-Participations, My-Documents, Energy |
+| `/api/funds` | 9 | 17 | CRUD, Hierarchy, Distributions, Recalculate |
+| `/api/documents` | 7 | 14 | CRUD, Approve, Download, Versions, Search |
+| `/api/reports` | 6 | ~12 | Reports, Annual, Monthly, Archive |
+| `/api/user` | 6 | ~10 | Settings, Password, Avatar, Dashboard-Config |
+| `/api/plots` | 6 | ~12 | CRUD, Areas, SHP-Import |
+| `/api/webhooks` | 5 | ~10 | CRUD, Test, Deliveries |
+| `/api/batch` | 4 | 7 | Invoices, Email, Documents, Settlements |
+| `/api/notifications` | 4 | 6 | CRUD, Mark-All-Read, Unread-Count |
+| `/api/auth` | 3 | 4 | Login, Forgot/Reset Password, Permissions |
+| `/api/votes` | 3 | 6 | CRUD, Export |
+| `/api/proxies` | 3 | 6 | CRUD, Document |
+| `/api/shareholders` | 4 | 8 | CRUD, Portal-Access, Onboard |
+| `/api/parks` | 3 | 6 | CRUD, Revenue-Phases |
+| `/api/contracts` | 3 | 6 | CRUD, Auto-Renew |
+| `/api/dashboard` | 3 | 3 | Widgets, Energy-KPIs, Stats |
+| `/api/export` | 2 | 2 | CSV/Excel/DATEV, ICS-Kalender |
+| `/api/misc` | ~8 | ~10 | Health, Upload, Weather, News, Turbines, Service-Events |
 
 ## 12. Docker-Container-Struktur
 
 ```yaml
 services:
-  app:           # Next.js 15 Application
-  worker:        # BullMQ Worker (Background Jobs)
-  postgres:      # PostgreSQL 16 Database
-  redis:         # Redis 7 - Cache, Sessions, BullMQ Queue
-  minio:         # MinIO (S3-kompatibel) fuer Dokumente
-  minio-init:    # MinIO Bucket-Initialisierung
-  traefik:       # Reverse Proxy & SSL Termination
-  backup:        # PostgreSQL Backup-Container (on-demand)
+  app:           # Next.js 15 Application (Port 3000)
+  worker:        # BullMQ Worker (2+ Replicas, START_MODE=worker)
+  postgres:      # PostgreSQL 16 (nicht extern exponiert)
+  redis:         # Redis 7 (AOF, maxmemory 256mb)
+  minio:         # MinIO S3 (API :9000, Console :9001)
+  minio-init:    # Bucket-Initialisierung (One-Shot)
+  traefik:       # Reverse Proxy, SSL, Rate Limiting
+  backup:        # pg_dump Cron (taeglich/woechentlich/monatlich)
 ```
+
+### Multi-Stage Dockerfile (4 Stages)
+
+```
+Stage 1: deps        → npm install (alle Dependencies)
+Stage 2: builder     → Next.js Build (standalone Output)
+Stage 2b: prisma-cli → Isolierte Prisma-Installation (/prisma-cli/)
+Stage 3: runner      → Production Image (Non-Root, Health-Check)
+```
+
+**Kritisch**: Prisma CLI muss in `/prisma-cli/` isoliert sein (nicht `/app/node_modules/`), da Next.js Standalone `@prisma/config` OHNE die transitive Dependency `effect` einbindet.
 
 ## 13. Entwicklungsumgebung vs. Produktion
 
 | Aspekt | Development | Production |
 |--------|-------------|------------|
-| Database | Lokale PostgreSQL 16 (Docker) | PostgreSQL 16 (Docker / Self-hosted) |
-| ORM | Prisma mit `prisma migrate dev` | Prisma mit `prisma migrate deploy` |
+| Database | Lokale PostgreSQL 16 (Docker) | PostgreSQL 16 (Docker/Portainer) |
+| ORM | Prisma mit `prisma db push` | Prisma mit `prisma db push --accept-data-loss` |
 | Storage | Lokales Dateisystem / MinIO | MinIO (S3-kompatibel, Docker) |
-| Auth | NextAuth.js v5 (JWT, Credentials) | NextAuth.js v5 (JWT, Credentials) |
-| Mail | Mailhog (Fake-SMTP auf Port 8025) | SMTP (konfigurierbar pro Mandant) |
+| Auth | NextAuth.js v5 (JWT) | NextAuth.js v5 (JWT, trustHost: true) |
+| Mail | Mailhog (Fake-SMTP, Port 8025) | SMTP (konfigurierbar pro Mandant) |
 | SSL | Kein SSL (localhost) | Let's Encrypt (via Traefik) |
-| Worker | `tsx watch` (Hot-Reload) | BullMQ Worker (mehrere Replicas) |
+| Worker | `tsx watch` (Hot-Reload) | BullMQ Worker (2+ Replicas) |
 | Logging | pino-pretty (formatiert) | Pino JSON (strukturiert) |
 | Error Tracking | Console | Sentry |
+| Cache | Redis (Fallback: In-Memory) | Redis 7 |
+| CI/CD | - | GitHub Actions → ghcr.io → Portainer |
 
 ## 14. Monitoring & Logging
 
-- **Application Monitoring**: Sentry (@sentry/nextjs) fuer Error-Tracking und Performance
-- **Infrastructure**: Docker Health Checks fuer alle Services
+- **Application Monitoring**: Sentry fuer Error-Tracking und Performance
+- **Infrastructure**: Docker Health Checks fuer alle Services (30s Interval)
 - **Logging**: Strukturiertes JSON-Logging mit Pino (Slow-Query-Warnung bei >100ms)
-- **Health Checks**: `/api/health` Endpoint
-- **Alerting**: Discord/Slack Webhooks bei Fehlern (via Sentry)
+- **Health Checks**: `/api/health` Endpoint, `/api/admin/system` Dashboard
+- **Alerting**: Sentry Webhooks
 - **Audit-Trail**: Alle Datenaenderungen in AuditLog-Tabelle
-- **System-Metriken**: `/api/admin/metrics` fuer SuperAdmin
+- **Cache-Stats**: `/api/admin/cache` fuer Hit/Miss-Raten
+- **Queue-Monitoring**: `/api/admin/jobs` fuer BullMQ Queue-Status
 
-## 15. Zukuenftige Module (geplant)
+## 15. Kennzahlen
 
-### 15.1 Invoice-Modul (Gutschriften an Gesellschafter)
-- Automatische Gutschrift-Erzeugung aus EnergySettlement
-- Pachtabrechnungs-Gutschriften aus LeaseSettlementPeriod
-- Integration mit DATEV-Export
-- PDF-Generierung mit mandantenspezifischen Briefkoepfen
-
-### 15.2 Erweiterte Pachtabrechnung
-- Automatische Vorschussberechnung basierend auf historischen Daten
-- Endabrechnung mit tatsaechlichen Produktionsdaten
-- Integration der DULDUNGS-Berechnung in Pachtabrechnungen
-
-### 15.3 Weitere SCADA-Hersteller
-- Erweiterung des Parsers fuer Vestas, Siemens Gamesa, Nordex
-- Generischer CSV/XML-Import fuer beliebige SCADA-Systeme
+| Metrik | Wert |
+|--------|------|
+| Prisma Models | 88 |
+| Prisma Enums | 34 |
+| Relations | 225 |
+| API Route Files | 286 |
+| HTTP Endpoints | 475 |
+| Dashboard Pages | 107 |
+| Portal Pages | 12 |
+| Auth/Marketing Pages | 7 |
+| Total Components | 163 |
+| Dashboard Widgets | 27 |
+| Sidebar Nav Items | 35+ |
+| Permissions | 75 |
+| BullMQ Queues/Workers | 8/8 |
+| Webhook Events | 13 |
+| Workflow Wizards | 5 |
+| i18n Sprachen | 2 (DE/EN) |
+| Cache Prefixes | 8 |
+| Security Headers | 9 |
+| Rate Limit Presets | 4 |
