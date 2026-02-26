@@ -110,9 +110,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, configs: results });
   } catch (error) {
-    logger.error({ err: error }, "[Settings/Paperless] POST error");
+    const detail = error instanceof Error ? error.message : String(error);
+    logger.error({ err: error, detail }, "[Settings/Paperless] POST error");
     return NextResponse.json(
-      { error: "Fehler beim Speichern der Konfiguration" },
+      { error: "Fehler beim Speichern der Konfiguration", detail },
       { status: 500 }
     );
   }
