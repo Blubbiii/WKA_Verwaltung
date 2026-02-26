@@ -44,6 +44,10 @@ interface PaperlessConfigFormProps {
   configs: ConfigValue[];
   availableKeys: AvailableKey[];
   onSave: () => void;
+  /** API endpoint for saving config (default: /api/admin/system-config) */
+  apiBasePath?: string;
+  /** API endpoint for connection test (default: /api/admin/system-config/test) */
+  testApiPath?: string;
 }
 
 // =============================================================================
@@ -53,6 +57,8 @@ interface PaperlessConfigFormProps {
 export function PaperlessConfigForm({
   configs,
   onSave,
+  apiBasePath = "/api/admin/system-config",
+  testApiPath = "/api/admin/system-config/test",
 }: PaperlessConfigFormProps) {
   const getConfigValue = (key: string): string => {
     const config = configs.find((c) => c.key === key);
@@ -106,7 +112,7 @@ export function PaperlessConfigForm({
         });
       }
 
-      const response = await fetch("/api/admin/system-config", {
+      const response = await fetch(apiBasePath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ configs: configsToSave }),
@@ -136,7 +142,7 @@ export function PaperlessConfigForm({
       setTesting(true);
       setTestResult(null);
 
-      const response = await fetch("/api/admin/system-config/test", {
+      const response = await fetch(testApiPath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "paperless" }),
