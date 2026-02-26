@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { mutate } from "swr";
 import {
   Card,
   CardContent,
@@ -193,6 +194,8 @@ export function FeatureFlagsTab() {
       toast.success(
         `${MODULE_LABELS[moduleKey]} für "${tenant.name}" ${newValue ? "aktiviert" : "deaktiviert"}`
       );
+      // Revalidate sidebar feature flags so menu updates immediately
+      mutate("/api/features");
     } catch {
       // Revert optimistic update
       setTenants((prev) =>
