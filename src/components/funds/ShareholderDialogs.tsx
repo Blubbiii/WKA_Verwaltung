@@ -114,6 +114,7 @@ interface ShareholderDetail extends Shareholder {
 interface ShareholderDialogsProps {
   fundId: string;
   fundName: string;
+  totalCapital?: number | null;
   existingShareholders: Shareholder[];
   onSuccess: () => void;
   // Add Dialog
@@ -151,6 +152,7 @@ function getPersonName(person: Person): string {
 export function ShareholderDialogs({
   fundId,
   fundName,
+  totalCapital,
   existingShareholders,
   onSuccess,
   isAddOpen,
@@ -167,6 +169,7 @@ export function ShareholderDialogs({
       <AddShareholderDialog
         fundId={fundId}
         fundName={fundName}
+        totalCapital={totalCapital}
         existingShareholders={existingShareholders}
         isOpen={isAddOpen}
         setIsOpen={setIsAddOpen}
@@ -174,6 +177,7 @@ export function ShareholderDialogs({
       />
       <EditShareholderDialog
         fundId={fundId}
+        totalCapital={totalCapital}
         existingShareholders={existingShareholders}
         shareholder={editingShareholder}
         isOpen={isEditOpen}
@@ -200,6 +204,7 @@ export function ShareholderDialogs({
 interface AddShareholderDialogProps {
   fundId: string;
   fundName: string;
+  totalCapital?: number | null;
   existingShareholders: Shareholder[];
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
@@ -209,6 +214,7 @@ interface AddShareholderDialogProps {
 function AddShareholderDialog({
   fundId,
   fundName,
+  totalCapital,
   existingShareholders,
   isOpen,
   setIsOpen,
@@ -240,14 +246,17 @@ function AddShareholderDialog({
   const [capitalContribution, setCapitalContribution] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Calculate total capital from existing shareholders
+  // Use fund's Stammkapital as denominator; fall back to sum of contributions
   const totalExistingCapital = existingShareholders
     .filter((sh) => sh.status === "ACTIVE")
     .reduce((sum, sh) => sum + (sh.capitalContribution || 0), 0);
+  const stammkapital = totalCapital && totalCapital > 0 ? totalCapital : null;
 
   // Calculate ownership percentage
   const calculatedPercentage = capitalContribution
-    ? ((parseFloat(capitalContribution) / (totalExistingCapital + parseFloat(capitalContribution))) * 100).toFixed(2)
+    ? stammkapital
+      ? ((parseFloat(capitalContribution) / stammkapital) * 100).toFixed(2)
+      : ((parseFloat(capitalContribution) / (totalExistingCapital + parseFloat(capitalContribution))) * 100).toFixed(2)
     : "0.00";
 
   // Reset when dialog closes
@@ -664,6 +673,7 @@ function AddShareholderDialog({
 
 interface EditShareholderDialogProps {
   fundId: string;
+  totalCapital?: number | null;
   existingShareholders: Shareholder[];
   shareholder: Shareholder | null;
   isOpen: boolean;
@@ -673,6 +683,7 @@ interface EditShareholderDialogProps {
 
 function EditShareholderDialog({
   fundId,
+  totalCapital,
   existingShareholders,
   shareholder,
   isOpen,
@@ -692,14 +703,17 @@ function EditShareholderDialog({
   const [status, setStatus] = useState<"ACTIVE" | "INACTIVE" | "ARCHIVED">("ACTIVE");
   const [notes, setNotes] = useState("");
 
-  // Calculate total capital from other shareholders
+  // Use fund's Stammkapital as denominator; fall back to sum of contributions
   const otherShareholdersCapital = existingShareholders
     .filter((sh) => sh.status === "ACTIVE" && sh.id !== shareholder?.id)
     .reduce((sum, sh) => sum + (sh.capitalContribution || 0), 0);
+  const stammkapital = totalCapital && totalCapital > 0 ? totalCapital : null;
 
   // Calculate ownership percentage
   const calculatedPercentage = capitalContribution
-    ? ((parseFloat(capitalContribution) / (otherShareholdersCapital + parseFloat(capitalContribution))) * 100).toFixed(2)
+    ? stammkapital
+      ? ((parseFloat(capitalContribution) / stammkapital) * 100).toFixed(2)
+      : ((parseFloat(capitalContribution) / (otherShareholdersCapital + parseFloat(capitalContribution))) * 100).toFixed(2)
     : "0.00";
 
   // Populate form when shareholder changes

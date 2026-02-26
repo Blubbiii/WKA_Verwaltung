@@ -2208,6 +2208,7 @@ export default function FundDetailsPage({
       <ShareholderDialogs
         fundId={id}
         fundName={fund.name}
+        totalCapital={fund.totalCapital}
         existingShareholders={fund.shareholders}
         onSuccess={fetchFund}
         isAddOpen={isAddShareholderOpen}

@@ -23,6 +23,13 @@ const shareholderCreateSchema = z.object({
 // Accepts optional transaction client for atomic operations
 async function recalculateFundShares(fundId: string, txClient?: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) {
   const db = txClient || prisma;
+
+  // Get the fund's registered capital (Stammkapital)
+  const fund = await db.fund.findUnique({
+    where: { id: fundId },
+    select: { totalCapital: true },
+  });
+
   // Get all active shareholders in this fund
   const shareholders = await db.shareholder.findMany({
     where: {
@@ -35,17 +42,19 @@ async function recalculateFundShares(fundId: string, txClient?: Parameters<Param
     },
   });
 
-  // Calculate total capital
-  const totalCapital = shareholders.reduce(
+  // Use fund's Stammkapital as denominator; fall back to sum of contributions
+  const stammkapital = Number(fund?.totalCapital) || 0;
+  const totalContributions = shareholders.reduce(
     (sum, sh) => sum + (Number(sh.capitalContribution) || 0),
     0
   );
+  const denominator = stammkapital > 0 ? stammkapital : totalContributions;
 
   // Update each shareholder's ownership percentage
-  if (totalCapital > 0) {
+  if (denominator > 0) {
     for (const sh of shareholders) {
       const contribution = Number(sh.capitalContribution) || 0;
-      const percentage = Math.round((contribution / totalCapital) * 100 * 100) / 100;
+      const percentage = Math.round((contribution / denominator) * 100 * 100) / 100;
       await db.shareholder.update({
         where: { id: sh.id },
         data: {
