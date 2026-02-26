@@ -26,6 +26,7 @@ import {
   Clock,
   XCircle,
   Eye,
+  Trash2,
   Lock,
 } from "lucide-react";
 
@@ -65,6 +66,7 @@ export default function KommunikationPage() {
   const { flags, loading: flagsLoading } = useFeatureFlags();
   const [mailings, setMailings] = useState<Mailing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchMailings = useCallback(async () => {
     setLoading(true);
@@ -78,6 +80,25 @@ export default function KommunikationPage() {
       toast.error("Mailings konnten nicht geladen werden");
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const handleDelete = useCallback(async (id: string) => {
+    if (!confirm("Mailing-Entwurf wirklich löschen?")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/mailings/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setMailings((prev) => prev.filter((m) => m.id !== id));
+        toast.success("Mailing gelöscht");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error ?? "Fehler beim Löschen");
+      }
+    } catch {
+      toast.error("Fehler beim Löschen");
+    } finally {
+      setDeletingId(null);
     }
   }, []);
 
@@ -146,7 +167,7 @@ export default function KommunikationPage() {
                 <TableHead>Empfaenger</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Datum</TableHead>
-                <TableHead className="w-[60px]" />
+                <TableHead className="w-[100px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -181,14 +202,31 @@ export default function KommunikationPage() {
                       {new Date(m.sentAt ?? m.createdAt).toLocaleDateString("de-DE")}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => router.push(`/kommunikation/${m.id}`)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => router.push(`/kommunikation/${m.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {m.status === "DRAFT" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleDelete(m.id)}
+                            disabled={deletingId === m.id}
+                          >
+                            {deletingId === m.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

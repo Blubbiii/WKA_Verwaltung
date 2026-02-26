@@ -15,6 +15,7 @@ import {
   resolveShareholderPlaceholders,
   applyPlaceholders,
 } from "@/lib/mailings/placeholder-service";
+import { wrapEmailBody } from "@/lib/mailings/email-wrapper";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -46,12 +47,10 @@ export async function POST(req: NextRequest, context: RouteContext) {
     const recipientWhere: any = {
       fund: { tenantId: check.tenantId! },
       status: "ACTIVE",
-      person: {
-        OR: [
-          { email: { not: null } },
-          { street: { not: null }, city: { not: null } },
-        ],
-      },
+      OR: [
+        { person: { email: { not: null } } },
+        { person: { street: { not: null }, city: { not: null } } },
+      ],
     };
 
     if (recipientFilter) {
@@ -107,6 +106,13 @@ export async function POST(req: NextRequest, context: RouteContext) {
       );
     }
 
+    // Get tenant name for email wrapper
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: check.tenantId! },
+      select: { name: true },
+    });
+    const tenantName = tenant?.name ?? "WindparkManager";
+
     // Resolve content
     let resolvedSubject: string;
     let resolvedHtml: string;
@@ -117,7 +123,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
       resolvedHtml = applyPlaceholders(mailing.template.bodyHtml, variables);
     } else {
       resolvedSubject = mailing.subject ?? "";
-      resolvedHtml = mailing.bodyHtml ?? "";
+      resolvedHtml = wrapEmailBody(mailing.bodyHtml ?? "", tenantName, false);
     }
 
     // Count total recipients + delivery method breakdown

@@ -2128,6 +2128,12 @@ export default function ParkDetailsPage({
                     ))}
                 </SelectContent>
               </Select>
+              <p className="text-sm text-muted-foreground">
+                Gesellschaft nicht vorhanden?{" "}
+                <Link href="/funds/new" className="text-primary hover:underline">
+                  Neue Gesellschaft anlegen
+                </Link>
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Eigentumsanteil (%, optional)</Label>

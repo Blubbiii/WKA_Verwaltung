@@ -52,8 +52,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationPreferences } from "@/components/settings/notification-preferences";
 import { TenantFeaturesSettings } from "@/components/settings/TenantFeaturesSettings";
+import { PaperlessConfigForm } from "@/components/admin/system-config/paperless-config-form";
 import { usePermissions } from "@/hooks/usePermissions";
-import { ToggleLeft } from "lucide-react";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { ToggleLeft, FileArchive } from "lucide-react";
 import { toast } from "sonner";
 
 // =============================================================================
@@ -993,12 +995,54 @@ function ProfileSkeleton() {
 // Main Settings Page
 // =============================================================================
 
+interface PaperlessConfigValue {
+  key: string;
+  value: string;
+  encrypted: boolean;
+  category: string;
+  label: string | null;
+  tenantId: string | null;
+  updatedAt: string;
+}
+
+interface PaperlessAvailableKey {
+  key: string;
+  category: string;
+  label: string;
+  encrypted: boolean;
+  envFallback?: string;
+  defaultValue?: string;
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { hasPermission, role } = usePermissions();
+  const { flags } = useFeatureFlags();
   const canManageFeatures = role === "SUPERADMIN" || hasPermission("settings:update");
+  const canManagePaperless = (role === "SUPERADMIN" || hasPermission("admin:manage")) && flags.paperless;
+
+  // Paperless config state
+  const [paperlessConfigs, setPaperlessConfigs] = useState<PaperlessConfigValue[]>([]);
+  const [paperlessKeys, setPaperlessKeys] = useState<PaperlessAvailableKey[]>([]);
+  const [paperlessLoading, setPaperlessLoading] = useState(false);
+
+  const fetchPaperlessConfig = useCallback(async () => {
+    setPaperlessLoading(true);
+    try {
+      const res = await fetch("/api/settings/paperless");
+      if (res.ok) {
+        const data = await res.json();
+        setPaperlessConfigs(data.configs ?? []);
+        setPaperlessKeys(data.availableKeys ?? []);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setPaperlessLoading(false);
+    }
+  }, []);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -1025,6 +1069,10 @@ export default function SettingsPage() {
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
+
+  useEffect(() => {
+    if (canManagePaperless) fetchPaperlessConfig();
+  }, [canManagePaperless, fetchPaperlessConfig]);
 
   if (loadError) {
     return (
@@ -1086,6 +1134,12 @@ export default function SettingsPage() {
             <Lock className="h-4 w-4" />
             Sicherheit
           </TabsTrigger>
+          {canManagePaperless && (
+            <TabsTrigger value="paperless" className="flex items-center gap-2">
+              <FileArchive className="h-4 w-4" />
+              Paperless
+            </TabsTrigger>
+          )}
           {canManageFeatures && (
             <TabsTrigger value="features" className="flex items-center gap-2">
               <ToggleLeft className="h-4 w-4" />
@@ -1119,6 +1173,38 @@ export default function SettingsPage() {
         <TabsContent value="security">
           <SecurityTab settings={settings} />
         </TabsContent>
+
+        {/* Paperless Tab (admin + superadmin, feature-flag gated) */}
+        {canManagePaperless && (
+          <TabsContent value="paperless">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileArchive className="h-5 w-5" />
+                  Paperless-ngx
+                </CardTitle>
+                <CardDescription>
+                  Verbindung zu Ihrer Paperless-ngx Instanz konfigurieren
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {paperlessLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <PaperlessConfigForm
+                    configs={paperlessConfigs}
+                    availableKeys={paperlessKeys}
+                    onSave={fetchPaperlessConfig}
+                    apiBasePath="/api/settings/paperless"
+                    testApiPath="/api/settings/paperless/test"
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         {/* Features/Module Tab (only for admins) */}
         {canManageFeatures && (

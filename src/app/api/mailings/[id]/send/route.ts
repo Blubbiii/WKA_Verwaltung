@@ -17,7 +17,6 @@ import {
   applyPlaceholders,
 } from "@/lib/mailings/placeholder-service";
 import { wrapEmailBody, stripHtml } from "@/lib/mailings/email-wrapper";
-import { getFilteredRecipients } from "@/lib/mass-communication/recipient-filter";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -126,9 +125,9 @@ export async function POST(_req: NextRequest, context: RouteContext) {
           : undefined;
       } else {
         // Freeform content
-        resolvedSubject = mailing.subject!;
-        resolvedHtml = wrapEmailBody(mailing.bodyHtml!, tenantName, false);
-        resolvedText = stripHtml(mailing.bodyHtml!);
+        resolvedSubject = mailing.subject ?? "(Kein Betreff)";
+        resolvedHtml = wrapEmailBody(mailing.bodyHtml ?? "", tenantName, false);
+        resolvedText = stripHtml(mailing.bodyHtml ?? "");
       }
 
       // Create recipient record
@@ -144,6 +143,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
           // Copy address for post delivery
           ...(deliveryMethod !== "EMAIL" ? {
             street: sh.person.street ?? null,
+            houseNumber: sh.person.houseNumber ?? null,
             postalCode: sh.person.postalCode ?? null,
             city: sh.person.city ?? null,
             country: sh.person.country ?? null,
@@ -245,12 +245,10 @@ async function getShareholdersWithDeliveryInfo(
     fund: { tenantId },
     status: "ACTIVE",
     // Include shareholders with email OR with address (for post delivery)
-    person: {
-      OR: [
-        { email: { not: null } },
-        { street: { not: null }, city: { not: null } },
-      ],
-    },
+    OR: [
+      { person: { email: { not: null } } },
+      { person: { street: { not: null }, city: { not: null } } },
+    ],
   };
 
   switch (filterType) {

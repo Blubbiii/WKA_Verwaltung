@@ -888,6 +888,7 @@ model MailingRecipient {
   sentAt          DateTime?
   error           String?
   street          String?
+  houseNumber     String?
   postalCode      String?
   city            String?
   country         String?
