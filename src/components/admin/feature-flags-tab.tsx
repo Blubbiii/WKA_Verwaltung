@@ -23,6 +23,10 @@ import { Badge } from "@/components/ui/badge";
 import { ToggleLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// =============================================================================
+// Types
+// =============================================================================
+
 interface FeatureFlags {
   votingEnabled: boolean;
   portalEnabled: boolean;
@@ -33,13 +37,24 @@ interface FeatureFlags {
   reportsEnabled: boolean;
 }
 
+interface ModuleFlags {
+  "management-billing": boolean;
+  "paperless": boolean;
+  "communication": boolean;
+}
+
 interface TenantWithFlags {
   id: string;
   name: string;
   slug: string;
   status: string;
   features: FeatureFlags;
+  modules: ModuleFlags;
 }
+
+// =============================================================================
+// Labels
+// =============================================================================
 
 const FLAG_LABELS: Record<keyof FeatureFlags, string> = {
   votingEnabled: "Abstimmungen",
@@ -50,6 +65,16 @@ const FLAG_LABELS: Record<keyof FeatureFlags, string> = {
   documentsEnabled: "Dokumente",
   reportsEnabled: "Berichte",
 };
+
+const MODULE_LABELS: Record<keyof ModuleFlags, string> = {
+  "management-billing": "Betriebsführung",
+  "paperless": "Paperless",
+  "communication": "Kommunikation",
+};
+
+// =============================================================================
+// Component
+// =============================================================================
 
 export function FeatureFlagsTab() {
   const [tenants, setTenants] = useState<TenantWithFlags[]>([]);
@@ -76,7 +101,8 @@ export function FeatureFlagsTab() {
     fetchFlags();
   }, [fetchFlags]);
 
-  const handleToggle = async (
+  // Toggle legacy feature flag (stored in tenant.settings.features)
+  const handleToggleFeature = async (
     tenantId: string,
     flagKey: keyof FeatureFlags,
     newValue: boolean
@@ -112,7 +138,7 @@ export function FeatureFlagsTab() {
       toast.success(
         `${FLAG_LABELS[flagKey]} für "${tenant.name}" ${newValue ? "aktiviert" : "deaktiviert"}`
       );
-    } catch (error) {
+    } catch {
       // Revert optimistic update
       setTenants((prev) =>
         prev.map((t) =>
@@ -126,6 +152,64 @@ export function FeatureFlagsTab() {
       setUpdating(null);
     }
   };
+
+  // Toggle module flag (stored in SystemConfig table with tenantId)
+  const handleToggleModule = async (
+    tenantId: string,
+    moduleKey: keyof ModuleFlags,
+    newValue: boolean
+  ) => {
+    const tenant = tenants.find((t) => t.id === tenantId);
+    if (!tenant) return;
+
+    // Optimistic update
+    setTenants((prev) =>
+      prev.map((t) =>
+        t.id === tenantId
+          ? { ...t, modules: { ...t.modules, [moduleKey]: newValue } }
+          : t
+      )
+    );
+
+    const cellKey = `${tenantId}-mod-${moduleKey}`;
+    setUpdating(cellKey);
+
+    try {
+      const response = await fetch("/api/admin/system-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: `${moduleKey}.enabled`,
+          value: String(newValue),
+          category: "features",
+          tenantId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Fehler beim Speichern");
+      }
+
+      toast.success(
+        `${MODULE_LABELS[moduleKey]} für "${tenant.name}" ${newValue ? "aktiviert" : "deaktiviert"}`
+      );
+    } catch {
+      // Revert optimistic update
+      setTenants((prev) =>
+        prev.map((t) =>
+          t.id === tenantId
+            ? { ...t, modules: { ...t.modules, [moduleKey]: !newValue } }
+            : t
+        )
+      );
+      toast.error("Fehler beim Speichern des Modul-Flags");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const featureKeys = Object.keys(FLAG_LABELS) as Array<keyof FeatureFlags>;
+  const moduleKeys = Object.keys(MODULE_LABELS) as Array<keyof ModuleFlags>;
 
   return (
     <Card>
@@ -171,8 +255,17 @@ export function FeatureFlagsTab() {
                 <TableRow>
                   <TableHead className="min-w-[180px]">Mandant</TableHead>
                   {Object.values(FLAG_LABELS).map((label) => (
-                    <TableHead key={label} className="text-center min-w-[100px]">
+                    <TableHead key={label} className="text-center min-w-[90px]">
                       {label}
+                    </TableHead>
+                  ))}
+                  {/* Separator + Module flags */}
+                  <TableHead className="w-[1px] px-0">
+                    <div className="h-full border-l-2 border-border mx-auto" />
+                  </TableHead>
+                  {Object.values(MODULE_LABELS).map((label) => (
+                    <TableHead key={label} className="text-center min-w-[90px]">
+                      <span className="text-primary font-semibold">{label}</span>
                     </TableHead>
                   ))}
                 </TableRow>
@@ -188,19 +281,36 @@ export function FeatureFlagsTab() {
                         </Badge>
                       </div>
                     </TableCell>
-                    {(
-                      Object.keys(FLAG_LABELS) as Array<keyof FeatureFlags>
-                    ).map((flagKey) => (
+                    {featureKeys.map((flagKey) => (
                       <TableCell key={flagKey} className="text-center">
                         <Switch
                           checked={tenant.features[flagKey]}
                           onCheckedChange={(checked) =>
-                            handleToggle(tenant.id, flagKey, checked)
+                            handleToggleFeature(tenant.id, flagKey, checked)
                           }
                           disabled={
                             updating === `${tenant.id}-${flagKey}`
                           }
                           aria-label={`${FLAG_LABELS[flagKey]} für ${tenant.name}`}
+                        />
+                      </TableCell>
+                    ))}
+                    {/* Separator */}
+                    <TableCell className="w-[1px] px-0">
+                      <div className="h-full border-l-2 border-border mx-auto" />
+                    </TableCell>
+                    {/* Module flags */}
+                    {moduleKeys.map((moduleKey) => (
+                      <TableCell key={moduleKey} className="text-center">
+                        <Switch
+                          checked={tenant.modules[moduleKey]}
+                          onCheckedChange={(checked) =>
+                            handleToggleModule(tenant.id, moduleKey, checked)
+                          }
+                          disabled={
+                            updating === `${tenant.id}-mod-${moduleKey}`
+                          }
+                          aria-label={`${MODULE_LABELS[moduleKey]} für ${tenant.name}`}
                         />
                       </TableCell>
                     ))}

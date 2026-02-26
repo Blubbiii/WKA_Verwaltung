@@ -114,7 +114,8 @@
     "mailings": "Mailings",
     "mailingsOverview": "Overview",
     "mailingTemplates": "Templates",
-    "emailSettings": "Email Settings"
+    "emailSettings": "Email Settings",
+    "notifications": "Notifications"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",

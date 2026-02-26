@@ -114,7 +114,8 @@
     "mailings": "Serienbriefe",
     "mailingsOverview": "Übersicht",
     "mailingTemplates": "Vorlagen",
-    "emailSettings": "E-Mail-Einstellungen"
+    "emailSettings": "E-Mail-Einstellungen",
+    "notifications": "Benachrichtigungen"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",

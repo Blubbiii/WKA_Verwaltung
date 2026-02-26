@@ -24,6 +24,25 @@ export interface FeatureFlags {
   reportsEnabled: boolean;
 }
 
+// Module flags stored in SystemConfig table
+const MODULE_FLAG_KEYS = [
+  "management-billing.enabled",
+  "paperless.enabled",
+  "communication.enabled",
+] as const;
+
+export interface ModuleFlags {
+  "management-billing": boolean;
+  "paperless": boolean;
+  "communication": boolean;
+}
+
+const DEFAULT_MODULE_FLAGS: ModuleFlags = {
+  "management-billing": false,
+  "paperless": false,
+  "communication": false,
+};
+
 // GET /api/admin/feature-flags - List all tenants with their feature flags (SUPERADMIN only)
 export async function GET(request: NextRequest) {
   try {
@@ -42,9 +61,46 @@ export async function GET(request: NextRequest) {
       orderBy: { name: "asc" },
     });
 
+    // Load SystemConfig module flags for all tenants + global in one query
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const prismaAny = prisma as any;
+    let systemConfigs: Array<{ key: string; value: string; tenantId: string | null }> = [];
+    if (prismaAny.systemConfig) {
+      systemConfigs = await prismaAny.systemConfig.findMany({
+        where: {
+          key: { in: [...MODULE_FLAG_KEYS] },
+        },
+        select: { key: true, value: true, tenantId: true },
+      });
+    }
+
+    // Build lookup: tenantId -> key -> value
+    const globalModuleFlags: Record<string, string> = {};
+    const tenantModuleFlags: Record<string, Record<string, string>> = {};
+
+    for (const sc of systemConfigs) {
+      if (sc.tenantId === null) {
+        globalModuleFlags[sc.key] = sc.value;
+      } else {
+        if (!tenantModuleFlags[sc.tenantId]) tenantModuleFlags[sc.tenantId] = {};
+        tenantModuleFlags[sc.tenantId][sc.key] = sc.value;
+      }
+    }
+
     const tenantsWithFlags = tenants.map((tenant) => {
       const settings = (tenant.settings as Record<string, unknown>) || {};
       const features = (settings.features as Partial<FeatureFlags>) || {};
+
+      // Resolve module flags: tenant-specific > global > env > default(false)
+      const tenantConfigs = tenantModuleFlags[tenant.id] || {};
+      const modules: ModuleFlags = { ...DEFAULT_MODULE_FLAGS };
+      for (const key of MODULE_FLAG_KEYS) {
+        const moduleName = key.replace(".enabled", "") as keyof ModuleFlags;
+        const tenantVal = tenantConfigs[key];
+        const globalVal = globalModuleFlags[key];
+        const resolved = tenantVal ?? globalVal;
+        modules[moduleName] = resolved === "true";
+      }
 
       return {
         id: tenant.id,
@@ -55,6 +111,7 @@ export async function GET(request: NextRequest) {
           ...DEFAULT_FEATURE_FLAGS,
           ...features,
         },
+        modules,
       };
     });
 
