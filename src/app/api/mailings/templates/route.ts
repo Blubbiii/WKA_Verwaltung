@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
+import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 
 const createSchema = z.object({
@@ -28,6 +29,9 @@ const createSchema = z.object({
 export async function GET(req: NextRequest) {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+
+  const enabled = await getConfigBoolean("communication.enabled", check.tenantId, false);
+  if (!enabled) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
 
   try {
     const { searchParams } = new URL(req.url);
@@ -51,6 +55,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+
+  const enabledPost = await getConfigBoolean("communication.enabled", check.tenantId, false);
+  if (!enabledPost) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
 
   try {
     const body = await req.json();

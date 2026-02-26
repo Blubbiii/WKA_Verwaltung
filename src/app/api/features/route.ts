@@ -25,14 +25,22 @@ export async function GET() {
       false
     );
 
+    const communicationEnabled = await getConfigBoolean(
+      "communication.enabled",
+      check.tenantId,
+      false
+    );
+
     return NextResponse.json({
       "management-billing": managementBillingEnabled,
       "paperless": paperlessEnabled,
+      "communication": communicationEnabled,
     });
   } catch {
     return NextResponse.json({
       "management-billing": false,
       "paperless": false,
+      "communication": false,
     });
   }
 }

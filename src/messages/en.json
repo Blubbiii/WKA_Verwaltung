@@ -113,7 +113,8 @@
     "communication": "Communication",
     "mailings": "Mailings",
     "mailingsOverview": "Overview",
-    "mailingTemplates": "Templates"
+    "mailingTemplates": "Templates",
+    "emailSettings": "Email Settings"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",

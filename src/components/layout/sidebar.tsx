@@ -71,7 +71,7 @@ interface NavChild {
   href: string;
   icon?: React.ElementType;
   /** Feature flag that must be enabled for this child to be visible */
-  featureFlag?: "management-billing" | "paperless";
+  featureFlag?: "management-billing" | "paperless" | "communication";
 }
 
 interface NavItem {
@@ -85,7 +85,7 @@ interface NavItem {
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
   /** Feature flag that must be enabled for this item to be visible */
-  featureFlag?: "management-billing" | "paperless";
+  featureFlag?: "management-billing" | "paperless" | "communication";
 }
 
 interface NavGroup {
@@ -266,7 +266,7 @@ const navGroups: NavGroup[] = [
     ],
   },
 
-  // ---- Kommunikation ----
+  // ---- Kommunikation (Feature-Flag-gesteuertes Modul) ----
   {
     label: "Kommunikation",
     labelKey: "communication",
@@ -274,13 +274,30 @@ const navGroups: NavGroup[] = [
       {
         title: "Serienbriefe",
         titleKey: "mailings",
-        href: "/mailings",
+        href: "/kommunikation",
         icon: Mail,
         permission: "mailings:read",
+        featureFlag: "communication",
         children: [
-          { title: "Übersicht", titleKey: "mailingsOverview", href: "/mailings", icon: Mail },
-          { title: "Vorlagen", titleKey: "mailingTemplates", href: "/mailings/templates", icon: FileText },
+          { title: "Übersicht", titleKey: "mailingsOverview", href: "/kommunikation", icon: Mail },
+          { title: "Vorlagen", titleKey: "mailingTemplates", href: "/kommunikation/vorlagen", icon: FileText },
         ],
+      },
+      {
+        title: "Massen-E-Mail",
+        titleKey: "massCommunication",
+        href: "/kommunikation/masse",
+        icon: Send,
+        permission: "admin:mass-communication",
+        featureFlag: "communication",
+      },
+      {
+        title: "E-Mail-Einstellungen",
+        titleKey: "emailSettings",
+        href: "/kommunikation/email",
+        icon: Cog,
+        permission: "admin:email",
+        featureFlag: "communication",
       },
     ],
   },
@@ -325,20 +342,6 @@ const navGroups: NavGroup[] = [
         href: "/admin/access-report",
         icon: KeyRound,
         permission: "admin:access-report",
-      },
-      {
-        title: "E-Mail-Vorlagen",
-        titleKey: "emailTemplates",
-        href: "/admin/email",
-        icon: Mail,
-        permission: "admin:email",
-      },
-      {
-        title: "Massen-Kommunikation",
-        titleKey: "massCommunication",
-        href: "/admin/mass-communication",
-        icon: Send,
-        permission: "admin:mass-communication",
       },
       {
         title: "Rechnungseinstellungen",

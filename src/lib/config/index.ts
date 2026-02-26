@@ -26,7 +26,7 @@ interface SystemConfigRecord {
 // TYPES
 // =============================================================================
 
-export type ConfigCategory = "email" | "weather" | "storage" | "general" | "features" | "paperless";
+export type ConfigCategory = "email" | "weather" | "storage" | "general" | "features" | "paperless" | "communication";
 
 export interface ConfigValue {
   key: string;
@@ -204,6 +204,13 @@ export const CONFIG_KEYS = {
     label: "Paperless-ngx Integration",
     encrypted: false,
     envFallback: "PAPERLESS_ENABLED",
+    defaultValue: "false",
+  },
+  "communication.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Kommunikation (Serienbriefe, Massen-E-Mail)",
+    encrypted: false,
+    envFallback: "COMMUNICATION_ENABLED",
     defaultValue: "false",
   },
 
@@ -581,7 +588,7 @@ export async function getAllConfigs(
   tenantId?: string | null,
   includeMasked: boolean = true
 ): Promise<ConfigValue[]> {
-  const categories: ConfigCategory[] = ["email", "weather", "storage", "general", "features", "paperless"];
+  const categories: ConfigCategory[] = ["email", "weather", "storage", "general", "features", "paperless", "communication"];
   const allConfigs: ConfigValue[] = [];
 
   for (const category of categories) {

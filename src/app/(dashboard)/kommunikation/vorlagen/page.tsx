@@ -18,7 +18,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, FileText } from "lucide-react";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { Plus, Pencil, Trash2, FileText, Loader2, Lock } from "lucide-react";
 import { TemplateEditor } from "@/components/mailings/template-editor";
 
 // =============================================================================
@@ -62,6 +63,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function MailingTemplatesPage() {
   const { toast } = useToast();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
   const [templates, setTemplates] = useState<MailingTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -84,8 +86,27 @@ export default function MailingTemplatesPage() {
   }, [toast]);
 
   useEffect(() => {
-    fetchTemplates();
-  }, [fetchTemplates]);
+    if (flags.communication) fetchTemplates();
+  }, [fetchTemplates, flags.communication]);
+
+  // Feature flag guard
+  if (flagsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!flags.communication) {
+    return (
+      <EmptyState
+        icon={Lock}
+        title="Modul nicht aktiviert"
+        description="Das Kommunikations-Modul ist nicht aktiviert. Aktivieren Sie es unter Admin → System-Konfiguration → Features."
+      />
+    );
+  }
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -93,13 +114,13 @@ export default function MailingTemplatesPage() {
       const res = await fetch(`/api/mailings/templates/${deleteId}`, { method: "DELETE" });
       if (res.ok) {
         setTemplates((prev) => prev.filter((t) => t.id !== deleteId));
-        toast({ title: "Vorlage gelöscht" });
+        toast({ title: "Vorlage geloescht" });
       } else {
         const data = await res.json();
         toast({ title: "Fehler", description: data.error, variant: "destructive" });
       }
     } catch {
-      toast({ title: "Fehler", description: "Löschen fehlgeschlagen", variant: "destructive" });
+      toast({ title: "Fehler", description: "Loeschen fehlgeschlagen", variant: "destructive" });
     } finally {
       setDeleteId(null);
     }
@@ -115,7 +136,7 @@ export default function MailingTemplatesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Mailing-Vorlagen"
-        description="Vorlagen für Serienbriefe an Gesellschafter"
+        description="Vorlagen fuer Serienbriefe an Gesellschafter"
         actions={
           <Button onClick={() => { setEditingTemplate(null); setEditorOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" />
@@ -137,7 +158,7 @@ export default function MailingTemplatesPage() {
         <EmptyState
           icon={FileText}
           title="Keine Vorlagen"
-          description="Erstellen Sie Ihre erste Mailing-Vorlage mit Platzhaltern für Gesellschafterdaten."
+          description="Erstellen Sie Ihre erste Mailing-Vorlage mit Platzhaltern fuer Gesellschafterdaten."
           action={
             <Button onClick={() => { setEditingTemplate(null); setEditorOpen(true); }}>
               <Plus className="mr-2 h-4 w-4" />
@@ -204,15 +225,15 @@ export default function MailingTemplatesPage() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Vorlage löschen?</AlertDialogTitle>
+            <AlertDialogTitle>Vorlage loeschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Diese Aktion kann nicht rückgängig gemacht werden.
+              Diese Aktion kann nicht rueckgaengig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Löschen
+              Loeschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

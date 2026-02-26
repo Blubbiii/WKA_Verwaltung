@@ -37,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import {
   Send,
   Eye,
@@ -49,6 +50,7 @@ import {
   AlertCircle,
   RefreshCw,
   History,
+  Lock,
 } from "lucide-react";
 import RichTextEditor from "@/components/ui/rich-text-editor-dynamic";
 
@@ -155,8 +157,9 @@ function getFilterLabel(filter: string): string {
 // Main Page Component
 // =============================================================================
 
-export default function MassCommunicationPage() {
+export default function MasseCommunicationPage() {
   const { toast } = useToast();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
 
   // Form state
   const [subject, setSubject] = useState("");
@@ -243,9 +246,30 @@ export default function MassCommunicationPage() {
   }, []);
 
   useEffect(() => {
-    loadFundsAndParks();
-    loadHistory();
-  }, [loadFundsAndParks, loadHistory]);
+    if (flags.communication) {
+      loadFundsAndParks();
+      loadHistory();
+    }
+  }, [loadFundsAndParks, loadHistory, flags.communication]);
+
+  // Feature flag guard
+  if (flagsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!flags.communication) {
+    return (
+      <EmptyState
+        icon={Lock}
+        title="Modul nicht aktiviert"
+        description="Das Kommunikations-Modul ist nicht aktiviert. Aktivieren Sie es unter Admin → System-Konfiguration → Features."
+      />
+    );
+  }
 
   // -------------------------------------------------------------------------
   // Preview
@@ -389,14 +413,11 @@ export default function MassCommunicationPage() {
           description: data.message || `${data.recipientCount} E-Mails wurden gesendet.`,
         });
 
-        // Reset form
         setSubject("");
         setBody("");
         setRecipientFilter("ALL");
         setSelectedFundIds([]);
         setSelectedParkIds([]);
-
-        // Reload history
         loadHistory();
       } else {
         toast({
@@ -450,11 +471,8 @@ export default function MassCommunicationPage() {
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* ============================================================= */}
         {/* Left side: Compose Form */}
-        {/* ============================================================= */}
         <div className="xl:col-span-2 space-y-6">
-          {/* Subject and Body */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -485,12 +503,11 @@ export default function MassCommunicationPage() {
             </CardContent>
           </Card>
 
-          {/* Recipient Filter */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Empfänger
+                Empfaenger
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -498,7 +515,6 @@ export default function MassCommunicationPage() {
                 value={recipientFilter}
                 onValueChange={(val) => {
                   setRecipientFilter(val as RecipientFilter);
-                  // Clear selections when filter type changes
                   setSelectedFundIds([]);
                   setSelectedParkIds([]);
                 }}
@@ -535,7 +551,6 @@ export default function MassCommunicationPage() {
                 </div>
               </RadioGroup>
 
-              {/* Fund multi-select */}
               {recipientFilter === "BY_FUND" && (
                 <div className="mt-4 space-y-2">
                   <Label>Fonds auswaehlen</Label>
@@ -576,7 +591,6 @@ export default function MassCommunicationPage() {
                 </div>
               )}
 
-              {/* Park multi-select */}
               {recipientFilter === "BY_PARK" && (
                 <div className="mt-4 space-y-2">
                   <Label>Windparks auswaehlen</Label>
@@ -619,7 +633,6 @@ export default function MassCommunicationPage() {
             </CardContent>
           </Card>
 
-          {/* Action buttons */}
           <div className="flex flex-wrap gap-3">
             <Button
               variant="outline"
@@ -661,9 +674,7 @@ export default function MassCommunicationPage() {
           </div>
         </div>
 
-        {/* ============================================================= */}
         {/* Right side: History */}
-        {/* ============================================================= */}
         <div className="xl:col-span-1">
           <Card>
             <CardHeader>
@@ -713,7 +724,7 @@ export default function MassCommunicationPage() {
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Users className="h-3 w-3" />
-                        {item.recipientCount} Empfänger
+                        {item.recipientCount} Empfaenger
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
@@ -740,17 +751,15 @@ export default function MassCommunicationPage() {
         </div>
       </div>
 
-      {/* ================================================================= */}
       {/* Preview Dialog */}
-      {/* ================================================================= */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Empfänger-Vorschau</DialogTitle>
+            <DialogTitle>Empfaenger-Vorschau</DialogTitle>
             <DialogDescription>
               {loadingPreview
-                ? "Empfänger werden geladen..."
-                : `${previewCount} Empfänger gefunden`}
+                ? "Empfaenger werden geladen..."
+                : `${previewCount} Empfaenger gefunden`}
             </DialogDescription>
           </DialogHeader>
 
@@ -766,7 +775,7 @@ export default function MassCommunicationPage() {
             </div>
           ) : previewRecipients.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
-              Keine Empfänger für die gewaehlten Filter-Kriterien gefunden.
+              Keine Empfaenger fuer die gewaehlten Filter-Kriterien gefunden.
             </div>
           ) : (
             <div className="overflow-y-auto flex-1">
@@ -799,17 +808,15 @@ export default function MassCommunicationPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ================================================================= */}
       {/* Confirmation Dialog */}
-      {/* ================================================================= */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>E-Mails versenden?</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie diese Nachricht versenden möchten?
+              Sind Sie sicher, dass Sie diese Nachricht versenden moechten?
               Die E-Mail wird basierend auf den gewaehlten Filtern an alle
-              passenden Empfänger gesendet. Dieser Vorgang kann nicht
+              passenden Empfaenger gesendet. Dieser Vorgang kann nicht
               rueckgaengig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>

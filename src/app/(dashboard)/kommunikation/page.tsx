@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import {
   Plus,
   Mail,
@@ -25,6 +26,7 @@ import {
   Clock,
   XCircle,
   Eye,
+  Lock,
 } from "lucide-react";
 
 // =============================================================================
@@ -56,9 +58,10 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 // Component
 // =============================================================================
 
-export default function MailingsPage() {
+export default function KommunikationPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
   const [mailings, setMailings] = useState<Mailing[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -78,8 +81,27 @@ export default function MailingsPage() {
   }, [toast]);
 
   useEffect(() => {
-    fetchMailings();
-  }, [fetchMailings]);
+    if (flags.communication) fetchMailings();
+  }, [fetchMailings, flags.communication]);
+
+  // Feature flag guard
+  if (flagsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!flags.communication) {
+    return (
+      <EmptyState
+        icon={Lock}
+        title="Modul nicht aktiviert"
+        description="Das Kommunikations-Modul ist nicht aktiviert. Aktivieren Sie es unter Admin → System-Konfiguration → Features."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -87,7 +109,7 @@ export default function MailingsPage() {
         title="Serienbriefe"
         description="Vorlagenbasierte Massenkommunikation an Gesellschafter"
         actions={
-          <Button onClick={() => router.push("/mailings/create")}>
+          <Button onClick={() => router.push("/kommunikation/erstellen")}>
             <Plus className="mr-2 h-4 w-4" />
             Neues Mailing
           </Button>
@@ -106,7 +128,7 @@ export default function MailingsPage() {
           title="Keine Mailings"
           description="Erstellen Sie Ihr erstes Mailing an Gesellschafter."
           action={
-            <Button onClick={() => router.push("/mailings/create")}>
+            <Button onClick={() => router.push("/kommunikation/erstellen")}>
               <Plus className="mr-2 h-4 w-4" />
               Mailing erstellen
             </Button>
@@ -120,7 +142,7 @@ export default function MailingsPage() {
                 <TableHead>Titel</TableHead>
                 <TableHead>Vorlage</TableHead>
                 <TableHead>Gesellschaft</TableHead>
-                <TableHead>Empfänger</TableHead>
+                <TableHead>Empfaenger</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Datum</TableHead>
                 <TableHead className="w-[60px]" />
@@ -160,7 +182,7 @@ export default function MailingsPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => router.push(`/mailings/${m.id}`)}
+                        onClick={() => router.push(`/kommunikation/${m.id}`)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>

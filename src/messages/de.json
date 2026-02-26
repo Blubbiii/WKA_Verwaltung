@@ -113,7 +113,8 @@
     "communication": "Kommunikation",
     "mailings": "Serienbriefe",
     "mailingsOverview": "Übersicht",
-    "mailingTemplates": "Vorlagen"
+    "mailingTemplates": "Vorlagen",
+    "emailSettings": "E-Mail-Einstellungen"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",

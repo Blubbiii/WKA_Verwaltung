@@ -13,6 +13,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { auth } from "@/lib/auth";
+import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { createAuditLog } from "@/lib/audit";
 import { sendEmailSync } from "@/lib/email";
@@ -67,6 +68,9 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+
+    const enabled = await getConfigBoolean("communication.enabled", check.tenantId, false);
+    if (!enabled) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
@@ -130,6 +134,9 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+
+    const enabledPost = await getConfigBoolean("communication.enabled", check.tenantId, false);
+    if (!enabledPost) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
 
     const body = await request.json();
     const parsed = sendSchema.safeParse(body);

@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Save,
   Server,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 // Dynamic import for Rich Text Editor (SSR-incompatible)
 const RichTextEditor = dynamic(
@@ -140,6 +143,8 @@ const defaultNotificationSettings: NotificationSettings = {
 // =============================================================================
 
 export default function EmailConfigPage() {
+  const { flags, loading: flagsLoading } = useFeatureFlags();
+
   // Notification state
   const [notificationSettings, setNotificationSettings] =
     useState<NotificationSettings>(defaultNotificationSettings);
@@ -181,12 +186,11 @@ export default function EmailConfigPage() {
   // LOAD DATA
   // =========================================================================
 
-  // Load notification settings (legacy API)
   useEffect(() => {
-    loadNotificationConfig();
-  }, []);
+    if (flags.communication) loadNotificationConfig();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flags.communication]);
 
-  // Load templates from new API
   const loadTemplates = useCallback(async () => {
     try {
       setTemplatesLoading(true);
@@ -203,8 +207,8 @@ export default function EmailConfigPage() {
   }, []);
 
   useEffect(() => {
-    loadTemplates();
-  }, [loadTemplates]);
+    if (flags.communication) loadTemplates();
+  }, [loadTemplates, flags.communication]);
 
   async function loadNotificationConfig() {
     try {
@@ -221,6 +225,25 @@ export default function EmailConfigPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Feature flag guard
+  if (flagsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!flags.communication) {
+    return (
+      <EmptyState
+        icon={Lock}
+        title="Modul nicht aktiviert"
+        description="Das Kommunikations-Modul ist nicht aktiviert. Aktivieren Sie es unter Admin → System-Konfiguration → Features."
+      />
+    );
   }
 
   // =========================================================================
@@ -370,7 +393,7 @@ export default function EmailConfigPage() {
 
       toast.success("Vorlage gespeichert");
       setShowTemplateDialog(false);
-      loadTemplates(); // Refresh the list
+      loadTemplates();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Fehler beim Speichern"
@@ -393,17 +416,17 @@ export default function EmailConfigPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Zurücksetzen");
+        throw new Error(error.error || "Fehler beim Zuruecksetzen");
       }
 
-      toast.success("Vorlage auf Standard zurückgesetzt");
+      toast.success("Vorlage auf Standard zurueckgesetzt");
       setShowTemplateDialog(false);
       loadTemplates();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Zurücksetzen"
+          : "Fehler beim Zuruecksetzen"
       );
     } finally {
       setTemplateSaving(false);
@@ -447,11 +470,7 @@ export default function EmailConfigPage() {
   }
 
   function insertPlaceholder(placeholder: string) {
-    // We insert the placeholder text at cursor position
-    // The RichTextEditor onChange will update our state
     setEditHtmlContent((prev) => {
-      // Simple append approach - the rich text editor will handle it
-      // In practice, users click in the editor first, then click a placeholder
       return prev + `{{${placeholder}}}`;
     });
   }
@@ -511,7 +530,7 @@ export default function EmailConfigPage() {
                 E-Mail-Vorlagen
               </CardTitle>
               <CardDescription>
-                Verwalten und bearbeiten Sie die Vorlagen für System-E-Mails
+                Verwalten und bearbeiten Sie die Vorlagen fuer System-E-Mails
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -604,7 +623,7 @@ export default function EmailConfigPage() {
                     System-E-Mails aktiviert
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Haupt-Schalter für alle E-Mail-Benachrichtigungen
+                    Haupt-Schalter fuer alle E-Mail-Benachrichtigungen
                   </p>
                 </div>
                 <Switch
@@ -630,7 +649,7 @@ export default function EmailConfigPage() {
                 />
                 <NotificationSwitch
                   label="Passwort-Reset"
-                  description="E-Mail zum Zurücksetzen des Passworts"
+                  description="E-Mail zum Zuruecksetzen des Passworts"
                   checked={notificationSettings.passwordReset}
                   disabled={!notificationSettings.systemEmailsEnabled}
                   onCheckedChange={(checked) =>
@@ -666,7 +685,7 @@ export default function EmailConfigPage() {
                 />
                 <NotificationSwitch
                   label="Vertragsfrist-Warnung"
-                  description="Warnung wenn eine Vertragsfrist bald abläuft"
+                  description="Warnung wenn eine Vertragsfrist bald ablaeuft"
                   checked={notificationSettings.contractWarning}
                   disabled={!notificationSettings.systemEmailsEnabled}
                   onCheckedChange={(checked) =>
@@ -696,14 +715,14 @@ export default function EmailConfigPage() {
                 Test-E-Mail senden
               </CardTitle>
               <CardDescription>
-                Überprüfen Sie die SMTP-Konfiguration durch Senden einer
+                Ueberpruefen Sie die SMTP-Konfiguration durch Senden einer
                 Test-E-Mail
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4">
                 <div className="flex-1 space-y-2">
-                  <Label htmlFor="test-email">Empfänger-Adresse</Label>
+                  <Label htmlFor="test-email">Empfaenger-Adresse</Label>
                   <Input
                     id="test-email"
                     type="email"
@@ -767,7 +786,6 @@ export default function EmailConfigPage() {
             </div>
           ) : templateDetail ? (
             <div className="space-y-4 py-4">
-              {/* Subject */}
               <div className="space-y-2">
                 <Label htmlFor="template-subject">Betreff</Label>
                 <Input
@@ -778,9 +796,8 @@ export default function EmailConfigPage() {
                 />
               </div>
 
-              {/* Placeholders */}
               <div className="space-y-2">
-                <Label>Verfügbare Platzhalter</Label>
+                <Label>Verfuegbare Platzhalter</Label>
                 <div className="flex flex-wrap gap-2">
                   {templateDetail.placeholders.map((placeholder) => (
                     <Badge
@@ -802,7 +819,6 @@ export default function EmailConfigPage() {
 
               <Separator />
 
-              {/* Editor / Preview Toggle */}
               {showPreview ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -813,7 +829,7 @@ export default function EmailConfigPage() {
                       onClick={() => setShowPreview(false)}
                     >
                       <Pencil className="mr-2 h-4 w-4" />
-                      Zurück zum Editor
+                      Zurueck zum Editor
                     </Button>
                   </div>
                   <div className="rounded-md border bg-white p-0 min-h-[400px]">
@@ -841,7 +857,6 @@ export default function EmailConfigPage() {
 
           <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
             <div className="flex gap-2">
-              {/* Preview Button */}
               <Button
                 variant="outline"
                 onClick={handleTemplatePreview}
@@ -855,19 +870,18 @@ export default function EmailConfigPage() {
                 Vorschau
               </Button>
 
-              {/* Reset to Default Button */}
               {templateDetail?.isCustomized && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline">
                       <RotateCcw className="mr-2 h-4 w-4" />
-                      Auf Standard zurücksetzen
+                      Auf Standard zuruecksetzen
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>
-                        Vorlage zurücksetzen?
+                        Vorlage zuruecksetzen?
                       </AlertDialogTitle>
                       <AlertDialogDescription>
                         Alle Anpassungen an dieser Vorlage werden entfernt. Die
@@ -881,7 +895,7 @@ export default function EmailConfigPage() {
                         onClick={handleTemplateReset}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        Zurücksetzen
+                        Zuruecksetzen
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

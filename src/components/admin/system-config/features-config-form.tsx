@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Briefcase, FileArchive, Loader2 } from "lucide-react";
+import { Briefcase, FileArchive, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -57,6 +57,9 @@ export function FeaturesConfigForm({
   const [paperlessEnabled, setPaperlessEnabled] = useState(
     getConfigValue("paperless.enabled") === "true"
   );
+  const [communicationEnabled, setCommunicationEnabled] = useState(
+    getConfigValue("communication.enabled") === "true"
+  );
 
   // UI state
   const [saving, setSaving] = useState(false);
@@ -74,6 +77,11 @@ export function FeaturesConfigForm({
         {
           key: "paperless.enabled",
           value: paperlessEnabled ? "true" : "false",
+          category: "features",
+        },
+        {
+          key: "communication.enabled",
+          value: communicationEnabled ? "true" : "false",
           category: "features",
         },
       ];
@@ -158,6 +166,36 @@ export function FeaturesConfigForm({
             id="paperless-enabled"
             checked={paperlessEnabled}
             onCheckedChange={setPaperlessEnabled}
+          />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Communication */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-muted-foreground" />
+          <h3 className="font-medium">Kommunikation</h3>
+        </div>
+
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div>
+            <Label
+              htmlFor="communication-enabled"
+              className="cursor-pointer"
+            >
+              Kommunikations-Modul aktivieren
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Aktiviert Serienbriefe, Massen-E-Mail und
+              E-Mail-Vorlagen-Verwaltung
+            </p>
+          </div>
+          <Switch
+            id="communication-enabled"
+            checked={communicationEnabled}
+            onCheckedChange={setCommunicationEnabled}
           />
         </div>
       </div>

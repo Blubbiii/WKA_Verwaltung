@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -16,7 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/hooks/use-toast";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import {
   ArrowLeft,
   ArrowRight,
@@ -26,6 +27,7 @@ import {
   FileText,
   Users,
   CheckCircle,
+  Lock,
 } from "lucide-react";
 import { SafeHtml } from "@/components/ui/safe-html";
 
@@ -63,7 +65,7 @@ type Step = 1 | 2 | 3;
 
 const STEPS = [
   { step: 1 as Step, label: "Vorlage", icon: FileText },
-  { step: 2 as Step, label: "Empfänger", icon: Users },
+  { step: 2 as Step, label: "Empfaenger", icon: Users },
   { step: 3 as Step, label: "Vorschau & Senden", icon: Send },
 ];
 
@@ -74,6 +76,7 @@ const STEPS = [
 export default function CreateMailingPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
 
   const [step, setStep] = useState<Step>(1);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -122,8 +125,27 @@ export default function CreateMailingPage() {
   }, [toast]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (flags.communication) loadData();
+  }, [loadData, flags.communication]);
+
+  // Feature flag guard
+  if (flagsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!flags.communication) {
+    return (
+      <EmptyState
+        icon={Lock}
+        title="Modul nicht aktiviert"
+        description="Das Kommunikations-Modul ist nicht aktiviert. Aktivieren Sie es unter Admin → System-Konfiguration → Features."
+      />
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Step navigation
@@ -132,7 +154,7 @@ export default function CreateMailingPage() {
   const canProceed = () => {
     switch (step) {
       case 1: return !!selectedTemplateId && !!title.trim();
-      case 2: return true; // "ALL" is a valid selection
+      case 2: return true;
       case 3: return !!preview;
       default: return false;
     }
@@ -140,7 +162,6 @@ export default function CreateMailingPage() {
 
   const handleNext = async () => {
     if (step === 2) {
-      // Create the mailing draft and load preview
       await createMailingAndPreview();
       return;
     }
@@ -158,7 +179,6 @@ export default function CreateMailingPage() {
   const createMailingAndPreview = async () => {
     setLoadingPreview(true);
     try {
-      // Create mailing draft
       const createRes = await fetch("/api/mailings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -179,7 +199,6 @@ export default function CreateMailingPage() {
       const { mailing } = await createRes.json();
       setMailingId(mailing.id);
 
-      // Load preview
       const previewRes = await fetch(`/api/mailings/${mailing.id}/preview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -216,7 +235,7 @@ export default function CreateMailingPage() {
           title: "Mailing gesendet",
           description: `${data.sentCount} von ${data.totalRecipients} E-Mails erfolgreich gesendet.`,
         });
-        router.push("/mailings");
+        router.push("/kommunikation");
       } else {
         toast({ title: "Fehler", description: data.error, variant: "destructive" });
       }
@@ -246,7 +265,7 @@ export default function CreateMailingPage() {
     <div className="space-y-6">
       <PageHeader
         title="Neues Mailing erstellen"
-        description="Wählen Sie eine Vorlage, bestimmen Sie die Empfänger und senden Sie."
+        description="Waehlen Sie eine Vorlage, bestimmen Sie die Empfaenger und senden Sie."
       />
 
       {/* Step indicator */}
@@ -296,7 +315,7 @@ export default function CreateMailingPage() {
               {templates.length === 0 ? (
                 <div className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
                   Keine Vorlagen vorhanden.{" "}
-                  <Button variant="link" className="p-0 h-auto" onClick={() => router.push("/mailings/templates")}>
+                  <Button variant="link" className="p-0 h-auto" onClick={() => router.push("/kommunikation/vorlagen")}>
                     Vorlage erstellen
                   </Button>
                 </div>
@@ -326,7 +345,7 @@ export default function CreateMailingPage() {
       {step === 2 && (
         <Card>
           <CardHeader>
-            <CardTitle>Empfänger wählen</CardTitle>
+            <CardTitle>Empfaenger waehlen</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -345,13 +364,13 @@ export default function CreateMailingPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Wählen Sie eine Gesellschaft oder &quot;Alle&quot; um an alle Gesellschafter zu senden.
+                Waehlen Sie eine Gesellschaft oder &quot;Alle&quot; um an alle Gesellschafter zu senden.
               </p>
             </div>
 
             {selectedTemplate && (
               <div className="rounded-lg border p-4 bg-muted/30">
-                <p className="text-sm font-medium">Ausgewählte Vorlage: {selectedTemplate.name}</p>
+                <p className="text-sm font-medium">Ausgewaehlte Vorlage: {selectedTemplate.name}</p>
                 <p className="text-xs text-muted-foreground mt-1">Betreff: {selectedTemplate.subject}</p>
               </div>
             )}
@@ -373,7 +392,6 @@ export default function CreateMailingPage() {
             </Card>
           ) : preview ? (
             <>
-              {/* Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <Card>
                   <CardContent className="pt-6">
@@ -381,7 +399,7 @@ export default function CreateMailingPage() {
                       <Users className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="text-2xl font-bold">{preview.recipientCount}</p>
-                        <p className="text-xs text-muted-foreground">Empfänger</p>
+                        <p className="text-xs text-muted-foreground">Empfaenger</p>
                       </div>
                     </div>
                   </CardContent>
@@ -399,12 +417,11 @@ export default function CreateMailingPage() {
                 </Card>
               </div>
 
-              {/* Email preview */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Eye className="h-4 w-4" />
-                    Vorschau (Beispiel-Empfänger)
+                    Vorschau (Beispiel-Empfaenger)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -430,10 +447,10 @@ export default function CreateMailingPage() {
       <div className="flex items-center justify-between border-t pt-4">
         <Button
           variant="outline"
-          onClick={step === 1 ? () => router.push("/mailings") : handleBack}
+          onClick={step === 1 ? () => router.push("/kommunikation") : handleBack}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          {step === 1 ? "Abbrechen" : "Zurück"}
+          {step === 1 ? "Abbrechen" : "Zurueck"}
         </Button>
 
         <div className="flex gap-2">
@@ -453,7 +470,7 @@ export default function CreateMailingPage() {
               ) : (
                 <Send className="mr-2 h-4 w-4" />
               )}
-              An {preview?.recipientCount ?? 0} Empfänger senden
+              An {preview?.recipientCount ?? 0} Empfaenger senden
             </Button>
           )}
         </div>
