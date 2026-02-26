@@ -17,7 +17,7 @@ const createSchema = z.object({
   category: z.enum(["GV_EINLADUNG", "QUARTALSBERICHT", "JAHRESABSCHLUSS", "MAHNUNG", "INFORMATION", "CUSTOM"]),
   subject: z.string().min(1).max(500),
   bodyHtml: z.string().min(1),
-  bodyText: z.string().optional(),
+  bodyText: z.string().nullable().optional(),
   variables: z.array(z.object({
     key: z.string(),
     label: z.string(),
