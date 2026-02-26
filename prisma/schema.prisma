@@ -277,6 +277,9 @@ model Turbine {
   weaSharePercentage             Decimal?                  @db.Decimal(5, 2)
   poolSharePercentage            Decimal?                  @db.Decimal(5, 2)
 
+  // QR-based technician check-in token
+  qrToken                        String?                   @unique
+
   contracts                      Contract[]
   documents                      Document[]
   energyReportConfigs            EnergyReportConfig[]
@@ -293,6 +296,7 @@ model Turbine {
   scadaWarningSummaries          ScadaWarningSummary[]
   scadaWindSummaries             ScadaWindSummary[]
   serviceEvents                  ServiceEvent[]
+  technicianSessions             TechnicianSession[]
   operatorHistory                TurbineOperator[]
   turbineProductions             TurbineProduction[]
   netzgesellschaftFund           Fund?                     @relation(fields: [netzgesellschaftFundId], references: [id])
@@ -316,13 +320,38 @@ model ServiceEvent {
   updatedAt     DateTime   @updatedAt
   turbineId     String
   createdById   String?
-  documents     Document[]
-  createdBy     User?      @relation("ServiceEventCreatedBy", fields: [createdById], references: [id])
-  turbine       Turbine    @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+  documents          Document[]
+  technicianSessions TechnicianSession[]
+  createdBy          User?      @relation("ServiceEventCreatedBy", fields: [createdById], references: [id])
+  turbine            Turbine    @relation(fields: [turbineId], references: [id], onDelete: Cascade)
 
   @@index([turbineId])
   @@index([eventDate])
   @@map("service_events")
+}
+
+model TechnicianSession {
+  id              String        @id @default(uuid())
+  technicianName  String
+  companyName     String
+  checkInAt       DateTime      @default(now())
+  checkOutAt      DateTime?
+  workDescription String?
+  durationMinutes Int?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  turbineId       String
+  serviceEventId  String?
+
+  turbine         Turbine       @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+  serviceEvent    ServiceEvent? @relation(fields: [serviceEventId], references: [id], onDelete: SetNull)
+
+  @@index([turbineId])
+  @@index([checkInAt])
+  @@index([serviceEventId])
+  @@map("technician_sessions")
 }
 
 model Fund {

@@ -163,7 +163,7 @@ export default function BackupStoragePage() {
 
       const result = await response.json();
       setData(result);
-      setSettings(result.settings);
+      if (result.settings) setSettings(result.settings);
       setLastRefresh(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unbekannter Fehler");

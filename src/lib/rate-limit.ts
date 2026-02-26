@@ -60,6 +60,12 @@ export const API_RATE_LIMIT: RateLimitConfig = {
   windowMs: 60 * 1000,
 };
 
+/** 10 requests per 5 minutes -- for public technician check-in/out endpoints. */
+export const TECHNICIAN_RATE_LIMIT: RateLimitConfig = {
+  limit: 10,
+  windowMs: 5 * 60 * 1000,
+};
+
 // ---------------------------------------------------------------------------
 // Internal state
 // ---------------------------------------------------------------------------

@@ -85,6 +85,20 @@ export async function GET(
             },
           },
         },
+        technicianSessions: {
+          orderBy: { checkInAt: "desc" },
+          take: 20,
+          select: {
+            id: true,
+            technicianName: true,
+            companyName: true,
+            checkInAt: true,
+            checkOutAt: true,
+            durationMinutes: true,
+            workDescription: true,
+            serviceEventId: true,
+          },
+        },
         contracts: {
           where: { status: { not: "TERMINATED" } },
           orderBy: { endDate: "asc" },
@@ -95,7 +109,7 @@ export async function GET(
           take: 10,
         },
         _count: {
-          select: { serviceEvents: true, documents: true, contracts: true },
+          select: { serviceEvents: true, documents: true, contracts: true, technicianSessions: true },
         },
       },
     });

@@ -24,6 +24,9 @@ export const WEBHOOK_EVENTS = {
   "document.approved": "Dokument genehmigt",
   // Service Events
   "service_event.created": "Service-Event erstellt",
+  // Technician Check-Ins
+  "technician.checked_in": "Techniker eingecheckt",
+  "technician.checked_out": "Techniker ausgecheckt",
 } as const;
 
 export type WebhookEventType = keyof typeof WEBHOOK_EVENTS;
@@ -63,5 +66,9 @@ export const WEBHOOK_EVENT_CATEGORIES: Record<
   serviceEvents: {
     label: "Service-Events",
     events: ["service_event.created"],
+  },
+  technicianCheckins: {
+    label: "Techniker-Check-Ins",
+    events: ["technician.checked_in", "technician.checked_out"],
   },
 };

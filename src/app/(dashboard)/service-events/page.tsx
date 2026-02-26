@@ -120,6 +120,7 @@ const eventTypeLabels: Record<string, string> = {
   GENERATOR_SERVICE: "Generator-Service",
   SOFTWARE_UPDATE: "Software-Update",
   EMERGENCY: "Notfall",
+  TECHNICIAN_VISIT: "Techniker-Besuch",
   OTHER: "Sonstiges",
 };
 
@@ -140,6 +141,8 @@ const eventTypeColors: Record<string, string> = {
     "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
   EMERGENCY:
     "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+  TECHNICIAN_VISIT:
+    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
   OTHER:
     "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300",
 };

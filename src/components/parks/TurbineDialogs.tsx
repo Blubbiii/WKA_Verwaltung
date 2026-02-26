@@ -16,9 +16,12 @@ import {
   Download,
   Eye,
   Info,
+  QrCode,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { DocumentPreviewDialog } from "@/components/documents";
+import { TurbineQrCodeTab } from "@/components/parks/TurbineQrCodeTab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -112,13 +115,28 @@ interface TurbineDocument {
   createdAt: string;
 }
 
+interface TechnicianSessionInfo {
+  id: string;
+  technicianName: string;
+  companyName: string;
+  checkInAt: string;
+  checkOutAt: string | null;
+  durationMinutes: number | null;
+  workDescription: string | null;
+  serviceEventId: string | null;
+}
+
 interface TurbineDetail extends Turbine {
+  qrToken?: string | null;
   serviceEvents: ServiceEvent[];
+  technicianSessions?: TechnicianSessionInfo[];
   documents: TurbineDocument[];
+  park?: { id: string; name: string; shortName: string | null };
   _count?: {
     serviceEvents: number;
     documents: number;
     contracts: number;
+    technicianSessions: number;
   };
 }
 
@@ -163,6 +181,7 @@ const eventTypeLabels: Record<string, string> = {
   INSPECTION: "Inspektion",
   UPGRADE: "Upgrade",
   INCIDENT: "Störung",
+  TECHNICIAN_VISIT: "Techniker-Besuch",
   OTHER: "Sonstige",
 };
 
@@ -1740,6 +1759,14 @@ function TurbineDetailDialog({
               <TabsTrigger value="documents">
                 Dokumente ({turbineDetail?._count?.documents || 0})
               </TabsTrigger>
+              <TabsTrigger value="checkins">
+                <Clock className="h-4 w-4 mr-1" />
+                Check-Ins ({turbineDetail?._count?.technicianSessions || 0})
+              </TabsTrigger>
+              <TabsTrigger value="qrcode">
+                <QrCode className="h-4 w-4 mr-1" />
+                QR-Code
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="space-y-6 mt-4">
@@ -2084,6 +2111,62 @@ function TurbineDetailDialog({
                   </TableBody>
                 </Table>
               )}
+            </TabsContent>
+
+            {/* Check-Ins Tab */}
+            <TabsContent value="checkins" className="mt-4">
+              {!turbineDetail?.technicianSessions || turbineDetail.technicianSessions.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  <Clock className="mx-auto h-12 w-12 opacity-50 mb-4" />
+                  <p>Keine Techniker-Check-Ins vorhanden</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Techniker</TableHead>
+                      <TableHead>Firma</TableHead>
+                      <TableHead>Einchecken</TableHead>
+                      <TableHead>Auschecken</TableHead>
+                      <TableHead>Dauer</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {turbineDetail.technicianSessions.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-medium">{s.technicianName}</TableCell>
+                        <TableCell>{s.companyName}</TableCell>
+                        <TableCell>
+                          {format(new Date(s.checkInAt), "dd.MM.yyyy HH:mm", { locale: de })}
+                        </TableCell>
+                        <TableCell>
+                          {s.checkOutAt
+                            ? format(new Date(s.checkOutAt), "dd.MM.yyyy HH:mm", { locale: de })
+                            : <Badge variant="secondary" className="bg-green-100 text-green-800">Aktiv</Badge>
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {s.durationMinutes != null
+                            ? `${Math.floor(s.durationMinutes / 60)}h ${s.durationMinutes % 60}m`
+                            : "-"
+                          }
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </TabsContent>
+
+            {/* QR-Code Tab */}
+            <TabsContent value="qrcode" className="mt-4">
+              <TurbineQrCodeTab
+                turbineId={turbine.id}
+                qrToken={turbineDetail?.qrToken ?? null}
+                turbineDesignation={turbine.designation}
+                parkName={turbineDetail?.park?.name}
+                onTokenChanged={fetchTurbineDetail}
+              />
             </TabsContent>
           </Tabs>
         )}

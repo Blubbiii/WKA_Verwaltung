@@ -51,9 +51,10 @@ export async function GET() {
       availableKeys,
     });
   } catch (error) {
-    logger.error({ err: error }, "[Settings/Paperless] GET error");
+    const detail = error instanceof Error ? error.message : String(error);
+    logger.error({ err: error, detail }, "[Settings/Paperless] GET error");
     return NextResponse.json(
-      { error: "Fehler beim Laden der Konfiguration" },
+      { error: "Fehler beim Laden der Konfiguration", detail },
       { status: 500 }
     );
   }
