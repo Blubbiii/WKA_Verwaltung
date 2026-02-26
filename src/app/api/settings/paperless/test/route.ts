@@ -33,9 +33,13 @@ export async function POST() {
     const result = await client.testConnection();
 
     if (!result.success) {
+      logger.warn(
+        { url: config.url, error: result.error },
+        "[Settings/Paperless Test] Connection failed"
+      );
       return NextResponse.json({
         success: false,
-        error: "Paperless-ngx-Verbindung fehlgeschlagen",
+        error: `Paperless-ngx-Verbindung fehlgeschlagen: ${result.error}`,
         details: result.error,
       });
     }

@@ -159,7 +159,7 @@ export function PaperlessConfigForm({
       if (data.success) {
         toast.success("Paperless-ngx Verbindung erfolgreich");
       } else {
-        toast.error(data.error || "Verbindungstest fehlgeschlagen");
+        toast.error(data.details || data.error || "Verbindungstest fehlgeschlagen");
       }
     } catch (error) {
       setTestResult({

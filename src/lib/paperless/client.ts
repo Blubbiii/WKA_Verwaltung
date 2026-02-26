@@ -123,7 +123,7 @@ export class PaperlessClient {
       const result = await this.request<PaperlessDocumentList>(
         "/api/documents/?page_size=1",
         {},
-        5000
+        10000 // 10s — Docker container networking can be slow
       );
 
       return {
