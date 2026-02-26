@@ -20,12 +20,6 @@ const leaseCreateSchema = z.object({
   waitingMoneyAmount: z.number().optional(),
   waitingMoneyUnit: z.enum(["pauschal", "ha"]).optional(),
   waitingMoneySchedule: z.enum(["monthly", "yearly", "once"]).optional(),
-  // Nutzungsarten
-  usageTypes: z.array(z.string()).default([]),
-  usageTypesWithSize: z.array(z.object({
-    id: z.string(),
-    sizeSqm: z.string(),
-  })).optional(),
   // Abrechnungsintervall
   billingInterval: z.enum(["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "CUSTOM_CRON"]).default("ANNUAL"),
   linkedTurbineId: z.string().uuid().optional().nullable(),
@@ -186,8 +180,6 @@ export async function POST(request: NextRequest) {
           waitingMoneyAmount: validatedData.waitingMoneyAmount,
           waitingMoneyUnit: validatedData.waitingMoneyUnit,
           waitingMoneySchedule: validatedData.waitingMoneySchedule,
-          usageTypes: validatedData.usageTypes,
-          usageTypesWithSize: validatedData.usageTypesWithSize,
           billingInterval: validatedData.billingInterval,
           linkedTurbineId: validatedData.linkedTurbineId || null,
           contractDocumentUrl: validatedData.contractDocumentUrl,

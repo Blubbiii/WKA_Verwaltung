@@ -21,12 +21,6 @@ const leaseUpdateSchema = z.object({
   waitingMoneyAmount: z.number().nullable().optional(),
   waitingMoneyUnit: z.enum(["pauschal", "ha"]).nullable().optional(),
   waitingMoneySchedule: z.enum(["monthly", "yearly", "once"]).nullable().optional(),
-  // Nutzungsarten
-  usageTypes: z.array(z.string()).optional(),
-  usageTypesWithSize: z.array(z.object({
-    id: z.string(),
-    sizeSqm: z.string(),
-  })).optional(),
   // Abrechnungsintervall
   billingInterval: z.enum(["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "CUSTOM_CRON"]).optional(),
   linkedTurbineId: z.string().uuid().nullable().optional(),

@@ -1755,10 +1755,18 @@ export default function ParkDetailsPage({
                   <p className="mt-4 text-muted-foreground">
                     Keine Flurstücke zugeordnet
                   </p>
-                  <Button className="mt-4" onClick={openAssignPlotsDialog}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Flurstücke zuordnen
-                  </Button>
+                  <div className="mt-4 flex flex-col items-center gap-2">
+                    <Button asChild>
+                      <Link href="/leases/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Vertrag anlegen
+                      </Link>
+                    </Button>
+                    <Button variant="outline" onClick={openAssignPlotsDialog}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Bestehende Flurstücke zuordnen
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ) : (() => {
@@ -1825,11 +1833,18 @@ export default function ParkDetailsPage({
                             </CardDescription>
                           </div>
                         </div>
-                        {leaseId && (
+                        {leaseId ? (
                           <Button variant="outline" size="sm" asChild>
                             <Link href={`/leases/${leaseId}/edit`}>
                               <Pencil className="mr-2 h-3.5 w-3.5" />
                               Vertrag bearbeiten
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href="/leases/new">
+                              <Plus className="mr-2 h-3.5 w-3.5" />
+                              Vertrag anlegen
                             </Link>
                           </Button>
                         )}

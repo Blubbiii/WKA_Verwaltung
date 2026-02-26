@@ -118,14 +118,6 @@ const WAITING_MONEY_SCHEDULE_LABELS: Record<string, string> = {
   yearly: "Jährlich",
 };
 
-const USAGE_TYPE_LABELS: Record<string, { label: string; unit: string }> = {
-  WEA_STANDORT: { label: "WEA-Standort", unit: "m²" },
-  POOL: { label: "Poolfläche", unit: "m²" },
-  WEG: { label: "Zuwegung", unit: "m²" },
-  KABEL: { label: "Kabeltrasse", unit: "lfm" },
-  AUSGLEICH: { label: "Ausgleichsfläche", unit: "m²" },
-};
-
 export default function LeaseDetailPage({
   params,
 }: {
@@ -225,7 +217,6 @@ export default function LeaseDetailPage({
   }
 
   const daysUntilEnd = getDaysUntilEnd();
-  const hasUsageTypes = lease.usageTypesWithSize && lease.usageTypesWithSize.length > 0;
 
   return (
     <div className="space-y-6">
@@ -513,46 +504,9 @@ export default function LeaseDetailPage({
           </CardContent>
         </Card>
 
-        {/* Nutzungsarten */}
-        {hasUsageTypes && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wind className="h-5 w-5" />
-                Nutzungsarten
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {lease.usageTypesWithSize!.map((ut) => {
-                  const typeInfo = USAGE_TYPE_LABELS[ut.id];
-                  return (
-                    <div
-                      key={ut.id}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-600" />
-                        <span className="font-medium text-sm">
-                          {typeInfo?.label || ut.id}
-                        </span>
-                      </div>
-                      {ut.sizeSqm && ut.sizeSqm !== "" && ut.sizeSqm !== "0" && (
-                        <Badge variant="secondary">
-                          {Number(ut.sizeSqm).toLocaleString("de-DE")} {typeInfo?.unit || "m²"}
-                        </Badge>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Notizen */}
         {lease.notes && (
-          <Card className={hasUsageTypes ? "" : "md:col-span-2"}>
+          <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />

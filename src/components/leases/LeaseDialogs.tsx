@@ -566,35 +566,6 @@ function LeaseDetailDialog({
                     </div>
                   )}
 
-                  {/* Nutzungsarten */}
-                  {leaseDetail.usageTypesWithSize &&
-                    leaseDetail.usageTypesWithSize.length > 0 && (
-                      <div className="space-y-3">
-                        <h4 className="font-medium flex items-center gap-2">
-                          <Layers className="h-4 w-4" />
-                          Nutzungsarten
-                        </h4>
-                        <div className="rounded-lg border p-4">
-                          <div className="flex flex-wrap gap-2">
-                            {leaseDetail.usageTypesWithSize.map((usage) => (
-                              <Badge key={usage.id} variant="outline">
-                                {areaTypeLabels[usage.id] || usage.id}
-                                {usage.sizeSqm && (
-                                  <span className="ml-1 text-muted-foreground">
-                                    (
-                                    {usage.id === "KABEL"
-                                      ? `${parseFloat(usage.sizeSqm).toLocaleString("de-DE")} m`
-                                      : `${(parseFloat(usage.sizeSqm) / 10000).toFixed(2)} ha`}
-                                    )
-                                  </span>
-                                )}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
                   {/* Notizen */}
                   {leaseDetail.notes && (
                     <div className="space-y-3">

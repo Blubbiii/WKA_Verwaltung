@@ -535,8 +535,6 @@ model Lease {
   waitingMoneyAmount                        Decimal?                         @db.Decimal(12, 2)
   waitingMoneyUnit                          String?
   waitingMoneySchedule                      String?
-  usageTypes                                String[]                         @default([])
-  usageTypesWithSize                        Json?
   contractDocumentUrl                       String?
   billingInterval                           BillingRuleFrequency             @default(ANNUAL)
   linkedTurbineId                           String?

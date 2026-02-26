@@ -177,20 +177,10 @@ export default function NewLeaseWizardPage() {
     waitingMoneyAmount: "",
     waitingMoneyUnit: "pauschal" as "pauschal" | "ha",
     waitingMoneySchedule: "yearly" as "monthly" | "yearly" | "once",
-    usageTypes: [] as Array<{ id: string; sizeSqm: string }>,
     billingInterval: "ANNUAL" as "MONTHLY" | "QUARTERLY" | "ANNUAL",
     linkedTurbineId: "" as string,
     notes: "",
   });
-
-  // Available usage types (PlotAreaType)
-  const USAGE_TYPES = [
-    { id: "WEA_STANDORT", label: "WEA-Standort", description: "Standortfläche für Windkraftanlage", unit: "m²" },
-    { id: "POOL", label: "Poolfläche", description: "Pool-Fläche mit Ertragsanteil", unit: "m²" },
-    { id: "WEG", label: "Zuwegung", description: "Zufahrtswege zur Anlage", unit: "m²" },
-    { id: "KABEL", label: "Kabeltrasse", description: "Erdkabel und Leitungen", unit: "lfm" },
-    { id: "AUSGLEICH", label: "Ausgleichsfläche", description: "Ökologische Ausgleichsflächen", unit: "m²" },
-  ];
 
   // Load data
   useEffect(() => {
@@ -412,8 +402,6 @@ export default function NewLeaseWizardPage() {
         waitingMoneySchedule: contractData.hasWaitingMoney
           ? contractData.waitingMoneySchedule
           : undefined,
-        usageTypes: contractData.usageTypes.map((u) => u.id),
-        usageTypesWithSize: contractData.usageTypes,
         billingInterval: contractData.billingInterval,
         linkedTurbineId: contractData.linkedTurbineId || null,
         notes: contractData.notes || undefined,
@@ -1054,37 +1042,6 @@ export default function NewLeaseWizardPage() {
 
   // Step 3: Contract
   function renderContractStep() {
-    const toggleUsageType = (typeId: string) => {
-      setContractData((prev) => {
-        const existing = prev.usageTypes.find((t) => t.id === typeId);
-        if (existing) {
-          return {
-            ...prev,
-            usageTypes: prev.usageTypes.filter((t) => t.id !== typeId),
-          };
-        }
-        return {
-          ...prev,
-          usageTypes: [...prev.usageTypes, { id: typeId, sizeSqm: "" }],
-        };
-      });
-    };
-
-    const updateUsageTypeSize = (typeId: string, sizeSqm: string) => {
-      setContractData((prev) => ({
-        ...prev,
-        usageTypes: prev.usageTypes.map((t) =>
-          t.id === typeId ? { ...t, sizeSqm } : t
-        ),
-      }));
-    };
-
-    const isUsageTypeSelected = (typeId: string) =>
-      contractData.usageTypes.some((t) => t.id === typeId);
-
-    const getUsageTypeSize = (typeId: string) =>
-      contractData.usageTypes.find((t) => t.id === typeId)?.sizeSqm || "";
-
     // Helper: Add years to start date for end date
     const setEndDateYears = (years: number) => {
       if (!contractData.startDate) {
@@ -1444,75 +1401,6 @@ export default function NewLeaseWizardPage() {
 
             <Separator />
 
-            {/* Nutzungsart */}
-            <div className="space-y-4">
-              <div>
-                <Label className="text-base">Nutzungsart der Flaechen</Label>
-                <p className="text-sm text-muted-foreground">
-                  Waehlen Sie die Art der Flaechennutzung und geben Sie die jeweilige Größe ein
-                </p>
-              </div>
-              <div className="space-y-3">
-                {USAGE_TYPES.map((type) => {
-                  const isSelected = isUsageTypeSelected(type.id);
-                  return (
-                    <div
-                      key={type.id}
-                      className={cn(
-                        "p-3 rounded-lg border transition-colors",
-                        isSelected
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:bg-muted/50"
-                      )}
-                    >
-                      {/* Toggle Button - Custom Implementation statt Radix Checkbox */}
-                      <button
-                        type="button"
-                        className="flex items-start space-x-3 w-full text-left"
-                        onClick={() => toggleUsageType(type.id)}
-                      >
-                        <div
-                          className={cn(
-                            "w-4 h-4 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors",
-                            isSelected
-                              ? "bg-primary border-primary text-primary-foreground"
-                              : "border-muted-foreground"
-                          )}
-                        >
-                          {isSelected && <Check className="h-3 w-3" />}
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <span className="text-sm font-medium leading-none">
-                            {type.label}
-                          </span>
-                          <p className="text-xs text-muted-foreground">{type.description}</p>
-                        </div>
-                      </button>
-                      {/* Size input when selected */}
-                      {isSelected && (
-                        <div className="mt-3 ml-7">
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs whitespace-nowrap">
-                              {type.unit === "lfm" ? "Länge:" : "Fläche:"}
-                            </Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              className="w-32 h-8 text-sm"
-                              value={getUsageTypeSize(type.id)}
-                              onChange={(e) => updateUsageTypeSize(type.id, e.target.value)}
-                              placeholder="0"
-                            />
-                            <span className="text-xs text-muted-foreground">{type.unit}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
             <Separator />
 
             {/* Notizen */}
@@ -1682,31 +1570,6 @@ export default function NewLeaseWizardPage() {
                   )}
                 </div>
 
-                {contractData.usageTypes.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Nutzungsart</p>
-                    <div className="space-y-1">
-                      {contractData.usageTypes.map((usage) => {
-                        const type = USAGE_TYPES.find((t) => t.id === usage.id);
-                        const isLfm = type?.unit === "lfm";
-                        const sizeValue = usage.sizeSqm ? parseFloat(usage.sizeSqm) : null;
-                        return (
-                          <div key={usage.id} className="flex items-center gap-2">
-                            <Badge variant="outline">{type?.label || usage.id}</Badge>
-                            {sizeValue && (
-                              <span className="text-xs text-muted-foreground">
-                                {isLfm
-                                  ? `${sizeValue.toLocaleString("de-DE")} lfm`
-                                  : `${(sizeValue / 10000).toFixed(2)} ha (${sizeValue.toLocaleString("de-DE")} m²)`
-                                }
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
 
                 {contractData.notes && (
                   <div>
