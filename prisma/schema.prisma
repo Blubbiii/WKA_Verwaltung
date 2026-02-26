@@ -409,6 +409,7 @@ model Person {
   bankBic                        String?
   bankName                       String?
   notes                          String?
+  preferredDeliveryMethod         DeliveryMethod                   @default(EMAIL)
   status                         EntityStatus                     @default(ACTIVE)
   createdAt                      DateTime                         @default(now())
   updatedAt                      DateTime                         @updatedAt
@@ -845,23 +846,28 @@ model MailingTemplate {
 }
 
 model Mailing {
-  id             String            @id @default(cuid())
-  tenantId       String
-  tenant         Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  templateId     String
-  template       MailingTemplate   @relation(fields: [templateId], references: [id])
-  fundId         String?
-  fund           Fund?             @relation(fields: [fundId], references: [id])
-  title          String
-  status         MailingStatus     @default(DRAFT)
-  recipientCount Int               @default(0)
-  sentCount      Int               @default(0)
-  failedCount    Int               @default(0)
-  scheduledAt    DateTime?
-  sentAt         DateTime?
-  createdBy      String?
-  createdAt      DateTime          @default(now())
-  recipients     MailingRecipient[]
+  id              String            @id @default(cuid())
+  tenantId        String
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId      String?
+  template        MailingTemplate?  @relation(fields: [templateId], references: [id])
+  fundId          String?
+  fund            Fund?             @relation(fields: [fundId], references: [id])
+  title           String
+  contentSource   String            @default("TEMPLATE")
+  subject         String?
+  bodyHtml        String?           @db.Text
+  recipientFilter Json?
+  status          MailingStatus     @default(DRAFT)
+  recipientCount  Int               @default(0)
+  sentCount       Int               @default(0)
+  failedCount     Int               @default(0)
+  postCount       Int               @default(0)
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  createdBy       String?
+  createdAt       DateTime          @default(now())
+  recipients      MailingRecipient[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -869,18 +875,23 @@ model Mailing {
 }
 
 model MailingRecipient {
-  id            String       @id @default(cuid())
-  mailingId     String
-  mailing       Mailing      @relation(fields: [mailingId], references: [id], onDelete: Cascade)
-  shareholderId String?
-  shareholder   Shareholder? @relation(fields: [shareholderId], references: [id])
-  email         String
-  name          String
-  variables     Json         @default("{}")
-  status        String       @default("PENDING")
-  sentAt        DateTime?
-  error         String?
-  createdAt     DateTime     @default(now())
+  id              String          @id @default(cuid())
+  mailingId       String
+  mailing         Mailing         @relation(fields: [mailingId], references: [id], onDelete: Cascade)
+  shareholderId   String?
+  shareholder     Shareholder?    @relation(fields: [shareholderId], references: [id])
+  email           String?
+  name            String
+  deliveryMethod  DeliveryMethod  @default(EMAIL)
+  variables       Json            @default("{}")
+  status          String          @default("PENDING")
+  sentAt          DateTime?
+  error           String?
+  street          String?
+  postalCode      String?
+  city            String?
+  country         String?
+  createdAt       DateTime        @default(now())
 
   @@index([mailingId])
   @@index([mailingId, status])
@@ -2436,6 +2447,12 @@ enum MailingStatus {
   SENT
   PARTIALLY_FAILED
   CANCELLED
+}
+
+enum DeliveryMethod {
+  EMAIL
+  POST
+  BOTH
 }
 
 enum BillingRuleFrequency {

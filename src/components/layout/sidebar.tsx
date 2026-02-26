@@ -272,23 +272,19 @@ const navGroups: NavGroup[] = [
     labelKey: "communication",
     items: [
       {
-        title: "Serienbriefe",
-        titleKey: "mailings",
+        title: "Übersicht",
+        titleKey: "mailingsOverview",
         href: "/kommunikation",
         icon: Mail,
         permission: "mailings:read",
         featureFlag: "communication",
-        children: [
-          { title: "Übersicht", titleKey: "mailingsOverview", href: "/kommunikation", icon: Mail },
-          { title: "Vorlagen", titleKey: "mailingTemplates", href: "/kommunikation/vorlagen", icon: FileText },
-        ],
       },
       {
-        title: "Massen-E-Mail",
-        titleKey: "massCommunication",
-        href: "/kommunikation/masse",
-        icon: Send,
-        permission: "admin:mass-communication",
+        title: "Vorlagen",
+        titleKey: "mailingTemplates",
+        href: "/kommunikation/vorlagen",
+        icon: FileText,
+        permission: "mailings:read",
         featureFlag: "communication",
       },
       {

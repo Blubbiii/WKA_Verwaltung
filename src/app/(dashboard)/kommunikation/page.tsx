@@ -37,12 +37,14 @@ interface Mailing {
   id: string;
   title: string;
   status: string;
+  contentSource?: string;
   recipientCount: number;
   sentCount: number;
   failedCount: number;
+  postCount?: number;
   sentAt: string | null;
   createdAt: string;
-  template: { name: string; category: string };
+  template: { name: string; category: string } | null;
   fund: { name: string } | null;
 }
 
@@ -155,7 +157,9 @@ export default function KommunikationPage() {
                 return (
                   <TableRow key={m.id}>
                     <TableCell className="font-medium">{m.title}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{m.template.name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {m.template?.name ?? (m.contentSource === "FREEFORM" ? "Freitext" : "–")}
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {m.fund?.name ?? "Alle"}
                     </TableCell>

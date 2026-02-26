@@ -1,19 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
@@ -28,8 +21,16 @@ import {
   Users,
   CheckCircle,
   Lock,
+  Mail,
+  Printer,
+  PenLine,
 } from "lucide-react";
 import { SafeHtml } from "@/components/ui/safe-html";
+import RichTextEditor from "@/components/ui/rich-text-editor-dynamic";
+import {
+  RecipientFilterForm,
+  type RecipientFilterValue,
+} from "@/components/mailings/recipient-filter-form";
 
 // =============================================================================
 // Types
@@ -42,11 +43,6 @@ interface Template {
   subject: string;
 }
 
-interface FundOption {
-  id: string;
-  name: string;
-}
-
 interface PreviewData {
   preview: {
     subject: string;
@@ -55,66 +51,67 @@ interface PreviewData {
     recipientEmail: string;
   };
   recipientCount: number;
+  deliveryBreakdown?: {
+    email: number;
+    post: number;
+    total: number;
+  };
 }
 
-// =============================================================================
-// Wizard steps
-// =============================================================================
-
-type Step = 1 | 2 | 3;
+type ContentSource = "TEMPLATE" | "FREEFORM";
+type Step = 1 | 2 | 3 | 4;
 
 const STEPS = [
-  { step: 1 as Step, label: "Vorlage", icon: FileText },
+  { step: 1 as Step, label: "Inhalt", icon: PenLine },
   { step: 2 as Step, label: "Empfaenger", icon: Users },
-  { step: 3 as Step, label: "Vorschau & Senden", icon: Send },
+  { step: 3 as Step, label: "Vorschau", icon: Eye },
+  { step: 4 as Step, label: "Senden", icon: Send },
 ];
 
 // =============================================================================
-// Component
+// Inner component (needs useSearchParams -> Suspense boundary)
 // =============================================================================
 
-export default function CreateMailingPage() {
+function CreateMailingWizard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { flags, loading: flagsLoading } = useFeatureFlags();
+
+  const initialMode = searchParams.get("mode") === "freeform" ? "FREEFORM" : "TEMPLATE";
 
   const [step, setStep] = useState<Step>(1);
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [funds, setFunds] = useState<FundOption[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Step 1: Template selection
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  // Step 1: Content
+  const [contentSource, setContentSource] = useState<ContentSource>(initialMode);
   const [title, setTitle] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [freeformSubject, setFreeformSubject] = useState("");
+  const [freeformBody, setFreeformBody] = useState("");
 
-  // Step 2: Fund selection
-  const [selectedFundId, setSelectedFundId] = useState<string>("ALL");
+  // Step 2: Recipients
+  const [recipientFilter, setRecipientFilter] = useState<RecipientFilterValue>({
+    type: "ALL",
+  });
 
-  // Step 3: Preview + Send
+  // Step 3+4: Preview & Send
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [mailingId, setMailingId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
   // ---------------------------------------------------------------------------
-  // Load initial data
+  // Load templates
   // ---------------------------------------------------------------------------
 
   const loadData = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [templatesRes, fundsRes] = await Promise.all([
-        fetch("/api/mailings/templates"),
-        fetch("/api/funds?limit=100"),
-      ]);
-
-      if (templatesRes.ok) {
-        const data = await templatesRes.json();
+      const res = await fetch("/api/mailings/templates");
+      if (res.ok) {
+        const data = await res.json();
         setTemplates(data.templates ?? []);
-      }
-      if (fundsRes.ok) {
-        const data = await fundsRes.json();
-        const fundsList = data.funds || data.data || data || [];
-        setFunds(Array.isArray(fundsList) ? fundsList.map((f: { id: string; name: string }) => ({ id: f.id, name: f.name })) : []);
       }
     } catch {
       toast.error("Daten konnten nicht geladen werden");
@@ -141,21 +138,29 @@ export default function CreateMailingPage() {
       <EmptyState
         icon={Lock}
         title="Modul nicht aktiviert"
-        description="Das Kommunikations-Modul ist nicht aktiviert. Aktivieren Sie es unter Admin → System-Konfiguration → Features."
+        description="Das Kommunikations-Modul ist nicht aktiviert."
       />
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Step navigation
+  // Step validation
   // ---------------------------------------------------------------------------
 
   const canProceed = () => {
     switch (step) {
-      case 1: return !!selectedTemplateId && !!title.trim();
-      case 2: return true;
-      case 3: return !!preview;
-      default: return false;
+      case 1:
+        if (!title.trim()) return false;
+        if (contentSource === "TEMPLATE") return !!selectedTemplateId;
+        return !!freeformSubject.trim() && !!freeformBody.trim();
+      case 2:
+        if (recipientFilter.type === "BY_FUND" && !(recipientFilter.fundIds?.length)) return false;
+        if (recipientFilter.type === "BY_PARK" && !(recipientFilter.parkIds?.length)) return false;
+        return true;
+      case 3:
+        return !!preview;
+      default:
+        return false;
     }
   };
 
@@ -164,7 +169,7 @@ export default function CreateMailingPage() {
       await createMailingAndPreview();
       return;
     }
-    if (step < 3) setStep((s) => (s + 1) as Step);
+    if (step < 4) setStep((s) => (s + 1) as Step);
   };
 
   const handleBack = () => {
@@ -178,14 +183,26 @@ export default function CreateMailingPage() {
   const createMailingAndPreview = async () => {
     setLoadingPreview(true);
     try {
+      const payload =
+        contentSource === "TEMPLATE"
+          ? {
+              contentSource: "TEMPLATE" as const,
+              templateId: selectedTemplateId,
+              title,
+              recipientFilter,
+            }
+          : {
+              contentSource: "FREEFORM" as const,
+              title,
+              subject: freeformSubject,
+              bodyHtml: freeformBody,
+              recipientFilter,
+            };
+
       const createRes = await fetch("/api/mailings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateId: selectedTemplateId,
-          fundId: selectedFundId !== "ALL" ? selectedFundId : undefined,
-          title,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!createRes.ok) {
@@ -230,7 +247,10 @@ export default function CreateMailingPage() {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success(`${data.sentCount} von ${data.totalRecipients} E-Mails erfolgreich gesendet.`);
+        const parts = [];
+        if (data.sentCount > 0) parts.push(`${data.sentCount} E-Mails gesendet`);
+        if (data.postCount > 0) parts.push(`${data.postCount} Post-Empfaenger markiert`);
+        toast.success(parts.join(", ") || "Versand abgeschlossen");
         router.push("/kommunikation");
       } else {
         toast.error(data.error ?? "Fehler beim Senden");
@@ -255,13 +275,11 @@ export default function CreateMailingPage() {
     );
   }
 
-  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Neues Mailing erstellen"
-        description="Waehlen Sie eine Vorlage, bestimmen Sie die Empfaenger und senden Sie."
+        description="Inhalt erstellen, Empfaenger waehlen und versenden."
       />
 
       {/* Step indicator */}
@@ -273,7 +291,9 @@ export default function CreateMailingPage() {
 
           return (
             <div key={s.step} className="flex items-center gap-2">
-              {i > 0 && <div className={`h-px w-8 ${isDone ? "bg-primary" : "bg-border"}`} />}
+              {i > 0 && (
+                <div className={`h-px w-8 ${isDone ? "bg-primary" : "bg-border"}`} />
+              )}
               <div
                 className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors ${
                   isActive
@@ -291,90 +311,154 @@ export default function CreateMailingPage() {
         })}
       </div>
 
-      {/* Step 1: Template Selection */}
+      {/* ================================================================== */}
+      {/* Step 1: Content */}
+      {/* ================================================================== */}
       {step === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Vorlage & Titel</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Mailing-Titel *</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="z.B. GV-Einladung Windpark Nord 2026"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Vorlage *</Label>
-              {templates.length === 0 ? (
-                <div className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
-                  Keine Vorlagen vorhanden.{" "}
-                  <Button variant="link" className="p-0 h-auto" onClick={() => router.push("/kommunikation/vorlagen")}>
-                    Vorlage erstellen
-                  </Button>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Titel & Inhaltsquelle</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Mailing-Titel *</Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="z.B. GV-Einladung Windpark Nord 2026"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Inhaltsquelle</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    className={`rounded-lg border p-4 text-left transition-colors hover:bg-muted/50 ${
+                      contentSource === "TEMPLATE"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : ""
+                    }`}
+                    onClick={() => setContentSource("TEMPLATE")}
+                  >
+                    <FileText className="h-5 w-5 mb-2 text-muted-foreground" />
+                    <p className="font-medium text-sm">Vorlage</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Vorgefertigte Vorlage mit Platzhaltern
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-lg border p-4 text-left transition-colors hover:bg-muted/50 ${
+                      contentSource === "FREEFORM"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : ""
+                    }`}
+                    onClick={() => setContentSource("FREEFORM")}
+                  >
+                    <PenLine className="h-5 w-5 mb-2 text-muted-foreground" />
+                    <p className="font-medium text-sm">Freitext</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Eigenen Text direkt verfassen
+                    </p>
+                  </button>
                 </div>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {templates.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={`rounded-lg border p-4 text-left transition-colors hover:bg-muted/50 ${
-                        selectedTemplateId === t.id ? "border-primary bg-primary/5 ring-1 ring-primary" : ""
-                      }`}
-                      onClick={() => setSelectedTemplateId(t.id)}
+              </div>
+            </CardContent>
+          </Card>
+
+          {contentSource === "TEMPLATE" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Vorlage waehlen *</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {templates.length === 0 ? (
+                  <div className="rounded-lg border p-4 text-center text-sm text-muted-foreground">
+                    Keine Vorlagen vorhanden.{" "}
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto"
+                      onClick={() => router.push("/kommunikation/vorlagen")}
                     >
-                      <p className="font-medium text-sm">{t.name}</p>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">Betreff: {t.subject}</p>
-                    </button>
-                  ))}
+                      Vorlage erstellen
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {templates.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className={`rounded-lg border p-4 text-left transition-colors hover:bg-muted/50 ${
+                          selectedTemplateId === t.id
+                            ? "border-primary bg-primary/5 ring-1 ring-primary"
+                            : ""
+                        }`}
+                        onClick={() => setSelectedTemplateId(t.id)}
+                      >
+                        <p className="font-medium text-sm">{t.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                          Betreff: {t.subject}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {contentSource === "FREEFORM" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Nachricht verfassen</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Betreff *</Label>
+                  <Input
+                    value={freeformSubject}
+                    onChange={(e) => setFreeformSubject(e.target.value)}
+                    placeholder="E-Mail Betreff..."
+                    maxLength={500}
+                  />
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                <div className="space-y-2">
+                  <Label>Nachricht *</Label>
+                  <RichTextEditor
+                    value={freeformBody}
+                    onChange={setFreeformBody}
+                    placeholder="Ihre Nachricht an die Gesellschafter..."
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
-      {/* Step 2: Recipient Selection */}
+      {/* ================================================================== */}
+      {/* Step 2: Recipients */}
+      {/* ================================================================== */}
       {step === 2 && (
         <Card>
           <CardHeader>
-            <CardTitle>Empfaenger waehlen</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Empfaenger waehlen
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Gesellschaft</Label>
-              <Select value={selectedFundId} onValueChange={setSelectedFundId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle Gesellschaften" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Alle Gesellschaften</SelectItem>
-                  {funds.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>
-                      {f.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Waehlen Sie eine Gesellschaft oder &quot;Alle&quot; um an alle Gesellschafter zu senden.
-              </p>
-            </div>
-
-            {selectedTemplate && (
-              <div className="rounded-lg border p-4 bg-muted/30">
-                <p className="text-sm font-medium">Ausgewaehlte Vorlage: {selectedTemplate.name}</p>
-                <p className="text-xs text-muted-foreground mt-1">Betreff: {selectedTemplate.subject}</p>
-              </div>
-            )}
+          <CardContent>
+            <RecipientFilterForm value={recipientFilter} onChange={setRecipientFilter} />
           </CardContent>
         </Card>
       )}
 
-      {/* Step 3: Preview & Send */}
+      {/* ================================================================== */}
+      {/* Step 3: Preview */}
+      {/* ================================================================== */}
       {step === 3 && (
         <div className="space-y-4">
           {loadingPreview ? (
@@ -388,14 +472,15 @@ export default function CreateMailingPage() {
             </Card>
           ) : preview ? (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
                       <Users className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="text-2xl font-bold">{preview.recipientCount}</p>
-                        <p className="text-xs text-muted-foreground">Empfaenger</p>
+                        <p className="text-xs text-muted-foreground">Empfaenger gesamt</p>
                       </div>
                     </div>
                   </CardContent>
@@ -403,21 +488,37 @@ export default function CreateMailingPage() {
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
-                      <Eye className="h-5 w-5 text-muted-foreground" />
+                      <Mail className="h-5 w-5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm font-medium">{preview.preview.recipientName}</p>
-                        <p className="text-xs text-muted-foreground">{preview.preview.recipientEmail}</p>
+                        <p className="text-2xl font-bold">
+                          {preview.deliveryBreakdown?.email ?? preview.recipientCount}
+                        </p>
+                        <p className="text-xs text-muted-foreground">per E-Mail</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <Printer className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-2xl font-bold">
+                          {preview.deliveryBreakdown?.post ?? 0}
+                        </p>
+                        <p className="text-xs text-muted-foreground">per Post</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
+              {/* Content Preview */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <Eye className="h-4 w-4" />
-                    Vorschau (Beispiel-Empfaenger)
+                    Vorschau (Beispiel: {preview.preview.recipientName})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -439,7 +540,64 @@ export default function CreateMailingPage() {
         </div>
       )}
 
-      {/* Navigation buttons */}
+      {/* ================================================================== */}
+      {/* Step 4: Confirm & Send */}
+      {/* ================================================================== */}
+      {step === 4 && preview && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Zusammenfassung</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Titel:</span>
+                <span className="font-medium">{title}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Inhaltsquelle:</span>
+                <span className="font-medium">
+                  {contentSource === "TEMPLATE" ? "Vorlage" : "Freitext"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Betreff:</span>
+                <span className="font-medium">{preview.preview.subject}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Empfaenger:</span>
+                <span className="font-medium">{preview.recipientCount}</span>
+              </div>
+              {(preview.deliveryBreakdown?.post ?? 0) > 0 && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">davon E-Mail:</span>
+                    <span className="font-medium">{preview.deliveryBreakdown!.email}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">davon Post:</span>
+                    <span className="font-medium">{preview.deliveryBreakdown!.post}</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {(preview.deliveryBreakdown?.post ?? 0) > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-3">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  <Printer className="inline h-4 w-4 mr-1" />
+                  {preview.deliveryBreakdown!.post} Empfaenger erhalten Post. Diese werden als
+                  &quot;Post ausstehend&quot; markiert.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ================================================================== */}
+      {/* Navigation */}
+      {/* ================================================================== */}
       <div className="flex items-center justify-between border-t pt-4">
         <Button
           variant="outline"
@@ -459,6 +617,11 @@ export default function CreateMailingPage() {
               )}
               Weiter
             </Button>
+          ) : step === 3 ? (
+            <Button onClick={() => setStep(4)} disabled={!preview}>
+              <ArrowRight className="mr-2 h-4 w-4" />
+              Weiter zum Senden
+            </Button>
           ) : (
             <Button onClick={handleSend} disabled={sending || !preview}>
               {sending ? (
@@ -466,11 +629,29 @@ export default function CreateMailingPage() {
               ) : (
                 <Send className="mr-2 h-4 w-4" />
               )}
-              An {preview?.recipientCount ?? 0} Empfaenger senden
+              Jetzt versenden
             </Button>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+// =============================================================================
+// Page export with Suspense for useSearchParams
+// =============================================================================
+
+export default function CreateMailingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <CreateMailingWizard />
+    </Suspense>
   );
 }

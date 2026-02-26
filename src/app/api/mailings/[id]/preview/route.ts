@@ -3,7 +3,8 @@
  *
  * POST /api/mailings/[id]/preview — Preview a mailing with resolved placeholders
  *
- * Returns the rendered subject + body for the first shareholder (or a specified one).
+ * Supports both TEMPLATE and FREEFORM content sources.
+ * Returns rendered preview + recipient count breakdown by delivery method.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -36,14 +37,53 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Mailing nicht gefunden" }, { status: 404 });
     }
 
+    const isTemplate = mailing.contentSource === "TEMPLATE" && mailing.template;
+
+    // Build recipient filter
+    const recipientFilter = mailing.recipientFilter as { type: string; fundIds?: string[]; parkIds?: string[] } | null;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recipientWhere: any = {
+      fund: { tenantId: check.tenantId! },
+      status: "ACTIVE",
+      person: {
+        OR: [
+          { email: { not: null } },
+          { street: { not: null }, city: { not: null } },
+        ],
+      },
+    };
+
+    if (recipientFilter) {
+      switch (recipientFilter.type) {
+        case "BY_FUND":
+          if (recipientFilter.fundIds?.length) {
+            recipientWhere.fundId = { in: recipientFilter.fundIds };
+          }
+          break;
+        case "BY_PARK":
+          if (recipientFilter.parkIds?.length) {
+            recipientWhere.fund = {
+              ...recipientWhere.fund,
+              fundParks: { some: { parkId: { in: recipientFilter.parkIds } } },
+            };
+          }
+          break;
+        case "BY_ROLE":
+          break;
+        case "ACTIVE_ONLY":
+          recipientWhere.exitDate = null;
+          break;
+      }
+    } else if (mailing.fundId) {
+      recipientWhere.fundId = mailing.fundId;
+    }
+
     // Find a shareholder for preview
     const shareholder = await prisma.shareholder.findFirst({
       where: {
         ...(shareholderId ? { id: shareholderId } : {}),
-        fund: { tenantId: check.tenantId! },
-        ...(mailing.fundId ? { fundId: mailing.fundId } : {}),
-        status: "ACTIVE",
-        person: { email: { not: null } },
+        ...recipientWhere,
       },
       include: {
         person: {
@@ -53,6 +93,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
             lastName: true,
             companyName: true,
             email: true,
+            preferredDeliveryMethod: true,
           },
         },
         fund: { select: { name: true } },
@@ -61,25 +102,42 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
     if (!shareholder) {
       return NextResponse.json(
-        { error: "Kein Gesellschafter für die Vorschau gefunden" },
+        { error: "Kein Empfänger für die Vorschau gefunden" },
         { status: 404 }
       );
     }
 
-    // Resolve placeholders
-    const variables = resolveShareholderPlaceholders(shareholder, shareholder.fund);
-    const resolvedSubject = applyPlaceholders(mailing.template.subject, variables);
-    const resolvedHtml = applyPlaceholders(mailing.template.bodyHtml, variables);
+    // Resolve content
+    let resolvedSubject: string;
+    let resolvedHtml: string;
 
-    // Count total recipients
-    const recipientCount = await prisma.shareholder.count({
-      where: {
-        fund: { tenantId: check.tenantId! },
-        ...(mailing.fundId ? { fundId: mailing.fundId } : {}),
-        status: "ACTIVE",
-        person: { email: { not: null } },
+    if (isTemplate && mailing.template) {
+      const variables = resolveShareholderPlaceholders(shareholder, shareholder.fund);
+      resolvedSubject = applyPlaceholders(mailing.template.subject, variables);
+      resolvedHtml = applyPlaceholders(mailing.template.bodyHtml, variables);
+    } else {
+      resolvedSubject = mailing.subject ?? "";
+      resolvedHtml = mailing.bodyHtml ?? "";
+    }
+
+    // Count total recipients + delivery method breakdown
+    const allRecipients = await prisma.shareholder.findMany({
+      where: recipientWhere,
+      select: {
+        person: {
+          select: { preferredDeliveryMethod: true },
+        },
       },
     });
+
+    let emailCount = 0;
+    let postCount = 0;
+    for (const r of allRecipients) {
+      const method = r.person.preferredDeliveryMethod ?? "EMAIL";
+      if (method === "EMAIL") emailCount++;
+      else if (method === "POST") postCount++;
+      else { emailCount++; postCount++; } // BOTH
+    }
 
     return NextResponse.json({
       preview: {
@@ -88,8 +146,12 @@ export async function POST(req: NextRequest, context: RouteContext) {
         recipientName: `${shareholder.person.firstName ?? ""} ${shareholder.person.lastName ?? shareholder.person.companyName ?? ""}`.trim(),
         recipientEmail: shareholder.person.email,
       },
-      variables,
-      recipientCount,
+      recipientCount: allRecipients.length,
+      deliveryBreakdown: {
+        email: emailCount,
+        post: postCount,
+        total: allRecipients.length,
+      },
     });
   } catch (error) {
     logger.error({ err: error }, "[Mailing Preview] Failed");

@@ -25,6 +25,7 @@ const personUpdateSchema = z.object({
   bankBic: z.string().optional().nullable(),
   bankName: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  preferredDeliveryMethod: z.enum(["EMAIL", "POST", "BOTH"]).optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).optional(),
 });
 
