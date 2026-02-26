@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Plus, Pencil, Trash2, FileText, Loader2, Lock } from "lucide-react";
 import { TemplateEditor } from "@/components/mailings/template-editor";
@@ -62,7 +62,6 @@ const CATEGORY_COLORS: Record<string, string> = {
 // =============================================================================
 
 export default function MailingTemplatesPage() {
-  const { toast } = useToast();
   const { flags, loading: flagsLoading } = useFeatureFlags();
   const [templates, setTemplates] = useState<MailingTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,11 +78,11 @@ export default function MailingTemplatesPage() {
         setTemplates(data.templates ?? []);
       }
     } catch {
-      toast({ title: "Fehler", description: "Vorlagen konnten nicht geladen werden", variant: "destructive" });
+      toast.error("Vorlagen konnten nicht geladen werden");
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     if (flags.communication) fetchTemplates();
@@ -114,13 +113,13 @@ export default function MailingTemplatesPage() {
       const res = await fetch(`/api/mailings/templates/${deleteId}`, { method: "DELETE" });
       if (res.ok) {
         setTemplates((prev) => prev.filter((t) => t.id !== deleteId));
-        toast({ title: "Vorlage geloescht" });
+        toast.success("Vorlage gelöscht");
       } else {
         const data = await res.json();
-        toast({ title: "Fehler", description: data.error, variant: "destructive" });
+        toast.error(data.error ?? "Fehler beim Löschen");
       }
     } catch {
-      toast({ title: "Fehler", description: "Loeschen fehlgeschlagen", variant: "destructive" });
+      toast.error("Löschen fehlgeschlagen");
     } finally {
       setDeleteId(null);
     }

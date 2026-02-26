@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import RichTextEditor from "@/components/ui/rich-text-editor-dynamic";
 import { STANDARD_PLACEHOLDERS } from "@/lib/mailings/placeholder-service";
@@ -59,7 +59,6 @@ const CATEGORIES = [
 // =============================================================================
 
 export function TemplateEditor({ open, onClose, onSaved, template }: TemplateEditorProps) {
-  const { toast } = useToast();
   const isEdit = !!template?.id;
 
   const [name, setName] = useState(template?.name ?? "");
@@ -79,7 +78,7 @@ export function TemplateEditor({ open, onClose, onSaved, template }: TemplateEdi
 
   const handleSave = async () => {
     if (!name.trim() || !subject.trim() || !bodyHtml.trim()) {
-      toast({ title: "Fehler", description: "Bitte füllen Sie alle Pflichtfelder aus", variant: "destructive" });
+      toast.error("Bitte füllen Sie alle Pflichtfelder aus");
       return;
     }
 
@@ -106,14 +105,14 @@ export function TemplateEditor({ open, onClose, onSaved, template }: TemplateEdi
       });
 
       if (res.ok) {
-        toast({ title: isEdit ? "Vorlage aktualisiert" : "Vorlage erstellt" });
+        toast.success(isEdit ? "Vorlage aktualisiert" : "Vorlage erstellt");
         onSaved();
       } else {
         const data = await res.json();
-        toast({ title: "Fehler", description: data.error, variant: "destructive" });
+        toast.error(data.error ?? "Fehler beim Speichern");
       }
     } catch {
-      toast({ title: "Fehler", description: "Speichern fehlgeschlagen", variant: "destructive" });
+      toast.error("Speichern fehlgeschlagen");
     } finally {
       setSaving(false);
     }

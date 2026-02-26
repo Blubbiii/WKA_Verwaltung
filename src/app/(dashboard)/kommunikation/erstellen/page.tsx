@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import {
   ArrowLeft,
@@ -75,7 +75,6 @@ const STEPS = [
 
 export default function CreateMailingPage() {
   const router = useRouter();
-  const { toast } = useToast();
   const { flags, loading: flagsLoading } = useFeatureFlags();
 
   const [step, setStep] = useState<Step>(1);
@@ -118,11 +117,11 @@ export default function CreateMailingPage() {
         setFunds(Array.isArray(fundsList) ? fundsList.map((f: { id: string; name: string }) => ({ id: f.id, name: f.name })) : []);
       }
     } catch {
-      toast({ title: "Fehler", description: "Daten konnten nicht geladen werden", variant: "destructive" });
+      toast.error("Daten konnten nicht geladen werden");
     } finally {
       setLoadingData(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     if (flags.communication) loadData();
@@ -191,7 +190,7 @@ export default function CreateMailingPage() {
 
       if (!createRes.ok) {
         const data = await createRes.json();
-        toast({ title: "Fehler", description: data.error, variant: "destructive" });
+        toast.error(data.error ?? "Fehler beim Erstellen");
         setLoadingPreview(false);
         return;
       }
@@ -210,10 +209,10 @@ export default function CreateMailingPage() {
         setPreview(previewData);
         setStep(3);
       } else {
-        toast({ title: "Fehler", description: "Vorschau konnte nicht geladen werden", variant: "destructive" });
+        toast.error("Vorschau konnte nicht geladen werden");
       }
     } catch {
-      toast({ title: "Fehler", description: "Mailing konnte nicht erstellt werden", variant: "destructive" });
+      toast.error("Mailing konnte nicht erstellt werden");
     } finally {
       setLoadingPreview(false);
     }
@@ -231,16 +230,13 @@ export default function CreateMailingPage() {
       const data = await res.json();
 
       if (res.ok) {
-        toast({
-          title: "Mailing gesendet",
-          description: `${data.sentCount} von ${data.totalRecipients} E-Mails erfolgreich gesendet.`,
-        });
+        toast.success(`${data.sentCount} von ${data.totalRecipients} E-Mails erfolgreich gesendet.`);
         router.push("/kommunikation");
       } else {
-        toast({ title: "Fehler", description: data.error, variant: "destructive" });
+        toast.error(data.error ?? "Fehler beim Senden");
       }
     } catch {
-      toast({ title: "Fehler", description: "Versand fehlgeschlagen", variant: "destructive" });
+      toast.error("Versand fehlgeschlagen");
     } finally {
       setSending(false);
     }

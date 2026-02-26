@@ -36,7 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import {
   Send,
@@ -158,7 +158,6 @@ function getFilterLabel(filter: string): string {
 // =============================================================================
 
 export default function MasseCommunicationPage() {
-  const { toast } = useToast();
   const { flags, loading: flagsLoading } = useFeatureFlags();
 
   // Form state
@@ -296,19 +295,11 @@ export default function MasseCommunicationPage() {
         setPreviewCount(data.totalCount || 0);
       } else {
         const errData = await res.json();
-        toast({
-          title: "Fehler",
-          description: errData.error || "Vorschau konnte nicht geladen werden",
-          variant: "destructive",
-        });
+        toast.error(errData.error || "Vorschau konnte nicht geladen werden");
         setPreviewOpen(false);
       }
     } catch {
-      toast({
-        title: "Fehler",
-        description: "Verbindungsfehler bei der Vorschau",
-        variant: "destructive",
-      });
+      toast.error("Verbindungsfehler bei der Vorschau");
       setPreviewOpen(false);
     } finally {
       setLoadingPreview(false);
@@ -321,11 +312,7 @@ export default function MasseCommunicationPage() {
 
   const handleSendTest = async () => {
     if (!subject.trim() || !body.trim()) {
-      toast({
-        title: "Fehlende Angaben",
-        description: "Bitte geben Sie Betreff und Nachricht ein.",
-        variant: "destructive",
-      });
+      toast.error("Bitte geben Sie Betreff und Nachricht ein.");
       return;
     }
 
@@ -348,23 +335,12 @@ export default function MasseCommunicationPage() {
       const data = await res.json();
 
       if (res.ok) {
-        toast({
-          title: "Test-E-Mail gesendet",
-          description: data.message || "Die Test-E-Mail wurde erfolgreich gesendet.",
-        });
+        toast.success(data.message || "Die Test-E-Mail wurde erfolgreich gesendet.");
       } else {
-        toast({
-          title: "Fehler",
-          description: data.error || "Test-E-Mail konnte nicht gesendet werden",
-          variant: "destructive",
-        });
+        toast.error(data.error || "Test-E-Mail konnte nicht gesendet werden");
       }
     } catch {
-      toast({
-        title: "Fehler",
-        description: "Verbindungsfehler beim Senden der Test-E-Mail",
-        variant: "destructive",
-      });
+      toast.error("Verbindungsfehler beim Senden der Test-E-Mail");
     } finally {
       setSendingTest(false);
     }
@@ -376,11 +352,7 @@ export default function MasseCommunicationPage() {
 
   const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
-      toast({
-        title: "Fehlende Angaben",
-        description: "Bitte geben Sie Betreff und Nachricht ein.",
-        variant: "destructive",
-      });
+      toast.error("Bitte geben Sie Betreff und Nachricht ein.");
       return;
     }
 
@@ -408,10 +380,7 @@ export default function MasseCommunicationPage() {
       const data = await res.json();
 
       if (res.ok) {
-        toast({
-          title: "E-Mails gesendet",
-          description: data.message || `${data.recipientCount} E-Mails wurden gesendet.`,
-        });
+        toast.success(data.message || `${data.recipientCount} E-Mails wurden gesendet.`);
 
         setSubject("");
         setBody("");
@@ -420,18 +389,10 @@ export default function MasseCommunicationPage() {
         setSelectedParkIds([]);
         loadHistory();
       } else {
-        toast({
-          title: "Fehler",
-          description: data.error || "E-Mails konnten nicht gesendet werden",
-          variant: "destructive",
-        });
+        toast.error(data.error || "E-Mails konnten nicht gesendet werden");
       }
     } catch {
-      toast({
-        title: "Fehler",
-        description: "Verbindungsfehler beim Senden",
-        variant: "destructive",
-      });
+      toast.error("Verbindungsfehler beim Senden");
     } finally {
       setSending(false);
     }

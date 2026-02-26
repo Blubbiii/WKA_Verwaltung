@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import {
   Plus,
@@ -60,7 +60,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 
 export default function KommunikationPage() {
   const router = useRouter();
-  const { toast } = useToast();
   const { flags, loading: flagsLoading } = useFeatureFlags();
   const [mailings, setMailings] = useState<Mailing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,11 +73,11 @@ export default function KommunikationPage() {
         setMailings(data.mailings ?? []);
       }
     } catch {
-      toast({ title: "Fehler", description: "Mailings konnten nicht geladen werden", variant: "destructive" });
+      toast.error("Mailings konnten nicht geladen werden");
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     if (flags.communication) fetchMailings();
