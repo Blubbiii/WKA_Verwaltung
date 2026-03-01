@@ -972,7 +972,28 @@ function ImportTab() {
     []
   );
 
-  const addValidFiles = useCallback((allFiles: File[], totalCount: number) => {
+  // Try to detect Loc_XXXX from file paths or folder names
+  const detectLocationCode = useCallback((files: File[], folderNames?: string[]) => {
+    const locPattern = /Loc_\d+/i;
+    // Check folder names first (from drag & drop entries)
+    if (folderNames) {
+      for (const name of folderNames) {
+        const match = name.match(locPattern);
+        if (match) return match[0];
+      }
+    }
+    // Check webkitRelativePath (from folder picker)
+    for (const f of files) {
+      const relPath = (f as File & { webkitRelativePath?: string }).webkitRelativePath;
+      if (relPath) {
+        const match = relPath.match(locPattern);
+        if (match) return match[0];
+      }
+    }
+    return null;
+  }, []);
+
+  const addValidFiles = useCallback((allFiles: File[], totalCount: number, folderNames?: string[]) => {
     const valid = allFiles.filter((f) => {
       const ext = "." + f.name.split(".").pop()?.toLowerCase();
       return SCADA_EXTENSIONS.includes(ext);
@@ -984,12 +1005,21 @@ function ImportTab() {
       return;
     }
     setUploadFiles((prev) => [...prev, ...valid]);
+
+    // Auto-detect location code if not set yet
+    const detected = detectLocationCode(valid, folderNames);
+    if (detected) {
+      setUploadLocationCode((prev) => prev || detected);
+      toast.success(`${valid.length} SCADA-Datei(en) hinzugefügt — Standort "${detected}" erkannt`);
+    } else {
+      toast.success(`${valid.length} SCADA-Datei(en) hinzugefügt`);
+    }
+
     const skipped = totalCount - valid.length;
     if (skipped > 0) {
       toast.warning(`${skipped} Datei(en) ignoriert (nicht unterstützt)`);
     }
-    toast.success(`${valid.length} SCADA-Datei(en) hinzugefügt`);
-  }, []);
+  }, [detectLocationCode]);
 
   // Handle drop (files or folders via DataTransfer)
   const handleDrop = useCallback(
@@ -1008,12 +1038,17 @@ function ImportTab() {
       }
 
       if (entries.length > 0) {
+        // Collect top-level folder names for Loc_ detection
+        const folderNames = entries
+          .filter((e) => e.isDirectory)
+          .map((e) => e.name);
+
         const allFiles: File[] = [];
         for (const entry of entries) {
           const files = await readEntriesRecursive(entry);
           allFiles.push(...files);
         }
-        addValidFiles(allFiles, allFiles.length);
+        addValidFiles(allFiles, allFiles.length, folderNames);
         return;
       }
 
@@ -1033,10 +1068,20 @@ function ImportTab() {
     [addValidFiles]
   );
 
-  // Handle folder input (webkitdirectory)
+  // Handle folder input (webkitdirectory — files have webkitRelativePath)
   const handleFolderInput = useCallback(
     (files: FileList) => {
-      addValidFiles(Array.from(files), files.length);
+      const fileArr = Array.from(files);
+      // Extract top-level folder name from webkitRelativePath
+      const folderNames: string[] = [];
+      if (fileArr.length > 0) {
+        const relPath = (fileArr[0] as File & { webkitRelativePath?: string }).webkitRelativePath;
+        if (relPath) {
+          const topFolder = relPath.split("/")[0];
+          if (topFolder) folderNames.push(topFolder);
+        }
+      }
+      addValidFiles(fileArr, fileArr.length, folderNames);
     },
     [addValidFiles]
   );
