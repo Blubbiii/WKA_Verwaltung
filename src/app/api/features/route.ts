@@ -37,11 +37,18 @@ export async function GET() {
       false
     );
 
+    const inboxEnabled = await getConfigBoolean(
+      "inbox.enabled",
+      check.tenantId,
+      false
+    );
+
     return NextResponse.json({
       "management-billing": managementBillingEnabled,
       "paperless": paperlessEnabled,
       "communication": communicationEnabled,
       "crm": crmEnabled,
+      "inbox": inboxEnabled,
     });
   } catch {
     return NextResponse.json({
@@ -49,6 +56,7 @@ export async function GET() {
       "paperless": false,
       "communication": false,
       "crm": false,
+      "inbox": false,
     });
   }
 }

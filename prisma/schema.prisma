@@ -94,6 +94,8 @@ model Tenant {
   mailings                  Mailing[]
   journalEntries            JournalEntry[]
   crmActivities             CrmActivity[]
+  vendors                   Vendor[]
+  incomingInvoices          IncomingInvoice[]
 
   @@map("tenants")
 }
@@ -150,6 +152,7 @@ model User {
   journalEntriesCreated                                                   JournalEntry[]              @relation("JournalEntryCreatedBy")
   crmActivitiesCreated                                                    CrmActivity[]               @relation("CrmActivityCreator")
   crmActivitiesAssigned                                                   CrmActivity[]               @relation("CrmActivityAssignee")
+  incomingInvoicesCreated                                                 IncomingInvoice[]           @relation("IncomingInvoiceCreator")
 
   @@index([tenantId])
   @@index([email])
@@ -406,6 +409,8 @@ model Fund {
   mailings                                              Mailing[]
   lastActivityAt                                        DateTime?
   crmActivities                                         CrmActivity[]
+  incomingInvoicesAsRecipient                           IncomingInvoice[]
+  incomingInvoiceSplits                                 IncomingInvoiceSplit[]
 
   @@index([tenantId])
   @@index([fundCategoryId])
@@ -460,6 +465,7 @@ model Person {
   contactType                    String?                          @db.VarChar(50)
   lastActivityAt                 DateTime?
   crmActivities                  CrmActivity[]
+  vendorProfiles                 Vendor[]
 
   @@index([tenantId])
   @@index([lastName, firstName])
@@ -824,6 +830,7 @@ model Invoice {
   settlementSettlementItem LeaseRevenueSettlementItem? @relation("SettlementInvoice")
   exemptAllocationItem             ParkCostAllocationItem?     @relation("ExemptInvoice")
   vatAllocationItem                ParkCostAllocationItem?     @relation("VatInvoice")
+  fromIncomingInvoiceSplit         IncomingInvoiceSplit?
 
   @@index([tenantId])
   @@index([invoiceNumber])
@@ -2861,4 +2868,145 @@ model CrmActivity {
   @@index([status])
   @@index([dueDate])
   @@map("crm_activities")
+}
+
+// =============================================================================
+// Inbox Module — Eingangsrechnungen & Gutschriften
+// =============================================================================
+
+enum IncomingInvoiceType {
+  INVOICE
+  CREDIT_NOTE
+}
+
+enum IncomingInvoiceStatus {
+  INBOX
+  OCR_PROCESSING
+  REVIEW
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+enum IncomingOcrStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+model Vendor {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String   @db.VarChar(200)
+  taxId       String?  @db.VarChar(50)
+  vatId       String?  @db.VarChar(50)
+  iban        String?  @db.VarChar(34)
+  bic         String?  @db.VarChar(11)
+  email       String?
+  street      String?
+  postalCode  String?
+  city        String?
+  country     String   @default("DE")
+  notes       String?  @db.Text
+  personId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  person      Person?           @relation(fields: [personId], references: [id])
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices    IncomingInvoice[]
+
+  @@index([tenantId])
+  @@index([name])
+  @@map("vendors")
+}
+
+model IncomingInvoice {
+  id                 String                @id @default(uuid())
+  tenantId           String
+  invoiceType        IncomingInvoiceType   @default(INVOICE)
+  status             IncomingInvoiceStatus @default(INBOX)
+  vendorId           String?
+  vendorNameFallback String?               @db.VarChar(200)
+  invoiceNumber      String?               @db.VarChar(100)
+  invoiceDate        DateTime?
+  dueDate            DateTime?
+  netAmount          Decimal?              @db.Decimal(15, 2)
+  vatAmount          Decimal?              @db.Decimal(15, 2)
+  grossAmount        Decimal?              @db.Decimal(15, 2)
+  vatRate            Decimal?              @db.Decimal(5, 2)
+  currency           String                @default("EUR")
+  iban               String?               @db.VarChar(34)
+  bic                String?               @db.VarChar(11)
+  paymentReference   String?               @db.VarChar(140)
+  recipientFundId    String?
+  ocrStatus          IncomingOcrStatus     @default(PENDING)
+  ocrRawText         String?               @db.Text
+  fileUrl            String
+  fileName           String
+  fileSizeBytes      BigInt?
+  mimeType           String?
+  paidAt             DateTime?
+  paidAmount         Decimal?              @db.Decimal(15, 2)
+  sepaExportedAt     DateTime?
+  datevExportedAt    DateTime?
+  datevAccount       String?               @db.VarChar(20)
+  notes              String?               @db.Text
+  createdById        String
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  deletedAt          DateTime?
+
+  vendor              Vendor?               @relation(fields: [vendorId], references: [id])
+  recipientFund       Fund?                 @relation(fields: [recipientFundId], references: [id])
+  tenant              Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy           User                  @relation("IncomingInvoiceCreator", fields: [createdById], references: [id])
+  splits              IncomingInvoiceSplit[]
+  lines               IncomingInvoiceLine[]
+
+  @@index([tenantId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([invoiceDate])
+  @@index([dueDate])
+  @@map("incoming_invoices")
+}
+
+model IncomingInvoiceLine {
+  id          String          @id @default(uuid())
+  invoiceId   String
+  position    Int
+  description String          @db.VarChar(500)
+  netAmount   Decimal         @db.Decimal(15, 2)
+  vatRate     Decimal         @db.Decimal(5, 2)
+  vatAmount   Decimal         @db.Decimal(15, 2)
+  grossAmount Decimal         @db.Decimal(15, 2)
+  datevAccount String?        @db.VarChar(20)
+
+  invoice     IncomingInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("incoming_invoice_lines")
+}
+
+model IncomingInvoiceSplit {
+  id                String          @id @default(uuid())
+  invoiceId         String
+  position          Int
+  fundId            String
+  splitPercent      Decimal?        @db.Decimal(8, 5)
+  splitAmount       Decimal?        @db.Decimal(15, 2)
+  description       String?         @db.VarChar(200)
+  datevAccount      String?         @db.VarChar(20)
+  outgoingInvoiceId String?         @unique
+
+  invoice           IncomingInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  fund              Fund            @relation(fields: [fundId], references: [id])
+  outgoingInvoice   Invoice?        @relation(fields: [outgoingInvoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@index([fundId])
+  @@map("incoming_invoice_splits")
 }

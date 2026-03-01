@@ -81,6 +81,14 @@ import {
 } from "./paperless.worker";
 import type { PaperlessJobData, PaperlessJobResult } from "../queues/paperless.queue";
 
+import {
+  startInboxOcrWorker,
+  stopInboxOcrWorker,
+  isInboxOcrWorkerRunning,
+  getInboxOcrWorker,
+} from "./inbox-ocr.worker";
+import type { InboxOcrJobData, InboxOcrJobResult } from "../queues/inbox-ocr.queue";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -97,6 +105,7 @@ export const WORKER_NAMES = {
   REMINDER: "reminder",
   SCADA_AUTO_IMPORT: "scada-auto-import",
   PAPERLESS: "paperless",
+  INBOX_OCR: "inbox-ocr",
 } as const;
 
 export type WorkerName = (typeof WORKER_NAMES)[keyof typeof WORKER_NAMES];
@@ -202,6 +211,14 @@ const workerRegistry: WorkerRegistryEntry[] = [
     stop: stopPaperlessWorker,
     isRunning: isPaperlessWorkerRunning,
     getWorker: getPaperlessWorker as () => Worker<unknown, unknown> | null,
+  },
+  {
+    name: WORKER_NAMES.INBOX_OCR,
+    displayName: "Inbox OCR Worker",
+    start: startInboxOcrWorker as () => Worker<unknown, unknown>,
+    stop: stopInboxOcrWorker,
+    isRunning: isInboxOcrWorkerRunning,
+    getWorker: getInboxOcrWorker as () => Worker<unknown, unknown> | null,
   },
 ];
 
@@ -493,3 +510,12 @@ export {
   getPaperlessWorker,
 };
 export type { PaperlessJobData, PaperlessJobResult };
+
+// Inbox OCR Worker
+export {
+  startInboxOcrWorker,
+  stopInboxOcrWorker,
+  isInboxOcrWorkerRunning,
+  getInboxOcrWorker,
+};
+export type { InboxOcrJobData, InboxOcrJobResult };

@@ -58,6 +58,7 @@ import {
   Landmark,
   BookOpen,
   ContactRound,
+  Inbox,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback } from "react";
@@ -74,7 +75,7 @@ interface NavChild {
   href: string;
   icon?: React.ElementType;
   /** Feature flag that must be enabled for this child to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox";
 }
 
 interface NavItem {
@@ -88,7 +89,7 @@ interface NavItem {
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
   /** Feature flag that must be enabled for this item to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox";
 }
 
 interface NavGroup {
@@ -145,6 +146,30 @@ const navGroups: NavGroup[] = [
         icon: ContactRound,
         permission: "crm:read",
         featureFlag: "crm" as const,
+      },
+    ],
+  },
+
+  // ---- Eingang (Inbox) ----
+  {
+    label: "Eingang",
+    labelKey: "inbox",
+    items: [
+      {
+        title: "Eingangsrechnungen",
+        titleKey: "inboxInvoices",
+        href: "/inbox",
+        icon: Inbox,
+        permission: "inbox:read",
+        featureFlag: "inbox" as const,
+      },
+      {
+        title: "Lieferanten",
+        titleKey: "vendors",
+        href: "/vendors",
+        icon: Building2,
+        permission: "vendors:read",
+        featureFlag: "inbox" as const,
       },
     ],
   },

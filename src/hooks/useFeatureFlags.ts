@@ -5,6 +5,7 @@ interface FeatureFlags {
   "paperless": boolean;
   "communication": boolean;
   "crm": boolean;
+  "inbox": boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -12,6 +13,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   "paperless": false,
   "communication": false,
   "crm": false,
+  "inbox": false,
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : DEFAULT_FLAGS);

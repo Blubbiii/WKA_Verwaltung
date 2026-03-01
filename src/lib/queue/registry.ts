@@ -14,6 +14,7 @@ import { getReportQueue, REPORT_QUEUE_NAME } from './queues/report.queue';
 import { getReminderQueue, REMINDER_QUEUE_NAME } from './queues/reminder.queue';
 import { getScadaAutoImportQueue, SCADA_AUTO_IMPORT_QUEUE_NAME } from './queues/scada-auto-import.queue';
 import { getPaperlessQueue, PAPERLESS_QUEUE_NAME } from './queues/paperless.queue';
+import { getInboxOcrQueue, INBOX_OCR_QUEUE_NAME } from './queues/inbox-ocr.queue';
 
 /**
  * Queue metadata for registry
@@ -92,6 +93,12 @@ const queueRegistry: QueueInfo[] = [
     displayName: 'Paperless Queue',
     description: 'Synchronisiert Dokumente mit Paperless-ngx zur Archivierung',
     getQueue: getPaperlessQueue as () => Queue,
+  },
+  {
+    name: INBOX_OCR_QUEUE_NAME,
+    displayName: 'Inbox OCR Queue',
+    description: 'Verarbeitet hochgeladene Eingangsrechnungen per OCR (pdfjs + tesseract)',
+    getQueue: getInboxOcrQueue as () => Queue,
   },
 ];
 

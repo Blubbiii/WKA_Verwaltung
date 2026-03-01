@@ -30,6 +30,7 @@ const MODULE_FLAG_KEYS = [
   "paperless.enabled",
   "communication.enabled",
   "crm.enabled",
+  "inbox.enabled",
 ] as const;
 
 export interface ModuleFlags {
@@ -37,6 +38,7 @@ export interface ModuleFlags {
   "paperless": boolean;
   "communication": boolean;
   "crm": boolean;
+  "inbox": boolean;
 }
 
 const DEFAULT_MODULE_FLAGS: ModuleFlags = {
@@ -44,6 +46,7 @@ const DEFAULT_MODULE_FLAGS: ModuleFlags = {
   "paperless": false,
   "communication": false,
   "crm": false,
+  "inbox": false,
 };
 
 // GET /api/admin/feature-flags - List all tenants with their feature flags (SUPERADMIN only)

@@ -435,6 +435,16 @@ export const PERMISSIONS = {
   CRM_UPDATE: "crm:update",
   CRM_DELETE: "crm:delete",
 
+  // Inbox (Eingangsrechnungen)
+  INBOX_READ: "inbox:read",
+  INBOX_CREATE: "inbox:create",
+  INBOX_UPDATE: "inbox:update",
+  INBOX_DELETE: "inbox:delete",
+  INBOX_APPROVE: "inbox:approve",
+  INBOX_EXPORT: "inbox:export",
+  VENDORS_READ: "vendors:read",
+  VENDORS_WRITE: "vendors:write",
+
   // Reports
   REPORTS_READ: "reports:read",
   REPORTS_CREATE: "reports:create",
