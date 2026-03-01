@@ -4,13 +4,22 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
 import { de } from "date-fns/locale";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -67,6 +76,28 @@ function activityAgeClass(lastActivityAt: string | null): string {
 // Page
 // ============================================================================
 
+interface CreateForm {
+  personType: "natural" | "legal";
+  salutation: string;
+  firstName: string;
+  lastName: string;
+  companyName: string;
+  email: string;
+  phone: string;
+  contactType: string;
+}
+
+const EMPTY_FORM: CreateForm = {
+  personType: "natural",
+  salutation: "",
+  firstName: "",
+  lastName: "",
+  companyName: "",
+  email: "",
+  phone: "",
+  contactType: "",
+};
+
 export default function CrmContactsPage() {
   const router = useRouter();
   const [contacts, setContacts] = useState<CrmContact[]>([]);
@@ -74,6 +105,43 @@ export default function CrmContactsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [contactType, setContactType] = useState("all");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [form, setForm] = useState<CreateForm>(EMPTY_FORM);
+  const [creating, setCreating] = useState(false);
+
+  const handleCreate = async () => {
+    setCreating(true);
+    try {
+      const body = {
+        personType: form.personType,
+        salutation: form.salutation || null,
+        firstName: form.firstName || null,
+        lastName: form.lastName || null,
+        companyName: form.companyName || null,
+        email: form.email || null,
+        phone: form.phone || null,
+        contactType: form.contactType || null,
+      };
+      const res = await fetch("/api/crm/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Fehler");
+      }
+      const created = await res.json();
+      toast.success("Kontakt erstellt");
+      setCreateOpen(false);
+      setForm(EMPTY_FORM);
+      router.push(`/crm/contacts/${created.id}`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Fehler beim Erstellen");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -106,6 +174,12 @@ export default function CrmContactsPage() {
       <PageHeader
         title="Kontakte"
         description={`${total} Kontakte im CRM`}
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Neuer Kontakt
+          </Button>
+        }
       />
 
       {/* Filters */}
@@ -131,6 +205,116 @@ export default function CrmContactsPage() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Create Dialog */}
+      <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) setForm(EMPTY_FORM); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Neuer Kontakt</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Typ</Label>
+              <Select value={form.personType} onValueChange={(v) => setForm((f) => ({ ...f, personType: v as "natural" | "legal" }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="natural">Natürliche Person</SelectItem>
+                  <SelectItem value="legal">Juristische Person / Firma</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {form.personType === "natural" && (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Anrede</Label>
+                  <Select value={form.salutation || "none"} onValueChange={(v) => setForm((f) => ({ ...f, salutation: v === "none" ? "" : v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">—</SelectItem>
+                      <SelectItem value="Herr">Herr</SelectItem>
+                      <SelectItem value="Frau">Frau</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Vorname</Label>
+                  <input
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                    value={form.firstName}
+                    onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                    placeholder="Max"
+                  />
+                </div>
+              </div>
+            )}
+            {form.personType === "natural" ? (
+              <div className="space-y-1.5">
+                <Label>Nachname *</Label>
+                <input
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  value={form.lastName}
+                  onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                  placeholder="Mustermann"
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Firmenname *</Label>
+                <input
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  value={form.companyName}
+                  onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
+                  placeholder="Muster GmbH"
+                />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label>E-Mail</Label>
+              <input
+                type="email"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="m.mustermann@beispiel.de"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Telefon</Label>
+              <input
+                type="tel"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                value={form.phone}
+                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                placeholder="+49 123 456789"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Kontakttyp</Label>
+              <Select value={form.contactType || "none"} onValueChange={(v) => setForm((f) => ({ ...f, contactType: v === "none" ? "" : v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Kein Typ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Kein Typ</SelectItem>
+                  {CONTACT_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>Abbrechen</Button>
+            <Button onClick={handleCreate} disabled={creating}>
+              {creating ? "Speichern..." : "Kontakt anlegen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Table */}
       <Card>
