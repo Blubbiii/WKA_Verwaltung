@@ -886,6 +886,7 @@ function ImportTab() {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   // Import history
   const [importHistory, setImportHistory] = useState<ImportJob[]>([]);
@@ -931,26 +932,113 @@ function ImportTab() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  // File Upload
+  // File Upload (supports individual files AND folder drops)
   // ---------------------------------------------------------------------------
-  const handleUploadFiles = useCallback(
-    (newFiles: FileList | File[]) => {
-      const valid = Array.from(newFiles).filter((f) => {
-        const ext = "." + f.name.split(".").pop()?.toLowerCase();
-        return SCADA_EXTENSIONS.includes(ext);
+
+  // Recursively read all files from a dropped directory entry
+  const readEntriesRecursive = useCallback(
+    (entry: FileSystemEntry): Promise<File[]> => {
+      return new Promise((resolve) => {
+        if (entry.isFile) {
+          (entry as FileSystemFileEntry).file(
+            (file) => resolve([file]),
+            () => resolve([])
+          );
+        } else if (entry.isDirectory) {
+          const reader = (entry as FileSystemDirectoryEntry).createReader();
+          const allFiles: File[] = [];
+          const readBatch = () => {
+            reader.readEntries(
+              async (entries) => {
+                if (entries.length === 0) {
+                  resolve(allFiles);
+                  return;
+                }
+                for (const e of entries) {
+                  const files = await readEntriesRecursive(e);
+                  allFiles.push(...files);
+                }
+                readBatch(); // readEntries returns batches of ~100
+              },
+              () => resolve(allFiles)
+            );
+          };
+          readBatch();
+        } else {
+          resolve([]);
+        }
       });
-      if (valid.length === 0) {
-        toast.error("Keine gültigen SCADA-Dateien gefunden");
-        return;
-      }
-      setUploadFiles((prev) => [...prev, ...valid]);
-      if (valid.length < newFiles.length) {
-        toast.warning(
-          `${newFiles.length - valid.length} Datei(en) ignoriert (nicht unterstützt)`
-        );
-      }
     },
     []
+  );
+
+  const addValidFiles = useCallback((allFiles: File[], totalCount: number) => {
+    const valid = allFiles.filter((f) => {
+      const ext = "." + f.name.split(".").pop()?.toLowerCase();
+      return SCADA_EXTENSIONS.includes(ext);
+    });
+    if (valid.length === 0) {
+      toast.error("Keine gültigen SCADA-Dateien gefunden", {
+        description: `${totalCount} Datei(en) geprüft — keine mit unterstützter Endung`,
+      });
+      return;
+    }
+    setUploadFiles((prev) => [...prev, ...valid]);
+    const skipped = totalCount - valid.length;
+    if (skipped > 0) {
+      toast.warning(`${skipped} Datei(en) ignoriert (nicht unterstützt)`);
+    }
+    toast.success(`${valid.length} SCADA-Datei(en) hinzugefügt`);
+  }, []);
+
+  // Handle drop (files or folders via DataTransfer)
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+
+      const items = e.dataTransfer.items;
+      if (!items || items.length === 0) return;
+
+      // Try webkitGetAsEntry for folder support
+      const entries: FileSystemEntry[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const entry = items[i].webkitGetAsEntry?.();
+        if (entry) entries.push(entry);
+      }
+
+      if (entries.length > 0) {
+        const allFiles: File[] = [];
+        for (const entry of entries) {
+          const files = await readEntriesRecursive(entry);
+          allFiles.push(...files);
+        }
+        addValidFiles(allFiles, allFiles.length);
+        return;
+      }
+
+      // Fallback: plain file list
+      if (e.dataTransfer.files.length > 0) {
+        addValidFiles(Array.from(e.dataTransfer.files), e.dataTransfer.files.length);
+      }
+    },
+    [readEntriesRecursive, addValidFiles]
+  );
+
+  // Handle file input (single files)
+  const handleFileInput = useCallback(
+    (files: FileList) => {
+      addValidFiles(Array.from(files), files.length);
+    },
+    [addValidFiles]
+  );
+
+  // Handle folder input (webkitdirectory)
+  const handleFolderInput = useCallback(
+    (files: FileList) => {
+      addValidFiles(Array.from(files), files.length);
+    },
+    [addValidFiles]
   );
 
   const handleStartUpload = useCallback(async () => {
@@ -1469,7 +1557,7 @@ function ImportTab() {
           {/* Drop Zone */}
           <div
             className={cn(
-              "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
+              "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
               isDragOver
                 ? "border-primary bg-primary/5"
                 : "border-muted-foreground/25 hover:border-muted-foreground/50"
@@ -1479,29 +1567,51 @@ function ImportTab() {
               setIsDragOver(true);
             }}
             onDragLeave={() => setIsDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragOver(false);
-              if (e.dataTransfer.files.length > 0) {
-                handleUploadFiles(e.dataTransfer.files);
-              }
-            }}
-            onClick={() => uploadInputRef.current?.click()}
+            onDrop={handleDrop}
           >
             <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm font-medium">
-              SCADA-Dateien hier ablegen oder klicken
+            <p className="text-sm font-medium mb-3">
+              SCADA-Dateien oder Ordner hier ablegen
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => uploadInputRef.current?.click()}
+              >
+                <FileUp className="h-4 w-4 mr-1" />
+                Dateien auswählen
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => folderInputRef.current?.click()}
+              >
+                <FolderOpen className="h-4 w-4 mr-1" />
+                Ordner auswählen
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
               {SCADA_EXTENSIONS.join(", ")}
             </p>
             <input
               ref={uploadInputRef}
               type="file"
               multiple
+              accept={SCADA_EXTENSIONS.join(",")}
               className="hidden"
               onChange={(e) => {
-                if (e.target.files) handleUploadFiles(e.target.files);
+                if (e.target.files) handleFileInput(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={folderInputRef}
+              type="file"
+              {...{ webkitdirectory: "" } as React.InputHTMLAttributes<HTMLInputElement>}
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) handleFolderInput(e.target.files);
                 e.target.value = "";
               }}
             />
