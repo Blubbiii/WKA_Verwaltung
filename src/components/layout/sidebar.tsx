@@ -57,6 +57,7 @@ import {
   Percent,
   Landmark,
   BookOpen,
+  ContactRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback } from "react";
@@ -120,6 +121,28 @@ const navGroups: NavGroup[] = [
         titleKey: "notifications",
         href: "/notifications",
         icon: Bell,
+      },
+    ],
+  },
+
+  // ---- CRM ----
+  {
+    label: "CRM",
+    labelKey: "crm",
+    items: [
+      {
+        title: "Übersicht",
+        titleKey: "crmOverview",
+        href: "/crm",
+        icon: Users,
+        permission: "crm:read",
+      },
+      {
+        title: "Kontakte",
+        titleKey: "crmContacts",
+        href: "/crm/contacts",
+        icon: ContactRound,
+        permission: "crm:read",
       },
     ],
   },

@@ -93,6 +93,7 @@ model Tenant {
   mailingTemplates          MailingTemplate[]
   mailings                  Mailing[]
   journalEntries            JournalEntry[]
+  crmActivities             CrmActivity[]
 
   @@map("tenants")
 }
@@ -147,6 +148,8 @@ model User {
   createdVotes                                                            Vote[]                      @relation("VoteCreatedBy")
   createdWebhooks                                                         Webhook[]                   @relation("WebhookCreatedBy")
   journalEntriesCreated                                                   JournalEntry[]              @relation("JournalEntryCreatedBy")
+  crmActivitiesCreated                                                    CrmActivity[]               @relation("CrmActivityCreator")
+  crmActivitiesAssigned                                                   CrmActivity[]               @relation("CrmActivityAssignee")
 
   @@index([tenantId])
   @@index([email])
@@ -245,6 +248,7 @@ model Park {
   scadaTurbineMappings                   ScadaTurbineMapping[]
   turbines                               Turbine[]
   weatherData                            WeatherData[]
+  crmActivities                          CrmActivity[]
 
   @@index([tenantId])
   @@map("parks")
@@ -400,6 +404,8 @@ model Fund {
   turbines                                              Turbine[]
   votes                                                 Vote[]
   mailings                                              Mailing[]
+  lastActivityAt                                        DateTime?
+  crmActivities                                         CrmActivity[]
 
   @@index([tenantId])
   @@index([fundCategoryId])
@@ -451,6 +457,9 @@ model Person {
   leases                         Lease[]                          @relation("LeaseLessor")
   tenant                         Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   shareholders                   Shareholder[]
+  contactType                    String?                          @db.VarChar(50)
+  lastActivityAt                 DateTime?
+  crmActivities                  CrmActivity[]
 
   @@index([tenantId])
   @@index([lastName, firstName])
@@ -555,6 +564,8 @@ model Lease {
   directBillingFund   Fund?                            @relation("LeaseDirectBilling", fields: [directBillingFundId], references: [id])
   lessor                                    Person                           @relation("LeaseLessor", fields: [lessorId], references: [id])
   tenant                                   Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lastActivityAt                            DateTime?
+  crmActivities                             CrmActivity[]
 
   @@index([endDate])
   @@index([billingInterval])
@@ -2796,4 +2807,58 @@ model JournalEntryLine {
 
   @@index([journalEntryId])
   @@map("journal_entry_lines")
+}
+
+// =============================================================================
+// CRM Module — Activities / Timeline on Persons, Funds, Leases, Parks
+// =============================================================================
+
+enum CrmActivityType {
+  CALL
+  EMAIL
+  MEETING
+  NOTE
+  TASK
+}
+
+model CrmActivity {
+  id          String          @id @default(uuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  type        CrmActivityType
+  title       String          @db.VarChar(200)
+  description String?         @db.Text
+  status      String          @default("DONE")
+  direction   String?         @db.VarChar(20)
+  duration    Int?
+  startTime   DateTime?
+  dueDate     DateTime?
+
+  personId    String?
+  person      Person?         @relation(fields: [personId], references: [id], onDelete: Cascade)
+  fundId      String?
+  fund        Fund?           @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  leaseId     String?
+  lease       Lease?          @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  parkId      String?
+  park        Park?           @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  assignedToId String?
+  assignedTo   User?          @relation("CrmActivityAssignee", fields: [assignedToId], references: [id])
+  createdById  String
+  createdBy    User           @relation("CrmActivityCreator", fields: [createdById], references: [id])
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?
+
+  @@index([tenantId])
+  @@index([personId])
+  @@index([fundId])
+  @@index([leaseId])
+  @@index([parkId])
+  @@index([type])
+  @@index([status])
+  @@index([dueDate])
+  @@map("crm_activities")
 }

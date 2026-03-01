@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import { ActivityTimeline } from "@/components/crm/activity-timeline";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format, differenceInDays } from "date-fns";
@@ -45,6 +46,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 interface Plot {
   id: string;
@@ -289,6 +291,7 @@ export default function LeaseDetailPage({
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
               Flurstücke ({lease.plots?.length || 0})
+              <InfoTooltip text="Katasterrechtlich erfasste Grundstücke, die Teil dieses Pachtvertrags sind." />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -355,6 +358,7 @@ export default function LeaseDetailPage({
                 <User className="h-5 w-5" />
               )}
               Verpächter
+              <InfoTooltip text="Eigentümer der Fläche, an den die Pacht gezahlt wird." />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -407,6 +411,7 @@ export default function LeaseDetailPage({
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               Vertragslaufzeit
+              <InfoTooltip text="Beginn, Ende und eventuelle Verlängerungsoptionen des Pachtvertrags." />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -468,6 +473,7 @@ export default function LeaseDetailPage({
             <CardTitle className="flex items-center gap-2">
               <Receipt className="h-5 w-5" />
               Abrechnung
+              <InfoTooltip text="Abrechnungsmodell und -details: Mindestpacht, Umsatzbeteiligung, Entschädigung." />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -511,6 +517,7 @@ export default function LeaseDetailPage({
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
                 Notizen
+                <InfoTooltip text="Interne Bemerkungen und Hinweise zu diesem Pachtvertrag." />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -525,6 +532,7 @@ export default function LeaseDetailPage({
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Metadaten
+              <InfoTooltip text="Systeminformationen: Erstellungs- und Änderungsdatum." />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -542,6 +550,16 @@ export default function LeaseDetailPage({
                 <p className="font-mono text-xs">{lease.id}</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* CRM Activities */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Aktivitäten</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ActivityTimeline entityType="lease" entityId={lease.id} />
           </CardContent>
         </Card>
       </div>

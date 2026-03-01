@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, use } from "react";
+import { ActivityTimeline } from "@/components/crm/activity-timeline";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -114,6 +115,7 @@ import {
   FundHierarchyChart,
 } from "@/components/funds";
 import { DocumentPreviewDialog } from "@/components/documents";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 interface Shareholder {
   id: string;
@@ -881,7 +883,10 @@ export default function FundDetailsPage({
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gesellschafter</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle className="text-sm font-medium">Gesellschafter</CardTitle>
+              <InfoTooltip text="Personen oder Unternehmen, die Kapitaleinlagen an dieser Gesellschaft halten." />
+            </div>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -893,7 +898,10 @@ export default function FundDetailsPage({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kapital</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle className="text-sm font-medium">Kapital</CardTitle>
+              <InfoTooltip text="Summe aller Kapitaleinlagen der aktiven Gesellschafter." />
+            </div>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -907,17 +915,23 @@ export default function FundDetailsPage({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gesellschaften</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle className="text-sm font-medium">Gesellschaften</CardTitle>
+              <InfoTooltip text="Mutter- oder Tochtergesellschaften in der Unternehmensstruktur." />
+            </div>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fund.stats.hierarchyCount}</div>
-            <p className="text-xs text-muted-foreground">Verbundene Gesellschaften</p>
+            <p className="text-xs text-muted-foreground">In der Konzernstruktur</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Anlagen</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle className="text-sm font-medium">Anlagen</CardTitle>
+              <InfoTooltip text="Windkraftanlagen, die von dieser Gesellschaft betrieben werden." />
+            </div>
             <Wind className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -927,7 +941,10 @@ export default function FundDetailsPage({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Abstimmungen</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle className="text-sm font-medium">Abstimmungen</CardTitle>
+              <InfoTooltip text="Gesellschafterbeschlüsse und Abstimmungen dieser Gesellschaft." />
+            </div>
             <Vote className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -949,7 +966,7 @@ export default function FundDetailsPage({
             Ausschuettungen ({distributions?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="companies">
-            Verbundene Unternehmen ({fund.stats.hierarchyCount})
+            Konzernstruktur ({fund.stats.hierarchyCount})
           </TabsTrigger>
           <TabsTrigger value="turbines">
             Anlagen ({fund.stats.operatedTurbineCount})
@@ -957,6 +974,7 @@ export default function FundDetailsPage({
           <TabsTrigger value="documents">
             Dokumente ({fund.stats.documentCount})
           </TabsTrigger>
+          <TabsTrigger value="activities">Aktivitäten</TabsTrigger>
         </TabsList>
 
         {/* Shareholders Tab */}
@@ -964,7 +982,10 @@ export default function FundDetailsPage({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Gesellschafter</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Gesellschafter</CardTitle>
+                  <InfoTooltip text="Personen oder Unternehmen, die Kapitaleinlagen an dieser Gesellschaft halten und entsprechende Anteile besitzen." />
+                </div>
                 <CardDescription>
                   Alle Beteiligten an dieser Gesellschaft
                 </CardDescription>
@@ -1196,7 +1217,10 @@ export default function FundDetailsPage({
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Gesellschaftsdaten</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Gesellschaftsdaten</CardTitle>
+                  <InfoTooltip text="Stammdaten der Gesellschaft wie Rechtsform, Handelsregistereintrag und Stammkapital." />
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -1267,7 +1291,10 @@ export default function FundDetailsPage({
 
             <Card>
               <CardHeader>
-                <CardTitle>Bankverbindung</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Bankverbindung</CardTitle>
+                  <InfoTooltip text="Bankdaten der Gesellschaft für Zahlungsverkehr und Überweisungen." />
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4">
@@ -1300,7 +1327,10 @@ export default function FundDetailsPage({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Ausschuettungen</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Ausschuettungen</CardTitle>
+                  <InfoTooltip text="Gewinnausschuettungen und Entnahmen, die anteilig an die Gesellschafter ausgezahlt werden." />
+                </div>
                 <CardDescription>
                   Gewinnausschuettungen an Gesellschafter
                 </CardDescription>
@@ -1428,9 +1458,12 @@ export default function FundDetailsPage({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Verbundene Unternehmen</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Konzernstruktur</CardTitle>
+                  <InfoTooltip text="Mutter- und Tochtergesellschaften, die ebenfalls im System verwaltet werden (z.B. Holding → Betreibergesellschaft). Gesellschafter (Personen/Firmen die Anteile halten) werden im Tab 'Gesellschafter' verwaltet." />
+                </div>
                 <CardDescription>
-                  Gesellschaften, die mit dieser Gesellschaft verknuepft sind
+                  Über- und untergeordnete Gesellschaften in der Unternehmensstruktur
                 </CardDescription>
               </div>
               <Button onClick={() => setIsAddHierarchyDialogOpen(true)}>
@@ -1441,7 +1474,7 @@ export default function FundDetailsPage({
             <CardContent>
               {fund.parentHierarchies.length === 0 && fund.childHierarchies.length === 0 ? (
                 <p className="py-8 text-center text-muted-foreground">
-                  Keine verbundenen Unternehmen
+                  Keine Gesellschaften in der Konzernstruktur verknuepft
                 </p>
               ) : (
                 <Table>
@@ -1559,7 +1592,10 @@ export default function FundDetailsPage({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Anlagen</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Anlagen</CardTitle>
+                  <InfoTooltip text="Windkraftanlagen (WKA/WEA), die von dieser Gesellschaft betrieben werden. Die Beteiligung gibt den Eigentumsanteil an." />
+                </div>
                 <CardDescription>
                   Turbinen, die von dieser Gesellschaft betrieben werden
                 </CardDescription>
@@ -1641,7 +1677,10 @@ export default function FundDetailsPage({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Dokumente</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Dokumente</CardTitle>
+                  <InfoTooltip text="Verträge, Beschlüsse, Berichte und sonstige Unterlagen dieser Gesellschaft." />
+                </div>
                 <CardDescription>Dokumente zu dieser Gesellschaft</CardDescription>
               </div>
               <Button asChild>
@@ -1717,6 +1756,15 @@ export default function FundDetailsPage({
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Activities Tab */}
+        <TabsContent value="activities">
+          <Card>
+            <CardContent className="pt-6">
+              <ActivityTimeline entityType="fund" entityId={fund.id} />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Add Hierarchy Dialog */}
@@ -1749,6 +1797,12 @@ export default function FundDetailsPage({
                   )}
                 </SelectContent>
               </Select>
+              <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
+                <Link href="/funds/new" target="_blank">
+                  <Plus className="mr-1 h-3 w-3" />
+                  Neue Gesellschaft anlegen
+                </Link>
+              </Button>
             </div>
             <div className="space-y-2">
               <Label>Beteiligungsanteil (%)</Label>

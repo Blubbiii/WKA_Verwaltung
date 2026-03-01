@@ -429,6 +429,12 @@ export const PERMISSIONS = {
   ENERGY_DELETE: "energy:delete",
   ENERGY_EXPORT: "energy:export",
 
+  // CRM
+  CRM_READ: "crm:read",
+  CRM_CREATE: "crm:create",
+  CRM_UPDATE: "crm:update",
+  CRM_DELETE: "crm:delete",
+
   // Reports
   REPORTS_READ: "reports:read",
   REPORTS_CREATE: "reports:create",
