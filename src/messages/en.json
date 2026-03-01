@@ -131,7 +131,9 @@
   "sidebar": {
     "collapse": "Collapse sidebar",
     "expand": "Expand sidebar",
-    "mainNavigation": "Main navigation"
+    "mainNavigation": "Main navigation",
+    "resetOrder": "Reset order",
+    "dragToReorder": "Drag to reorder"
   },
   "header": {
     "search": "Search...",

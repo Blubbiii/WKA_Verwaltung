@@ -59,10 +59,30 @@ import {
   BookOpen,
   ContactRound,
   Inbox,
+  GripVertical,
+  RotateCcw,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useSidebarOrder } from "@/hooks/useSidebarOrder";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -510,8 +530,35 @@ const navGroups: NavGroup[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// (Role hierarchy helper removed — all visibility is now permission-based)
+// Group pinning: top (Dashboard) and bottom (Admin, System) are fixed
 // ---------------------------------------------------------------------------
+
+const PINNED_BOTTOM_KEYS = new Set(["admin", "system"]);
+
+/** Partition navGroups into pinned-top, reorderable middle, pinned-bottom */
+function partitionGroups(groups: NavGroup[]) {
+  const pinnedTop: NavGroup[] = [];
+  const middle: NavGroup[] = [];
+  const pinnedBottom: NavGroup[] = [];
+
+  for (const g of groups) {
+    if (g.label === null) pinnedTop.push(g);
+    else if (g.labelKey && PINNED_BOTTOM_KEYS.has(g.labelKey)) pinnedBottom.push(g);
+    else middle.push(g);
+  }
+
+  return { pinnedTop, middle, pinnedBottom };
+}
+
+/** Sort groups by the saved order array */
+function sortGroupsByOrder(groups: NavGroup[], order: string[]): NavGroup[] {
+  const orderMap = new Map(order.map((key, idx) => [key, idx]));
+  return [...groups].sort((a, b) => {
+    const idxA = orderMap.get(a.labelKey ?? "") ?? Infinity;
+    const idxB = orderMap.get(b.labelKey ?? "") ?? Infinity;
+    return idxA - idxB;
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -523,6 +570,7 @@ export function Sidebar() {
   const { data: session } = useSession();
   const t = useTranslations();
   const { isFeatureEnabled } = useFeatureFlags();
+  const { groupOrder, updateOrder, resetOrder, isDefault } = useSidebarOrder();
 
   const tenantLogoUrl = session?.user?.tenantLogoUrl;
   const tenantName = session?.user?.tenantName;
@@ -530,6 +578,36 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  // Partition and sort groups
+  const { pinnedTop, middle, pinnedBottom } = useMemo(
+    () => partitionGroups(navGroups),
+    []
+  );
+  const sortedMiddle = useMemo(
+    () => sortGroupsByOrder(middle, groupOrder),
+    [middle, groupOrder]
+  );
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = groupOrder.indexOf(active.id as string);
+      const newIndex = groupOrder.indexOf(over.id as string);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      updateOrder(arrayMove(groupOrder, oldIndex, newIndex));
+    },
+    [groupOrder, updateOrder]
+  );
 
   /** Resolve the display title for a nav item or child using translations */
   const getTitle = (item: { title: string; titleKey?: string }) => {
@@ -729,6 +807,92 @@ export function Sidebar() {
   };
 
   // -----------------------------------------------------------------------
+  // Group rendering helper
+  // -----------------------------------------------------------------------
+
+  const renderGroupContent = (
+    group: NavGroup,
+    groupIdx: number,
+    options?: { dragListeners?: Record<string, unknown>; showDragHandle?: boolean }
+  ) => {
+    if (!isGroupVisible(group)) return null;
+
+    const visibleItems = getVisibleItems(group);
+    if (visibleItems.length === 0) return null;
+
+    const groupExpanded = isGroupExpanded(group, visibleItems);
+
+    return (
+      <div
+        key={group.label ?? `group-${groupIdx}`}
+        data-tour={group.labelKey ? `sidebar-group-${group.labelKey}` : undefined}
+        className={cn("mb-4", groupIdx > 0 && group.label && !group.showSeparator && !collapsed && "pt-2")}
+      >
+        {group.showSeparator && (
+          <div className="mx-3 mb-3 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
+        )}
+
+        {group.label && !collapsed && (
+          <div className="flex items-center w-full px-4 mb-1.5 group/header">
+            {/* Drag handle — only for reorderable groups */}
+            {options?.showDragHandle && (
+              <span
+                className="cursor-grab active:cursor-grabbing mr-1 text-muted-foreground/40 hover:text-muted-foreground transition-colors opacity-0 group-hover/header:opacity-100"
+                title={t("sidebar.dragToReorder")}
+                {...(options.dragListeners ?? {})}
+              >
+                <GripVertical className="h-3 w-3" />
+              </span>
+            )}
+            <button
+              onClick={() => toggleGroup(group.label!)}
+              className="flex items-center justify-between flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span>{getGroupLabel(group)}</span>
+              {groupExpanded ? (
+                <ChevronDown className="h-3 w-3 text-primary/40" />
+              ) : (
+                <ChevronRight className="h-3 w-3 text-primary/40" />
+              )}
+            </button>
+          </div>
+        )}
+
+        {(groupExpanded || collapsed) && (
+          <ul className="space-y-1 px-2">
+            {visibleItems.map(renderNavItem)}
+          </ul>
+        )}
+      </div>
+    );
+  };
+
+  // Sortable group wrapper that passes drag listeners down
+  const renderSortableGroup = (group: NavGroup, groupIdx: number) => {
+    const key = group.labelKey!;
+    return (
+      <SortableGroupItem key={key} id={key}>
+        {(listeners) =>
+          renderGroupContent(group, groupIdx, {
+            dragListeners: listeners,
+            showDragHandle: sortedMiddle.filter((g) => isGroupVisible(g)).length > 1,
+          })
+        }
+      </SortableGroupItem>
+    );
+  };
+
+  // Visible sortable IDs for SortableContext
+  const visibleSortableIds = useMemo(
+    () =>
+      sortedMiddle
+        .filter((g) => isGroupVisible(g) && getVisibleItems(g).length > 0)
+        .map((g) => g.labelKey!),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sortedMiddle, role, permissionsLoaded]
+  );
+
+  // -----------------------------------------------------------------------
   // Main render
   // -----------------------------------------------------------------------
 
@@ -773,23 +937,36 @@ export function Sidebar() {
             />
           </Link>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className="h-8 w-8"
-          aria-label={
-            collapsed
-              ? t("sidebar.expand")
-              : t("sidebar.collapse")
-          }
-        >
-          {collapsed ? (
-            <Menu className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
+        <div className="flex items-center gap-1">
+          {!collapsed && !isDefault && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={resetOrder}
+              className="h-8 w-8"
+              title={t("sidebar.resetOrder")}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </Button>
           )}
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(!collapsed)}
+            className="h-8 w-8"
+            aria-label={
+              collapsed
+                ? t("sidebar.expand")
+                : t("sidebar.collapse")
+            }
+          >
+            {collapsed ? (
+              <Menu className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -797,50 +974,70 @@ export function Sidebar() {
         className="flex-1 overflow-y-auto py-4"
         aria-label={t("sidebar.mainNavigation")}
       >
-        {navGroups.map((group, groupIdx) => {
-          // Check group-level visibility
-          if (!isGroupVisible(group)) return null;
+        {/* Pinned top: Dashboard */}
+        {pinnedTop.map((group, idx) => renderGroupContent(group, idx))}
 
-          // Filter items within the group by permission
-          const visibleItems = getVisibleItems(group);
-
-          // Hide the group entirely if no items are visible
-          if (visibleItems.length === 0) return null;
-
-          const groupExpanded = isGroupExpanded(group, visibleItems);
-
-          return (
-            <div key={group.label ?? `group-${groupIdx}`} data-tour={group.labelKey ? `sidebar-group-${group.labelKey}` : undefined} className={cn("mb-4", groupIdx > 0 && group.label && !group.showSeparator && !collapsed && "pt-2")}>
-              {/* Separator before Administration and System groups */}
-              {group.showSeparator && (
-                <div className="mx-3 mb-3 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
+        {/* Reorderable middle groups */}
+        {!collapsed ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={visibleSortableIds}
+              strategy={verticalListSortingStrategy}
+            >
+              {sortedMiddle.map((group, idx) =>
+                renderSortableGroup(group, pinnedTop.length + idx)
               )}
+            </SortableContext>
+          </DndContext>
+        ) : (
+          sortedMiddle.map((group, idx) =>
+            renderGroupContent(group, pinnedTop.length + idx)
+          )
+        )}
 
-              {/* Section label - clickable to collapse/expand */}
-              {group.label && !collapsed && (
-                <button
-                  onClick={() => toggleGroup(group.label!)}
-                  className="flex items-center justify-between w-full px-4 mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <span>{getGroupLabel(group)}</span>
-                  {groupExpanded ? (
-                    <ChevronDown className="h-3 w-3 text-primary/40" />
-                  ) : (
-                    <ChevronRight className="h-3 w-3 text-primary/40" />
-                  )}
-                </button>
-              )}
-
-              {/* Items - show when expanded or in icon-only mode */}
-              {(groupExpanded || collapsed) && (
-                <ul className="space-y-1 px-2">
-                  {visibleItems.map(renderNavItem)}
-                </ul>
-              )}
-            </div>
-          );
-        })}
+        {/* Pinned bottom: Admin, System */}
+        {pinnedBottom.map((group, idx) =>
+          renderGroupContent(group, pinnedTop.length + sortedMiddle.length + idx)
+        )}
       </nav>
     </aside>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Inner sortable component (needs useSortable inside SortableContext)
+// ---------------------------------------------------------------------------
+
+function SortableGroupItem({
+  id,
+  children,
+}: {
+  id: string;
+  children: (listeners: Record<string, unknown>) => React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {children(listeners ?? {})}
+    </div>
   );
 }

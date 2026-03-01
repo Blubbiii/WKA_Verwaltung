@@ -84,6 +84,8 @@ export interface WidgetDefinition {
 export interface UserSettings {
   dashboard?: DashboardConfig;
   onboarding?: OnboardingState;
+  /** Ordered labelKeys for sidebar nav groups (middle section only) */
+  sidebarGroupOrder?: string[];
   /** Other settings can be added here */
   [key: string]: unknown;
 }

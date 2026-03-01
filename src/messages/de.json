@@ -131,7 +131,9 @@
   "sidebar": {
     "collapse": "Seitenleiste einklappen",
     "expand": "Seitenleiste ausklappen",
-    "mainNavigation": "Hauptnavigation"
+    "mainNavigation": "Hauptnavigation",
+    "resetOrder": "Reihenfolge zurücksetzen",
+    "dragToReorder": "Ziehen zum Umsortieren"
   },
   "header": {
     "search": "Suchen...",
