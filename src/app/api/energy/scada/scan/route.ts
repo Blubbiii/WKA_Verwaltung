@@ -16,19 +16,35 @@ import * as path from "path";
 //   -> Scannt einen spezifischen Standort und liefert alle verfügbaren Dateitypen
 // =============================================================================
 
+// GET /api/energy/scada/scan - Returns configured default scan path
+export async function GET() {
+  try {
+    const check = await requirePermission("energy:read");
+    if (!check.authorized) return check.error;
+
+    const defaultPath = process.env.SCADA_BASE_PATH || "";
+    return NextResponse.json({ defaultPath });
+  } catch (error) {
+    logger.error({ err: error }, "Fehler beim Laden des SCADA-Pfads");
+    return NextResponse.json({ defaultPath: "" });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
 
     const body = await request.json();
-    const { basePath, locationCode } = body;
+    const { locationCode } = body;
+    // Use provided basePath, fall back to SCADA_BASE_PATH env
+    const basePath = body.basePath || process.env.SCADA_BASE_PATH;
 
     // --- Validierung ---
 
     if (!basePath || typeof basePath !== "string") {
       return NextResponse.json(
-        { error: "basePath ist erforderlich (z.B. 'C:\\Enercon')" },
+        { error: "basePath ist erforderlich (z.B. '/data/scada') oder SCADA_BASE_PATH muss gesetzt sein" },
         { status: 400 }
       );
     }

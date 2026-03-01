@@ -77,6 +77,10 @@ export interface ImportParams {
   basePath: string;
   /** UUID des ScadaImportLog-Eintrags (muss vorab erstellt werden) */
   importLogId: string;
+  /** Optional: explicit file paths (skip discovery, e.g. from browser upload) */
+  filePaths?: string[];
+  /** Optional: directory to delete after import completes */
+  cleanupDir?: string;
 }
 
 /** Ergebnis eines abgeschlossenen Imports */
@@ -1399,7 +1403,7 @@ export async function scanAllFileTypes(
  * @returns Import-Ergebnis mit Statistiken
  */
 export async function startImport(params: ImportParams): Promise<ImportResult> {
-  const { tenantId, locationCode, fileType, basePath, importLogId } = params;
+  const { tenantId, locationCode, fileType, basePath, importLogId, filePaths, cleanupDir } = params;
 
   const errors: string[] = [];
   let filesProcessed = 0;
@@ -1411,12 +1415,12 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
 
   try {
     // 1. Dateien finden
-    // For WSD and UID, use the existing scanLocation (backwards compatibility).
-    // For all other types, use the new discoverFiles function.
     let filesToScan: string[];
-    const locationPath = path.join(basePath, locationCode);
 
-    if (fileType === 'WSD' || fileType === 'UID') {
+    if (filePaths && filePaths.length > 0) {
+      // Explicit file paths provided (e.g. from browser upload) — skip discovery
+      filesToScan = filePaths;
+    } else if (fileType === 'WSD' || fileType === 'UID') {
       // Use existing scan logic for WSD/UID (they are in the daily directory structure)
       const scanResults = await scanLocation(basePath, locationCode);
       const targetScan = scanResults.find((s) => s.fileType === fileType);
@@ -1442,6 +1446,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
       filesToScan = targetScan.files;
     } else {
       // Use new discovery for all extended file types
+      const locationPath = path.join(basePath, locationCode);
       filesToScan = await discoverFiles(locationPath, fileType);
 
       if (filesToScan.length === 0) {
@@ -1753,6 +1758,15 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
       errors,
       affectedMonths: allAffectedMonths,
     };
+  } finally {
+    // Cleanup temp upload directory if specified
+    if (cleanupDir) {
+      try {
+        await fs.rm(cleanupDir, { recursive: true, force: true });
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
   }
 }
 

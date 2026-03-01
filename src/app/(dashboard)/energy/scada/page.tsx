@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import {
   Radio,
   RefreshCw,
@@ -22,6 +23,9 @@ import {
   Power,
   PowerOff,
   AlertCircle,
+  Upload,
+  FileUp,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,7 +164,7 @@ const STATUS_LABELS: Record<string, string> = {
   INACTIVE: "Inaktiv",
 };
 
-const DEFAULT_SCAN_PATH = "C:\\Enercon";
+const DEFAULT_SCAN_PATH_FALLBACK = process.env.NEXT_PUBLIC_SCADA_BASE_PATH || "";
 
 // =============================================================================
 // Helper Functions
@@ -430,7 +434,7 @@ function MappingsTab() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            basePath: DEFAULT_SCAN_PATH,
+            basePath: DEFAULT_SCAN_PATH_FALLBACK,
             locationCode,
           }),
         });
@@ -457,7 +461,7 @@ function MappingsTab() {
               body: JSON.stringify({
                 locationCode,
                 fileType,
-                basePath: DEFAULT_SCAN_PATH,
+                basePath: DEFAULT_SCAN_PATH_FALLBACK,
               }),
             });
 
@@ -838,11 +842,19 @@ function MappingsTab() {
 // Tab: Import
 // =============================================================================
 
+const SCADA_EXTENSIONS = [
+  ".wsd", ".uid",
+  ".avr", ".avw", ".avm", ".avy",
+  ".ssm", ".swm",
+  ".pes", ".pew", ".pet",
+  ".wsr", ".wsw", ".wsm", ".wsy",
+];
+
 function ImportTab() {
   const { parks, isLoading: parksLoading } = useParks();
 
   // Scan state
-  const [scanPath, setScanPath] = useState(DEFAULT_SCAN_PATH);
+  const [scanPath, setScanPath] = useState(DEFAULT_SCAN_PATH_FALLBACK);
   const [isScanning, setIsScanning] = useState(false);
   const [scanResults, setScanResults] = useState<ScanResult[]>([]);
 
@@ -868,9 +880,26 @@ function ImportTab() {
   const [isImporting, setIsImporting] = useState(false);
   const pollingRefs = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
 
+  // Upload state
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploadLocationCode, setUploadLocationCode] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+
   // Import history
   const [importHistory, setImportHistory] = useState<ImportJob[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+
+  // Fetch configured default scan path from server
+  useEffect(() => {
+    fetch("/api/energy/scada/scan")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.defaultPath) setScanPath(data.defaultPath);
+      })
+      .catch(() => {});
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Load import history
@@ -900,6 +929,124 @@ function ImportTab() {
       pollingRefs.current.clear();
     };
   }, []);
+
+  // ---------------------------------------------------------------------------
+  // File Upload
+  // ---------------------------------------------------------------------------
+  const handleUploadFiles = useCallback(
+    (newFiles: FileList | File[]) => {
+      const valid = Array.from(newFiles).filter((f) => {
+        const ext = "." + f.name.split(".").pop()?.toLowerCase();
+        return SCADA_EXTENSIONS.includes(ext);
+      });
+      if (valid.length === 0) {
+        toast.error("Keine gültigen SCADA-Dateien gefunden");
+        return;
+      }
+      setUploadFiles((prev) => [...prev, ...valid]);
+      if (valid.length < newFiles.length) {
+        toast.warning(
+          `${newFiles.length - valid.length} Datei(en) ignoriert (nicht unterstützt)`
+        );
+      }
+    },
+    []
+  );
+
+  const handleStartUpload = useCallback(async () => {
+    if (uploadFiles.length === 0 || !uploadLocationCode) return;
+
+    setIsUploading(true);
+    setActiveImports([]);
+    try {
+      const formData = new FormData();
+      formData.append("locationCode", uploadLocationCode);
+      for (const file of uploadFiles) {
+        formData.append("files", file);
+      }
+
+      const res = await fetch("/api/energy/scada/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Upload fehlgeschlagen");
+      }
+
+      const data = await res.json();
+      setUploadFiles([]);
+      setIsImporting(true);
+
+      if (data.invalidFiles?.length > 0) {
+        toast.warning(`${data.invalidFiles.length} Datei(en) ignoriert`);
+      }
+
+      // Start polling for each import job
+      for (const imp of data.imports) {
+        const job: ImportJob = {
+          id: imp.importId,
+          status: "RUNNING",
+          fileType: imp.fileType,
+          locationCode: uploadLocationCode,
+          filesTotal: imp.fileCount,
+          filesProcessed: 0,
+          recordsImported: 0,
+          recordsSkipped: 0,
+          recordsFailed: 0,
+          startedAt: new Date().toISOString(),
+          completedAt: null,
+          duration: null,
+          error: null,
+        };
+
+        setActiveImports((prev) => [...prev, job]);
+
+        const pollInterval = setInterval(async () => {
+          try {
+            const pollRes = await fetch(`/api/energy/scada/import/${imp.importId}`);
+            if (!pollRes.ok) return;
+            const pollData = await pollRes.json();
+            const updatedJob: ImportJob = pollData.data ?? pollData;
+
+            setActiveImports((prev) =>
+              prev.map((j) => (j.id === updatedJob.id ? updatedJob : j))
+            );
+
+            if (
+              updatedJob.status === "SUCCESS" ||
+              updatedJob.status === "FAILED" ||
+              updatedJob.status === "PARTIAL"
+            ) {
+              const interval = pollingRefs.current.get(imp.importId);
+              if (interval) {
+                clearInterval(interval);
+                pollingRefs.current.delete(imp.importId);
+              }
+              if (pollingRefs.current.size === 0) {
+                setIsImporting(false);
+                loadHistory();
+              }
+            }
+          } catch {
+            // Ignore polling errors
+          }
+        }, 2000);
+
+        pollingRefs.current.set(imp.importId, pollInterval);
+      }
+
+      toast.success(
+        `Upload gestartet: ${data.imports.length} Dateityp(en), ${data.totalFiles} Dateien`
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload fehlgeschlagen");
+      setIsImporting(false);
+    } finally {
+      setIsUploading(false);
+    }
+  }, [uploadFiles, uploadLocationCode, loadHistory]);
 
   // ---------------------------------------------------------------------------
   // Folder Browser
@@ -1296,12 +1443,137 @@ function ImportTab() {
   // ---------------------------------------------------------------------------
   return (
     <div className="space-y-6">
+      {/* Upload Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileUp className="h-5 w-5" />
+            Dateien hochladen
+          </CardTitle>
+          <CardDescription>
+            SCADA-Dateien direkt im Browser hochladen — bereits importierte Datensätze werden automatisch übersprungen
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Location Code Input */}
+          <div className="space-y-2">
+            <Label htmlFor="uploadLocationCode">Standort-Code</Label>
+            <Input
+              id="uploadLocationCode"
+              placeholder="z.B. Loc_5842"
+              value={uploadLocationCode}
+              onChange={(e) => setUploadLocationCode(e.target.value)}
+            />
+          </div>
+
+          {/* Drop Zone */}
+          <div
+            className={cn(
+              "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
+              isDragOver
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-muted-foreground/50"
+            )}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragOver(true);
+            }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragOver(false);
+              if (e.dataTransfer.files.length > 0) {
+                handleUploadFiles(e.dataTransfer.files);
+              }
+            }}
+            onClick={() => uploadInputRef.current?.click()}
+          >
+            <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-sm font-medium">
+              SCADA-Dateien hier ablegen oder klicken
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {SCADA_EXTENSIONS.join(", ")}
+            </p>
+            <input
+              ref={uploadInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) handleUploadFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+          </div>
+
+          {/* Selected Files */}
+          {uploadFiles.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">
+                  {uploadFiles.length} Datei(en) ausgewählt
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setUploadFiles([])}
+                >
+                  Alle entfernen
+                </Button>
+              </div>
+              <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
+                {uploadFiles.map((f, i) => (
+                  <div
+                    key={`${f.name}-${i}`}
+                    className="flex items-center justify-between text-xs"
+                  >
+                    <span className="font-mono truncate">{f.name}</span>
+                    <Badge variant="outline">
+                      {f.name.split(".").pop()?.toUpperCase()}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Info Badge */}
+          <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-3">
+            <Info className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>
+              Duplikate werden automatisch erkannt und übersprungen. Sie können dieselben Dateien
+              bedenkenlos mehrfach hochladen.
+            </span>
+          </div>
+
+          {/* Upload Button */}
+          <Button
+            onClick={handleStartUpload}
+            disabled={
+              uploadFiles.length === 0 ||
+              !uploadLocationCode.startsWith("Loc_") ||
+              isUploading ||
+              isImporting
+            }
+            className="w-full"
+          >
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-2" />
+            )}
+            {uploadFiles.length} Datei(en) hochladen & importieren
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Scan Section */}
       <Card>
         <CardHeader>
           <CardTitle>Ordner scannen</CardTitle>
           <CardDescription>
-            Durchsuchen Sie einen Ordner nach Enercon SCADA-Dateien
+            Durchsuchen Sie einen Ordner nach Enercon SCADA-Dateien (Server-Dateisystem)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1311,7 +1583,7 @@ function ImportTab() {
               <div className="flex gap-2">
                 <Input
                   id="scanPath"
-                  placeholder={DEFAULT_SCAN_PATH}
+                  placeholder={DEFAULT_SCAN_PATH_FALLBACK}
                   value={scanPath}
                   onChange={(e) => setScanPath(e.target.value)}
                   className="flex-1"
