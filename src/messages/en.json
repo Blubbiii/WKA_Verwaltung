@@ -95,6 +95,7 @@
     "invoicesOverview": "Overview",
     "invoiceDispatch": "Dispatch Overview",
     "reconciliation": "Reconciliation",
+    "bankImport": "Bank Import",
     "marketing": "Marketing",
     "invoiceSettings": "Invoice Settings",
     "templates": "Templates",
