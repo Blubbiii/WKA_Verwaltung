@@ -787,6 +787,8 @@ model Invoice {
   emailedAt                                                                                   DateTime?
   emailedById                                                                                 String?
   emailedTo                                                                                   String?
+  reminderLevel                                                                               Int?
+  reminderSentAt                                                                              DateTime?
   distributionItems                                                                           DistributionItem?
   energySettlementItems                                                                       EnergySettlementItem[]
   items                                                                                       InvoiceItem[]

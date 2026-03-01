@@ -16,6 +16,7 @@ export type EmailTemplate =
   | 'welcome'
   | 'password-reset'
   | 'invoice-notification'
+  | 'invoice-reminder'
   | 'report-ready'
   | 'vote-invitation'
   | 'vote-reminder'

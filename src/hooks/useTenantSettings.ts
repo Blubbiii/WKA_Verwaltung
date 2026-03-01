@@ -52,6 +52,14 @@ export interface TenantSettings {
   // GoBD Aufbewahrung
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
+  // Mahnwesen
+  reminderEnabled: boolean;
+  reminderDays1: number;
+  reminderDays2: number;
+  reminderDays3: number;
+  reminderFee1: number;
+  reminderFee2: number;
+  reminderFee3: number;
 }
 
 // =============================================================================

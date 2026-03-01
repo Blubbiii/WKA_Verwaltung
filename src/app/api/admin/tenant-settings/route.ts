@@ -56,6 +56,14 @@ export interface TenantSettings {
   // GoBD Aufbewahrung
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
+  // Mahnwesen
+  reminderEnabled: boolean;
+  reminderDays1: number;
+  reminderDays2: number;
+  reminderDays3: number;
+  reminderFee1: number;
+  reminderFee2: number;
+  reminderFee3: number;
 }
 
 const DEFAULT_TENANT_SETTINGS: TenantSettings = {
@@ -112,6 +120,15 @@ const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   // GoBD Aufbewahrung (§147 AO)
   gobdRetentionYearsInvoice: 10,
   gobdRetentionYearsContract: 10,
+
+  // Mahnwesen defaults
+  reminderEnabled: true,
+  reminderDays1: 7,
+  reminderDays2: 21,
+  reminderDays3: 42,
+  reminderFee1: 0,
+  reminderFee2: 5,
+  reminderFee3: 10,
 };
 
 // =============================================================================
@@ -280,6 +297,42 @@ const tenantSettingsSchema = z.object({
     .int()
     .min(1, "Aufbewahrungsfrist muss mindestens 1 Jahr sein")
     .max(30, "Aufbewahrungsfrist darf maximal 30 Jahre sein")
+    .optional(),
+
+  // Mahnwesen
+  reminderEnabled: z.boolean().optional(),
+  reminderDays1: z
+    .number()
+    .int()
+    .min(0, "Darf nicht negativ sein")
+    .max(365, "Maximal 365 Tage")
+    .optional(),
+  reminderDays2: z
+    .number()
+    .int()
+    .min(0, "Darf nicht negativ sein")
+    .max(365, "Maximal 365 Tage")
+    .optional(),
+  reminderDays3: z
+    .number()
+    .int()
+    .min(0, "Darf nicht negativ sein")
+    .max(365, "Maximal 365 Tage")
+    .optional(),
+  reminderFee1: z
+    .number()
+    .min(0, "Mahngebühr darf nicht negativ sein")
+    .max(999.99, "Mahngebühr zu hoch")
+    .optional(),
+  reminderFee2: z
+    .number()
+    .min(0, "Mahngebühr darf nicht negativ sein")
+    .max(999.99, "Mahngebühr zu hoch")
+    .optional(),
+  reminderFee3: z
+    .number()
+    .min(0, "Mahngebühr darf nicht negativ sein")
+    .max(999.99, "Mahngebühr zu hoch")
     .optional(),
 });
 

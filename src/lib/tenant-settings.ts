@@ -43,6 +43,14 @@ export interface TenantSettings {
   // GoBD retention
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
+  // Mahnwesen
+  reminderEnabled: boolean;
+  reminderDays1: number;
+  reminderDays2: number;
+  reminderDays3: number;
+  reminderFee1: number;
+  reminderFee2: number;
+  reminderFee3: number;
 }
 
 export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
@@ -83,6 +91,14 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   // GoBD retention (§147 AO)
   gobdRetentionYearsInvoice: 10,
   gobdRetentionYearsContract: 10,
+  // Mahnwesen defaults
+  reminderEnabled: true,
+  reminderDays1: 7,
+  reminderDays2: 21,
+  reminderDays3: 42,
+  reminderFee1: 0,
+  reminderFee2: 5,
+  reminderFee3: 10,
 };
 
 /**

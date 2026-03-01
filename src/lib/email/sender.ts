@@ -18,6 +18,7 @@ import type {
   WelcomeEmailProps,
   PasswordResetEmailProps,
   NewInvoiceEmailProps,
+  InvoiceReminderEmailProps,
   VoteInvitationEmailProps,
   TenantAdminInvitationEmailProps,
   PortalInvitationEmailProps,
@@ -39,6 +40,7 @@ type TemplatePropsMap = {
   welcome: Omit<WelcomeEmailProps, keyof import('./types').BaseTemplateProps>;
   'password-reset': Omit<PasswordResetEmailProps, keyof import('./types').BaseTemplateProps>;
   'new-invoice': Omit<NewInvoiceEmailProps, keyof import('./types').BaseTemplateProps>;
+  'invoice-reminder': Omit<InvoiceReminderEmailProps, keyof import('./types').BaseTemplateProps>;
   'vote-invitation': Omit<VoteInvitationEmailProps, keyof import('./types').BaseTemplateProps>;
   'tenant-admin-invitation': Omit<TenantAdminInvitationEmailProps, keyof import('./types').BaseTemplateProps>;
   'portal-invitation': Omit<PortalInvitationEmailProps, keyof import('./types').BaseTemplateProps>;
@@ -56,6 +58,7 @@ const templateNameToQueue: Record<EmailTemplateName, QueueEmailTemplate> = {
   welcome: 'welcome',
   'password-reset': 'password-reset',
   'new-invoice': 'invoice-notification',
+  'invoice-reminder': 'invoice-reminder',
   'vote-invitation': 'vote-invitation',
   'tenant-admin-invitation': 'welcome',
   'portal-invitation': 'portal-invitation',

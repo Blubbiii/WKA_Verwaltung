@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Loader2, Save, Receipt, FileText, Database, Archive, RotateCcw } from "lucide-react";
+import { Loader2, Save, Receipt, FileText, Database, Archive, RotateCcw, Bell } from "lucide-react";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 
 const SKR03_DEFAULTS = {
@@ -46,6 +46,14 @@ interface InvoiceFormData {
   // GoBD
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
+  // Mahnwesen
+  reminderEnabled: boolean;
+  reminderDays1: number;
+  reminderDays2: number;
+  reminderDays3: number;
+  reminderFee1: number;
+  reminderFee2: number;
+  reminderFee3: number;
 }
 
 function InvoiceSettingsSkeleton() {
@@ -91,6 +99,13 @@ export function TenantInvoiceSettings() {
         datevAccountBF: settings.datevAccountBF ?? SKR03_DEFAULTS.datevAccountBF,
         gobdRetentionYearsInvoice: settings.gobdRetentionYearsInvoice ?? 10,
         gobdRetentionYearsContract: settings.gobdRetentionYearsContract ?? 10,
+        reminderEnabled: settings.reminderEnabled ?? true,
+        reminderDays1: settings.reminderDays1 ?? 7,
+        reminderDays2: settings.reminderDays2 ?? 21,
+        reminderDays3: settings.reminderDays3 ?? 42,
+        reminderFee1: settings.reminderFee1 ?? 0,
+        reminderFee2: settings.reminderFee2 ?? 5,
+        reminderFee3: settings.reminderFee3 ?? 10,
       });
       setHasChanges(false);
     }
@@ -460,6 +475,80 @@ export function TenantInvoiceSettings() {
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Mahnwesen */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-lg">Mahnwesen</CardTitle>
+          </div>
+          <CardDescription>
+            Mahnstufen, Fristen und Gebühren für den Mahnprozess
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left pb-2 font-medium text-muted-foreground w-40">Stufe</th>
+                  <th className="text-left pb-2 font-medium text-muted-foreground w-36">Tage nach Fälligkeit</th>
+                  <th className="text-left pb-2 font-medium text-muted-foreground w-32">Mahngebühr (€)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {(
+                  [
+                    { label: "1. Zahlungserinnerung", daysKey: "reminderDays1", feeKey: "reminderFee1" },
+                    { label: "2. Mahnung", daysKey: "reminderDays2", feeKey: "reminderFee2" },
+                    { label: "3. Mahnung (Letzte)", daysKey: "reminderDays3", feeKey: "reminderFee3" },
+                  ] as const
+                ).map(({ label, daysKey, feeKey }) => (
+                  <tr key={daysKey} className="py-2">
+                    <td className="py-2 pr-4 text-sm">{label}</td>
+                    <td className="py-2 pr-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-xs">+</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={365}
+                          className="h-7 w-20 font-mono text-sm"
+                          value={formData[daysKey]}
+                          onChange={(e) =>
+                            handleChange(daysKey, parseInt(e.target.value, 10) || 0)
+                          }
+                        />
+                        <span className="text-xs text-muted-foreground">Tage</span>
+                      </div>
+                    </td>
+                    <td className="py-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={999.99}
+                          step={0.01}
+                          className="h-7 w-24 font-mono text-sm"
+                          value={formData[feeKey]}
+                          onChange={(e) =>
+                            handleChange(feeKey, parseFloat(e.target.value) || 0)
+                          }
+                        />
+                        <span className="text-xs text-muted-foreground">€</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Gebühren von 0 € bedeuten: keine Mahngebühr für diese Stufe.
+          </p>
         </CardContent>
       </Card>
 

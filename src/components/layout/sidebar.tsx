@@ -161,6 +161,7 @@ const navGroups: NavGroup[] = [
           { title: "Versandübersicht", titleKey: "invoiceDispatch", href: "/invoices/dispatch", icon: Send },
           { title: "Zahlungs-Abgleich", titleKey: "reconciliation", href: "/invoices/reconciliation", icon: Scale },
           { title: "Bank-Import", titleKey: "bankImport", href: "/invoices/bank-import", icon: Landmark },
+          { title: "Mahnwesen", titleKey: "reminders", href: "/invoices/reminders", icon: Bell },
         ],
       },
       {

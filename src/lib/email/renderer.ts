@@ -12,6 +12,7 @@ import type {
   WelcomeEmailProps,
   PasswordResetEmailProps,
   NewInvoiceEmailProps,
+  InvoiceReminderEmailProps,
   VoteInvitationEmailProps,
   TenantAdminInvitationEmailProps,
   PortalInvitationEmailProps,
@@ -27,6 +28,7 @@ import type {
 import { WelcomeEmail } from './templates/welcome';
 import { PasswordResetEmail } from './templates/password-reset';
 import { NewInvoiceEmail } from './templates/new-invoice';
+import { InvoiceReminderEmail } from './templates/invoice-reminder';
 import { VoteInvitationEmail } from './templates/vote-invitation';
 import { TenantAdminInvitationEmail } from './templates/tenant-admin-invitation';
 import { PortalInvitationEmail } from './templates/portal-invitation';
@@ -48,6 +50,7 @@ export type SupportedTemplateName =
   | 'welcome'
   | 'password-reset'
   | 'new-invoice'
+  | 'invoice-reminder'
   | 'vote-invitation'
   | 'tenant-admin-invitation'
   | 'portal-invitation'
@@ -63,6 +66,7 @@ type TemplatePropsMap = {
   welcome: WelcomeEmailProps;
   'password-reset': PasswordResetEmailProps;
   'new-invoice': NewInvoiceEmailProps;
+  'invoice-reminder': InvoiceReminderEmailProps;
   'vote-invitation': VoteInvitationEmailProps;
   'tenant-admin-invitation': TenantAdminInvitationEmailProps;
   'portal-invitation': PortalInvitationEmailProps;
@@ -83,6 +87,7 @@ const templateComponents: TemplateComponentMap = {
   welcome: WelcomeEmail,
   'password-reset': PasswordResetEmail,
   'new-invoice': NewInvoiceEmail,
+  'invoice-reminder': InvoiceReminderEmail,
   'vote-invitation': VoteInvitationEmail,
   'tenant-admin-invitation': TenantAdminInvitationEmail,
   'portal-invitation': PortalInvitationEmail,
@@ -214,6 +219,8 @@ function getDefaultSubject(
       return `Passwort zurücksetzen - ${tenantName}`;
     case 'new-invoice':
       return `Neue Rechnung ${props.invoiceNumber || ''} - ${tenantName}`;
+    case 'invoice-reminder':
+      return `${props.reminderLabel || 'Mahnung'}: Rechnung ${props.invoiceNumber || ''} - ${tenantName}`;
     case 'vote-invitation':
       return `Neue Abstimmung: ${props.voteName || 'Abstimmung'} - ${tenantName}`;
     case 'tenant-admin-invitation':
@@ -375,6 +382,17 @@ export function getSampleData(templateName: SupportedTemplateName): Record<strin
         amount: '1.234,56 EUR',
         dueDate: '15.03.2026',
         downloadUrl: `${baseUrl}/invoices/sample-invoice.pdf`,
+      };
+    case 'invoice-reminder':
+      return {
+        recipientName: 'Max Mustermann',
+        invoiceNumber: 'RG-2026-0001',
+        amount: '1.234,56 EUR',
+        dueDate: '15.01.2026',
+        daysOverdue: 45,
+        reminderLevel: 2,
+        reminderLabel: '1. Mahnung',
+        lateFee: 5,
       };
     case 'vote-invitation':
       return {

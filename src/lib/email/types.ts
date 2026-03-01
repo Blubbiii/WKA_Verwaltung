@@ -117,6 +117,7 @@ export type EmailTemplateName =
   | 'welcome'
   | 'password-reset'
   | 'new-invoice'
+  | 'invoice-reminder'
   | 'vote-invitation'
   | 'tenant-admin-invitation'
   | 'portal-invitation'
@@ -263,6 +264,23 @@ export interface ServiceEventEmailProps extends BaseTemplateProps {
   criticalCount?: number;
   warningCount?: number;
   link?: string;
+}
+
+/**
+ * Invoice reminder / dunning email template props
+ */
+export interface InvoiceReminderEmailProps extends BaseTemplateProps {
+  recipientName: string;
+  invoiceNumber: string;
+  /** Formatted amount string, e.g. "1.234,56 EUR" */
+  amount: string;
+  dueDate: string;
+  daysOverdue: number;
+  reminderLevel: 1 | 2 | 3;
+  /** e.g. "1. Zahlungserinnerung", "2. Mahnung", "3. Mahnung" */
+  reminderLabel: string;
+  /** Late fee in EUR, 0 = none */
+  lateFee: number;
 }
 
 /**
