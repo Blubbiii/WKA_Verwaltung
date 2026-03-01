@@ -41,6 +41,14 @@ export interface TenantSettings {
   datevDebtorStart: number;
   datevCreditorStart: number;
 
+  // SKR03 Kontenrahmen
+  datevAccountEinspeisung: string;
+  datevAccountDirektvermarktung: string;
+  datevAccountPachtEinnahmen: string;
+  datevAccountPachtAufwand: string;
+  datevAccountWartung: string;
+  datevAccountBF: string;
+
   // GoBD Aufbewahrung
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;

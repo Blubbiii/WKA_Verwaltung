@@ -19,6 +19,28 @@
 // ============================================================================
 
 /**
+ * SKR03 account mapping per transaction category.
+ * Each field maps to a DATEV Sachkonto (account number).
+ * Used to automatically assign correct accounts based on invoice item type.
+ */
+export interface DatevAccountMapping {
+  /** Fallback revenue account (used when no category matches) */
+  revenueAccount: string;
+  /** Einspeisevergütung / Stromerlöse (SKR03: 8400) */
+  einspeisung: string;
+  /** Direktvermarktungserlöse (SKR03: 8338) */
+  direktvermarktung: string;
+  /** Miet-/Pachterträge — Einnahmen (SKR03: 8210) */
+  pachtEinnahmen: string;
+  /** Miet-/Pachtaufwand — Ausgaben (SKR03: 4210) */
+  pachtAufwand: string;
+  /** Reparatur und Instandhaltung / Wartungskosten (SKR03: 4950) */
+  wartung: string;
+  /** Betriebsführungsentgelt (SKR03: 4120) */
+  bf: string;
+}
+
+/**
  * DATEV export options
  */
 export interface DatevExportOptions {
@@ -38,6 +60,8 @@ export interface DatevExportOptions {
   defaultDebtorStart?: number;
   /** Default creditor account number start (Kreditorennummernkreis) */
   defaultCreditorStart?: number;
+  /** SKR03 account mapping per transaction category */
+  accountMapping?: DatevAccountMapping;
 }
 
 /**
@@ -110,9 +134,15 @@ export interface DatevInvoiceItemData {
   taxRate: number;
   taxAmount: number;
   grossAmount: number;
+  /** Manual DATEV account override (highest priority) */
   datevKonto?: string | null;
   datevGegenkonto?: string | null;
   datevKostenstelle?: string | null;
+  /**
+   * Transaction category for automatic account resolution.
+   * Values: "LEASE", "ENERGY", "ENERGY_DIRECT", "SERVICE", "MANAGEMENT_FEE"
+   */
+  referenceType?: string | null;
 }
 
 // ============================================================================
@@ -383,6 +413,43 @@ function getDebtorAccount(
 }
 
 /**
+ * Resolve the DATEV Gegenkonto (revenue/expense account) for an invoice item.
+ *
+ * Priority:
+ * 1. item.datevKonto — manually set on the item → use directly
+ * 2. item.referenceType → mapped to a category account from accountMapping
+ * 3. Fallback → mapping.revenueAccount (or defaultRevenue if no mapping)
+ */
+function resolveItemAccount(
+  item: DatevInvoiceItemData,
+  mapping: DatevAccountMapping | undefined,
+  defaultRevenue: string
+): string {
+  // Priority 1: manual override
+  if (item.datevKonto) return item.datevKonto;
+
+  // Priority 2: category mapping
+  if (mapping && item.referenceType) {
+    switch (item.referenceType) {
+      case "ENERGY":
+        return mapping.einspeisung;
+      case "ENERGY_DIRECT":
+        return mapping.direktvermarktung;
+      case "LEASE":
+        // Use income or expense account depending on sign of netAmount
+        return item.netAmount < 0 ? mapping.pachtAufwand : mapping.pachtEinnahmen;
+      case "SERVICE":
+        return mapping.wartung;
+      case "MANAGEMENT_FEE":
+        return mapping.bf;
+    }
+  }
+
+  // Priority 3: fallback
+  return mapping?.revenueAccount ?? defaultRevenue;
+}
+
+/**
  * Get the recipient display name from invoice data
  */
 function getRecipientName(invoice: DatevInvoiceData): string {
@@ -418,6 +485,7 @@ export function invoiceToBookingEntries(
     options.defaultDebtorStart ?? DEFAULT_ACCOUNTS.debtorStart
   );
   const defaultRevenue = options.defaultRevenueAccount ?? DEFAULT_ACCOUNTS.revenueWindPower;
+  const accountMapping = options.accountMapping;
   const recipientName = getRecipientName(invoice);
 
   // Determine debit/credit direction based on invoice type
@@ -425,18 +493,20 @@ export function invoiceToBookingEntries(
   // CREDIT_NOTE: We pay money -> Credit debtor, Debit revenue
   const isInvoice = invoice.invoiceType === "INVOICE";
 
-  // Check if we have item-level DATEV accounts
+  // Use per-item entries when any item has a DATEV account, referenceType, or the
+  // account mapping is configured (so we can apply category-based account resolution).
   const hasItemAccounts = invoice.items?.some(
-    (item) => item.datevKonto || item.datevGegenkonto
+    (item) => item.datevKonto || item.datevGegenkonto || item.referenceType
   );
+  const useItemEntries = hasItemAccounts || (accountMapping !== undefined && (invoice.items?.length ?? 0) > 0);
 
-  if (hasItemAccounts && invoice.items && invoice.items.length > 0) {
+  if (useItemEntries && invoice.items && invoice.items.length > 0) {
     // Create one booking entry per item
     for (const item of invoice.items) {
       if (item.grossAmount === 0) continue;
 
       const account = item.datevGegenkonto || debtorAccount;
-      const counterAccount = item.datevKonto || defaultRevenue;
+      const counterAccount = resolveItemAccount(item, accountMapping, defaultRevenue);
       const taxKey = TAX_KEY_MAP[item.taxType] || "0";
 
       entries.push({
@@ -462,6 +532,7 @@ export function invoiceToBookingEntries(
     // Single entry for the whole invoice (gross amount)
     const taxKey = invoice.datevBuchungsschluessel
       || (invoice.taxRate >= 19 ? "9" : invoice.taxRate >= 7 ? "8" : "0");
+    const singleCounterAccount = accountMapping?.revenueAccount ?? defaultRevenue;
 
     entries.push({
       amount: Math.abs(
@@ -472,7 +543,7 @@ export function invoiceToBookingEntries(
       debitCredit: isInvoice ? "S" : "H",
       currency: invoice.currency || "EUR",
       account: debtorAccount,
-      counterAccount: defaultRevenue,
+      counterAccount: singleCounterAccount,
       taxKey,
       documentDate: typeof invoice.invoiceDate === "string"
         ? new Date(invoice.invoiceDate)

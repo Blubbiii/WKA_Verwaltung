@@ -7,6 +7,7 @@ import {
   generateDatevFilename,
   type DatevExportOptions,
   type DatevInvoiceData,
+  type DatevAccountMapping,
 } from "@/lib/export";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
@@ -151,6 +152,7 @@ async function getHandler(request: NextRequest) {
             datevKonto: true,
             datevGegenkonto: true,
             datevKostenstelle: true,
+            referenceType: true,
           },
           orderBy: { position: "asc" },
         },
@@ -185,6 +187,17 @@ async function getHandler(request: NextRequest) {
     // Load tenant DATEV settings as defaults, allow per-request override
     const tenantSettings = await getTenantSettings(check.tenantId!);
 
+    // Build SKR03 account mapping from tenant settings
+    const accountMapping: DatevAccountMapping = {
+      revenueAccount: params.revenueAccount || tenantSettings.datevRevenueAccount,
+      einspeisung: tenantSettings.datevAccountEinspeisung,
+      direktvermarktung: tenantSettings.datevAccountDirektvermarktung,
+      pachtEinnahmen: tenantSettings.datevAccountPachtEinnahmen,
+      pachtAufwand: tenantSettings.datevAccountPachtAufwand,
+      wartung: tenantSettings.datevAccountWartung,
+      bf: tenantSettings.datevAccountBF,
+    };
+
     // Build DATEV export options
     const datevOptions: DatevExportOptions = {
       consultantNumber: params.consultantNumber,
@@ -195,6 +208,7 @@ async function getHandler(request: NextRequest) {
       defaultRevenueAccount: params.revenueAccount || tenantSettings.datevRevenueAccount,
       defaultDebtorStart: params.debtorStart || tenantSettings.datevDebtorStart,
       defaultCreditorStart: tenantSettings.datevCreditorStart,
+      accountMapping,
     };
 
     // Convert Prisma Decimal objects to plain numbers for the export
@@ -230,6 +244,7 @@ async function getHandler(request: NextRequest) {
         datevKonto: item.datevKonto,
         datevGegenkonto: item.datevGegenkonto,
         datevKostenstelle: item.datevKostenstelle,
+        referenceType: item.referenceType,
       })),
     }));
 

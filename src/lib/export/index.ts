@@ -22,6 +22,7 @@ export {
 } from './datev-export';
 export type {
   DatevExportOptions,
+  DatevAccountMapping,
   DatevBookingEntry,
   DatevInvoiceData,
   DatevInvoiceItemData,

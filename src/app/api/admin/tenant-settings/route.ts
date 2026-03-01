@@ -45,6 +45,14 @@ export interface TenantSettings {
   datevDebtorStart: number;
   datevCreditorStart: number;
 
+  // SKR03 Kontenrahmen
+  datevAccountEinspeisung: string;
+  datevAccountDirektvermarktung: string;
+  datevAccountPachtEinnahmen: string;
+  datevAccountPachtAufwand: string;
+  datevAccountWartung: string;
+  datevAccountBF: string;
+
   // GoBD Aufbewahrung
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
@@ -87,11 +95,19 @@ const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   companyEmail: "",
   companyWebsite: "",
 
-  // DATEV Export (SKR04 defaults)
+  // DATEV Export (SKR03 defaults)
   datevRevenueAccount: "8400",
   datevExpenseAccount: "8000",
   datevDebtorStart: 10000,
   datevCreditorStart: 70000,
+
+  // SKR03 Kontenrahmen-Defaults
+  datevAccountEinspeisung: "8400",
+  datevAccountDirektvermarktung: "8338",
+  datevAccountPachtEinnahmen: "8210",
+  datevAccountPachtAufwand: "4210",
+  datevAccountWartung: "4950",
+  datevAccountBF: "4120",
 
   // GoBD Aufbewahrung (§147 AO)
   gobdRetentionYearsInvoice: 10,
@@ -224,6 +240,32 @@ const tenantSettingsSchema = z.object({
     .int()
     .min(1000, "Kreditorennummernkreis muss mindestens 1000 sein")
     .max(99999999, "Kreditorennummernkreis darf maximal 99999999 sein")
+    .optional(),
+
+  // SKR03 Kontenrahmen
+  datevAccountEinspeisung: z
+    .string()
+    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
+    .optional(),
+  datevAccountDirektvermarktung: z
+    .string()
+    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
+    .optional(),
+  datevAccountPachtEinnahmen: z
+    .string()
+    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
+    .optional(),
+  datevAccountPachtAufwand: z
+    .string()
+    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
+    .optional(),
+  datevAccountWartung: z
+    .string()
+    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
+    .optional(),
+  datevAccountBF: z
+    .string()
+    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
     .optional(),
 
   // GoBD Aufbewahrung

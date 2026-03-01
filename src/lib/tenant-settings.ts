@@ -33,6 +33,13 @@ export interface TenantSettings {
   datevExpenseAccount: string;
   datevDebtorStart: number;
   datevCreditorStart: number;
+  // SKR03 Kontenrahmen (konfigurierbar je Mandant)
+  datevAccountEinspeisung: string;
+  datevAccountDirektvermarktung: string;
+  datevAccountPachtEinnahmen: string;
+  datevAccountPachtAufwand: string;
+  datevAccountWartung: string;
+  datevAccountBF: string;
   // GoBD retention
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
@@ -61,11 +68,18 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   companyPhone: "",
   companyEmail: "",
   companyWebsite: "",
-  // DATEV defaults (SKR04)
+  // DATEV defaults (SKR03)
   datevRevenueAccount: "8400",
   datevExpenseAccount: "8000",
   datevDebtorStart: 10000,
   datevCreditorStart: 70000,
+  // SKR03 Kontenrahmen-Defaults
+  datevAccountEinspeisung: "8400",
+  datevAccountDirektvermarktung: "8338",
+  datevAccountPachtEinnahmen: "8210",
+  datevAccountPachtAufwand: "4210",
+  datevAccountWartung: "4950",
+  datevAccountBF: "4120",
   // GoBD retention (§147 AO)
   gobdRetentionYearsInvoice: 10,
   gobdRetentionYearsContract: 10,

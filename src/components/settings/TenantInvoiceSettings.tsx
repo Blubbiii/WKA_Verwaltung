@@ -15,8 +15,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Loader2, Save, Receipt, FileText, Database, Archive } from "lucide-react";
+import { Loader2, Save, Receipt, FileText, Database, Archive, RotateCcw } from "lucide-react";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
+
+const SKR03_DEFAULTS = {
+  datevAccountEinspeisung: "8400",
+  datevAccountDirektvermarktung: "8338",
+  datevAccountPachtEinnahmen: "8210",
+  datevAccountPachtAufwand: "4210",
+  datevAccountWartung: "4950",
+  datevAccountBF: "4120",
+};
 
 interface InvoiceFormData {
   paymentTermDays: number;
@@ -27,6 +36,13 @@ interface InvoiceFormData {
   datevExpenseAccount: string;
   datevDebtorStart: number;
   datevCreditorStart: number;
+  // SKR03 Kontenrahmen
+  datevAccountEinspeisung: string;
+  datevAccountDirektvermarktung: string;
+  datevAccountPachtEinnahmen: string;
+  datevAccountPachtAufwand: string;
+  datevAccountWartung: string;
+  datevAccountBF: string;
   // GoBD
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
@@ -67,6 +83,12 @@ export function TenantInvoiceSettings() {
         datevExpenseAccount: settings.datevExpenseAccount ?? "8000",
         datevDebtorStart: settings.datevDebtorStart ?? 10000,
         datevCreditorStart: settings.datevCreditorStart ?? 70000,
+        datevAccountEinspeisung: settings.datevAccountEinspeisung ?? SKR03_DEFAULTS.datevAccountEinspeisung,
+        datevAccountDirektvermarktung: settings.datevAccountDirektvermarktung ?? SKR03_DEFAULTS.datevAccountDirektvermarktung,
+        datevAccountPachtEinnahmen: settings.datevAccountPachtEinnahmen ?? SKR03_DEFAULTS.datevAccountPachtEinnahmen,
+        datevAccountPachtAufwand: settings.datevAccountPachtAufwand ?? SKR03_DEFAULTS.datevAccountPachtAufwand,
+        datevAccountWartung: settings.datevAccountWartung ?? SKR03_DEFAULTS.datevAccountWartung,
+        datevAccountBF: settings.datevAccountBF ?? SKR03_DEFAULTS.datevAccountBF,
         gobdRetentionYearsInvoice: settings.gobdRetentionYearsInvoice ?? 10,
         gobdRetentionYearsContract: settings.gobdRetentionYearsContract ?? 10,
       });
@@ -271,6 +293,69 @@ export function TenantInvoiceSettings() {
               <p className="text-xs text-muted-foreground">
                 Standard-Sachkonto für Aufwendungen (z.B. 8000 bei SKR04)
               </p>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Kontenrahmen SKR03 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Kontenrahmen (SKR03)</p>
+                <p className="text-xs text-muted-foreground">
+                  Kontenzuordnung pro Transaktionsart — wird beim DATEV-Export automatisch verwendet
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (formData) {
+                    setFormData({ ...formData, ...SKR03_DEFAULTS });
+                    setHasChanges(true);
+                  }
+                }}
+              >
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                SKR03-Defaults
+              </Button>
+            </div>
+            <div className="rounded-md border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">Transaktionsart</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground w-36">Kontonummer</th>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground w-28">SKR03 Standard</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {[
+                    { label: "Einspeisevergütung", key: "datevAccountEinspeisung" as const, default: SKR03_DEFAULTS.datevAccountEinspeisung },
+                    { label: "Direktvermarktung", key: "datevAccountDirektvermarktung" as const, default: SKR03_DEFAULTS.datevAccountDirektvermarktung },
+                    { label: "Pachteinnahmen", key: "datevAccountPachtEinnahmen" as const, default: SKR03_DEFAULTS.datevAccountPachtEinnahmen },
+                    { label: "Pachtaufwand", key: "datevAccountPachtAufwand" as const, default: SKR03_DEFAULTS.datevAccountPachtAufwand },
+                    { label: "Wartung / Instandhaltung", key: "datevAccountWartung" as const, default: SKR03_DEFAULTS.datevAccountWartung },
+                    { label: "Betriebsführungsentgelt", key: "datevAccountBF" as const, default: SKR03_DEFAULTS.datevAccountBF },
+                  ].map((row) => (
+                    <tr key={row.key}>
+                      <td className="px-3 py-2 text-muted-foreground">{row.label}</td>
+                      <td className="px-3 py-2">
+                        <Input
+                          value={formData[row.key]}
+                          onChange={(e) => handleChange(row.key, e.target.value)}
+                          className="h-7 w-28 font-mono text-sm"
+                          maxLength={10}
+                          placeholder={row.default}
+                        />
+                      </td>
+                      <td className="px-3 py-2 font-mono text-muted-foreground">{row.default}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
