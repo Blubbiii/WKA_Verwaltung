@@ -56,6 +56,7 @@ import {
   Briefcase,
   Percent,
   Landmark,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useCallback } from "react";
@@ -134,6 +135,10 @@ const navGroups: NavGroup[] = [
         href: "/parks",
         icon: Wind,
         permission: "parks:read",
+        children: [
+          { title: "Übersicht", titleKey: "parksOverview", href: "/parks", icon: Wind },
+          { title: "Park P&L", titleKey: "parkPL", href: "/parks/pl", icon: BarChart3 },
+        ],
       },
       {
         title: "Service-Events",
@@ -162,6 +167,7 @@ const navGroups: NavGroup[] = [
           { title: "Zahlungs-Abgleich", titleKey: "reconciliation", href: "/invoices/reconciliation", icon: Scale },
           { title: "Bank-Import", titleKey: "bankImport", href: "/invoices/bank-import", icon: Landmark },
           { title: "Mahnwesen", titleKey: "reminders", href: "/invoices/reminders", icon: Bell },
+          { title: "Buchungsjournal", titleKey: "journalEntries", href: "/journal-entries", icon: BookOpen },
         ],
       },
       {

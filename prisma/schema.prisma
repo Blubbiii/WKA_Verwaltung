@@ -92,6 +92,7 @@ model Tenant {
   webhooks                  Webhook[]
   mailingTemplates          MailingTemplate[]
   mailings                  Mailing[]
+  journalEntries            JournalEntry[]
 
   @@map("tenants")
 }
@@ -145,6 +146,7 @@ model User {
   tenant                                                                  Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdVotes                                                            Vote[]                      @relation("VoteCreatedBy")
   createdWebhooks                                                         Webhook[]                   @relation("WebhookCreatedBy")
+  journalEntriesCreated                                                   JournalEntry[]              @relation("JournalEntryCreatedBy")
 
   @@index([tenantId])
   @@index([email])
@@ -2747,4 +2749,51 @@ model WebhookDelivery {
   @@index([createdAt])
   @@index([createdAt, success])
   @@map("webhook_deliveries")
+}
+
+// =============================================================================
+// Journal Entries (M50) — Manual Soll/Haben bookings with SKR03 accounts
+// =============================================================================
+
+enum JournalEntryStatus {
+  DRAFT
+  POSTED
+}
+
+model JournalEntry {
+  id          String             @id @default(uuid())
+  tenantId    String
+  tenant      Tenant             @relation(fields: [tenantId], references: [id])
+  entryDate   DateTime
+  description String             @db.VarChar(200)
+  reference   String?            @db.VarChar(100)
+  status      JournalEntryStatus @default(DRAFT)
+  createdById String
+  createdBy   User               @relation("JournalEntryCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  deletedAt   DateTime?
+  lines       JournalEntryLine[]
+
+  @@index([tenantId])
+  @@index([tenantId, entryDate])
+  @@index([tenantId, status])
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id             String       @id @default(uuid())
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  lineNumber     Int
+  account        String       @db.VarChar(20)
+  accountName    String?      @db.VarChar(100)
+  description    String?      @db.VarChar(200)
+  debitAmount    Decimal?     @db.Decimal(15, 2)
+  creditAmount   Decimal?     @db.Decimal(15, 2)
+  taxKey         String?      @db.VarChar(10)
+  costCenter     String?      @db.VarChar(50)
+
+  @@index([journalEntryId])
+  @@map("journal_entry_lines")
 }
