@@ -88,7 +88,10 @@ function NewInvoiceContent() {
     dueDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
     recipientType: "PERSON",
     recipientName: "",
-    recipientAddress: "",
+    recipientStreet: "",
+    recipientHouseNumber: "",
+    recipientPostalCode: "",
+    recipientCity: "",
     serviceStartDate: "",
     serviceEndDate: "",
     paymentReference: "",
@@ -173,11 +176,26 @@ function NewInvoiceContent() {
   }
 
   function handleRecipientSelect(recipient: RecipientSelection) {
+    // Address comes as "Straße Hausnr\nPLZ Ort"
+    const lines = (recipient.recipientAddress || "").split("\n").map(l => l.trim()).filter(Boolean);
+    const streetLine = lines[0] || "";
+    const plzCity = lines[1] || "";
+    const plzMatch = plzCity.match(/^(\d{4,5})\s*(.*)/);
+    // Split street line into street + housenumber (last token if it looks like a number)
+    const streetParts = streetLine.split(/\s+/);
+    const lastPart = streetParts[streetParts.length - 1] || "";
+    const looksLikeNumber = /^\d/.test(lastPart);
+    const street = looksLikeNumber ? streetParts.slice(0, -1).join(" ") : streetLine;
+    const houseNumber = looksLikeNumber ? lastPart : "";
+
     setFormData({
       ...formData,
       recipientType: recipient.recipientType,
       recipientName: recipient.recipientName,
-      recipientAddress: recipient.recipientAddress,
+      recipientStreet: street,
+      recipientHouseNumber: houseNumber,
+      recipientPostalCode: plzMatch ? plzMatch[1] : "",
+      recipientCity: plzMatch ? plzMatch[2] : plzCity,
     });
   }
 
@@ -251,7 +269,10 @@ function NewInvoiceContent() {
         dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
         recipientType: formData.recipientType,
         recipientName: formData.recipientName,
-        recipientAddress: formData.recipientAddress || null,
+        recipientAddress: [
+          [formData.recipientStreet, formData.recipientHouseNumber].filter(Boolean).join(" "),
+          [formData.recipientPostalCode, formData.recipientCity].filter(Boolean).join(" "),
+        ].filter(Boolean).join("\n") || null,
         serviceStartDate: formData.serviceStartDate
           ? new Date(formData.serviceStartDate).toISOString()
           : null,
@@ -342,61 +363,75 @@ function NewInvoiceContent() {
               <CardTitle>Empfänger</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="recipientType">Typ</Label>
-                  <Select
-                    value={formData.recipientType}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, recipientType: value })
+              <div className="flex items-end gap-2">
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="recipientName">Name *</Label>
+                  <Input
+                    id="recipientName"
+                    value={formData.recipientName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, recipientName: e.target.value })
                     }
-                  >
-                    <SelectTrigger id="recipientType">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PERSON">Person</SelectItem>
-                      <SelectItem value="COMPANY">Unternehmen</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    placeholder="Name des Empfängers"
+                    required
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setRecipientDialogOpen(true)}
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  Suchen / Anlegen
+                </Button>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-4">
+                <div className="space-y-2 sm:col-span-3">
+                  <Label htmlFor="recipientStreet">Strasse</Label>
+                  <Input
+                    id="recipientStreet"
+                    value={formData.recipientStreet}
+                    onChange={(e) =>
+                      setFormData({ ...formData, recipientStreet: e.target.value })
+                    }
+                    placeholder="Musterstrasse"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="recipientName">Name *</Label>
-                  <div className="relative">
-                    <Input
-                      id="recipientName"
-                      value={formData.recipientName}
-                      onChange={(e) =>
-                        setFormData({ ...formData, recipientName: e.target.value })
-                      }
-                      placeholder="Name des Empfängers"
-                      required
-                      className="pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full w-10"
-                      onClick={() => setRecipientDialogOpen(true)}
-                      title="Kontakt suchen"
-                    >
-                      <Search className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Label htmlFor="recipientHouseNumber">Hausnr.</Label>
+                  <Input
+                    id="recipientHouseNumber"
+                    value={formData.recipientHouseNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, recipientHouseNumber: e.target.value })
+                    }
+                    placeholder="12a"
+                  />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="recipientAddress">Adresse</Label>
-                <Textarea
-                  id="recipientAddress"
-                  value={formData.recipientAddress}
-                  onChange={(e) =>
-                    setFormData({ ...formData, recipientAddress: e.target.value })
-                  }
-                  placeholder="Strasse, PLZ Ort"
-                  rows={3}
-                />
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="recipientPostalCode">PLZ</Label>
+                  <Input
+                    id="recipientPostalCode"
+                    value={formData.recipientPostalCode}
+                    onChange={(e) =>
+                      setFormData({ ...formData, recipientPostalCode: e.target.value })
+                    }
+                    placeholder="12345"
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="recipientCity">Ort</Label>
+                  <Input
+                    id="recipientCity"
+                    value={formData.recipientCity}
+                    onChange={(e) =>
+                      setFormData({ ...formData, recipientCity: e.target.value })
+                    }
+                    placeholder="Musterstadt"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -790,6 +825,12 @@ function NewInvoiceContent() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
+                  <Link href="/funds/new" target="_blank">
+                    <Plus className="mr-1 h-3 w-3" />
+                    Neue Gesellschaft anlegen
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>

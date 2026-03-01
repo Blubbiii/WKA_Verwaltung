@@ -26,6 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { VOTE_STATUS, getStatusBadge } from "@/lib/status-config";
@@ -262,7 +263,10 @@ export default function VoteDetailPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stimmberechtigte</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle className="text-sm font-medium">Stimmberechtigte</CardTitle>
+              <InfoTooltip text="Anzahl der Gesellschafter, die an dieser Abstimmung teilnehmen dürfen." />
+            </div>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -272,7 +276,10 @@ export default function VoteDetailPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Abgestimmt</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle className="text-sm font-medium">Abgestimmt</CardTitle>
+              <InfoTooltip text="Anzahl der bereits eingegangenen Stimmabgaben." />
+            </div>
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -284,7 +291,10 @@ export default function VoteDetailPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kapital-Beteiligung</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle className="text-sm font-medium">Kapital-Beteiligung</CardTitle>
+              <InfoTooltip text="Anteil des abgestimmten Kapitals am Gesamtkapital der Gesellschaft." />
+            </div>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -294,7 +304,10 @@ export default function VoteDetailPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Quorum</CardTitle>
+            <div className="flex items-center gap-1.5">
+              <CardTitle className="text-sm font-medium">Quorum</CardTitle>
+              <InfoTooltip text="Mindestanteil der Stimmen bzw. des Kapitals, der für die Beschlussfähigkeit erreicht werden muss." />
+            </div>
             {vote.stats.quorumMet ? (
               <CheckCircle className="h-4 w-4 text-green-600" />
             ) : (
@@ -316,7 +329,10 @@ export default function VoteDetailPage() {
       {vote.description && (
         <Card>
           <CardHeader>
-            <CardTitle>Beschreibung</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Beschreibung</CardTitle>
+              <InfoTooltip text="Gegenstand und Inhalt der Abstimmung." />
+            </div>
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap">{vote.description}</p>
@@ -328,7 +344,10 @@ export default function VoteDetailPage() {
       {vote.status !== "DRAFT" && (
         <Card>
           <CardHeader>
-            <CardTitle>Ergebnis</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Ergebnis</CardTitle>
+              <InfoTooltip text="Aktuelles Abstimmungsergebnis auf Basis der abgegebenen Stimmen." />
+            </div>
             <CardDescription>
               {vote.requiresCapitalMajority
                 ? "Abstimmung nach Kapitalanteilen"
@@ -585,7 +604,10 @@ export default function VoteDetailPage() {
       {/* Meta Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>Details</CardTitle>
+            <InfoTooltip text="Zeitraum, Abstimmungstyp und zugehörige Gesellschaft." />
+          </div>
         </CardHeader>
         <CardContent>
           <dl className="grid gap-4 md:grid-cols-3 text-sm">

@@ -31,16 +31,24 @@ export async function GET() {
       false
     );
 
+    const crmEnabled = await getConfigBoolean(
+      "crm.enabled",
+      check.tenantId,
+      false
+    );
+
     return NextResponse.json({
       "management-billing": managementBillingEnabled,
       "paperless": paperlessEnabled,
       "communication": communicationEnabled,
+      "crm": crmEnabled,
     });
   } catch {
     return NextResponse.json({
       "management-billing": false,
       "paperless": false,
       "communication": false,
+      "crm": false,
     });
   }
 }

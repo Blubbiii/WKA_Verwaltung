@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
 import { de } from "date-fns/locale";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Users } from "lucide-react";
 import { toast } from "sonner";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -100,6 +101,7 @@ const EMPTY_FORM: CreateForm = {
 
 export default function CrmContactsPage() {
   const router = useRouter();
+  const { flags } = useFeatureFlags();
   const [contacts, setContacts] = useState<CrmContact[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -162,12 +164,24 @@ export default function CrmContactsPage() {
     }
   };
 
-  useEffect(() => { load(); }, [search, contactType]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (flags.crm) load(); }, [search, contactType, flags.crm]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const displayName = (c: CrmContact) => {
     if (c.firstName || c.lastName) return `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim();
     return c.companyName ?? "—";
   };
+
+  if (!flags.crm) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <Users className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-lg font-semibold">CRM nicht aktiviert</h2>
+        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+          Das CRM-Modul ist für diesen Mandanten nicht freigeschaltet. Bitte wenden Sie sich an Ihren Administrator.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

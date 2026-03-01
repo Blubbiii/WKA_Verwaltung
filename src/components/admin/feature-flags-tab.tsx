@@ -42,6 +42,7 @@ interface ModuleFlags {
   "management-billing": boolean;
   "paperless": boolean;
   "communication": boolean;
+  "crm": boolean;
 }
 
 interface TenantWithFlags {
@@ -71,6 +72,7 @@ const MODULE_LABELS: Record<keyof ModuleFlags, string> = {
   "management-billing": "Betriebsführung",
   "paperless": "Paperless",
   "communication": "Kommunikation",
+  "crm": "CRM",
 };
 
 // =============================================================================

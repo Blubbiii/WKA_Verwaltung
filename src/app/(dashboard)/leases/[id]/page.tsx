@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format, differenceInDays } from "date-fns";
@@ -127,6 +128,7 @@ export default function LeaseDetailPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const { flags } = useFeatureFlags();
   const [lease, setLease] = useState<Lease | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -554,14 +556,16 @@ export default function LeaseDetailPage({
         </Card>
 
         {/* CRM Activities */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Aktivitäten</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ActivityTimeline entityType="lease" entityId={lease.id} />
-          </CardContent>
-        </Card>
+        {flags.crm && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">Aktivitäten</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ActivityTimeline entityType="lease" entityId={lease.id} />
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

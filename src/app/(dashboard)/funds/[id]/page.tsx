@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -294,6 +295,7 @@ export default function FundDetailsPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { flags } = useFeatureFlags();
   const [fund, setFund] = useState<Fund | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -974,7 +976,7 @@ export default function FundDetailsPage({
           <TabsTrigger value="documents">
             Dokumente ({fund.stats.documentCount})
           </TabsTrigger>
-          <TabsTrigger value="activities">Aktivitäten</TabsTrigger>
+          {flags.crm && <TabsTrigger value="activities">Aktivitäten</TabsTrigger>}
         </TabsList>
 
         {/* Shareholders Tab */}
@@ -1758,13 +1760,15 @@ export default function FundDetailsPage({
         </TabsContent>
 
         {/* Activities Tab */}
-        <TabsContent value="activities">
-          <Card>
-            <CardContent className="pt-6">
-              <ActivityTimeline entityType="fund" entityId={fund.id} />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {flags.crm && (
+          <TabsContent value="activities">
+            <Card>
+              <CardContent className="pt-6">
+                <ActivityTimeline entityType="fund" entityId={fund.id} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Add Hierarchy Dialog */}

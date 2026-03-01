@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
@@ -36,6 +37,8 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
+      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
 
     const { searchParams } = new URL(request.url);
     const personId = searchParams.get("personId");
@@ -94,6 +97,8 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
+    if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
+      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
 
     const raw = await request.json();
     const parsed = activitySchema.safeParse(raw);

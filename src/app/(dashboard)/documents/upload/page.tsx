@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2, Upload, File, X, Info } from "lucide-react";
+import { ArrowLeft, Loader2, Upload, File, X, Info, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -648,6 +648,12 @@ function DocumentUploadForm() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
+                        <Link href="/funds/new" target="_blank">
+                          <Plus className="mr-1 h-3 w-3" />
+                          Neue Gesellschaft anlegen
+                        </Link>
+                      </Button>
                     </FormItem>
                   )}
                 />

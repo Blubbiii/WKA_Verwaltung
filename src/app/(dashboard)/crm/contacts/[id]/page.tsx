@@ -2,8 +2,9 @@
 
 import { use, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Mail, Phone, MapPin, Building2, User } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Building2, User, Users } from "lucide-react";
 import { toast } from "sonner";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,6 +73,7 @@ export default function CrmContactDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const { flags } = useFeatureFlags();
   const [contact, setContact] = useState<CrmContactDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingType, setSavingType] = useState(false);
@@ -114,6 +116,18 @@ export default function CrmContactDetailPage({
       ? `${contact.salutation ? contact.salutation + " " : ""}${contact.firstName ?? ""} ${contact.lastName ?? ""}`.trim()
       : contact.companyName ?? "—"
     : "";
+
+  if (!flags.crm) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <Users className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-lg font-semibold">CRM nicht aktiviert</h2>
+        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+          Das CRM-Modul ist für diesen Mandanten nicht freigeschaltet. Bitte wenden Sie sich an Ihren Administrator.
+        </p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

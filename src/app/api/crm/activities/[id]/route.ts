@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
@@ -24,6 +25,8 @@ export async function GET(
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
+      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
     const { id } = await params;
 
     const activity = await prisma.crmActivity.findFirst({
@@ -57,6 +60,8 @@ export async function PUT(
   try {
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
+    if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
+      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
     const { id } = await params;
 
     const existing = await prisma.crmActivity.findFirst({
@@ -105,6 +110,8 @@ export async function DELETE(
   try {
     const check = await requirePermission("crm:delete");
     if (!check.authorized) return check.error;
+    if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
+      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
     const { id } = await params;
 
     const existing = await prisma.crmActivity.findFirst({

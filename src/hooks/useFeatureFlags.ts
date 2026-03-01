@@ -4,12 +4,14 @@ interface FeatureFlags {
   "management-billing": boolean;
   "paperless": boolean;
   "communication": boolean;
+  "crm": boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
   "management-billing": false,
   "paperless": false,
   "communication": false,
+  "crm": false,
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : DEFAULT_FLAGS);

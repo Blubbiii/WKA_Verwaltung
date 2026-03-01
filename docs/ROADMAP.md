@@ -27,16 +27,21 @@ AUDIT & FIX      UX & WIZARDS     FINAL POLISH     SHP & KARTE      BF-ABRECHNUN
 • Unit Tests     • Dashboard UX   • Duplikat-Clean  • Vertragspartn. • PDF/Rechnungen • Turbopack-Fix
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Phase 14
+Phase 14                                    Phase 15
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
-KOMMUNIKATION & UX
-✅ FERTIG
+KOMMUNIKATION & UX                          BUCHHALTUNGS-PAKET
+✅ FERTIG                                   🔜 GEPLANT
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
-• Benachrichtigungscenter (U2)     • Serienbriefe / Mailing (K2)
-• Paperless-ngx Integration        • Onboarding Product Tour (driver.js)
-• Park-Wizard Vereinfachung         • Per-Turbine Pacht-Overrides
-• Cookie-Einstellungen              • Dashboard Footer
-• Scrollbar-Theming                 • Error-Detail-Surfacing
+• Benachrichtigungscenter (U2)              • DATEV-Export Enhanced (SKR03)
+• Serienbriefe / Mailing (K2)              • MT940/CAMT.054 Bank-Import
+• Paperless-ngx Integration                • Mahnwesen UI + E-Mail-Versand
+• Onboarding Product Tour (driver.js)      • SKR03 Kontenplan-Mapping
+• Park-Wizard Vereinfachung                 • Cost-Center Reports (Park-P&L)
+• Per-Turbine Pacht-Overrides              • Journal Entries (Manuell)
+• Cookie-Einstellungen                      • Demo-Request /register
+• Dashboard Footer                         • DATEV Enhanced (SKR03)
+• Scrollbar-Theming
+• Error-Detail-Surfacing
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
 ```
 
@@ -542,6 +547,13 @@ prisma/
 | M39 | Onboarding Tour: driver.js, rollenbasierte Steps, Auto-Trigger | ✅ |
 | M40 | Park-Wizard Vereinfachung + ü/ue Feld-Fix + Per-Turbine Pacht-Overrides | ✅ |
 | M41 | Cookie-Einstellungen, Dashboard Footer, Scrollbar-Theming | ✅ |
+| M43 | Demo-Request /register Seite + /api/demo-request Endpoint | ✅ |
+| M44 | DATEV-Export Enhanced: Buchungssaetze mit SKR03-Kontonummern | 🔜 |
+| M46 | MT940/CAMT.054 Bank-Import + automatisches Payment-Matching | 🔜 |
+| M47 | Mahnwesen UI: PDF-Mahnung, direkter E-Mail-Versand, Mahnstufen-Verwaltung | 🔜 |
+| M48 | SKR03 Kontenplan-Mapping (konfigurierbar je Mandant) | 🔜 |
+| M49 | Cost-Center Reports: Park-P&L, Einnahmen vs. Ausgaben, XLSX-Export | 🔜 |
+| M50 | Journal Entries: Manuelle Soll/Haben-Buchungen mit SKR03 | 🔜 |
 | M42 | Release: Production Deployment | ⏳ |
 
 ---
@@ -687,7 +699,88 @@ prisma/
 
 ## Offene Punkte
 
-### Naechste Features (aus Implementation Strategy)
+### Phase 15: Buchhaltungs-Paket
+
+Statt ERPNext zu integrieren, bauen wir die relevanten Buchhaltungsfunktionen
+nativ in WPM — eine Datenbank, kein externer Stack, direkt vermarktbar.
+
+**Strategische Grundlage:**
+ERPNext wurde evaluiert und abgelehnt (Datenbankkonflikt, zu komplex).
+Ideen werden nativ in WPM implementiert. Inspirationsquellen unten.
+
+---
+
+#### Tier 1 — Hoher Wert, ~4–6 Wochen:
+
+- [ ] **DATEV-Export Enhanced** — Buchungssätze mit echten SKR03-Kontonummern, GoBD-konform
+  - Steuerberater bekommt fertige DATEV-Datei statt Rohdaten
+  - **Inspiration:** [Kivitendo](https://github.com/kivitendo/kivitendo-erp) — deutscher Open-Source-ERP,
+    DATEV-Export seit 2003, SKR03 direkt im Source Code studieren (Perl, aber Logik übertragbar)
+  - **Inspiration:** Odoo `l10n_de` Modul — SKR03/SKR04 Kontenplan-Struktur
+  - DATEV-Format: Buchungstext, Kontonummer (4-stellig), Gegenkonto, Betrag, Datum, Belegnummer
+
+- [ ] **MT940/CAMT.054 Bank-Import** — Kontoauszug hochladen → automatisches Payment-Matching
+  - Zahlungseingang → Invoice Status `PAID` automatisch, kein manuelles Abgleichen
+  - **NPM-Paket direkt nutzen:** `npm install mt940js` — parst MT940 → JS-Objekte, kein Parser nötig!
+  - **CAMT.054:** Reines XML → standard Node.js XML-Parser reicht
+  - **UI-Inspiration:** [InvoiceNinja Banking](https://invoiceninja.github.io/en/banking/) —
+    Matched vs. Unmatched Transactions UI, Fuzzy-Matching auf Betrag + Datum + Referenz
+  - Matching-Logik: Betrag exakt + IBAN oder Verwendungszweck enthält Rechnungsnummer
+
+- [ ] **Mahnwesen UI + E-Mail-Versand** — Mahnstufen-Verwaltung, PDF-Mahnschreiben, direkter E-Mail-Versand
+  - Vollständiger Dunning-Workflow ohne externe Tools
+  - **UI-Inspiration:** [InvoiceNinja Reminders](https://invoiceninja.com/invoicing/) —
+    3 Stufen (First/Second/Third + Endless), Tage vor/nach Fälligkeit konfigurierbar
+  - **Design-Inspiration:** [Crater](https://github.com/crater-invoice-inc/crater) — cleane Stage-Cards
+  - WPM-Umsetzung: BullMQ-Cron prüft täglich, erzeugt DunningNotice Model, PDF + E-Mail-Queue
+  - 3 Stufen: Zahlungserinnerung (0€ Gebühr) → 1. Mahnung (5€) → 2. Mahnung (15€ + Verzugszins)
+
+- [ ] **SKR03 Kontenplan-Mapping** — WPM-Transaktionen erhalten echte Kontonummern
+  - Pacht→4210, Einspeisung→8400, AfA→4830 (konfigurierbar je Mandant)
+  - **Quelle:** [Kivitendo SKR03](https://github.com/kivitendo/kivitendo-erp) Source + DATEV-Offizial-Doku
+  - Relevante WPM-Konten: Einspeisung 8400, Direktvermarktung 8338, Pachtaufwand 4210,
+    Wartung/Service 4950, Abschreibung 4830, Verwaltung BF 4120, Vorsteuer 1576, MwSt 1776
+
+---
+
+#### Tier 2 — Mittlerer Wert, ~6–8 Wochen nach Tier 1:
+
+- [ ] **Cost-Center Reports (Park-P&L)** — Einnahmen vs. Ausgaben je Park, exportierbar als XLSX
+  - Windpark-Controller brauchen das täglich
+  - **Inspiration:** [hledger](https://hledger.org/) — Web-UI + JSON-API für Cost-Center-Reports,
+    Einnahmen/Ausgaben-Struktur je Periode und Kostenstelle
+  - WPM: Jeder Park = Cost Center, Buchungen aus Settlements + Invoices + Service-Events
+
+- [ ] **Journal Entries (Manuelle Buchungen)** — Einfache Soll/Haben-Buchungen mit SKR03
+  - Korrekturbuchungen ohne Steuerberater-Software
+  - **Inspiration:** [hledger Web-UI](https://hledger.org/) — minimale Eingabemaske Soll/Haben
+  - **Inspiration:** [LedgerSMB](https://ledgersmb.org/) — wie manuelle GL-Einträge validiert werden
+  - Neues Prisma-Model: `JournalEntry` (date, description, debit_account, credit_account, amount, tenantId)
+
+- [ ] **DATEV Buchungssätze vollständig** — Alle Buchungstypen → vollständige GoBD-DATEV-Übergabe
+
+---
+
+#### Bereits umgesetzt:
+
+- [x] **Demo-Request `/register`** — Marketing-Formular, POST `/api/demo-request`, Success-State
+  - `src/app/(marketing)/register/page.tsx` + `src/app/api/demo-request/route.ts`
+
+---
+
+#### Referenz-Links für die Umsetzung:
+
+| Feature | Tool | Link |
+|---------|------|------|
+| DATEV-Format + SKR03 | Kivitendo (Open Source ERP DE) | https://github.com/kivitendo/kivitendo-erp |
+| MT940 Parser | mt940js (npm) | https://www.npmjs.com/package/mt940js |
+| Bank-Import UI | InvoiceNinja Banking | https://invoiceninja.github.io/en/banking/ |
+| Mahnwesen UI | InvoiceNinja Invoicing | https://invoiceninja.com/invoicing/ |
+| Dunning Design | Crater (Open Source) | https://github.com/crater-invoice-inc/crater |
+| Cost-Center / P&L | hledger | https://hledger.org/ |
+| Journal Entries | hledger + LedgerSMB | https://ledgersmb.org/ |
+
+### Weitere offene Features (Backlog)
 
 - [ ] K1: Ausschuettungsmodul (Gewinnverteilung an Gesellschafter)
 - [ ] A1: Leistungskurven-Analyse (Soll vs. Ist SCADA-Daten)
@@ -695,7 +788,7 @@ prisma/
 - [ ] K3: Redispatch 2.0 (Abregelungen + Entschaedigungen)
 - [ ] A4: Echtzeit-Status-Dashboard (Live-Karte mit Turbinen-Markern)
 - [ ] U1: Mobile Inspektion (Vor-Ort-Checklisten per Smartphone)
-- [ ] I2: Banking / SEPA (SEPA-XML Export + Kontoauszug-Import)
+- [ ] I2: SEPA-XML Export (Sammel-Lastschriften an Gesellschafter)
 
 ### Zurueckgestellt
 
@@ -764,6 +857,25 @@ Das Rechnungssystem ist funktional komplett mit anpassbaren Vorlagen:
 ---
 
 ## Aenderungshistorie
+
+### 1. März 2026 — Phase 0 & Phase 15 Planung: ERPNext-Analyse + Buchhaltungs-Paket
+
+**Strategische Entscheidung: Kein ERPNext-Backend**
+- Vollständige Analyse ERPNext vs. WPM-native Implementierung
+- Entscheidung: ERPNext-Ideen nativ in WPM bauen (eine DB, kein externer Stack)
+- ERPNext als optionales Docker-Addon verfügbar (für Kunden die es wollen)
+
+**Demo-Request (erledigt):**
+- `src/app/(marketing)/register/page.tsx`: Formular-Seite im Marketing-Layout
+- `src/app/api/demo-request/route.ts`: POST-Endpoint mit Validierung + Logging
+
+**Phase 15 Planung: Buchhaltungs-Paket**
+- DATEV-Export Enhanced mit echten SKR03-Kontonummern
+- MT940/CAMT.054 Bank-Import mit automatischem Payment-Matching
+- Mahnwesen UI + direkter E-Mail-Versand aus WPM
+- SKR03 Kontenplan-Mapping (konfigurierbar je Mandant)
+- Cost-Center Reports (Park-P&L, XLSX-Export)
+- Journal Entries (Manuelle Buchungen)
 
 ### 26. Februar 2026 — Phase 14: Kommunikation & UX
 

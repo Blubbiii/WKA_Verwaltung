@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { toast } from "sonner";
 import {
   useEnergySettlement,
@@ -275,6 +276,7 @@ export default function SettlementDetailPage({
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Park & Zeitraum
+              <InfoTooltip text="Windpark und Abrechnungszeitraum dieser Stromabrechnung." />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -308,6 +310,7 @@ export default function SettlementDetailPage({
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Zap className="h-4 w-4" />
               Produktion & Erlös
+              <InfoTooltip text="Erzeugte Strommenge und daraus resultierende Erlöse." />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -346,6 +349,7 @@ export default function SettlementDetailPage({
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Verteilung
+              <InfoTooltip text="Aufteilung der Erlöse auf die einzelnen Betreibergesellschaften." />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -397,6 +401,7 @@ export default function SettlementDetailPage({
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Info className="h-4 w-4" />
               Notizen
+              <InfoTooltip text="Interne Bemerkungen zur Stromabrechnung." />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -409,7 +414,10 @@ export default function SettlementDetailPage({
       {settlement.items && settlement.items.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Abrechnungspositionen</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Abrechnungspositionen</CardTitle>
+              <InfoTooltip text="Einzelne Positionen der Abrechnung je Gesellschaft und Anlage." />
+            </div>
             <CardDescription>
               {settlement.items.length} Position(en) -{" "}
               {settlementStatusLabels[settlement.status]}

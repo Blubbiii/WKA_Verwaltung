@@ -28,6 +28,7 @@ interface Person {
   email: string | null;
   phone: string | null;
   street: string | null;
+  houseNumber: string | null;
   postalCode: string | null;
   city: string | null;
   _count: {
@@ -59,7 +60,8 @@ function getPersonDisplayName(person: Person): string {
 
 function getPersonAddress(person: Person): string {
   const parts: string[] = [];
-  if (person.street) parts.push(person.street);
+  const streetLine = [person.street, person.houseNumber].filter(Boolean).join(" ");
+  if (streetLine) parts.push(streetLine);
   if (person.postalCode || person.city) {
     parts.push([person.postalCode, person.city].filter(Boolean).join(" "));
   }
@@ -91,6 +93,7 @@ export function RecipientSearchDialog({
   const [newLastName, setNewLastName] = useState("");
   const [newCompanyName, setNewCompanyName] = useState("");
   const [newStreet, setNewStreet] = useState("");
+  const [newHouseNumber, setNewHouseNumber] = useState("");
   const [newPostalCode, setNewPostalCode] = useState("");
   const [newCity, setNewCity] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -110,6 +113,7 @@ export function RecipientSearchDialog({
     setNewLastName("");
     setNewCompanyName("");
     setNewStreet("");
+    setNewHouseNumber("");
     setNewPostalCode("");
     setNewCity("");
     setNewEmail("");
@@ -176,6 +180,7 @@ export function RecipientSearchDialog({
           lastName: newPersonType === "natural" ? newLastName.trim() : undefined,
           companyName: newPersonType === "legal" ? newCompanyName.trim() : undefined,
           street: newStreet.trim() || undefined,
+          houseNumber: newHouseNumber.trim() || undefined,
           postalCode: newPostalCode.trim() || undefined,
           city: newCity.trim() || undefined,
           email: newEmail.trim() || undefined,
@@ -196,7 +201,8 @@ export function RecipientSearchDialog({
         ? newCompanyName.trim()
         : `${newFirstName.trim()} ${newLastName.trim()}`;
       const addressParts: string[] = [];
-      if (newStreet.trim()) addressParts.push(newStreet.trim());
+      const streetLine = [newStreet.trim(), newHouseNumber.trim()].filter(Boolean).join(" ");
+      if (streetLine) addressParts.push(streetLine);
       if (newPostalCode.trim() || newCity.trim()) {
         addressParts.push([newPostalCode.trim(), newCity.trim()].filter(Boolean).join(" "));
       }
@@ -369,14 +375,25 @@ export function RecipientSearchDialog({
             )}
 
             {/* Address */}
-            <div className="space-y-2">
-              <Label htmlFor="new-street">Strasse</Label>
-              <Input
-                id="new-street"
-                value={newStreet}
-                onChange={(e) => setNewStreet(e.target.value)}
-                placeholder="Strasse und Hausnummer"
-              />
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="new-street">Strasse</Label>
+                <Input
+                  id="new-street"
+                  value={newStreet}
+                  onChange={(e) => setNewStreet(e.target.value)}
+                  placeholder="Musterstrasse"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-houseNumber">Hausnr.</Label>
+                <Input
+                  id="new-houseNumber"
+                  value={newHouseNumber}
+                  onChange={(e) => setNewHouseNumber(e.target.value)}
+                  placeholder="12a"
+                />
+              </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">

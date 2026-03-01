@@ -48,6 +48,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ContractDocuments, ReminderSettings } from "@/components/contracts";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 interface ContractDetail {
   id: string;
@@ -306,7 +307,10 @@ export default function ContractDetailPage() {
             {/* Main Details */}
             <Card className="md:col-span-2">
               <CardHeader>
-                <CardTitle>Vertragsdetails</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Vertragsdetails</CardTitle>
+                  <InfoTooltip text="Kernbedingungen des Vertrags: Typ, Parteien, Laufzeit und Wert." />
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Dates */}
@@ -401,7 +405,10 @@ export default function ContractDetailPage() {
               {/* Status Actions */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Status</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Status</CardTitle>
+                    <InfoTooltip text="Aktueller Vertragsstatus und zeitliche Einordnung." />
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Badge variant="secondary" className={`${statusConf.className} text-base px-3 py-1`}>
@@ -434,7 +441,10 @@ export default function ContractDetailPage() {
               {/* Associations */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Zuordnungen</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Zuordnungen</CardTitle>
+                    <InfoTooltip text="Verknüpfte Gesellschaften, Windparks oder Personen." />
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {contract.park && (
@@ -491,7 +501,10 @@ export default function ContractDetailPage() {
               {/* Quick Info */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Info</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Info</CardTitle>
+                    <InfoTooltip text="Zusätzliche Vertragsinformationen und Beschreibung." />
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div className="flex justify-between">

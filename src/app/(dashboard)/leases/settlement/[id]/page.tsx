@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import {
   ArrowLeft,
   Calculator,
@@ -1001,6 +1002,7 @@ export default function SettlementDetailPage({
               <CardTitle className="text-base flex items-center gap-2">
                 <Send className="h-4 w-4" />
                 Gutschriften zustellen
+                <InfoTooltip text="Versand der Pachtgutschriften an die Verpächter per E-Mail oder Post." />
               </CardTitle>
               <CardDescription>
                 {printedCount} von {invoices.length} gedruckt, {emailedCount} von {invoices.length} per E-Mail versendet
@@ -1154,12 +1156,15 @@ export default function SettlementDetailPage({
             <Card key={allocation.id}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">
-                    Kostenumlage
-                    {allocation.periodLabel
-                      ? ` - ${allocation.periodLabel}`
-                      : ""}
-                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base">
+                      Kostenumlage
+                      {allocation.periodLabel
+                        ? ` - ${allocation.periodLabel}`
+                        : ""}
+                    </CardTitle>
+                    <InfoTooltip text="Verteilung der angefallenen Betriebskosten auf die Pachtverträge." />
+                  </div>
                   <div className="flex items-center gap-3">
                     <Badge
                       variant="secondary"
@@ -1354,7 +1359,10 @@ export default function SettlementDetailPage({
         {/* Allgemein */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Allgemein</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">Allgemein</CardTitle>
+              <InfoTooltip text="Grunddaten der Pachtabrechnung: Park, Zeitraum, Status." />
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
@@ -1383,7 +1391,10 @@ export default function SettlementDetailPage({
         {/* Fälligkeiten */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Fälligkeiten</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">Fälligkeiten</CardTitle>
+              <InfoTooltip text="Zahlungstermine und -fristen der Pachtabrechnung." />
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
@@ -1404,7 +1415,10 @@ export default function SettlementDetailPage({
         {/* Verknuepfungen */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Verknuepfungen</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">Verknuepfungen</CardTitle>
+              <InfoTooltip text="Verknüpfte Stromabrechnungen und Kostenzuordnungen." />
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
@@ -1449,9 +1463,12 @@ export default function SettlementDetailPage({
           status === "CLOSED") && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">
-                Prüfung & Freigabe
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base">
+                  Prüfung & Freigabe
+                </CardTitle>
+                <InfoTooltip text="Genehmigungsworkflow: Prüfung und Freigabe durch Berechtigte." />
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
@@ -1479,7 +1496,10 @@ export default function SettlementDetailPage({
         {/* Notizen */}
         <Card className="md:col-span-2">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Notizen</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">Notizen</CardTitle>
+              <InfoTooltip text="Interne Bemerkungen zur Pachtabrechnung." />
+            </div>
           </CardHeader>
           <CardContent>
             {settlement.notes ? (

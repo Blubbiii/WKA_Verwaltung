@@ -74,7 +74,7 @@ interface NavChild {
   href: string;
   icon?: React.ElementType;
   /** Feature flag that must be enabled for this child to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm";
 }
 
 interface NavItem {
@@ -88,7 +88,7 @@ interface NavItem {
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
   /** Feature flag that must be enabled for this item to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm";
 }
 
 interface NavGroup {
@@ -136,6 +136,7 @@ const navGroups: NavGroup[] = [
         href: "/crm",
         icon: Users,
         permission: "crm:read",
+        featureFlag: "crm" as const,
       },
       {
         title: "Kontakte",
@@ -143,6 +144,7 @@ const navGroups: NavGroup[] = [
         href: "/crm/contacts",
         icon: ContactRound,
         permission: "crm:read",
+        featureFlag: "crm" as const,
       },
     ],
   },

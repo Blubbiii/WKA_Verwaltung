@@ -80,6 +80,7 @@ import { ParkMapContainer } from "@/components/maps";
 import type { PlotFeature } from "@/components/maps";
 import { TurbineDialogs, NetworkTopology } from "@/components/parks";
 import { DocumentPreviewDialog } from "@/components/documents";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 interface Turbine {
   id: string;
@@ -887,7 +888,10 @@ export default function ParkDetailsPage({
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Anlagen</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Anlagen</CardTitle>
+              <InfoTooltip text="Anzahl der Windkraftanlagen in diesem Park." />
+            </div>
             <Wind className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -901,7 +905,10 @@ export default function ParkDetailsPage({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Leistung</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Leistung</CardTitle>
+              <InfoTooltip text="Gesamte installierte Nennleistung aller Anlagen in Megawatt." />
+            </div>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -915,7 +922,10 @@ export default function ParkDetailsPage({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Verträge</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Verträge</CardTitle>
+              <InfoTooltip text="Anzahl der aktiven Verträge zu diesem Windpark." />
+            </div>
             <ScrollText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -925,7 +935,10 @@ export default function ParkDetailsPage({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Dokumente</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Dokumente</CardTitle>
+              <InfoTooltip text="Anzahl der hinterlegten Dokumente." />
+            </div>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -982,6 +995,7 @@ export default function ParkDetailsPage({
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
                   Standort
+                  <InfoTooltip text="GPS-Koordinaten und Adresse des Windparks." />
                 </CardTitle>
                 <CardDescription>
                   Übersichtskarte mit Parkstandort und Anlagen
@@ -1014,7 +1028,10 @@ export default function ParkDetailsPage({
             {/* Key Roles */}
             <Card>
               <CardHeader>
-                <CardTitle>Schluesselrollen</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Schluesselrollen</CardTitle>
+                  <InfoTooltip text="Wichtige Ansprechpartner und Verantwortliche für diesen Windpark." />
+                </div>
                 <CardDescription>
                   Abrechnungsgesellschaft für diesen Park
                 </CardDescription>
@@ -1041,7 +1058,10 @@ export default function ParkDetailsPage({
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Zugeordnete Gesellschaften</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Zugeordnete Gesellschaften</CardTitle>
+                    <InfoTooltip text="Betreibergesellschaften, die Anteile an diesem Windpark halten." />
+                  </div>
                   <CardDescription>
                     Alle Gesellschaften, die diesem Windpark zugeordnet sind
                   </CardDescription>
@@ -1132,7 +1152,10 @@ export default function ParkDetailsPage({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Windkraftanlagen</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Windkraftanlagen</CardTitle>
+                  <InfoTooltip text="Alle Turbinen/Windenergieanlagen in diesem Windpark mit technischen Daten." />
+                </div>
                 <CardDescription>
                   Alle Anlagen in diesem Windpark
                 </CardDescription>
@@ -1265,6 +1288,7 @@ export default function ParkDetailsPage({
                 <CardTitle className="flex items-center gap-2">
                   <Euro className="h-5 w-5" />
                   Pacht-Grundeinstellungen
+                  <InfoTooltip text="Grundlegende Einstellungen für die Berechnung der Pachtabrechnungen dieses Parks." />
                 </CardTitle>
                 <CardDescription>
                   Mindestpacht und Aufteilung zwischen WEA-Standort und Poolfläche
@@ -1333,6 +1357,7 @@ export default function ParkDetailsPage({
                 <CardTitle className="flex items-center gap-2">
                   <Percent className="h-5 w-5" />
                   Entschädigungssätze
+                  <InfoTooltip text="Entschädigungsbeträge pro kW Leistung, die an die Verpächter gezahlt werden." />
                 </CardTitle>
                 <CardDescription>
                   Sätze für Weg-, Ausgleichsflächen und Kabeltrassen
@@ -1383,6 +1408,7 @@ export default function ParkDetailsPage({
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="h-5 w-5" />
                   Stromabrechnung (DULDUNG)
+                  <InfoTooltip text="Abrechnung der Stromerzeugung für Pachtflächen mit Duldungsvertrag." />
                 </CardTitle>
                 <CardDescription>
                   Verteilungsmodus für die Erlösverteilung bei der Stromabrechnung
@@ -1534,6 +1560,7 @@ export default function ParkDetailsPage({
                   <CardTitle className="flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
                     Vergütungsphasen (Umsatzbeteiligung)
+                    <InfoTooltip text="Zeitlich gestaffelte Vergütungssätze für die Umsatzbeteiligung der Verpächter." />
                   </CardTitle>
                   <CardDescription>
                     Prozentuale Umsatzbeteiligung nach Betriebsjahren
@@ -1638,6 +1665,7 @@ export default function ParkDetailsPage({
               <CardTitle className="flex items-center gap-2">
                 <GitCompare className="h-5 w-5" />
                 Kostenaufteilung
+                <InfoTooltip text="Verteilung der Betriebskosten auf die einzelnen Betreibergesellschaften." />
               </CardTitle>
               <CardDescription>
                 Verteilung der Nutzungsentgelte auf Betreibergesellschaften
@@ -1731,7 +1759,10 @@ export default function ParkDetailsPage({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold">Flurstücke nach Vertrag</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold">Flurstücke nach Vertrag</h3>
+                  <InfoTooltip text="Katasterrechtlich erfasste Grundstücke, auf denen der Windpark errichtet ist." />
+                </div>
                 <p className="text-sm text-muted-foreground">
                   {plotFeatures.length} Flurstücke in diesem Windpark
                 </p>
@@ -1914,7 +1945,10 @@ export default function ParkDetailsPage({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Verträge</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Verträge</CardTitle>
+                  <InfoTooltip text="Pacht-, Service- und sonstige Verträge zu diesem Windpark." />
+                </div>
                 <CardDescription>
                   Aktive Verträge für diesen Windpark
                 </CardDescription>
@@ -2014,7 +2048,10 @@ export default function ParkDetailsPage({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Dokumente</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Dokumente</CardTitle>
+                  <InfoTooltip text="Genehmigungen, Gutachten, Pläne und sonstige Unterlagen dieses Windparks." />
+                </div>
                 <CardDescription>
                   Dokumente zu diesem Windpark
                 </CardDescription>

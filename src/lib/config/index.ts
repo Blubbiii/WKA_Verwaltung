@@ -213,6 +213,13 @@ export const CONFIG_KEYS = {
     envFallback: "COMMUNICATION_ENABLED",
     defaultValue: "false",
   },
+  "crm.enabled": {
+    category: "features" as ConfigCategory,
+    label: "CRM (Kontaktpflege & Aktivitäten)",
+    encrypted: false,
+    envFallback: "CRM_ENABLED",
+    defaultValue: "false",
+  },
 
   // Paperless-ngx Configuration
   "paperless.url": {

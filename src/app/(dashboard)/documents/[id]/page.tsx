@@ -39,6 +39,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -421,7 +422,10 @@ export default function DocumentDetailPage() {
           {document.description && (
             <Card>
               <CardHeader>
-                <CardTitle>Beschreibung</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Beschreibung</CardTitle>
+                  <InfoTooltip text="Inhaltliche Beschreibung des Dokuments." />
+                </div>
               </CardHeader>
               <CardContent>
                 <p className="whitespace-pre-wrap">{document.description}</p>
@@ -435,6 +439,7 @@ export default function DocumentDetailPage() {
               <CardTitle className="flex items-center gap-2">
                 <History className="h-5 w-5" />
                 Versionshistorie
+                <InfoTooltip text="Frühere Versionen dieses Dokuments mit Änderungsdatum." />
               </CardTitle>
               <CardDescription>
                 {document.versions.length} Version(en) verfügbar
@@ -502,6 +507,7 @@ export default function DocumentDetailPage() {
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
                 Freigabestatus
+                <InfoTooltip text="Aktueller Freigabe-/Genehmigungsstatus des Dokuments." />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -553,7 +559,10 @@ export default function DocumentDetailPage() {
           {/* Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Details</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle>Details</CardTitle>
+                <InfoTooltip text="Dateityp, Größe und Erstellungsinformationen." />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -595,7 +604,10 @@ export default function DocumentDetailPage() {
           {/* Zuordnungen */}
           <Card>
             <CardHeader>
-              <CardTitle>Zuordnungen</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle>Zuordnungen</CardTitle>
+                <InfoTooltip text="Verknüpfte Gesellschaften, Windparks oder Verträge." />
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {document.park && (
@@ -667,6 +679,7 @@ export default function DocumentDetailPage() {
                 <CardTitle className="flex items-center gap-2">
                   <Tag className="h-4 w-4" />
                   Tags
+                  <InfoTooltip text="Schlagwörter zur Kategorisierung und schnellen Suche." />
                 </CardTitle>
               </CardHeader>
               <CardContent>

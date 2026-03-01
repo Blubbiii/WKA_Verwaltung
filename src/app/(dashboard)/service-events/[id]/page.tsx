@@ -29,6 +29,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -281,7 +282,10 @@ export default function ServiceEventDetailPage({
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Datum</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Datum</CardTitle>
+              <InfoTooltip text="Zeitpunkt des Service-Ereignisses." />
+            </div>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -293,7 +297,10 @@ export default function ServiceEventDetailPage({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Dauer</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Dauer</CardTitle>
+              <InfoTooltip text="Gesamtdauer des Service-Einsatzes." />
+            </div>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -305,7 +312,10 @@ export default function ServiceEventDetailPage({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kosten</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Kosten</CardTitle>
+              <InfoTooltip text="Entstandene Kosten für diesen Service-Einsatz." />
+            </div>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -317,7 +327,10 @@ export default function ServiceEventDetailPage({
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Dokumente</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm font-medium">Dokumente</CardTitle>
+              <InfoTooltip text="Zum Service-Ereignis gehörende Protokolle und Berichte." />
+            </div>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -335,6 +348,7 @@ export default function ServiceEventDetailPage({
             <CardTitle className="flex items-center gap-2">
               <Wrench className="h-5 w-5" />
               Event-Details
+              <InfoTooltip text="Beschreibung, betroffene Anlage und Kategorie des Ereignisses." />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -399,6 +413,7 @@ export default function ServiceEventDetailPage({
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
                 Dokumente
+                <InfoTooltip text="Zum Service-Ereignis gehörende Protokolle und Berichte." />
               </CardTitle>
               <CardDescription>
                 Protokolle, Berichte und andere Dokumente

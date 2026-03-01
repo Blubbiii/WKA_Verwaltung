@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
@@ -9,6 +10,8 @@ export async function GET(_req: NextRequest) {
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
+      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
 
     const tenantId = check.tenantId!;
     const now = new Date();

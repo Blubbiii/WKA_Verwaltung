@@ -76,6 +76,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { InvoicePreviewDialog, PartialCancelDialog, CorrectionDialog, SettlementDetailsCard } from "@/components/invoices";
 import { INVOICE_STATUS, getStatusBadge } from "@/lib/status-config";
 import { getSkontoStatus, getSkontoStatusLabel, getSkontoStatusBadgeClass } from "@/lib/invoices/skonto";
@@ -775,6 +776,7 @@ export default function InvoiceDetailPage({
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Receipt className="h-4 w-4" />
               {isInvoice ? "Rechnungssteller" : "Gutschrift von"}
+              <InfoTooltip text="Unternehmen oder Person, die die Rechnung bzw. Gutschrift ausstellt." />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -828,6 +830,7 @@ export default function InvoiceDetailPage({
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               {isInvoice ? "Rechnungsempfänger" : "Gutschrift an"}
+              <InfoTooltip text="Unternehmen oder Person, an die die Rechnung gerichtet ist." />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -942,7 +945,10 @@ export default function InvoiceDetailPage({
       {/* Positionen */}
       <Card>
         <CardHeader>
-          <CardTitle>Positionen</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>Positionen</CardTitle>
+            <InfoTooltip text="Einzelposten der Rechnung mit Menge, Preis und Steuersatz." />
+          </div>
           <CardDescription>{invoice.items.length} Position(en)</CardDescription>
         </CardHeader>
         <CardContent>
@@ -1000,7 +1006,10 @@ export default function InvoiceDetailPage({
         {/* Referenzen */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Referenzen</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-sm">Referenzen</CardTitle>
+              <InfoTooltip text="Verknüpfte Verträge, Gesellschaften oder Windparks." />
+            </div>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {invoice.paymentReference && (
@@ -1030,7 +1039,10 @@ export default function InvoiceDetailPage({
         {invoice.notes && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Notizen</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-sm">Notizen</CardTitle>
+                <InfoTooltip text="Interne Bemerkungen zur Rechnung." />
+              </div>
             </CardHeader>
             <CardContent>
               <p className="text-sm whitespace-pre-line">{invoice.notes}</p>
@@ -1045,6 +1057,7 @@ export default function InvoiceDetailPage({
           <CardTitle className="text-sm flex items-center gap-2">
             <Send className="h-4 w-4" />
             Zustellung
+            <InfoTooltip text="Status und Verlauf der Rechnungszustellung per E-Mail oder Post." />
           </CardTitle>
           <CardDescription>
             Druck- und E-Mail-Versand dieser {isInvoice ? "Rechnung" : "Gutschrift"}
@@ -1117,6 +1130,7 @@ export default function InvoiceDetailPage({
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <History className="h-4 w-4" />
               Korrekturen / Stornierungen
+              <InfoTooltip text="Storno- und Korrekturbelege zu dieser Rechnung." />
             </CardTitle>
             <CardDescription>
               {correctionHistory.corrections.length} Korrektur(en) zu dieser Rechnung
@@ -1196,6 +1210,7 @@ export default function InvoiceDetailPage({
             <CardTitle className="text-sm flex items-center gap-2">
               <FileCode2 className="h-4 w-4" />
               E-Rechnung (XRechnung / ZUGFeRD)
+              <InfoTooltip text="Elektronisches Rechnungsformat nach EU-Standard für den automatisierten Rechnungsaustausch." />
             </CardTitle>
             <CardDescription>
               Pflicht seit 2025 für B2B-Rechnungen (EN 16931)

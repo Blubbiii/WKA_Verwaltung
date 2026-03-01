@@ -535,6 +535,12 @@ export default function EditContractPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
+                        <Link href="/funds/new" target="_blank">
+                          <Plus className="mr-1 h-3 w-3" />
+                          Neue Gesellschaft anlegen
+                        </Link>
+                      </Button>
                     </FormItem>
                   )}
                 />
