@@ -3,9 +3,13 @@
  *
  * Accepts a ZIP buffer containing .shp, .dbf, .prj (and optionally .cpg)
  * files and returns parsed GeoJSON features with computed centroids and areas.
+ *
+ * If the coordinates are not in WGS84 (e.g. UTM or Gauss-Krüger from German
+ * ALKIS data), they are automatically reprojected using proj4.
  */
 
 import shp from "shpjs";
+import proj4 from "proj4";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -91,6 +95,119 @@ function fixPropertyEncoding(
   }
 
   return { fixed, hadMojibake };
+}
+
+// ---------------------------------------------------------------------------
+// CRS detection & reprojection
+// ---------------------------------------------------------------------------
+
+/**
+ * Common German projected CRS definitions for proj4.
+ * shpjs normally reprojects via the .prj file, but if that file is missing
+ * or proj4 cannot parse the WKT, coordinates stay in the source CRS.
+ * We detect the CRS from coordinate value ranges and reproject to WGS84.
+ */
+const KNOWN_CRS: {
+  name: string;
+  proj4def: string;
+  /** Returns true if sample [x, y] values match this CRS's typical range */
+  match: (x: number, y: number) => boolean;
+}[] = [
+  {
+    name: "EPSG:25832 (ETRS89 / UTM zone 32N)",
+    proj4def:
+      "+proj=utm +zone=32 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs",
+    match: (x, y) => x > 100_000 && x < 900_000 && y > 5_000_000 && y < 6_500_000,
+  },
+  {
+    name: "EPSG:25833 (ETRS89 / UTM zone 33N)",
+    proj4def:
+      "+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs",
+    match: (x, y) => x > 100_000 && x < 900_000 && y > 5_200_000 && y < 6_200_000,
+  },
+  {
+    name: "EPSG:31467 (DHDN / Gauss-Krüger zone 3)",
+    proj4def:
+      "+proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs +type=crs",
+    match: (x, y) => x > 3_000_000 && x < 4_000_000 && y > 5_000_000 && y < 6_500_000,
+  },
+  {
+    name: "EPSG:31468 (DHDN / Gauss-Krüger zone 4)",
+    proj4def:
+      "+proj=tmerc +lat_0=0 +lon_0=12 +k=1 +x_0=4500000 +y_0=0 +ellps=bessel +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs +type=crs",
+    match: (x, y) => x > 4_000_000 && x < 5_000_000 && y > 5_000_000 && y < 6_500_000,
+  },
+];
+
+/** Check if coordinates look like WGS84 (lng -180..180, lat -90..90). */
+function isWgs84(coords: number[][]): boolean {
+  if (coords.length === 0) return true;
+  // Sample a few coordinates — if any are wildly out of WGS84 range, it's projected
+  const sample = coords.slice(0, Math.min(10, coords.length));
+  return sample.every(
+    ([lng, lat]) =>
+      lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90,
+  );
+}
+
+/**
+ * Try to detect the source CRS from coordinate value ranges.
+ * Returns the proj4 definition string or null if unrecognized.
+ */
+function detectCrs(
+  coords: number[][],
+): { name: string; proj4def: string } | null {
+  if (coords.length === 0) return null;
+
+  // Use the median sample point to avoid outliers
+  const midIdx = Math.floor(coords.length / 2);
+  const [x, y] = coords[midIdx];
+
+  for (const crs of KNOWN_CRS) {
+    if (crs.match(x, y)) {
+      return { name: crs.name, proj4def: crs.proj4def };
+    }
+  }
+  return null;
+}
+
+/**
+ * Reproject all coordinates in a GeoJSON geometry from sourceCrs to WGS84.
+ * Mutates coordinate arrays in place for performance.
+ */
+function reprojectGeometry(
+  geometry: GeoJSON.Geometry,
+  sourceDef: string,
+): void {
+  const transformer = proj4(sourceDef, "EPSG:4326");
+
+  function reprojectCoords(coords: number[]): void {
+    const [x, y] = coords;
+    const [lng, lat] = transformer.forward([x, y]);
+    coords[0] = lng;
+    coords[1] = lat;
+  }
+
+  function walkCoords(obj: unknown): void {
+    if (!Array.isArray(obj)) return;
+    // If it's a coordinate pair [number, number, ...]
+    if (typeof obj[0] === "number") {
+      reprojectCoords(obj as number[]);
+      return;
+    }
+    // Otherwise recurse into nested arrays
+    for (const item of obj) {
+      walkCoords(item);
+    }
+  }
+
+  if ("coordinates" in geometry) {
+    walkCoords(geometry.coordinates);
+  } else if (geometry.type === "GeometryCollection") {
+    for (const g of geometry.geometries) {
+      reprojectGeometry(g, sourceDef);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -281,6 +398,43 @@ export async function parseShapefile(
   const raw = geojson as any;
   if (raw.crs?.properties?.name) {
     crs = String(raw.crs.properties.name);
+  }
+
+  // -------------------------------------------------------------------
+  // Auto-detect & reproject non-WGS84 coordinates
+  // shpjs reprojects if .prj is present, but if it's missing or
+  // proj4 couldn't parse the WKT, coordinates stay in the source CRS.
+  // -------------------------------------------------------------------
+  const firstGeom = geojson.features.find((f) => f.geometry)?.geometry;
+  if (firstGeom) {
+    const sampleCoords = extractCoordinates(firstGeom);
+    if (!isWgs84(sampleCoords)) {
+      // Collect more samples for reliable detection
+      const allSample: number[][] = [];
+      for (const f of geojson.features.slice(0, 5)) {
+        if (f.geometry) {
+          allSample.push(...extractCoordinates(f.geometry).slice(0, 5));
+        }
+      }
+
+      const detected = detectCrs(allSample);
+      if (detected) {
+        crs = detected.name;
+        warnings.push(
+          `Koordinaten nicht in WGS84 — automatische Umrechnung von ${detected.name} nach WGS84.`,
+        );
+        for (const f of geojson.features) {
+          if (f.geometry) {
+            reprojectGeometry(f.geometry, detected.proj4def);
+          }
+        }
+      } else {
+        warnings.push(
+          "Koordinaten sind nicht in WGS84, aber das Quell-Koordinatensystem konnte nicht erkannt werden. " +
+            "Centroids und Flächenberechnungen könnten ungenau sein.",
+        );
+      }
+    }
   }
 
   // Process each feature
