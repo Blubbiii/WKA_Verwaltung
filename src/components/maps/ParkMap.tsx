@@ -11,12 +11,10 @@ import {
 } from "./PlotGeoJsonLayer";
 import type { PlotFeature } from "./PlotGeoJsonLayer";
 import { MapLayerControl } from "./MapLayerControl";
-import { WfsCadastralLayer } from "./WfsCadastralLayer";
 import { MapAnnotationLayer } from "./MapAnnotationLayer";
 import type { MapAnnotationData } from "./MapAnnotationLayer";
 import { DrawControl } from "./DrawControl";
 import { AnnotationSaveDialog } from "./AnnotationSaveDialog";
-import type { Feature, Geometry } from "geojson";
 
 // Types
 interface TurbineLocation {
@@ -35,7 +33,6 @@ interface ParkMapProps {
   parkLongitude: number | null;
   turbines: TurbineLocation[];
   plots?: PlotFeature[];
-  wfsFeatures?: Feature<Geometry>[];
   annotations?: MapAnnotationData[];
   onAnnotationSaved?: () => void;
   className?: string;
@@ -204,7 +201,6 @@ export function ParkMap({
   parkLongitude,
   turbines,
   plots,
-  wfsFeatures,
   annotations,
   onAnnotationSaved,
   className,
@@ -214,7 +210,6 @@ export function ParkMap({
   const [showTurbines, setShowTurbines] = useState(true);
   const [showPlots, setShowPlots] = useState(true);
   const [showLabels, setShowLabels] = useState(false);
-  const [showWfsLayer, setShowWfsLayer] = useState(true);
   const [showAnnotations, setShowAnnotations] = useState(true);
 
   // Draw mode state
@@ -322,11 +317,6 @@ export function ParkMap({
           plots={plots}
         />
 
-        {/* WFS cadastral parcels (lowest z-order) */}
-        {wfsFeatures && wfsFeatures.length > 0 && (
-          <WfsCadastralLayer features={wfsFeatures} visible={showWfsLayer} />
-        )}
-
         {/* Annotations layer */}
         {annotations && annotations.length > 0 && (
           <MapAnnotationLayer annotations={annotations} visible={showAnnotations} />
@@ -410,9 +400,6 @@ export function ParkMap({
         showLabels={showLabels}
         onToggleLabels={setShowLabels}
         ownerLegend={ownerLegend}
-        hasWfsFeatures={!!wfsFeatures && wfsFeatures.length > 0}
-        showWfsLayer={showWfsLayer}
-        onToggleWfsLayer={setShowWfsLayer}
         hasAnnotations={!!annotations && annotations.length > 0}
         showAnnotations={showAnnotations}
         onToggleAnnotations={setShowAnnotations}

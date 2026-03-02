@@ -78,9 +78,7 @@ import {
 } from "@/components/ui/select";
 import { ParkMapContainer } from "@/components/maps";
 import type { PlotFeature } from "@/components/maps";
-import { WfsLookupPanel } from "@/components/maps/WfsLookupPanel";
 import type { MapAnnotationData } from "@/components/maps/MapAnnotationLayer";
-import type { Feature, Geometry } from "geojson";
 import { TurbineDialogs, NetworkTopology } from "@/components/parks";
 import { DocumentPreviewDialog } from "@/components/documents";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
@@ -288,8 +286,7 @@ export default function ParkDetailsPage({
   const [error, setError] = useState<string | null>(null);
   const [plotFeatures, setPlotFeatures] = useState<PlotFeature[]>([]);
 
-  // WFS / Annotation state
-  const [wfsFeatures, setWfsFeatures] = useState<Feature<Geometry>[]>([]);
+  // Annotation state
   const [annotations, setAnnotations] = useState<MapAnnotationData[]>([]);
 
   // Pacht-Konfiguration State
@@ -1034,25 +1031,11 @@ export default function ParkDetailsPage({
                     ratedPowerKw: t.ratedPowerKw,
                   }))}
                   plots={plotFeatures}
-                  wfsFeatures={wfsFeatures}
                   annotations={annotations}
                   onAnnotationSaved={() => fetchPark()}
                   height="400px"
                 />
 
-                {/* WFS Cadastral Lookup */}
-                <Separator />
-                <WfsLookupPanel
-                  parkId={id}
-                  defaultCadastralDistrict={
-                    plotFeatures.length > 0 ? plotFeatures[0].cadastralDistrict : ""
-                  }
-                  defaultFieldNumber={
-                    plotFeatures.length > 0 ? plotFeatures[0].fieldNumber : ""
-                  }
-                  onFeaturesLoaded={(features) => setWfsFeatures(features)}
-                  onFeaturesMatched={(features) => setWfsFeatures(features)}
-                />
               </CardContent>
             </Card>
           </div>

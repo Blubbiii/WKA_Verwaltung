@@ -97,7 +97,6 @@ model Tenant {
   vendors                   Vendor[]
   incomingInvoices          IncomingInvoice[]
   mapAnnotations            MapAnnotation[]
-  wfsCadastralCache         WfsCadastralCache[]
   contactLinks              ContactLink[]
 
   @@map("tenants")
@@ -3051,27 +3050,6 @@ model MapAnnotation {
 }
 
 // =============================================================================
-// WFS Cadastral Cache (caches WFS parcel lookups to avoid repeated calls)
-// =============================================================================
-
-model WfsCadastralCache {
-  id                String   @id @default(uuid())
-  tenantId          String
-  serviceUrl        String   @db.VarChar(500)
-  cadastralDistrict String   @db.VarChar(200) // Gemarkung
-  fieldNumber       String   @db.VarChar(50)  // Flur
-  plotNumber        String?  @db.VarChar(50)  // Flurstück (null = entire Flur)
-  geometry          Json                      // GeoJSON from WFS
-  properties        Json                      // All WFS feature properties
-  fetchedAt         DateTime @default(now())
-
-  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@unique([tenantId, serviceUrl, cadastralDistrict, fieldNumber, plotNumber])
-  @@index([tenantId, cadastralDistrict, fieldNumber])
-  @@map("wfs_cadastral_cache")
-}
-
 // =============================================================================
 // Contact Links (CRM contact-entity role assignments)
 // =============================================================================
