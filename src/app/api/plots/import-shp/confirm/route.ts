@@ -416,10 +416,16 @@ export async function POST(request: NextRequest) {
                 county: pd.county || null,
                 municipality: pd.municipality || null,
                 usageType: pd.usageType || null,
+                // Only store centroid if it looks like WGS84 coordinates
+                // (projected systems like UTM/Gauss-Krüger have values in the hundreds of thousands)
                 latitude: vf.centroid?.lat != null
+                    && isFinite(vf.centroid.lat)
+                    && Math.abs(vf.centroid.lat) <= 90
                   ? new Prisma.Decimal(vf.centroid.lat)
                   : null,
                 longitude: vf.centroid?.lng != null
+                    && isFinite(vf.centroid.lng)
+                    && Math.abs(vf.centroid.lng) <= 180
                   ? new Prisma.Decimal(vf.centroid.lng)
                   : null,
                 geometry: vf.geometry as Prisma.InputJsonValue,

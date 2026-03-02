@@ -91,7 +91,7 @@ interface Park {
 }
 
 interface ParksResponse {
-  parks: Park[];
+  data: Park[];
 }
 
 // ---------------------------------------------------------------------------
@@ -177,7 +177,7 @@ export default function ImportShpPage() {
     ["parks-import"],
     "/api/parks?limit=100"
   );
-  const parks = parksData?.parks ?? [];
+  const parks = parksData?.data ?? [];
 
   // -------------------------------------------------------------------------
   // Helpers
