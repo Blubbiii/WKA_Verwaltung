@@ -486,7 +486,8 @@ function getBool(rec: Record<string, unknown>, fieldName: string): boolean {
 function getStr(rec: Record<string, unknown>, fieldName: string): string {
   const val = caseGet(rec, fieldName);
   if (val == null) return '';
-  return String(val).trim();
+  // Strip null bytes (0x00) — dBASE pads strings with nulls, PostgreSQL rejects them
+  return String(val).replace(/\0/g, '').trim();
 }
 
 /**

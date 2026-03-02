@@ -410,8 +410,8 @@ export async function POST(request: NextRequest) {
                 cadastralDistrict: pd.cadastralDistrict || "Unbekannt",
                 fieldNumber: pd.fieldNumber || "0",
                 plotNumber: pd.plotNumber || "0",
-                areaSqm: vf.areaSqm != null
-                  ? new Prisma.Decimal(vf.areaSqm)
+                areaSqm: vf.areaSqm != null && isFinite(vf.areaSqm) && vf.areaSqm >= 0
+                  ? new Prisma.Decimal(Math.min(vf.areaSqm, 9_999_999_999_999_999))
                   : null,
                 county: pd.county || null,
                 municipality: pd.municipality || null,

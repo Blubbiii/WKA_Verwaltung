@@ -520,7 +520,7 @@ model Plot {
   cadastralDistrict String
   fieldNumber       String        @default("0")
   plotNumber        String
-  areaSqm           Decimal?      @db.Decimal(12, 2)
+  areaSqm           Decimal?      @db.Decimal(18, 2)
   usageType         String?
   latitude          Decimal?      @db.Decimal(10, 8)
   longitude         Decimal?      @db.Decimal(11, 8)
@@ -1857,7 +1857,7 @@ model Permission {
 model PlotArea {
   id                      String           @id @default(uuid())
   areaType                PlotAreaType
-  areaSqm                 Decimal?         @db.Decimal(12, 2)
+  areaSqm                 Decimal?         @db.Decimal(18, 2)
   lengthM                 Decimal?         @db.Decimal(10, 2)
   compensationType        CompensationType @default(ANNUAL)
   compensationFixedAmount Decimal?         @db.Decimal(12, 2)

@@ -1034,7 +1034,8 @@ async function writeTextEventRecords(
         tenantId,
         timestamp: rec.timestamp,
         plantNo: rec.plantNo,
-        info: rec.info,
+        // Strip null bytes (0x00) from dBASE text — PostgreSQL rejects them
+        info: typeof rec.info === "string" ? rec.info.replace(/\0/g, "").trim() : rec.info,
         sourceFile: sourceFileType,
       });
     }
