@@ -24,6 +24,7 @@ interface PlotGeoJsonLayerProps {
   plots: PlotFeature[];
   visible: boolean;
   showLabels: boolean;
+  hiddenOwnerIds?: Set<string>;
 }
 
 // --- Color palette ---
@@ -97,13 +98,22 @@ export function PlotGeoJsonLayer({
   plots,
   visible,
   showLabels,
+  hiddenOwnerIds,
 }: PlotGeoJsonLayerProps) {
   // Build color map once when plots change
   const ownerColorMap = useMemo(() => buildOwnerColorMap(plots), [plots]);
 
+  // Filter plots by hidden owners
+  const visiblePlots = useMemo(() => {
+    if (!hiddenOwnerIds || hiddenOwnerIds.size === 0) return plots;
+    return plots.filter(
+      (p) => !p.lessorId || !hiddenOwnerIds.has(p.lessorId)
+    );
+  }, [plots, hiddenOwnerIds]);
+
   // Convert PlotFeature[] to a GeoJSON FeatureCollection
   const geojsonData = useMemo(() => {
-    const features: Feature<Geometry>[] = plots.map((plot) => ({
+    const features: Feature<Geometry>[] = visiblePlots.map((plot) => ({
       type: "Feature" as const,
       geometry: plot.geometry,
       properties: {
@@ -123,12 +133,12 @@ export function PlotGeoJsonLayer({
       type: "FeatureCollection" as const,
       features,
     };
-  }, [plots]);
+  }, [visiblePlots]);
 
-  // Unique key that forces GeoJSON re-render when data changes
+  // Unique key that forces GeoJSON re-render when data or visibility changes
   const geoJsonKey = useMemo(
-    () => plots.map((p) => `${p.id}-${p.leaseStatus}`).join("|"),
-    [plots]
+    () => visiblePlots.map((p) => `${p.id}-${p.leaseStatus}`).join("|"),
+    [visiblePlots]
   );
 
   // Style function for each feature
@@ -214,7 +224,7 @@ export function PlotGeoJsonLayer({
     };
   }, []);
 
-  if (!visible || plots.length === 0) {
+  if (!visible || visiblePlots.length === 0) {
     return null;
   }
 
@@ -226,7 +236,7 @@ export function PlotGeoJsonLayer({
       onEachFeature={onEachFeature}
     >
       {showLabels &&
-        plots.map((plot) => {
+        visiblePlots.map((plot) => {
           // Calculate a rough center for the tooltip from the geometry
           // For polygons, use the first coordinate ring centroid
           const center = getCentroid(plot.geometry);

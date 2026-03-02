@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
-interface OwnerLegendEntry {
+export interface OwnerLegendEntry {
+  id: string;
   name: string;
   color: string;
 }
@@ -17,6 +20,8 @@ interface MapLayerControlProps {
   showLabels: boolean;
   onToggleLabels: (show: boolean) => void;
   ownerLegend: OwnerLegendEntry[];
+  hiddenOwnerIds: Set<string>;
+  onToggleOwner: (ownerId: string) => void;
   hasAnnotations?: boolean;
   showAnnotations?: boolean;
   onToggleAnnotations?: (show: boolean) => void;
@@ -97,21 +102,34 @@ export function MapLayerControl({
   showLabels,
   onToggleLabels,
   ownerLegend,
+  hiddenOwnerIds,
+  onToggleOwner,
   hasAnnotations,
   showAnnotations,
   onToggleAnnotations,
 }: MapLayerControlProps) {
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <div
-      className="absolute top-3 right-3 z-[1000] bg-white rounded-lg shadow-lg border border-gray-200 p-3 min-w-[200px] max-h-[calc(100%-24px)] overflow-y-auto"
+      className="absolute top-3 right-3 z-[1000] bg-white rounded-lg shadow-lg border border-gray-200 min-w-[180px]"
+      style={collapsed ? undefined : { resize: "vertical", overflow: "auto", maxHeight: "calc(100% - 24px)", minHeight: "80px" }}
       // Prevent map drag/scroll events from firing when interacting with this panel
       onMouseDown={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
       onWheel={(e) => e.stopPropagation()}
     >
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+      {/* Header — always visible, click to collapse/expand */}
+      <button
+        className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide hover:bg-gray-50 rounded-t-lg"
+        onClick={() => setCollapsed(!collapsed)}
+      >
         Ebenen
-      </p>
+        {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+      </button>
+
+      {collapsed ? null : (
+      <div className="px-3 pb-3">
 
       {/* Turbines toggle */}
       <div className="flex items-center justify-between gap-3 py-1.5">
@@ -205,26 +223,40 @@ export function MapLayerControl({
         </div>
       )}
 
-      {/* Owner Legend */}
+      {/* Owner Legend (clickable toggles) */}
       {ownerLegend.length > 0 && (
         <>
           <Separator className="my-2" />
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
             Eigentuemer
           </p>
-          <ul className="space-y-1">
-            {ownerLegend.map((entry) => (
-              <li key={entry.name} className="flex items-center gap-2">
-                <span
-                  className="inline-block w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: entry.color }}
-                  aria-hidden="true"
-                />
-                <span className="text-xs text-gray-700 truncate">
-                  {entry.name}
-                </span>
-              </li>
-            ))}
+          <ul className="space-y-0.5">
+            {ownerLegend.map((entry) => {
+              const isHidden = hiddenOwnerIds.has(entry.id);
+              return (
+                <li key={entry.id}>
+                  <button
+                    className="flex items-center gap-2 w-full px-1 py-0.5 rounded hover:bg-gray-50 transition-colors text-left"
+                    onClick={() => onToggleOwner(entry.id)}
+                    title={isHidden ? `${entry.name} einblenden` : `${entry.name} ausblenden`}
+                  >
+                    <span
+                      className="inline-block w-3 h-3 rounded-full shrink-0 border"
+                      style={{
+                        backgroundColor: isHidden ? "transparent" : entry.color,
+                        borderColor: entry.color,
+                      }}
+                      aria-hidden="true"
+                    />
+                    <span
+                      className={`text-xs truncate ${isHidden ? "text-gray-400 line-through" : "text-gray-700"}`}
+                    >
+                      {entry.name}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
@@ -280,6 +312,8 @@ export function MapLayerControl({
           <span className="text-xs text-gray-700">Abgelaufen</span>
         </li>
       </ul>
+      </div>
+      )}
     </div>
   );
 }

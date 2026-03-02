@@ -782,6 +782,10 @@ export default function ImportShpPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Flurstücke werden nur in der Kartenansicht des zugeordneten Windparks angezeigt.
+                Ohne Zuordnung sind sie nur unter Pachtverträge sichtbar.
+              </p>
             </div>
           </CardContent>
         </Card>

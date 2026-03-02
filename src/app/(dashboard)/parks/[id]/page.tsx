@@ -1034,6 +1034,7 @@ export default function ParkDetailsPage({
                   annotations={annotations}
                   onAnnotationSaved={() => fetchPark()}
                   height="400px"
+                  mapPageUrl={`/parks/${id}/map`}
                 />
 
               </CardContent>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -15,6 +15,7 @@ import { MapAnnotationLayer } from "./MapAnnotationLayer";
 import type { MapAnnotationData } from "./MapAnnotationLayer";
 import { DrawControl } from "./DrawControl";
 import { AnnotationSaveDialog } from "./AnnotationSaveDialog";
+import { Maximize2, Minimize2, ExternalLink } from "lucide-react";
 
 // Types
 interface TurbineLocation {
@@ -25,6 +26,14 @@ interface TurbineLocation {
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   ratedPowerKw: number | null;
 }
+
+type MapSize = "sm" | "md" | "lg";
+
+const MAP_HEIGHTS: Record<MapSize, string> = {
+  sm: "300px",
+  md: "400px",
+  lg: "600px",
+};
 
 interface ParkMapProps {
   parkName: string;
@@ -37,6 +46,18 @@ interface ParkMapProps {
   onAnnotationSaved?: () => void;
   className?: string;
   height?: string;
+  mapPageUrl?: string;
+}
+
+// Helper component to invalidate map size after container resize
+function MapResizeHandler({ trigger }: { trigger: unknown }) {
+  const map = useMap();
+  useEffect(() => {
+    // Small delay so the DOM has finished resizing
+    const timer = setTimeout(() => map.invalidateSize(), 150);
+    return () => clearTimeout(timer);
+  }, [map, trigger]);
+  return null;
 }
 
 // Custom DivIcon for park center
@@ -205,17 +226,34 @@ export function ParkMap({
   onAnnotationSaved,
   className,
   height = "400px",
+  mapPageUrl,
 }: ParkMapProps) {
   // Layer visibility state
   const [showTurbines, setShowTurbines] = useState(true);
   const [showPlots, setShowPlots] = useState(true);
   const [showLabels, setShowLabels] = useState(false);
   const [showAnnotations, setShowAnnotations] = useState(true);
+  const [hiddenOwnerIds, setHiddenOwnerIds] = useState<Set<string>>(new Set());
+
+  // Size & fullscreen state
+  const [mapSize, setMapSize] = useState<MapSize>("md");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Draw mode state
   const [drawMode, setDrawMode] = useState(false);
   const [pendingGeometry, setPendingGeometry] = useState<GeoJSON.Geometry | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+
+  // ESC key closes fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isFullscreen]);
 
   const handleDrawCreated = useCallback((geometry: GeoJSON.Geometry) => {
     setPendingGeometry(geometry);
@@ -238,7 +276,7 @@ export function ParkMap({
     if (!plots || plots.length === 0) return [];
 
     const colorMap = buildOwnerColorMap(plots);
-    const legend: { name: string; color: string }[] = [];
+    const legend: { id: string; name: string; color: string }[] = [];
 
     // Build a name->color mapping, using sorted unique lessorIds
     const seenIds = new Set<string>();
@@ -251,6 +289,7 @@ export function ParkMap({
       if (plot.lessorId && !seenIds.has(plot.lessorId)) {
         seenIds.add(plot.lessorId);
         legend.push({
+          id: plot.lessorId,
           name: plot.lessorName || "Unbekannt",
           color: colorMap.get(plot.lessorId) || OWNER_PALETTE[0],
         });
@@ -259,6 +298,18 @@ export function ParkMap({
 
     return legend;
   }, [plots]);
+
+  const handleToggleOwner = useCallback((ownerId: string) => {
+    setHiddenOwnerIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(ownerId)) {
+        next.delete(ownerId);
+      } else {
+        next.add(ownerId);
+      }
+      return next;
+    });
+  }, []);
 
   // Determine whether we have plots to show
   const hasPlots = plots && plots.length > 0;
@@ -297,113 +348,182 @@ export function ParkMap({
     );
   }
 
+  const currentHeight = isFullscreen ? "100%" : MAP_HEIGHTS[mapSize] || height;
+
   return (
-    <div className="relative" style={{ height }}>
-      <MapContainer
-        center={center}
-        zoom={13}
-        className={`rounded-lg border ${className || ""}`}
-        style={{ height: "100%", width: "100%" }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> Mitwirkende'
-          url="https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png"
-        />
-
-        <FitBoundsToMarkers
-          parkLat={parkLatitude}
-          parkLng={parkLongitude}
-          turbines={turbines}
-          plots={plots}
-        />
-
-        {/* Annotations layer */}
-        {annotations && annotations.length > 0 && (
-          <MapAnnotationLayer annotations={annotations} visible={showAnnotations} />
+    <div
+      ref={containerRef}
+      className={
+        isFullscreen
+          ? "fixed inset-0 z-[9999] bg-white flex flex-col"
+          : ""
+      }
+    >
+      {/* Toolbar */}
+      <div className={`flex items-center justify-between gap-2 ${isFullscreen ? "px-3 py-2 border-b" : "mb-2"}`}>
+        {/* Size buttons (hidden in fullscreen) */}
+        {!isFullscreen ? (
+          <div className="flex items-center rounded-md border border-gray-200 overflow-hidden">
+            {(["sm", "md", "lg"] as const).map((size) => (
+              <button
+                key={size}
+                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                  mapSize === size
+                    ? "bg-gray-900 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                } ${size !== "sm" ? "border-l border-gray-200" : ""}`}
+                onClick={() => setMapSize(size)}
+              >
+                {size === "sm" ? "Klein" : size === "md" ? "Normal" : "Gross"}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <span className="text-sm font-medium text-gray-700">{parkName}</span>
         )}
 
-        {/* Plot polygons (rendered before markers so polygons appear behind) */}
-        {hasPlots && (
-          <PlotGeoJsonLayer
-            plots={plots!}
-            visible={showPlots}
-            showLabels={showLabels}
-          />
-        )}
-
-        {/* Park center marker */}
-        {showTurbines && hasValidParkCoords && (
-          <Marker
-            position={[Number(parkLatitude), Number(parkLongitude)]}
-            icon={parkIcon}
+        {/* Action buttons */}
+        <div className="flex items-center gap-1">
+          {mapPageUrl && (
+            <button
+              className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              onClick={() => window.open(mapPageUrl, "_blank")}
+              title="In neuem Tab oeffnen"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </button>
+          )}
+          <button
+            className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            title={isFullscreen ? "Vollbild beenden (Esc)" : "Vollbild"}
           >
-            <Popup>
-              <div className="font-semibold">{parkName}</div>
-              <div className="text-xs text-muted-foreground">Parkzentrum</div>
-            </Popup>
-          </Marker>
-        )}
+            {isFullscreen ? (
+              <Minimize2 className="h-4 w-4" />
+            ) : (
+              <Maximize2 className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
 
-        {/* Turbine markers */}
-        {showTurbines &&
-          turbinesWithCoords.map((turbine) => (
+      {/* Map container */}
+      <div
+        className={`relative ${isFullscreen ? "flex-1" : ""}`}
+        style={isFullscreen ? undefined : { height: currentHeight }}
+      >
+        <MapContainer
+          center={center}
+          zoom={13}
+          className={`${isFullscreen ? "" : "rounded-lg"} border ${className || ""}`}
+          style={{ height: "100%", width: "100%" }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> Mitwirkende'
+            url="https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png"
+          />
+
+          <FitBoundsToMarkers
+            parkLat={parkLatitude}
+            parkLng={parkLongitude}
+            turbines={turbines}
+            plots={plots}
+          />
+
+          {/* Trigger map resize when size or fullscreen changes */}
+          <MapResizeHandler trigger={`${mapSize}-${isFullscreen}`} />
+
+          {/* Annotations layer */}
+          {annotations && annotations.length > 0 && (
+            <MapAnnotationLayer annotations={annotations} visible={showAnnotations} />
+          )}
+
+          {/* Plot polygons (rendered before markers so polygons appear behind) */}
+          {hasPlots && (
+            <PlotGeoJsonLayer
+              plots={plots!}
+              visible={showPlots}
+              showLabels={showLabels}
+              hiddenOwnerIds={hiddenOwnerIds}
+            />
+          )}
+
+          {/* Park center marker */}
+          {showTurbines && hasValidParkCoords && (
             <Marker
-              key={turbine.id}
-              position={[Number(turbine.latitude), Number(turbine.longitude)]}
-              icon={
-                turbine.status === "ACTIVE" ? turbineIcon : inactiveTurbineIcon
-              }
+              position={[Number(parkLatitude), Number(parkLongitude)]}
+              icon={parkIcon}
             >
               <Popup>
-                <div className="font-semibold">{turbine.designation}</div>
-                {turbine.ratedPowerKw && (
-                  <div className="text-xs">
-                    {turbine.ratedPowerKw >= 1000
-                      ? `${(turbine.ratedPowerKw / 1000).toFixed(1)} MW`
-                      : `${turbine.ratedPowerKw} kW`}
-                  </div>
-                )}
-                <div className="text-xs text-muted-foreground">
-                  {turbine.status === "ACTIVE" ? "Aktiv" : "Inaktiv"}
-                </div>
+                <div className="font-semibold">{parkName}</div>
+                <div className="text-xs text-muted-foreground">Parkzentrum</div>
               </Popup>
             </Marker>
-          ))}
+          )}
 
-        {/* Draw control (only when parkId is provided and draw mode active) */}
-        {parkId && drawMode && (
-          <DrawControl onCreated={handleDrawCreated} />
+          {/* Turbine markers */}
+          {showTurbines &&
+            turbinesWithCoords.map((turbine) => (
+              <Marker
+                key={turbine.id}
+                position={[Number(turbine.latitude), Number(turbine.longitude)]}
+                icon={
+                  turbine.status === "ACTIVE" ? turbineIcon : inactiveTurbineIcon
+                }
+              >
+                <Popup>
+                  <div className="font-semibold">{turbine.designation}</div>
+                  {turbine.ratedPowerKw && (
+                    <div className="text-xs">
+                      {turbine.ratedPowerKw >= 1000
+                        ? `${(turbine.ratedPowerKw / 1000).toFixed(1)} MW`
+                        : `${turbine.ratedPowerKw} kW`}
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground">
+                    {turbine.status === "ACTIVE" ? "Aktiv" : "Inaktiv"}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+          {/* Draw control (only when parkId is provided and draw mode active) */}
+          {parkId && drawMode && (
+            <DrawControl onCreated={handleDrawCreated} />
+          )}
+        </MapContainer>
+
+        {/* Draw mode toggle button */}
+        {parkId && (
+          <button
+            className={`absolute bottom-3 left-3 z-[1000] px-3 py-1.5 rounded-md text-xs font-medium shadow-md border transition-colors ${
+              drawMode
+                ? "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700"
+                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+            }`}
+            onClick={() => setDrawMode(!drawMode)}
+            title={drawMode ? "Zeichenmodus beenden" : "Zeichenmodus starten"}
+          >
+            {drawMode ? "Zeichnen beenden" : "Zeichnen"}
+          </button>
         )}
-      </MapContainer>
 
-      {/* Draw mode toggle button */}
-      {parkId && (
-        <button
-          className={`absolute bottom-3 left-3 z-[1000] px-3 py-1.5 rounded-md text-xs font-medium shadow-md border transition-colors ${
-            drawMode
-              ? "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700"
-              : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-          }`}
-          onClick={() => setDrawMode(!drawMode)}
-          title={drawMode ? "Zeichenmodus beenden" : "Zeichenmodus starten"}
-        >
-          {drawMode ? "Zeichnen beenden" : "Zeichnen"}
-        </button>
-      )}
-
-      {/* Layer control overlay */}
-      <MapLayerControl
-        showTurbines={showTurbines}
-        onToggleTurbines={setShowTurbines}
-        showPlots={showPlots}
-        onTogglePlots={setShowPlots}
-        showLabels={showLabels}
-        onToggleLabels={setShowLabels}
-        ownerLegend={ownerLegend}
-        hasAnnotations={!!annotations && annotations.length > 0}
-        showAnnotations={showAnnotations}
-        onToggleAnnotations={setShowAnnotations}
-      />
+        {/* Layer control overlay */}
+        <MapLayerControl
+          showTurbines={showTurbines}
+          onToggleTurbines={setShowTurbines}
+          showPlots={showPlots}
+          onTogglePlots={setShowPlots}
+          showLabels={showLabels}
+          onToggleLabels={setShowLabels}
+          ownerLegend={ownerLegend}
+          hiddenOwnerIds={hiddenOwnerIds}
+          onToggleOwner={handleToggleOwner}
+          hasAnnotations={!!annotations && annotations.length > 0}
+          showAnnotations={showAnnotations}
+          onToggleAnnotations={setShowAnnotations}
+        />
+      </div>
 
       {/* Annotation save dialog */}
       {parkId && (
