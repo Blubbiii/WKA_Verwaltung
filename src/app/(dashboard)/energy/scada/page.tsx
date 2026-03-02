@@ -903,6 +903,15 @@ function ImportTab() {
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
 
+  // Upload mapping dialog state
+  const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
+  const [mappingDialogGroup, setMappingDialogGroup] = useState<UploadLocGroup | null>(null);
+  const [uploadPreviewPlants, setUploadPreviewPlants] = useState<PlantPreview[]>([]);
+  const [isLoadingUploadPreview, setIsLoadingUploadPreview] = useState(false);
+  const [uploadPlantMappings, setUploadPlantMappings] = useState<Record<number, { parkId: string; turbineId: string }>>({});
+  const [uploadParkTurbines, setUploadParkTurbines] = useState<Record<string, Array<{ id: string; designation: string }>>>({});
+  const [isSavingUploadMappings, setIsSavingUploadMappings] = useState(false);
+
   // Computed: group upload entries by detected Loc code
   const uploadGroups = useMemo((): UploadLocGroup[] => {
     const byLoc = new Map<string, UploadEntry[]>();
@@ -1061,6 +1070,113 @@ function ImportTab() {
     [toUploadEntry]
   );
 
+  // Load turbines for a park in upload dialog (cached)
+  const loadUploadTurbinesForPark = useCallback(async (parkId: string) => {
+    if (uploadParkTurbines[parkId]) return;
+    try {
+      const res = await fetch(`/api/turbines?parkId=${parkId}&limit=100`);
+      if (!res.ok) throw new Error("Fehler beim Laden der Turbinen");
+      const data = await res.json();
+      const turbines = data.data ?? [];
+      setUploadParkTurbines((prev) => ({
+        ...prev,
+        [parkId]: Array.isArray(turbines) ? turbines : [],
+      }));
+    } catch {
+      toast.error("Fehler beim Laden der Turbinen");
+    }
+  }, [uploadParkTurbines]);
+
+  const handleUploadPlantParkChange = (plantNo: number, parkId: string) => {
+    setUploadPlantMappings((prev) => ({
+      ...prev,
+      [plantNo]: { parkId, turbineId: "" },
+    }));
+    if (parkId) loadUploadTurbinesForPark(parkId);
+  };
+
+  const handleUploadPlantTurbineChange = (plantNo: number, turbineId: string) => {
+    setUploadPlantMappings((prev) => ({
+      ...prev,
+      [plantNo]: { ...prev[plantNo], turbineId },
+    }));
+  };
+
+  // Save upload mappings and then start the actual upload+import
+  const handleSaveUploadMappingsAndImport = async () => {
+    if (!mappingDialogGroup) return;
+
+    const unmappedWithSelections = uploadPreviewPlants.filter(
+      (p) => !p.mapping && uploadPlantMappings[p.plantNo]?.parkId && uploadPlantMappings[p.plantNo]?.turbineId,
+    );
+
+    if (unmappedWithSelections.length === 0) {
+      toast.error("Bitte mindestens eine Zuordnung auswählen");
+      return;
+    }
+
+    setIsSavingUploadMappings(true);
+    try {
+      for (const plant of unmappedWithSelections) {
+        const mapping = uploadPlantMappings[plant.plantNo];
+        const res = await fetch("/api/energy/scada/mappings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            locationCode: mappingDialogGroup.locCode,
+            parkId: mapping.parkId,
+            plantNo: plant.plantNo,
+            turbineId: mapping.turbineId,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(
+            err.error || `Fehler beim Speichern der Zuordnung für Anlage ${plant.plantNo}`,
+          );
+        }
+      }
+
+      toast.success(`${unmappedWithSelections.length} Zuordnung(en) gespeichert`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern der Zuordnungen");
+      setIsSavingUploadMappings(false);
+      return;
+    }
+
+    setIsSavingUploadMappings(false);
+    setMappingDialogOpen(false);
+
+    // Now start the actual upload
+    const group = mappingDialogGroup;
+    setMappingDialogGroup(null);
+    setUploadPreviewPlants([]);
+    setUploadPlantMappings({});
+
+    setIsUploading(true);
+    setActiveImports([]);
+    setIsImporting(true);
+    pollingRefs.current.forEach((interval) => clearInterval(interval));
+    pollingRefs.current.clear();
+
+    try {
+      await uploadLocGroup(group);
+      setUploadEntries((prev) => prev.filter((e) => (e.locCode ?? "unbekannt") !== group.locCode));
+      toast.success(`Upload gestartet: ${group.locCode}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Upload ${group.locCode} fehlgeschlagen`);
+    }
+    setIsUploading(false);
+  };
+
+  // Check if all unmapped plants in upload dialog have selections
+  const allUploadUnmappedHaveMappings =
+    uploadPreviewPlants.length > 0 &&
+    uploadPreviewPlants
+      .filter((p) => !p.mapping)
+      .every((p) => uploadPlantMappings[p.plantNo]?.parkId && uploadPlantMappings[p.plantNo]?.turbineId);
+
   // Handle drop (files or folders via DataTransfer)
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
@@ -1208,6 +1324,7 @@ function ImportTab() {
   );
 
   // Upload all location groups (or a single one)
+  // For single groups: first calls preview to check mappings, opens dialog if needed
   const handleStartUpload = useCallback(
     async (singleGroup?: UploadLocGroup) => {
       const groups = singleGroup ? [singleGroup] : uploadGroups;
@@ -1218,6 +1335,46 @@ function ImportTab() {
         return;
       }
 
+      // For a single group: check mappings via upload preview first
+      if (singleGroup && validGroups.length === 1) {
+        const group = validGroups[0];
+
+        // Find a WSD or UID file for preview
+        const previewFile = group.entries.find((e) => e.fileType === "WSD" || e.fileType === "UID");
+        if (previewFile) {
+          setIsLoadingUploadPreview(true);
+          try {
+            const formData = new FormData();
+            formData.append("locationCode", group.locCode);
+            formData.append("files", previewFile.file);
+
+            const res = await fetch("/api/energy/scada/upload/preview", {
+              method: "POST",
+              body: formData,
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+
+              if (!data.allMapped && data.unmappedCount > 0) {
+                // Open mapping dialog
+                setUploadPreviewPlants(data.plants);
+                setMappingDialogGroup(group);
+                setUploadPlantMappings({});
+                setUploadParkTurbines({});
+                setMappingDialogOpen(true);
+                setIsLoadingUploadPreview(false);
+                return; // Don't proceed with upload yet
+              }
+            }
+          } catch {
+            // Preview failed — proceed with upload anyway
+          }
+          setIsLoadingUploadPreview(false);
+        }
+      }
+
+      // All mapped (or multi-group) — proceed directly
       setIsUploading(true);
       setActiveImports([]);
       setIsImporting(true);
@@ -1854,6 +2011,174 @@ function ImportTab() {
               </div>
             </div>
           )}
+
+          {/* Upload Preview Loading */}
+          {isLoadingUploadPreview && (
+            <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm">Prüfe Zuordnungen...</span>
+            </div>
+          )}
+
+          {/* Mapping Dialog for Upload */}
+          <Dialog open={mappingDialogOpen} onOpenChange={(open) => {
+            if (!open) {
+              setMappingDialogOpen(false);
+              setMappingDialogGroup(null);
+              setUploadPreviewPlants([]);
+              setUploadPlantMappings({});
+            }
+          }}>
+            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  Anlagen zuordnen — {mappingDialogGroup?.locCode}
+                </DialogTitle>
+                <DialogDescription>
+                  {uploadPreviewPlants.filter((p) => !p.mapping).length} von{" "}
+                  {uploadPreviewPlants.length} Anlagen sind noch nicht zugeordnet.
+                  Bitte ordnen Sie die Anlagen einem Park und einer Turbine zu.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[60px]">Nr.</TableHead>
+                      <TableHead>Wind (m/s)</TableHead>
+                      <TableHead>Leistung (W)</TableHead>
+                      <TableHead>Park</TableHead>
+                      <TableHead>WKA / Turbine</TableHead>
+                      <TableHead className="w-[60px]">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {uploadPreviewPlants.map((plant) => {
+                      const isMapped = plant.mapping != null;
+                      const currentMapping = uploadPlantMappings[plant.plantNo];
+
+                      return (
+                        <TableRow key={plant.plantNo} className={isMapped ? "bg-green-50/50" : ""}>
+                          <TableCell className="font-mono font-medium">
+                            {plant.plantNo}
+                          </TableCell>
+                          <TableCell className="font-mono">
+                            {plant.sampleWindSpeed != null
+                              ? plant.sampleWindSpeed.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+                              : "-"}
+                          </TableCell>
+                          <TableCell className="font-mono">
+                            {plant.samplePower != null
+                              ? plant.samplePower.toLocaleString("de-DE")
+                              : "-"}
+                          </TableCell>
+
+                          {/* Park column */}
+                          <TableCell>
+                            {isMapped ? (
+                              <span className="text-green-700">{plant.mapping!.parkName}</span>
+                            ) : (
+                              <Select
+                                value={currentMapping?.parkId ?? ""}
+                                onValueChange={(val) => handleUploadPlantParkChange(plant.plantNo, val)}
+                              >
+                                <SelectTrigger className="w-[160px] h-8">
+                                  <SelectValue placeholder="Park..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {parksLoading ? (
+                                    <SelectItem value="__loading" disabled>Laden...</SelectItem>
+                                  ) : (
+                                    parks?.map((park) => (
+                                      <SelectItem key={park.id} value={park.id}>
+                                        {park.name}
+                                      </SelectItem>
+                                    ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </TableCell>
+
+                          {/* Turbine column */}
+                          <TableCell>
+                            {isMapped ? (
+                              <span className="text-green-700">{plant.mapping!.turbineDesignation}</span>
+                            ) : (
+                              <Select
+                                value={currentMapping?.turbineId ?? ""}
+                                onValueChange={(val) => handleUploadPlantTurbineChange(plant.plantNo, val)}
+                                disabled={!currentMapping?.parkId}
+                              >
+                                <SelectTrigger className="w-[160px] h-8">
+                                  <SelectValue
+                                    placeholder={!currentMapping?.parkId ? "Zuerst Park" : "WKA..."}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {currentMapping?.parkId && uploadParkTurbines[currentMapping.parkId] ? (
+                                    uploadParkTurbines[currentMapping.parkId].length > 0 ? (
+                                      uploadParkTurbines[currentMapping.parkId].map((t) => (
+                                        <SelectItem key={t.id} value={t.id}>
+                                          {t.designation}
+                                        </SelectItem>
+                                      ))
+                                    ) : (
+                                      <SelectItem value="__empty" disabled>Keine Turbinen</SelectItem>
+                                    )
+                                  ) : currentMapping?.parkId ? (
+                                    <SelectItem value="__loading" disabled>Laden...</SelectItem>
+                                  ) : null}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </TableCell>
+
+                          {/* Status column */}
+                          <TableCell>
+                            {isMapped ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            ) : currentMapping?.parkId && currentMapping?.turbineId ? (
+                              <CheckCircle2 className="h-5 w-5 text-blue-500" />
+                            ) : (
+                              <AlertCircle className="h-5 w-5 text-amber-500" />
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setMappingDialogOpen(false);
+                    setMappingDialogGroup(null);
+                    setUploadPreviewPlants([]);
+                    setUploadPlantMappings({});
+                  }}
+                  disabled={isSavingUploadMappings}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  onClick={handleSaveUploadMappingsAndImport}
+                  disabled={isSavingUploadMappings || !allUploadUnmappedHaveMappings}
+                >
+                  {isSavingUploadMappings ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Play className="h-4 w-4 mr-2" />
+                  )}
+                  Speichern & Importieren
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Server path scan (collapsible secondary option) */}
           <details className="group">
