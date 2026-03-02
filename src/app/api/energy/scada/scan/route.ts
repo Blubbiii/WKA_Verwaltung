@@ -90,6 +90,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Check if basePath itself is a Loc_XXXX directory
+    const baseDir = path.basename(basePath);
+    if (/^Loc_\d+$/i.test(baseDir)) {
+      // User pointed directly to a Loc_ directory — scan parent with this locationCode
+      const parentPath = path.dirname(basePath);
+      const fileTypes = await scanAllFileTypes(parentPath, baseDir);
+
+      return NextResponse.json({
+        data: [{
+          locationCode: baseDir,
+          plantNumbers: [],
+          fileCount: fileTypes.reduce((sum, ft) => sum + ft.fileCount, 0),
+          dateRange: { from: null, to: null },
+          fileTypes: fileTypes.map((ft) => ft.fileType),
+        }],
+        count: 1,
+        basePath: parentPath,
+      });
+    }
+
     // Standard-Scan: alle Standorte unter basePath
     const locations = await scanAllLocations(basePath);
 
