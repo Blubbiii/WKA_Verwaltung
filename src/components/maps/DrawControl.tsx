@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
-import "leaflet-draw";
 import "leaflet-draw/dist/leaflet.draw.css";
+
+// leaflet-draw requires window.L to be set (it uses IIFE referencing global L).
+// Webpack resolves leaflet's ESM module which does NOT set window.L,
+// so we must assign it manually before dynamically importing leaflet-draw.
+if (typeof window !== "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).L = L;
+}
 
 interface DrawControlProps {
   /** Called when a shape is created (GeoJSON geometry) */
@@ -17,9 +24,19 @@ export function DrawControl({ onCreated }: DrawControlProps) {
   const drawnItemsRef = useRef<L.FeatureGroup>(new L.FeatureGroup());
   const onCreatedRef = useRef(onCreated);
   onCreatedRef.current = onCreated;
+  const [drawReady, setDrawReady] = useState(false);
+
+  // Dynamically import leaflet-draw after window.L is set
+  useEffect(() => {
+    let cancelled = false;
+    import("leaflet-draw").then(() => {
+      if (!cancelled) setDrawReady(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || !drawReady) return;
 
     const drawnItems = drawnItemsRef.current;
     map.addLayer(drawnItems);
@@ -87,7 +104,7 @@ export function DrawControl({ onCreated }: DrawControlProps) {
       }
       map.removeLayer(drawnItems);
     };
-  }, [map]);
+  }, [map, drawReady]);
 
   return null;
 }
