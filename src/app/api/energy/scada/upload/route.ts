@@ -26,7 +26,7 @@ const MAX_TOTAL_SIZE = 500 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
-    const check = await requirePermission("energy:scada:import");
+    const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
 
     const formData = await request.formData();
@@ -106,7 +106,9 @@ export async function POST(request: NextRequest) {
 
       const savedPaths: string[] = [];
       for (const file of typeFiles) {
-        const filePath = path.join(typeDir, file.name);
+        // file.name may contain relative path from folder picker (e.g. "Loc_3196/00000000.avm")
+        const safeName = path.basename(file.name);
+        const filePath = path.join(typeDir, safeName);
         const buffer = Buffer.from(await file.arrayBuffer());
         await fs.writeFile(filePath, buffer);
         savedPaths.push(filePath);
@@ -173,9 +175,11 @@ export async function POST(request: NextRequest) {
       { status: 202 }
     );
   } catch (error) {
-    logger.error({ err: error }, "Fehler beim SCADA-Upload");
+    const errMsg = error instanceof Error ? error.message : String(error);
+    const errStack = error instanceof Error ? error.stack : undefined;
+    logger.error({ err: error, errMsg, errStack }, "Fehler beim SCADA-Upload");
     return NextResponse.json(
-      { error: "Fehler beim Hochladen der SCADA-Dateien" },
+      { error: "Fehler beim Hochladen der SCADA-Dateien", details: errMsg },
       { status: 500 }
     );
   }

@@ -1552,24 +1552,14 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
     const turbineMappings = await loadTurbineMappings(tenantId, locationCode);
 
     if (turbineMappings.size === 0) {
-      await updateImportLog(importLogId, {
-        status: 'FAILED',
-        completedAt: new Date(),
-        errorDetails: {
-          message: `Keine aktiven Turbine-Mappings für ${locationCode} im Mandanten ${tenantId} gefunden. ` +
-            'Bitte zuerst ScadaTurbineMapping-Einträge anlegen.',
-        },
-      });
-
-      return {
-        status: 'FAILED',
-        filesProcessed: 0,
-        recordsImported: 0,
-        recordsSkipped: 0,
-        recordsFailed: 0,
-        errors: [`Keine aktiven Turbine-Mappings für ${locationCode} gefunden`],
-        affectedMonths: [],
-      };
+      console.warn(
+        `[SCADA] Keine aktiven Turbine-Mappings für ${locationCode} — Import läuft weiter, ` +
+        'nicht zugeordnete Anlagen werden als Warnung geloggt.',
+      );
+      errors.push(
+        `Keine Turbine-Mappings für ${locationCode} vorhanden. ` +
+        'Records ohne Mapping werden übersprungen.',
+      );
     }
 
     // 3. Jede (neue) Datei verarbeiten
@@ -1708,10 +1698,11 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
     }
 
     // 5. Import abschliessen
+    // PARTIAL when files were processed but records were skipped (e.g. missing mappings)
     const finalStatus =
       errors.length === 0
         ? 'SUCCESS'
-        : totalImported > 0
+        : (totalImported > 0 || totalSkipped > 0)
           ? 'PARTIAL'
           : 'FAILED';
 

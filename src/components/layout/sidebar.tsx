@@ -80,7 +80,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useId } from "react";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useSidebarOrder } from "@/hooks/useSidebarOrder";
 
@@ -575,6 +575,7 @@ export function Sidebar() {
   const tenantLogoUrl = session?.user?.tenantLogoUrl;
   const tenantName = session?.user?.tenantName;
 
+  const dndId = useId();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -980,6 +981,7 @@ export function Sidebar() {
         {/* Reorderable middle groups */}
         {!collapsed ? (
           <DndContext
+            id={dndId}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}

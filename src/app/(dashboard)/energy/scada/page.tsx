@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -138,6 +138,22 @@ interface ImportJob {
 interface Turbine {
   id: string;
   designation: string;
+}
+
+/** A file with its relative path (for Loc_ detection from folder structure) */
+interface UploadEntry {
+  file: File;
+  relativePath: string;
+  locCode: string | null; // detected Loc_XXXX or null
+  fileType: string; // extension uppercase, e.g. "WSD"
+}
+
+/** Grouped summary of upload entries by location */
+interface UploadLocGroup {
+  locCode: string;
+  entries: UploadEntry[];
+  fileTypes: string[];
+  fileCount: number;
 }
 
 // =============================================================================
@@ -881,12 +897,27 @@ function ImportTab() {
   const pollingRefs = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
 
   // Upload state
-  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
-  const [uploadLocationCode, setUploadLocationCode] = useState("");
+  const [uploadEntries, setUploadEntries] = useState<UploadEntry[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+
+  // Computed: group upload entries by detected Loc code
+  const uploadGroups = useMemo((): UploadLocGroup[] => {
+    const byLoc = new Map<string, UploadEntry[]>();
+    for (const entry of uploadEntries) {
+      const key = entry.locCode ?? "unbekannt";
+      if (!byLoc.has(key)) byLoc.set(key, []);
+      byLoc.get(key)!.push(entry);
+    }
+    return Array.from(byLoc.entries()).map(([locCode, entries]) => ({
+      locCode,
+      entries,
+      fileTypes: [...new Set(entries.map((e) => e.fileType))],
+      fileCount: entries.length,
+    }));
+  }, [uploadEntries]);
 
   // Import history
   const [importHistory, setImportHistory] = useState<ImportJob[]>([]);
@@ -932,21 +963,44 @@ function ImportTab() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  // File Upload (supports individual files AND folder drops)
+  // File Upload (supports individual files, folder drops, and folder picker)
   // ---------------------------------------------------------------------------
 
-  // Recursively read all files from a dropped directory entry
+  const LOC_PATTERN = /Loc_\d+/i;
+
+  // Extract Loc_XXXX from a path string
+  const extractLocCode = useCallback((path: string): string | null => {
+    const match = path.match(LOC_PATTERN);
+    return match ? match[0] : null;
+  }, []);
+
+  // Create UploadEntry from file + path
+  const toUploadEntry = useCallback(
+    (file: File, relativePath: string): UploadEntry | null => {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+      if (!SCADA_EXTENSIONS.includes("." + ext)) return null;
+      return {
+        file,
+        relativePath,
+        locCode: extractLocCode(relativePath),
+        fileType: ext.toUpperCase(),
+      };
+    },
+    [extractLocCode]
+  );
+
+  // Recursively read all files from a dropped directory entry (preserves path)
   const readEntriesRecursive = useCallback(
-    (entry: FileSystemEntry): Promise<File[]> => {
+    (entry: FileSystemEntry): Promise<Array<{ file: File; path: string }>> => {
       return new Promise((resolve) => {
         if (entry.isFile) {
           (entry as FileSystemFileEntry).file(
-            (file) => resolve([file]),
+            (file) => resolve([{ file, path: entry.fullPath }]),
             () => resolve([])
           );
         } else if (entry.isDirectory) {
           const reader = (entry as FileSystemDirectoryEntry).createReader();
-          const allFiles: File[] = [];
+          const allFiles: Array<{ file: File; path: string }> = [];
           const readBatch = () => {
             reader.readEntries(
               async (entries) => {
@@ -972,54 +1026,40 @@ function ImportTab() {
     []
   );
 
-  // Try to detect Loc_XXXX from file paths or folder names
-  const detectLocationCode = useCallback((files: File[], folderNames?: string[]) => {
-    const locPattern = /Loc_\d+/i;
-    // Check folder names first (from drag & drop entries)
-    if (folderNames) {
-      for (const name of folderNames) {
-        const match = name.match(locPattern);
-        if (match) return match[0];
+  // Add valid SCADA files to upload entries
+  const addUploadEntries = useCallback(
+    (filesWithPaths: Array<{ file: File; path: string }>) => {
+      const entries: UploadEntry[] = [];
+      for (const { file, path } of filesWithPaths) {
+        const entry = toUploadEntry(file, path);
+        if (entry) entries.push(entry);
       }
-    }
-    // Check webkitRelativePath (from folder picker)
-    for (const f of files) {
-      const relPath = (f as File & { webkitRelativePath?: string }).webkitRelativePath;
-      if (relPath) {
-        const match = relPath.match(locPattern);
-        if (match) return match[0];
+
+      if (entries.length === 0) {
+        toast.error("Keine gültigen SCADA-Dateien gefunden", {
+          description: `${filesWithPaths.length} Datei(en) geprüft — keine mit unterstützter Endung`,
+        });
+        return;
       }
-    }
-    return null;
-  }, []);
 
-  const addValidFiles = useCallback((allFiles: File[], totalCount: number, folderNames?: string[]) => {
-    const valid = allFiles.filter((f) => {
-      const ext = "." + f.name.split(".").pop()?.toLowerCase();
-      return SCADA_EXTENSIONS.includes(ext);
-    });
-    if (valid.length === 0) {
-      toast.error("Keine gültigen SCADA-Dateien gefunden", {
-        description: `${totalCount} Datei(en) geprüft — keine mit unterstützter Endung`,
-      });
-      return;
-    }
-    setUploadFiles((prev) => [...prev, ...valid]);
+      setUploadEntries((prev) => [...prev, ...entries]);
 
-    // Auto-detect location code if not set yet
-    const detected = detectLocationCode(valid, folderNames);
-    if (detected) {
-      setUploadLocationCode((prev) => prev || detected);
-      toast.success(`${valid.length} SCADA-Datei(en) hinzugefügt — Standort "${detected}" erkannt`);
-    } else {
-      toast.success(`${valid.length} SCADA-Datei(en) hinzugefügt`);
-    }
+      const locs = [...new Set(entries.map((e) => e.locCode).filter(Boolean))];
+      if (locs.length === 1) {
+        toast.success(`${entries.length} SCADA-Datei(en) — Standort „${locs[0]}" erkannt`);
+      } else if (locs.length > 1) {
+        toast.success(`${entries.length} SCADA-Datei(en) — ${locs.length} Standorte erkannt`);
+      } else {
+        toast.success(`${entries.length} SCADA-Datei(en) hinzugefügt`);
+      }
 
-    const skipped = totalCount - valid.length;
-    if (skipped > 0) {
-      toast.warning(`${skipped} Datei(en) ignoriert (nicht unterstützt)`);
-    }
-  }, [detectLocationCode]);
+      const skipped = filesWithPaths.length - entries.length;
+      if (skipped > 0) {
+        toast.warning(`${skipped} Datei(en) ignoriert (nicht unterstützt)`);
+      }
+    },
+    [toUploadEntry]
+  );
 
   // Handle drop (files or folders via DataTransfer)
   const handleDrop = useCallback(
@@ -1030,72 +1070,63 @@ function ImportTab() {
       const items = e.dataTransfer.items;
       if (!items || items.length === 0) return;
 
-      // Try webkitGetAsEntry for folder support
-      const entries: FileSystemEntry[] = [];
+      // Try webkitGetAsEntry for folder support (preserves paths)
+      const fsEntries: FileSystemEntry[] = [];
       for (let i = 0; i < items.length; i++) {
         const entry = items[i].webkitGetAsEntry?.();
-        if (entry) entries.push(entry);
+        if (entry) fsEntries.push(entry);
       }
 
-      if (entries.length > 0) {
-        // Collect top-level folder names for Loc_ detection
-        const folderNames = entries
-          .filter((e) => e.isDirectory)
-          .map((e) => e.name);
-
-        const allFiles: File[] = [];
-        for (const entry of entries) {
+      if (fsEntries.length > 0) {
+        const allFiles: Array<{ file: File; path: string }> = [];
+        for (const entry of fsEntries) {
           const files = await readEntriesRecursive(entry);
           allFiles.push(...files);
         }
-        addValidFiles(allFiles, allFiles.length, folderNames);
+        addUploadEntries(allFiles);
         return;
       }
 
-      // Fallback: plain file list
-      if (e.dataTransfer.files.length > 0) {
-        addValidFiles(Array.from(e.dataTransfer.files), e.dataTransfer.files.length);
-      }
+      // Fallback: plain file list (no path info)
+      const files = Array.from(e.dataTransfer.files).map((f) => ({
+        file: f,
+        path: f.name,
+      }));
+      addUploadEntries(files);
     },
-    [readEntriesRecursive, addValidFiles]
+    [readEntriesRecursive, addUploadEntries]
   );
 
-  // Handle file input (single files)
+  // Handle file input (single files — no path info)
   const handleFileInput = useCallback(
     (files: FileList) => {
-      addValidFiles(Array.from(files), files.length);
+      addUploadEntries(
+        Array.from(files).map((f) => ({ file: f, path: f.name }))
+      );
     },
-    [addValidFiles]
+    [addUploadEntries]
   );
 
-  // Handle folder input (webkitdirectory — files have webkitRelativePath)
+  // Handle folder input (webkitdirectory — has webkitRelativePath)
   const handleFolderInput = useCallback(
     (files: FileList) => {
-      const fileArr = Array.from(files);
-      // Extract top-level folder name from webkitRelativePath
-      const folderNames: string[] = [];
-      if (fileArr.length > 0) {
-        const relPath = (fileArr[0] as File & { webkitRelativePath?: string }).webkitRelativePath;
-        if (relPath) {
-          const topFolder = relPath.split("/")[0];
-          if (topFolder) folderNames.push(topFolder);
-        }
-      }
-      addValidFiles(fileArr, fileArr.length, folderNames);
+      addUploadEntries(
+        Array.from(files).map((f) => ({
+          file: f,
+          path: (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name,
+        }))
+      );
     },
-    [addValidFiles]
+    [addUploadEntries]
   );
 
-  const handleStartUpload = useCallback(async () => {
-    if (uploadFiles.length === 0 || !uploadLocationCode) return;
-
-    setIsUploading(true);
-    setActiveImports([]);
-    try {
+  // Upload & import one location group
+  const uploadLocGroup = useCallback(
+    async (group: UploadLocGroup) => {
       const formData = new FormData();
-      formData.append("locationCode", uploadLocationCode);
-      for (const file of uploadFiles) {
-        formData.append("files", file);
+      formData.append("locationCode", group.locCode);
+      for (const entry of group.entries) {
+        formData.append("files", entry.file);
       }
 
       const res = await fetch("/api/energy/scada/upload", {
@@ -1105,24 +1136,25 @@ function ImportTab() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Upload fehlgeschlagen");
+        const msg = err.details
+          ? `${err.error}: ${err.details}`
+          : err.error || `Upload ${group.locCode} fehlgeschlagen`;
+        throw new Error(msg);
       }
 
       const data = await res.json();
-      setUploadFiles([]);
-      setIsImporting(true);
 
       if (data.invalidFiles?.length > 0) {
-        toast.warning(`${data.invalidFiles.length} Datei(en) ignoriert`);
+        toast.warning(`${group.locCode}: ${data.invalidFiles.length} Datei(en) ignoriert`);
       }
 
-      // Start polling for each import job
+      // Start polling for each import job from this location
       for (const imp of data.imports) {
         const job: ImportJob = {
           id: imp.importId,
           status: "RUNNING",
           fileType: imp.fileType,
-          locationCode: uploadLocationCode,
+          locationCode: group.locCode,
           filesTotal: imp.fileCount,
           filesProcessed: 0,
           recordsImported: 0,
@@ -1170,16 +1202,60 @@ function ImportTab() {
         pollingRefs.current.set(imp.importId, pollInterval);
       }
 
-      toast.success(
-        `Upload gestartet: ${data.imports.length} Dateityp(en), ${data.totalFiles} Dateien`
-      );
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Upload fehlgeschlagen");
-      setIsImporting(false);
-    } finally {
+      return data;
+    },
+    [loadHistory]
+  );
+
+  // Upload all location groups (or a single one)
+  const handleStartUpload = useCallback(
+    async (singleGroup?: UploadLocGroup) => {
+      const groups = singleGroup ? [singleGroup] : uploadGroups;
+      const validGroups = groups.filter((g) => g.locCode !== "unbekannt" && g.locCode.startsWith("Loc_"));
+
+      if (validGroups.length === 0) {
+        toast.error("Keine Standorte mit gültigem Loc-Code gefunden");
+        return;
+      }
+
+      setIsUploading(true);
+      setActiveImports([]);
+      setIsImporting(true);
+
+      // Clear existing polling
+      pollingRefs.current.forEach((interval) => clearInterval(interval));
+      pollingRefs.current.clear();
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const group of validGroups) {
+        try {
+          await uploadLocGroup(group);
+          successCount++;
+        } catch (err) {
+          failCount++;
+          toast.error(err instanceof Error ? err.message : `Upload ${group.locCode} fehlgeschlagen`);
+        }
+      }
+
+      // Remove uploaded entries from state
+      if (singleGroup) {
+        setUploadEntries((prev) => prev.filter((e) => e.locCode !== singleGroup.locCode));
+      } else {
+        setUploadEntries([]);
+      }
+
+      if (successCount > 0 && failCount === 0) {
+        toast.success(`Upload gestartet: ${successCount} Standort(e)`);
+      } else if (successCount > 0) {
+        toast.warning(`${successCount} Standort(e) gestartet, ${failCount} fehlgeschlagen`);
+      }
+
       setIsUploading(false);
-    }
-  }, [uploadFiles, uploadLocationCode, loadHistory]);
+    },
+    [uploadGroups, uploadLocGroup]
+  );
 
   // ---------------------------------------------------------------------------
   // Folder Browser
@@ -1576,29 +1652,18 @@ function ImportTab() {
   // ---------------------------------------------------------------------------
   return (
     <div className="space-y-6">
-      {/* Upload Section */}
+      {/* === Unified SCADA Import Card === */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileUp className="h-5 w-5" />
-            Dateien hochladen
+            SCADA-Daten importieren
           </CardTitle>
           <CardDescription>
-            SCADA-Dateien direkt im Browser hochladen — bereits importierte Datensätze werden automatisch übersprungen
+            Ordner oder Dateien vom PC auswählen, oder einen Server-Pfad scannen — Duplikate werden automatisch übersprungen
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Location Code Input */}
-          <div className="space-y-2">
-            <Label htmlFor="uploadLocationCode">Standort-Code</Label>
-            <Input
-              id="uploadLocationCode"
-              placeholder="z.B. Loc_5842"
-              value={uploadLocationCode}
-              onChange={(e) => setUploadLocationCode(e.target.value)}
-            />
-          </div>
-
           {/* Drop Zone */}
           <div
             className={cn(
@@ -1622,22 +1687,22 @@ function ImportTab() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => uploadInputRef.current?.click()}
-              >
-                <FileUp className="h-4 w-4 mr-1" />
-                Dateien auswählen
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={() => folderInputRef.current?.click()}
               >
                 <FolderOpen className="h-4 w-4 mr-1" />
                 Ordner auswählen
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => uploadInputRef.current?.click()}
+              >
+                <FileUp className="h-4 w-4 mr-1" />
+                Dateien auswählen
+              </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              {SCADA_EXTENSIONS.join(", ")}
+              Unterstützt: {SCADA_EXTENSIONS.join(", ")}
             </p>
             <input
               ref={uploadInputRef}
@@ -1662,188 +1727,22 @@ function ImportTab() {
             />
           </div>
 
-          {/* Selected Files */}
-          {uploadFiles.length > 0 && (
-            <div className="space-y-2">
+          {/* Grouped upload summary by location */}
+          {uploadGroups.length > 0 && (
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">
-                  {uploadFiles.length} Datei(en) ausgewählt
-                </p>
+                <h4 className="text-sm font-medium">
+                  {uploadEntries.length} Datei(en) — {uploadGroups.length} Standort(e)
+                </h4>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setUploadFiles([])}
+                  onClick={() => setUploadEntries([])}
                 >
                   Alle entfernen
                 </Button>
               </div>
-              <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-                {uploadFiles.map((f, i) => (
-                  <div
-                    key={`${f.name}-${i}`}
-                    className="flex items-center justify-between text-xs"
-                  >
-                    <span className="font-mono truncate">{f.name}</span>
-                    <Badge variant="outline">
-                      {f.name.split(".").pop()?.toUpperCase()}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Info Badge */}
-          <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-3">
-            <Info className="h-4 w-4 shrink-0 mt-0.5" />
-            <span>
-              Duplikate werden automatisch erkannt und übersprungen. Sie können dieselben Dateien
-              bedenkenlos mehrfach hochladen.
-            </span>
-          </div>
-
-          {/* Upload Button */}
-          <Button
-            onClick={handleStartUpload}
-            disabled={
-              uploadFiles.length === 0 ||
-              !uploadLocationCode.startsWith("Loc_") ||
-              isUploading ||
-              isImporting
-            }
-            className="w-full"
-          >
-            {isUploading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4 mr-2" />
-            )}
-            {uploadFiles.length} Datei(en) hochladen & importieren
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Scan Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ordner scannen</CardTitle>
-          <CardDescription>
-            Durchsuchen Sie einen Ordner nach Enercon SCADA-Dateien (Server-Dateisystem)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-3 items-end">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="scanPath">Pfad zum SCADA-Ordner</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="scanPath"
-                  placeholder={DEFAULT_SCAN_PATH_FALLBACK}
-                  value={scanPath}
-                  onChange={(e) => setScanPath(e.target.value)}
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleOpenBrowser}
-                  aria-label="Ordner durchsuchen"
-                  title="Ordner durchsuchen"
-                >
-                  <FolderOpen className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <Button onClick={handleScan} disabled={isScanning || isImporting}>
-              {isScanning ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <FolderSearch className="h-4 w-4 mr-2" />
-              )}
-              Ordner scannen
-            </Button>
-          </div>
-
-          {/* Folder Browser Dialog */}
-          <Dialog open={browseOpen} onOpenChange={setBrowseOpen}>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Ordner auswaehlen</DialogTitle>
-                <DialogDescription>
-                  Navigieren Sie zum SCADA-Datenverzeichnis
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3">
-                {/* Current path display */}
-                <div className="text-sm font-mono bg-muted px-3 py-2 rounded-md break-all">
-                  {browsePath || "Laufwerke"}
-                </div>
-
-                {/* Directory listing */}
-                <div className="border rounded-md max-h-[320px] overflow-y-auto">
-                  {isBrowsing ? (
-                    <div className="flex items-center justify-center py-8 text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                      Laden...
-                    </div>
-                  ) : (
-                    <div className="divide-y">
-                      {/* Parent directory */}
-                      {browseParentPath && (
-                        <button
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-muted transition-colors"
-                          onClick={() => browseTo(browseParentPath)}
-                        >
-                          <ArrowLeft className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="text-muted-foreground">..</span>
-                        </button>
-                      )}
-
-                      {browseDirectories.length === 0 && !browseParentPath && (
-                        <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                          Keine Verzeichnisse gefunden
-                        </div>
-                      )}
-
-                      {browseDirectories.map((dir) => (
-                        <button
-                          key={dir.path}
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-muted transition-colors group"
-                          onClick={() => browseTo(dir.path)}
-                        >
-                          <Folder className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                          <span className="flex-1 truncate">{dir.name}</span>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 flex-shrink-0" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setBrowseOpen(false)}
-                >
-                  Abbrechen
-                </Button>
-                <Button
-                  onClick={handleBrowseSelect}
-                  disabled={!browsePath}
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Auswaehlen
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Scan Results List */}
-          {scanResults.length > 0 && !selectedLocation && (
-            <div className="mt-6">
-              <h4 className="text-sm font-medium mb-3">
-                Gefundene Standorte ({scanResults.length})
-              </h4>
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -1851,51 +1750,75 @@ function ImportTab() {
                       <TableHead>Standort</TableHead>
                       <TableHead className="text-right">Dateien</TableHead>
                       <TableHead>Dateitypen</TableHead>
-                      <TableHead>Zeitraum</TableHead>
-                      <TableHead className="w-[200px]">Aktion</TableHead>
+                      <TableHead className="w-[180px]">Aktion</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {scanResults.map((result) => (
-                      <TableRow key={result.locationCode}>
+                    {uploadGroups.map((group) => (
+                      <TableRow key={group.locCode}>
                         <TableCell className="font-mono font-medium">
-                          {result.locationCode}
+                          {group.locCode === "unbekannt" ? (
+                            <Input
+                              placeholder="Loc_XXXX"
+                              className="h-8 w-32 font-mono text-xs"
+                              onChange={(e) => {
+                                const newLoc = e.target.value.trim();
+                                if (newLoc) {
+                                  setUploadEntries((prev) =>
+                                    prev.map((entry) =>
+                                      entry.locCode === null
+                                        ? { ...entry, locCode: newLoc }
+                                        : entry
+                                    )
+                                  );
+                                }
+                              }}
+                            />
+                          ) : (
+                            group.locCode
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {result.fileCount.toLocaleString("de-DE")}
+                          {group.fileCount.toLocaleString("de-DE")}
                         </TableCell>
                         <TableCell>
-                          {result.fileTypes.length > 0
-                            ? result.fileTypes.join(", ")
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {result.dateRange
-                            ? `${result.dateRange.from} - ${result.dateRange.to}`
-                            : "-"}
+                          <div className="flex flex-wrap gap-1">
+                            {group.fileTypes.map((ft) => (
+                              <Badge key={ft} variant="outline" className="text-xs">
+                                {ft}
+                              </Badge>
+                            ))}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() => handleSelectLocation(result)}
-                              disabled={isImporting}
+                              onClick={() => handleStartUpload(group)}
+                              disabled={
+                                group.locCode === "unbekannt" ||
+                                !group.locCode.startsWith("Loc_") ||
+                                isUploading ||
+                                isImporting
+                              }
                             >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Vorschau
+                              {isUploading ? (
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <Play className="h-4 w-4 mr-1" />
+                              )}
+                              Import
                             </Button>
                             <Button
                               size="sm"
-                              onClick={() => handleDirectImport(result)}
-                              disabled={isImporting}
+                              variant="ghost"
+                              onClick={() =>
+                                setUploadEntries((prev) =>
+                                  prev.filter((e) => (e.locCode ?? "unbekannt") !== group.locCode)
+                                )
+                              }
                             >
-                              {isImporting ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <Play className="h-4 w-4 mr-2" />
-                              )}
-                              Import
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
@@ -1904,8 +1827,206 @@ function ImportTab() {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Batch upload all button */}
+              {uploadGroups.filter((g) => g.locCode !== "unbekannt" && g.locCode.startsWith("Loc_")).length > 1 && (
+                <Button
+                  onClick={() => handleStartUpload()}
+                  disabled={isUploading || isImporting}
+                  className="w-full"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4 mr-2" />
+                  )}
+                  Alle Standorte importieren
+                </Button>
+              )}
+
+              {/* Info badge */}
+              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-3">
+                <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>
+                  Der Standort-Code wird automatisch aus dem Ordnernamen erkannt (z.B. Loc_5842).
+                  Duplikate werden beim Import automatisch übersprungen.
+                </span>
+              </div>
             </div>
           )}
+
+          {/* Server path scan (collapsible secondary option) */}
+          <details className="group">
+            <summary className="flex items-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors py-2">
+              <FolderSearch className="h-4 w-4" />
+              Server-Ordner scannen (für Dateien auf dem Server)
+              <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+            </summary>
+            <div className="pt-3 space-y-4">
+              <div className="flex gap-3 items-end">
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="scanPath">Server-Pfad</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="scanPath"
+                      placeholder={DEFAULT_SCAN_PATH_FALLBACK || "/data/scada"}
+                      value={scanPath}
+                      onChange={(e) => setScanPath(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleOpenBrowser}
+                      aria-label="Ordner durchsuchen"
+                      title="Server-Ordner durchsuchen"
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <Button onClick={handleScan} disabled={isScanning || isImporting}>
+                  {isScanning ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <FolderSearch className="h-4 w-4 mr-2" />
+                  )}
+                  Scannen
+                </Button>
+              </div>
+
+              {/* Folder Browser Dialog */}
+              <Dialog open={browseOpen} onOpenChange={setBrowseOpen}>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Server-Ordner auswählen</DialogTitle>
+                    <DialogDescription>
+                      Navigieren Sie zum SCADA-Datenverzeichnis auf dem Server
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <div className="text-sm font-mono bg-muted px-3 py-2 rounded-md break-all">
+                      {browsePath || "Laufwerke"}
+                    </div>
+                    <div className="border rounded-md max-h-[320px] overflow-y-auto">
+                      {isBrowsing ? (
+                        <div className="flex items-center justify-center py-8 text-muted-foreground">
+                          <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                          Laden...
+                        </div>
+                      ) : (
+                        <div className="divide-y">
+                          {browseParentPath && (
+                            <button
+                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-muted transition-colors"
+                              onClick={() => browseTo(browseParentPath)}
+                            >
+                              <ArrowLeft className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="text-muted-foreground">..</span>
+                            </button>
+                          )}
+                          {browseDirectories.length === 0 && !browseParentPath && (
+                            <div className="px-3 py-6 text-center text-sm text-muted-foreground">
+                              Keine Verzeichnisse gefunden
+                            </div>
+                          )}
+                          {browseDirectories.map((dir) => (
+                            <button
+                              key={dir.path}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-muted transition-colors group"
+                              onClick={() => browseTo(dir.path)}
+                            >
+                              <Folder className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                              <span className="flex-1 truncate">{dir.name}</span>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 flex-shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setBrowseOpen(false)}>
+                      Abbrechen
+                    </Button>
+                    <Button onClick={handleBrowseSelect} disabled={!browsePath}>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Auswählen
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Server scan results */}
+              {scanResults.length > 0 && !selectedLocation && (
+                <div>
+                  <h4 className="text-sm font-medium mb-3">
+                    Gefundene Standorte ({scanResults.length})
+                  </h4>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Standort</TableHead>
+                          <TableHead className="text-right">Dateien</TableHead>
+                          <TableHead>Dateitypen</TableHead>
+                          <TableHead>Zeitraum</TableHead>
+                          <TableHead className="w-[200px]">Aktion</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {scanResults.map((result) => (
+                          <TableRow key={result.locationCode}>
+                            <TableCell className="font-mono font-medium">
+                              {result.locationCode}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {result.fileCount.toLocaleString("de-DE")}
+                            </TableCell>
+                            <TableCell>
+                              {result.fileTypes.length > 0
+                                ? result.fileTypes.join(", ")
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {result.dateRange
+                                ? `${result.dateRange.from} - ${result.dateRange.to}`
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleSelectLocation(result)}
+                                  disabled={isImporting}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Vorschau
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleDirectImport(result)}
+                                  disabled={isImporting}
+                                >
+                                  {isImporting ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Play className="h-4 w-4 mr-2" />
+                                  )}
+                                  Import
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </details>
         </CardContent>
       </Card>
 
