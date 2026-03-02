@@ -17,6 +17,12 @@ interface MapLayerControlProps {
   showLabels: boolean;
   onToggleLabels: (show: boolean) => void;
   ownerLegend: OwnerLegendEntry[];
+  hasWfsFeatures?: boolean;
+  showWfsLayer?: boolean;
+  onToggleWfsLayer?: (show: boolean) => void;
+  hasAnnotations?: boolean;
+  showAnnotations?: boolean;
+  onToggleAnnotations?: (show: boolean) => void;
 }
 
 // Small inline SVG icons for each toggle row
@@ -94,6 +100,12 @@ export function MapLayerControl({
   showLabels,
   onToggleLabels,
   ownerLegend,
+  hasWfsFeatures,
+  showWfsLayer,
+  onToggleWfsLayer,
+  hasAnnotations,
+  showAnnotations,
+  onToggleAnnotations,
 }: MapLayerControlProps) {
   return (
     <div
@@ -163,6 +175,129 @@ export function MapLayerControl({
           aria-label="Beschriftungen ein-/ausblenden"
         />
       </div>
+
+      {/* WFS Cadastral layer toggle */}
+      {hasWfsFeatures && onToggleWfsLayer && (
+        <div className="flex items-center justify-between gap-3 py-1.5">
+          <div className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-orange-600"
+            >
+              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+              <path d="m3.3 7 8.7 5 8.7-5" />
+              <path d="M12 22V12" />
+            </svg>
+            <Label
+              htmlFor="toggle-wfs"
+              className="text-sm font-medium cursor-pointer select-none"
+            >
+              Kataster (WFS)
+            </Label>
+          </div>
+          <Switch
+            id="toggle-wfs"
+            checked={showWfsLayer ?? true}
+            onCheckedChange={onToggleWfsLayer}
+            aria-label="WFS-Katasterdaten ein-/ausblenden"
+          />
+        </div>
+      )}
+
+      {/* Annotations layer toggle */}
+      {hasAnnotations && onToggleAnnotations && (
+        <div className="flex items-center justify-between gap-3 py-1.5">
+          <div className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-indigo-600"
+            >
+              <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z" />
+            </svg>
+            <Label
+              htmlFor="toggle-annotations"
+              className="text-sm font-medium cursor-pointer select-none"
+            >
+              Zeichnungen
+            </Label>
+          </div>
+          <Switch
+            id="toggle-annotations"
+            checked={showAnnotations ?? true}
+            onCheckedChange={onToggleAnnotations}
+            aria-label="Zeichnungen ein-/ausblenden"
+          />
+        </div>
+      )}
+
+      {/* WFS Status Legend */}
+      {hasWfsFeatures && (
+        <>
+          <Separator className="my-2" />
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+            Kataster-Status
+          </p>
+          <ul className="space-y-1">
+            <li className="flex items-center gap-2">
+              <span
+                className="inline-block w-3 h-3 rounded-full shrink-0 border-2"
+                style={{ backgroundColor: "rgba(34,197,94,0.3)", borderColor: "#16a34a" }}
+                aria-hidden="true"
+              />
+              <span className="text-xs text-gray-700">Vertrag aktiv</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span
+                className="inline-block w-3 h-3 rounded-full shrink-0 border-2"
+                style={{ backgroundColor: "rgba(245,158,11,0.3)", borderColor: "#d97706" }}
+                aria-hidden="true"
+              />
+              <span className="text-xs text-gray-700">Läuft aus</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span
+                className="inline-block w-3 h-3 rounded-full shrink-0 border-2"
+                style={{ backgroundColor: "rgba(239,68,68,0.2)", borderColor: "#dc2626" }}
+                aria-hidden="true"
+              />
+              <span className="text-xs text-gray-700">Kein Vertrag</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span
+                className="inline-block w-3 h-3 rounded-full shrink-0 border-2"
+                style={{ backgroundColor: "rgba(107,114,128,0.2)", borderColor: "#6b7280" }}
+                aria-hidden="true"
+              />
+              <span className="text-xs text-gray-700">Abgelaufen</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span
+                className="inline-block w-3 h-3 rounded-full shrink-0 border-2"
+                style={{ backgroundColor: "rgba(59,130,246,0.2)", borderColor: "#2563eb" }}
+                aria-hidden="true"
+              />
+              <span className="text-xs text-gray-700">Entwurf</span>
+            </li>
+          </ul>
+        </>
+      )}
 
       {/* Owner Legend */}
       {ownerLegend.length > 0 && (

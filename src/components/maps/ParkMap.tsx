@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -11,6 +11,12 @@ import {
 } from "./PlotGeoJsonLayer";
 import type { PlotFeature } from "./PlotGeoJsonLayer";
 import { MapLayerControl } from "./MapLayerControl";
+import { WfsCadastralLayer } from "./WfsCadastralLayer";
+import { MapAnnotationLayer } from "./MapAnnotationLayer";
+import type { MapAnnotationData } from "./MapAnnotationLayer";
+import { DrawControl } from "./DrawControl";
+import { AnnotationSaveDialog } from "./AnnotationSaveDialog";
+import type { Feature, Geometry } from "geojson";
 
 // Types
 interface TurbineLocation {
@@ -24,10 +30,14 @@ interface TurbineLocation {
 
 interface ParkMapProps {
   parkName: string;
+  parkId?: string;
   parkLatitude: number | null;
   parkLongitude: number | null;
   turbines: TurbineLocation[];
   plots?: PlotFeature[];
+  wfsFeatures?: Feature<Geometry>[];
+  annotations?: MapAnnotationData[];
+  onAnnotationSaved?: () => void;
   className?: string;
   height?: string;
 }
@@ -189,10 +199,14 @@ function FitBoundsToMarkers({
 
 export function ParkMap({
   parkName,
+  parkId,
   parkLatitude,
   parkLongitude,
   turbines,
   plots,
+  wfsFeatures,
+  annotations,
+  onAnnotationSaved,
   className,
   height = "400px",
 }: ParkMapProps) {
@@ -200,6 +214,18 @@ export function ParkMap({
   const [showTurbines, setShowTurbines] = useState(true);
   const [showPlots, setShowPlots] = useState(true);
   const [showLabels, setShowLabels] = useState(false);
+  const [showWfsLayer, setShowWfsLayer] = useState(true);
+  const [showAnnotations, setShowAnnotations] = useState(true);
+
+  // Draw mode state
+  const [drawMode, setDrawMode] = useState(false);
+  const [pendingGeometry, setPendingGeometry] = useState<GeoJSON.Geometry | null>(null);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+
+  const handleDrawCreated = useCallback((geometry: GeoJSON.Geometry) => {
+    setPendingGeometry(geometry);
+    setSaveDialogOpen(true);
+  }, []);
 
   // Create icons once
   const parkIcon = useMemo(() => createParkIcon(), []);
@@ -296,6 +322,16 @@ export function ParkMap({
           plots={plots}
         />
 
+        {/* WFS cadastral parcels (lowest z-order) */}
+        {wfsFeatures && wfsFeatures.length > 0 && (
+          <WfsCadastralLayer features={wfsFeatures} visible={showWfsLayer} />
+        )}
+
+        {/* Annotations layer */}
+        {annotations && annotations.length > 0 && (
+          <MapAnnotationLayer annotations={annotations} visible={showAnnotations} />
+        )}
+
         {/* Plot polygons (rendered before markers so polygons appear behind) */}
         {hasPlots && (
           <PlotGeoJsonLayer
@@ -343,18 +379,59 @@ export function ParkMap({
               </Popup>
             </Marker>
           ))}
+
+        {/* Draw control (only when parkId is provided and draw mode active) */}
+        {parkId && drawMode && (
+          <DrawControl onCreated={handleDrawCreated} />
+        )}
       </MapContainer>
 
-      {/* Layer control overlay (only show when there are plots) */}
-      {hasPlots && (
-        <MapLayerControl
-          showTurbines={showTurbines}
-          onToggleTurbines={setShowTurbines}
-          showPlots={showPlots}
-          onTogglePlots={setShowPlots}
-          showLabels={showLabels}
-          onToggleLabels={setShowLabels}
-          ownerLegend={ownerLegend}
+      {/* Draw mode toggle button */}
+      {parkId && (
+        <button
+          className={`absolute bottom-3 left-3 z-[1000] px-3 py-1.5 rounded-md text-xs font-medium shadow-md border transition-colors ${
+            drawMode
+              ? "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700"
+              : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+          }`}
+          onClick={() => setDrawMode(!drawMode)}
+          title={drawMode ? "Zeichenmodus beenden" : "Zeichenmodus starten"}
+        >
+          {drawMode ? "Zeichnen beenden" : "Zeichnen"}
+        </button>
+      )}
+
+      {/* Layer control overlay */}
+      <MapLayerControl
+        showTurbines={showTurbines}
+        onToggleTurbines={setShowTurbines}
+        showPlots={showPlots}
+        onTogglePlots={setShowPlots}
+        showLabels={showLabels}
+        onToggleLabels={setShowLabels}
+        ownerLegend={ownerLegend}
+        hasWfsFeatures={!!wfsFeatures && wfsFeatures.length > 0}
+        showWfsLayer={showWfsLayer}
+        onToggleWfsLayer={setShowWfsLayer}
+        hasAnnotations={!!annotations && annotations.length > 0}
+        showAnnotations={showAnnotations}
+        onToggleAnnotations={setShowAnnotations}
+      />
+
+      {/* Annotation save dialog */}
+      {parkId && (
+        <AnnotationSaveDialog
+          open={saveDialogOpen}
+          onOpenChange={(open) => {
+            setSaveDialogOpen(open);
+            if (!open) setPendingGeometry(null);
+          }}
+          geometry={pendingGeometry}
+          parkId={parkId}
+          onSaved={() => {
+            setPendingGeometry(null);
+            onAnnotationSaved?.();
+          }}
         />
       )}
     </div>

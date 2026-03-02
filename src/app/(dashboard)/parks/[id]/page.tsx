@@ -78,6 +78,9 @@ import {
 } from "@/components/ui/select";
 import { ParkMapContainer } from "@/components/maps";
 import type { PlotFeature } from "@/components/maps";
+import { WfsLookupPanel } from "@/components/maps/WfsLookupPanel";
+import type { MapAnnotationData } from "@/components/maps/MapAnnotationLayer";
+import type { Feature, Geometry } from "geojson";
 import { TurbineDialogs, NetworkTopology } from "@/components/parks";
 import { DocumentPreviewDialog } from "@/components/documents";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
@@ -285,6 +288,10 @@ export default function ParkDetailsPage({
   const [error, setError] = useState<string | null>(null);
   const [plotFeatures, setPlotFeatures] = useState<PlotFeature[]>([]);
 
+  // WFS / Annotation state
+  const [wfsFeatures, setWfsFeatures] = useState<Feature<Geometry>[]>([]);
+  const [annotations, setAnnotations] = useState<MapAnnotationData[]>([]);
+
   // Pacht-Konfiguration State
   const [leaseConfig, setLeaseConfig] = useState({
     minimumRentPerTurbine: "",
@@ -468,6 +475,17 @@ export default function ParkDetailsPage({
         }
       } catch {
         // Plot loading is non-critical, ignore errors
+      }
+
+      // Load map annotations
+      try {
+        const annoRes = await fetch(`/api/parks/${id}/annotations`);
+        if (annoRes.ok) {
+          const annoData = await annoRes.json();
+          setAnnotations(annoData.data ?? []);
+        }
+      } catch {
+        // Annotation loading is non-critical
       }
     } catch {
       setError("Fehler beim Laden des Parks");
@@ -1001,9 +1019,10 @@ export default function ParkDetailsPage({
                   Übersichtskarte mit Parkstandort und Anlagen
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <ParkMapContainer
                   parkName={park.name}
+                  parkId={id}
                   parkLatitude={park.latitude}
                   parkLongitude={park.longitude}
                   turbines={park.turbines.map((t) => ({
@@ -1015,7 +1034,24 @@ export default function ParkDetailsPage({
                     ratedPowerKw: t.ratedPowerKw,
                   }))}
                   plots={plotFeatures}
-                  height="350px"
+                  wfsFeatures={wfsFeatures}
+                  annotations={annotations}
+                  onAnnotationSaved={() => fetchPark()}
+                  height="400px"
+                />
+
+                {/* WFS Cadastral Lookup */}
+                <Separator />
+                <WfsLookupPanel
+                  parkId={id}
+                  defaultCadastralDistrict={
+                    plotFeatures.length > 0 ? plotFeatures[0].cadastralDistrict : ""
+                  }
+                  defaultFieldNumber={
+                    plotFeatures.length > 0 ? plotFeatures[0].fieldNumber : ""
+                  }
+                  onFeaturesLoaded={(features) => setWfsFeatures(features)}
+                  onFeaturesMatched={(features) => setWfsFeatures(features)}
                 />
               </CardContent>
             </Card>

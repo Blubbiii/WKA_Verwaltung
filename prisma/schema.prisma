@@ -96,6 +96,9 @@ model Tenant {
   crmActivities             CrmActivity[]
   vendors                   Vendor[]
   incomingInvoices          IncomingInvoice[]
+  mapAnnotations            MapAnnotation[]
+  wfsCadastralCache         WfsCadastralCache[]
+  contactLinks              ContactLink[]
 
   @@map("tenants")
 }
@@ -153,6 +156,7 @@ model User {
   crmActivitiesCreated                                                    CrmActivity[]               @relation("CrmActivityCreator")
   crmActivitiesAssigned                                                   CrmActivity[]               @relation("CrmActivityAssignee")
   incomingInvoicesCreated                                                 IncomingInvoice[]           @relation("IncomingInvoiceCreator")
+  mapAnnotations                                                          MapAnnotation[]
 
   @@index([tenantId])
   @@index([email])
@@ -252,6 +256,7 @@ model Park {
   turbines                               Turbine[]
   weatherData                            WeatherData[]
   crmActivities                          CrmActivity[]
+  mapAnnotations                         MapAnnotation[]
 
   @@index([tenantId])
   @@map("parks")
@@ -466,6 +471,7 @@ model Person {
   lastActivityAt                 DateTime?
   crmActivities                  CrmActivity[]
   vendorProfiles                 Vendor[]
+  contactLinks                   ContactLink[]
 
   @@index([tenantId])
   @@index([lastName, firstName])
@@ -3009,4 +3015,99 @@ model IncomingInvoiceSplit {
   @@index([invoiceId])
   @@index([fundId])
   @@map("incoming_invoice_splits")
+}
+
+// =============================================================================
+// Map Annotations (user-drawn polygons/lines on park maps)
+// =============================================================================
+
+enum MapAnnotationType {
+  CABLE_ROUTE
+  COMPENSATION_AREA
+  ACCESS_ROAD
+  EXCLUSION_ZONE
+  CUSTOM
+}
+
+model MapAnnotation {
+  id          String              @id @default(uuid())
+  tenantId    String
+  parkId      String
+  name        String              @db.VarChar(200)
+  type        MapAnnotationType   @default(CUSTOM)
+  geometry    Json                // GeoJSON Polygon/LineString/MultiPolygon
+  style       Json?               // {color, weight, fillColor, fillOpacity, dashArray}
+  description String?
+  createdById String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  park        Park                @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  createdBy   User                @relation(fields: [createdById], references: [id])
+
+  @@index([tenantId, parkId])
+  @@map("map_annotations")
+}
+
+// =============================================================================
+// WFS Cadastral Cache (caches WFS parcel lookups to avoid repeated calls)
+// =============================================================================
+
+model WfsCadastralCache {
+  id                String   @id @default(uuid())
+  tenantId          String
+  serviceUrl        String   @db.VarChar(500)
+  cadastralDistrict String   @db.VarChar(200) // Gemarkung
+  fieldNumber       String   @db.VarChar(50)  // Flur
+  plotNumber        String?  @db.VarChar(50)  // Flurstück (null = entire Flur)
+  geometry          Json                      // GeoJSON from WFS
+  properties        Json                      // All WFS feature properties
+  fetchedAt         DateTime @default(now())
+
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, serviceUrl, cadastralDistrict, fieldNumber, plotNumber])
+  @@index([tenantId, cadastralDistrict, fieldNumber])
+  @@map("wfs_cadastral_cache")
+}
+
+// =============================================================================
+// Contact Links (CRM contact-entity role assignments)
+// =============================================================================
+
+enum ContactRole {
+  VERPAECHTER
+  NETZBETREIBER
+  GUTACHTER
+  BETRIEBSFUEHRER
+  VERSICHERUNG
+  RECHTSANWALT
+  STEUERBERATER
+  DIENSTLEISTER
+  BEHOERDE
+  SONSTIGES
+}
+
+model ContactLink {
+  id          String       @id @default(uuid())
+  tenantId    String
+  personId    String
+  role        ContactRole
+  entityType  String       @db.VarChar(50) // "PARK", "FUND", "LEASE", "CONTRACT"
+  entityId    String
+  notes       String?
+  isPrimary   Boolean      @default(false)
+  validFrom   DateTime?
+  validTo     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  person      Person       @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, personId, role, entityType, entityId])
+  @@index([tenantId, entityType, entityId])
+  @@index([personId])
+  @@map("contact_links")
 }
