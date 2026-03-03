@@ -1470,42 +1470,48 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
     }
 
     // -- Incremental Import: skip files that have already been imported --
-    // Query the most recent successful or partial import for this location+fileType+tenant
-    const lastSuccessfulImport = await prisma.scadaImportLog.findFirst({
-      where: {
-        tenantId,
-        locationCode,
-        fileType,
-        status: { in: ['SUCCESS', 'PARTIAL'] },
-        lastProcessedDate: { not: null },
-        // Exclude the current import log entry
-        id: { not: importLogId },
-      },
-      orderBy: { lastProcessedDate: 'desc' },
-      select: { lastProcessedDate: true },
-    });
-
+    // Only applies to path-based (auto/scan) imports, NOT browser uploads.
+    // For uploads (filePaths explicitly set), always process all files and rely
+    // on skipDuplicates: true in createMany to silently skip duplicate records.
     let filesToProcess = filesToScan;
 
-    if (lastSuccessfulImport?.lastProcessedDate) {
-      // Normalize lastProcessedDate to start-of-day UTC so we skip the entire
-      // day that was already fully processed (files are per-day granularity).
-      const lpd = lastSuccessfulImport.lastProcessedDate;
-      const lastDayStart = new Date(Date.UTC(
-        lpd.getUTCFullYear(),
-        lpd.getUTCMonth(),
-        lpd.getUTCDate(),
-      ));
+    const isUpload = filePaths && filePaths.length > 0;
 
-      filesToProcess = filesToScan.filter((fp) => {
-        const fileDate = extractDateFromFilename(fp);
-        if (!fileDate) {
-          // Cannot determine date from filename -> include to be safe
-          return true;
-        }
-        // Only include files whose date is strictly after the last processed day
-        return fileDate.getTime() > lastDayStart.getTime();
+    if (!isUpload) {
+      const lastSuccessfulImport = await prisma.scadaImportLog.findFirst({
+        where: {
+          tenantId,
+          locationCode,
+          fileType,
+          status: { in: ['SUCCESS', 'PARTIAL'] },
+          lastProcessedDate: { not: null },
+          // Exclude the current import log entry
+          id: { not: importLogId },
+        },
+        orderBy: { lastProcessedDate: 'desc' },
+        select: { lastProcessedDate: true },
       });
+
+      if (lastSuccessfulImport?.lastProcessedDate) {
+        // Normalize lastProcessedDate to start-of-day UTC so we skip the entire
+        // day that was already fully processed (files are per-day granularity).
+        const lpd = lastSuccessfulImport.lastProcessedDate;
+        const lastDayStart = new Date(Date.UTC(
+          lpd.getUTCFullYear(),
+          lpd.getUTCMonth(),
+          lpd.getUTCDate(),
+        ));
+
+        filesToProcess = filesToScan.filter((fp) => {
+          const fileDate = extractDateFromFilename(fp);
+          if (!fileDate) {
+            // Cannot determine date from filename -> include to be safe
+            return true;
+          }
+          // Only include files whose date is strictly after the last processed day
+          return fileDate.getTime() > lastDayStart.getTime();
+        });
+      }
     }
 
     // If all files are already imported, complete immediately
