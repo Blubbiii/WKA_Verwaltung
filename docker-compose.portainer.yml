@@ -19,8 +19,9 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "3050:3000"
+      - "3050:3050"
     environment:
+      PORT: "3050"
       DATABASE_URL: postgresql://wpm:WpmSicher2026@postgres:5432/windparkmanager?schema=public
       NEXTAUTH_URL: http://192.168.178.101:3050
       NEXTAUTH_SECRET: WindparkManager-Secret-Key-Mindestens-32-Zeichen-Lang
@@ -39,7 +40,7 @@ services:
       LOG_LEVEL: info
       EMAIL_ENCRYPTION_KEY: 91f05f5cd36be50d8487e40104084b36a4cab94b891a0610576c53d6f91877b1
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3050/api/health"]
       interval: 30s
       timeout: 10s
       start_period: 60s
