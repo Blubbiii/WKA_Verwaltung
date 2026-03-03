@@ -3,8 +3,8 @@
   "version": "0.3.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "dev:clean": "rimraf .next && next dev --turbopack",
+    "dev": "next dev --turbopack -p 3050",
+    "dev:clean": "rimraf .next && next dev --turbopack -p 3050",
     "build": "next build",
     "build:clean": "rimraf .next && next build",
     "start": "next start",

@@ -19,22 +19,22 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "3050:3000"
     environment:
       DATABASE_URL: postgresql://wpm:WpmSicher2026@postgres:5432/windparkmanager?schema=public
-      NEXTAUTH_URL: http://192.168.178.101:3000
+      NEXTAUTH_URL: http://192.168.178.101:3050
       NEXTAUTH_SECRET: WindparkManager-Secret-Key-Mindestens-32-Zeichen-Lang
       AUTH_SECRET: WindparkManager-Secret-Key-Mindestens-32-Zeichen-Lang
       AUTH_TRUST_HOST: "true"
-      NEXT_PUBLIC_APP_URL: http://192.168.178.101:3000
-      APP_URL: http://192.168.178.101:3000
+      NEXT_PUBLIC_APP_URL: http://192.168.178.101:3050
+      APP_URL: http://192.168.178.101:3050
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: minioadmin
       S3_SECRET_KEY: MinioSicher2026
       S3_BUCKET: wpm-documents
       S3_REGION: eu-central-1
-      S3_PUBLIC_URL: http://192.168.178.101:3000/api/documents
+      S3_PUBLIC_URL: http://192.168.178.101:3050/api/documents
       NODE_ENV: production
       LOG_LEVEL: info
       EMAIL_ENCRYPTION_KEY: 91f05f5cd36be50d8487e40104084b36a4cab94b891a0610576c53d6f91877b1
