@@ -2,12 +2,20 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ExternalLink, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { isMetabaseConfigured, getMetabaseDashboardUrl } from "@/lib/metabase-embed";
 
 export default async function AnalyticsPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
   const metabaseUrl = process.env.NEXT_PUBLIC_METABASE_URL;
+  const useEmbedding = isMetabaseConfigured();
+
+  // Dashboard ID 1 = default first dashboard in Metabase
+  // Change this to the actual dashboard ID you want to embed
+  const iframeSrc = useEmbedding
+    ? getMetabaseDashboardUrl(1)
+    : metabaseUrl;
 
   return (
     <div className="flex flex-col h-full gap-4 p-6">
@@ -28,10 +36,10 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* iFrame or placeholder */}
-      {metabaseUrl ? (
+      {iframeSrc ? (
         <div className="flex-1 rounded-lg border overflow-hidden">
           <iframe
-            src={metabaseUrl}
+            src={iframeSrc}
             className="w-full h-full border-0"
             title="Metabase Analytics"
             allow="fullscreen"
@@ -44,15 +52,15 @@ export default async function AnalyticsPage() {
             <p className="text-lg font-medium">Metabase nicht konfiguriert</p>
             <p className="text-sm text-muted-foreground">
               Starten Sie den Metabase-Dienst im Docker-Stack und setzen Sie
-              die Umgebungsvariable{" "}
+              die Umgebungsvariablen{" "}
               <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
                 NEXT_PUBLIC_METABASE_URL
               </code>{" "}
-              in Portainer auf die Metabase-Adresse (z. B.{" "}
+              und{" "}
               <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
-                http://192.168.178.101:3002
-              </code>
-              ). Beim ersten Start die Einrichtung im Browser abschliessen.
+                METABASE_EMBEDDING_SECRET
+              </code>{" "}
+              in Portainer.
             </p>
           </div>
         </div>
