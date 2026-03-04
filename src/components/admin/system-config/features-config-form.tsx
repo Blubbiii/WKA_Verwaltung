@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Briefcase, FileArchive, Mail, Loader2 } from "lucide-react";
+import { Briefcase, FileArchive, Mail, BarChart3, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -60,6 +60,9 @@ export function FeaturesConfigForm({
   const [communicationEnabled, setCommunicationEnabled] = useState(
     getConfigValue("communication.enabled") === "true"
   );
+  const [wirtschaftsplanEnabled, setWirtschaftsplanEnabled] = useState(
+    getConfigValue("wirtschaftsplan.enabled") === "true"
+  );
 
   // UI state
   const [saving, setSaving] = useState(false);
@@ -82,6 +85,11 @@ export function FeaturesConfigForm({
         {
           key: "communication.enabled",
           value: communicationEnabled ? "true" : "false",
+          category: "features",
+        },
+        {
+          key: "wirtschaftsplan.enabled",
+          value: wirtschaftsplanEnabled ? "true" : "false",
           category: "features",
         },
       ];
@@ -196,6 +204,36 @@ export function FeaturesConfigForm({
             id="communication-enabled"
             checked={communicationEnabled}
             onCheckedChange={setCommunicationEnabled}
+          />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Wirtschaftsplan */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          <h3 className="font-medium">Wirtschaftsplan</h3>
+        </div>
+
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div>
+            <Label
+              htmlFor="wirtschaftsplan-enabled"
+              className="cursor-pointer"
+            >
+              Wirtschaftsplan & Kostenstellenmanagement aktivieren
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Aktiviert Budgetplanung, Kostenstellen, Gewinn- & Verlustrechnung
+              mit Soll/Ist-Vergleich
+            </p>
+          </div>
+          <Switch
+            id="wirtschaftsplan-enabled"
+            checked={wirtschaftsplanEnabled}
+            onCheckedChange={setWirtschaftsplanEnabled}
           />
         </div>
       </div>

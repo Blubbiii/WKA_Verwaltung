@@ -196,16 +196,17 @@ export async function GET(
       );
     }
 
-    // Berechne Statistiken
+    // Berechne Statistiken (nur echte WEAs, keine NVP/Parkrechner)
     const activeTurbines = park.turbines.filter((t) => t.status === "ACTIVE");
-    const totalCapacity = activeTurbines.reduce(
+    const activeWEAs = activeTurbines.filter((t) => (t.deviceType ?? "WEA") === "WEA");
+    const totalCapacity = activeWEAs.reduce(
       (sum, t) => sum + (Number(t.ratedPowerKw) || 0),
       0
     );
 
     const stats = {
       turbineCount: park._count.turbines,
-      activeTurbineCount: activeTurbines.length,
+      activeTurbineCount: activeWEAs.length,
       calculatedCapacityKw: totalCapacity,
       documentCount: park._count.documents,
       contractCount: park._count.contracts,

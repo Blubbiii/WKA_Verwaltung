@@ -38,6 +38,8 @@ import {
   ProductionForecastChart,
   RevenueByParkChart,
   LeaseOverviewWidget,
+  BudgetVarianceKPI,
+  WirtschaftsplanPLChart,
 } from "./widgets";
 import { useAnalytics, useFormatCurrencyCompact } from "@/hooks/useAnalytics";
 import type { AvailableWidget } from "@/hooks/useDashboardConfig";
@@ -87,6 +89,8 @@ const WIDGET_TITLES: Record<string, string> = {
   "chart-production-forecast": "Produktion vs. Prognose",
   "chart-revenue-by-park": "Erlöse nach Park",
   "list-lease-overview": "Pachtübersicht",
+  "kpi-budget-variance": "Budget-Auslastung",
+  "chart-wirtschaftsplan-pl": "P&L Jahresverlauf",
 };
 
 // =============================================================================
@@ -483,6 +487,19 @@ export function WidgetRenderer({
           <LeaseOverviewWidget />
         </WidgetWrapper>
       );
+    }
+
+    // Wirtschaftsplan Widgets
+    if (widgetId === "kpi-budget-variance") {
+      return (
+        <WidgetWrapper title={widgetTitle} isEditing={isEditing} onRemove={onRemove}>
+          <BudgetVarianceKPI />
+        </WidgetWrapper>
+      );
+    }
+
+    if (widgetId === "chart-wirtschaftsplan-pl") {
+      return <WirtschaftsplanPLChart />;
     }
 
     // Unknown Widget

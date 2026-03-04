@@ -16,3 +16,4 @@ export {
   RevenueByParkChart,
   LeaseOverviewWidget,
 } from "./energy-widgets";
+export { BudgetVarianceKPI, WirtschaftsplanPLChart } from "./wirtschaftsplan-widgets";

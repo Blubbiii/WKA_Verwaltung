@@ -98,6 +98,8 @@ model Tenant {
   incomingInvoices          IncomingInvoice[]
   mapAnnotations            MapAnnotation[]
   contactLinks              ContactLink[]
+  costCenters               CostCenter[]
+  annualBudgets             AnnualBudget[]
 
   @@map("tenants")
 }
@@ -256,6 +258,7 @@ model Park {
   weatherData                            WeatherData[]
   crmActivities                          CrmActivity[]
   mapAnnotations                         MapAnnotation[]
+  costCenters                            CostCenter[]
 
   @@index([tenantId])
   @@map("parks")
@@ -314,6 +317,7 @@ model Turbine {
   turbineProductions             TurbineProduction[]
   netzgesellschaftFund           Fund?                     @relation(fields: [netzgesellschaftFundId], references: [id])
   park                           Park                      @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  costCenters                    CostCenter[]
 
   @@index([parkId])
   @@index([netzgesellschaftFundId])
@@ -415,6 +419,7 @@ model Fund {
   crmActivities                                         CrmActivity[]
   incomingInvoicesAsRecipient                           IncomingInvoice[]
   incomingInvoiceSplits                                 IncomingInvoiceSplit[]
+  costCenters                                           CostCenter[]
 
   @@index([tenantId])
   @@index([fundCategoryId])
@@ -3088,4 +3093,118 @@ model ContactLink {
   @@index([tenantId, entityType, entityId])
   @@index([personId])
   @@map("contact_links")
+}
+
+// =============================================================================
+// Wirtschaftsplan: Cost Centers, Annual Budgets, Budget Lines
+// =============================================================================
+
+enum CostCenterType {
+  PARK
+  TURBINE
+  FUND
+  OVERHEAD
+  CUSTOM
+}
+
+enum BudgetStatus {
+  DRAFT
+  APPROVED
+  LOCKED
+}
+
+enum BudgetCategory {
+  REVENUE_ENERGY
+  REVENUE_OTHER
+  COST_LEASE
+  COST_MAINTENANCE
+  COST_INSURANCE
+  COST_ADMIN
+  COST_DEPRECIATION
+  COST_FINANCING
+  COST_OTHER
+  RESERVE
+}
+
+model CostCenter {
+  id          String         @id @default(cuid())
+  tenantId    String
+  code        String
+  name        String
+  type        CostCenterType
+  description String?
+  isActive    Boolean        @default(true)
+
+  parkId    String?
+  park      Park?    @relation(fields: [parkId], references: [id])
+  turbineId String?
+  turbine   Turbine? @relation(fields: [turbineId], references: [id])
+  fundId    String?
+  fund      Fund?    @relation(fields: [fundId], references: [id])
+
+  parentId String?
+  parent   CostCenter?  @relation("CostCenterHierarchy", fields: [parentId], references: [id])
+  children CostCenter[] @relation("CostCenterHierarchy")
+
+  budgetLines BudgetLine[]
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("cost_centers")
+}
+
+model AnnualBudget {
+  id       String       @id @default(cuid())
+  tenantId String
+  year     Int
+  name     String
+  status   BudgetStatus @default(DRAFT)
+  notes    String?
+
+  lines BudgetLine[]
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, year, name])
+  @@index([tenantId, year])
+  @@map("annual_budgets")
+}
+
+model BudgetLine {
+  id           String         @id @default(cuid())
+  budgetId     String
+  costCenterId String
+  category     BudgetCategory
+  description  String
+  notes        String?
+
+  jan Decimal @default(0) @db.Decimal(14, 2)
+  feb Decimal @default(0) @db.Decimal(14, 2)
+  mar Decimal @default(0) @db.Decimal(14, 2)
+  apr Decimal @default(0) @db.Decimal(14, 2)
+  may Decimal @default(0) @db.Decimal(14, 2)
+  jun Decimal @default(0) @db.Decimal(14, 2)
+  jul Decimal @default(0) @db.Decimal(14, 2)
+  aug Decimal @default(0) @db.Decimal(14, 2)
+  sep Decimal @default(0) @db.Decimal(14, 2)
+  oct Decimal @default(0) @db.Decimal(14, 2)
+  nov Decimal @default(0) @db.Decimal(14, 2)
+  dec Decimal @default(0) @db.Decimal(14, 2)
+
+  budget     AnnualBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  costCenter CostCenter   @relation(fields: [costCenterId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([budgetId])
+  @@index([costCenterId])
+  @@map("budget_lines")
 }

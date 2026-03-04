@@ -105,7 +105,7 @@ export function PortalHeader() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={async () => { await signOut({ redirect: false }); window.location.href = "/login"; }}
                 className="text-red-600"
               >
                 <LogOut className="mr-2 h-4 w-4" />

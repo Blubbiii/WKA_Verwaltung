@@ -227,6 +227,13 @@ export const CONFIG_KEYS = {
     envFallback: "INBOX_ENABLED",
     defaultValue: "false",
   },
+  "wirtschaftsplan.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Wirtschaftsplan & Kostenstellenmanagement",
+    encrypted: false,
+    envFallback: "WIRTSCHAFTSPLAN_ENABLED",
+    defaultValue: "false",
+  },
 
   // Paperless-ngx Configuration
   "paperless.url": {

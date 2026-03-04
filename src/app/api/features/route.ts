@@ -43,12 +43,19 @@ export async function GET() {
       false
     );
 
+    const wirtschaftsplanEnabled = await getConfigBoolean(
+      "wirtschaftsplan.enabled",
+      check.tenantId,
+      false
+    );
+
     return NextResponse.json({
       "management-billing": managementBillingEnabled,
       "paperless": paperlessEnabled,
       "communication": communicationEnabled,
       "crm": crmEnabled,
       "inbox": inboxEnabled,
+      "wirtschaftsplan": wirtschaftsplanEnabled,
     });
   } catch {
     return NextResponse.json({
@@ -57,6 +64,7 @@ export async function GET() {
       "communication": false,
       "crm": false,
       "inbox": false,
+      "wirtschaftsplan": false,
     });
   }
 }

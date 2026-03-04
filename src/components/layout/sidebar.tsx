@@ -61,6 +61,7 @@ import {
   Inbox,
   GripVertical,
   RotateCcw,
+  Wallet,
 } from "lucide-react";
 import {
   DndContext,
@@ -95,7 +96,7 @@ interface NavChild {
   href: string;
   icon?: React.ElementType;
   /** Feature flag that must be enabled for this child to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan";
 }
 
 interface NavItem {
@@ -109,7 +110,7 @@ interface NavItem {
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
   /** Feature flag that must be enabled for this item to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan";
 }
 
 interface NavGroup {
@@ -207,7 +208,6 @@ const navGroups: NavGroup[] = [
         permission: "parks:read",
         children: [
           { title: "Übersicht", titleKey: "parksOverview", href: "/parks", icon: Wind },
-          { title: "Park P&L", titleKey: "parkPL", href: "/parks/pl", icon: BarChart3 },
         ],
       },
       {
@@ -282,6 +282,20 @@ const navGroups: NavGroup[] = [
           { title: "Übersicht", titleKey: "managementBillingOverview", href: "/management-billing" },
           { title: "BF-Verträge", titleKey: "managementStakeholders", href: "/management-billing/stakeholders" },
           { title: "Abrechnungen", titleKey: "managementBillings", href: "/management-billing/billings" },
+        ],
+      },
+      {
+        title: "Wirtschaftsplan",
+        titleKey: "wirtschaftsplan",
+        href: "/wirtschaftsplan",
+        icon: BarChart3,
+        permission: "wirtschaftsplan:read",
+        featureFlag: "wirtschaftsplan",
+        children: [
+          { title: "Übersicht", titleKey: "wirtschaftsplanOverview", href: "/wirtschaftsplan", icon: BarChart3 },
+          { title: "Gewinn & Verlust", titleKey: "wirtschaftsplanPL", href: "/wirtschaftsplan/pl", icon: TrendingUp },
+          { title: "Budgetplanung", titleKey: "wirtschaftsplanBudget", href: "/wirtschaftsplan/budget", icon: Wallet },
+          { title: "Kostenstellen", titleKey: "wirtschaftsplanCostCenters", href: "/wirtschaftsplan/cost-centers", icon: Building2 },
         ],
       },
     ],

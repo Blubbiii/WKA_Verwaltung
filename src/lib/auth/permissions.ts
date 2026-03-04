@@ -445,6 +445,12 @@ export const PERMISSIONS = {
   VENDORS_READ: "vendors:read",
   VENDORS_WRITE: "vendors:write",
 
+  // Wirtschaftsplan (Business Plan & Cost Centers)
+  WIRTSCHAFTSPLAN_READ: "wirtschaftsplan:read",
+  WIRTSCHAFTSPLAN_CREATE: "wirtschaftsplan:create",
+  WIRTSCHAFTSPLAN_UPDATE: "wirtschaftsplan:update",
+  WIRTSCHAFTSPLAN_DELETE: "wirtschaftsplan:delete",
+
   // Reports
   REPORTS_READ: "reports:read",
   REPORTS_CREATE: "reports:create",

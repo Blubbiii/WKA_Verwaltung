@@ -58,6 +58,10 @@ export const MANAGER_DEFAULT_LAYOUT: DashboardWidget[] = [
   { id: "list-deadlines",          x: 0, y: 11, w: 4, h: 5 },
   { id: "list-expiring-contracts", x: 4, y: 11, w: 4, h: 5 },
   { id: "list-activities",         x: 8, y: 11, w: 4, h: 5 },
+
+  // Row 16-17: Wirtschaftsplan KPI (3x2) + P&L chart (6x4)
+  { id: "kpi-budget-variance",       x: 0, y: 16, w: 3, h: 2 },
+  { id: "chart-wirtschaftsplan-pl",  x: 3, y: 16, w: 6, h: 4 },
 ];
 
 /**
@@ -85,9 +89,13 @@ export const ADMIN_DEFAULT_LAYOUT: DashboardWidget[] = [
   { id: "list-expiring-contracts", x: 4, y: 11, w: 4, h: 5 },
   { id: "list-activities",         x: 8, y: 11, w: 4, h: 5 },
 
-  // Row 16-20: admin widgets (4x5 + 6x6)
-  { id: "admin-system-status", x: 0, y: 16, w: 4, h: 5 },
-  { id: "admin-audit-log",     x: 4, y: 16, w: 8, h: 6 },
+  // Row 16-17: Wirtschaftsplan KPI (3x2) + P&L chart (6x4)
+  { id: "kpi-budget-variance",       x: 0, y: 16, w: 3, h: 2 },
+  { id: "chart-wirtschaftsplan-pl",  x: 3, y: 16, w: 6, h: 4 },
+
+  // Row 20-25: admin widgets (4x5 + 6x6)
+  { id: "admin-system-status", x: 0, y: 20, w: 4, h: 5 },
+  { id: "admin-audit-log",     x: 4, y: 20, w: 8, h: 6 },
 ];
 
 /**
@@ -116,14 +124,18 @@ export const SUPERADMIN_DEFAULT_LAYOUT: DashboardWidget[] = [
   { id: "list-expiring-contracts", x: 4, y: 11, w: 4, h: 5 },
   { id: "list-activities",         x: 8, y: 11, w: 4, h: 5 },
 
-  // Row 16-20: admin widgets + chart
-  { id: "admin-system-status",     x: 0, y: 16, w: 4, h: 5 },
-  { id: "chart-documents-by-type", x: 4, y: 16, w: 4, h: 5 },
-  { id: "admin-audit-log",         x: 0, y: 21, w: 6, h: 6 },
-  { id: "admin-billing-jobs",      x: 6, y: 21, w: 6, h: 6 },
+  // Row 16-17: Wirtschaftsplan KPI (3x2) + P&L chart (6x4)
+  { id: "kpi-budget-variance",       x: 0, y: 16, w: 3, h: 2 },
+  { id: "chart-wirtschaftsplan-pl",  x: 3, y: 16, w: 6, h: 4 },
 
-  // Row 27-31: webhook status (4x5)
-  { id: "admin-webhook-status",    x: 0, y: 27, w: 4, h: 5 },
+  // Row 20-25: admin widgets + chart
+  { id: "admin-system-status",     x: 0, y: 20, w: 4, h: 5 },
+  { id: "chart-documents-by-type", x: 4, y: 20, w: 4, h: 5 },
+  { id: "admin-audit-log",         x: 0, y: 25, w: 6, h: 6 },
+  { id: "admin-billing-jobs",      x: 6, y: 25, w: 6, h: 6 },
+
+  // Row 31-35: webhook status (4x5)
+  { id: "admin-webhook-status",    x: 0, y: 31, w: 4, h: 5 },
 ];
 
 /**
