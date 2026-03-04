@@ -1,29 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { rateLimit, getClientIp, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 
-interface DemoRequestBody {
-  name: string;
-  company: string;
-  email: string;
-  phone?: string;
-  message?: string;
-}
+const DemoRequestSchema = z.object({
+  name: z.string().min(1).max(100),
+  company: z.string().min(1).max(100),
+  email: z.string().email().max(200),
+  phone: z.string().max(50).optional(),
+  message: z.string().max(1000).optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const body: DemoRequestBody = await req.json();
-
-    if (!body.name?.trim() || !body.company?.trim() || !body.email?.trim()) {
+    // Rate limiting: same tight limit as auth endpoints (public endpoint, no auth)
+    const ip = getClientIp(req);
+    const rl = rateLimit(`demo-request:${ip}`, AUTH_RATE_LIMIT);
+    if (!rl.success) {
       return NextResponse.json(
-        { error: "Name, Unternehmen und E-Mail sind erforderlich." },
+        { error: "Zu viele Anfragen. Bitte versuchen Sie es später erneut." },
+        { status: 429 }
+      );
+    }
+
+    const parsed = DemoRequestSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabedaten." },
         { status: 400 }
       );
     }
 
-    // Log the demo request
-    logger.info(
-      `Demo request: ${body.name} (${body.company}) <${body.email}>`
-    );
+    const { name, company, email, phone, message } = parsed.data;
+
+    // Structured logging — no string interpolation of user input
+    logger.info({ name, company, email, phone: phone ?? null }, "Demo request received");
+
+    // TODO: send notification email here if needed
 
     return NextResponse.json({ success: true });
   } catch {

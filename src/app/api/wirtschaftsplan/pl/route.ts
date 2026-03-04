@@ -149,10 +149,16 @@ export async function GET(request: NextRequest) {
           leaseRevenueSettlement: { select: { parkId: true } },
         },
       }),
-      // Budget lines: if budgetId specified, use that; otherwise find first approved/draft budget for year
+      // Budget lines: always verify budget belongs to current tenant (IDOR protection)
       (async () => {
-        let budgetId = budgetIdParam;
-        if (!budgetId) {
+        let resolvedBudgetId = budgetIdParam;
+        if (resolvedBudgetId) {
+          // Validate that the requested budget belongs to this tenant
+          const owned = await prisma.annualBudget.findFirst({
+            where: { id: resolvedBudgetId, tenantId: check.tenantId },
+          });
+          if (!owned) return [];
+        } else {
           const budget = await prisma.annualBudget.findFirst({
             where: {
               tenantId: check.tenantId,
@@ -161,11 +167,11 @@ export async function GET(request: NextRequest) {
             },
             orderBy: { status: "asc" }, // APPROVED before DRAFT
           });
-          budgetId = budget?.id ?? null;
+          resolvedBudgetId = budget?.id ?? null;
         }
-        if (!budgetId) return [];
+        if (!resolvedBudgetId) return [];
         return prisma.budgetLine.findMany({
-          where: { budgetId },
+          where: { budgetId: resolvedBudgetId },
           include: {
             costCenter: { select: { parkId: true } },
           },

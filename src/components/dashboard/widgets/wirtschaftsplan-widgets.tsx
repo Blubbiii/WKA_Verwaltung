@@ -16,33 +16,24 @@ import {
 } from "recharts";
 
 // =============================================================================
-// Types
+// Types — matches actual /api/wirtschaftsplan/overview response
 // =============================================================================
 
 interface OverviewData {
   year: number;
-  revenueActual: number;
-  revenueBudget: number | null;
-  costsActual: number;
-  costsBudget: number | null;
-  resultActual: number;
-  resultBudget: number | null;
-  budgetUtilizationPct: number | null;
-  monthlyData: Array<{
-    month: number;
-    revenueActual: number;
-    revenueBudget: number | null;
-    costsActual: number;
-    costsBudget: number | null;
-    resultActual: number;
-    resultBudget: number | null;
-  }>;
+  currentMonth: number;
+  totalRevenue: number;
+  totalCosts: number;
+  netPL: number;
+  budgetRevenue: number;
+  budgetCosts: number;
+  budgetNetPL: number;
+  budgetUsagePct: number | null;
+  hasBudget: boolean;
+  varianceRevenue: number;
+  varianceCosts: number;
+  varianceNetPL: number;
 }
-
-const MONTH_LABELS = [
-  "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
-  "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
-];
 
 function useOverviewData() {
   const [data, setData] = useState<OverviewData | null>(null);
@@ -50,10 +41,14 @@ function useOverviewData() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/wirtschaftsplan/overview")
+    const controller = new AbortController();
+    fetch("/api/wirtschaftsplan/overview", { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d: OverviewData) => { setData(d); setIsLoading(false); })
-      .catch(() => { setError(true); setIsLoading(false); });
+      .catch((e) => {
+        if (e?.name !== "AbortError") { setError(true); setIsLoading(false); }
+      });
+    return () => controller.abort();
   }, []);
 
   return { data, isLoading, error };
@@ -82,8 +77,8 @@ export function BudgetVarianceKPI({ className }: { className?: string }) {
     );
   }
 
-  const utilization = data.budgetUtilizationPct;
-  const hasBudget = utilization !== null && utilization !== undefined;
+  const utilization = data.budgetUsagePct;
+  const hasBudget = data.hasBudget && utilization !== null;
 
   const isOver = hasBudget && utilization! > 100;
   const isUnder = hasBudget && utilization! < 90;
@@ -111,10 +106,8 @@ export function BudgetVarianceKPI({ className }: { className?: string }) {
         <p className={cn("text-2xl font-bold truncate", color)}>
           {hasBudget ? `${utilization!.toFixed(1)} %` : "–"}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">Budget-Auslastung {data.year}</p>
-        {hasBudget && (
-          <p className={cn("text-xs mt-1", color)}>{label}</p>
-        )}
+        <p className="text-xs text-muted-foreground mt-0.5">Kostenauslastung {data.year}</p>
+        {hasBudget && <p className={cn("text-xs mt-1", color)}>{label}</p>}
         {!hasBudget && (
           <p className="text-xs text-muted-foreground mt-1">Kein Budget hinterlegt</p>
         )}
@@ -124,8 +117,12 @@ export function BudgetVarianceKPI({ className }: { className?: string }) {
 }
 
 // =============================================================================
-// Chart: P&L Jahresverlauf (Ist vs. Plan)
+// Chart: P&L Ist vs. Plan (YTD comparison, 3 categories)
 // =============================================================================
+
+function formatK(value: number) {
+  return `${(value / 1000).toFixed(1)}k€`;
+}
 
 export function WirtschaftsplanPLChart({ className }: { className?: string }) {
   const { data, isLoading, error } = useOverviewData();
@@ -146,13 +143,23 @@ export function WirtschaftsplanPLChart({ className }: { className?: string }) {
     );
   }
 
-  const chartData = data.monthlyData.map((m) => ({
-    name: MONTH_LABELS[m.month - 1],
-    Ist: Math.round(m.resultActual / 100) / 10,
-    Plan: m.resultBudget != null ? Math.round(m.resultBudget / 100) / 10 : undefined,
-  }));
-
-  const hasBudget = data.revenueBudget !== null;
+  const chartData = [
+    {
+      name: "Erlöse",
+      Ist: Math.round(data.totalRevenue / 10) / 100,
+      ...(data.hasBudget ? { Plan: Math.round(data.budgetRevenue / 10) / 100 } : {}),
+    },
+    {
+      name: "Kosten",
+      Ist: Math.round(data.totalCosts / 10) / 100,
+      ...(data.hasBudget ? { Plan: Math.round(data.budgetCosts / 10) / 100 } : {}),
+    },
+    {
+      name: "Ergebnis",
+      Ist: Math.round(data.netPL / 10) / 100,
+      ...(data.hasBudget ? { Plan: Math.round(data.budgetNetPL / 10) / 100 } : {}),
+    },
+  ];
 
   return (
     <Card className={cn("h-full flex flex-col", className)}>
@@ -161,7 +168,8 @@ export function WirtschaftsplanPLChart({ className }: { className?: string }) {
           P&L Jahresverlauf
         </CardTitle>
         <CardDescription className="text-xs">
-          Ergebnis {data.year} — Ist{hasBudget ? " vs. Plan" : ""}
+          YTD {data.year} (Jan–{["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"][data.currentMonth - 1]})
+          {data.hasBudget ? " — Ist vs. Plan" : " — Ist"}
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4 pt-0 flex-1 min-h-0">
@@ -173,12 +181,12 @@ export function WirtschaftsplanPLChart({ className }: { className?: string }) {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
             />
             <YAxis
               tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-              tickFormatter={(v) => `${v}k`}
-              width={36}
+              tickFormatter={formatK}
+              width={50}
             />
             <Tooltip
               contentStyle={{
@@ -187,11 +195,11 @@ export function WirtschaftsplanPLChart({ className }: { className?: string }) {
                 borderRadius: "6px",
                 fontSize: 12,
               }}
-              formatter={(value: number, name: string) => [`${value.toFixed(1)} k€`, name]}
+              formatter={(value: number, name: string) => [`${value.toFixed(1)}k€`, name]}
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="Ist" fill="hsl(215, 50%, 40%)" radius={[2, 2, 0, 0]} />
-            {hasBudget && (
+            {data.hasBudget && (
               <Bar dataKey="Plan" fill="hsl(215, 50%, 68%)" radius={[2, 2, 0, 0]} />
             )}
           </BarChart>

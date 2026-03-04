@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, use } from "react";
+import { useState, useCallback, useEffect, use } from "react";
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import {
@@ -27,7 +27,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  });
 
 const MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 const MONTH_KEYS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"] as const;
@@ -86,6 +90,100 @@ function rowSum(line: BudgetLine): number {
   return MONTH_KEYS.reduce((s, k) => s + (Number(line[k]) || 0), 0);
 }
 
+// =============================================================================
+// LineRow — outside component to avoid remount on every parent render
+// =============================================================================
+
+interface LineRowProps {
+  line: BudgetLine;
+  isLocked: boolean;
+  costCenters: CostCenter[] | undefined;
+  updateLine: (localId: string, field: string, value: string | number) => void;
+  removeLine: (localId: string) => void;
+}
+
+function LineRow({ line, isLocked, costCenters, updateLine, removeLine }: LineRowProps) {
+  const annual = rowSum(line);
+  return (
+    <tr className="border-b hover:bg-muted/20 group">
+      {/* Kostenstelle */}
+      <td className="px-2 py-1 min-w-[140px]">
+        <Select
+          value={line.costCenterId}
+          onValueChange={(v) => updateLine(line._localId!, "costCenterId", v)}
+          disabled={isLocked}
+        >
+          <SelectTrigger className="h-7 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(costCenters ?? []).map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.code} — {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </td>
+      {/* Kategorie */}
+      <td className="px-2 py-1 min-w-[140px]">
+        <Select
+          value={line.category}
+          onValueChange={(v) => updateLine(line._localId!, "category", v)}
+          disabled={isLocked}
+        >
+          <SelectTrigger className="h-7 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </td>
+      {/* Beschreibung */}
+      <td className="px-2 py-1 min-w-[120px]">
+        <Input
+          value={line.description}
+          onChange={(e) => updateLine(line._localId!, "description", e.target.value)}
+          className="h-7 text-xs"
+          disabled={isLocked}
+        />
+      </td>
+      {/* Monatswerte */}
+      {MONTH_KEYS.map((k) => (
+        <td key={k} className="px-1 py-1">
+          <Input
+            type="number"
+            value={line[k] || ""}
+            onChange={(e) => updateLine(line._localId!, k, parseFloat(e.target.value) || 0)}
+            className="h-7 text-xs text-right w-[70px]"
+            disabled={isLocked}
+          />
+        </td>
+      ))}
+      {/* Jahressumme */}
+      <td className="px-2 py-1 text-right text-xs font-medium min-w-[80px]">
+        {annual.toLocaleString("de-DE", { maximumFractionDigits: 0 })}
+      </td>
+      {/* Delete */}
+      {!isLocked && (
+        <td className="px-1 py-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive"
+            onClick={() => removeLine(line._localId!)}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </td>
+      )}
+    </tr>
+  );
+}
+
 export default function BudgetDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -100,11 +198,13 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
   const [saving, setSaving] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
 
-  // Initialize lines from budget data once
-  if (budget && !initialized) {
-    setLines(budget.lines.map((l) => ({ ...l, _localId: Math.random().toString(36).slice(2) })));
-    setInitialized(true);
-  }
+  // Initialize lines from budget data once (in useEffect to avoid state mutation during render)
+  useEffect(() => {
+    if (budget && !initialized) {
+      setLines(budget.lines.map((l) => ({ ...l, _localId: Math.random().toString(36).slice(2) })));
+      setInitialized(true);
+    }
+  }, [budget, initialized]);
 
   const isLocked = budget?.status === "LOCKED";
 
@@ -195,87 +295,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
   const status = STATUS_MAP[budget.status];
   const StatusIcon = status.icon;
 
-  function LineRow({ line }: { line: BudgetLine }) {
-    const annual = rowSum(line);
-    return (
-      <tr className="border-b hover:bg-muted/20 group">
-        {/* Kostenstelle */}
-        <td className="px-2 py-1 min-w-[140px]">
-          <Select
-            value={line.costCenterId}
-            onValueChange={(v) => updateLine(line._localId!, "costCenterId", v)}
-            disabled={isLocked}
-          >
-            <SelectTrigger className="h-7 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(costCenters ?? []).map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.code} — {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </td>
-        {/* Kategorie */}
-        <td className="px-2 py-1 min-w-[140px]">
-          <Select
-            value={line.category}
-            onValueChange={(v) => updateLine(line._localId!, "category", v)}
-            disabled={isLocked}
-          >
-            <SelectTrigger className="h-7 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </td>
-        {/* Beschreibung */}
-        <td className="px-2 py-1 min-w-[120px]">
-          <Input
-            value={line.description}
-            onChange={(e) => updateLine(line._localId!, "description", e.target.value)}
-            className="h-7 text-xs"
-            disabled={isLocked}
-          />
-        </td>
-        {/* Monatswerte */}
-        {MONTH_KEYS.map((k) => (
-          <td key={k} className="px-1 py-1">
-            <Input
-              type="number"
-              value={line[k] || ""}
-              onChange={(e) => updateLine(line._localId!, k, parseFloat(e.target.value) || 0)}
-              className="h-7 text-xs text-right w-[70px]"
-              disabled={isLocked}
-            />
-          </td>
-        ))}
-        {/* Jahressumme */}
-        <td className="px-2 py-1 text-right text-xs font-medium min-w-[80px]">
-          {annual.toLocaleString("de-DE", { maximumFractionDigits: 0 })}
-        </td>
-        {/* Delete */}
-        {!isLocked && (
-          <td className="px-1 py-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive"
-              onClick={() => removeLine(line._localId!)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </td>
-        )}
-      </tr>
-    );
-  }
+
 
   return (
     <div className="space-y-6">
@@ -368,7 +388,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
                         EINNAHMEN
                       </td>
                     </tr>
-                    {revenueLines.map((l) => <LineRow key={l._localId} line={l} />)}
+                    {revenueLines.map((l) => <LineRow key={l._localId} line={l} isLocked={isLocked} costCenters={costCenters} updateLine={updateLine} removeLine={removeLine} />)}
                   </>
                 )}
                 {costLines.length > 0 && (
@@ -378,7 +398,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
                         AUSGABEN
                       </td>
                     </tr>
-                    {costLines.map((l) => <LineRow key={l._localId} line={l} />)}
+                    {costLines.map((l) => <LineRow key={l._localId} line={l} isLocked={isLocked} costCenters={costCenters} updateLine={updateLine} removeLine={removeLine} />)}
                   </>
                 )}
                 {lines.length === 0 && (

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth/withPermission";
+import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { apiLogger as logger } from "@/lib/logger";
-import { auth } from "@/lib/auth";
 
 const userUpdateSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse").optional(),
@@ -17,10 +16,10 @@ const userUpdateSchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
 
-/** Quick helper to check if current user is SUPERADMIN (without throwing) */
+/** Check if current user is SUPERADMIN using the authoritative hierarchy check */
 async function isSuperadmin(): Promise<boolean> {
-  const session = await auth();
-  return session?.user?.role === "SUPERADMIN";
+  const result = await requireSuperadmin();
+  return result.authorized;
 }
 
 // GET /api/admin/users/[id]

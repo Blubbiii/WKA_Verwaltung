@@ -43,7 +43,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  });
 
 const TYPE_META: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   PARK: { label: "Park", icon: Building2, color: "text-blue-600" },

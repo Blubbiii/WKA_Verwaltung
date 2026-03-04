@@ -17,6 +17,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { currentPath } = body;
 
+    // Security: SCADA_BASE_PATH must be set in production
+    const scadaBasePath = process.env.SCADA_BASE_PATH;
+    if (!scadaBasePath && process.env.NODE_ENV === "production") {
+      logger.error("SCADA_BASE_PATH is not configured — filesystem browsing disabled for security");
+      return NextResponse.json(
+        { error: "SCADA-Verzeichnis nicht konfiguriert. Bitte SCADA_BASE_PATH in der Umgebung setzen." },
+        { status: 503 }
+      );
+    }
+
     // Ohne Pfad: Laufwerke/Root-Verzeichnisse zurückgeben
     if (!currentPath || typeof currentPath !== "string") {
       // Auf Windows: Gaengige Laufwerke prüfen
