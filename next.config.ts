@@ -51,7 +51,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' data:",
               "connect-src 'self' https://*.sentry.io",
               frameSrc,
-              "frame-ancestors 'none'",
+              "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",
             ].join("; "),
