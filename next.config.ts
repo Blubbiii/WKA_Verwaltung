@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
   async headers() {
     // Allow iFrame embedding for Grafana and Metabase on admin pages
     // Note: Next.js standalone freezes headers() at build time,
-    // so we allow http://* to cover any local network Grafana/Metabase instance.
-    const frameSrc = "frame-src 'self' http://*.* https://*.*";
+    // so we use http: https: (protocol sources) to allow any origin.
+    const frameSrc = "frame-src 'self' http: https:";
 
     return [
       {
