@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
-import { DistributionMode } from "@prisma/client";
+import { DistributionMode, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 
@@ -166,9 +166,7 @@ export async function PATCH(
     }
 
     // Baue Update-Daten
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const updateData: any = {};
+    const updateData: Prisma.EnergySettlementUpdateInput = {};
 
     // Änderung von netOperatorRevenueEur setzt Status zurück auf DRAFT
     // (redundant da wir schon DRAFT prüfen, aber für zukuenftige Erweiterungen)
@@ -176,7 +174,7 @@ export async function PATCH(
       updateData.netOperatorRevenueEur = validatedData.netOperatorRevenueEur;
       // Bei Änderung des Erlös-Betrags muss neu berechnet werden
       updateData.status = "DRAFT";
-      updateData.calculationDetails = null; // Reset calculation
+      updateData.calculationDetails = Prisma.DbNull; // Reset calculation
     }
 
     if (validatedData.netOperatorReference !== undefined) {
@@ -187,7 +185,7 @@ export async function PATCH(
       updateData.totalProductionKwh = validatedData.totalProductionKwh;
       // Bei Änderung der Produktion muss neu berechnet werden
       updateData.status = "DRAFT";
-      updateData.calculationDetails = null;
+      updateData.calculationDetails = Prisma.DbNull;
     }
 
     if (validatedData.eegProductionKwh !== undefined) {
@@ -207,7 +205,7 @@ export async function PATCH(
       updateData.distributionMode = validatedData.distributionMode as DistributionMode;
       // Bei Änderung des Verteilmodus muss neu berechnet werden
       updateData.status = "DRAFT";
-      updateData.calculationDetails = null;
+      updateData.calculationDetails = Prisma.DbNull;
     }
 
     if (validatedData.smoothingFactor !== undefined) {

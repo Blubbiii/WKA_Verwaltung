@@ -228,7 +228,7 @@ export async function POST(
       reminderLevel,
       lateFee,
       emailedTo: emailAddress,
-    }).catch(() => {});
+    }).catch((err) => logger.error({ err }, "[Audit] Failed to dispatch reminder webhook"));
 
     logger.info(
       { userId: check.userId, tenantId: check.tenantId, invoiceId: id, reminderLevel, lateFee },

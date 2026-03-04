@@ -50,19 +50,40 @@ async function recalculateFundShares(fundId: string, txClient?: Parameters<Param
   );
   const denominator = stammkapital > 0 ? stammkapital : totalContributions;
 
-  // Update each shareholder's ownership percentage
+  // Update each shareholder's ownership percentage (batched for performance)
   if (denominator > 0) {
-    for (const sh of shareholders) {
-      const contribution = Number(sh.capitalContribution) || 0;
-      const percentage = Math.round((contribution / denominator) * 100 * 100) / 100;
-      await db.shareholder.update({
-        where: { id: sh.id },
-        data: {
-          ownershipPercentage: percentage,
-          votingRightsPercentage: percentage,
-          distributionPercentage: percentage,
-        },
-      });
+    if (txClient) {
+      // Already inside an interactive transaction - run updates concurrently
+      await Promise.all(
+        shareholders.map((sh) => {
+          const contribution = Number(sh.capitalContribution) || 0;
+          const percentage = Math.round((contribution / denominator) * 100 * 100) / 100;
+          return db.shareholder.update({
+            where: { id: sh.id },
+            data: {
+              ownershipPercentage: percentage,
+              votingRightsPercentage: percentage,
+              distributionPercentage: percentage,
+            },
+          });
+        })
+      );
+    } else {
+      // No transaction context - use batch $transaction for atomicity + performance
+      await prisma.$transaction(
+        shareholders.map((sh) => {
+          const contribution = Number(sh.capitalContribution) || 0;
+          const percentage = Math.round((contribution / denominator) * 100 * 100) / 100;
+          return prisma.shareholder.update({
+            where: { id: sh.id },
+            data: {
+              ownershipPercentage: percentage,
+              votingRightsPercentage: percentage,
+              distributionPercentage: percentage,
+            },
+          });
+        })
+      );
     }
   }
 }

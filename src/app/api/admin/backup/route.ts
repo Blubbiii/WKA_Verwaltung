@@ -242,7 +242,10 @@ export async function POST(request: NextRequest) {
           const files = await fs.readdir(tempDir);
           for (const file of files) {
             try {
-              await fs.unlink(path.join(tempDir, file));
+              const filePath = path.join(tempDir, file);
+              const stat = await fs.lstat(filePath);
+              if (!stat.isFile()) continue;
+              await fs.unlink(filePath);
               deletedCount++;
             } catch {
               // Skip files that cannot be deleted

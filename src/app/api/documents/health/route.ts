@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
-import { S3Client, HeadBucketCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
+import { HeadBucketCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { getS3Client, S3_BUCKET, getStorageConfig } from "@/lib/storage";
 
 export async function GET() {
   // Admin-only health check - requires admin:system permission
   const check = await requirePermission(PERMISSIONS.ADMIN_SYSTEM);
   if (!check.authorized) return check.error!;
 
-  const S3_ENDPOINT = process.env.S3_ENDPOINT || "http://localhost:9000";
-  const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY || "minioadmin";
-  const S3_SECRET_KEY = process.env.S3_SECRET_KEY || "minioadmin";
-  const S3_BUCKET = process.env.S3_BUCKET || "wpm-documents";
-  const S3_REGION = process.env.S3_REGION || "us-east-1";
+  const storageConfig = getStorageConfig();
 
   const result: {
     status: string;
@@ -32,24 +29,16 @@ export async function GET() {
     status: "healthy",
     timestamp: new Date().toISOString(),
     config: {
-      endpoint: S3_ENDPOINT,
-      bucket: S3_BUCKET,
-      region: S3_REGION,
+      endpoint: storageConfig.endpoint,
+      bucket: storageConfig.bucket,
+      region: storageConfig.region,
     },
     checks: [],
   };
 
   // Teste S3-Verbindung
   try {
-    const s3Client = new S3Client({
-      endpoint: S3_ENDPOINT,
-      region: S3_REGION,
-      credentials: {
-        accessKeyId: S3_ACCESS_KEY,
-        secretAccessKey: S3_SECRET_KEY,
-      },
-      forcePathStyle: true,
-    });
+    const s3Client = getS3Client();
 
     try {
       const command = new HeadBucketCommand({ Bucket: S3_BUCKET });
@@ -96,7 +85,7 @@ export async function GET() {
       result.checks.push({
         name: "S3 Connection",
         status: "error",
-        message: `MinIO/S3 ist nicht erreichbar unter ${S3_ENDPOINT}`,
+        message: `MinIO/S3 ist nicht erreichbar unter ${storageConfig.endpoint}`,
         error: "ECONNREFUSED - Bitte starte MinIO mit: docker-compose -f docker-compose.dev.yml up -d minio",
       });
     } else {

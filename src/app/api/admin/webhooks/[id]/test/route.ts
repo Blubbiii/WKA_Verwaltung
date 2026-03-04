@@ -12,6 +12,23 @@ import { enqueueWebhookDelivery } from "@/lib/queue/queues/webhook.queue";
 import { apiLogger as logger } from "@/lib/logger";
 import type { WebhookEventPayload } from "@/lib/webhooks/dispatcher";
 
+function isInternalUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
+    const blockedHosts = ["localhost", "127.0.0.1", "0.0.0.0", "::1",
+      "redis", "postgres", "minio", "meilisearch", "prometheus", "grafana", "metabase"];
+    if (blockedHosts.includes(hostname)) return true;
+    // Block private IP ranges
+    const parts = hostname.split(".").map(Number);
+    if (parts[0] === 10) return true;
+    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+    if (parts[0] === 192 && parts[1] === 168) return true;
+    if (hostname.endsWith(".internal") || hostname.endsWith(".local")) return true;
+    return false;
+  } catch { return true; }
+}
+
 // =============================================================================
 // POST /api/admin/webhooks/[id]/test - Send test event
 // =============================================================================
@@ -59,6 +76,14 @@ export async function POST(
         triggeredBy: check.userId,
       },
     };
+
+    // SSRF protection: block requests to internal/private URLs
+    if (isInternalUrl(webhook.url)) {
+      return NextResponse.json(
+        { error: "Webhook-URL darf nicht auf interne oder private Adressen zeigen" },
+        { status: 400 }
+      );
+    }
 
     // Enqueue delivery job
     await enqueueWebhookDelivery({

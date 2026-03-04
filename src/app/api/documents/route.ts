@@ -490,12 +490,12 @@ async function handleFileUpload(
   // Auto-archive to Paperless-ngx (fire-and-forget)
   import("@/lib/paperless")
     .then(({ enqueuePaperlessSync }) => enqueuePaperlessSync(document.id, tenantId))
-    .catch(() => {});
+    .catch((err) => logger.warn({ err }, "[Paperless] Sync enqueue failed"));
 
   // Auto-index in Meilisearch (fire-and-forget)
   import("@/lib/search/indexer")
     .then(({ indexDocument }) => indexDocument(document.id, tenantId))
-    .catch(() => {});
+    .catch((err) => logger.warn({ err }, "[Search] Index enqueue failed"));
 
   return NextResponse.json({
     ...document,
@@ -596,12 +596,12 @@ async function handleJsonCreate(
   // Auto-archive to Paperless-ngx (fire-and-forget)
   import("@/lib/paperless")
     .then(({ enqueuePaperlessSync }) => enqueuePaperlessSync(document.id, tenantId))
-    .catch(() => {});
+    .catch((err) => logger.warn({ err }, "[Paperless] Sync enqueue failed"));
 
   // Auto-index in Meilisearch (fire-and-forget)
   import("@/lib/search/indexer")
     .then(({ indexDocument }) => indexDocument(document.id, tenantId))
-    .catch(() => {});
+    .catch((err) => logger.warn({ err }, "[Search] Index enqueue failed"));
 
   // Convert BigInt to Number for JSON serialization
   return NextResponse.json({

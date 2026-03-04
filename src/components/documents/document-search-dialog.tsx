@@ -22,6 +22,7 @@ import {
   Tag,
   FolderOpen,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -47,14 +48,16 @@ interface DocumentSearchDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const categoryConfig: Record<string, { label: string; color: string }> = {
-  CONTRACT: { label: "Vertrag", color: "bg-blue-100 text-blue-800" },
-  PROTOCOL: { label: "Protokoll", color: "bg-purple-100 text-purple-800" },
-  REPORT: { label: "Bericht", color: "bg-green-100 text-green-800" },
-  INVOICE: { label: "Rechnung", color: "bg-orange-100 text-orange-800" },
-  PERMIT: { label: "Genehmigung", color: "bg-red-100 text-red-800" },
-  CORRESPONDENCE: { label: "Korrespondenz", color: "bg-yellow-100 text-yellow-800" },
-  OTHER: { label: "Sonstiges", color: "bg-gray-100 text-gray-800" },
+const CATEGORY_KEYS = ["CONTRACT", "PROTOCOL", "REPORT", "INVOICE", "PERMIT", "CORRESPONDENCE", "OTHER"] as const;
+
+const categoryColorMap: Record<string, string> = {
+  CONTRACT: "bg-blue-100 text-blue-800",
+  PROTOCOL: "bg-purple-100 text-purple-800",
+  REPORT: "bg-green-100 text-green-800",
+  INVOICE: "bg-orange-100 text-orange-800",
+  PERMIT: "bg-red-100 text-red-800",
+  CORRESPONDENCE: "bg-yellow-100 text-yellow-800",
+  OTHER: "bg-gray-100 text-gray-800",
 };
 
 function getFileIcon(mimeType: string | null) {
@@ -71,6 +74,7 @@ export function DocumentSearchDialog({
   onOpenChange,
 }: DocumentSearchDialogProps) {
   const router = useRouter();
+  const t = useTranslations("documentSearch");
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -224,6 +228,13 @@ export function DocumentSearchDialog({
     });
   }
 
+  function getCategoryLabel(category: string): string {
+    if (CATEGORY_KEYS.includes(category as typeof CATEGORY_KEYS[number])) {
+      return t(`category.${category}` as Parameters<typeof t>[0]);
+    }
+    return category;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
@@ -235,7 +246,7 @@ export function DocumentSearchDialog({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Dokumente durchsuchen..."
+            placeholder={t("placeholder")}
             className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
           />
           {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground ml-2" />}
@@ -248,12 +259,12 @@ export function DocumentSearchDialog({
             <div className="p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Clock className="h-3 w-3" />
-                Letzte Suchen
+                {t("recentSearches")}
               </p>
               <div className="flex flex-wrap gap-2">
-                {recentSearches.map((term, index) => (
+                {recentSearches.map((term) => (
                   <button
-                    key={index}
+                    key={term}
                     onClick={() => handleRecentSearchClick(term)}
                     className="text-sm px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors"
                   >
@@ -268,9 +279,9 @@ export function DocumentSearchDialog({
           {!query && recentSearches.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
               <FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">Schnellsuche</p>
+              <p className="font-medium">{t("quickSearch")}</p>
               <p className="text-sm mt-1">
-                Geben Sie mindestens 2 Zeichen ein, um Dokumente zu finden
+                {t("minCharsHint")}
               </p>
             </div>
           )}
@@ -279,7 +290,7 @@ export function DocumentSearchDialog({
           {query && loading && results.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-3" />
-              <p>Suche läuft...</p>
+              <p>{t("searching")}</p>
             </div>
           )}
 
@@ -287,9 +298,9 @@ export function DocumentSearchDialog({
           {query && !loading && results.length === 0 && query.length >= 2 && (
             <div className="p-8 text-center text-muted-foreground">
               <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">Keine Ergebnisse</p>
+              <p className="font-medium">{t("noResults")}</p>
               <p className="text-sm mt-1">
-                Keine Dokumente gefunden für &quot;{query}&quot;
+                {t("noDocumentsFound", { query })}
               </p>
             </div>
           )}
@@ -298,7 +309,7 @@ export function DocumentSearchDialog({
           {query && query.length < 2 && (
             <div className="p-8 text-center text-muted-foreground">
               <p className="text-sm">
-                Bitte geben Sie mindestens 2 Zeichen ein
+                {t("minCharsWarning")}
               </p>
             </div>
           )}
@@ -308,14 +319,15 @@ export function DocumentSearchDialog({
             <>
               <div className="px-4 py-2 border-b bg-muted/30">
                 <p className="text-xs text-muted-foreground">
-                  {totalCount} {totalCount === 1 ? "Ergebnis" : "Ergebnisse"}
-                  {totalCount > 10 && " (zeige Top 10)"}
+                  {totalCount} {totalCount === 1 ? t("resultCount", { count: 1 }) : t("resultCount", { count: totalCount })}
+                  {totalCount > 10 && ` ${t("showingTop", { limit: 10 })}`}
                 </p>
               </div>
               <div ref={resultsRef} className="py-2">
                 {results.map((result, index) => {
                   const FileIcon = getFileIcon(result.mimeType);
-                  const catConfig = categoryConfig[result.category];
+                  const catColor = categoryColorMap[result.category];
+                  const catLabel = getCategoryLabel(result.category);
                   const titleHighlight = result.highlights.find((h) => h.field === "title");
                   const descHighlight = result.highlights.find((h) => h.field === "description");
 
@@ -339,8 +351,8 @@ export function DocumentSearchDialog({
                               ? renderHighlightedText(titleHighlight.snippet)
                               : result.title}
                           </span>
-                          <Badge variant="secondary" className={cn("shrink-0 text-xs", catConfig?.color)}>
-                            {catConfig?.label || result.category}
+                          <Badge variant="secondary" className={cn("shrink-0 text-xs", catColor)}>
+                            {catLabel}
                           </Badge>
                         </div>
                         {descHighlight && (
@@ -362,9 +374,9 @@ export function DocumentSearchDialog({
                         {result.tags.length > 0 && (
                           <div className="flex items-center gap-1.5 mt-1.5">
                             <Tag className="h-3 w-3 text-muted-foreground" />
-                            {result.tags.slice(0, 3).map((tag, tagIndex) => (
+                            {result.tags.slice(0, 3).map((tag) => (
                               <span
-                                key={tagIndex}
+                                key={tag}
                                 className="text-xs px-1.5 py-0.5 rounded bg-muted"
                               >
                                 {tag}
@@ -392,17 +404,17 @@ export function DocumentSearchDialog({
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">Enter</kbd>
-              oeffnen
+              {t("keyOpen")}
             </span>
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">Esc</kbd>
-              schliessen
+              {t("keyClose")}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">&#8593;</kbd>
             <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px]">&#8595;</kbd>
-            navigieren
+            {t("keyNavigate")}
           </div>
         </div>
       </DialogContent>

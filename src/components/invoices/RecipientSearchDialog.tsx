@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { User, Building2, Search, Plus, Loader2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,12 +69,12 @@ function getPersonAddress(person: Person): string {
   return parts.join("\n");
 }
 
-function getPersonRole(person: Person): string | null {
-  const roles: string[] = [];
-  if (person._count.shareholders > 0) roles.push("Gesellschafter");
-  if (person._count.leases > 0) roles.push("Verpächter");
-  if (roles.length === 0) return null;
-  return roles.join(", ");
+// Role lookup is handled in the component where t() is available
+function getPersonRoleKeys(person: Person): string[] {
+  const keys: string[] = [];
+  if (person._count.shareholders > 0) keys.push("roleShareholder");
+  if (person._count.leases > 0) keys.push("roleLessor");
+  return keys;
 }
 
 export function RecipientSearchDialog({
@@ -81,6 +82,7 @@ export function RecipientSearchDialog({
   onOpenChange,
   onSelect,
 }: RecipientSearchDialogProps) {
+  const t = useTranslations("recipientSearch");
   const [step, setStep] = useState<Step>("search");
   const [searchQuery, setSearchQuery] = useState("");
   const [persons, setPersons] = useState<Person[]>([]);
@@ -159,13 +161,13 @@ export function RecipientSearchDialog({
   }
 
   async function handleCreatePerson() {
-    // Validierung
+    // Validation
     if (newPersonType === "natural" && (!newFirstName.trim() || !newLastName.trim())) {
-      toast.error("Vor- und Nachname sind erforderlich");
+      toast.error(t("toast.firstNameLastNameRequired"));
       return;
     }
     if (newPersonType === "legal" && !newCompanyName.trim()) {
-      toast.error("Firmenname ist erforderlich");
+      toast.error(t("toast.companyNameRequired"));
       return;
     }
 
@@ -189,11 +191,11 @@ export function RecipientSearchDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Anlegen");
+        throw new Error(error.error || t("toast.createError"));
       }
 
       const created = await response.json();
-      toast.success("Kunde erfolgreich angelegt");
+      toast.success(t("toast.created"));
 
       // Select the newly created person
       const isCompany = newPersonType === "legal";
@@ -214,7 +216,7 @@ export function RecipientSearchDialog({
       });
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Anlegen");
+      toast.error(error instanceof Error ? error.message : t("toast.createError"));
     } finally {
       setIsCreating(false);
     }
@@ -225,12 +227,12 @@ export function RecipientSearchDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {step === "search" ? "Empfänger auswaehlen" : "Neuen Kunden anlegen"}
+            {step === "search" ? t("selectRecipient") : t("createCustomer")}
           </DialogTitle>
           <DialogDescription>
             {step === "search"
-              ? "Suchen Sie nach einem bestehenden Kontakt oder legen Sie einen neuen an."
-              : "Erfassen Sie die Daten des neuen Kunden."}
+              ? t("searchDescription")
+              : t("createDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -240,7 +242,7 @@ export function RecipientSearchDialog({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Name, Firma oder E-Mail suchen..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -257,12 +259,13 @@ export function RecipientSearchDialog({
               ) : persons.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground text-sm">
                   {searchQuery
-                    ? "Keine Kontakte gefunden"
-                    : "Geben Sie einen Suchbegriff ein"}
+                    ? t("noContactsFound")
+                    : t("enterSearchTerm")}
                 </div>
               ) : (
                 persons.map((person) => {
-                  const role = getPersonRole(person);
+                  const roleKeys = getPersonRoleKeys(person);
+                  const roleStr = roleKeys.length > 0 ? roleKeys.map((k) => t(k as Parameters<typeof t>[0])).join(", ") : null;
                   return (
                     <button
                       key={person.id}
@@ -285,7 +288,7 @@ export function RecipientSearchDialog({
                           {[
                             person.email,
                             person.city,
-                            role,
+                            roleStr,
                           ]
                             .filter(Boolean)
                             .join(" · ")}
@@ -307,7 +310,7 @@ export function RecipientSearchDialog({
               onClick={() => setStep("create")}
             >
               <UserPlus className="mr-2 h-4 w-4" />
-              Neuen Kunden anlegen
+              {t("createCustomer")}
             </Button>
           </div>
         ) : (
@@ -315,7 +318,7 @@ export function RecipientSearchDialog({
           <div className="space-y-4">
             {/* Person Type */}
             <div className="space-y-2">
-              <Label>Typ</Label>
+              <Label>{t("typeLabel")}</Label>
               <RadioGroup
                 value={newPersonType}
                 onValueChange={(v) => setNewPersonType(v as "natural" | "legal")}
@@ -325,14 +328,14 @@ export function RecipientSearchDialog({
                   <RadioGroupItem value="natural" id="type-natural" />
                   <Label htmlFor="type-natural" className="flex items-center gap-1.5 cursor-pointer">
                     <User className="h-4 w-4" />
-                    Person
+                    {t("person")}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="legal" id="type-legal" />
                   <Label htmlFor="type-legal" className="flex items-center gap-1.5 cursor-pointer">
                     <Building2 className="h-4 w-4" />
-                    Unternehmen
+                    {t("company")}
                   </Label>
                 </div>
               </RadioGroup>
@@ -342,33 +345,33 @@ export function RecipientSearchDialog({
             {newPersonType === "natural" ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="new-firstName">Vorname *</Label>
+                  <Label htmlFor="new-firstName">{t("firstName")} *</Label>
                   <Input
                     id="new-firstName"
                     value={newFirstName}
                     onChange={(e) => setNewFirstName(e.target.value)}
-                    placeholder="Vorname"
+                    placeholder={t("firstName")}
                     autoFocus
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="new-lastName">Nachname *</Label>
+                  <Label htmlFor="new-lastName">{t("lastName")} *</Label>
                   <Input
                     id="new-lastName"
                     value={newLastName}
                     onChange={(e) => setNewLastName(e.target.value)}
-                    placeholder="Nachname"
+                    placeholder={t("lastName")}
                   />
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="new-companyName">Firmenname *</Label>
+                <Label htmlFor="new-companyName">{t("companyName")} *</Label>
                 <Input
                   id="new-companyName"
                   value={newCompanyName}
                   onChange={(e) => setNewCompanyName(e.target.value)}
-                  placeholder="Firmenname"
+                  placeholder={t("companyName")}
                   autoFocus
                 />
               </div>
@@ -377,16 +380,16 @@ export function RecipientSearchDialog({
             {/* Address */}
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="new-street">Strasse</Label>
+                <Label htmlFor="new-street">{t("street")}</Label>
                 <Input
                   id="new-street"
                   value={newStreet}
                   onChange={(e) => setNewStreet(e.target.value)}
-                  placeholder="Musterstrasse"
+                  placeholder={t("streetPlaceholder")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="new-houseNumber">Hausnr.</Label>
+                <Label htmlFor="new-houseNumber">{t("houseNumber")}</Label>
                 <Input
                   id="new-houseNumber"
                   value={newHouseNumber}
@@ -397,34 +400,34 @@ export function RecipientSearchDialog({
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="new-postalCode">PLZ</Label>
+                <Label htmlFor="new-postalCode">{t("postalCode")}</Label>
                 <Input
                   id="new-postalCode"
                   value={newPostalCode}
                   onChange={(e) => setNewPostalCode(e.target.value)}
-                  placeholder="PLZ"
+                  placeholder={t("postalCode")}
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="new-city">Ort</Label>
+                <Label htmlFor="new-city">{t("city")}</Label>
                 <Input
                   id="new-city"
                   value={newCity}
                   onChange={(e) => setNewCity(e.target.value)}
-                  placeholder="Ort"
+                  placeholder={t("city")}
                 />
               </div>
             </div>
 
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="new-email">E-Mail</Label>
+              <Label htmlFor="new-email">{t("email")}</Label>
               <Input
                 id="new-email"
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="E-Mail-Adresse (optional)"
+                placeholder={t("emailPlaceholder")}
               />
             </div>
 
@@ -440,7 +443,7 @@ export function RecipientSearchDialog({
                   resetCreateForm();
                 }}
               >
-                Zurück
+                {t("back")}
               </Button>
               <Button
                 type="button"
@@ -452,7 +455,7 @@ export function RecipientSearchDialog({
                 ) : (
                   <Plus className="mr-2 h-4 w-4" />
                 )}
-                Anlegen und auswaehlen
+                {t("createAndSelect")}
               </Button>
             </div>
           </div>

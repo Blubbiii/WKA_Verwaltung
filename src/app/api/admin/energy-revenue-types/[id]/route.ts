@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -159,9 +160,7 @@ export async function PATCH(
     }
 
     // Update-Daten vorbereiten (nur gesetzte Felder)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const updateData: any = {};
+    const updateData: Prisma.EnergyRevenueTypeUpdateInput = {};
 
     if (validatedData.name !== undefined) {
       updateData.name = validatedData.name;

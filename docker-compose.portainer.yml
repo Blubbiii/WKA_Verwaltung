@@ -21,6 +21,8 @@
 #   GRAFANA_PASSWORD          Grafana Admin-Passwort
 #   METRICS_TOKEN             Bearer-Token fuer /api/metrics (openssl rand -hex 16)
 #   NEXT_PUBLIC_GRAFANA_URL   z.B. http://192.168.178.101:3001
+#   REDIS_PASSWORD            Redis-Authentifizierungspasswort
+#   METABASE_DB_PASSWORD      Passwort fuer wpm_readonly DB-User (optional, nur wenn Metabase genutzt)
 #   NEXT_PUBLIC_METABASE_URL  z.B. http://192.168.178.101:3002
 # =============================================================================
 
@@ -47,7 +49,7 @@ services:
       AUTH_SECRET: ${AUTH_SECRET}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
       APP_URL: ${APP_URL}
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
@@ -103,11 +105,13 @@ services:
     image: redis:7-alpine
     container_name: wpm-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $REDIS_PASSWORD ping"]
       interval: 10s
       timeout: 5s
       start_period: 20s
@@ -210,7 +214,7 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_SECURITY_ALLOW_EMBEDDING: "true"
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_SERVER_ROOT_URL: ${NEXT_PUBLIC_GRAFANA_URL:-http://localhost:3001}
     configs:
@@ -237,8 +241,8 @@ services:
       MB_DB_HOST: postgres
       MB_DB_PORT: 5432
       MB_DB_DBNAME: windparkmanager
-      MB_DB_USER: wpm
-      MB_DB_PASS: ${POSTGRES_PASSWORD}
+      MB_DB_USER: wpm_readonly
+      MB_DB_PASS: ${METABASE_DB_PASSWORD}
       MB_SITE_URL: ${NEXT_PUBLIC_METABASE_URL:-http://localhost:3002}
       JAVA_TIMEZONE: Europe/Berlin
     ports:

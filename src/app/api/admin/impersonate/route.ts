@@ -1,8 +1,27 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperadmin, requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { apiLogger as logger } from "@/lib/logger";
+
+function signCookieValue(data: object): string {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
+  const payload = JSON.stringify(data);
+  const signature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+  return `${payload}.${signature}`;
+}
+
+function verifyCookieValue(signed: string): object | null {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
+  const lastDot = signed.lastIndexOf(".");
+  if (lastDot === -1) return null;
+  const payload = signed.substring(0, lastDot);
+  const signature = signed.substring(lastDot + 1);
+  const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  try { return JSON.parse(payload); } catch { return null; }
+}
 
 // POST /api/admin/impersonate - Start impersonating a user
 export async function POST(request: NextRequest) {
@@ -109,7 +128,7 @@ const check = await requireSuperadmin();
 
     // Set impersonation cookie (secure, httpOnly)
     const cookieStore = await cookies();
-    cookieStore.set("impersonation", JSON.stringify(impersonationData), {
+    cookieStore.set("impersonation", signCookieValue(impersonationData), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -197,7 +216,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ impersonating: null });
     }
 
-    const impersonationData = JSON.parse(impersonationCookie.value);
+    const impersonationData = verifyCookieValue(impersonationCookie.value);
+    if (!impersonationData) {
+      // Invalid or tampered cookie — remove it
+      cookieStore.delete("impersonation");
+      return NextResponse.json({ impersonating: null });
+    }
 
     return NextResponse.json({ impersonating: impersonationData });
   } catch (error) {

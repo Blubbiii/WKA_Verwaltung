@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       indexUid: ENTITY_INDEX_MAP[entity],
       q,
       limit,
-      filter: `tenantId = "${check.tenantId}"`,
+      filter: [`tenantId = ${JSON.stringify(check.tenantId)}`],
     }));
 
     // Multi-index search

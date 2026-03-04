@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission";
 import { invalidateAll } from "@/lib/auth/permissionCache";
 import { z } from "zod";
@@ -146,9 +147,7 @@ export async function PATCH(
     }
 
     // Update role
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const updateData: any = {};
+    const updateData: Prisma.RoleUpdateInput = {};
     if (validatedData.name !== undefined) updateData.name = validatedData.name;
     if (validatedData.description !== undefined) updateData.description = validatedData.description;
     if (validatedData.color !== undefined) updateData.color = validatedData.color;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   Building2,
   Zap,
@@ -56,41 +57,40 @@ interface WidgetRendererProps {
 }
 
 // =============================================================================
-// WIDGET TITLES MAP
+// WIDGET TITLE KEYS (mapped to dashboard.widget.* i18n keys)
 // =============================================================================
 
-const WIDGET_TITLES: Record<string, string> = {
-  "kpi-parks": "Windparks",
-  "kpi-turbines": "Turbinen",
-  "kpi-shareholders": "Gesellschafter",
-  "kpi-fund-capital": "Gesellschaftskapital",
-  "kpi-open-invoices": "Offene Rechnungen",
-  "kpi-contracts": "Verträge",
-  "kpi-documents": "Dokumente",
-  "kpi-votes": "Abstimmungen",
-  "chart-monthly-invoices": "Rechnungen pro Monat",
-  "chart-capital-development": "Kapitalentwicklung",
-  "chart-documents-by-type": "Dokumente nach Typ",
-  "list-expiring-contracts": "Auslaufende Verträge",
-  "list-deadlines": "Anstehende Fristen",
-  "list-activities": "Letzte Aktivitäten",
-  "list-pending-actions": "Handlungsbedarf",
-  "weather-widget": "Wetter",
-  "quick-actions": "Schnellzugriff",
-  "admin-system-status": "System-Status",
-  "admin-user-stats": "Benutzer-Statistiken",
-  "admin-webhook-status": "Webhook-Status",
-  // Energy widgets (planned)
-  "kpi-energy-yield": "Energieertrag",
-  "kpi-availability": "Verfügbarkeit",
-  "kpi-wind-speed": "Windgeschwindigkeit",
-  "kpi-lease-revenue": "Pachteinnahmen",
-  "chart-turbine-status": "Turbinen-Status",
-  "chart-production-forecast": "Produktion vs. Prognose",
-  "chart-revenue-by-park": "Erlöse nach Park",
-  "list-lease-overview": "Pachtübersicht",
-  "kpi-budget-variance": "Budget-Auslastung",
-  "chart-wirtschaftsplan-pl": "P&L Jahresverlauf",
+const WIDGET_TITLE_KEYS: Record<string, string> = {
+  "kpi-parks": "parks",
+  "kpi-turbines": "turbines",
+  "kpi-shareholders": "shareholders",
+  "kpi-fund-capital": "fundCapital",
+  "kpi-open-invoices": "openInvoices",
+  "kpi-contracts": "contracts",
+  "kpi-documents": "documents",
+  "kpi-votes": "votes",
+  "chart-monthly-invoices": "monthlyInvoices",
+  "chart-capital-development": "capitalDevelopment",
+  "chart-documents-by-type": "documentsByType",
+  "list-expiring-contracts": "expiringContracts",
+  "list-deadlines": "deadlines",
+  "list-activities": "activities",
+  "list-pending-actions": "pendingActions",
+  "weather-widget": "weather",
+  "quick-actions": "quickActions",
+  "admin-system-status": "systemStatus",
+  "admin-user-stats": "userStats",
+  "admin-webhook-status": "webhookStatus",
+  "kpi-energy-yield": "energyYield",
+  "kpi-availability": "availability",
+  "kpi-wind-speed": "windSpeed",
+  "kpi-lease-revenue": "leaseRevenue",
+  "chart-turbine-status": "turbineStatus",
+  "chart-production-forecast": "productionForecast",
+  "chart-revenue-by-park": "revenueByPark",
+  "list-lease-overview": "leaseOverview",
+  "kpi-budget-variance": "budgetVariance",
+  "chart-wirtschaftsplan-pl": "wirtschaftsplanPL",
 };
 
 // =============================================================================
@@ -105,18 +105,21 @@ export function WidgetRenderer({
 }: WidgetRendererProps) {
   const { data, isLoading, error } = useAnalytics();
   const formatCurrency = useFormatCurrencyCompact();
+  const t = useTranslations("dashboard");
 
   const kpis = data?.kpis ?? null;
   const charts = data?.charts ?? null;
 
-  // Get widget title
+  // Get widget title via i18n
   const widgetTitle = useMemo(() => {
     if (availableWidgets) {
       const widget = availableWidgets.find((w) => w.id === widgetId);
       if (widget) return widget.name;
     }
-    return WIDGET_TITLES[widgetId] || widgetId;
-  }, [widgetId, availableWidgets]);
+    const titleKey = WIDGET_TITLE_KEYS[widgetId];
+    if (titleKey) return t(`widget.${titleKey}`);
+    return widgetId;
+  }, [widgetId, availableWidgets, t]);
 
   // Render the appropriate widget content based on widgetId
   const renderWidgetContent = () => {
@@ -124,10 +127,10 @@ export function WidgetRenderer({
     if (widgetId === "kpi-parks") {
       return (
         <KPICard
-          title="Windparks"
-          value={kpis ? `${kpis.activeParks} aktiv` : "-"}
+          title={t("widget.parks")}
+          value={kpis ? `${kpis.activeParks} ${t("widget.active")}` : "-"}
           icon={Building2}
-          description={kpis ? `${kpis.totalParks} total` : undefined}
+          description={kpis ? `${kpis.totalParks} ${t("widget.totalSuffix")}` : undefined}
           isLoading={isLoading}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
@@ -138,14 +141,14 @@ export function WidgetRenderer({
     if (widgetId === "kpi-turbines") {
       return (
         <KPICard
-          title="Turbinen"
-          value={kpis ? `${kpis.totalTurbines} total` : "-"}
+          title={t("widget.turbines")}
+          value={kpis ? `${kpis.totalTurbines} ${t("widget.totalSuffix")}` : "-"}
           icon={Zap}
           description={
             kpis
               ? kpis.turbinesInMaintenance > 0
-                ? `${kpis.turbinesInMaintenance} in Wartung`
-                : `${kpis.totalCapacityMW} MW Leistung`
+                ? `${kpis.turbinesInMaintenance} ${t("widget.inMaintenance")}`
+                : `${kpis.totalCapacityMW} MW ${t("widget.power")}`
               : undefined
           }
           isLoading={isLoading}
@@ -159,11 +162,11 @@ export function WidgetRenderer({
     if (widgetId === "kpi-shareholders") {
       return (
         <KPICard
-          title="Gesellschafter"
+          title={t("widget.shareholders")}
           value={kpis ? kpis.totalShareholders : "-"}
           icon={Users}
           trend={kpis?.trends.shareholders}
-          trendLabel="vs. Vormonat"
+          trendLabel={t("widget.vsLastMonth")}
           isLoading={isLoading}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
@@ -174,11 +177,11 @@ export function WidgetRenderer({
     if (widgetId === "kpi-fund-capital") {
       return (
         <KPICard
-          title="Gesellschaftskapital"
+          title={t("widget.fundCapital")}
           value={kpis ? formatCurrency(kpis.totalFundCapital) : "-"}
           icon={Euro}
           trend={kpis?.trends.revenue}
-          trendLabel="Einnahmen vs. Vormonat"
+          trendLabel={t("widget.revenueVsLastMonth")}
           isLoading={isLoading}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
@@ -189,10 +192,10 @@ export function WidgetRenderer({
     if (widgetId === "kpi-open-invoices") {
       return (
         <KPICard
-          title="Offene Rechnungen"
+          title={t("widget.openInvoices")}
           value={kpis ? formatCurrency(kpis.openInvoicesAmount) : "-"}
           icon={FileText}
-          description={kpis ? `${kpis.openInvoicesCount} ausstehend` : undefined}
+          description={kpis ? `${kpis.openInvoicesCount} ${t("widget.pending")}` : undefined}
           isLoading={isLoading}
           isAlert={kpis ? kpis.openInvoicesCount > 10 : false}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
@@ -204,23 +207,23 @@ export function WidgetRenderer({
     if (widgetId === "kpi-contracts") {
       return (
         <KPICard
-          title="Verträge"
+          title={t("widget.contracts")}
           value={
             kpis
               ? kpis.expiringContractsCount > 0
-                ? `${kpis.expiringContractsCount} laufen aus`
-                : `${kpis.activeContractsCount} aktiv`
+                ? `${kpis.expiringContractsCount} ${t("widget.expiring")}`
+                : `${kpis.activeContractsCount} ${t("widget.active")}`
               : "-"
           }
           icon={FileWarning}
           description={
-            kpis ? `${kpis.activeContractsCount} aktive Verträge` : undefined
+            kpis ? `${kpis.activeContractsCount} ${t("widget.activeContracts")}` : undefined
           }
           isLoading={isLoading}
           isAlert={kpis ? kpis.expiringContractsCount > 0 : false}
           trendLabel={
             kpis && kpis.expiringContractsCount > 0
-              ? "Nächste 30 Tage"
+              ? t("widget.next30Days")
               : undefined
           }
           accentColor={KPI_ACCENT_COLORS[widgetId]}
@@ -232,10 +235,10 @@ export function WidgetRenderer({
     if (widgetId === "kpi-documents") {
       return (
         <KPICard
-          title="Dokumente"
-          value={kpis ? `${kpis.totalDocuments} total` : "-"}
+          title={t("widget.documents")}
+          value={kpis ? `${kpis.totalDocuments} ${t("widget.totalSuffix")}` : "-"}
           icon={FolderOpen}
-          description={kpis ? `+${kpis.documentsThisMonth} diesen Monat` : undefined}
+          description={kpis ? `+${kpis.documentsThisMonth} ${t("widget.thisMonth")}` : undefined}
           trend={kpis?.trends.documents}
           isLoading={isLoading}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
@@ -247,14 +250,14 @@ export function WidgetRenderer({
     if (widgetId === "kpi-votes") {
       return (
         <KPICard
-          title="Abstimmungen"
-          value={kpis ? `${kpis.activeVotes} aktiv` : "-"}
+          title={t("widget.votes")}
+          value={kpis ? `${kpis.activeVotes} ${t("widget.active")}` : "-"}
           icon={Vote}
           description={
             kpis
               ? kpis.pendingVotersCount > 0
-                ? `${kpis.pendingVotersCount} offene Stimmen`
-                : "Alle haben abgestimmt"
+                ? `${kpis.pendingVotersCount} ${t("widget.openVotes")}`
+                : t("widget.allVoted")
               : undefined
           }
           isLoading={isLoading}
@@ -508,7 +511,7 @@ export function WidgetRenderer({
         title={widgetTitle}
         isEditing={isEditing}
         onRemove={onRemove}
-        error={`Widget "${widgetId}" nicht gefunden`}
+        error={t("widget.notFound", { widgetId })}
       >
         <div />
       </WidgetWrapper>
@@ -526,7 +529,7 @@ export function WidgetRenderer({
         title={widgetTitle}
         isEditing={isEditing}
         onRemove={onRemove}
-        error="Daten konnten nicht geladen werden"
+        error={t("widget.loadError")}
       >
         <div />
       </WidgetWrapper>
@@ -548,7 +551,7 @@ export function WidgetRenderer({
                 onRemove();
               }}
               className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 z-10"
-              title="Widget entfernen"
+              title={t("widget.remove")}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

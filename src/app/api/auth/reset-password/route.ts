@@ -17,7 +17,9 @@ const resetPasswordSchema = z.object({
     .min(PASSWORD_MIN_LENGTH, `Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen lang sein`)
     .regex(/[A-Z]/, "Passwort muss mindestens einen Grossbuchstaben enthalten")
     .regex(/[a-z]/, "Passwort muss mindestens einen Kleinbuchstaben enthalten")
-    .regex(/[0-9]/, "Passwort muss mindestens eine Zahl enthalten"),
+    .regex(/[0-9]/, "Passwort muss mindestens eine Zahl enthalten")
+    .regex(/[^A-Za-z0-9]/, "Passwort muss mindestens ein Sonderzeichen enthalten")
+    .max(128, "Passwort darf maximal 128 Zeichen lang sein"),
 });
 
 export async function POST(request: Request) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -221,10 +222,7 @@ export async function PUT(
       noticeDeadline.setMonth(noticeDeadline.getMonth() - noticePeriodMonths);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-
-    const updateData: any = {};
+    const updateData: Prisma.ContractUncheckedUpdateInput = {};
 
     // Only include defined values
     if (validatedData.contractType !== undefined) {

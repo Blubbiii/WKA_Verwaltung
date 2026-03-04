@@ -230,5 +230,13 @@ export function getStorageConfig() {
   };
 }
 
+/**
+ * Returns the S3 client singleton.
+ * Useful when callers need a function reference instead of the module-level constant.
+ */
+export function getS3Client(): S3Client {
+  return s3Client;
+}
+
 // Exportiere den Client für fortgeschrittene Anwendungsfaelle
 export { s3Client, S3_BUCKET };

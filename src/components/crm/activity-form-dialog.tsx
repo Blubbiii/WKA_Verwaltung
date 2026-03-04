@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Phone, Mail, CalendarDays, FileText, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -54,13 +55,15 @@ interface ActivityFormDialogProps {
 // Constants
 // ============================================================================
 
-const TYPE_OPTIONS: { value: ActivityType; label: string; icon: React.ElementType }[] = [
-  { value: "CALL", label: "Anruf", icon: Phone },
-  { value: "EMAIL", label: "E-Mail", icon: Mail },
-  { value: "MEETING", label: "Meeting", icon: CalendarDays },
-  { value: "NOTE", label: "Notiz", icon: FileText },
-  { value: "TASK", label: "Aufgabe", icon: CheckSquare },
-];
+const TYPE_ICONS: Record<ActivityType, React.ElementType> = {
+  CALL: Phone,
+  EMAIL: Mail,
+  MEETING: CalendarDays,
+  NOTE: FileText,
+  TASK: CheckSquare,
+};
+
+const TYPE_VALUES: ActivityType[] = ["CALL", "EMAIL", "MEETING", "NOTE", "TASK"];
 
 // ============================================================================
 // Component
@@ -74,6 +77,8 @@ export function ActivityFormDialog({
   activity,
   onSuccess,
 }: ActivityFormDialogProps) {
+  const t = useTranslations("activityForm");
+  const tc = useTranslations("common");
   const isEdit = !!activity;
 
   const [type, setType] = useState<ActivityType>(activity?.type ?? "NOTE");
@@ -94,7 +99,7 @@ export function ActivityFormDialog({
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      toast.error("Titel ist erforderlich");
+      toast.error(t("toast.titleRequired"));
       return;
     }
 
@@ -128,14 +133,14 @@ export function ActivityFormDialog({
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Unbekannter Fehler");
+        throw new Error(err.error ?? t("toast.saveError"));
       }
 
-      toast.success(isEdit ? "Aktivität aktualisiert" : "Aktivität erstellt");
+      toast.success(isEdit ? t("toast.updated") : t("toast.created"));
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : t("toast.saveError"));
     } finally {
       setLoading(false);
     }
@@ -151,27 +156,30 @@ export function ActivityFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Aktivität bearbeiten" : "Aktivität hinzufügen"}</DialogTitle>
+          <DialogTitle>{isEdit ? t("editTitle") : t("addTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           {/* Type */}
           {!isEdit && (
             <div className="space-y-1.5">
-              <Label>Typ</Label>
+              <Label>{t("typeLabel")}</Label>
               <Select value={type} onValueChange={(v) => setType(v as ActivityType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TYPE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <span className="flex items-center gap-2">
-                        <opt.icon className="h-4 w-4" />
-                        {opt.label}
-                      </span>
-                    </SelectItem>
-                  ))}
+                  {TYPE_VALUES.map((typeVal) => {
+                    const Icon = TYPE_ICONS[typeVal];
+                    return (
+                      <SelectItem key={typeVal} value={typeVal}>
+                        <span className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          {t(`type.${typeVal}`)}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -179,32 +187,26 @@ export function ActivityFormDialog({
 
           {/* Title */}
           <div className="space-y-1.5">
-            <Label htmlFor="act-title">Titel *</Label>
+            <Label htmlFor="act-title">{t("titleLabel")}</Label>
             <Input
               id="act-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={
-                type === "CALL" ? "Anruf mit Max Müller" :
-                type === "EMAIL" ? "E-Mail zu Dividendenausschüttung" :
-                type === "MEETING" ? "Jahresgespräch Q1" :
-                type === "TASK" ? "Pachtvertrag verlängern" :
-                "Notiz..."
-              }
+              placeholder={t(`placeholder.${type}`)}
             />
           </div>
 
           {/* Direction */}
           {showDirection && (
             <div className="space-y-1.5">
-              <Label>Richtung</Label>
+              <Label>{t("directionLabel")}</Label>
               <Select value={direction} onValueChange={(v) => setDirection(v as "INBOUND" | "OUTBOUND")}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Richtung wählen..." />
+                  <SelectValue placeholder={t("directionPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="INBOUND">Eingehend</SelectItem>
-                  <SelectItem value="OUTBOUND">Ausgehend</SelectItem>
+                  <SelectItem value="INBOUND">{t("direction.INBOUND")}</SelectItem>
+                  <SelectItem value="OUTBOUND">{t("direction.OUTBOUND")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -213,7 +215,7 @@ export function ActivityFormDialog({
           {/* StartTime */}
           {showStartTime && (
             <div className="space-y-1.5">
-              <Label htmlFor="act-start">Datum &amp; Uhrzeit</Label>
+              <Label htmlFor="act-start">{t("startTimeLabel")}</Label>
               <Input
                 id="act-start"
                 type="datetime-local"
@@ -226,7 +228,7 @@ export function ActivityFormDialog({
           {/* Duration */}
           {showDuration && (
             <div className="space-y-1.5">
-              <Label htmlFor="act-duration">Dauer (Minuten)</Label>
+              <Label htmlFor="act-duration">{t("durationLabel")}</Label>
               <Input
                 id="act-duration"
                 type="number"
@@ -241,7 +243,7 @@ export function ActivityFormDialog({
           {/* DueDate (Tasks) */}
           {showDueDate && (
             <div className="space-y-1.5">
-              <Label htmlFor="act-due">Fällig am</Label>
+              <Label htmlFor="act-due">{t("dueDateLabel")}</Label>
               <Input
                 id="act-due"
                 type="datetime-local"
@@ -254,15 +256,15 @@ export function ActivityFormDialog({
           {/* Status (Tasks) */}
           {showStatus && (
             <div className="space-y-1.5">
-              <Label>Status</Label>
+              <Label>{t("statusLabel")}</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as ActivityStatus)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PENDING">Offen</SelectItem>
-                  <SelectItem value="DONE">Erledigt</SelectItem>
-                  <SelectItem value="CANCELLED">Abgebrochen</SelectItem>
+                  <SelectItem value="PENDING">{t("status.PENDING")}</SelectItem>
+                  <SelectItem value="DONE">{t("status.DONE")}</SelectItem>
+                  <SelectItem value="CANCELLED">{t("status.CANCELLED")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -270,23 +272,23 @@ export function ActivityFormDialog({
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label htmlFor="act-desc">Beschreibung</Label>
+            <Label htmlFor="act-desc">{t("descriptionLabel")}</Label>
             <Textarea
               id="act-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              placeholder="Details zur Aktivität..."
+              placeholder={t("descriptionPlaceholder")}
             />
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Abbrechen
+            {tc("cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Speichern..." : isEdit ? "Aktualisieren" : "Speichern"}
+            {loading ? tc("loading") : isEdit ? tc("save") : tc("save")}
           </Button>
         </DialogFooter>
       </DialogContent>

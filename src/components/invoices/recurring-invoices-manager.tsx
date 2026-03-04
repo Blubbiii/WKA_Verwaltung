@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { format } from "date-fns";
@@ -117,30 +118,6 @@ interface RecurringInvoicesResponse {
 }
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-const FREQUENCY_LABELS: Record<string, string> = {
-  MONTHLY: "Monatlich",
-  QUARTERLY: "Quartalweise",
-  SEMI_ANNUAL: "Halbjährlich",
-  ANNUAL: "Jährlich",
-};
-
-const RECIPIENT_TYPE_LABELS: Record<string, string> = {
-  shareholder: "Gesellschafter",
-  lessor: "Verpachter",
-  fund: "Gesellschaft",
-  custom: "Benutzerdefiniert",
-};
-
-const TAX_TYPE_LABELS: Record<string, string> = {
-  STANDARD: "19% MwSt",
-  REDUCED: "7% MwSt",
-  EXEMPT: "Steuerfrei",
-};
-
-// ============================================================================
 // Empty Position Template
 // ============================================================================
 
@@ -226,6 +203,8 @@ function CreateEditDialog({
   editingInvoice,
   onSaved,
 }: CreateEditDialogProps) {
+  const t = useTranslations("recurringInvoices");
+  const tc = useTranslations("common");
   const [formData, setFormData] = useState<RecurringInvoiceFormData>(
     getDefaultFormData()
   );
@@ -278,19 +257,19 @@ function CreateEditDialog({
   async function handleSubmit() {
     // Basic client-side validation
     if (!formData.name.trim()) {
-      toast.error("Name ist erforderlich");
+      toast.error(t("validation.nameRequired"));
       return;
     }
     if (!formData.recipientName.trim()) {
-      toast.error("Empfängername ist erforderlich");
+      toast.error(t("validation.recipientRequired"));
       return;
     }
     if (formData.positions.length === 0) {
-      toast.error("Mindestens eine Position ist erforderlich");
+      toast.error(t("validation.positionRequired"));
       return;
     }
     if (formData.positions.some((p) => !p.description.trim())) {
-      toast.error("Alle Positionen muessen eine Beschreibung haben");
+      toast.error(t("validation.descriptionRequired"));
       return;
     }
 
@@ -332,20 +311,20 @@ function CreateEditDialog({
       if (!response.ok) {
         const err = await response
           .json()
-          .catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || "Fehler beim Speichern");
+          .catch(() => ({ error: t("toast.unknownError") }));
+        throw new Error(err.error || t("toast.saveError"));
       }
 
       toast.success(
         editingInvoice
-          ? "Wiederkehrende Rechnung aktualisiert"
-          : "Wiederkehrende Rechnung erstellt"
+          ? t("toast.updated")
+          : t("toast.created")
       );
       onSaved();
       onOpenChange(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("toast.saveError")
       );
     } finally {
       setSaving(false);
@@ -364,23 +343,23 @@ function CreateEditDialog({
         <DialogHeader>
           <DialogTitle>
             {editingInvoice
-              ? "Wiederkehrende Rechnung bearbeiten"
-              : "Neue wiederkehrende Rechnung"}
+              ? t("editTitle")
+              : t("createTitle")}
           </DialogTitle>
           <DialogDescription>
             {editingInvoice
-              ? "Aendern Sie die Einstellungen der wiederkehrenden Rechnung."
-              : "Erstellen Sie eine Rechnung, die automatisch nach Zeitplan generiert wird."}
+              ? t("editDescription")
+              : t("createDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="ri-name">Name *</Label>
+            <Label htmlFor="ri-name">{t("nameLabel")}</Label>
             <Input
               id="ri-name"
-              placeholder="z.B. Monatliche Verwaltungsgebühr"
+              placeholder={t("namePlaceholder")}
               value={formData.name}
               onChange={(e) => updateField("name", e.target.value)}
             />
@@ -389,7 +368,7 @@ function CreateEditDialog({
           {/* Recipient */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Empfängertyp</Label>
+              <Label>{t("recipientTypeLabel")}</Label>
               <Select
                 value={formData.recipientType}
                 onValueChange={(v) => updateField("recipientType", v)}
@@ -398,15 +377,15 @@ function CreateEditDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="shareholder">Gesellschafter</SelectItem>
-                  <SelectItem value="lessor">Verpachter</SelectItem>
-                  <SelectItem value="fund">Gesellschaft</SelectItem>
-                  <SelectItem value="custom">Benutzerdefiniert</SelectItem>
+                  <SelectItem value="shareholder">{t("recipientType.shareholder")}</SelectItem>
+                  <SelectItem value="lessor">{t("recipientType.lessor")}</SelectItem>
+                  <SelectItem value="fund">{t("recipientType.fund")}</SelectItem>
+                  <SelectItem value="custom">{t("recipientType.custom")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Rechnungstyp</Label>
+              <Label>{t("invoiceTypeLabel")}</Label>
               <Select
                 value={formData.invoiceType}
                 onValueChange={(v) => updateField("invoiceType", v)}
@@ -415,8 +394,8 @@ function CreateEditDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="INVOICE">Rechnung</SelectItem>
-                  <SelectItem value="CREDIT_NOTE">Gutschrift</SelectItem>
+                  <SelectItem value="INVOICE">{t("invoiceType.INVOICE")}</SelectItem>
+                  <SelectItem value="CREDIT_NOTE">{t("invoiceType.CREDIT_NOTE")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -424,19 +403,19 @@ function CreateEditDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="ri-recipient-name">Empfänger *</Label>
+              <Label htmlFor="ri-recipient-name">{t("recipientLabel")}</Label>
               <Input
                 id="ri-recipient-name"
-                placeholder="Name des Empfängers"
+                placeholder={t("recipientNamePlaceholder")}
                 value={formData.recipientName}
                 onChange={(e) => updateField("recipientName", e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ri-recipient-address">Adresse</Label>
+              <Label htmlFor="ri-recipient-address">{t("addressLabel")}</Label>
               <Input
                 id="ri-recipient-address"
-                placeholder="Strasse, PLZ Ort"
+                placeholder={t("addressPlaceholder")}
                 value={formData.recipientAddress}
                 onChange={(e) => updateField("recipientAddress", e.target.value)}
               />
@@ -446,7 +425,7 @@ function CreateEditDialog({
           {/* Positions */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Positionen *</Label>
+              <Label>{t("positionsLabel")}</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -454,31 +433,31 @@ function CreateEditDialog({
                 onClick={addPosition}
               >
                 <Plus className="mr-1 h-3 w-3" />
-                Position
+                {t("addPosition")}
               </Button>
             </div>
 
             <div className="space-y-3">
               {formData.positions.map((pos, index) => (
                 <div
-                  key={index}
+                  key={`position-${index}-${pos.description}`}
                   className="grid grid-cols-12 gap-2 items-end rounded-md border p-3"
                 >
                   <div className="col-span-4 space-y-1">
                     <Label className="text-xs text-muted-foreground">
-                      Beschreibung
+                      {t("descriptionLabel")}
                     </Label>
                     <Input
                       value={pos.description}
                       onChange={(e) =>
                         updatePosition(index, "description", e.target.value)
                       }
-                      placeholder="Beschreibung"
+                      placeholder={t("descriptionLabel")}
                     />
                   </div>
                   <div className="col-span-2 space-y-1">
                     <Label className="text-xs text-muted-foreground">
-                      Menge
+                      {t("quantityLabel")}
                     </Label>
                     <Input
                       type="number"
@@ -492,7 +471,7 @@ function CreateEditDialog({
                   </div>
                   <div className="col-span-2 space-y-1">
                     <Label className="text-xs text-muted-foreground">
-                      Einzelpreis
+                      {t("unitPriceLabel")}
                     </Label>
                     <Input
                       type="number"
@@ -506,7 +485,7 @@ function CreateEditDialog({
                   </div>
                   <div className="col-span-3 space-y-1">
                     <Label className="text-xs text-muted-foreground">
-                      MwSt
+                      {t("vatLabel")}
                     </Label>
                     <Select
                       value={pos.taxType}
@@ -543,14 +522,14 @@ function CreateEditDialog({
 
             {/* Total preview */}
             <div className="text-right text-sm text-muted-foreground">
-              Netto-Summe: <span className="font-medium text-foreground">{formatCurrency(previewTotal)}</span>
+              {t("netTotal")}: <span className="font-medium text-foreground">{formatCurrency(previewTotal)}</span>
             </div>
           </div>
 
           {/* Schedule */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Frequenz</Label>
+              <Label>{t("frequencyLabel")}</Label>
               <Select
                 value={formData.frequency}
                 onValueChange={(v) => updateField("frequency", v)}
@@ -559,15 +538,15 @@ function CreateEditDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MONTHLY">Monatlich</SelectItem>
-                  <SelectItem value="QUARTERLY">Quartalweise</SelectItem>
-                  <SelectItem value="SEMI_ANNUAL">Halbjährlich</SelectItem>
-                  <SelectItem value="ANNUAL">Jährlich</SelectItem>
+                  <SelectItem value="MONTHLY">{t("frequency.MONTHLY")}</SelectItem>
+                  <SelectItem value="QUARTERLY">{t("frequency.QUARTERLY")}</SelectItem>
+                  <SelectItem value="SEMI_ANNUAL">{t("frequency.SEMI_ANNUAL")}</SelectItem>
+                  <SelectItem value="ANNUAL">{t("frequency.ANNUAL")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ri-day">Tag im Monat</Label>
+              <Label htmlFor="ri-day">{t("dayOfMonthLabel")}</Label>
               <Input
                 id="ri-day"
                 type="number"
@@ -578,7 +557,7 @@ function CreateEditDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ri-start">Startdatum *</Label>
+              <Label htmlFor="ri-start">{t("startDateLabel")}</Label>
               <Input
                 id="ri-start"
                 type="date"
@@ -590,7 +569,7 @@ function CreateEditDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="ri-end">Enddatum (optional)</Label>
+              <Label htmlFor="ri-end">{t("endDateLabel")}</Label>
               <Input
                 id="ri-end"
                 type="date"
@@ -598,7 +577,7 @@ function CreateEditDialog({
                 onChange={(e) => updateField("endDate", e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Leer lassen für unbefristete Laufzeit
+                {t("endDateHint")}
               </p>
             </div>
             <div className="flex items-center gap-3 pt-6">
@@ -608,16 +587,16 @@ function CreateEditDialog({
                   updateField("enabled", checked)
                 }
               />
-              <Label>Aktiv</Label>
+              <Label>{t("activeLabel")}</Label>
             </div>
           </div>
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="ri-notes">Notizen</Label>
+            <Label htmlFor="ri-notes">{t("notesLabel")}</Label>
             <Textarea
               id="ri-notes"
-              placeholder="Optionale Notizen..."
+              placeholder={t("notesPlaceholder")}
               value={formData.notes}
               onChange={(e) => updateField("notes", e.target.value)}
               rows={2}
@@ -627,11 +606,11 @@ function CreateEditDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Abbrechen
+            {tc("cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {editingInvoice ? "Speichern" : "Erstellen"}
+            {editingInvoice ? t("save") : t("createAction")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -644,6 +623,8 @@ function CreateEditDialog({
 // ============================================================================
 
 export function RecurringInvoicesManager() {
+  const t = useTranslations("recurringInvoices");
+  const tc = useTranslations("common");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<RecurringInvoice | null>(
     null
@@ -690,17 +671,17 @@ export function RecurringInvoicesManager() {
       );
 
       if (!response.ok) {
-        throw new Error("Fehler beim Aktualisieren");
+        throw new Error(t("toast.toggleError"));
       }
 
       toast.success(
         ri.enabled
-          ? `"${ri.name}" pausiert`
-          : `"${ri.name}" aktiviert`
+          ? t("toast.paused", { name: ri.name })
+          : t("toast.activated", { name: ri.name })
       );
       invalidate(["recurring-invoices"]);
     } catch (error) {
-      toast.error("Fehler beim Aktualisieren des Status");
+      toast.error(t("toast.toggleError"));
     }
   }
 
@@ -714,14 +695,14 @@ export function RecurringInvoicesManager() {
       );
 
       if (!response.ok) {
-        throw new Error("Fehler beim Löschen");
+        throw new Error(t("toast.deleteError"));
       }
 
-      toast.success("Wiederkehrende Rechnung deaktiviert");
+      toast.success(t("toast.deactivated"));
       setDeleteId(null);
       invalidate(["recurring-invoices"]);
     } catch (error) {
-      toast.error("Fehler beim Löschen der wiederkehrenden Rechnung");
+      toast.error(t("toast.deleteError"));
     }
   }
 
@@ -738,14 +719,14 @@ export function RecurringInvoicesManager() {
         <CardContent className="pt-6">
           <div className="text-center">
             <p className="text-destructive">
-              Fehler beim Laden der wiederkehrenden Rechnungen
+              {t("loadError")}
             </p>
             <Button
               onClick={() => refetch()}
               variant="outline"
               className="mt-4"
             >
-              Erneut versuchen
+              {t("retry")}
             </Button>
           </div>
         </CardContent>
@@ -761,15 +742,15 @@ export function RecurringInvoicesManager() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <CalendarClock className="h-5 w-5" />
-                Wiederkehrende Rechnungen
+                {t("title")}
               </CardTitle>
               <CardDescription>
-                {activeCount} aktiv, {totalGenerated} insgesamt generiert
+                {t("description", { activeCount, totalGenerated })}
               </CardDescription>
             </div>
             <Button onClick={handleCreate}>
               <Plus className="mr-2 h-4 w-4" />
-              Neue wiederkehrende Rechnung
+              {t("create")}
             </Button>
           </div>
         </CardHeader>
@@ -778,22 +759,22 @@ export function RecurringInvoicesManager() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Empfänger</TableHead>
-                  <TableHead className="text-right">Betrag (Netto)</TableHead>
-                  <TableHead>Frequenz</TableHead>
-                  <TableHead>Nächste Ausführung</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Generiert</TableHead>
+                  <TableHead>{t("tableHeader.name")}</TableHead>
+                  <TableHead>{t("tableHeader.recipient")}</TableHead>
+                  <TableHead className="text-right">{t("tableHeader.amountNet")}</TableHead>
+                  <TableHead>{t("tableHeader.frequency")}</TableHead>
+                  <TableHead>{t("tableHeader.nextRun")}</TableHead>
+                  <TableHead>{t("tableHeader.status")}</TableHead>
+                  <TableHead>{t("tableHeader.generated")}</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   Array.from({ length: 3 }).map((_, i) => (
-                    <TableRow key={i}>
+                    <TableRow key={`skeleton-${i}`}>
                       {Array.from({ length: 8 }).map((_, j) => (
-                        <TableCell key={j}>
+                        <TableCell key={`skeleton-cell-${i}-${j}`}>
                           <Skeleton className="h-5 w-20" />
                         </TableCell>
                       ))}
@@ -807,14 +788,14 @@ export function RecurringInvoicesManager() {
                     >
                       <div className="flex flex-col items-center gap-2">
                         <RefreshCw className="h-8 w-8 text-muted-foreground/50" />
-                        <p>Keine wiederkehrenden Rechnungen vorhanden</p>
+                        <p>{t("emptyState")}</p>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={handleCreate}
                         >
                           <Plus className="mr-2 h-4 w-4" />
-                          Erste wiederkehrende Rechnung erstellen
+                          {t("emptyStateAction")}
                         </Button>
                       </div>
                     </TableCell>
@@ -827,8 +808,8 @@ export function RecurringInvoicesManager() {
                           <div className="font-medium">{ri.name}</div>
                           <div className="text-xs text-muted-foreground">
                             {ri.invoiceType === "CREDIT_NOTE"
-                              ? "Gutschrift"
-                              : "Rechnung"}
+                              ? t("invoiceType.CREDIT_NOTE")
+                              : t("invoiceType.INVOICE")}
                           </div>
                         </div>
                       </TableCell>
@@ -836,8 +817,7 @@ export function RecurringInvoicesManager() {
                         <div>
                           <div>{ri.recipientName}</div>
                           <div className="text-xs text-muted-foreground">
-                            {RECIPIENT_TYPE_LABELS[ri.recipientType] ||
-                              ri.recipientType}
+                            {t(`recipientType.${ri.recipientType}` as Parameters<typeof t>[0])}
                           </div>
                         </div>
                       </TableCell>
@@ -846,7 +826,7 @@ export function RecurringInvoicesManager() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {FREQUENCY_LABELS[ri.frequency] || ri.frequency}
+                          {t(`frequency.${ri.frequency}` as Parameters<typeof t>[0])}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -871,7 +851,7 @@ export function RecurringInvoicesManager() {
                             checked={ri.enabled}
                             onCheckedChange={() => handleToggleEnabled(ri)}
                             aria-label={
-                              ri.enabled ? "Deaktivieren" : "Aktivieren"
+                              ri.enabled ? t("deactivate") : t("activeLabel")
                             }
                           />
                           <span className="text-xs">
@@ -880,10 +860,10 @@ export function RecurringInvoicesManager() {
                                 variant="secondary"
                                 className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                               >
-                                Aktiv
+                                {t("statusActive")}
                               </Badge>
                             ) : (
-                              <Badge variant="secondary">Pausiert</Badge>
+                              <Badge variant="secondary">{t("statusPaused")}</Badge>
                             )}
                           </span>
                         </div>
@@ -909,7 +889,7 @@ export function RecurringInvoicesManager() {
                               onClick={() => handleEdit(ri)}
                             >
                               <Pencil className="mr-2 h-4 w-4" />
-                              Bearbeiten
+                              {tc("edit")}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -917,7 +897,7 @@ export function RecurringInvoicesManager() {
                               className="text-red-600"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Deaktivieren
+                              {t("deactivate")}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -932,7 +912,7 @@ export function RecurringInvoicesManager() {
           {/* Last run info */}
           {recurringInvoices.some((ri) => ri.lastRunAt) && (
             <div className="mt-3 text-xs text-muted-foreground">
-              Letzte Ausführung:{" "}
+              {t("lastRun")}:{" "}
               {(() => {
                 const lastRun = recurringInvoices
                   .filter((ri) => ri.lastRunAt)
@@ -969,8 +949,8 @@ export function RecurringInvoicesManager() {
           if (!open) setDeleteId(null);
         }}
         onConfirm={handleDelete}
-        title="Wiederkehrende Rechnung deaktivieren"
-        description="Die wiederkehrende Rechnung wird deaktiviert. Bereits generierte Rechnungen bleiben erhalten."
+        title={t("deleteTitle")}
+        description={t("deleteDescription")}
       />
     </>
   );

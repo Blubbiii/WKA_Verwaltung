@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 // GET /api/reports/[type] - Generate report data for a specific type
@@ -155,9 +156,7 @@ async function getParksOverview(tenantId: string) {
 }
 
 async function getTurbinesOverview(tenantId: string, parkId: string | null) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-  const where: any = { park: { tenantId } };
+  const where: Prisma.TurbineWhereInput = { park: { tenantId } };
   if (parkId) where.parkId = parkId;
 
   const turbines = await prisma.turbine.findMany({
@@ -199,9 +198,7 @@ async function getTurbinesOverview(tenantId: string, parkId: string | null) {
 }
 
 async function getShareholdersOverview(tenantId: string, fundId: string | null) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-  const where: any = { fund: { tenantId } };
+  const where: Prisma.ShareholderWhereInput = { fund: { tenantId } };
   if (fundId) where.fundId = fundId;
 
   const shareholders = await prisma.shareholder.findMany({
@@ -379,9 +376,7 @@ async function getExpiringContracts(tenantId: string) {
 }
 
 async function getInvoicesOverview(tenantId: string, fundId: string | null) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-  const where: any = { tenantId };
+  const where: Prisma.InvoiceWhereInput = { tenantId };
   if (fundId) where.fundId = fundId;
 
   const invoices = await prisma.invoice.findMany({
@@ -443,9 +438,7 @@ async function getInvoicesOverview(tenantId: string, fundId: string | null) {
 }
 
 async function getVotesResults(tenantId: string, fundId: string | null) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-  const where: any = { tenantId, status: "CLOSED" };
+  const where: Prisma.VoteWhereInput = { tenantId, status: "CLOSED" };
   if (fundId) where.fundId = fundId;
 
   const votes = await prisma.vote.findMany({
@@ -514,9 +507,7 @@ async function getVotesResults(tenantId: string, fundId: string | null) {
 }
 
 async function getFundPerformance(tenantId: string, fundId: string | null) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-  const where: any = { tenantId };
+  const where: Prisma.FundWhereInput = { tenantId };
   if (fundId) where.id = fundId;
 
   const funds = await prisma.fund.findMany({

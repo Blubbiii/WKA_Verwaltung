@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
@@ -56,9 +57,7 @@ export async function GET(request: NextRequest) {
 
     // Where-Clause aufbauen
     // Multi-Tenancy: Filter über Turbine -> Park -> Tenant
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const where: any = {
+    const where: Prisma.TurbineOperatorWhereInput = {
       turbine: {
         park: {
           tenantId: check.tenantId!,

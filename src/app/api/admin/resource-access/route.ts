@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import {
@@ -52,9 +53,7 @@ const check = await requireAdmin();
     const includeExpired = searchParams.get("includeExpired") === "true";
 
     // Baue Where-Clause
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const where: any = {};
+    const where: Prisma.ResourceAccessWhereInput = {};
 
     if (userId) {
       where.userId = userId;

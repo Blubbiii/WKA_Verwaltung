@@ -78,31 +78,35 @@ export async function POST(request: NextRequest) {
       errors: [],
     };
 
+    // Batch-load all invoices upfront (single DB query instead of N queries)
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        id: { in: uniqueIds },
+        ...(check.tenantId ? { tenantId: check.tenantId } : {}),
+      },
+      include: {
+        items: { orderBy: { position: "asc" } },
+        fund: { select: { id: true, name: true, legalForm: true } },
+        tenant: { select: { id: true, name: true } },
+        shareholder: {
+          include: {
+            person: { select: { email: true } },
+          },
+        },
+        lease: {
+          select: {
+            lessor: { select: { email: true } },
+          },
+        },
+      },
+    });
+    const invoicesMap = new Map(invoices.map((inv) => [inv.id, inv]));
+
     // Process invoices sequentially to avoid overwhelming the email server
     for (const invoiceId of uniqueIds) {
       try {
-        // Load invoice with tenant ownership check and all relations needed for PDF + email
-        const invoice = await prisma.invoice.findFirst({
-          where: {
-            id: invoiceId,
-            ...(check.tenantId ? { tenantId: check.tenantId } : {}),
-          },
-          include: {
-            items: { orderBy: { position: "asc" } },
-            fund: { select: { id: true, name: true, legalForm: true } },
-            tenant: { select: { id: true, name: true } },
-            shareholder: {
-              include: {
-                person: { select: { email: true } },
-              },
-            },
-            lease: {
-              select: {
-                lessor: { select: { email: true } },
-              },
-            },
-          },
-        });
+        // Look up invoice from pre-loaded map
+        const invoice = invoicesMap.get(invoiceId) ?? null;
 
         // Invoice not found or not owned by tenant
         if (!invoice) {

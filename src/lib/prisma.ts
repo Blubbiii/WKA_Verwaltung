@@ -4,8 +4,12 @@ import { logger } from "@/lib/logger";
 
 // Make BigInt JSON-serializable globally (Prisma returns BigInt for BigInt columns)
 // eslint-disable-next-line no-extend-native
-(BigInt.prototype as unknown as { toJSON: () => number }).toJSON = function () {
-  return Number(this);
+(BigInt.prototype as unknown as { toJSON: () => number | string }).toJSON = function () {
+  const n = Number(this);
+  if (n > Number.MAX_SAFE_INTEGER || n < Number.MIN_SAFE_INTEGER) {
+    return this.toString();
+  }
+  return n;
 };
 
 const globalForPrisma = globalThis as unknown as {

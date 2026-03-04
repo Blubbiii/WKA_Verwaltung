@@ -255,7 +255,7 @@ export function EnergyReportBuilder() {
   const [selectedTurbineId, setSelectedTurbineId] = useState<string>("");
   const [fromDate, setFromDate] = useState<string>(getDefaultFrom);
   const [toDate, setToDate] = useState<string>(getDefaultTo);
-  const [interval, setInterval] = useState<Interval>("month");
+  const [reportInterval, setReportInterval] = useState<Interval>("month");
 
   // ---------------------------------------------------------------------------
   // State: turbines loading
@@ -346,7 +346,7 @@ export function EnergyReportBuilder() {
         turbineId: selectedTurbineId || undefined,
         from: fromDate,
         to: toDate,
-        interval,
+        interval: reportInterval,
       };
 
       const res = await fetch("/api/energy/reports/generate", {
@@ -387,7 +387,7 @@ export function EnergyReportBuilder() {
       turbineId: selectedTurbineId,
       from: fromDate,
       to: toDate,
-      interval,
+      interval: reportInterval,
     };
   }
 
@@ -397,7 +397,7 @@ export function EnergyReportBuilder() {
     setSelectedTurbineId(config.turbineId || "");
     setFromDate(config.from);
     setToDate(config.to);
-    setInterval((config.interval as Interval) || "month");
+    setReportInterval((config.interval as Interval) || "month");
   }
 
   // ---------------------------------------------------------------------------
@@ -601,8 +601,8 @@ export function EnergyReportBuilder() {
                   Intervall
                 </Label>
                 <Select
-                  value={interval}
-                  onValueChange={(v) => setInterval(v as Interval)}
+                  value={reportInterval}
+                  onValueChange={(v) => setReportInterval(v as Interval)}
                 >
                   <SelectTrigger id="energy-filter-interval">
                     <SelectValue />
@@ -731,7 +731,7 @@ export function EnergyReportBuilder() {
                             <ProductionChart
                               data={reportData.production}
                               hasParkFilter={!!selectedParkId}
-                              interval={interval}
+                              interval={reportInterval}
                               chartType="bar"
                             />
                           )}

@@ -2,39 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ChevronRight, Home } from "lucide-react";
 
-// German translations for path segments
-const pathLabels: Record<string, string> = {
-  // Main sections
-  dashboard: "Dashboard",
-  parks: "Windparks",
-  funds: "Beteiligungen",
-  leases: "Pachtverträge",
-  contracts: "Verträge",
-  documents: "Dokumente",
-  invoices: "Rechnungen",
-  votes: "Abstimmungen",
-  reports: "Berichte",
-  settings: "Einstellungen",
-  admin: "Administration",
-  news: "Neuigkeiten",
-  "service-events": "Service-Events",
-
-  // Energy / Stromabrechnung
-  energy: "Stromabrechnung",
-  settlements: "Abrechnungen",
-  productions: "Netzbetreiber-Daten",
-  import: "Import",
-
-  // Actions
-  new: "Neu",
-  edit: "Bearbeiten",
-  upload: "Hochladen",
-
-  // Portal
-  portal: "Portal",
-};
+// Known path segments that have i18n keys in breadcrumb.path.*
+const KNOWN_SEGMENTS = new Set([
+  "dashboard", "parks", "funds", "leases", "contracts", "documents",
+  "invoices", "votes", "reports", "settings", "admin", "news",
+  "service-events", "energy", "settlements", "productions", "import",
+  "new", "edit", "upload", "portal",
+]);
 
 // Sections that have detail pages (id-based routes)
 const detailSections = [
@@ -58,6 +35,8 @@ interface BreadcrumbItem {
 
 export function Breadcrumb() {
   const pathname = usePathname();
+  const tNav = useTranslations("nav");
+  const tBc = useTranslations("breadcrumb");
 
   // Don't show breadcrumb on portal pages or login
   if (pathname.startsWith("/portal") || pathname === "/login") {
@@ -86,18 +65,16 @@ export function Breadcrumb() {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment);
 
     if (isUuid) {
-      // This is a detail page - label it as "Details"
-      const prevSegment = segments[i - 1];
-      const sectionLabel = pathLabels[prevSegment] || prevSegment;
-
       items.push({
-        label: "Details",
+        label: tBc("details"),
         href: currentPath,
         isCurrentPage: i === segments.length - 1,
       });
     } else {
-      // Regular segment
-      const label = pathLabels[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+      // Try i18n key first, then fallback to capitalized segment
+      const label = KNOWN_SEGMENTS.has(segment)
+        ? tBc(`path.${segment}` as Parameters<typeof tBc>[0])
+        : segment.charAt(0).toUpperCase() + segment.slice(1);
 
       items.push({
         label,
@@ -119,7 +96,7 @@ export function Breadcrumb() {
           <Link
             href="/"
             className="flex items-center hover:text-foreground transition-colors"
-            title="Dashboard"
+            title={tNav("dashboard")}
           >
             <Home className="h-4 w-4" />
           </Link>

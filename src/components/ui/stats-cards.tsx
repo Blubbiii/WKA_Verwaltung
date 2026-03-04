@@ -31,9 +31,9 @@ export function StatsCards({ stats, columns = 4 }: StatsCardsProps) {
 
   return (
     <div className={cn("grid gap-4", gridCols[columns])}>
-      {stats.map((stat, index) => (
+      {stats.map((stat) => (
         <Card
-          key={index}
+          key={stat.label}
           className={cn(
             "border-l-4 border-l-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-transparent hover:shadow-md transition-shadow duration-200",
             stat.cardClassName

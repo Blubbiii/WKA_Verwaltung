@@ -2,36 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getS3Client, S3_BUCKET } from "@/lib/storage";
 import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import { apiLogger as logger } from "@/lib/logger";
 
-// S3 Client Konfiguration
 const S3_ENDPOINT = process.env.S3_ENDPOINT || "http://localhost:9000";
-const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY || "minioadmin";
-const S3_SECRET_KEY = process.env.S3_SECRET_KEY || "minioadmin";
-const S3_BUCKET = process.env.S3_BUCKET || "wpm-documents";
-const S3_REGION = process.env.S3_REGION || "us-east-1";
-
-// Lazy-initialized S3 Client (NOT on module load)
-let s3Client: S3Client | null = null;
-
-function getS3Client(): S3Client {
-  if (!s3Client) {
-    s3Client = new S3Client({
-      endpoint: S3_ENDPOINT,
-      region: S3_REGION,
-      credentials: {
-        accessKeyId: S3_ACCESS_KEY,
-        secretAccessKey: S3_SECRET_KEY,
-      },
-      forcePathStyle: true,
-    });
-  }
-  return s3Client;
-}
 
 /**
  * GET /api/documents/[id]/content

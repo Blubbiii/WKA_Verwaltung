@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -103,10 +104,7 @@ export async function PATCH(
       });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-
-    const updateData: any = {};
+    const updateData: Prisma.DocumentTemplateUpdateInput = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.layout !== undefined) updateData.layout = data.layout;
     if (data.customCss !== undefined) updateData.customCss = data.customCss;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -10,6 +11,7 @@ interface MaintenanceStatus {
 }
 
 export function MaintenanceBanner() {
+  const t = useTranslations("maintenance");
   const [status, setStatus] = useState<MaintenanceStatus | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
@@ -40,15 +42,14 @@ export function MaintenanceBanner() {
   return (
     <div className="bg-yellow-500 text-yellow-900 px-4 py-2 text-center text-sm font-medium relative flex items-center justify-center">
       <span>
-        {status.message ||
-          "Das System befindet sich im Wartungsmodus. Bitte versuchen Sie es später erneut."}
+        {status.message || t("defaultMessage")}
       </span>
       <Button
         variant="ghost"
         size="icon"
         className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 text-yellow-900 hover:bg-yellow-600/20"
         onClick={() => setDismissed(true)}
-        aria-label="Banner schliessen"
+        aria-label={t("closeBanner")}
       >
         <X className="h-4 w-4" />
       </Button>
