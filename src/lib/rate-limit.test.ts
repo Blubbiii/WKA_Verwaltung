@@ -11,6 +11,21 @@ vi.mock("next/server", () => ({
   },
 }));
 
+// Prevent ioredis from attempting a real connection during unit tests.
+// The rate limiter falls back to the in-memory store when Redis is unavailable,
+// which is exactly what these tests exercise.
+vi.mock("ioredis", () => {
+  const Redis = vi.fn().mockImplementation(() => ({
+    on: vi.fn(),
+    connect: vi.fn().mockRejectedValue(new Error("Redis unavailable in test")),
+    ping: vi.fn().mockRejectedValue(new Error("Redis unavailable in test")),
+    pipeline: vi.fn(),
+    expire: vi.fn(),
+    quit: vi.fn(),
+  }));
+  return { default: Redis };
+});
+
 import { rateLimit, getClientIp, AUTH_RATE_LIMIT, UPLOAD_RATE_LIMIT, API_RATE_LIMIT } from "./rate-limit";
 import type { RateLimitConfig } from "./rate-limit";
 
@@ -55,53 +70,53 @@ describe("Rate Limit Konfigurationen", () => {
 describe("rateLimit", () => {
   const config: RateLimitConfig = { limit: 3, windowMs: 60_000 };
 
-  it("erlaubt Anfragen innerhalb des Limits", () => {
+  it("erlaubt Anfragen innerhalb des Limits", async () => {
     const id = uniqueId();
-    const result1 = rateLimit(id, config);
+    const result1 = await rateLimit(id, config);
     expect(result1.success).toBe(true);
     expect(result1.remaining).toBe(2);
 
-    const result2 = rateLimit(id, config);
+    const result2 = await rateLimit(id, config);
     expect(result2.success).toBe(true);
     expect(result2.remaining).toBe(1);
 
-    const result3 = rateLimit(id, config);
+    const result3 = await rateLimit(id, config);
     expect(result3.success).toBe(true);
     expect(result3.remaining).toBe(0);
   });
 
-  it("blockiert Anfragen die das Limit überschreiten", () => {
+  it("blockiert Anfragen die das Limit überschreiten", async () => {
     const id = uniqueId();
     // Use up all allowed requests
     for (let i = 0; i < 3; i++) {
-      rateLimit(id, config);
+      await rateLimit(id, config);
     }
 
-    const blocked = rateLimit(id, config);
+    const blocked = await rateLimit(id, config);
     expect(blocked.success).toBe(false);
     expect(blocked.remaining).toBe(0);
   });
 
-  it("gibt einen reset-Timestamp zurück", () => {
+  it("gibt einen reset-Timestamp zurück", async () => {
     const id = uniqueId();
     const now = Date.now();
-    const result = rateLimit(id, config);
+    const result = await rateLimit(id, config);
     expect(result.reset).toBeGreaterThanOrEqual(now);
     expect(result.reset).toBeLessThanOrEqual(now + config.windowMs + 100);
   });
 
-  it("verwendet separate Zaehler für unterschiedliche Identifier", () => {
+  it("verwendet separate Zaehler für unterschiedliche Identifier", async () => {
     const id1 = uniqueId("user-a");
     const id2 = uniqueId("user-b");
 
     // Exhaust limit for id1
     for (let i = 0; i < 3; i++) {
-      rateLimit(id1, config);
+      await rateLimit(id1, config);
     }
-    expect(rateLimit(id1, config).success).toBe(false);
+    expect((await rateLimit(id1, config)).success).toBe(false);
 
     // id2 should still have full quota
-    const result = rateLimit(id2, config);
+    const result = await rateLimit(id2, config);
     expect(result.success).toBe(true);
     expect(result.remaining).toBe(2);
   });
@@ -120,37 +135,37 @@ describe("rateLimit - Zeitfenster", () => {
     vi.useRealTimers();
   });
 
-  it("setzt das Limit nach Ablauf des Zeitfensters zurück", () => {
+  it("setzt das Limit nach Ablauf des Zeitfensters zurück", async () => {
     const config: RateLimitConfig = { limit: 2, windowMs: 10_000 };
     const id = uniqueId("window-reset");
 
     // Exhaust the limit
-    rateLimit(id, config);
-    rateLimit(id, config);
-    expect(rateLimit(id, config).success).toBe(false);
+    await rateLimit(id, config);
+    await rateLimit(id, config);
+    expect((await rateLimit(id, config)).success).toBe(false);
 
     // Advance time past the window
     vi.advanceTimersByTime(10_001);
 
     // Should be allowed again
-    const result = rateLimit(id, config);
+    const result = await rateLimit(id, config);
     expect(result.success).toBe(true);
     expect(result.remaining).toBe(1);
   });
 
-  it("entfernt nur abgelaufene Timestamps aus dem Fenster", () => {
+  it("entfernt nur abgelaufene Timestamps aus dem Fenster", async () => {
     const config: RateLimitConfig = { limit: 3, windowMs: 10_000 };
     const id = uniqueId("partial-reset");
 
     // Make 2 requests at time 0
-    rateLimit(id, config);
-    rateLimit(id, config);
+    await rateLimit(id, config);
+    await rateLimit(id, config);
 
     // Advance 6 seconds
     vi.advanceTimersByTime(6_000);
 
     // Make 1 more request at time 6000
-    const result3 = rateLimit(id, config);
+    const result3 = await rateLimit(id, config);
     expect(result3.success).toBe(true);
     expect(result3.remaining).toBe(0); // 3 total in window
 
@@ -159,7 +174,7 @@ describe("rateLimit - Zeitfenster", () => {
     vi.advanceTimersByTime(5_000);
 
     // Should have room for 2 more (only the request at t=6000 is still in window)
-    const result4 = rateLimit(id, config);
+    const result4 = await rateLimit(id, config);
     expect(result4.success).toBe(true);
     expect(result4.remaining).toBe(1);
   });
@@ -170,17 +185,17 @@ describe("rateLimit - Zeitfenster", () => {
 // =============================================================================
 
 describe("rateLimit - remaining", () => {
-  it("zaehlt remaining korrekt herunter", () => {
+  it("zaehlt remaining korrekt herunter", async () => {
     const config: RateLimitConfig = { limit: 5, windowMs: 60_000 };
     const id = uniqueId("remaining");
 
-    expect(rateLimit(id, config).remaining).toBe(4);
-    expect(rateLimit(id, config).remaining).toBe(3);
-    expect(rateLimit(id, config).remaining).toBe(2);
-    expect(rateLimit(id, config).remaining).toBe(1);
-    expect(rateLimit(id, config).remaining).toBe(0);
+    expect((await rateLimit(id, config)).remaining).toBe(4);
+    expect((await rateLimit(id, config)).remaining).toBe(3);
+    expect((await rateLimit(id, config)).remaining).toBe(2);
+    expect((await rateLimit(id, config)).remaining).toBe(1);
+    expect((await rateLimit(id, config)).remaining).toBe(0);
     // After limit exceeded
-    expect(rateLimit(id, config).remaining).toBe(0);
+    expect((await rateLimit(id, config)).remaining).toBe(0);
   });
 });
 

@@ -318,7 +318,7 @@ export async function GET(
     const sheetName = getEntityDisplayName(type);
 
     if (format === 'xlsx') {
-      fileBuffer = generateExcel(data, columns, sheetName);
+      fileBuffer = await generateExcel(data, columns, sheetName);
     } else {
       fileBuffer = generateCsvBuffer(data, columns);
     }

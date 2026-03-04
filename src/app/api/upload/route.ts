@@ -32,7 +32,7 @@ const MAX_FILE_SIZE: Record<string, number> = {
 export async function POST(request: NextRequest) {
   // Rate limiting: 20 uploads per minute
   const clientIp = getClientIp(request);
-  const rateLimitResult = rateLimit(
+  const rateLimitResult = await rateLimit(
     `${clientIp}:/api/upload`,
     UPLOAD_RATE_LIMIT
   );

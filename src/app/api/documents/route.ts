@@ -236,7 +236,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   // Rate limiting: 20 uploads per minute
   const clientIp = getClientIp(request);
-  const rateLimitResult = rateLimit(
+  const rateLimitResult = await rateLimit(
     `${clientIp}:/api/documents`,
     UPLOAD_RATE_LIMIT
   );

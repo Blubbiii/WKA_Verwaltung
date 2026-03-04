@@ -36,7 +36,7 @@ export const {
         const { email, password } = parsed.data;
 
         // Rate limiting: max 5 login attempts per 15 minutes per email
-        const loginRateCheck = rateLimit(`login:${email.toLowerCase()}`, AUTH_RATE_LIMIT);
+        const loginRateCheck = await rateLimit(`login:${email.toLowerCase()}`, AUTH_RATE_LIMIT);
         if (!loginRateCheck.success) {
           authLogger.warn({ email }, "Login rate limit exceeded");
           throw new Error("Zu viele Anmeldeversuche. Bitte warten Sie 15 Minuten.");

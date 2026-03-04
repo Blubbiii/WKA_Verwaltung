@@ -54,7 +54,6 @@ export async function POST(request: NextRequest) {
     const normalizedPath = path.resolve(currentPath);
 
     // Security: Restrict browsing to SCADA_BASE_PATH if configured
-    const scadaBasePath = process.env.SCADA_BASE_PATH;
     if (scadaBasePath) {
       const allowedBase = path.resolve(scadaBasePath);
       if (!normalizedPath.startsWith(allowedBase + path.sep) && normalizedPath !== allowedBase) {

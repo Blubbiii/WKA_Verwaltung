@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
+import Redis from "ioredis";
+import { apiLogger } from "@/lib/logger";
 
 /**
- * In-memory sliding window rate limiter for Next.js API routes.
+ * Redis-backed sliding window rate limiter for Next.js API routes.
  *
- * Each identifier (typically IP + route path) maintains a list of request
- * timestamps. When `rateLimit` is called the list is pruned to the current
- * window and checked against the configured limit.
+ * Strategy: INCR + EXPIRE pipeline on a key `ratelimit:${identifier}`.
+ * The counter is reset by Redis TTL (= windowMs in seconds), giving a
+ * fixed-window approximation. This is atomic enough for most API-protection
+ * use cases and requires no Lua scripting.
  *
- * A background cleanup runs every 60 seconds to remove entries whose most
- * recent request is older than any active window, preventing unbounded
- * memory growth.
+ * When Redis is unavailable the module falls back to an in-memory
+ * implementation so that a Redis outage never causes legitimate requests
+ * to be denied (fail-open policy).
  */
 
 // ---------------------------------------------------------------------------
@@ -67,28 +70,175 @@ export const TECHNICIAN_RATE_LIMIT: RateLimitConfig = {
 };
 
 // ---------------------------------------------------------------------------
-// Internal state
+// Redis connection (reuses the same REDIS_URL as the cache layer)
+// ---------------------------------------------------------------------------
+
+let redisClient: Redis | null = null;
+let redisAvailable = false;
+/** Set to true once a connection attempt has been completed (success or fail). */
+let redisInitialised = false;
+
+/**
+ * Lazily create and return the shared Redis client for rate limiting.
+ * Returns null when Redis is unavailable so callers can fall back gracefully.
+ */
+async function getRedisClient(): Promise<Redis | null> {
+  // Fast path: already connected.
+  if (redisClient && redisAvailable) {
+    return redisClient;
+  }
+
+  // If we already know Redis is down, do not keep retrying on every request.
+  if (redisInitialised && !redisAvailable) {
+    return null;
+  }
+
+  redisInitialised = true;
+
+  try {
+    const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+    const url = new URL(redisUrl);
+
+    redisClient = new Redis({
+      host: url.hostname,
+      port: parseInt(url.port) || 6379,
+      ...(url.password ? { password: decodeURIComponent(url.password) } : {}),
+      ...(url.username && url.username !== "default"
+        ? { username: url.username }
+        : {}),
+      ...(url.protocol === "rediss:"
+        ? { tls: { rejectUnauthorized: process.env.NODE_ENV === "production" } }
+        : {}),
+      maxRetriesPerRequest: 1, // Fail fast -- we have a fallback
+      connectTimeout: 3000,
+      lazyConnect: true,
+    });
+
+    redisClient.on("error", (err: Error) => {
+      if (redisAvailable) {
+        // Only log when we transition from available → unavailable
+        apiLogger.warn({ err }, "rate-limit: Redis error, switching to in-memory fallback");
+      }
+      redisAvailable = false;
+    });
+
+    redisClient.on("connect", () => {
+      if (!redisAvailable) {
+        apiLogger.info("rate-limit: Redis reconnected, switching back to Redis backend");
+      }
+      redisAvailable = true;
+    });
+
+    await redisClient.connect();
+    await redisClient.ping();
+    redisAvailable = true;
+
+    return redisClient;
+  } catch (err) {
+    apiLogger.warn({ err }, "rate-limit: Could not connect to Redis, using in-memory fallback");
+    redisAvailable = false;
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Redis-backed rate limit check
+// ---------------------------------------------------------------------------
+
+/**
+ * Attempt a rate limit check against Redis.
+ * Returns null when Redis is unavailable so the caller can fall back.
+ */
+async function rateLimitRedis(
+  identifier: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult | null> {
+  const redis = await getRedisClient();
+  if (!redis) return null;
+
+  const { limit, windowMs } = config;
+  const ttlSeconds = Math.ceil(windowMs / 1000);
+  const redisKey = `ratelimit:${identifier}`;
+
+  try {
+    // Pipeline: INCR first, then conditionally EXPIRE.
+    // INCR is atomic; EXPIRE only needs to fire on the first request in a
+    // window (when count transitions from 0 → 1), which is why we always
+    // send it — Redis ignores EXPIRE if the key already has a TTL and the
+    // NX flag is used below.
+    const pipeline = redis.pipeline();
+    pipeline.incr(redisKey);
+    // Set TTL only when the key is newly created (XX = only if exists without
+    // expiry is not what we want; NX = only set if key has no expiry).
+    // Simplest correct approach: always call EXPIRE. For an already-existing
+    // key Redis will simply refresh the TTL, which is acceptable for a
+    // fixed-window counter — it is already the documented trade-off of this
+    // pattern. Use EXPIRE only on the first hit by checking count after.
+    pipeline.ttl(redisKey);
+    const results = await pipeline.exec();
+
+    if (!results) return null;
+
+    const [incrResult, ttlResult] = results;
+    if (incrResult[0] || ttlResult[0]) {
+      // Command-level error inside the pipeline
+      apiLogger.warn(
+        { incrErr: incrResult[0], ttlErr: ttlResult[0] },
+        "rate-limit: Redis pipeline command error"
+      );
+      return null;
+    }
+
+    const count = incrResult[1] as number;
+    const currentTtl = ttlResult[1] as number;
+
+    // If the key has no TTL (new key or TTL was lost) set it now.
+    if (currentTtl === -1) {
+      // Fire-and-forget; if this fails the key will eventually expire via the
+      // next request's EXPIRE call.
+      redis.expire(redisKey, ttlSeconds).catch(() => {
+        /* ignore */
+      });
+    }
+
+    // Compute reset time from remaining TTL.
+    // If TTL is -1 (just set above) use the full window duration.
+    const remainingTtlMs =
+      currentTtl > 0 ? currentTtl * 1000 : windowMs;
+    const reset = Date.now() + remainingTtlMs;
+
+    if (count > limit) {
+      return {
+        success: false,
+        remaining: 0,
+        reset,
+      };
+    }
+
+    return {
+      success: true,
+      remaining: limit - count,
+      reset,
+    };
+  } catch (err) {
+    apiLogger.warn({ err, key: redisKey }, "rate-limit: Redis command error, falling back to memory");
+    redisAvailable = false;
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// In-memory fallback (original implementation)
 // ---------------------------------------------------------------------------
 
 /**
  * Map of identifier -> sorted array of request timestamps (newest last).
- * Using a simple array is efficient enough for the expected per-key volume
- * (at most `limit` entries per window).
+ * Only used when Redis is unavailable.
  */
-const store = new Map<string, number[]>();
-
-/**
- * The largest windowMs value seen so far. Used during cleanup to determine
- * which entries are safe to evict.
- */
+const memoryStore = new Map<string, number[]>();
 let maxWindowMs = 0;
 
-// ---------------------------------------------------------------------------
-// Automatic cleanup of expired entries (every 60 seconds)
-// ---------------------------------------------------------------------------
-
 const CLEANUP_INTERVAL_MS = 60 * 1000;
-
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
 function startCleanup() {
@@ -96,47 +246,30 @@ function startCleanup() {
 
   cleanupTimer = setInterval(() => {
     const now = Date.now();
-    // Use the largest window we have ever seen so we never prune entries
-    // that might still be relevant for a longer window.
     const cutoff = now - (maxWindowMs || 60 * 1000);
 
-    for (const [key, timestamps] of store.entries()) {
-      // Because timestamps are appended in order the last element is the
-      // most recent. If even the most recent one is older than the cutoff
-      // the whole entry can be removed.
-      if (timestamps.length === 0 || timestamps[timestamps.length - 1] < cutoff) {
-        store.delete(key);
+    for (const [key, timestamps] of memoryStore.entries()) {
+      if (
+        timestamps.length === 0 ||
+        timestamps[timestamps.length - 1] < cutoff
+      ) {
+        memoryStore.delete(key);
       }
     }
   }, CLEANUP_INTERVAL_MS);
 
-  // Allow the Node.js process to exit even if the timer is still active.
-  if (cleanupTimer && typeof cleanupTimer === "object" && "unref" in cleanupTimer) {
+  if (
+    cleanupTimer &&
+    typeof cleanupTimer === "object" &&
+    "unref" in cleanupTimer
+  ) {
     cleanupTimer.unref();
   }
 }
 
-// Start cleanup on module load.
 startCleanup();
 
-// ---------------------------------------------------------------------------
-// Core rate limiting function
-// ---------------------------------------------------------------------------
-
-/**
- * Check whether a request identified by `identifier` is within the rate
- * limit defined by `config`.
- *
- * Usage:
- * ```ts
- * const ip = request.headers.get("x-forwarded-for") || "unknown";
- * const result = rateLimit(`${ip}:/api/auth/forgot-password`, AUTH_RATE_LIMIT);
- * if (!result.success) {
- *   return getRateLimitResponse(result);
- * }
- * ```
- */
-export function rateLimit(
+function rateLimitMemory(
   identifier: string,
   config: RateLimitConfig
 ): RateLimitResult {
@@ -144,46 +277,30 @@ export function rateLimit(
   const now = Date.now();
   const windowStart = now - windowMs;
 
-  // Track the largest window for cleanup purposes.
   if (windowMs > maxWindowMs) {
     maxWindowMs = windowMs;
   }
 
-  // Retrieve (or initialise) the timestamps for this identifier.
-  let timestamps = store.get(identifier);
+  let timestamps = memoryStore.get(identifier);
   if (!timestamps) {
     timestamps = [];
-    store.set(identifier, timestamps);
+    memoryStore.set(identifier, timestamps);
   }
 
-  // Prune timestamps that have fallen outside the current window.
-  // Because timestamps are in ascending order we can find the first index
-  // inside the window and slice from there.
   const firstValidIndex = timestamps.findIndex((t) => t > windowStart);
   if (firstValidIndex === -1) {
-    // All timestamps are outside the window -- clear the list.
     timestamps.length = 0;
   } else if (firstValidIndex > 0) {
     timestamps.splice(0, firstValidIndex);
   }
 
-  // Determine the reset time. If there are existing hits the window resets
-  // relative to the oldest remaining hit. Otherwise it resets relative to now.
   const reset =
-    timestamps.length > 0
-      ? timestamps[0] + windowMs
-      : now + windowMs;
+    timestamps.length > 0 ? timestamps[0] + windowMs : now + windowMs;
 
-  // Check against the limit.
   if (timestamps.length >= limit) {
-    return {
-      success: false,
-      remaining: 0,
-      reset,
-    };
+    return { success: false, remaining: 0, reset };
   }
 
-  // Record the current request.
   timestamps.push(now);
 
   return {
@@ -191,6 +308,43 @@ export function rateLimit(
     remaining: limit - timestamps.length,
     reset,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Check whether a request identified by `identifier` is within the rate
+ * limit defined by `config`.
+ *
+ * Tries Redis first. Falls back to the in-memory implementation when Redis
+ * is unavailable (fail-open: the request is allowed and a warning is logged).
+ *
+ * Usage:
+ * ```ts
+ * const ip = getClientIp(request);
+ * const result = await rateLimit(`${ip}:/api/auth/forgot-password`, AUTH_RATE_LIMIT);
+ * if (!result.success) {
+ *   return getRateLimitResponse(result);
+ * }
+ * ```
+ *
+ * NOTE: The function signature is intentionally async. All existing callers
+ * that previously used the synchronous version should add `await`.
+ */
+export async function rateLimit(
+  identifier: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  // Try Redis first.
+  const redisResult = await rateLimitRedis(identifier, config);
+  if (redisResult !== null) {
+    return redisResult;
+  }
+
+  // Fall back to in-memory implementation.
+  return rateLimitMemory(identifier, config);
 }
 
 // ---------------------------------------------------------------------------
@@ -204,7 +358,6 @@ export function rateLimit(
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    // x-forwarded-for can contain a comma-separated list; take the first one.
     return forwarded.split(",")[0].trim();
   }
   return request.headers.get("x-real-ip") || "unknown";
@@ -218,9 +371,6 @@ export function getClientIp(request: Request): string {
  * Returns a `NextResponse` with HTTP 429 (Too Many Requests) and the
  * standard `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`
  * and `X-RateLimit-Reset` headers.
- *
- * If a `RateLimitResult` is passed the headers are populated from it.
- * Otherwise sensible defaults are used.
  */
 export function getRateLimitResponse(
   result?: RateLimitResult,

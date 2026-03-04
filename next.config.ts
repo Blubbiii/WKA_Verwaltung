@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: require("./package.json").version,
   },
   // Prevent Turbopack from bundling packages that use worker threads or native bindings
-  serverExternalPackages: ["bullmq", "ioredis", "pino", "pino-pretty"],
+  serverExternalPackages: ["bullmq", "ioredis", "pino", "pino-pretty", "exceljs"],
   async headers() {
     return [
       {
@@ -59,11 +59,11 @@ const nextConfig: NextConfig = {
   },
   output: "standalone",
   images: {
+    // Restrict to known hosts only (no wildcard to prevent SSRF/cost abuse)
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**",
-      },
+      // MinIO / S3 — internal proxy via /api/documents (no direct image URLs needed)
+      // Add specific hostnames here if external images are ever required, e.g.:
+      // { protocol: "https", hostname: "cdn.example.com" },
     ],
   },
   experimental: {

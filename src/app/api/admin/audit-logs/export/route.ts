@@ -371,7 +371,7 @@ export async function GET(request: NextRequest) {
       }
 
       case "xlsx": {
-        buffer = generateExcel(
+        buffer = await generateExcel(
           auditLogs as unknown as Record<string, unknown>[],
           auditLogColumns,
           "Audit-Log",

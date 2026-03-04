@@ -22,6 +22,14 @@ const S3_SECRET_KEY = process.env.S3_SECRET_KEY || "minioadmin";
 const S3_BUCKET = process.env.S3_BUCKET || "wpm-documents";
 const S3_REGION = process.env.S3_REGION || "us-east-1";
 
+// Security: warn loudly if default credentials are used in production
+if (process.env.NODE_ENV === "production" && S3_ACCESS_KEY === "minioadmin") {
+  logger.error(
+    "SECURITY WARNING: S3_ACCESS_KEY is set to default 'minioadmin' in production! " +
+    "Set S3_ACCESS_KEY and S3_SECRET_KEY environment variables immediately."
+  );
+}
+
 /**
  * S3 Client Singleton
  * Konfiguriert für MinIO (lokal) oder AWS S3 (Produktion)

@@ -269,7 +269,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const excelBuffer = generateExcel(data, columns, "Berechtigungs-Matrix", {
+      const excelBuffer = await generateExcel(data, columns, "Berechtigungs-Matrix", {
         sheetName: "Matrix",
       });
 

@@ -2,10 +2,10 @@
  * Excel Export Utility
  *
  * Generates XLSX files with proper formatting, headers, and data types.
- * Uses the xlsx library (SheetJS) for Excel generation.
+ * Uses the exceljs library for Excel generation (actively maintained).
  */
 
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import type { ColumnDef, ExportOptions, ColumnFormat } from './types';
 
 /**
@@ -59,6 +59,7 @@ function formatValue(
       if (typeof value === 'number') {
         return value;
       }
+      // eslint-disable-next-line no-case-declarations
       const num = parseFloat(String(value));
       return isNaN(num) ? String(value) : num;
 
@@ -70,6 +71,7 @@ function formatValue(
       if (typeof value === 'object' && value !== null && 'toNumber' in value) {
         return (value as { toNumber: () => number }).toNumber();
       }
+      // eslint-disable-next-line no-case-declarations
       const currencyNum = parseFloat(String(value));
       return isNaN(currencyNum) ? String(value) : currencyNum;
 
@@ -81,6 +83,7 @@ function formatValue(
       if (typeof value === 'object' && value !== null && 'toNumber' in value) {
         return (value as { toNumber: () => number }).toNumber() / 100;
       }
+      // eslint-disable-next-line no-case-declarations
       const pctNum = parseFloat(String(value));
       return isNaN(pctNum) ? String(value) : pctNum / 100;
 
@@ -99,7 +102,7 @@ function formatValue(
 }
 
 /**
- * Get Excel number format string for column type
+ * Get ExcelJS number format string for column type
  */
 function getNumberFormat(format: ColumnFormat | undefined): string | undefined {
   switch (format) {
@@ -117,6 +120,22 @@ function getNumberFormat(format: ColumnFormat | undefined): string | undefined {
 }
 
 /**
+ * Apply header row styling to a worksheet row
+ */
+function styleHeaderRow(row: ExcelJS.Row, colCount: number): void {
+  for (let c = 1; c <= colCount; c++) {
+    const cell = row.getCell(c);
+    cell.font = { bold: true };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+    cell.alignment = { horizontal: 'center' };
+  }
+}
+
+/**
  * Generate an Excel workbook from data
  *
  * @param data - Array of data objects to export
@@ -125,88 +144,51 @@ function getNumberFormat(format: ColumnFormat | undefined): string | undefined {
  * @param options - Export options
  * @returns Buffer containing the XLSX file
  */
-export function generateExcel(
+export async function generateExcel(
   data: Record<string, unknown>[],
   columns: ColumnDef[],
   sheetName?: string,
   options?: ExportOptions
-): Buffer {
+): Promise<Buffer> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const finalSheetName = sheetName || opts.sheetName || 'Export';
 
-  // Create workbook and worksheet
-  const workbook = XLSX.utils.book_new();
-
-  // Build header row
-  const headers = columns.map((col) => col.header);
-
-  // Build data rows
-  const rows: (string | number | Date | null)[][] = data.map((row) => {
-    return columns.map((col) => {
-      let value = getNestedValue(row, col.key);
-
-      // Apply custom transformer if provided
-      if (col.transform) {
-        value = col.transform(value, row);
-      }
-
-      return formatValue(value, col.format, opts);
-    });
-  });
-
-  // Combine headers and data
-  const worksheetData = [headers, ...rows];
-
-  // Create worksheet from array
-  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(finalSheetName);
 
   // Set column widths
-  const colWidths: XLSX.ColInfo[] = columns.map((col) => ({
-    wch: col.width || Math.max(col.header.length, 15),
+  worksheet.columns = columns.map((col) => ({
+    width: col.width || Math.max(col.header.length, 15),
   }));
-  worksheet['!cols'] = colWidths;
 
-  // Apply cell formatting
-  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+  // Add header row
+  const headerRow = worksheet.addRow(columns.map((col) => col.header));
+  styleHeaderRow(headerRow, columns.length);
 
-  // Style header row (bold)
-  for (let col = range.s.c; col <= range.e.c; col++) {
-    const cellRef = XLSX.utils.encode_cell({ r: 0, c: col });
-    if (!worksheet[cellRef]) continue;
-
-    worksheet[cellRef].s = {
-      font: { bold: true },
-      fill: { fgColor: { rgb: 'E0E0E0' } },
-      alignment: { horizontal: 'center' },
-    };
-  }
-
-  // Apply number formats to data cells
-  for (let row = 1; row <= range.e.r; row++) {
-    for (let col = range.s.c; col <= range.e.c; col++) {
-      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
-      if (!worksheet[cellRef]) continue;
-
-      const columnDef = columns[col];
-      const numberFormat = getNumberFormat(columnDef?.format);
-
-      if (numberFormat) {
-        worksheet[cellRef].z = numberFormat;
+  // Add data rows
+  for (const rowData of data) {
+    const rowValues = columns.map((col) => {
+      let value = getNestedValue(rowData, col.key);
+      if (col.transform) {
+        value = col.transform(value, rowData);
       }
-    }
+      return formatValue(value, col.format, opts);
+    });
+
+    const row = worksheet.addRow(rowValues);
+
+    // Apply number formats per cell
+    columns.forEach((col, colIdx) => {
+      const numFmt = getNumberFormat(col.format);
+      if (numFmt) {
+        const cell = row.getCell(colIdx + 1);
+        cell.numFmt = numFmt;
+      }
+    });
   }
 
-  // Add worksheet to workbook
-  XLSX.utils.book_append_sheet(workbook, worksheet, finalSheetName);
-
-  // Generate buffer
-  const excelBuffer = XLSX.write(workbook, {
-    type: 'buffer',
-    bookType: 'xlsx',
-    bookSST: false,
-  });
-
-  return Buffer.from(excelBuffer);
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }
 
 /**
@@ -216,83 +198,52 @@ export function generateExcel(
  * @param options - Export options
  * @returns Buffer containing the XLSX file
  */
-export function generateExcelMultiSheet(
+export async function generateExcelMultiSheet(
   sheets: Array<{
     name: string;
     data: Record<string, unknown>[];
     columns: ColumnDef[];
   }>,
   options?: ExportOptions
-): Buffer {
+): Promise<Buffer> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
-  const workbook = XLSX.utils.book_new();
+  const workbook = new ExcelJS.Workbook();
 
   for (const sheet of sheets) {
-    // Build header row
-    const headers = sheet.columns.map((col) => col.header);
-
-    // Build data rows
-    const rows: (string | number | Date | null)[][] = sheet.data.map((row) => {
-      return sheet.columns.map((col) => {
-        let value = getNestedValue(row, col.key);
-
-        if (col.transform) {
-          value = col.transform(value, row);
-        }
-
-        return formatValue(value, col.format, opts);
-      });
-    });
-
-    // Combine headers and data
-    const worksheetData = [headers, ...rows];
-
-    // Create worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const worksheet = workbook.addWorksheet(sheet.name);
 
     // Set column widths
-    const colWidths: XLSX.ColInfo[] = sheet.columns.map((col) => ({
-      wch: col.width || Math.max(col.header.length, 15),
+    worksheet.columns = sheet.columns.map((col) => ({
+      width: col.width || Math.max(col.header.length, 15),
     }));
-    worksheet['!cols'] = colWidths;
 
-    // Apply header styling
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-    for (let col = range.s.c; col <= range.e.c; col++) {
-      const cellRef = XLSX.utils.encode_cell({ r: 0, c: col });
-      if (!worksheet[cellRef]) continue;
+    // Add header row
+    const headerRow = worksheet.addRow(sheet.columns.map((col) => col.header));
+    styleHeaderRow(headerRow, sheet.columns.length);
 
-      worksheet[cellRef].s = {
-        font: { bold: true },
-        fill: { fgColor: { rgb: 'E0E0E0' } },
-        alignment: { horizontal: 'center' },
-      };
-    }
-
-    // Apply number formats
-    for (let row = 1; row <= range.e.r; row++) {
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
-        if (!worksheet[cellRef]) continue;
-
-        const columnDef = sheet.columns[col];
-        const numberFormat = getNumberFormat(columnDef?.format);
-
-        if (numberFormat) {
-          worksheet[cellRef].z = numberFormat;
+    // Add data rows
+    for (const rowData of sheet.data) {
+      const rowValues = sheet.columns.map((col) => {
+        let value = getNestedValue(rowData, col.key);
+        if (col.transform) {
+          value = col.transform(value, rowData);
         }
-      }
-    }
+        return formatValue(value, col.format, opts);
+      });
 
-    // Add to workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name);
+      const row = worksheet.addRow(rowValues);
+
+      // Apply number formats per cell
+      sheet.columns.forEach((col, colIdx) => {
+        const numFmt = getNumberFormat(col.format);
+        if (numFmt) {
+          const cell = row.getCell(colIdx + 1);
+          cell.numFmt = numFmt;
+        }
+      });
+    }
   }
 
-  const excelBuffer = XLSX.write(workbook, {
-    type: 'buffer',
-    bookType: 'xlsx',
-    bookSST: false,
-  });
-
-  return Buffer.from(excelBuffer);
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }

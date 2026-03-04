@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   try {
     // Rate limiting: same tight limit as auth endpoints (public endpoint, no auth)
     const ip = getClientIp(req);
-    const rl = rateLimit(`demo-request:${ip}`, AUTH_RATE_LIMIT);
+    const rl = await rateLimit(`demo-request:${ip}`, AUTH_RATE_LIMIT);
     if (!rl.success) {
       return NextResponse.json(
         { error: "Zu viele Anfragen. Bitte versuchen Sie es später erneut." },

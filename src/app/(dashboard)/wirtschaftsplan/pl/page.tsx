@@ -259,8 +259,9 @@ export default function WirtschaftsplanPLPage() {
 
   const handleExport = useCallback(async () => {
     if (!data) return;
-    const { utils, writeFile } = await import("xlsx");
-    const wb = utils.book_new();
+    const ExcelJS = (await import("exceljs")).default;
+    const workbook = new ExcelJS.Workbook();
+
     for (const park of data.parks) {
       const rows: (string | number)[][] = [
         ["Position", ...MONTHS, "Gesamt"],
@@ -281,10 +282,24 @@ export default function WirtschaftsplanPLPage() {
           ["Abweichung", ...park.months.map((m) => m.varianceNetPL), park.totals.varianceNetPL],
         ] : []),
       ];
-      const ws = utils.aoa_to_sheet(rows);
-      utils.book_append_sheet(wb, ws, park.parkName.slice(0, 30));
+
+      const worksheet = workbook.addWorksheet(park.parkName.slice(0, 30));
+      for (const row of rows) {
+        worksheet.addRow(row);
+      }
     }
-    writeFile(wb, `Wirtschaftsplan_P&L_${year}.xlsx`);
+
+    // Write buffer and trigger browser download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Wirtschaftsplan_P&L_${year}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   }, [data, year]);
 
   return (

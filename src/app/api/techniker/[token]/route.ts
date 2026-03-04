@@ -19,7 +19,7 @@ type RouteContext = { params: Promise<{ token: string }> };
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const ip = getClientIp(request);
-    const rateLimitResult = rateLimit(`techniker:${ip}`, TECHNICIAN_RATE_LIMIT);
+    const rateLimitResult = await rateLimit(`techniker:${ip}`, TECHNICIAN_RATE_LIMIT);
     if (!rateLimitResult.success) {
       return getRateLimitResponse(rateLimitResult, TECHNICIAN_RATE_LIMIT);
     }

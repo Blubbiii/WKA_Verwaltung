@@ -26,7 +26,7 @@ type RouteContext = { params: Promise<{ token: string }> };
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const ip = getClientIp(request);
-    const rateLimitResult = rateLimit(`techniker-checkin:${ip}`, TECHNICIAN_RATE_LIMIT);
+    const rateLimitResult = await rateLimit(`techniker-checkin:${ip}`, TECHNICIAN_RATE_LIMIT);
     if (!rateLimitResult.success) {
       return getRateLimitResponse(rateLimitResult, TECHNICIAN_RATE_LIMIT);
     }

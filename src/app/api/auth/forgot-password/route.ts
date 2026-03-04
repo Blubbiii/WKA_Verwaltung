@@ -22,7 +22,7 @@ const TOKEN_EXPIRY_HOURS = 1;
 export async function POST(request: Request) {
   // Rate limiting: 5 attempts per 15 minutes
   const clientIp = getClientIp(request);
-  const rateLimitResult = rateLimit(
+  const rateLimitResult = await rateLimit(
     `${clientIp}:/api/auth/forgot-password`,
     AUTH_RATE_LIMIT
   );

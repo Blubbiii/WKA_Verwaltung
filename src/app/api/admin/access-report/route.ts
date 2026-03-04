@@ -323,7 +323,7 @@ export async function GET(request: NextRequest) {
     let mimeType: string;
 
     if (format === "xlsx") {
-      fileBuffer = generateExcel(flatData, columns, "Zugriffsreport");
+      fileBuffer = await generateExcel(flatData, columns, "Zugriffsreport");
       mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     } else {
       fileBuffer = generateCsvBuffer(flatData, columns);

@@ -2,7 +2,6 @@
 
 import * as React from 'react'
 import { useState, useCallback, useRef } from 'react'
-import * as XLSX from 'xlsx'
 import { toast } from 'sonner'
 import {
   Upload,
@@ -284,6 +283,47 @@ export function SettlementImportSheet({
   // -------------------------------------------------------------------------
   // Step 1: File parsing
   // -------------------------------------------------------------------------
+
+  /** Parse a CSV string into an array of row objects */
+  function parseCsv(text: string): ParsedRow[] {
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
+    const nonEmpty = lines.filter((l) => l.trim() !== '')
+    if (nonEmpty.length === 0) return []
+
+    // Detect delimiter: semicolon or comma
+    const firstLine = nonEmpty[0]
+    const delimiter = firstLine.includes(';') ? ';' : ','
+
+    const parseRow = (line: string): string[] => {
+      const result: string[] = []
+      let cur = ''
+      let inQuotes = false
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i]
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') { cur += '"'; i++ }
+          else inQuotes = !inQuotes
+        } else if (ch === delimiter && !inQuotes) {
+          result.push(cur); cur = ''
+        } else {
+          cur += ch
+        }
+      }
+      result.push(cur)
+      return result
+    }
+
+    const headers = parseRow(nonEmpty[0]).map((h) => h.trim())
+    const rows: ParsedRow[] = []
+    for (let i = 1; i < nonEmpty.length; i++) {
+      const values = parseRow(nonEmpty[i])
+      const row: ParsedRow = {}
+      headers.forEach((h, idx) => { row[h] = values[idx]?.trim() ?? '' })
+      rows.push(row)
+    }
+    return rows
+  }
+
   const parseFile = useCallback(
     async (selectedFile: File) => {
       setIsParsing(true)
@@ -296,18 +336,62 @@ export function SettlementImportSheet({
           )
         }
 
-        const data = await selectedFile.arrayBuffer()
-        const workbook = XLSX.read(data, { type: 'array', codepage: 65001 })
+        const ext = selectedFile.name.split('.').pop()?.toLowerCase() ?? ''
 
-        if (workbook.SheetNames.length === 0) {
-          throw new Error('Die Datei enthaelt keine Tabellenblaetter.')
+        if (ext === 'xls') {
+          throw new Error(
+            'Das ältere .xls-Format wird nicht unterstützt. Bitte die Datei als .xlsx oder .csv speichern.'
+          )
         }
 
-        const sheet = workbook.Sheets[workbook.SheetNames[0]]
-        const jsonData = XLSX.utils.sheet_to_json<ParsedRow>(sheet, {
-          defval: '',
-          raw: false,
-        })
+        let jsonData: ParsedRow[]
+
+        if (ext === 'csv') {
+          // Parse CSV directly
+          const text = await selectedFile.text()
+          jsonData = parseCsv(text)
+        } else {
+          // Parse XLSX using ExcelJS (dynamically imported to reduce bundle size)
+          const ExcelJS = (await import('exceljs')).default
+          const workbook = new ExcelJS.Workbook()
+          const arrayBuffer = await selectedFile.arrayBuffer()
+          await workbook.xlsx.load(arrayBuffer)
+
+          const worksheet = workbook.worksheets[0]
+          if (!worksheet) {
+            throw new Error('Die Datei enthaelt keine Tabellenblaetter.')
+          }
+
+          // Extract headers from first row
+          const headerRow = worksheet.getRow(1)
+          const headers: string[] = []
+          headerRow.eachCell({ includeEmpty: false }, (cell) => {
+            headers.push(String(cell.value ?? '').trim())
+          })
+
+          // Extract data rows
+          jsonData = []
+          worksheet.eachRow({ includeEmpty: false }, (row, rowIndex) => {
+            if (rowIndex === 1) return // skip header
+            const rowObj: ParsedRow = {}
+            headers.forEach((h, idx) => {
+              const cell = row.getCell(idx + 1)
+              const val = cell.value
+              // Normalize ExcelJS cell values to strings/numbers
+              if (val === null || val === undefined) {
+                rowObj[h] = ''
+              } else if (typeof val === 'object' && 'result' in (val as object)) {
+                // Formula cell — use computed result
+                rowObj[h] = String((val as { result: unknown }).result ?? '')
+              } else if (typeof val === 'object' && val instanceof Date) {
+                rowObj[h] = val.toISOString().split('T')[0]
+              } else {
+                rowObj[h] = val as string | number
+              }
+            })
+            jsonData.push(rowObj)
+          })
+        }
 
         if (jsonData.length === 0) {
           throw new Error('Die Datei enthaelt keine Daten.')

@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   try {
     // Rate limiting: prevent brute-force token guessing
     const ip = getClientIp(request);
-    const rateLimitResult = rateLimit(`reset-password:${ip}`, AUTH_RATE_LIMIT);
+    const rateLimitResult = await rateLimit(`reset-password:${ip}`, AUTH_RATE_LIMIT);
     if (!rateLimitResult.success) {
       return getRateLimitResponse(rateLimitResult, AUTH_RATE_LIMIT);
     }
