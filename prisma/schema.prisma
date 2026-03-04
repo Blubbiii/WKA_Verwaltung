@@ -2099,7 +2099,7 @@ model ScadaImportLog {
 }
 
 model ScadaMeasurement {
-  id              String   @id @default(uuid())
+  id              String   @default(uuid())
   timestamp       DateTime
   createdAt       DateTime @default(now())
   windSpeedMs     Decimal? @db.Decimal(6, 2)
@@ -2118,6 +2118,7 @@ model ScadaMeasurement {
   tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   turbine        Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
 
+  @@id([id, timestamp])
   @@unique([turbineId, timestamp, sourceFile])
   @@index([tenantId])
   @@index([tenantId, turbineId])
