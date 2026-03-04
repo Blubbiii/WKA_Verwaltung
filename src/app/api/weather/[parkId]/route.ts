@@ -68,17 +68,7 @@ export async function GET(
       );
     }
 
-    // Check if weather API is configured
-    if (!isWeatherApiConfigured() && forceRefresh) {
-      return NextResponse.json(
-        {
-          error:
-            "Wetter-API nicht konfiguriert. Bitte OPENWEATHERMAP_API_KEY setzen.",
-          configured: false,
-        },
-        { status: 503 }
-      );
-    }
+    // isWeatherApiConfigured() is always true for Open-Meteo (no key required)
 
     // Get weather data
     const weatherData = await getWeatherForPark(parkId, {
@@ -168,18 +158,6 @@ export async function POST(
           parkName: park.name,
         },
         { status: 400 }
-      );
-    }
-
-    // Check if weather API is configured
-    if (!isWeatherApiConfigured()) {
-      return NextResponse.json(
-        {
-          error:
-            "Wetter-API nicht konfiguriert. Bitte OPENWEATHERMAP_API_KEY setzen.",
-          configured: false,
-        },
-        { status: 503 }
       );
     }
 

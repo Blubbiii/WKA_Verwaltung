@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Briefcase, FileArchive, Mail, BarChart3, Loader2 } from "lucide-react";
+import { Briefcase, FileArchive, Mail, BarChart3, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -63,6 +63,9 @@ export function FeaturesConfigForm({
   const [wirtschaftsplanEnabled, setWirtschaftsplanEnabled] = useState(
     getConfigValue("wirtschaftsplan.enabled") === "true"
   );
+  const [meilisearchEnabled, setMeilisearchEnabled] = useState(
+    getConfigValue("meilisearch.enabled") === "true"
+  );
 
   // UI state
   const [saving, setSaving] = useState(false);
@@ -90,6 +93,11 @@ export function FeaturesConfigForm({
         {
           key: "wirtschaftsplan.enabled",
           value: wirtschaftsplanEnabled ? "true" : "false",
+          category: "features",
+        },
+        {
+          key: "meilisearch.enabled",
+          value: meilisearchEnabled ? "true" : "false",
           category: "features",
         },
       ];
@@ -234,6 +242,38 @@ export function FeaturesConfigForm({
             id="wirtschaftsplan-enabled"
             checked={wirtschaftsplanEnabled}
             onCheckedChange={setWirtschaftsplanEnabled}
+          />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Meilisearch */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <h3 className="font-medium">Meilisearch</h3>
+        </div>
+
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div>
+            <Label htmlFor="meilisearch-enabled" className="cursor-pointer">
+              Volltextsuche aktivieren
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Aktiviert typo-tolerante Suche über Dokumente, Rechnungen, Parks,
+              Turbinen und Audit-Logs. Erfordert den Meilisearch-Docker-Dienst
+              und die Umgebungsvariable{" "}
+              <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">
+                MEILISEARCH_URL
+              </code>
+              .
+            </p>
+          </div>
+          <Switch
+            id="meilisearch-enabled"
+            checked={meilisearchEnabled}
+            onCheckedChange={setMeilisearchEnabled}
           />
         </div>
       </div>

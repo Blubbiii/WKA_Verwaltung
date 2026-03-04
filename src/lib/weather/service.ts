@@ -12,7 +12,8 @@ import {
   getForecast,
   getWeatherWithForecast,
   isWeatherApiConfigured,
-} from "./openweathermap";
+  getHistoricalRange,
+} from "./openmeteo";
 import {
   getCachedWeather,
   setCachedWeather,
@@ -269,7 +270,7 @@ export async function saveWeatherToDatabase(
       humidityPercent: data.humidity,
       pressureHpa: data.pressure,
       weatherCondition: data.description,
-      source: "openweathermap",
+      source: "openmeteo",
       rawData: {
         feelsLike: data.feelsLike,
         windGust: data.windGust,
@@ -429,7 +430,7 @@ export async function getHistoricalWeather(
   }
 
   // Get weather data
-  const [data, total] = await Promise.all([
+  let [data, total] = await Promise.all([
     prisma.weatherData.findMany({
       where: {
         parkId,
@@ -452,6 +453,49 @@ export async function getHistoricalWeather(
       },
     }),
   ]);
+
+  // If DB has no data for the requested range, fetch from Open-Meteo archive
+  if (data.length === 0) {
+    const parkCoords = await prisma.park.findUnique({
+      where: { id: parkId },
+      select: { latitude: true, longitude: true },
+    });
+    if (parkCoords?.latitude && parkCoords?.longitude) {
+      try {
+        const archiveRows = await getHistoricalRange(
+          Number(parkCoords.latitude), Number(parkCoords.longitude), defaultFrom, defaultTo
+        );
+        // Persist fetched rows so future requests hit DB
+        for (const row of archiveRows) {
+          await prisma.weatherData.create({
+            data: {
+              parkId,
+              recordedAt:       new Date(row.date),
+              windSpeedMs:      row.windSpeedMax,
+              windDirectionDeg: row.windDirection,
+              temperatureC:     (row.tempMax + row.tempMin) / 2,
+              humidityPercent:  null,
+              pressureHpa:      null,
+              weatherCondition: `WMO:${row.weatherCode}`,
+              source:           "openmeteo",
+            },
+          }).catch(() => { /* ignore duplicate key errors */ });
+        }
+        // Re-fetch from DB after filling
+        [data, total] = await Promise.all([
+          prisma.weatherData.findMany({
+            where: { parkId, recordedAt: { gte: defaultFrom, lte: defaultTo } },
+            orderBy: { recordedAt: "desc" },
+            skip: (page - 1) * limit,
+            take: limit,
+          }),
+          prisma.weatherData.count({ where: { parkId, recordedAt: { gte: defaultFrom, lte: defaultTo } } }),
+        ]);
+      } catch {
+        // Archive fetch failed — continue with empty data
+      }
+    }
+  }
 
   // Calculate statistics if we have data
   let statistics: WeatherStatistics | null = null;

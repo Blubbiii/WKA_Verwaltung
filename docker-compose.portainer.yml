@@ -5,18 +5,25 @@
 # "Environment variables" gesetzt werden, NICHT direkt in dieser Datei.
 #
 # Erforderliche Portainer-Umgebungsvariablen:
-#   DATABASE_URL          z.B. postgresql://wpm:PASSWORT@postgres:5432/windparkmanager?schema=public
-#   NEXTAUTH_URL          z.B. https://windparkmanager.eu
-#   NEXTAUTH_SECRET       min. 32 Zeichen, zufaellig generiert
-#   AUTH_SECRET           identisch mit NEXTAUTH_SECRET
-#   APP_URL               identisch mit NEXTAUTH_URL
-#   NEXT_PUBLIC_APP_URL   identisch mit NEXTAUTH_URL
-#   POSTGRES_PASSWORD     Datenbankpasswort
-#   MINIO_ROOT_USER       MinIO Admin-Benutzername
-#   MINIO_ROOT_PASSWORD   MinIO Admin-Passwort
-#   S3_ACCESS_KEY         MinIO Access Key (= MINIO_ROOT_USER)
-#   S3_SECRET_KEY         MinIO Secret Key (= MINIO_ROOT_PASSWORD)
-#   EMAIL_ENCRYPTION_KEY  64-stelliger Hex-String (openssl rand -hex 32)
+#   DATABASE_URL              z.B. postgresql://wpm:PASSWORT@postgres:5432/windparkmanager?schema=public
+#   NEXTAUTH_URL              z.B. https://windparkmanager.eu
+#   NEXTAUTH_SECRET           min. 32 Zeichen, zufaellig generiert
+#   AUTH_SECRET               identisch mit NEXTAUTH_SECRET
+#   APP_URL                   identisch mit NEXTAUTH_URL
+#   NEXT_PUBLIC_APP_URL       identisch mit NEXTAUTH_URL
+#   POSTGRES_PASSWORD         Datenbankpasswort
+#   MINIO_ROOT_USER           MinIO Admin-Benutzername
+#   MINIO_ROOT_PASSWORD       MinIO Admin-Passwort
+#   S3_ACCESS_KEY             MinIO Access Key (= MINIO_ROOT_USER)
+#   S3_SECRET_KEY             MinIO Secret Key (= MINIO_ROOT_PASSWORD)
+#   EMAIL_ENCRYPTION_KEY      64-stelliger Hex-String (openssl rand -hex 32)
+#
+# Optionale Dienste (auskommentiert — nach Bedarf aktivieren):
+#   MEILISEARCH_KEY           min. 32 Zeichen (openssl rand -hex 16)
+#   GRAFANA_PASSWORD          Grafana Admin-Passwort
+#   METRICS_TOKEN             Bearer-Token fuer /api/metrics (openssl rand -hex 16)
+#   NEXT_PUBLIC_GRAFANA_URL   z.B. http://192.168.178.101:3001
+#   NEXT_PUBLIC_METABASE_URL  z.B. http://192.168.178.101:3002
 # =============================================================================
 
 services:
@@ -62,10 +69,13 @@ services:
       - wpm-network
 
   # ---------------------------------------------------------------------------
-  # PostgreSQL Database
+  # PostgreSQL Database (TimescaleDB — PG16-kompatibles Drop-in-Replacement)
+  # MIGRATION: Falls bisher postgres:16-alpine genutzt wurde, Volume bleibt
+  # erhalten — TimescaleDB liest die bestehenden Daten.
+  # Nach erstem Start: scripts/setup-timescaledb.sql ausführen!
   # ---------------------------------------------------------------------------
   postgres:
-    image: postgres:16-alpine
+    image: timescale/timescaledb:latest-pg16
     container_name: wpm-postgres
     restart: unless-stopped
     environment:
@@ -159,6 +169,102 @@ services:
     networks:
       - wpm-network
 
+  # ---------------------------------------------------------------------------
+  # Meilisearch — Typo-tolerante Volltextsuche
+  # Aktivieren: MEILISEARCH_ENABLED=true in App-Umgebungsvariablen setzen
+  # ---------------------------------------------------------------------------
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: wpm-meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_KEY}
+      MEILI_ENV: production
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - wpm-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Prometheus — Metriken-Sammlung fuer Monitoring
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: wpm-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - wpm-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Grafana — Monitoring-Dashboards (iFrame in WPM eingebettet)
+  # Aufruf: http://SERVER_IP:3001
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: wpm-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SERVER_ROOT_URL: ${NEXT_PUBLIC_GRAFANA_URL:-http://localhost:3001}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "127.0.0.1:3001:3000"
+    networks:
+      - wpm-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Metabase — Business Intelligence (iFrame in WPM eingebettet)
+  # Aufruf: http://SERVER_IP:3002
+  # Beim ersten Start: Browser oeffnen und Einrichtung abschliessen (2-3 Min.)
+  # ---------------------------------------------------------------------------
+  metabase:
+    image: metabase/metabase:latest
+    container_name: wpm-metabase
+    restart: unless-stopped
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: postgres
+      MB_DB_PORT: 5432
+      MB_DB_DBNAME: windparkmanager
+      MB_DB_USER: wpm
+      MB_DB_PASS: ${POSTGRES_PASSWORD}
+      MB_SITE_URL: ${NEXT_PUBLIC_METABASE_URL:-http://localhost:3002}
+      JAVA_TIMEZONE: Europe/Berlin
+    ports:
+      - "127.0.0.1:3002:3000"
+    volumes:
+      - metabase_data:/metabase-data
+    networks:
+      - wpm-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
 # =============================================================================
 # Volumes
 # =============================================================================
@@ -168,6 +274,14 @@ volumes:
   redis_data:
     driver: local
   minio_data:
+    driver: local
+  meilisearch_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  metabase_data:
     driver: local
 
 # =============================================================================

@@ -29,6 +29,7 @@ import {
   Lock,
   ClipboardList,
   Activity,
+  BarChart2,
   Mail,
   HardDrive,
   CreditCard,
@@ -481,6 +482,20 @@ const navGroups: NavGroup[] = [
         titleKey: "systemHealth",
         href: "/admin/system",
         icon: Activity,
+        permission: "system:health",
+      },
+      {
+        title: "Monitoring",
+        titleKey: "monitoring",
+        href: "/admin/monitoring",
+        icon: Activity,
+        permission: "system:health",
+      },
+      {
+        title: "Analytics",
+        titleKey: "analyticsBI",
+        href: "/admin/analytics",
+        icon: BarChart2,
         permission: "system:health",
       },
       {

@@ -199,7 +199,7 @@ async function processWeatherJob(
       latestTemperature,
       latestWindSpeed,
       latestWindDirection,
-      source: "openweathermap",
+      source: "openmeteo",
       latestDataTimestamp: new Date().toISOString(),
     };
   } catch (error) {

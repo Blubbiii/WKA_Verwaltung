@@ -1,13 +1,12 @@
 /**
  * Weather Module - Central Exports
  *
- * Public API for weather functionality in WindparkManager
+ * Public API for weather functionality in WindparkManager.
+ * Provider: Open-Meteo (free, no API key required)
  */
 
 // Types
 export type {
-  OpenWeatherMapCurrentResponse,
-  OpenWeatherMapForecastResponse,
   CurrentWeather,
   DailyForecast,
   HourlyForecast,
@@ -18,6 +17,7 @@ export type {
 } from "./types";
 
 export {
+  WMO_CODES,
   WEATHER_CONDITIONS,
   getWindDirectionLabel,
   getWindDirectionFullLabel,
@@ -25,16 +25,17 @@ export {
   WeatherErrorCode,
 } from "./types";
 
-// OpenWeatherMap API Client
+// Open-Meteo API Client
 export {
   isWeatherApiConfigured,
   getCurrentWeather,
   getForecast,
   getWeatherWithForecast,
   getHistoricalWeather as getHistoricalWeatherFromApi,
+  getHistoricalRange,
   getRateLimitStatus,
   testApiConnection,
-} from "./openweathermap";
+} from "./openmeteo";
 
 // Cache Operations
 export {

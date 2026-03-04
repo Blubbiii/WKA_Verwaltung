@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  # WindparkManager App — scrapes /api/metrics every 30s
+  # Replace <METRICS_TOKEN> with the value of your METRICS_TOKEN env var
+  - job_name: windparkmanager
+    static_configs:
+      - targets: ['app:3050']
+    metrics_path: /api/metrics
+    params:
+      token: ['<METRICS_TOKEN>']
+    scheme: http

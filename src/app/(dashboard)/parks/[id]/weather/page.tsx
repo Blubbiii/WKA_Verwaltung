@@ -421,7 +421,7 @@ export default function ParkWeatherPage({
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
-          <TabsTrigger value="forecast">5-Tage Vorhersage</TabsTrigger>
+          <TabsTrigger value="forecast">14-Tage Vorhersage</TabsTrigger>
           <TabsTrigger value="history">Historische Daten</TabsTrigger>
           <TabsTrigger value="statistics">Statistiken</TabsTrigger>
         </TabsList>
@@ -548,10 +548,10 @@ export default function ParkWeatherPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                5-Tage Vorhersage
+                14-Tage Vorhersage
               </CardTitle>
               <CardDescription>
-                Wettervorhersage für die nächsten 5 Tage
+                Wettervorhersage für die nächsten 14 Tage
               </CardDescription>
             </CardHeader>
             <CardContent>

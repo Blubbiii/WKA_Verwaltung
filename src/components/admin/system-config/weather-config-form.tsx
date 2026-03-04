@@ -4,19 +4,17 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   Cloud,
-  Eye,
-  EyeOff,
   Loader2,
   CheckCircle,
   XCircle,
   RefreshCw,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -82,7 +80,6 @@ export function WeatherConfigForm({
   };
 
   // Form state
-  const [apiKey, setApiKey] = useState("");
   const [syncInterval, setSyncInterval] = useState(
     getConfigValue("weather.sync.interval") || "60"
   );
@@ -91,15 +88,9 @@ export function WeatherConfigForm({
   );
 
   // UI state
-  const [showApiKey, setShowApiKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
-
-  // Check if API key has value (masked)
-  const hasExistingApiKey = configs.some(
-    (c) => c.key === "weather.api.key" && c.value && c.value !== ""
-  );
 
   // Save configuration
   async function handleSave() {
@@ -111,15 +102,6 @@ export function WeatherConfigForm({
         { key: "weather.sync.interval", value: syncInterval, category: "weather" },
         { key: "weather.cache.ttl", value: cacheTtl, category: "weather" },
       ];
-
-      // Only include API key if a new one was entered
-      if (apiKey) {
-        configsToSave.push({
-          key: "weather.api.key",
-          value: apiKey,
-          category: "weather",
-        });
-      }
 
       const response = await fetch("/api/admin/system-config", {
         method: "POST",
@@ -133,7 +115,6 @@ export function WeatherConfigForm({
       }
 
       toast.success("Wetter-Konfiguration gespeichert");
-      setApiKey(""); // Clear API key field after save
       onSave();
     } catch (error) {
       toast.error(
@@ -186,62 +167,20 @@ export function WeatherConfigForm({
 
   return (
     <div className="space-y-6">
-      {/* API Key */}
+      {/* Provider Info */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Cloud className="h-4 w-4 text-muted-foreground" />
-          <h3 className="font-medium">OpenWeatherMap API</h3>
+          <h3 className="font-medium">Wetter-Provider</h3>
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="api-key">
-            API Key
-            <Badge variant="outline" className="ml-2 text-xs">
-              OPENWEATHERMAP_API_KEY
-            </Badge>
-            {hasExistingApiKey && (
-              <Badge variant="secondary" className="ml-2 text-xs">
-                Gespeichert
-              </Badge>
-            )}
-          </Label>
-          <div className="relative">
-            <Input
-              id="api-key"
-              type={showApiKey ? "text" : "password"}
-              placeholder={hasExistingApiKey ? "Neuen API Key eingeben..." : "Ihr OpenWeatherMap API Key"}
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-0 top-0 h-full px-3"
-              onClick={() => setShowApiKey(!showApiKey)}
-            >
-              {showApiKey ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-          {hasExistingApiKey && !apiKey && (
-            <p className="text-xs text-muted-foreground">
-              Leer lassen um den bestehenden API Key beizubehalten
-            </p>
-          )}
-          <p className="text-sm text-muted-foreground">
-            Einen kostenlosen API Key erhalten Sie unter{" "}
-            <a
-              href="https://openweathermap.org/api"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              openweathermap.org/api
-            </a>
+        <div className="rounded-md border bg-muted/50 p-4 text-sm space-y-1">
+          <p className="font-medium">Open-Meteo — kostenlos &amp; kein API-Key nötig</p>
+          <p className="text-muted-foreground">
+            Wetterdaten werden über{" "}
+            <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              open-meteo.com
+            </a>{" "}
+            abgerufen. EU-basiert, DSGVO-konform, 14-Tage-Prognose, historische Daten seit 1940.
           </p>
         </div>
       </div>

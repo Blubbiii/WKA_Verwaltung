@@ -9,16 +9,21 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: require("./package.json").version,
   },
   // Prevent Turbopack from bundling packages that use worker threads or native bindings
-  serverExternalPackages: ["bullmq", "ioredis", "pino", "pino-pretty", "exceljs"],
+  serverExternalPackages: ["bullmq", "ioredis", "pino", "pino-pretty", "exceljs", "prom-client"],
   async headers() {
+    // Allow iFrame embedding for Grafana and Metabase on admin pages
+    const grafanaUrl = process.env.NEXT_PUBLIC_GRAFANA_URL ?? "";
+    const metabaseUrl = process.env.NEXT_PUBLIC_METABASE_URL ?? "";
+    const iframeSources = [grafanaUrl, metabaseUrl].filter(Boolean);
+    const frameSrc = iframeSources.length > 0
+      ? `frame-src ${iframeSources.join(" ")} 'self'`
+      : "frame-src 'none'";
+
     return [
       {
         source: "/(.*)",
         headers: [
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
+          // X-Frame-Options is replaced by CSP frame-ancestors for flexibility
           {
             key: "X-Content-Type-Options",
             value: "nosniff",
@@ -48,6 +53,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
               "connect-src 'self' https://*.sentry.io",
+              frameSrc,
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
