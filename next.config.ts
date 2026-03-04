@@ -12,12 +12,9 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["bullmq", "ioredis", "pino", "pino-pretty", "exceljs", "prom-client"],
   async headers() {
     // Allow iFrame embedding for Grafana and Metabase on admin pages
-    const grafanaUrl = process.env.NEXT_PUBLIC_GRAFANA_URL ?? "";
-    const metabaseUrl = process.env.NEXT_PUBLIC_METABASE_URL ?? "";
-    const iframeSources = [grafanaUrl, metabaseUrl].filter(Boolean);
-    const frameSrc = iframeSources.length > 0
-      ? `frame-src ${iframeSources.join(" ")} 'self'`
-      : "frame-src 'none'";
+    // Note: Next.js standalone freezes headers() at build time,
+    // so we allow http://* to cover any local network Grafana/Metabase instance.
+    const frameSrc = "frame-src 'self' http://*.* https://*.*";
 
     return [
       {
