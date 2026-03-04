@@ -7,6 +7,7 @@ interface FeatureFlags {
   "crm": boolean;
   "inbox": boolean;
   "wirtschaftsplan": boolean;
+  "meilisearch": boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -16,6 +17,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   "crm": false,
   "inbox": false,
   "wirtschaftsplan": false,
+  "meilisearch": false,
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : DEFAULT_FLAGS);

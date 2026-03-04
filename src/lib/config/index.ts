@@ -100,10 +100,10 @@ export const CONFIG_KEYS = {
     defaultValue: "WindparkManager",
   },
 
-  // Weather API Configuration
+  // Weather API (Open-Meteo is used — this key is no longer required)
   "weather.api.key": {
     category: "weather" as ConfigCategory,
-    label: "OpenWeatherMap API Key",
+    label: "Wetter-API Key (veraltet — Open-Meteo benötigt keinen Key)",
     encrypted: true,
     envFallback: "OPENWEATHERMAP_API_KEY",
   },
@@ -232,6 +232,13 @@ export const CONFIG_KEYS = {
     label: "Wirtschaftsplan & Kostenstellenmanagement",
     encrypted: false,
     envFallback: "WIRTSCHAFTSPLAN_ENABLED",
+    defaultValue: "false",
+  },
+  "meilisearch.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Meilisearch Volltextsuche",
+    encrypted: false,
+    envFallback: "MEILISEARCH_ENABLED",
     defaultValue: "false",
   },
 

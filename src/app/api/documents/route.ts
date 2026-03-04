@@ -492,6 +492,11 @@ async function handleFileUpload(
     .then(({ enqueuePaperlessSync }) => enqueuePaperlessSync(document.id, tenantId))
     .catch(() => {});
 
+  // Auto-index in Meilisearch (fire-and-forget)
+  import("@/lib/search/indexer")
+    .then(({ indexDocument }) => indexDocument(document.id, tenantId))
+    .catch(() => {});
+
   return NextResponse.json({
     ...document,
     fileSizeBytes: document.fileSizeBytes ? Number(document.fileSizeBytes) : null,
@@ -591,6 +596,11 @@ async function handleJsonCreate(
   // Auto-archive to Paperless-ngx (fire-and-forget)
   import("@/lib/paperless")
     .then(({ enqueuePaperlessSync }) => enqueuePaperlessSync(document.id, tenantId))
+    .catch(() => {});
+
+  // Auto-index in Meilisearch (fire-and-forget)
+  import("@/lib/search/indexer")
+    .then(({ indexDocument }) => indexDocument(document.id, tenantId))
     .catch(() => {});
 
   // Convert BigInt to Number for JSON serialization
