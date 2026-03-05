@@ -11,9 +11,7 @@ const nextConfig: NextConfig = {
   // Prevent Turbopack from bundling packages that use worker threads or native bindings
   serverExternalPackages: ["bullmq", "ioredis", "pino", "pino-pretty", "exceljs", "prom-client"],
   async headers() {
-    // Allow iFrame embedding for Grafana and Metabase on admin pages
-    // Note: Next.js standalone freezes headers() at build time,
-    // so we use http: https: (protocol sources) to allow any origin.
+    // Allow iFrame embedding for Metabase on admin pages (if used externally)
     const frameSrc = "frame-src 'self' http: https:";
 
     return [

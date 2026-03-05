@@ -18,9 +18,7 @@
 #   S3_SECRET_KEY             MinIO Secret Key (= MINIO_ROOT_PASSWORD)
 #   EMAIL_ENCRYPTION_KEY      64-stelliger Hex-String (openssl rand -hex 32)
 #   MEILISEARCH_KEY           min. 32 Zeichen (openssl rand -hex 16)
-#   GRAFANA_PASSWORD          Grafana Admin-Passwort
 #   METRICS_TOKEN             Bearer-Token fuer /api/metrics (openssl rand -hex 16)
-#   NEXT_PUBLIC_GRAFANA_URL   z.B. http://192.168.178.101:3001
 #   REDIS_PASSWORD            Redis-Authentifizierungspasswort
 #   METABASE_DB_PASSWORD      Passwort fuer wpm_readonly DB-User (optional, nur wenn Metabase genutzt)
 #   NEXT_PUBLIC_METABASE_URL  z.B. http://192.168.178.101:3002
@@ -61,7 +59,6 @@ services:
       LOG_LEVEL: info
       EMAIL_ENCRYPTION_KEY: ${EMAIL_ENCRYPTION_KEY}
       METRICS_TOKEN: ${METRICS_TOKEN}
-      NEXT_PUBLIC_GRAFANA_URL: ${NEXT_PUBLIC_GRAFANA_URL:-}
       NEXT_PUBLIC_METABASE_URL: ${NEXT_PUBLIC_METABASE_URL:-}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3050/api/health"]
@@ -205,32 +202,6 @@ services:
       - wpm-network
 
   # ---------------------------------------------------------------------------
-  # Grafana — Monitoring-Dashboards (iFrame in WPM eingebettet)
-  # Aufruf: http://SERVER_IP:3001
-  # ---------------------------------------------------------------------------
-  grafana:
-    image: grafana/grafana:latest
-    container_name: wpm-grafana
-    restart: unless-stopped
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
-      GF_SECURITY_ALLOW_EMBEDDING: "true"
-      GF_SECURITY_COOKIE_SAMESITE: "disabled"
-      GF_SECURITY_COOKIE_SECURE: "false"
-      GF_AUTH_ANONYMOUS_ENABLED: "true"
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
-      GF_SERVER_ROOT_URL: ${NEXT_PUBLIC_GRAFANA_URL:-http://localhost:3001}
-    configs:
-      - source: grafana_datasources
-        target: /etc/grafana/provisioning/datasources/default.yml
-    volumes:
-      - grafana_data:/var/lib/grafana
-    ports:
-      - "127.0.0.1:3001:3000"
-    networks:
-      - wpm-network
-
-  # ---------------------------------------------------------------------------
   # Metabase — Business Intelligence (iFrame in WPM eingebettet)
   # Aufruf: http://SERVER_IP:3002
   # Beim ersten Start: Browser oeffnen und Einrichtung abschliessen (2-3 Min.)
@@ -273,16 +244,6 @@ configs:
           metrics_path: /api/metrics
           params:
             token: ['${METRICS_TOKEN}']
-  grafana_datasources:
-    content: |
-      apiVersion: 1
-      datasources:
-        - name: Prometheus
-          type: prometheus
-          url: http://prometheus:9090
-          isDefault: true
-          access: proxy
-          editable: false
 
 # =============================================================================
 # Volumes
@@ -297,8 +258,6 @@ volumes:
   meilisearch_data:
     driver: local
   prometheus_data:
-    driver: local
-  grafana_data:
     driver: local
   metabase_data:
     driver: local
