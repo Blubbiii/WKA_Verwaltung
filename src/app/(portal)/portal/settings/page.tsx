@@ -11,6 +11,9 @@ import {
   Wallet,
   Vote,
   Info,
+  Download,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import {
   Card,
@@ -23,6 +26,18 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
   // Notification settings (placeholder state - not persisted)
@@ -31,6 +46,51 @@ export default function SettingsPage() {
     newDistribution: true,
     newDocument: false,
   });
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDataExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/portal/my-data/export");
+      if (!res.ok) throw new Error("Export fehlgeschlagen");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `datenauskunft-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Datenexport heruntergeladen");
+    } catch {
+      toast.error("Datenexport fehlgeschlagen");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleAccountDelete() {
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/portal/my-account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: "DELETE_MY_ACCOUNT" }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Loeschung fehlgeschlagen");
+      }
+      toast.success("Konto wurde geloescht. Sie werden abgemeldet.");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 2000);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Loeschung fehlgeschlagen");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   // Mock last login date
   const lastLogin = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000); // 2 days ago
@@ -241,6 +301,93 @@ export default function SettingsPage() {
                   {formatDate(lastLogin)}
                 </p>
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* DSGVO / Data Privacy Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Datenschutz (DSGVO)
+          </CardTitle>
+          <CardDescription>
+            Ihre Rechte gemaess der Datenschutz-Grundverordnung
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Data Export (Art. 15) */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                <Download className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-base font-medium">Datenauskunft (Art. 15)</p>
+                <p className="text-sm text-muted-foreground">
+                  Alle ueber Sie gespeicherten Daten als JSON herunterladen
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleDataExport}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Daten exportieren
+            </Button>
+          </div>
+
+          {/* Account Deletion (Art. 17) */}
+          <div className="border-t pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-base font-medium">Konto loeschen (Art. 17)</p>
+                  <p className="text-sm text-muted-foreground">
+                    Alle personenbezogenen Daten unwiderruflich anonymisieren
+                  </p>
+                </div>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" disabled={deleting}>
+                    {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                    Konto loeschen
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Konto unwiderruflich loeschen?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Diese Aktion kann nicht rueckgaengig gemacht werden. Alle Ihre
+                      personenbezogenen Daten (Name, Adresse, Bankdaten, E-Mail)
+                      werden anonymisiert. Ihr Zugang wird dauerhaft deaktiviert.
+                      Geschaeftsdaten (Buchungen, Ausschuettungen) bleiben aus
+                      handelsrechtlichen Gruenden anonymisiert erhalten.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleAccountDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Ja, Konto loeschen
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </CardContent>

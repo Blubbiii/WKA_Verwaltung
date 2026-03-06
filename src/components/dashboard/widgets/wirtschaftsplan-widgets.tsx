@@ -198,9 +198,9 @@ export function WirtschaftsplanPLChart({ className }: { className?: string }) {
               formatter={(value: number, name: string) => [`${value.toFixed(1)}k€`, name]}
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="Ist" fill="hsl(215, 50%, 40%)" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="Ist" fill="hsl(var(--chart-1))" radius={[2, 2, 0, 0]} />
             {data.hasBudget && (
-              <Bar dataKey="Plan" fill="hsl(215, 50%, 68%)" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="Plan" fill="hsl(var(--chart-2))" radius={[2, 2, 0, 0]} />
             )}
           </BarChart>
         </ResponsiveContainer>

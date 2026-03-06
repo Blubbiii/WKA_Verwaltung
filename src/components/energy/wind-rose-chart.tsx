@@ -44,12 +44,12 @@ interface WindRoseChartProps {
 // =============================================================================
 
 const SPEED_RANGE_COLORS: Record<string, string> = {
-  "0-3": "#bfdbfe",
-  "3-6": "#93c5fd",
-  "6-9": "#60a5fa",
-  "9-12": "#335E99",
-  "12-15": "#2563eb",
-  "15+": "#1d4ed8",
+  "0-3": "hsl(var(--chart-8))",
+  "3-6": "hsl(var(--chart-6))",
+  "6-9": "hsl(var(--chart-3))",
+  "9-12": "hsl(var(--chart-1))",
+  "12-15": "hsl(var(--chart-4))",
+  "15+": "hsl(var(--chart-5))",
 };
 
 const SPEED_RANGE_LABELS: Record<string, string> = {
