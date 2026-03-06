@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { LegalPages } from "@/lib/marketing/types";
 import type { Metadata } from "next";
 import { SafeHtml } from "@/components/ui/safe-html";
+import { DEFAULT_LEGAL_PAGES } from "@/lib/marketing/defaults";
 
 export const metadata: Metadata = {
   title: "Datenschutz -- WindparkManager",
@@ -16,7 +17,7 @@ export default async function DatenschutzPage() {
   });
   const settings = (tenant?.settings as Record<string, unknown>) || {};
   const legalPages = settings.legalPages as LegalPages | undefined;
-  const datenschutzContent = legalPages?.datenschutz;
+  const datenschutzContent = legalPages?.datenschutz || DEFAULT_LEGAL_PAGES.datenschutz;
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-12 md:py-24">
@@ -25,18 +26,10 @@ export default async function DatenschutzPage() {
           Datenschutzerklärung
         </h1>
 
-        {datenschutzContent ? (
-          <SafeHtml
-            html={datenschutzContent}
-            className="prose prose-gray dark:prose-invert max-w-none"
-          />
-        ) : (
-          <div className="rounded-lg border bg-card p-8 text-center">
-            <p className="text-muted-foreground">
-              Datenschutzerklärung wird in Kuerze bereitgestellt.
-            </p>
-          </div>
-        )}
+        <SafeHtml
+          html={datenschutzContent}
+          className="prose prose-gray dark:prose-invert max-w-none"
+        />
       </div>
     </div>
   );
