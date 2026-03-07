@@ -10,7 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { prisma, getPrismaModel } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { auth } from "@/lib/auth";
 import { getConfigBoolean } from "@/lib/config";
@@ -20,10 +20,8 @@ import { sendEmailSync } from "@/lib/email";
 import { getFilteredRecipients } from "@/lib/mass-communication/recipient-filter";
 import { wrapEmailBody, stripHtml } from "@/lib/mailings/email-wrapper";
 
-// Type assertion for Prisma client with new MassCommunication model
-// Will be properly typed after running `prisma generate`
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = prisma as any;
+// Type-safe accessor for the MassCommunication model
+const massCommunicationModel = getPrismaModel("massCommunication");
 
 // =============================================================================
 // Types (will be auto-generated after prisma generate)
@@ -81,7 +79,7 @@ export async function GET(request: NextRequest) {
     const tenantId = check.tenantId!;
 
     const [communications, totalCount] = await Promise.all([
-      db.massCommunication.findMany({
+      massCommunicationModel.findMany({
         where: { tenantId },
         include: {
           createdBy: {
@@ -95,10 +93,10 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
-      }) as Promise<MassCommunicationRecord[]>,
-      db.massCommunication.count({
+      }) as unknown as Promise<MassCommunicationRecord[]>,
+      massCommunicationModel.count({
         where: { tenantId },
-      }) as Promise<number>,
+      }),
     ]);
 
     return NextResponse.json({
@@ -210,7 +208,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the mass communication record
-    const communication = await db.massCommunication.create({
+    const communication = await massCommunicationModel.create({
       data: {
         subject,
         body: emailBody,
@@ -224,7 +222,7 @@ export async function POST(request: NextRequest) {
         tenantId,
         createdById: userId,
       },
-    }) as MassCommunicationRecord;
+    }) as unknown as MassCommunicationRecord;
 
     // Send emails to all recipients
     // Using direct send since mass communication is custom HTML, not a template
@@ -252,7 +250,7 @@ export async function POST(request: NextRequest) {
 
     // Update communication status
     const finalStatus = errorCount === recipients.length ? "FAILED" : "SENT";
-    await db.massCommunication.update({
+    await massCommunicationModel.update({
       where: { id: communication.id },
       data: {
         status: finalStatus,

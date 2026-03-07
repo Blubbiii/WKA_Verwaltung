@@ -6,7 +6,7 @@
 
 import { render } from '@react-email/components';
 import * as React from 'react';
-import { prisma } from '@/lib/prisma';
+import { prisma, hasPrismaModel, getPrismaModel } from '@/lib/prisma';
 import type {
   EmailTemplateName,
   WelcomeEmailProps,
@@ -258,15 +258,18 @@ export async function renderCustomTemplate(
   // Note: emailTemplate is a new model, will be available after prisma generate
   // For now, we use raw query or skip if model doesn't exist
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const template = await (prisma as any).emailTemplate?.findUnique({
+    if (!hasPrismaModel("emailTemplate")) {
+      return null;
+    }
+    const emailTemplateModel = getPrismaModel("emailTemplate");
+    const template = await emailTemplateModel.findUnique({
       where: {
         tenantId_name: {
           tenantId,
           name: templateName,
         },
       },
-    });
+    }) as { isActive: boolean; htmlContent: string; textContent: string | null; subject: string } | null;
 
     if (!template || !template.isActive) {
       return null;

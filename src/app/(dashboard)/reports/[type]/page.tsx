@@ -33,21 +33,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-
-interface ReportData {
-  title: string;
-  generatedAt: string;
-  tenant: {
-    name: string;
-    logoUrl: string | null;
-    primaryColor: string | null;
-    address: string | null;
-    phone: string | null;
-    email: string | null;
-    website: string | null;
-  };
-  data: any;
-}
+import type {
+  ReportData,
+  ReportPark,
+  ReportTurbine,
+  ReportShareholder,
+  ReportContract,
+  ReportInvoice,
+  ReportVote,
+  ReportVoteResult,
+  ReportFund,
+} from "@/types/reports";
 
 export default function ReportViewPage() {
   const params = useParams();
@@ -275,7 +271,7 @@ export default function ReportViewPage() {
 }
 
 // Table Components
-function ParksTable({ data, formatNumber }: { data: any[]; formatNumber: (v: number, d?: number) => string }) {
+function ParksTable({ data, formatNumber }: { data: ReportPark[]; formatNumber: (v: number, d?: number) => string }) {
   return (
     <Table>
       <TableHeader>
@@ -304,7 +300,7 @@ function ParksTable({ data, formatNumber }: { data: any[]; formatNumber: (v: num
   );
 }
 
-function TurbinesTable({ data }: { data: any[] }) {
+function TurbinesTable({ data }: { data: ReportTurbine[] }) {
   return (
     <Table>
       <TableHeader>
@@ -339,7 +335,7 @@ function TurbinesTable({ data }: { data: any[] }) {
   );
 }
 
-function ShareholdersTable({ data, formatNumber }: { data: any[]; formatNumber: (v: number, d?: number) => string }) {
+function ShareholdersTable({ data, formatNumber }: { data: ReportShareholder[]; formatNumber: (v: number, d?: number) => string }) {
   return (
     <Table>
       <TableHeader>
@@ -374,7 +370,7 @@ function ShareholdersTable({ data, formatNumber }: { data: any[]; formatNumber: 
   );
 }
 
-function ContractsTable({ data, formatCurrency }: { data: any[]; formatCurrency: (v: number) => string }) {
+function ContractsTable({ data, formatCurrency }: { data: ReportContract[]; formatCurrency: (v: number) => string }) {
   return (
     <Table>
       <TableHeader>
@@ -429,7 +425,7 @@ function ContractsTable({ data, formatCurrency }: { data: any[]; formatCurrency:
   );
 }
 
-function InvoicesTable({ data, formatCurrency }: { data: any[]; formatCurrency: (v: number) => string }) {
+function InvoicesTable({ data, formatCurrency }: { data: ReportInvoice[]; formatCurrency: (v: number) => string }) {
   return (
     <Table>
       <TableHeader>
@@ -470,7 +466,7 @@ function InvoicesTable({ data, formatCurrency }: { data: any[]; formatCurrency: 
   );
 }
 
-function VotesTable({ data }: { data: any[] }) {
+function VotesTable({ data }: { data: ReportVote[] }) {
   return (
     <Table>
       <TableHeader>
@@ -491,7 +487,7 @@ function VotesTable({ data }: { data: any[] }) {
             <TableCell className="text-right">{vote.totalResponses}</TableCell>
             <TableCell>
               <div className="flex flex-wrap gap-1">
-                {Object.entries(vote.results || {}).map(([option, result]: [string, any]) => (
+                {Object.entries(vote.results || {}).map(([option, result]: [string, ReportVoteResult]) => (
                   <Badge key={option} variant="outline" className="text-xs">
                     {option}: {result.percentage?.toFixed(1)}%
                   </Badge>
@@ -505,7 +501,7 @@ function VotesTable({ data }: { data: any[] }) {
   );
 }
 
-function FundsTable({ data, formatCurrency }: { data: any[]; formatCurrency: (v: number) => string }) {
+function FundsTable({ data, formatCurrency }: { data: ReportFund[]; formatCurrency: (v: number) => string }) {
   return (
     <Table>
       <TableHeader>

@@ -5,7 +5,7 @@
  * Supports encryption for sensitive values and fallback to environment variables.
  */
 
-import { prisma } from "@/lib/prisma";
+import { prisma, hasPrismaModel, getPrismaModel } from "@/lib/prisma";
 import { encrypt, decrypt, maskSensitive } from "@/lib/email/encryption";
 import { logger } from "@/lib/logger";
 
@@ -304,11 +304,8 @@ export async function getConfig(
 ): Promise<string | null> {
   try {
     // Try to get from database using raw query for compatibility
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const prismaAny = prisma as any;
-
     // Check if systemConfig model exists (after migration)
-    if (!prismaAny.systemConfig) {
+    if (!hasPrismaModel("systemConfig")) {
       // Model not yet available, fall back to env variables
       const keyConfig = CONFIG_KEYS[key as ConfigKey];
       if (keyConfig?.envFallback) {
@@ -321,7 +318,8 @@ export async function getConfig(
       return null;
     }
 
-    const configs: SystemConfigRecord[] = await prismaAny.systemConfig.findMany({
+    const systemConfig = getPrismaModel("systemConfig");
+    const configs = await systemConfig.findMany({
       where: {
         key,
         OR: [
@@ -332,10 +330,10 @@ export async function getConfig(
       orderBy: {
         tenantId: "desc", // Tenant-specific first (not null comes before null)
       },
-    });
+    }) as unknown as SystemConfigRecord[];
 
     // Prefer tenant-specific config
-    const config = configs.find((c: SystemConfigRecord) => c.tenantId === tenantId) || configs.find((c: SystemConfigRecord) => c.tenantId === null);
+    const config = configs.find((c) => c.tenantId === tenantId) || configs.find((c) => c.tenantId === null);
 
     if (config) {
       // Decrypt if necessary
@@ -419,13 +417,12 @@ export async function setConfig(
   // Encrypt value if needed
   const storedValue = encrypted ? encrypt(value) : value;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const prismaAny = prisma as any;
-
   // Check if systemConfig model exists
-  if (!prismaAny.systemConfig) {
+  if (!hasPrismaModel("systemConfig")) {
     throw new Error("SystemConfig model not available. Please run prisma generate and migrate.");
   }
+
+  const systemConfig = getPrismaModel("systemConfig");
 
   // Upsert the config
   // Prisma cannot use upsert on a composite unique with null tenantId,
@@ -433,7 +430,7 @@ export async function setConfig(
   let config: SystemConfigRecord;
 
   if (tenantId) {
-    config = await prismaAny.systemConfig.upsert({
+    config = await systemConfig.upsert({
       where: {
         tenantId_key: {
           tenantId,
@@ -455,15 +452,15 @@ export async function setConfig(
         label: label || null,
         tenantId,
       },
-    });
+    }) as unknown as SystemConfigRecord;
   } else {
     // Global config (tenantId = null): manual find + create/update
-    const existing = await prismaAny.systemConfig.findFirst({
+    const existing = await systemConfig.findFirst({
       where: { key, tenantId: null },
     });
 
     if (existing) {
-      config = await prismaAny.systemConfig.update({
+      config = await systemConfig.update({
         where: { id: existing.id },
         data: {
           value: storedValue,
@@ -472,9 +469,9 @@ export async function setConfig(
           label: label || null,
           updatedAt: new Date(),
         },
-      });
+      }) as unknown as SystemConfigRecord;
     } else {
-      config = await prismaAny.systemConfig.create({
+      config = await systemConfig.create({
         data: {
           key,
           value: storedValue,
@@ -483,7 +480,7 @@ export async function setConfig(
           label: label || null,
           tenantId: null,
         },
-      });
+      }) as unknown as SystemConfigRecord;
     }
   }
 
@@ -510,14 +507,12 @@ export async function getConfigsByCategory(
   tenantId?: string | null,
   includeMasked: boolean = true
 ): Promise<ConfigValue[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const prismaAny = prisma as any;
-
   let configs: SystemConfigRecord[] = [];
 
   // Check if systemConfig model exists
-  if (prismaAny.systemConfig) {
-    configs = await prismaAny.systemConfig.findMany({
+  if (hasPrismaModel("systemConfig")) {
+    const systemConfig = getPrismaModel("systemConfig");
+    configs = await systemConfig.findMany({
       where: {
         category,
         OR: [
@@ -529,7 +524,7 @@ export async function getConfigsByCategory(
         { tenantId: "desc" },
         { key: "asc" },
       ],
-    });
+    }) as unknown as SystemConfigRecord[];
   }
 
   // Group by key, preferring tenant-specific
@@ -642,14 +637,12 @@ export async function deleteConfig(
   tenantId?: string | null
 ): Promise<boolean> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const prismaAny = prisma as any;
-
-    if (!prismaAny.systemConfig) {
+    if (!hasPrismaModel("systemConfig")) {
       return false;
     }
 
-    await prismaAny.systemConfig.delete({
+    const systemConfig = getPrismaModel("systemConfig");
+    await systemConfig.delete({
       where: {
         tenantId_key: {
           tenantId: tenantId ?? null,

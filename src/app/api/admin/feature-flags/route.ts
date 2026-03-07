@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, hasPrismaModel, getPrismaModel } from "@/lib/prisma";
 import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -74,16 +74,15 @@ export async function GET(request: NextRequest) {
     });
 
     // Load SystemConfig module flags for all tenants + global in one query
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const prismaAny = prisma as any;
     let systemConfigs: Array<{ key: string; value: string; tenantId: string | null }> = [];
-    if (prismaAny.systemConfig) {
-      systemConfigs = await prismaAny.systemConfig.findMany({
+    if (hasPrismaModel("systemConfig")) {
+      const systemConfig = getPrismaModel("systemConfig");
+      systemConfigs = await systemConfig.findMany({
         where: {
           key: { in: [...MODULE_FLAG_KEYS] },
         },
         select: { key: true, value: true, tenantId: true },
-      });
+      }) as Array<{ key: string; value: string; tenantId: string | null }>;
     }
 
     // Build lookup: tenantId -> key -> value
