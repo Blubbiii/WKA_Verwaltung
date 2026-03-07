@@ -49,6 +49,12 @@ export async function GET() {
       false
     );
 
+    const accountingEnabled = await getConfigBoolean(
+      "accounting.enabled",
+      check.tenantId,
+      false
+    );
+
     return NextResponse.json({
       "management-billing": managementBillingEnabled,
       "paperless": paperlessEnabled,
@@ -56,6 +62,7 @@ export async function GET() {
       "crm": crmEnabled,
       "inbox": inboxEnabled,
       "wirtschaftsplan": wirtschaftsplanEnabled,
+      "accounting": accountingEnabled,
     });
   } catch {
     return NextResponse.json({
@@ -65,6 +72,7 @@ export async function GET() {
       "crm": false,
       "inbox": false,
       "wirtschaftsplan": false,
+      "accounting": false,
     });
   }
 }
