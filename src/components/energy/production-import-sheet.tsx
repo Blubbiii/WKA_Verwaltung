@@ -43,6 +43,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Stepper } from '@/components/ui/stepper'
+import { UPLOAD_LIMITS } from '@/lib/config/upload-limits'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -93,7 +94,7 @@ const WIZARD_STEPS = [
   { id: 'import', title: 'Import', description: 'Daten importieren' },
 ]
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+const MAX_FILE_SIZE = UPLOAD_LIMITS.energyImport
 
 const GERMAN_MONTHS: Record<string, number> = {
   januar: 1, februar: 2, maerz: 3, march: 3, april: 4, mai: 5, juni: 6,

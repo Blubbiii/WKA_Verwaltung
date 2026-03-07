@@ -8,6 +8,7 @@
 import { Queue, JobsOptions } from 'bullmq';
 import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from "@/lib/logger";
+import { getJobOptions } from "@/lib/config/queue-config";
 
 /**
  * Available email templates
@@ -66,19 +67,7 @@ export const EMAIL_QUEUE_NAME = 'email';
 /**
  * Default job options for email queue
  */
-const defaultJobOptions: JobsOptions = {
-  attempts: 3,
-  backoff: {
-    type: 'exponential',
-    delay: 2000, // Start with 2s, then 4s, 8s
-  },
-  removeOnComplete: {
-    count: 100, // Keep last 100 completed jobs
-  },
-  removeOnFail: {
-    count: 500, // Keep last 500 failed jobs for debugging
-  },
-};
+const defaultJobOptions = getJobOptions("critical");
 
 // Singleton queue instance
 let emailQueue: Queue<EmailJobData> | null = null;

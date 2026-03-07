@@ -4,9 +4,10 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { uploadFile, getSignedUrl, deleteFile } from "@/lib/storage";
 import { apiLogger as logger } from "@/lib/logger";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 // Maximale Dateigröße: 10MB
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = UPLOAD_LIMITS.proxy;
 
 // Erlaubte MIME-Types
 const ALLOWED_MIME_TYPES = ["application/pdf"];

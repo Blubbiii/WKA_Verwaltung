@@ -4,12 +4,13 @@ import { apiLogger as logger } from "@/lib/logger";
 import { parseMt940 } from "@/lib/bank-import/mt940-parser";
 import { parseCamt054 } from "@/lib/bank-import/camt054-parser";
 import { matchTransactions } from "@/lib/bank-import/matcher";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_FILE_SIZE_BYTES = UPLOAD_LIMITS.bankImport;
 
 const ALLOWED_EXTENSIONS = [".sta", ".mt940", ".txt", ".xml"];
 

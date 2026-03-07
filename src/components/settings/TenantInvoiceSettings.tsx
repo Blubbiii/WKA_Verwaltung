@@ -25,6 +25,11 @@ const SKR03_DEFAULTS = {
   datevAccountPachtAufwand: "4210",
   datevAccountWartung: "4950",
   datevAccountBF: "4120",
+  datevAccountReceivables: "1200",
+  datevAccountOutputTax19: "1776",
+  datevAccountOutputTax7: "1771",
+  datevAccountInputTax19: "1576",
+  datevAccountInputTax7: "1571",
 };
 
 interface InvoiceFormData {
@@ -43,6 +48,13 @@ interface InvoiceFormData {
   datevAccountPachtAufwand: string;
   datevAccountWartung: string;
   datevAccountBF: string;
+  datevAccountReceivables: string;
+  datevAccountOutputTax19: string;
+  datevAccountOutputTax7: string;
+  datevAccountInputTax19: string;
+  datevAccountInputTax7: string;
+  // Geschaeftsjahr
+  fiscalYearStartMonth: number;
   // GoBD
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
@@ -97,6 +109,12 @@ export function TenantInvoiceSettings() {
         datevAccountPachtAufwand: settings.datevAccountPachtAufwand ?? SKR03_DEFAULTS.datevAccountPachtAufwand,
         datevAccountWartung: settings.datevAccountWartung ?? SKR03_DEFAULTS.datevAccountWartung,
         datevAccountBF: settings.datevAccountBF ?? SKR03_DEFAULTS.datevAccountBF,
+        datevAccountReceivables: settings.datevAccountReceivables ?? SKR03_DEFAULTS.datevAccountReceivables,
+        datevAccountOutputTax19: settings.datevAccountOutputTax19 ?? SKR03_DEFAULTS.datevAccountOutputTax19,
+        datevAccountOutputTax7: settings.datevAccountOutputTax7 ?? SKR03_DEFAULTS.datevAccountOutputTax7,
+        datevAccountInputTax19: settings.datevAccountInputTax19 ?? SKR03_DEFAULTS.datevAccountInputTax19,
+        datevAccountInputTax7: settings.datevAccountInputTax7 ?? SKR03_DEFAULTS.datevAccountInputTax7,
+        fiscalYearStartMonth: settings.fiscalYearStartMonth ?? 1,
         gobdRetentionYearsInvoice: settings.gobdRetentionYearsInvoice ?? 10,
         gobdRetentionYearsContract: settings.gobdRetentionYearsContract ?? 10,
         reminderEnabled: settings.reminderEnabled ?? true,
@@ -354,6 +372,11 @@ export function TenantInvoiceSettings() {
                     { label: "Pachtaufwand", key: "datevAccountPachtAufwand" as const, default: SKR03_DEFAULTS.datevAccountPachtAufwand },
                     { label: "Wartung / Instandhaltung", key: "datevAccountWartung" as const, default: SKR03_DEFAULTS.datevAccountWartung },
                     { label: "Betriebsführungsentgelt", key: "datevAccountBF" as const, default: SKR03_DEFAULTS.datevAccountBF },
+                    { label: "Forderungen", key: "datevAccountReceivables" as const, default: SKR03_DEFAULTS.datevAccountReceivables },
+                    { label: "USt 19%", key: "datevAccountOutputTax19" as const, default: SKR03_DEFAULTS.datevAccountOutputTax19 },
+                    { label: "USt 7%", key: "datevAccountOutputTax7" as const, default: SKR03_DEFAULTS.datevAccountOutputTax7 },
+                    { label: "VSt 19%", key: "datevAccountInputTax19" as const, default: SKR03_DEFAULTS.datevAccountInputTax19 },
+                    { label: "VSt 7%", key: "datevAccountInputTax7" as const, default: SKR03_DEFAULTS.datevAccountInputTax7 },
                   ].map((row) => (
                     <tr key={row.key}>
                       <td className="px-3 py-2 text-muted-foreground">{row.label}</td>
@@ -415,6 +438,44 @@ export function TenantInvoiceSettings() {
                 Startnummer für Kreditorenkonten (Standard: 70000)
               </p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Geschaeftsjahr */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-lg">Geschaeftsjahr</CardTitle>
+          </div>
+          <CardDescription>
+            Beginn des Geschaeftsjahres für BWA und Jahresvergleiche
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-w-xs">
+            <Label htmlFor="fiscalYearStartMonth">Geschaeftsjahr beginnt im</Label>
+            <select
+              id="fiscalYearStartMonth"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+              value={formData.fiscalYearStartMonth}
+              onChange={(e) => handleChange("fiscalYearStartMonth", parseInt(e.target.value, 10))}
+            >
+              {[
+                { value: 1, label: "Januar" }, { value: 2, label: "Februar" },
+                { value: 3, label: "Maerz" }, { value: 4, label: "April" },
+                { value: 5, label: "Mai" }, { value: 6, label: "Juni" },
+                { value: 7, label: "Juli" }, { value: 8, label: "August" },
+                { value: 9, label: "September" }, { value: 10, label: "Oktober" },
+                { value: 11, label: "November" }, { value: 12, label: "Dezember" },
+              ].map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Standard: Januar (Kalenderjahr = Geschaeftsjahr)
+            </p>
           </div>
         </CardContent>
       </Card>

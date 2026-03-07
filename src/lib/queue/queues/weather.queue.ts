@@ -8,6 +8,7 @@
 import { Queue, JobsOptions } from 'bullmq';
 import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from "@/lib/logger";
+import { getJobOptions } from "@/lib/config/queue-config";
 
 /**
  * Weather job data structure
@@ -54,19 +55,7 @@ export const WEATHER_QUEUE_NAME = 'weather';
  * Default job options for weather queue
  * Weather sync is less critical, so we use moderate settings
  */
-const defaultJobOptions: JobsOptions = {
-  attempts: 3,
-  backoff: {
-    type: 'exponential',
-    delay: 3000, // Start with 3s, then 6s, 12s
-  },
-  removeOnComplete: {
-    count: 100,
-  },
-  removeOnFail: {
-    count: 500,
-  },
-};
+const defaultJobOptions = getJobOptions("standard");
 
 // Singleton queue instance
 let weatherQueue: Queue<WeatherJobData, WeatherJobResult> | null = null;

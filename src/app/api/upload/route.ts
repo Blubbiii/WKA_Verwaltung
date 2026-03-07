@@ -14,6 +14,7 @@ import {
   checkStorageLimit,
   incrementStorageUsage,
 } from "@/lib/storage-tracking";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 // Allowed file types for different upload categories
 const ALLOWED_TYPES: Record<string, string[]> = {
@@ -23,9 +24,9 @@ const ALLOWED_TYPES: Record<string, string[]> = {
 };
 
 const MAX_FILE_SIZE: Record<string, number> = {
-  logo: 2 * 1024 * 1024, // 2MB
-  document: 10 * 1024 * 1024, // 10MB
-  letterhead: 5 * 1024 * 1024, // 5MB
+  logo: UPLOAD_LIMITS.logo,
+  document: UPLOAD_LIMITS.document,
+  letterhead: UPLOAD_LIMITS.letterhead,
 };
 
 // POST /api/upload - Upload a file to S3/MinIO

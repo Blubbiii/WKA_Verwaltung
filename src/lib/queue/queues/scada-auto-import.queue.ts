@@ -10,6 +10,7 @@
 import { Queue, JobsOptions } from 'bullmq';
 import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from '@/lib/logger';
+import { getJobOptions } from "@/lib/config/queue-config";
 
 // ---------------------------------------------------------------
 // Types
@@ -56,19 +57,7 @@ export interface ScadaAutoImportJobResult {
 
 export const SCADA_AUTO_IMPORT_QUEUE_NAME = 'scada-auto-import';
 
-const defaultJobOptions: JobsOptions = {
-  attempts: 3,
-  backoff: {
-    type: 'exponential',
-    delay: 60000, // Start with 60s (SCADA import can be slow)
-  },
-  removeOnComplete: {
-    count: 50, // Keep last 50 completed jobs
-  },
-  removeOnFail: {
-    count: 200, // Keep last 200 failed jobs for debugging
-  },
-};
+const defaultJobOptions = getJobOptions("slow");
 
 // Singleton queue instance
 let scadaAutoImportQueue: Queue<ScadaAutoImportJobData, ScadaAutoImportJobResult> | null = null;

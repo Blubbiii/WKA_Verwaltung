@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 export interface BwaLine {
   label: string;
@@ -89,14 +90,20 @@ export async function generateBwa(
   periodStart: Date,
   periodEnd: Date
 ): Promise<BwaResult> {
+  const settings = await getTenantSettings(tenantId);
+  const fyMonth = (settings.fiscalYearStartMonth || 1) - 1; // 0-based month
+
   // Calculate previous period (same length, shifted back)
   const periodMs = periodEnd.getTime() - periodStart.getTime();
   const prevEnd = new Date(periodStart.getTime() - 1);
   const prevStart = new Date(prevEnd.getTime() - periodMs);
 
-  // YTD: from Jan 1 of periodStart's year
-  const ytdStart = new Date(periodStart.getFullYear(), 0, 1);
-  const prevYtdStart = new Date(periodStart.getFullYear() - 1, 0, 1);
+  // YTD: from fiscal year start (configurable, default Jan 1)
+  const fyYear = periodStart.getMonth() >= fyMonth
+    ? periodStart.getFullYear()
+    : periodStart.getFullYear() - 1;
+  const ytdStart = new Date(fyYear, fyMonth, 1);
+  const prevYtdStart = new Date(fyYear - 1, fyMonth, 1);
   const prevYtdEnd = new Date(periodStart.getFullYear() - 1, periodEnd.getMonth(), periodEnd.getDate());
 
   const [current, previous, ytd, prevYtd] = await Promise.all([

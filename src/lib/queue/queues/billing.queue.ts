@@ -8,6 +8,7 @@
 import { Queue, JobsOptions } from 'bullmq';
 import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from "@/lib/logger";
+import { getJobOptions } from "@/lib/config/queue-config";
 
 /**
  * Billing job data structure
@@ -55,19 +56,7 @@ export const BILLING_QUEUE_NAME = 'billing';
  * Default job options for billing queue
  * Billing is critical, so we use more conservative settings
  */
-const defaultJobOptions: JobsOptions = {
-  attempts: 3,
-  backoff: {
-    type: 'exponential',
-    delay: 10000, // Start with 10s, then 20s, 40s
-  },
-  removeOnComplete: {
-    count: 100,
-  },
-  removeOnFail: {
-    count: 500,
-  },
-};
+const defaultJobOptions = getJobOptions("slow");
 
 // Singleton queue instance
 let billingQueue: Queue<BillingJobData, BillingJobResult> | null = null;

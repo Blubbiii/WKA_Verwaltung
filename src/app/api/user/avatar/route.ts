@@ -19,12 +19,13 @@ import { prisma } from "@/lib/prisma";
 import { uploadFile, deleteFile, getSignedUrl } from "@/lib/storage";
 import { validateFileContent } from "@/lib/file-validation";
 import { apiLogger as logger } from "@/lib/logger";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_FILE_SIZE = UPLOAD_LIMITS.avatar;
 const ALLOWED_MIME_TYPES = [
   "image/png",
   "image/jpeg",

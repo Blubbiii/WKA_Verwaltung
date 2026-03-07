@@ -4,7 +4,7 @@ import type { TaxType } from "@prisma/client";
 /**
  * Default tax rates used as fallback when no DB config exists.
  */
-const DEFAULT_TAX_RATES: Record<string, number> = {
+export const DEFAULT_TAX_RATES: Record<string, number> = {
   STANDARD: 19,
   REDUCED: 7,
   EXEMPT: 0,

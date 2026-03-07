@@ -52,6 +52,14 @@ export interface TenantSettings {
   datevAccountPachtAufwand: string;
   datevAccountWartung: string;
   datevAccountBF: string;
+  datevAccountReceivables: string;
+  datevAccountOutputTax19: string;
+  datevAccountOutputTax7: string;
+  datevAccountInputTax19: string;
+  datevAccountInputTax7: string;
+
+  // Geschaeftsjahr
+  fiscalYearStartMonth: number;
 
   // GoBD Aufbewahrung
   gobdRetentionYearsInvoice: number;
@@ -116,6 +124,14 @@ const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   datevAccountPachtAufwand: "4210",
   datevAccountWartung: "4950",
   datevAccountBF: "4120",
+  datevAccountReceivables: "1200",
+  datevAccountOutputTax19: "1776",
+  datevAccountOutputTax7: "1771",
+  datevAccountInputTax19: "1576",
+  datevAccountInputTax7: "1571",
+
+  // Geschaeftsjahr
+  fiscalYearStartMonth: 1,
 
   // GoBD Aufbewahrung (§147 AO)
   gobdRetentionYearsInvoice: 10,

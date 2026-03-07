@@ -38,18 +38,18 @@ const getRedisOptions = () => {
     const options: RedisOptions = {
       host: url.hostname,
       port: parseInt(url.port) || 6379,
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: parseInt(process.env.REDIS_CACHE_MAX_RETRIES || "3"),
       enableReadyCheck: true,
       retryStrategy: (times: number) => {
-        if (times > 3) {
-          // Stop retrying after 3 attempts for cache operations
+        const maxRetries = parseInt(process.env.REDIS_CACHE_MAX_RETRIES || "3");
+        if (times > maxRetries) {
           cacheLogger.warn('Max retry attempts reached, using memory fallback');
           return null;
         }
         return Math.min(times * 100, 2000);
       },
-      lazyConnect: true, // Don't connect until first command
-      connectTimeout: 5000,
+      lazyConnect: true,
+      connectTimeout: parseInt(process.env.REDIS_CACHE_CONNECT_TIMEOUT_MS || "5000"),
     };
 
     if (url.password) {
@@ -72,9 +72,9 @@ const getRedisOptions = () => {
     return {
       host: 'localhost',
       port: 6379,
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: parseInt(process.env.REDIS_CACHE_MAX_RETRIES || "3"),
       lazyConnect: true,
-      connectTimeout: 5000,
+      connectTimeout: parseInt(process.env.REDIS_CACHE_CONNECT_TIMEOUT_MS || "5000"),
     };
   }
 };

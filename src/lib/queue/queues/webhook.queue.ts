@@ -9,6 +9,7 @@ import { Queue, JobsOptions } from "bullmq";
 import crypto from "crypto";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
+import { getJobOptions } from "@/lib/config/queue-config";
 import type { WebhookEventPayload } from "@/lib/webhooks/dispatcher";
 
 export interface WebhookJobData {
@@ -26,19 +27,7 @@ export interface WebhookJobResult {
 
 export const WEBHOOK_QUEUE_NAME = "webhook";
 
-const defaultJobOptions: JobsOptions = {
-  attempts: 3,
-  backoff: {
-    type: "exponential",
-    delay: 10000, // 10s → 20s → 40s
-  },
-  removeOnComplete: {
-    count: 100,
-  },
-  removeOnFail: {
-    count: 500,
-  },
-};
+const defaultJobOptions = getJobOptions("slow");
 
 let webhookQueue: Queue<WebhookJobData> | null = null;
 

@@ -15,9 +15,10 @@ import {
   autoDetectOwnerMapping,
 } from "@/lib/shapefile/field-mapping";
 import { apiLogger as logger } from "@/lib/logger";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 // Maximum upload size: 50 MB
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_FILE_SIZE = UPLOAD_LIMITS.large;
 
 export async function POST(request: NextRequest) {
   try {

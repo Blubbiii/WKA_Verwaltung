@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 export interface UstvaLine {
   kennzahl: string; // ELSTER field number
@@ -32,7 +33,7 @@ export async function generateUstva(
   periodStart: Date,
   periodEnd: Date
 ): Promise<UstvaResult> {
-  const [journalLines, ledgerAccounts] = await Promise.all([
+  const [journalLines, ledgerAccounts, settings] = await Promise.all([
     prisma.journalEntryLine.findMany({
       where: {
         journalEntry: {
@@ -52,7 +53,14 @@ export async function generateUstva(
       where: { tenantId, isActive: true },
       select: { accountNumber: true, taxBehavior: true },
     }),
+    getTenantSettings(tenantId),
   ]);
+
+  // Tax account numbers from tenant settings
+  const outputTax19Acc = settings.datevAccountOutputTax19;
+  const outputTax7Acc = settings.datevAccountOutputTax7;
+  const inputTax19Acc = settings.datevAccountInputTax19;
+  const inputTax7Acc = settings.datevAccountInputTax7;
 
   // Build tax behavior lookup from LedgerAccount
   const taxBehaviorMap = new Map(ledgerAccounts.map((a) => [a.accountNumber, a.taxBehavior]));
@@ -61,10 +69,10 @@ export async function generateUstva(
   let revenue19 = 0;     // KZ 81: Steuerpflichtige Umsaetze 19%
   let revenue7 = 0;      // KZ 86: Steuerpflichtige Umsaetze 7%
   let revenueExempt = 0; // KZ 43: Steuerfreie Umsaetze
-  let tax19 = 0;         // Output tax 19% (account 1776)
-  let tax7 = 0;          // Output tax 7% (account 1771)
-  let inputTax19 = 0;    // Input tax 19% (account 1576)
-  let inputTax7 = 0;     // Input tax 7% (account 1571)
+  let tax19 = 0;         // Output tax 19%
+  let tax7 = 0;          // Output tax 7%
+  let inputTax19 = 0;    // Input tax 19%
+  let inputTax7 = 0;     // Input tax 7%
 
   for (const line of journalLines) {
     const credit = toNum(line.creditAmount);
@@ -84,13 +92,11 @@ export async function generateUstva(
       }
     }
 
-    // Output tax accounts
-    if (acc === "1776") tax19 += credit - debit;
-    if (acc === "1771") tax7 += credit - debit;
-
-    // Input tax accounts
-    if (acc === "1576") inputTax19 += debit - credit;
-    if (acc === "1571") inputTax7 += debit - credit;
+    // Tax accounts from tenant settings
+    if (acc === outputTax19Acc) tax19 += credit - debit;
+    if (acc === outputTax7Acc) tax7 += credit - debit;
+    if (acc === inputTax19Acc) inputTax19 += debit - credit;
+    if (acc === inputTax7Acc) inputTax7 += debit - credit;
   }
 
   const totalInputTax = inputTax19 + inputTax7;

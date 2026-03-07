@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
-
-// Default tenant limits
-const DEFAULT_LIMITS = {
-  maxUsers: 50,
-  maxStorageMb: 5000, // 5 GB
-  maxParks: 20,
-};
+import { DEFAULT_TENANT_LIMITS } from "@/lib/config/auth-config";
 
 export interface TenantLimits {
   maxUsers: number;
@@ -55,9 +49,9 @@ export async function GET(request: NextRequest) {
         name: tenant.name,
         slug: tenant.slug,
         limits: {
-          ...DEFAULT_LIMITS,
+          ...DEFAULT_TENANT_LIMITS,
           ...limits,
-          maxStorageMb: limits.maxStorageMb || storageLimitMb || DEFAULT_LIMITS.maxStorageMb,
+          maxStorageMb: limits.maxStorageMb || storageLimitMb || DEFAULT_TENANT_LIMITS.maxStorageMb,
         },
         usage: {
           currentUsers: tenant._count.users,

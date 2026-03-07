@@ -8,6 +8,7 @@
 import { Queue, JobsOptions } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
+import { getJobOptions } from "@/lib/config/queue-config";
 
 export interface PaperlessJobData {
   documentId: string;
@@ -24,19 +25,7 @@ export interface PaperlessJobResult {
 
 export const PAPERLESS_QUEUE_NAME = "paperless";
 
-const defaultJobOptions: JobsOptions = {
-  attempts: 3,
-  backoff: {
-    type: "exponential",
-    delay: 10000, // 10s → 20s → 40s
-  },
-  removeOnComplete: {
-    count: 100,
-  },
-  removeOnFail: {
-    count: 500,
-  },
-};
+const defaultJobOptions = getJobOptions("slow");
 
 let paperlessQueue: Queue<PaperlessJobData> | null = null;
 

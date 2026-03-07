@@ -4,6 +4,7 @@ import { requireSuperadmin, requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { apiLogger as logger } from "@/lib/logger";
+import { AUTH_CONFIG } from "@/lib/config/auth-config";
 
 function signCookieValue(data: object): string {
   const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
@@ -132,7 +133,7 @@ const check = await requireSuperadmin();
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60, // 1 hour
+      maxAge: AUTH_CONFIG.impersonationMaxAge,
       path: "/",
     });
 

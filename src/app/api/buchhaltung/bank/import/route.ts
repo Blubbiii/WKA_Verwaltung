@@ -6,6 +6,7 @@ import { parseMt940 } from "@/lib/bank-import/mt940-parser";
 import { parseCamt054 } from "@/lib/bank-import/camt054-parser";
 import { matchTransactions } from "@/lib/bank-import/matcher";
 import { randomUUID } from "crypto";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 // POST /api/buchhaltung/bank/import — Upload + Parse + Persist bank statement
 export async function POST(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Keine Datei hochgeladen" }, { status: 400 });
     }
 
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    const MAX_FILE_SIZE = UPLOAD_LIMITS.bankImport;
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ error: "Datei zu groß (max. 10 MB)" }, { status: 400 });
     }

@@ -76,10 +76,10 @@ export class SmtpProvider implements EmailProvider {
         user: config.user,
         pass: config.password,
       },
-      // Timeouts
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 10000,
-      socketTimeout: 30000, // 30 seconds
+      // Timeouts (env-overridable)
+      connectionTimeout: parseInt(process.env.SMTP_CONNECTION_TIMEOUT_MS || "10000"),
+      greetingTimeout: parseInt(process.env.SMTP_GREETING_TIMEOUT_MS || "10000"),
+      socketTimeout: parseInt(process.env.SMTP_SOCKET_TIMEOUT_MS || "30000"),
     });
   }
 

@@ -48,6 +48,7 @@ import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 // ============================================================================
 // Types
@@ -115,7 +116,7 @@ const TURBINE_FIELD_LABELS: Record<keyof TurbineColumnMapping, string> = {
   notes: "Bemerkungen",
 };
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = UPLOAD_LIMITS.energyImport;
 const ACCEPTED_EXTENSIONS = [".csv", ".xlsx", ".xls"];
 
 // ============================================================================

@@ -48,6 +48,14 @@ export interface TenantSettings {
   datevAccountPachtAufwand: string;
   datevAccountWartung: string;
   datevAccountBF: string;
+  datevAccountReceivables: string;
+  datevAccountOutputTax19: string;
+  datevAccountOutputTax7: string;
+  datevAccountInputTax19: string;
+  datevAccountInputTax7: string;
+
+  // Geschaeftsjahr
+  fiscalYearStartMonth: number;
 
   // GoBD Aufbewahrung
   gobdRetentionYearsInvoice: number;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 import { prisma } from "@/lib/prisma";
 import { DocumentCategory, DocumentApprovalStatus } from "@prisma/client";
 import { uploadFile, ensureBucket } from "@/lib/storage";
@@ -59,7 +60,7 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 // Maximale Dateigröße: 50 MB
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_FILE_SIZE = UPLOAD_LIMITS.large;
 
 // GET /api/documents - Liste aller Dokumente
 export async function GET(request: NextRequest) {

@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { getTenantSettings, type TenantSettings } from "@/lib/tenant-settings";
 import type { Prisma } from "@prisma/client";
 
 interface AutoPostingResult {
@@ -13,14 +14,16 @@ interface AutoPostingResult {
   error?: string;
 }
 
-// Default SKR03 account mappings (used when InvoiceItem has no datevKonto)
-const DEFAULT_ACCOUNT_MAP: Record<string, { debit: string; credit: string }> = {
-  ENERGY: { debit: "1200", credit: "8400" },        // Forderungen / Erloese Einspeiseverguetung
-  ENERGY_DIRECT: { debit: "1200", credit: "8338" },  // Forderungen / Erloese Direktvermarktung
-  LEASE: { debit: "4210", credit: "1200" },          // Pachtaufwand / Forderungen
-  SERVICE: { debit: "4950", credit: "1200" },        // Wartung / Forderungen
-  MANAGEMENT_FEE: { debit: "4120", credit: "1200" }, // BF-Verguetung / Forderungen
-};
+/** Build account map from tenant settings (no more hardcoded accounts) */
+function buildAccountMap(s: TenantSettings): Record<string, { debit: string; credit: string }> {
+  return {
+    ENERGY: { debit: s.datevAccountReceivables, credit: s.datevAccountEinspeisung },
+    ENERGY_DIRECT: { debit: s.datevAccountReceivables, credit: s.datevAccountDirektvermarktung },
+    LEASE: { debit: s.datevAccountPachtAufwand, credit: s.datevAccountReceivables },
+    SERVICE: { debit: s.datevAccountWartung, credit: s.datevAccountReceivables },
+    MANAGEMENT_FEE: { debit: s.datevAccountBF, credit: s.datevAccountReceivables },
+  };
+}
 
 /**
  * Create a JournalEntry when an invoice is finalized (status → SENT).
@@ -59,14 +62,18 @@ export async function createAutoPosting(
       return { success: false, error: "Invoice not found" };
     }
 
+    // Load tenant-specific account mappings
+    const settings = await getTenantSettings(tenantId);
+    const accountMap = buildAccountMap(settings);
+
     // Build journal entry lines from invoice items
     const lines: Prisma.JournalEntryLineCreateWithoutJournalEntryInput[] = [];
     let lineNumber = 1;
 
     for (const item of invoice.items) {
-      const accountMap = DEFAULT_ACCOUNT_MAP[item.referenceType || ""] || DEFAULT_ACCOUNT_MAP.ENERGY;
-      const debitAccount = item.datevKonto || accountMap.debit;
-      const creditAccount = item.datevGegenkonto || accountMap.credit;
+      const mapping = accountMap[item.referenceType || ""] || accountMap.ENERGY;
+      const debitAccount = item.datevKonto || mapping.debit;
+      const creditAccount = item.datevGegenkonto || mapping.credit;
       const amount = item.grossAmount;
 
       // Debit line

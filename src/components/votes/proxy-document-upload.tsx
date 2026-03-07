@@ -35,6 +35,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { cn } from "@/lib/utils";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 interface ProxyDocumentUploadProps {
   proxyId: string;
@@ -46,7 +47,7 @@ interface ProxyDocumentUploadProps {
   compact?: boolean;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = UPLOAD_LIMITS.proxy;
 
 export function ProxyDocumentUpload({
   proxyId,

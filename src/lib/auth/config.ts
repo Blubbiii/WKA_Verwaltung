@@ -1,4 +1,5 @@
 import { NextAuthConfig } from "next-auth";
+import { AUTH_CONFIG } from "@/lib/config/auth-config";
 
 // Edge-compatible auth config (no database operations here)
 export const authConfig: NextAuthConfig = {
@@ -121,7 +122,7 @@ export const authConfig: NextAuthConfig = {
   providers: [], // Providers are added in auth.ts
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: AUTH_CONFIG.sessionMaxAge,
   },
   cookies: {
     sessionToken: {

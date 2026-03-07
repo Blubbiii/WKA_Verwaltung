@@ -8,6 +8,7 @@
 import { Queue, JobsOptions } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
+import { getJobOptions } from "@/lib/config/queue-config";
 
 /**
  * Supported report job types
@@ -46,19 +47,7 @@ export const REPORT_QUEUE_NAME = "report";
 /**
  * Default job options for report queue
  */
-const defaultJobOptions: JobsOptions = {
-  attempts: 2,
-  backoff: {
-    type: "exponential",
-    delay: 30000, // Start with 30s - report generation can be slow
-  },
-  removeOnComplete: {
-    count: 50, // Keep last 50 completed jobs
-  },
-  removeOnFail: {
-    count: 200, // Keep last 200 failed jobs for debugging
-  },
-};
+const defaultJobOptions = getJobOptions("background");
 
 // Singleton queue instance
 let reportQueue: Queue<ReportJobData, ReportJobResult> | null = null;

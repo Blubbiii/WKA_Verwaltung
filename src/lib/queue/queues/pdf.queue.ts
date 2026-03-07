@@ -8,6 +8,7 @@
 import { Queue, JobsOptions } from 'bullmq';
 import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from "@/lib/logger";
+import { getJobOptions } from "@/lib/config/queue-config";
 
 /**
  * Supported PDF document types
@@ -50,19 +51,7 @@ export const PDF_QUEUE_NAME = 'pdf';
  * Default job options for PDF queue
  * PDF generation can be resource-intensive, so we use longer timeouts
  */
-const defaultJobOptions: JobsOptions = {
-  attempts: 3,
-  backoff: {
-    type: 'exponential',
-    delay: 5000, // Start with 5s, then 10s, 20s (PDF generation is slow)
-  },
-  removeOnComplete: {
-    count: 100,
-  },
-  removeOnFail: {
-    count: 500,
-  },
-};
+const defaultJobOptions = getJobOptions("standard");
 
 // Singleton queue instance
 let pdfQueue: Queue<PdfJobData> | null = null;

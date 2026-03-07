@@ -4,22 +4,19 @@ import * as bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { rateLimit, getClientIp, getRateLimitResponse, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
-
-// Password requirements
-const PASSWORD_MIN_LENGTH = 8;
-const BCRYPT_SALT_ROUNDS = 12;
+import { AUTH_CONFIG } from "@/lib/config/auth-config";
 
 // Validation Schema
 const resetPasswordSchema = z.object({
   token: z.string().uuid("Ungültiger Token"),
   password: z
     .string()
-    .min(PASSWORD_MIN_LENGTH, `Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen lang sein`)
+    .min(AUTH_CONFIG.passwordMinLength, `Passwort muss mindestens ${AUTH_CONFIG.passwordMinLength} Zeichen lang sein`)
     .regex(/[A-Z]/, "Passwort muss mindestens einen Grossbuchstaben enthalten")
     .regex(/[a-z]/, "Passwort muss mindestens einen Kleinbuchstaben enthalten")
     .regex(/[0-9]/, "Passwort muss mindestens eine Zahl enthalten")
     .regex(/[^A-Za-z0-9]/, "Passwort muss mindestens ein Sonderzeichen enthalten")
-    .max(128, "Passwort darf maximal 128 Zeichen lang sein"),
+    .max(AUTH_CONFIG.passwordMaxLength, `Passwort darf maximal ${AUTH_CONFIG.passwordMaxLength} Zeichen lang sein`),
 });
 
 export async function POST(request: Request) {
@@ -93,7 +90,7 @@ export async function POST(request: Request) {
     }
 
     // Hash new password
-    const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+    const passwordHash = await bcrypt.hash(password, AUTH_CONFIG.bcryptSaltRounds);
 
     // Update user password and invalidate all other tokens
     await prisma.$transaction([

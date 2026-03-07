@@ -109,8 +109,8 @@ async function getRedisClient(): Promise<Redis | null> {
       ...(url.protocol === "rediss:"
         ? { tls: { rejectUnauthorized: process.env.NODE_ENV === "production" } }
         : {}),
-      maxRetriesPerRequest: 1, // Fail fast -- we have a fallback
-      connectTimeout: 3000,
+      maxRetriesPerRequest: parseInt(process.env.REDIS_RATELIMIT_MAX_RETRIES || "1"),
+      connectTimeout: parseInt(process.env.REDIS_RATELIMIT_CONNECT_TIMEOUT_MS || "3000"),
       lazyConnect: true,
     });
 

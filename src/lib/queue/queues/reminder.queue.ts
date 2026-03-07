@@ -9,6 +9,7 @@
 import { Queue, JobsOptions } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
+import { getJobOptions } from "@/lib/config/queue-config";
 
 /**
  * Reminder job data structure
@@ -46,19 +47,7 @@ export const REMINDER_QUEUE_NAME = "reminder";
 /**
  * Default job options for reminder queue
  */
-const defaultJobOptions: JobsOptions = {
-  attempts: 2,
-  backoff: {
-    type: "exponential",
-    delay: 30000, // Start with 30s, then 60s
-  },
-  removeOnComplete: {
-    count: 50, // Keep last 50 completed jobs
-  },
-  removeOnFail: {
-    count: 200, // Keep last 200 failed jobs for debugging
-  },
-};
+const defaultJobOptions = getJobOptions("background");
 
 // Singleton queue instance
 let reminderQueue: Queue<ReminderJobData, ReminderJobResult> | null = null;

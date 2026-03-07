@@ -4,9 +4,10 @@
  * Handles asynchronous OCR processing of uploaded invoice PDFs.
  */
 
-import { Queue, JobsOptions } from "bullmq";
+import { Queue } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
+import { getJobOptions } from "@/lib/config/queue-config";
 
 export interface InboxOcrJobData {
   invoiceId: string;
@@ -22,15 +23,7 @@ export interface InboxOcrJobResult {
 
 export const INBOX_OCR_QUEUE_NAME = "inbox-ocr";
 
-const defaultJobOptions: JobsOptions = {
-  attempts: 2,
-  backoff: {
-    type: "exponential",
-    delay: 5000,
-  },
-  removeOnComplete: { count: 200 },
-  removeOnFail: { count: 500 },
-};
+const defaultJobOptions = getJobOptions("background");
 
 let inboxOcrQueue: Queue<InboxOcrJobData> | null = null;
 

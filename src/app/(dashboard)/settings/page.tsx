@@ -57,6 +57,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { ToggleLeft, FileArchive } from "lucide-react";
 import { toast } from "sonner";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 // =============================================================================
 // Types
@@ -154,8 +155,7 @@ function AvatarUploadSection({
       return;
     }
 
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    if (file.size > maxSize) {
+    if (file.size > UPLOAD_LIMITS.avatar) {
       toast.error("Datei zu gross. Maximale Größe: 2MB");
       return;
     }
