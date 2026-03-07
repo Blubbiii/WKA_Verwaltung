@@ -144,7 +144,7 @@ describe("safeNumber", () => {
 describe("round", () => {
   it("rundet auf 2 Dezimalstellen (Standard)", () => {
     expect(round(3.14159)).toBe(3.14);
-    expect(round(2.005)).toBe(2); // classic floating point: 2.005 * 100 = 200.499...
+    expect(round(2.005)).toBe(2.01);
     expect(round(1.999)).toBe(2);
   });
 

@@ -16,6 +16,7 @@
 
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { s3Client, S3_BUCKET } from "@/lib/storage";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { logger } from "@/lib/logger";
@@ -346,12 +347,7 @@ export async function getArchivedDocument(
   }
 
   // Convert stream to buffer
-  const chunks: Uint8Array[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for await (const chunk of bodyStream as any) {
-    chunks.push(chunk);
-  }
-  const content = Buffer.concat(chunks);
+  const content = Buffer.from(await bodyStream.transformToByteArray());
 
   // Verify integrity on retrieval
   if (!verifyDocumentIntegrity(content, doc.contentHash)) {
@@ -409,21 +405,21 @@ export async function searchArchive(
     offset = 0,
   } = params;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { tenantId };
+  const where: Prisma.ArchivedDocumentWhereInput = { tenantId };
 
   if (documentType) {
     where.documentType = documentType;
   }
 
   if (dateFrom || dateTo) {
-    where.archivedAt = {};
-    if (dateFrom) where.archivedAt.gte = dateFrom;
+    const archivedAtFilter: Prisma.DateTimeFilter = {};
+    if (dateFrom) archivedAtFilter.gte = dateFrom;
     if (dateTo) {
       const endOfDay = new Date(dateTo);
       endOfDay.setHours(23, 59, 59, 999);
-      where.archivedAt.lte = endOfDay;
+      archivedAtFilter.lte = endOfDay;
     }
+    where.archivedAt = archivedAtFilter;
   }
 
   if (searchTerm) {
@@ -500,17 +496,17 @@ export async function verifyChainIntegrity(
     "Starting chain integrity verification"
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { tenantId };
+  const where: Prisma.ArchivedDocumentWhereInput = { tenantId };
 
   if (startDate || endDate) {
-    where.archivedAt = {};
-    if (startDate) where.archivedAt.gte = startDate;
+    const archivedAtFilter: Prisma.DateTimeFilter = {};
+    if (startDate) archivedAtFilter.gte = startDate;
     if (endDate) {
       const endOfDay = new Date(endDate);
       endOfDay.setHours(23, 59, 59, 999);
-      where.archivedAt.lte = endOfDay;
+      archivedAtFilter.lte = endOfDay;
     }
+    where.archivedAt = archivedAtFilter;
   }
 
   // Fetch all documents in chain order (oldest first)

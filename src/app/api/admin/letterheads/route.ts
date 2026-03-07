@@ -41,8 +41,7 @@ export async function GET(request: NextRequest) {
     const parkId = searchParams.get("parkId");
     const fundId = searchParams.get("fundId");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.LetterheadWhereInput = {
       tenantId: check.tenantId!,
       isActive: true,
     };

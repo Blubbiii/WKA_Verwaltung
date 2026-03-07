@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { generateCsvBuffer, generateExcel, type ColumnDef } from "@/lib/export";
 import { generateAuditLogPdf, type AuditLogPdfData } from "@/lib/pdf/generators/auditLogPdf";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 // ============================================================================
@@ -164,9 +165,7 @@ function buildWhereClause(
   params: z.infer<typeof querySchema>,
   tenantId: string | undefined
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-  const where: any = {};
+  const where: Prisma.AuditLogWhereInput = {};
 
   // Tenant filter - non-superadmins can only see their tenant's logs
   if (tenantId) {

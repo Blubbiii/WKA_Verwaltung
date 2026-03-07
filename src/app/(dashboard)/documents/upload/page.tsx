@@ -153,32 +153,27 @@ function DocumentUploadForm() {
         if (parksRes.ok) {
           const data = await parksRes.json();
           setParks(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data.data.map((p: any) => ({ id: p.id, name: p.shortName || p.name }))
+            data.data.map((p: { id: string; name: string; shortName?: string | null }) => ({ id: p.id, name: p.shortName || p.name }))
           );
         }
         if (fundsRes.ok) {
           const data = await fundsRes.json();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setFunds(data.data.map((f: any) => ({ id: f.id, name: f.name })));
+          setFunds(data.data.map((f: { id: string; name: string }) => ({ id: f.id, name: f.name })));
         }
         if (contractsRes.ok) {
           const data = await contractsRes.json();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setContracts(data.data.map((c: any) => ({ id: c.id, name: c.title })));
+          setContracts(data.data.map((c: { id: string; title: string }) => ({ id: c.id, name: c.title })));
         }
         if (shareholdersRes.ok) {
           const data = await shareholdersRes.json();
           setShareholders(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data.data.map((s: any) => ({ id: s.id, name: s.person?.name || s.id }))
+            data.data.map((s: { id: string; person?: { name?: string } | null }) => ({ id: s.id, name: s.person?.name || s.id }))
           );
         }
         if (turbinesRes.ok) {
           const data = await turbinesRes.json();
           setTurbines(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data.data.map((t: any) => ({
+            data.data.map((t: { id: string; designation: string; park?: { shortName?: string | null } | null }) => ({
               id: t.id,
               name: `${t.designation}${t.park?.shortName ? ` (${t.park.shortName})` : ""}`
             }))
@@ -187,8 +182,7 @@ function DocumentUploadForm() {
         if (serviceEventsRes.ok) {
           const data = await serviceEventsRes.json();
           setServiceEvents(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data.data.map((e: any) => ({
+            data.data.map((e: { id: string; eventType: string; eventDate: string; turbine?: { designation?: string } | null }) => ({
               id: e.id,
               eventType: e.eventType,
               eventDate: e.eventDate,
@@ -201,7 +195,7 @@ function DocumentUploadForm() {
         const infoParts: string[] = [];
         if (preselectedServiceEventId) {
           const event = serviceEventsRes.ok
-            ? (await serviceEventsRes.json()).data?.find((e: any) => e.id === preselectedServiceEventId)
+            ? (await serviceEventsRes.json()).data?.find((e: { id: string }) => e.id === preselectedServiceEventId)
             : null;
           if (event) {
             infoParts.push(`Service-Event: ${eventTypeLabels[event.eventType] || event.eventType} (${event.turbine?.designation})`);

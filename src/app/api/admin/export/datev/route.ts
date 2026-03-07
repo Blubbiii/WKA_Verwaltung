@@ -10,6 +10,7 @@ import {
   type DatevAccountMapping,
 } from "@/lib/export";
 import { withMonitoring } from "@/lib/monitoring";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { getTenantSettings } from "@/lib/tenant-settings";
 
@@ -88,8 +89,7 @@ async function getHandler(request: NextRequest) {
     }
 
     // Build where clause
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.InvoiceWhereInput = {
       tenantId: check.tenantId!,
       deletedAt: null,
       invoiceDate: {

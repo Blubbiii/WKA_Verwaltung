@@ -127,8 +127,7 @@ export default function NewProxyPage() {
         if (shResponse.ok) {
           const shData = await shResponse.json();
           setShareholders(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            shData.data.map((sh: any) => ({
+            shData.data.map((sh: { id: string; shareholderNumber: string | null; person?: { companyName?: string | null; firstName?: string | null; lastName?: string | null } | null }) => ({
               id: sh.id,
               shareholderNumber: sh.shareholderNumber,
               name:
@@ -143,8 +142,7 @@ export default function NewProxyPage() {
         if (voteResponse.ok) {
           const voteData = await voteResponse.json();
           setVotes(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            voteData.data.map((v: any) => ({
+            voteData.data.map((v: { id: string; title: string; status: string }) => ({
               id: v.id,
               title: v.title,
               status: v.status,

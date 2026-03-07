@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 const querySchema = z.object({
@@ -37,9 +38,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Build where clause
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const where: any = {};
+    const where: Prisma.AuditLogWhereInput = {};
 
     // Filter by action
     if (params.action && params.action !== "ALL") {

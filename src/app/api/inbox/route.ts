@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
+import { Prisma, IncomingInvoiceStatus, IncomingInvoiceType } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { uploadFile } from "@/lib/storage";
@@ -34,13 +35,12 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
     const limit = Math.min(100, parseInt(searchParams.get("limit") ?? "50"));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.IncomingInvoiceWhereInput = {
       tenantId: check.tenantId!,
       deletedAt: null,
     };
-    if (status) where.status = status;
-    if (invoiceType) where.invoiceType = invoiceType;
+    if (status) where.status = status as IncomingInvoiceStatus;
+    if (invoiceType) where.invoiceType = invoiceType as IncomingInvoiceType;
     if (vendorId) where.vendorId = vendorId;
     if (recipientFundId) where.recipientFundId = recipientFundId;
     if (dateFrom || dateTo) {

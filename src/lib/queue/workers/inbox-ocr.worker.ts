@@ -9,6 +9,7 @@
  */
 
 import { Worker, Job } from "bullmq";
+import type { Prisma } from "@prisma/client";
 import { getRedisConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getFileBuffer } from "@/lib/storage";
@@ -29,8 +30,7 @@ async function extractTextFromPdf(buffer: Buffer): Promise<string> {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
     const pageText = content.items
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((item: any) => ("str" in item ? item.str : ""))
+      .map((item: { str?: string }) => (item.str ?? ""))
       .join(" ");
     textParts.push(pageText);
   }
@@ -120,8 +120,7 @@ async function processInboxOcrJob(
 
   await prisma.incomingInvoice.update({
     where: { id: invoiceId },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data: updateData as any,
+    data: updateData as Prisma.IncomingInvoiceUpdateInput,
   });
 
   logger.info(

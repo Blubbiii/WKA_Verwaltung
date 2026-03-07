@@ -80,7 +80,16 @@ export default function ContractsCalendarPage() {
       const contractEvents: ContractEvent[] = [];
       const now = new Date();
 
-      data.data.forEach((contract: any) => {
+      interface ContractData {
+        id: string;
+        title: string;
+        contractType: string;
+        status: string;
+        endDate: string | null;
+        noticeDeadline: string | null;
+      }
+
+      data.data.forEach((contract: ContractData) => {
         // Add end date events
         if (contract.endDate && contract.status !== "TERMINATED") {
           const endDate = new Date(contract.endDate);

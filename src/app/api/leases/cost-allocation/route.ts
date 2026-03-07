@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { Prisma, ParkCostAllocationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
@@ -29,8 +30,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50", 10);
 
     // Build where clause with multi-tenancy filter
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.ParkCostAllocationWhereInput = {
       tenantId: check.tenantId!,
     };
 
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       where.leaseRevenueSettlementId = settlementId;
     }
     if (status && ["DRAFT", "INVOICED", "CLOSED"].includes(status)) {
-      where.status = status;
+      where.status = status as ParkCostAllocationStatus;
     }
     if (parkId) {
       where.leaseRevenueSettlement = { parkId };

@@ -39,12 +39,7 @@ async function fetchFileFromStorage(storageKey: string): Promise<Buffer | null> 
 
     if (!bodyStream) return null;
 
-    const chunks: Uint8Array[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for await (const chunk of bodyStream as any) {
-      chunks.push(chunk);
-    }
-    return Buffer.concat(chunks);
+    return Buffer.from(await bodyStream.transformToByteArray());
   } catch (error) {
     autoArchiveLogger.error(
       { err: error, storageKey },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma, CrmActivityType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
     const year = searchParams.get("year");
     const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 200);
 
-    const where: Record<string, unknown> = {
+    const where: Prisma.CrmActivityWhereInput = {
       tenantId: check.tenantId,
       deletedAt: null,
     };
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     if (fundId) where.fundId = fundId;
     if (leaseId) where.leaseId = leaseId;
     if (parkId) where.parkId = parkId;
-    if (type) where.type = type;
+    if (type) where.type = type as CrmActivityType;
     if (status) where.status = status;
     if (year) {
       where.createdAt = {

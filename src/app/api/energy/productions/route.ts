@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
-import { ProductionDataSource, ProductionStatus } from "@prisma/client";
+import { ProductionDataSource, ProductionStatus, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
@@ -49,9 +49,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50", 10);
 
     // Where-Clause mit Multi-Tenancy Filter
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const where: any = {
+    const where: Prisma.TurbineProductionWhereInput = {
       tenantId: check.tenantId!,
     };
 

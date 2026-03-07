@@ -6,6 +6,7 @@
  */
 
 import { Worker, Job } from "bullmq";
+import type { SupportedTemplateName } from "@/lib/email/renderer";
 import { getRedisConnection } from "../connection";
 import { emailLogger } from "@/lib/logger";
 
@@ -138,8 +139,7 @@ async function sendEmail(data: EmailJobData): Promise<EmailJobResult> {
 
     if (knownTemplates.includes(data.type)) {
       const rendered = await renderEmail(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data.type as any,
+        data.type as SupportedTemplateName,
         data.templateData as unknown as Parameters<typeof renderEmail>[1],
         data.tenantId
       );

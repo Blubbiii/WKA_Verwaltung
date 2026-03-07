@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/buchhaltung/bank/transactions — List bank transactions
@@ -15,8 +16,8 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "100") || 100, 1), 500);
     const offset = Math.max(parseInt(searchParams.get("offset") || "0") || 0, 0);
 
-    const where: Record<string, unknown> = { tenantId: check.tenantId! };
-    if (status) where.matchStatus = status;
+    const where: Prisma.BankTransactionWhereInput = { tenantId: check.tenantId! };
+    if (status) where.matchStatus = status as Prisma.EnumBankTxStatusFilter<"BankTransaction">;
     if (batchId) where.importBatchId = batchId;
 
     const [transactions, total] = await Promise.all([

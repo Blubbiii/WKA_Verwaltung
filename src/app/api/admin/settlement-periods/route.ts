@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
+import { Prisma, SettlementPeriodStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 
@@ -28,10 +29,7 @@ export async function GET(request: NextRequest) {
     const periodType = searchParams.get("periodType");
     const status = searchParams.get("status");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-
-    const where: any = {
+    const where: Prisma.LeaseSettlementPeriodWhereInput = {
       tenantId: check.tenantId!,
     };
 
@@ -39,7 +37,7 @@ export async function GET(request: NextRequest) {
     if (year) where.year = parseInt(year, 10);
     if (month) where.month = parseInt(month, 10);
     if (periodType) where.periodType = periodType;
-    if (status) where.status = status;
+    if (status) where.status = status as SettlementPeriodStatus;
 
     const periods = await prisma.leaseSettlementPeriod.findMany({
       where,

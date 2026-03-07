@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 const leaseCreateSchema = z.object({
@@ -44,9 +45,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50", 10);
 
     // Build where clause - now using tenantId directly on lease
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const where: any = {
+    const where: Prisma.LeaseWhereInput = {
       tenantId: check.tenantId,
       ...(status && { status: status as "DRAFT" | "ACTIVE" | "EXPIRING" | "EXPIRED" | "TERMINATED" }),
       ...(plotId && {

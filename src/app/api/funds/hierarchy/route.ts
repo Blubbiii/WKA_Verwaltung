@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
@@ -136,9 +137,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50", 10);
 
     // Where-Clause aufbauen mit Multi-Tenancy Filter
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const where: any = {
+    const where: Prisma.FundHierarchyWhereInput = {
       parentFund: {
         tenantId: check.tenantId!,
       },

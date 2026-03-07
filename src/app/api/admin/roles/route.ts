@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 const roleCreateSchema = z.object({
@@ -21,9 +22,7 @@ export async function GET(request: NextRequest) {
     const includeSystem = searchParams.get("includeSystem") === "true";
 
     // Build where clause
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const where: any = {};
+    const where: Prisma.RoleWhereInput = {};
 
     // Non-superadmins can only see tenant-specific roles + system roles (excluding Superadmin role)
     const superadminCheck = await requireSuperadmin();

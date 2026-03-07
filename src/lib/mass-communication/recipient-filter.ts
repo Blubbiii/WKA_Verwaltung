@@ -2,6 +2,7 @@
 // Used by both the preview and send endpoints
 
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 export interface RecipientInfo {
   id: string;
@@ -16,18 +17,11 @@ export async function getFilteredRecipients(
   fundIds?: string[],
   parkIds?: string[]
 ): Promise<RecipientInfo[]> {
-  // Base where clause: shareholders in the tenant with a person that has an email
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const baseWhere: any = {
-    fund: {
-      tenantId,
-    },
-    person: {
-      email: {
-        not: null,
-      },
-    },
-  };
+  // Build fund filter
+  let fundFilter: Prisma.FundWhereInput = { tenantId };
+  let fundIdFilter: Prisma.ShareholderWhereInput["fundId"] = undefined;
+  let statusFilter: Prisma.ShareholderWhereInput["status"] = undefined;
+  let exitDateFilter: Prisma.ShareholderWhereInput["exitDate"] = undefined;
 
   switch (recipientFilter) {
     case "ALL":
@@ -35,14 +29,14 @@ export async function getFilteredRecipients(
 
     case "BY_FUND":
       if (fundIds && fundIds.length > 0) {
-        baseWhere.fundId = { in: fundIds };
+        fundIdFilter = { in: fundIds };
       }
       break;
 
     case "BY_PARK":
       if (parkIds && parkIds.length > 0) {
-        baseWhere.fund = {
-          ...baseWhere.fund,
+        fundFilter = {
+          ...fundFilter,
           fundParks: {
             some: {
               parkId: { in: parkIds },
@@ -53,14 +47,27 @@ export async function getFilteredRecipients(
       break;
 
     case "BY_ROLE":
-      baseWhere.status = "ACTIVE";
+      statusFilter = "ACTIVE";
       break;
 
     case "ACTIVE_ONLY":
-      baseWhere.status = "ACTIVE";
-      baseWhere.exitDate = null;
+      statusFilter = "ACTIVE";
+      exitDateFilter = null;
       break;
   }
+
+  // Base where clause: shareholders in the tenant with a person that has an email
+  const baseWhere: Prisma.ShareholderWhereInput = {
+    fund: fundFilter,
+    person: {
+      email: {
+        not: null,
+      },
+    },
+    ...(fundIdFilter !== undefined && { fundId: fundIdFilter }),
+    ...(statusFilter !== undefined && { status: statusFilter }),
+    ...(exitDateFilter !== undefined && { exitDate: exitDateFilter }),
+  };
 
   const shareholders = await prisma.shareholder.findMany({
     where: baseWhere,

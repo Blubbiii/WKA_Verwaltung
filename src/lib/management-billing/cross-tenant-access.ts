@@ -2,6 +2,7 @@
 // Secure access to settlement data from client tenants, validated through ParkStakeholder entries.
 
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import type { ClientSettlementData, FundDetails, ParkDetails } from "./types";
 
 /**
@@ -33,8 +34,7 @@ export async function getClientSettlementData(
   }
 
   // 2. Build the settlement query for the CLIENT tenant (cross-tenant access)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {
+  const where: Prisma.EnergySettlementWhereInput = {
     tenantId: stakeholder.parkTenantId,
     year,
   };

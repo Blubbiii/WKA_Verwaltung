@@ -636,7 +636,7 @@ export async function POST(
     const turbineNames = turbines.map((t) => t.designation);
 
     // Build response
-    const result: Record<string, any> = {
+    const result: Record<string, unknown> = {
       meta: {
         generatedAt: new Date().toISOString(),
         configName: config.portalLabel || config.name,

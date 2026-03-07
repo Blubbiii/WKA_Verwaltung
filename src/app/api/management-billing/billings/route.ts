@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
+import { Prisma, ManagementBillingStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
@@ -37,12 +38,11 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const stakeholderId = searchParams.get("stakeholderId");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: Prisma.ManagementBillingWhereInput = {};
 
     if (year) where.year = parseInt(year, 10);
     if (month) where.month = parseInt(month, 10);
-    if (status) where.status = status;
+    if (status) where.status = status as ManagementBillingStatus;
     if (stakeholderId) where.stakeholderId = stakeholderId;
 
     // Always filter to own tenant's stakeholders (tenant context required)

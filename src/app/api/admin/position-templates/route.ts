@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 const createSchema = z.object({
@@ -24,10 +25,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const category = searchParams.get("category") || "";
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-
-    const where: any = {
+    const where: Prisma.InvoiceItemTemplateWhereInput = {
       tenantId: check.tenantId!,
       isActive: true,
     };

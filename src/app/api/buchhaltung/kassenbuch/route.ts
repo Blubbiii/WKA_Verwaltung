@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -22,11 +23,12 @@ export async function GET(request: NextRequest) {
     const from = searchParams.get("from");
     const to = searchParams.get("to");
 
-    const where: Record<string, unknown> = { tenantId: check.tenantId! };
+    const where: Prisma.CashBookEntryWhereInput = { tenantId: check.tenantId! };
     if (from || to) {
-      where.entryDate = {};
-      if (from) (where.entryDate as Record<string, unknown>).gte = new Date(from);
-      if (to) (where.entryDate as Record<string, unknown>).lte = new Date(to);
+      const entryDateFilter: Prisma.DateTimeFilter = {};
+      if (from) entryDateFilter.gte = new Date(from);
+      if (to) entryDateFilter.lte = new Date(to);
+      where.entryDate = entryDateFilter;
     }
 
     const entries = await prisma.cashBookEntry.findMany({

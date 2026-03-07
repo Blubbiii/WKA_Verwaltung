@@ -23,17 +23,17 @@ const SLOW_REQUEST_THRESHOLD = parseInt(process.env.SLOW_REQUEST_THRESHOLD || "2
  * Accepts handlers that return NextResponse or NextResponse | undefined
  * (common when using requireAuth/requirePermission patterns).
  */
-export function withMonitoring<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  T extends (request: NextRequest, context?: any) => Promise<NextResponse | undefined>
->(handler: T) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return async (request: NextRequest, context?: any): Promise<NextResponse | undefined> => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyRouteHandler = (...args: any[]) => Promise<NextResponse | undefined>;
+
+export function withMonitoring<T extends AnyRouteHandler>(handler: T): T {
+  const wrapped = async (...args: Parameters<T>): Promise<NextResponse | undefined> => {
+    const request = args[0] as NextRequest;
     const start = performance.now();
     let response: NextResponse | undefined;
 
     try {
-      response = await handler(request, context);
+      response = await handler(...args);
     } catch (error) {
       const duration = Math.round(performance.now() - start);
       recordMetric({
@@ -82,6 +82,7 @@ export function withMonitoring<
 
     return response;
   };
+  return wrapped as T;
 }
 
 function recordMetric(metric: RequestMetrics) {

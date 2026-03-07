@@ -12,6 +12,7 @@ import {
   type DatevAccountMapping,
 } from "@/lib/export";
 import { withMonitoring } from "@/lib/monitoring";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { getTenantSettings } from "@/lib/tenant-settings";
 
@@ -211,12 +212,11 @@ async function previewHandler(request: NextRequest) {
 
 // Helper: fetch invoices
 async function getInvoices(tenantId: string, from: Date, to: Date, status?: string, fundId?: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = {
+  const where: Prisma.InvoiceWhereInput = {
     tenantId,
     deletedAt: null,
     invoiceDate: { gte: from, lte: to },
-    status: status ? status : { in: ["SENT", "PAID"] },
+    status: status ? (status as Prisma.EnumInvoiceStatusFilter<"Invoice">) : { in: ["SENT", "PAID"] },
   };
   if (fundId) where.fundId = fundId;
 

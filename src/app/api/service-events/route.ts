@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 
@@ -45,10 +46,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "50", 10);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-
-    const where: any = {
+    const where: Prisma.ServiceEventWhereInput = {
       turbine: {
         park: {
           tenantId: check.tenantId,

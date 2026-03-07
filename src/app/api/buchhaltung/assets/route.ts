@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { runDepreciation } from "@/lib/accounting/depreciation";
 import { z } from "zod";
@@ -36,8 +37,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
-    const where: Record<string, unknown> = { tenantId: check.tenantId! };
-    if (status) where.status = status;
+    const where: Prisma.FixedAssetWhereInput = { tenantId: check.tenantId! };
+    if (status) where.status = status as Prisma.EnumAssetStatusFilter<"FixedAsset">;
 
     const assets = await prisma.fixedAsset.findMany({
       where,

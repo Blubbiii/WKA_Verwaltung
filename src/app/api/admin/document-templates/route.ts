@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { DEFAULT_DOCUMENT_LAYOUT } from "@/types/pdf";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 const createTemplateSchema = z.object({
@@ -25,15 +26,12 @@ export async function GET(request: NextRequest) {
     const documentType = searchParams.get("documentType");
     const parkId = searchParams.get("parkId");
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-
-    const where: any = {
+    const where: Prisma.DocumentTemplateWhereInput = {
       tenantId: check.tenantId!,
       isActive: true,
     };
 
-    if (documentType) where.documentType = documentType;
+    if (documentType) where.documentType = documentType as Prisma.EnumDocumentTypeFilter<"DocumentTemplate">;
     if (parkId) where.parkId = parkId;
 
     const templates = await prisma.documentTemplate.findMany({

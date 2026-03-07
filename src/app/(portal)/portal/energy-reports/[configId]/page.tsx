@@ -40,6 +40,23 @@ import {
   WindRoseChart,
   DailyChart,
 } from "@/components/energy/charts-dynamic";
+import type {
+  TurbinePerformanceKpi,
+  FleetPerformanceSummary,
+  HeatmapData,
+  HeatmapCell,
+  YearOverYearData,
+  AvailabilityBreakdown,
+  AvailabilityTrendPoint,
+  ParetoItem,
+  FaultParetoItem,
+  WarningTrendPoint,
+  PowerCurvePoint,
+  WindDistributionBin,
+  SeasonalPatternPoint,
+  DirectionEfficiency,
+  MonthlyRevenuePoint,
+} from "@/types/analytics";
 
 // =============================================================================
 // Types
@@ -113,7 +130,33 @@ interface WindRoseMeta {
   dominantDirection: string;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+interface PerformanceKpisData {
+  turbines: TurbinePerformanceKpi[];
+  fleet: FleetPerformanceSummary;
+}
+
+interface EnvironmentalData {
+  seasonalPatterns: SeasonalPatternPoint[];
+  directionEfficiency: DirectionEfficiency[];
+}
+
+interface FinancialOverviewData {
+  monthly: MonthlyRevenuePoint[];
+  summary: { totalRevenueEur: number; totalProductionKwh: number; avgRevenuePerKwh: number | null };
+}
+
+interface LostRevenueData {
+  totalLostKwh: number;
+  estimatedLostEur: number;
+  avgRevenuePerKwh: number | null;
+}
+
+interface PowerCurveOverlayEntry {
+  turbineId: string;
+  designation: string;
+  curve: PowerCurvePoint[];
+}
+
 interface ReportData {
   kpiSummary?: KpiSummary;
   production?: ProductionDataPoint[];
@@ -129,21 +172,21 @@ interface ReportData {
   };
   dailyProfile?: ProductionDataPoint[];
   // Analytics modules
-  performanceKpis?: any;
-  productionHeatmap?: any;
-  turbineRanking?: any;
-  yearOverYear?: any;
-  availabilityBreakdown?: any;
-  availabilityTrend?: any;
-  availabilityHeatmap?: any;
-  downtimePareto?: any;
-  faultPareto?: any;
-  warningTrend?: any;
-  powerCurveOverlay?: any;
-  windDistribution?: any;
-  environmentalData?: any;
-  financialOverview?: any;
-  revenueComparison?: any;
+  performanceKpis?: PerformanceKpisData;
+  productionHeatmap?: HeatmapData[];
+  turbineRanking?: TurbinePerformanceKpi[];
+  yearOverYear?: YearOverYearData[];
+  availabilityBreakdown?: AvailabilityBreakdown[];
+  availabilityTrend?: AvailabilityTrendPoint[];
+  availabilityHeatmap?: HeatmapData[];
+  downtimePareto?: ParetoItem[];
+  faultPareto?: FaultParetoItem[];
+  warningTrend?: WarningTrendPoint[];
+  powerCurveOverlay?: PowerCurveOverlayEntry[];
+  windDistribution?: WindDistributionBin[];
+  environmentalData?: EnvironmentalData;
+  financialOverview?: FinancialOverviewData;
+  revenueComparison?: LostRevenueData;
 }
 
 const MODULE_LABELS: Record<string, string> = {
@@ -640,7 +683,7 @@ export default function EnergyReportDetailPage() {
                 <CardDescription>Monatliche technische Verfügbarkeit</CardDescription>
               </CardHeader>
               <CardContent>
-                <AnalyticsTrendTable data={reportData.availabilityTrend} valueKey="avgAvailability" unit="%" />
+                <AnalyticsTrendTable data={reportData.availabilityTrend} unit="%" />
               </CardContent>
             </Card>
           )}
@@ -897,7 +940,7 @@ function TurbineComparisonTable({ data }: { data: TurbineRow[] }) {
 
 const MONTH_LABELS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
-function AnalyticsFleetKpis({ data }: { data: any }) {
+function AnalyticsFleetKpis({ data }: { data: PerformanceKpisData }) {
   const fleet = data?.fleet;
   if (!fleet) return <EmptyModuleState text="Keine Flottendaten" />;
 
@@ -921,7 +964,7 @@ function AnalyticsFleetKpis({ data }: { data: any }) {
   );
 }
 
-function AnalyticsTurbineRanking({ data }: { data: any[] }) {
+function AnalyticsTurbineRanking({ data }: { data: TurbinePerformanceKpi[] }) {
   if (!data || data.length === 0) return <EmptyModuleState text="Keine Ranking-Daten" />;
 
   return (
@@ -937,9 +980,9 @@ function AnalyticsTurbineRanking({ data }: { data: any[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data
-            .sort((a: any, b: any) => (b.capacityFactor || 0) - (a.capacityFactor || 0))
-            .map((t: any, i: number) => (
+          {[...data]
+            .sort((a, b) => (b.capacityFactor || 0) - (a.capacityFactor || 0))
+            .map((t, i) => (
               <TableRow key={t.turbineId || i}>
                 <TableCell>{i + 1}</TableCell>
                 <TableCell className="font-medium">{t.designation}</TableCell>
@@ -954,7 +997,7 @@ function AnalyticsTurbineRanking({ data }: { data: any[] }) {
   );
 }
 
-function AnalyticsHeatmapTable({ data, unit }: { data: any[]; unit: string }) {
+function AnalyticsHeatmapTable({ data, unit }: { data: HeatmapData[]; unit: string }) {
   if (!data || data.length === 0) return <EmptyModuleState text="Keine Heatmap-Daten" />;
 
   return (
@@ -969,8 +1012,8 @@ function AnalyticsHeatmapTable({ data, unit }: { data: any[]; unit: string }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row: any) => {
-            const cellMap = new Map((row.months || []).map((c: any) => [c.month, c.value]));
+          {data.map((row: HeatmapData) => {
+            const cellMap = new Map((row.months || []).map((c: HeatmapCell) => [c.month, c.value]));
             return (
               <TableRow key={row.turbineId}>
                 <TableCell className="font-medium text-xs">{row.designation}</TableCell>
@@ -988,7 +1031,7 @@ function AnalyticsHeatmapTable({ data, unit }: { data: any[]; unit: string }) {
   );
 }
 
-function AnalyticsYoyTable({ data }: { data: any[] }) {
+function AnalyticsYoyTable({ data }: { data: YearOverYearData[] }) {
   if (!data || data.length === 0) return <EmptyModuleState text="Keine Jahresvergleichsdaten" />;
 
   return (
@@ -1003,7 +1046,7 @@ function AnalyticsYoyTable({ data }: { data: any[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row: any) => {
+          {data.map((row: YearOverYearData) => {
             const diff = (row.currentYear || 0) - (row.previousYear || 0);
             const diffPct = row.previousYear > 0 ? (diff / row.previousYear * 100) : 0;
             return (
@@ -1023,10 +1066,11 @@ function AnalyticsYoyTable({ data }: { data: any[] }) {
   );
 }
 
-function AnalyticsAvailTable({ data }: { data: any[] }) {
+function AnalyticsAvailTable({ data }: { data: AvailabilityBreakdown[] }) {
   if (!data || data.length === 0) return <EmptyModuleState text="Keine Verfügbarkeitsdaten" />;
 
   const tLabels: Record<string, string> = { t1: "Prod.", t2: "Still.", t3: "Umw.", t4: "Wart.", t5: "Stoer.", t6: "Sonst." };
+  const tKeys = ["t1", "t2", "t3", "t4", "t5", "t6"] as const;
 
   return (
     <div className="overflow-x-auto">
@@ -1041,10 +1085,10 @@ function AnalyticsAvailTable({ data }: { data: any[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row: any) => (
+          {data.map((row: AvailabilityBreakdown) => (
             <TableRow key={row.turbineId}>
               <TableCell className="font-medium text-xs">{row.designation}</TableCell>
-              {["t1", "t2", "t3", "t4", "t5", "t6"].map((k) => (
+              {tKeys.map((k) => (
                 <TableCell key={k} className="text-right text-xs">
                   {formatNumber((row[k] || 0) / 3600, 0)}h
                 </TableCell>
@@ -1060,7 +1104,7 @@ function AnalyticsAvailTable({ data }: { data: any[] }) {
   );
 }
 
-function AnalyticsTrendTable({ data, valueKey, unit }: { data: any[]; valueKey: string; unit: string }) {
+function AnalyticsTrendTable({ data, unit }: { data: AvailabilityTrendPoint[]; unit: string }) {
   if (!data || data.length === 0) return <EmptyModuleState text="Keine Trenddaten" />;
 
   return (
@@ -1073,10 +1117,10 @@ function AnalyticsTrendTable({ data, valueKey, unit }: { data: any[]; valueKey: 
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row: any) => (
+          {data.map((row: AvailabilityTrendPoint) => (
             <TableRow key={row.month}>
               <TableCell className="font-medium">{row.label}</TableCell>
-              <TableCell className="text-right">{formatNumber(row[valueKey] || 0, 2)} {unit}</TableCell>
+              <TableCell className="text-right">{formatNumber(row.avgAvailability || 0, 2)} {unit}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -1085,7 +1129,15 @@ function AnalyticsTrendTable({ data, valueKey, unit }: { data: any[]; valueKey: 
   );
 }
 
-function AnalyticsParetoTable({ data, durationKey }: { data: any[]; durationKey: string }) {
+type ParetoTableRow = (ParetoItem | FaultParetoItem) & { label: string; percentage: number; cumulative: number };
+
+function getParetoSeconds(row: ParetoItem | FaultParetoItem, durationKey: "totalSeconds" | "totalDurationSeconds"): number {
+  if (durationKey === "totalSeconds" && "totalSeconds" in row) return row.totalSeconds;
+  if (durationKey === "totalDurationSeconds" && "totalDurationSeconds" in row) return row.totalDurationSeconds;
+  return 0;
+}
+
+function AnalyticsParetoTable({ data, durationKey }: { data: ParetoTableRow[]; durationKey: "totalSeconds" | "totalDurationSeconds" }) {
   if (!data || data.length === 0) return <EmptyModuleState text="Keine Pareto-Daten" />;
 
   return (
@@ -1100,10 +1152,10 @@ function AnalyticsParetoTable({ data, durationKey }: { data: any[]; durationKey:
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row: any, i: number) => (
+          {data.map((row, i: number) => (
             <TableRow key={i}>
-              <TableCell className="font-medium">{row.label || row.category}</TableCell>
-              <TableCell className="text-right">{formatNumber((row[durationKey] || 0) / 3600, 1)}</TableCell>
+              <TableCell className="font-medium">{row.label || ("category" in row ? row.category : "")}</TableCell>
+              <TableCell className="text-right">{formatNumber(getParetoSeconds(row, durationKey) / 3600, 1)}</TableCell>
               <TableCell className="text-right">{formatNumber(row.percentage || 0, 1)}</TableCell>
               <TableCell className="text-right">{formatNumber(row.cumulative || 0, 1)}</TableCell>
             </TableRow>
@@ -1114,7 +1166,7 @@ function AnalyticsParetoTable({ data, durationKey }: { data: any[]; durationKey:
   );
 }
 
-function AnalyticsWarningTable({ data }: { data: any[] }) {
+function AnalyticsWarningTable({ data }: { data: WarningTrendPoint[] }) {
   if (!data || data.length === 0) return <EmptyModuleState text="Keine Warnungsdaten" />;
 
   return (
@@ -1128,7 +1180,7 @@ function AnalyticsWarningTable({ data }: { data: any[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row: any) => (
+          {data.map((row: WarningTrendPoint) => (
             <TableRow key={row.month}>
               <TableCell className="font-medium">{row.label}</TableCell>
               <TableCell className="text-right">{formatInteger(row.totalFrequency || 0)}</TableCell>
@@ -1141,7 +1193,7 @@ function AnalyticsWarningTable({ data }: { data: any[] }) {
   );
 }
 
-function AnalyticsWindDistTable({ data }: { data: any[] }) {
+function AnalyticsWindDistTable({ data }: { data: WindDistributionBin[] }) {
   if (!data || data.length === 0) return <EmptyModuleState text="Keine Windverteilungsdaten" />;
 
   return (
@@ -1155,7 +1207,7 @@ function AnalyticsWindDistTable({ data }: { data: any[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row: any) => (
+          {data.map((row: WindDistributionBin) => (
             <TableRow key={row.windSpeedBin}>
               <TableCell className="font-medium">{row.windSpeedBin} - {row.windSpeedBin + 1}</TableCell>
               <TableCell className="text-right">{formatInteger(row.count || 0)}</TableCell>
@@ -1168,7 +1220,7 @@ function AnalyticsWindDistTable({ data }: { data: any[] }) {
   );
 }
 
-function AnalyticsEnvironmentTable({ data }: { data: any }) {
+function AnalyticsEnvironmentTable({ data }: { data: EnvironmentalData }) {
   const seasonal = data?.seasonalPatterns;
   if (!seasonal || seasonal.length === 0) return <EmptyModuleState text="Keine Umweltdaten" />;
 
@@ -1185,7 +1237,7 @@ function AnalyticsEnvironmentTable({ data }: { data: any }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {seasonal.map((row: any) => (
+          {seasonal.map((row: SeasonalPatternPoint) => (
             <TableRow key={row.month}>
               <TableCell className="font-medium">{row.label}</TableCell>
               <TableCell className="text-right">{formatNumber(row.avgWindSpeed || 0, 1)}</TableCell>
@@ -1200,7 +1252,7 @@ function AnalyticsEnvironmentTable({ data }: { data: any }) {
   );
 }
 
-function AnalyticsFinancialTable({ data }: { data: any }) {
+function AnalyticsFinancialTable({ data }: { data: FinancialOverviewData }) {
   const monthly = data?.monthly;
   const summary = data?.summary;
 
@@ -1234,7 +1286,7 @@ function AnalyticsFinancialTable({ data }: { data: any }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {monthly.map((row: any) => (
+              {monthly.map((row: MonthlyRevenuePoint) => (
                 <TableRow key={row.month}>
                   <TableCell className="font-medium">{row.label}</TableCell>
                   <TableCell className="text-right">{formatNumber(row.revenueEur || 0, 2)}</TableCell>
@@ -1250,7 +1302,7 @@ function AnalyticsFinancialTable({ data }: { data: any }) {
   );
 }
 
-function AnalyticsLostRevenue({ data }: { data: any }) {
+function AnalyticsLostRevenue({ data }: { data: LostRevenueData }) {
   if (!data) return <EmptyModuleState text="Keine Erlösverlustdaten" />;
 
   return (

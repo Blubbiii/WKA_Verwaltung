@@ -148,8 +148,7 @@ export default function EditContractPage() {
         if (parksRes.ok) {
           const data = await parksRes.json();
           setParks(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data.data.map((p: any) => ({
+            data.data.map((p: { id: string; name: string; shortName?: string | null }) => ({
               id: p.id,
               name: p.shortName || p.name,
             }))
@@ -157,13 +156,11 @@ export default function EditContractPage() {
         }
         if (fundsRes.ok) {
           const data = await fundsRes.json();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setFunds(data.data.map((f: any) => ({ id: f.id, name: f.name })));
+          setFunds(data.data.map((f: { id: string; name: string }) => ({ id: f.id, name: f.name })));
         }
         if (personsRes.ok) {
           const data = await personsRes.json();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setPartners(data.data.map((p: any) => ({ id: p.id, name: p.name })));
+          setPartners(data.data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })));
         }
       } catch {
       } finally {

@@ -217,8 +217,7 @@ export default function RolesPage() {
       const res = await fetch(`/api/admin/roles/${role.id}`);
       if (res.ok) {
         const fullRole = await res.json();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const permNames = fullRole.permissions?.map((p: any) => p.permission.name) || [];
+        const permNames = fullRole.permissions?.map((p: { permission: { name: string } }) => p.permission.name) || [];
         setSelectedPermissions(permNames);
         form.reset({
           name: role.name,

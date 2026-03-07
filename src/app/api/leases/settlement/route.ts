@@ -34,8 +34,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
 
     // Build where clause with multi-tenancy filter
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: Prisma.LeaseRevenueSettlementWhereInput = {};
     if (check.tenantId) {
       where.tenantId = check.tenantId;
     }
@@ -52,7 +51,7 @@ export async function GET(request: NextRequest) {
         status as LeaseRevenueSettlementStatus
       )
     ) {
-      where.status = status;
+      where.status = status as LeaseRevenueSettlementStatus;
     }
     if (
       periodType &&

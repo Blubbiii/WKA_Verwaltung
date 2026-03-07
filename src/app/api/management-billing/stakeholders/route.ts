@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
+import { Prisma, ParkStakeholderRole } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
@@ -45,8 +46,7 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get("isActive");
 
     // Build where clause
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {};
+    const where: Prisma.ParkStakeholderWhereInput = {};
 
     // SUPERADMIN sees all, others only their tenant's stakeholder entries
     if (check.tenantId) {
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     if (parkTenantId) where.parkTenantId = parkTenantId;
     if (parkId) where.parkId = parkId;
-    if (role) where.role = role;
+    if (role) where.role = role as ParkStakeholderRole;
     if (isActive !== null && isActive !== undefined) {
       where.isActive = isActive === "true";
     }

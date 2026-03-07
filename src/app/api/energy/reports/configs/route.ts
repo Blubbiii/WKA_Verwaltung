@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
@@ -71,9 +72,7 @@ export async function GET(request: NextRequest) {
     const portalOnly = searchParams.get("portalOnly") === "true";
 
     // Build where clause
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const where: any = { tenantId };
+    const where: Prisma.EnergyReportConfigWhereInput = { tenantId };
     if (portalOnly) {
       where.portalVisible = true;
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
 
@@ -25,12 +26,12 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const activeOnly = searchParams.get("active") !== "false";
 
-    const where: Record<string, unknown> = {
+    const where: Prisma.LedgerAccountWhereInput = {
       tenantId: check.tenantId,
     };
 
     if (activeOnly) where.isActive = true;
-    if (category) where.category = category;
+    if (category) where.category = category as Prisma.EnumAccountCategoryFilter<"LedgerAccount">;
     if (search) {
       where.OR = [
         { accountNumber: { contains: search } },

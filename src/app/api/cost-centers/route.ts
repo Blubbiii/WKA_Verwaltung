@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
@@ -27,9 +28,9 @@ async function getHandler(request: NextRequest) {
     const activeOnly = searchParams.get("activeOnly") !== "false";
     const parkId = searchParams.get("parkId");
 
-    const where: Record<string, unknown> = { tenantId: check.tenantId };
+    const where: Prisma.CostCenterWhereInput = { tenantId: check.tenantId };
     if (activeOnly) where.isActive = true;
-    if (type) where.type = type;
+    if (type) where.type = type as Prisma.EnumCostCenterTypeFilter<"CostCenter">;
     if (parkId) where.parkId = parkId;
 
     const costCenters = await prisma.costCenter.findMany({

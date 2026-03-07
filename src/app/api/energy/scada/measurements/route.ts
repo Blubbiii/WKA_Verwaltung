@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
@@ -48,9 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Where-Clause aufbauen
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const where: any = {
+    const where: Prisma.ScadaMeasurementWhereInput = {
       tenantId: check.tenantId!,
       turbineId,
     };

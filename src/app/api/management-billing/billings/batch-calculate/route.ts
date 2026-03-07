@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
+import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
@@ -41,8 +42,7 @@ export async function POST(request: NextRequest) {
       month !== undefined && month !== null ? parseInt(month, 10) : null;
 
     // Find all active stakeholders with billing enabled
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.ParkStakeholderWhereInput = {
       isActive: true,
       billingEnabled: true,
     };
