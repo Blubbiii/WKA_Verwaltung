@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useDebounce } from "@/hooks/useDebounce";
+import { formatDateTime } from "@/lib/format";
 import {
   Newspaper,
   Search,
@@ -150,16 +151,8 @@ export default function NewsPage() {
     loadNews();
   }, [debouncedSearch, publishedFilter, fundFilter, categoryFilter, pagination.page, pagination.limit]);
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  // formatDate with datetime → use central formatDateTime from @/lib/format
+  const formatDate = formatDateTime;
 
   const getAuthorName = (author: NewsItem["createdBy"]) => {
     if (!author) return "System";

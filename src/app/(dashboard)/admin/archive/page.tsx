@@ -59,6 +59,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { useDebounce } from "@/hooks/useDebounce";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -314,7 +315,7 @@ function ArchiveContent() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Download fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : "Download fehlgeschlagen");
     } finally {
       setDownloadingId(null);
     }
@@ -340,7 +341,7 @@ function ArchiveContent() {
       // Refresh stats after verification
       fetchStats();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Prüfung fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : "Prüfung fehlgeschlagen");
     } finally {
       setVerifying(false);
     }
@@ -376,12 +377,11 @@ function ArchiveContent() {
       document.body.removeChild(a);
 
       setShowExportDialog(false);
-      alert(
-        `Export erfolgreich: ${data.documentCount} Dokumente indexiert.\n` +
-        `Die Index-CSV wurde heruntergeladen. Einzelne Dokumente können über die Tabelle heruntergeladen werden.`
+      toast.success(
+        `Export erfolgreich: ${data.documentCount} Dokumente indexiert. Die Index-CSV wurde heruntergeladen.`
       );
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Export fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : "Export fehlgeschlagen");
     } finally {
       setExporting(false);
     }

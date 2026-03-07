@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import {
   ArrowLeft,
   Plus,
@@ -741,8 +741,7 @@ function NewInvoiceContent() {
                     <p className="text-green-700">
                       Zahlbar bis: {
                         formData.invoiceDate
-                          ? new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })
-                              .format(calculateSkontoDeadline(new Date(formData.invoiceDate), skontoDays))
+                          ? formatDate(calculateSkontoDeadline(new Date(formData.invoiceDate), skontoDays))
                           : "-"
                       }
                     </p>

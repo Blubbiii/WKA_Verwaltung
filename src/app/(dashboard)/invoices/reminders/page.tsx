@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { formatDate } from "@/lib/format";
 import {
   Bell,
   CheckCircle2,
@@ -59,9 +60,7 @@ function formatAmount(value: string | number): string {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(n);
 }
 
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString("de-DE");
-}
+// formatDate → uses central formatDate from @/lib/format
 
 function reminderLevelLabel(level: number | null): string {
   if (!level) return "—";

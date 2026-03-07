@@ -240,7 +240,7 @@ export async function reindexAll(tenantId: string): Promise<{ indexed: number; e
   // Invoices
   try {
     const invs = await prisma.invoice.findMany({
-      where: { tenantId },
+      where: { tenantId, deletedAt: null },
       select: {
         id: true, invoiceNumber: true, recipientName: true, status: true,
         invoiceType: true, grossAmount: true, invoiceDate: true,

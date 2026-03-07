@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -219,7 +220,7 @@ export default function SuSaPage() {
               </div>
 
               <div className="mt-4 flex gap-4 text-sm text-muted-foreground">
-                <span>Zeitraum: {new Date(data.periodStart).toLocaleDateString("de-DE")} - {new Date(data.periodEnd).toLocaleDateString("de-DE")}</span>
+                <span>Zeitraum: {formatDate(data.periodStart)} - {formatDate(data.periodEnd)}</span>
                 <span>{data.rows.length} Konten</span>
               </div>
             </>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { formatDate } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -199,7 +200,7 @@ export default function KommunikationPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(m.sentAt ?? m.createdAt).toLocaleDateString("de-DE")}
+                      {formatDate(m.sentAt ?? m.createdAt)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">

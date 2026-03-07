@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -167,7 +168,7 @@ export default function AnlagenPage() {
                         <TableCell className="font-mono">{a.assetNumber}</TableCell>
                         <TableCell>{a.name}</TableCell>
                         <TableCell>{a.category}</TableCell>
-                        <TableCell>{new Date(a.acquisitionDate).toLocaleDateString("de-DE")}</TableCell>
+                        <TableCell>{formatDate(a.acquisitionDate)}</TableCell>
                         <TableCell className="text-right font-mono">{fmt(a.acquisitionCost)}</TableCell>
                         <TableCell className="text-right font-mono">{fmt(bookValue)}</TableCell>
                         <TableCell>{a.usefulLifeMonths}</TableCell>

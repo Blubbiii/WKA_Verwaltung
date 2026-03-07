@@ -94,27 +94,26 @@ export async function GET() {
       take: 10,
     });
 
-    // Enrich recent billings with park names
-    const enrichedRecent = await Promise.all(
-      recentBillings.map(async (b) => {
-        const park = await prisma.park.findFirst({
-          where: { id: b.stakeholder.parkId, tenantId: b.stakeholder.parkTenantId },
-          select: { name: true },
-        });
-        return {
-          id: b.id,
-          year: b.year,
-          month: b.month,
-          status: b.status,
-          feeAmountNetEur: Number(b.feeAmountNetEur),
-          feeAmountGrossEur: Number(b.feeAmountGrossEur),
-          parkName: park?.name || "Unbekannt",
-          providerName: b.stakeholder.stakeholderTenant.name,
-          role: b.stakeholder.role,
-          createdAt: b.createdAt,
-        };
-      })
-    );
+    // Batch-load park names to avoid N+1 queries
+    const parkIds = [...new Set(recentBillings.map((b) => b.stakeholder.parkId).filter(Boolean))];
+    const parks = await prisma.park.findMany({
+      where: { id: { in: parkIds } },
+      select: { id: true, name: true },
+    });
+    const parkMap = new Map(parks.map((p) => [p.id, p.name]));
+
+    const enrichedRecent = recentBillings.map((b) => ({
+      id: b.id,
+      year: b.year,
+      month: b.month,
+      status: b.status,
+      feeAmountNetEur: Number(b.feeAmountNetEur),
+      feeAmountGrossEur: Number(b.feeAmountGrossEur),
+      parkName: parkMap.get(b.stakeholder.parkId) || "Unbekannt",
+      providerName: b.stakeholder.stakeholderTenant.name,
+      role: b.stakeholder.role,
+      createdAt: b.createdAt,
+    }));
 
     return NextResponse.json({
       overview: {

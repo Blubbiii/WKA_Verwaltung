@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -149,7 +150,7 @@ export default function MahnwesenPage() {
                             <TableCell className="font-mono">{c.invoiceNumber}</TableCell>
                             <TableCell>{c.recipientName}</TableCell>
                             <TableCell className="text-right font-mono">{fmt(c.grossAmount)} EUR</TableCell>
-                            <TableCell>{new Date(c.dueDate).toLocaleDateString("de-DE")}</TableCell>
+                            <TableCell>{formatDate(c.dueDate)}</TableCell>
                             <TableCell className="text-right font-semibold text-red-600 dark:text-red-400">{c.overdueDays}</TableCell>
                             <TableCell><Badge variant="outline">{LEVEL_LABELS[c.suggestedLevel] || `Stufe ${c.suggestedLevel}`}</Badge></TableCell>
                             <TableCell className="text-right font-mono">{fmt(c.feeAmount)} EUR</TableCell>
@@ -190,7 +191,7 @@ export default function MahnwesenPage() {
                     <TableBody>
                       {runs.map((run) => (
                         <TableRow key={run.id}>
-                          <TableCell>{new Date(run.runDate).toLocaleDateString("de-DE")}</TableCell>
+                          <TableCell>{formatDate(run.runDate)}</TableCell>
                           <TableCell><Badge variant={run.status === "EXECUTED" ? "default" : "secondary"}>{run.status}</Badge></TableCell>
                           <TableCell className="text-right">{run._count.items}</TableCell>
                           <TableCell>{run.createdBy.firstName} {run.createdBy.lastName}</TableCell>

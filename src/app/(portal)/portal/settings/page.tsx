@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatDateTime } from "@/lib/format";
 import {
   Bell,
   Globe,
@@ -95,15 +96,8 @@ export default function SettingsPage() {
   // Mock last login date
   const lastLogin = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000); // 2 days ago
 
-  function formatDate(date: Date): string {
-    return new Intl.DateTimeFormat("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-  }
+  // formatDate with datetime → use central formatDateTime from @/lib/format
+  const formatDate = formatDateTime;
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatDate } from "@/lib/format";
 import {
   Dialog,
   DialogContent,
@@ -607,7 +608,7 @@ export function ResourceAccessDialog({
                           {entry.expiresAt ? (
                             <div className="flex items-center gap-1 text-muted-foreground">
                               <Clock className="h-3 w-3" />
-                              {new Date(entry.expiresAt).toLocaleDateString("de-DE")}
+                              {formatDate(entry.expiresAt)}
                             </div>
                           ) : (
                             <span className="text-muted-foreground">-</span>

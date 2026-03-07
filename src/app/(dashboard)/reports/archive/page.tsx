@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { formatDateTime } from "@/lib/format";
 import {
   Archive,
   Download,
@@ -118,15 +119,8 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+// formatDate with datetime → use central formatDateTime from @/lib/format
+const formatDate = formatDateTime;
 
 function getUserDisplayName(user: ArchivedReport["generatedBy"]): string {
   if (user.firstName || user.lastName) {

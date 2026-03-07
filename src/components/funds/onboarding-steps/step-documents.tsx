@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Upload, X, FileText, FileImage, File } from "lucide-react";
 import type { DocumentsData, DocumentFile } from "../onboarding-types";
+import { toast } from "sonner";
 
 interface StepDocumentsProps {
   data: DocumentsData;
@@ -62,13 +63,13 @@ export function StepDocuments({ data, onChange }: StepDocumentsProps) {
 
     // Validate type
     if (!ALLOWED_TYPES.includes(file.type)) {
-      alert("Dateityp nicht erlaubt. Erlaubt: PDF, JPG, PNG, WebP, DOC, DOCX");
+      toast.error("Dateityp nicht erlaubt. Erlaubt: PDF, JPG, PNG, WebP, DOC, DOCX");
       return;
     }
 
     // Validate size
     if (file.size > MAX_SIZE_BYTES) {
-      alert(`Datei zu gross. Maximal ${MAX_SIZE_MB} MB erlaubt.`);
+      toast.error(`Datei zu gross. Maximal ${MAX_SIZE_MB} MB erlaubt.`);
       return;
     }
 

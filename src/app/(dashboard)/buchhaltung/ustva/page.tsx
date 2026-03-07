@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -131,7 +132,7 @@ export default function UstvaPage() {
                 </Table>
               </div>
               <div className="mt-4 text-sm text-muted-foreground">
-                Zeitraum: {new Date(data.periodStart).toLocaleDateString("de-DE")} - {new Date(data.periodEnd).toLocaleDateString("de-DE")}
+                Zeitraum: {formatDate(data.periodStart)} - {formatDate(data.periodEnd)}
               </div>
             </>
           )}

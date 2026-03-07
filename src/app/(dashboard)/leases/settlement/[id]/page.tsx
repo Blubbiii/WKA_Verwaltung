@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -119,28 +120,8 @@ function formatPercent(value: number | string | null | undefined): string {
 }
 
 // =============================================================================
-// HELPER: Format date
+// HELPER: Format date — uses central formatDate/formatDateTime from @/lib/format
 // =============================================================================
-
-function formatDate(value: string | null | undefined): string {
-  if (!value) return "-";
-  return new Date(value).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(value: string | null | undefined): string {
-  if (!value) return "-";
-  return new Date(value).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 // =============================================================================
 // HELPER: Lessor display name

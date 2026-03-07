@@ -10,6 +10,7 @@
 import { jobLogger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { notifyAdmins } from "@/lib/notifications";
+import { formatDate } from "@/lib/format";
 import type {
   ReminderCategory,
   ReminderItem,
@@ -490,7 +491,7 @@ async function findExpiringContracts(
       else if (daysUntilExpiry <= 14) urgency = "warning";
 
       const expiryStr = contract.endDate
-        ? contract.endDate.toLocaleDateString("de-DE")
+        ? formatDate(contract.endDate)
         : "n/a";
 
       return {
@@ -668,7 +669,7 @@ async function sendReminderEmail(
             recipient.firstName || "Administrator",
           invoiceNumber: item.title,
           grossAmount: item.amount ?? 0,
-          dueDate: item.referenceDate.toLocaleDateString("de-DE"),
+          dueDate: formatDate(item.referenceDate),
           reminderDescription: item.description,
           category: item.category,
           urgency: item.urgency,

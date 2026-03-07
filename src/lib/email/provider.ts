@@ -206,6 +206,9 @@ export class SendGridProvider implements EmailProvider {
         })),
       };
 
+      const controller = new AbortController();
+      const timeoutMs = parseInt(process.env.SENDGRID_TIMEOUT_MS || "30000");
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
         method: 'POST',
         headers: {
@@ -213,7 +216,9 @@ export class SendGridProvider implements EmailProvider {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -243,12 +248,16 @@ export class SendGridProvider implements EmailProvider {
     try {
       // SendGrid doesn't have a verify endpoint, so we check the API key format
       // and make a simple API call
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       const response = await fetch('https://api.sendgrid.com/v3/scopes', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
         },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       return response.ok;
     } catch {

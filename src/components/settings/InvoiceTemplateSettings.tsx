@@ -4,6 +4,7 @@
 // Integrates with the admin settings page as a tab
 
 import { useState } from "react";
+import { formatDate } from "@/lib/format";
 import {
   Card,
   CardContent,
@@ -230,11 +231,7 @@ export function InvoiceTemplateSettings() {
                   const layout = template.layout as TemplateLayout | null;
                   const blockCount = layout?.blocks?.length || 0;
                   const visibleCount = layout?.blocks?.filter((b) => b.visible).length || 0;
-                  const updatedAt = new Date(template.updatedAt).toLocaleDateString("de-DE", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  });
+                  const updatedAt = formatDate(template.updatedAt);
 
                   return (
                     <TableRow key={template.id}>

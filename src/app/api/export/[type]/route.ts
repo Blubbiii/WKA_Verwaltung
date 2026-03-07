@@ -147,6 +147,7 @@ async function fetchData(
           ...(status && { status: status as 'DRAFT' | 'SENT' | 'PAID' | 'CANCELLED' }),
           ...(startDate && { invoiceDate: { gte: startDate } }),
           ...(endDate && { invoiceDate: { lte: endDate } }),
+          deletedAt: null,
         },
         include: {
           fund: { select: { id: true, name: true } },

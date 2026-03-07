@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -104,9 +105,7 @@ const EMPTY_FORM: TaxRateFormData = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatDate(dateString: string): string {
-  return new Intl.DateTimeFormat("de-DE").format(new Date(dateString));
-}
+// formatDate → uses central formatDate from @/lib/format
 
 function getRateStatus(
   rate: TaxRate

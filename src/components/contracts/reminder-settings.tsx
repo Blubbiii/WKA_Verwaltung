@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatDate } from "@/lib/format";
 import { Bell, Save, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -130,11 +131,7 @@ export function ReminderSettings({
     const end = new Date(endDate);
     const reminder = new Date(end);
     reminder.setDate(reminder.getDate() - daysBeforeEnd);
-    return reminder.toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    return formatDate(reminder);
   }
 
   // Pruefe ob Erinnerungsdatum bereits vergangen ist

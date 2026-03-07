@@ -8,6 +8,8 @@
 // Standard placeholder definitions
 // =============================================================================
 
+import { formatDate } from "@/lib/format";
+
 export interface PlaceholderDefinition {
   key: string;
   label: string;
@@ -88,11 +90,7 @@ export function resolveShareholderPlaceholders(
     : "–";
 
   // Current date formatted
-  const datum = new Date().toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  const datum = formatDate(new Date());
 
   return {
     anrede,

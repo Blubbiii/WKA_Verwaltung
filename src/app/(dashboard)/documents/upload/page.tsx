@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { formatDate } from "@/lib/format";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -553,7 +554,7 @@ function DocumentUploadForm() {
                           <SelectItem value="_none">Kein Service-Event</SelectItem>
                           {serviceEvents.map((event) => (
                             <SelectItem key={event.id} value={event.id}>
-                              {eventTypeLabels[event.eventType] || event.eventType} - {event.turbineDesignation} ({new Date(event.eventDate).toLocaleDateString("de-DE")})
+                              {eventTypeLabels[event.eventType] || event.eventType} - {event.turbineDesignation} ({formatDate(event.eventDate)})
                             </SelectItem>
                           ))}
                         </SelectContent>

@@ -6,6 +6,7 @@ import {
   Receipt,
   Info,
 } from "lucide-react";
+import { formatDate } from "@/lib/format";
 
 // =============================================================================
 // Notification type constants shared between NotificationBell and /notifications
@@ -77,9 +78,5 @@ export function formatRelativeTime(dateStr: string): string {
   if (diffDay === 1) return "gestern";
   if (diffDay < 7) return `vor ${diffDay} Tagen`;
 
-  return new Date(dateStr).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  return formatDate(dateStr);
 }

@@ -58,37 +58,58 @@ export async function POST(request: NextRequest) {
       "@/lib/management-billing/calculator"
     );
 
-    const results: Array<{
+    type BatchResult = {
       stakeholderId: string;
       billingId: string | null;
       success: boolean;
       error?: string;
       feeAmountNet?: number;
-    }> = [];
+    };
 
-    for (const stakeholder of stakeholders) {
+    // Simple concurrency limiter to avoid overwhelming the database
+    async function parallelLimit<T>(tasks: (() => Promise<T>)[], limit: number): Promise<PromiseSettledResult<T>[]> {
+      const results: PromiseSettledResult<T>[] = [];
+      const executing: Promise<void>[] = [];
+      for (const task of tasks) {
+        const p = task().then(
+          (value) => { results.push({ status: "fulfilled", value }); },
+          (reason) => { results.push({ status: "rejected", reason }); }
+        ).then(() => { executing.splice(executing.indexOf(p), 1); });
+        executing.push(p);
+        if (executing.length >= limit) await Promise.race(executing);
+      }
+      await Promise.all(executing);
+      return results;
+    }
+
+    const tasks = stakeholders.map((stakeholder) => async (): Promise<BatchResult> => {
       try {
         const { id, result } = await calculateAndSaveBilling({
           stakeholderId: stakeholder.id,
           year: parsedYear,
           month: parsedMonth,
         });
-        results.push({
+        return {
           stakeholderId: stakeholder.id,
           billingId: id,
           success: true,
           feeAmountNet: result.feeAmountNet,
-        });
+        };
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unbekannter Fehler";
-        results.push({
+        return {
           stakeholderId: stakeholder.id,
           billingId: null,
           success: false,
           error: msg,
-        });
+        };
       }
-    }
+    });
+
+    const settled = await parallelLimit(tasks, 5);
+    const results = settled
+      .filter((r): r is PromiseSettledResult<BatchResult> & { status: "fulfilled" } => r.status === "fulfilled")
+      .map((r) => r.value);
 
     const successCount = results.filter((r) => r.success).length;
     const failCount = results.filter((r) => !r.success).length;

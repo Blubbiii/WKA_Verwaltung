@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatDate } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -202,7 +203,7 @@ export default function MailingTemplatesPage() {
                   Betreff: {t.subject}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Aktualisiert: {new Date(t.updatedAt).toLocaleDateString("de-DE")}
+                  Aktualisiert: {formatDate(t.updatedAt)}
                 </p>
               </CardContent>
             </Card>

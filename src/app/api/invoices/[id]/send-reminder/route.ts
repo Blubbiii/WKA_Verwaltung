@@ -8,6 +8,7 @@ import { sendEmailSync } from "@/lib/email/sender";
 import { renderEmail, getBaseTemplateProps } from "@/lib/email/renderer";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { formatDate } from "@/lib/format";
 
 // ============================================================================
 // VALIDATION
@@ -154,9 +155,7 @@ export async function POST(
       currency: "EUR",
     }).format(Number(invoice.grossAmount));
 
-    const formattedDueDate = invoice.dueDate
-      ? invoice.dueDate.toLocaleDateString("de-DE")
-      : "—";
+    const formattedDueDate = formatDate(invoice.dueDate);
 
     // Generate PDF with dunning watermark
     const pdfBuffer = await generateInvoicePdf(invoice.id, {

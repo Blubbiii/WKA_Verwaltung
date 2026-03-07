@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { formatDate } from "@/lib/format";
 import {
   ArrowLeft,
   ArrowRight,
@@ -1173,7 +1174,7 @@ export default function NewLeaseSettlementPage() {
                                     : "-"}
                               </TableCell>
                               <TableCell>
-                                {new Date(settlement.createdAt).toLocaleDateString("de-DE")}
+                                {formatDate(settlement.createdAt)}
                               </TableCell>
                             </TableRow>
                           ))}

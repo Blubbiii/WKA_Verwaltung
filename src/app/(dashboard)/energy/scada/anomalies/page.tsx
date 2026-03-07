@@ -54,6 +54,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 // =============================================================================
 // TYPES
@@ -286,11 +287,11 @@ export default function ScadaAnomaliesPage() {
       if (!res.ok) throw new Error("Fehler bei der Erkennung");
 
       const data = await res.json();
-      alert(data.message);
+      toast.success(data.message);
       await fetchAnomalies();
     } catch (err) {
       console.error("Error running detection:", err);
-      alert("Fehler bei der Anomalie-Erkennung");
+      toast.error("Fehler bei der Anomalie-Erkennung");
     } finally {
       setRunningDetection(false);
     }

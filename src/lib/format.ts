@@ -1,4 +1,24 @@
 /**
+ * Format date as dd.MM.yyyy (German standard)
+ */
+export function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return "–";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "–";
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+/**
+ * Format date and time as dd.MM.yyyy HH:mm
+ */
+export function formatDateTime(date: Date | string | null | undefined): string {
+  if (!date) return "–";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return "–";
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+/**
  * Format a number as EUR currency string (German locale)
  * Example: 1234.56 → "1.234,56 €"
  */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatDate } from "@/lib/format";
 import { FolderOpen, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -94,13 +95,7 @@ export function LoadConfigDialog({
     }
   }
 
-  function formatDate(dateString: string): string {
-    return new Intl.DateTimeFormat("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(new Date(dateString));
-  }
+  // formatDate → uses central formatDate from @/lib/format
 
   return (
     <>

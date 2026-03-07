@@ -74,26 +74,29 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Enrich with park name from the park tenant (cross-tenant lookup)
-    const enriched = await Promise.all(
-      stakeholders.map(async (s) => {
-        const park = await prisma.park.findFirst({
-          where: { id: s.parkId, tenantId: s.parkTenantId },
-          select: { name: true },
-        });
-        const parkTenant = await prisma.tenant.findUnique({
-          where: { id: s.parkTenantId },
-          select: { name: true },
-        });
-        return {
-          ...s,
-          feePercentage: s.feePercentage ? Number(s.feePercentage) : null,
-          parkName: park?.name || "Unbekannt",
-          parkTenantName: parkTenant?.name || "Unbekannt",
-          billingsCount: s._count.managementBillings,
-        };
-      })
-    );
+    // Batch-load parks and tenants to avoid N+1 queries
+    const parkIds = [...new Set(stakeholders.map((s) => s.parkId).filter(Boolean))];
+    const tenantIds = [...new Set(stakeholders.map((s) => s.parkTenantId).filter(Boolean))];
+    const [parks, parkTenants] = await Promise.all([
+      prisma.park.findMany({
+        where: { id: { in: parkIds } },
+        select: { id: true, name: true },
+      }),
+      prisma.tenant.findMany({
+        where: { id: { in: tenantIds } },
+        select: { id: true, name: true },
+      }),
+    ]);
+    const parkMap = new Map(parks.map((p) => [p.id, p.name]));
+    const tenantMap = new Map(parkTenants.map((t) => [t.id, t.name]));
+
+    const enriched = stakeholders.map((s) => ({
+      ...s,
+      feePercentage: s.feePercentage ? Number(s.feePercentage) : null,
+      parkName: parkMap.get(s.parkId) || "Unbekannt",
+      parkTenantName: tenantMap.get(s.parkTenantId) || "Unbekannt",
+      billingsCount: s._count.managementBillings,
+    }));
 
     return NextResponse.json({ stakeholders: enriched });
   } catch (error) {

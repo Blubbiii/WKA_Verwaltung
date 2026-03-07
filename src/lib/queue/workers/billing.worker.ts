@@ -20,6 +20,7 @@ import { Worker, Job } from "bullmq";
 import { getRedisConnection } from "../connection";
 import { billingLogger } from "@/lib/logger";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { formatDate } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -637,7 +638,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
     });
     return {
       success: false,
-      error: `Rechnung ist noch nicht fällig (Fälligkeit: ${invoice.dueDate.toLocaleDateString("de-DE")})`,
+      error: `Rechnung ist noch nicht fällig (Fälligkeit: ${formatDate(invoice.dueDate)})`,
       processedCount: 0,
       processedAt: new Date(),
     };
@@ -716,7 +717,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
           invoiceNumber: invoice.invoiceNumber,
           recipientName: invoice.recipientName || "Empfänger",
           grossAmount: Number(invoice.grossAmount),
-          dueDate: invoice.dueDate?.toLocaleDateString("de-DE") || "n/a",
+          dueDate: invoice.dueDate ? formatDate(invoice.dueDate) : "n/a",
           daysOverdue,
           reminderLevel: data.reminderLevel,
           reminderLabel,

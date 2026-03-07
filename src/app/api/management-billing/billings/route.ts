@@ -73,29 +73,25 @@ export async function GET(request: NextRequest) {
       orderBy: [{ year: "desc" }, { month: "desc" }],
     });
 
-    // Enrich with park names
-    const enriched = await Promise.all(
-      billings.map(async (b) => {
-        const park = await prisma.park.findFirst({
-          where: {
-            id: b.stakeholder.parkId,
-            tenantId: b.stakeholder.parkTenantId,
-          },
-          select: { name: true },
-        });
-        return {
-          ...b,
-          baseRevenueEur: Number(b.baseRevenueEur),
-          feePercentageUsed: Number(b.feePercentageUsed),
-          feeAmountNetEur: Number(b.feeAmountNetEur),
-          taxRate: Number(b.taxRate),
-          taxAmountEur: Number(b.taxAmountEur),
-          feeAmountGrossEur: Number(b.feeAmountGrossEur),
-          parkName: park?.name || "Unbekannt",
-          providerName: b.stakeholder.stakeholderTenant.name,
-        };
-      })
-    );
+    // Batch-load park names to avoid N+1 queries
+    const parkIds = [...new Set(billings.map((b) => b.stakeholder.parkId).filter(Boolean))];
+    const parks = await prisma.park.findMany({
+      where: { id: { in: parkIds } },
+      select: { id: true, name: true },
+    });
+    const parkMap = new Map(parks.map((p) => [p.id, p.name]));
+
+    const enriched = billings.map((b) => ({
+      ...b,
+      baseRevenueEur: Number(b.baseRevenueEur),
+      feePercentageUsed: Number(b.feePercentageUsed),
+      feeAmountNetEur: Number(b.feeAmountNetEur),
+      taxRate: Number(b.taxRate),
+      taxAmountEur: Number(b.taxAmountEur),
+      feeAmountGrossEur: Number(b.feeAmountGrossEur),
+      parkName: parkMap.get(b.stakeholder.parkId) || "Unbekannt",
+      providerName: b.stakeholder.stakeholderTenant.name,
+    }));
 
     return NextResponse.json({ billings: enriched });
   } catch (error) {

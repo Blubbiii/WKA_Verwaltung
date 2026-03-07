@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { formatDate } from "@/lib/format";
 import {
   BookOpen,
   CheckCircle2,
@@ -78,9 +79,7 @@ interface JournalEntry {
 // HELPERS
 // ============================================================================
 
-function formatDate(d: string): string {
-  return new Date(d).toLocaleDateString("de-DE");
-}
+// formatDate → uses central formatDate from @/lib/format
 
 function formatCurrency(n: string | number | null | undefined): string {
   if (n === null || n === undefined) return "";

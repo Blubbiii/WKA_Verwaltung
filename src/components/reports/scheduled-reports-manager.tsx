@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatDateTime } from "@/lib/format";
 import {
   Clock,
   Plus,
@@ -324,16 +325,8 @@ export function ScheduledReportsManager() {
   // HELPERS
   // ===========================================
 
-  function formatDate(dateStr: string | null): string {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
+  // formatDate with datetime → use central formatDateTime from @/lib/format
+  const formatDate = formatDateTime;
 
   function getParkName(parkId?: string): string {
     if (!parkId) return "Alle";

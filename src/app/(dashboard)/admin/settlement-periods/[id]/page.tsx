@@ -3,7 +3,7 @@
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import {
   Card,
   CardContent,
@@ -203,10 +203,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
     }
   }
 
-  function formatDate(date: string | null | undefined) {
-    if (!date) return "-";
-    return new Intl.DateTimeFormat("de-DE").format(new Date(date));
-  }
+  // formatDate → uses central formatDate from @/lib/format
 
   function formatDateTime(date: string | null | undefined) {
     if (!date) return "-";

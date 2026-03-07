@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -107,7 +108,7 @@ export default function SepaPage() {
                     return (
                       <TableRow key={b.id}>
                         <TableCell className="font-mono">{b.batchNumber}</TableCell>
-                        <TableCell>{new Date(b.executionDate).toLocaleDateString("de-DE")}</TableCell>
+                        <TableCell>{formatDate(b.executionDate)}</TableCell>
                         <TableCell><Badge variant={badge.variant}>{badge.label}</Badge></TableCell>
                         <TableCell className="text-right font-mono">{fmt(b.totalAmount)} EUR</TableCell>
                         <TableCell className="text-right">{b.paymentCount}</TableCell>

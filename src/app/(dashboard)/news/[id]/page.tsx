@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatDateTime } from "@/lib/format";
 import {
   ArrowLeft,
   Edit,
@@ -97,16 +98,8 @@ export default function NewsDetailPage({
     loadNews();
   }, [id, router]);
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  // formatDate with datetime → use central formatDateTime from @/lib/format
+  const formatDate = formatDateTime;
 
   const getAuthorName = (author: NewsDetail["createdBy"]) => {
     if (!author) return "System";

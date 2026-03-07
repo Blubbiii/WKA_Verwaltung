@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -164,7 +165,7 @@ export default function BankPage() {
                     const badge = STATUS_BADGES[tx.matchStatus] || STATUS_BADGES.UNMATCHED;
                     return (
                       <TableRow key={tx.id}>
-                        <TableCell className="font-mono text-sm">{new Date(tx.bookingDate).toLocaleDateString("de-DE")}</TableCell>
+                        <TableCell className="font-mono text-sm">{formatDate(tx.bookingDate)}</TableCell>
                         <TableCell className={`text-right font-mono text-sm ${Number(tx.amount) >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                           {fmt(tx.amount)} {tx.currency}
                         </TableCell>

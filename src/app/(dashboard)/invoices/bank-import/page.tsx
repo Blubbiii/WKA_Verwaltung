@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { formatDate } from "@/lib/format";
 import {
   CheckCircle2,
   CircleAlert,
@@ -49,10 +50,7 @@ function formatAmount(amount: number, currency = "EUR"): string {
   }).format(amount);
 }
 
-function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("de-DE");
-}
+// formatDate → uses central formatDate from @/lib/format
 
 // ============================================================================
 // MATCH BADGE

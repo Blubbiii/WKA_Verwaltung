@@ -3,6 +3,7 @@ import { InvoiceTemplate } from "../templates/InvoiceTemplate";
 import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../utils/templateResolver";
 import type { InvoicePdfData, SettlementPdfDetails, LetterheadCompanyInfo } from "@/types/pdf";
 import { prisma } from "@/lib/prisma";
+import { formatDate } from "@/lib/format";
 import type { DocumentType } from "@prisma/client";
 import {
   type WatermarkType,
@@ -37,12 +38,7 @@ function resolvePaymentText(
   let text = template;
   text = text.replace(/\{invoiceNumber\}/g, invoiceNumber);
   if (dueDate) {
-    const formatted = new Intl.DateTimeFormat("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(dueDate);
-    text = text.replace(/\{dueDate\}/g, formatted);
+    text = text.replace(/\{dueDate\}/g, formatDate(dueDate));
   }
   return text;
 }

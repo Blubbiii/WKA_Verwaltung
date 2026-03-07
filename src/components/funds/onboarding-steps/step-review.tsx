@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -95,7 +96,7 @@ export function StepReview({ data, onGoToStep }: StepReviewProps) {
         {personalData.birthDate && (
           <ReviewRow
             label="Geburtsdatum"
-            value={new Date(personalData.birthDate).toLocaleDateString("de-DE")}
+            value={formatDate(personalData.birthDate)}
           />
         )}
         {address && (
@@ -168,7 +169,7 @@ export function StepReview({ data, onGoToStep }: StepReviewProps) {
             participation.entryDate ? (
               <span className="flex items-center gap-1">
                 <Calendar className="h-3 w-3 text-muted-foreground" />
-                {new Date(participation.entryDate).toLocaleDateString("de-DE")}
+                {formatDate(participation.entryDate)}
               </span>
             ) : (
               "-"

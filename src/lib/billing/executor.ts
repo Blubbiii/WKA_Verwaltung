@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { billingLogger } from "@/lib/logger";
+import { formatDate } from "@/lib/format";
 import { BillingRuleType } from "./types";
 import {
   ExecuteRuleOptions,
@@ -75,7 +76,7 @@ export async function executeRule(
     const now = new Date();
     if (rule.nextRunAt > now) {
       throw new Error(
-        `Regel "${rule.name}" ist erst am ${rule.nextRunAt.toLocaleDateString("de-DE")} fällig`
+        `Regel "${rule.name}" ist erst am ${formatDate(rule.nextRunAt)} fällig`
       );
     }
   }

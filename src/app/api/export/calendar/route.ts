@@ -11,6 +11,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { generateIcsCalendar, type IcsEvent } from "@/lib/export/ics";
 import { apiLogger as logger } from "@/lib/logger";
+import { formatDate } from "@/lib/format";
 
 const CONTRACT_TYPE_LABELS: Record<string, string> = {
   LEASE: "Pachtvertrag",
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
         events.push({
           uid: `contract-${contract.id}-end@windparkmanager`,
           summary: `Vertrag "${contract.title}" laeuft aus`,
-          description: `${context}\nVertragsende: ${contract.endDate.toLocaleDateString("de-DE")}`,
+          description: `${context}\nVertragsende: ${formatDate(contract.endDate)}`,
           dtstart: contract.endDate,
           alarmDaysBefore:
             contract.reminderDays.length > 0
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest) {
           events.push({
             uid: `contract-${contract.id}-notice@windparkmanager`,
             summary: `Kuendigungsfrist "${contract.title}"`,
-            description: `${context}\nKuendigungsfrist endet am ${contract.noticeDeadline.toLocaleDateString("de-DE")}`,
+            description: `${context}\nKuendigungsfrist endet am ${formatDate(contract.noticeDeadline)}`,
             dtstart: contract.noticeDeadline,
             alarmDaysBefore: [14, 7],
             categories: ["Kuendigungsfrist", typeLabel],
@@ -152,7 +153,7 @@ export async function GET(request: NextRequest) {
         events.push({
           uid: `lease-${lease.id}-end@windparkmanager`,
           summary: `Pachtvertrag "${lessorName}" laeuft aus`,
-          description: `Verpaecher: ${lessorName}${parkName ? `\nPark: ${parkName}` : ""}\nPachtende: ${lease.endDate.toLocaleDateString("de-DE")}`,
+          description: `Verpaecher: ${lessorName}${parkName ? `\nPark: ${parkName}` : ""}\nPachtende: ${formatDate(lease.endDate)}`,
           dtstart: lease.endDate,
           alarmDaysBefore: [90, 30],
           categories: ["Pachtvertrag"],

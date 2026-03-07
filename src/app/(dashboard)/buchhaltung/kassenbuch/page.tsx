@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -145,7 +146,7 @@ export default function KassenbuchPage() {
                   {entries.map((e) => (
                     <TableRow key={e.id}>
                       <TableCell className="font-mono">{e.entryNumber}</TableCell>
-                      <TableCell>{new Date(e.entryDate).toLocaleDateString("de-DE")}</TableCell>
+                      <TableCell>{formatDate(e.entryDate)}</TableCell>
                       <TableCell>{e.description}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{e.receiptNumber || "-"}</TableCell>
                       <TableCell className="font-mono text-sm">{e.account || "-"}</TableCell>

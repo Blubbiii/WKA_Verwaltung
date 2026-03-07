@@ -8,7 +8,7 @@
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,16 +93,8 @@ const FREQUENCY_LABELS: Record<string, string> = {
   CUSTOM_CRON: "Benutzerdefiniert",
 };
 
-function formatDate(dateString: string | null): string {
-  if (!dateString) return "-";
-  return new Date(dateString).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+// formatDate with datetime → use central formatDateTime from @/lib/format
+const formatDate = formatDateTime;
 
 function ParameterDisplay({ parameters, ruleType }: { parameters: Record<string, unknown>; ruleType: string }) {
   const renderValue = (key: string, value: unknown): string => {

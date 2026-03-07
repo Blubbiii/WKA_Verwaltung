@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     // Verify all invoices belong to the user's tenant
     const invoices = await prisma.invoice.findMany({
-      where: { id: { in: invoiceIds }, tenantId: check.tenantId },
+      where: { id: { in: invoiceIds }, tenantId: check.tenantId, deletedAt: null },
       select: { id: true, status: true },
     });
 

@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { formatDateTime } from "@/lib/format";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -121,16 +122,8 @@ const STATUS_CONFIG = {
   },
 };
 
-function formatDate(dateString: string | null): string {
-  if (!dateString) return "-";
-  return new Date(dateString).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+// formatDate with datetime → use central formatDateTime from @/lib/format
+const formatDate = formatDateTime;
 
 export default function BillingRulesPage() {
   const router = useRouter();

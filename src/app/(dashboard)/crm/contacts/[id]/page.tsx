@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { formatDate } from "@/lib/format";
 import { ArrowLeft, Mail, Phone, MapPin, Building2, User, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
@@ -302,7 +303,7 @@ export default function CrmContactDetailPage({
                 <div className="space-y-2">
                   {contact.leases.map((l) => (
                     <div key={l.id} className="flex items-center justify-between text-sm">
-                      <span>ab {new Date(l.startDate).toLocaleDateString("de-DE")}</span>
+                      <span>ab {formatDate(l.startDate)}</span>
                       <Badge variant={l.status === "ACTIVE" ? "default" : "outline"} className="text-xs">
                         {l.status}
                       </Badge>

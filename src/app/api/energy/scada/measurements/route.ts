@@ -84,9 +84,16 @@ export async function GET(request: NextRequest) {
       where.timestamp = timestampFilter;
     }
 
-    // Daten abfragen mit Limit
+    // Daten abfragen mit Limit - only select needed fields for performance
     const measurements = await prisma.scadaMeasurement.findMany({
       where,
+      select: {
+        timestamp: true,
+        powerW: true,
+        windSpeedMs: true,
+        rotorRpm: true,
+        windDirection: true,
+      },
       orderBy: {
         timestamp: "asc",
       },

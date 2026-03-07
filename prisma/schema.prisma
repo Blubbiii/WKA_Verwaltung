@@ -324,7 +324,7 @@ model Turbine {
   technicianSessions             TechnicianSession[]
   operatorHistory                TurbineOperator[]
   turbineProductions             TurbineProduction[]
-  netzgesellschaftFund           Fund?                     @relation(fields: [netzgesellschaftFundId], references: [id])
+  netzgesellschaftFund           Fund?                     @relation(fields: [netzgesellschaftFundId], references: [id], onDelete: SetNull)
   park                           Park                      @relation(fields: [parkId], references: [id], onDelete: Cascade)
   costCenters                    CostCenter[]
 
@@ -408,7 +408,7 @@ model Fund {
   parentHierarchies  FundHierarchy[]               @relation("ChildHierarchy")
   childHierarchies FundHierarchy[]               @relation("ParentHierarchy")
   fundParks                                             FundPark[]
-  fundCategory                                          FundCategory?                 @relation(fields: [fundCategoryId], references: [id])
+  fundCategory                                          FundCategory?                 @relation(fields: [fundCategoryId], references: [id], onDelete: SetNull)
   tenant                                                Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices                                              Invoice[]
   leaseRevenueSettlementItems                           LeaseRevenueSettlementItem[]
@@ -514,7 +514,7 @@ model Shareholder {
   invoices               Invoice[]
   fund                   Fund                 @relation(fields: [fundId], references: [id], onDelete: Cascade)
   person                 Person               @relation(fields: [personId], references: [id], onDelete: Cascade)
-  user                   User?                @relation(fields: [userId], references: [id])
+  user                   User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   voteProxiesReceived    VoteProxy[]          @relation("ProxyGrantee")
   voteProxiesGiven       VoteProxy[]          @relation("ProxyGrantor")
   voteResponses          VoteResponse[]
@@ -549,7 +549,7 @@ model Plot {
   geometry          Json?
   leasePlots        LeasePlot[]
   plotAreas         PlotArea[]
-  park              Park?         @relation(fields: [parkId], references: [id])
+  park              Park?         @relation(fields: [parkId], references: [id], onDelete: SetNull)
   tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, cadastralDistrict, fieldNumber, plotNumber])
@@ -625,11 +625,11 @@ model Contract {
   turbineId           String?
   fundId              String?
   partnerId           String?
-  fund                Fund?          @relation(fields: [fundId], references: [id])
-  park                Park?          @relation(fields: [parkId], references: [id])
-  partner             Person?        @relation("ContractPartner", fields: [partnerId], references: [id])
+  fund                Fund?          @relation(fields: [fundId], references: [id], onDelete: SetNull)
+  park                Park?          @relation(fields: [parkId], references: [id], onDelete: SetNull)
+  partner             Person?        @relation("ContractPartner", fields: [partnerId], references: [id], onDelete: SetNull)
   tenant              Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  turbine             Turbine?       @relation(fields: [turbineId], references: [id])
+  turbine             Turbine?       @relation(fields: [turbineId], references: [id], onDelete: SetNull)
   documents           Document[]
 
   @@index([tenantId])
@@ -675,17 +675,17 @@ model Document {
   paperlessSyncStatus                 PaperlessSyncStatus?
   paperlessSyncedAt                   DateTime?
   paperlessSyncError                  String?
-  contract                            Contract?              @relation(fields: [contractId], references: [id])
-  fund                                Fund?                  @relation(fields: [fundId], references: [id])
-  parent                              Document?              @relation("DocumentVersions", fields: [parentId], references: [id])
+  contract                            Contract?              @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  fund                                Fund?                  @relation(fields: [fundId], references: [id], onDelete: SetNull)
+  parent                              Document?              @relation("DocumentVersions", fields: [parentId], references: [id], onDelete: SetNull)
   versions                            Document[]             @relation("DocumentVersions")
-  park                                Park?                  @relation(fields: [parkId], references: [id])
-  reviewedBy User?                  @relation("DocumentReviewedBy", fields: [reviewedById], references: [id])
-  serviceEvent                        ServiceEvent?          @relation(fields: [serviceEventId], references: [id])
-  shareholder                         Shareholder?           @relation(fields: [shareholderId], references: [id])
+  park                                Park?                  @relation(fields: [parkId], references: [id], onDelete: SetNull)
+  reviewedBy User?                  @relation("DocumentReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  serviceEvent                        ServiceEvent?          @relation(fields: [serviceEventId], references: [id], onDelete: SetNull)
+  shareholder                         Shareholder?           @relation(fields: [shareholderId], references: [id], onDelete: SetNull)
   tenant                              Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  turbine                             Turbine?               @relation(fields: [turbineId], references: [id])
-  uploadedBy                          User?                  @relation("DocumentCreatedBy", fields: [uploadedById], references: [id])
+  turbine                             Turbine?               @relation(fields: [turbineId], references: [id], onDelete: SetNull)
+  uploadedBy                          User?                  @relation("DocumentCreatedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([category])
@@ -721,7 +721,7 @@ model Vote {
   createdById             String?
   proxies                 VoteProxy[]
   responses               VoteResponse[]
-  createdBy               User?          @relation("VoteCreatedBy", fields: [createdById], references: [id])
+  createdBy               User?          @relation("VoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   fund                    Fund           @relation(fields: [fundId], references: [id], onDelete: Cascade)
   tenant                  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -760,7 +760,7 @@ model VoteProxy {
   voteId      String?
   grantee     Shareholder @relation("ProxyGrantee", fields: [granteeId], references: [id], onDelete: Cascade)
   grantor     Shareholder @relation("ProxyGrantor", fields: [grantorId], references: [id], onDelete: Cascade)
-  vote        Vote?       @relation(fields: [voteId], references: [id])
+  vote        Vote?       @relation(fields: [voteId], references: [id], onDelete: SetNull)
 
   @@index([granteeId])
   @@index([grantorId])
@@ -831,20 +831,20 @@ model Invoice {
   distributionItems                                                                           DistributionItem?
   energySettlementItems                                                                       EnergySettlementItem[]
   items                                                                                       InvoiceItem[]
-  cancelledInvoice                                              Invoice?                        @relation("InvoiceCancellation", fields: [cancelledInvoiceId], references: [id])
+  cancelledInvoice                                              Invoice?                        @relation("InvoiceCancellation", fields: [cancelledInvoiceId], references: [id], onDelete: SetNull)
   cancellationInvoices                                        Invoice[]                       @relation("InvoiceCancellation")
-  correctedInvoice                                                    Invoice?                        @relation("InvoiceCorrection", fields: [correctionOf], references: [id])
+  correctedInvoice                                                    Invoice?                        @relation("InvoiceCorrection", fields: [correctionOf], references: [id], onDelete: SetNull)
   correctionInvoices                                              Invoice[]                       @relation("InvoiceCorrection")
-  createdBy                                                                                   User?                           @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
-  emailedBy                                                           User?                           @relation("InvoiceEmailedBy", fields: [emailedById], references: [id])
-  fund                                                                                        Fund?                           @relation(fields: [fundId], references: [id])
-  lease                                                                                       Lease?                          @relation(fields: [leaseId], references: [id])
-  letterhead                                                                                  Letterhead?                    @relation(fields: [letterheadId], references: [id])
-  park                                                                                       Park?                           @relation(fields: [parkId], references: [id])
-  printedBy                                                           User?                           @relation("InvoicePrintedBy", fields: [printedById], references: [id])
-  settlementPeriod                                                                            LeaseSettlementPeriod?       @relation(fields: [settlementPeriodId], references: [id])
-  shareholder                                                                                 Shareholder?                    @relation(fields: [shareholderId], references: [id])
-  template                                                                                    DocumentTemplate?             @relation(fields: [templateId], references: [id])
+  createdBy                                                                                   User?                           @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  emailedBy                                                           User?                           @relation("InvoiceEmailedBy", fields: [emailedById], references: [id], onDelete: SetNull)
+  fund                                                                                        Fund?                           @relation(fields: [fundId], references: [id], onDelete: SetNull)
+  lease                                                                                       Lease?                          @relation(fields: [leaseId], references: [id], onDelete: SetNull)
+  letterhead                                                                                  Letterhead?                    @relation(fields: [letterheadId], references: [id], onDelete: SetNull)
+  park                                                                                       Park?                           @relation(fields: [parkId], references: [id], onDelete: SetNull)
+  printedBy                                                           User?                           @relation("InvoicePrintedBy", fields: [printedById], references: [id], onDelete: SetNull)
+  settlementPeriod                                                                            LeaseSettlementPeriod?       @relation(fields: [settlementPeriodId], references: [id], onDelete: SetNull)
+  shareholder                                                                                 Shareholder?                    @relation(fields: [shareholderId], references: [id], onDelete: SetNull)
+  template                                                                                    DocumentTemplate?             @relation(fields: [templateId], references: [id], onDelete: SetNull)
   tenant                                                                                      Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   advanceSettlementItem    LeaseRevenueSettlementItem? @relation("AdvanceInvoice")
   settlementSettlementItem LeaseRevenueSettlementItem? @relation("SettlementInvoice")
@@ -855,8 +855,8 @@ model Invoice {
   dunningItems                     DunningItem[]           @relation("DunningItemInvoice")
   sepaPaymentItems                 SepaPaymentItem[]       @relation("SepaPaymentItemInvoice")
 
+  @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
-  @@index([invoiceNumber])
   @@index([invoiceDate])
   @@index([status])
   @@index([correctionOf])
@@ -922,9 +922,9 @@ model Mailing {
   tenantId        String
   tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   templateId      String?
-  template        MailingTemplate?  @relation(fields: [templateId], references: [id])
+  template        MailingTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
   fundId          String?
-  fund            Fund?             @relation(fields: [fundId], references: [id])
+  fund            Fund?             @relation(fields: [fundId], references: [id], onDelete: SetNull)
   title           String
   contentSource   String            @default("TEMPLATE")
   subject         String?
@@ -951,7 +951,7 @@ model MailingRecipient {
   mailingId       String
   mailing         Mailing         @relation(fields: [mailingId], references: [id], onDelete: Cascade)
   shareholderId   String?
-  shareholder     Shareholder?    @relation(fields: [shareholderId], references: [id])
+  shareholder     Shareholder?    @relation(fields: [shareholderId], references: [id], onDelete: SetNull)
   email           String?
   name            String
   deliveryMethod  DeliveryMethod  @default(EMAIL)
@@ -984,8 +984,8 @@ model News {
   tenantId    String
   fundId      String?
   createdById String?
-  createdBy   User?        @relation("NewsCreatedBy", fields: [createdById], references: [id])
-  fund        Fund?        @relation(fields: [fundId], references: [id])
+  createdBy   User?        @relation("NewsCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  fund        Fund?        @relation(fields: [fundId], references: [id], onDelete: SetNull)
   tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
@@ -1028,9 +1028,9 @@ model AuditLog {
   tenantId         String?
   userId           String?
   impersonatedById String?
-  impersonatedBy   User?    @relation("AuditLogImpersonatedBy", fields: [impersonatedById], references: [id])
-  tenant           Tenant?  @relation(fields: [tenantId], references: [id])
-  user             User?    @relation("AuditLogUser", fields: [userId], references: [id])
+  impersonatedBy   User?    @relation("AuditLogImpersonatedBy", fields: [impersonatedById], references: [id], onDelete: SetNull)
+  tenant           Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user             User?    @relation("AuditLogUser", fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([userId])
@@ -1051,8 +1051,8 @@ model ArchiveVerificationLog {
   validDocs    Int
   invalidDocs  Int
   details      Json?
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  verifiedBy        User     @relation(fields: [verifiedById], references: [id])
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  verifiedBy        User     @relation(fields: [verifiedById], references: [id], onDelete: Restrict)
 
   @@index([tenantId, verifiedAt(sort: Desc)])
   @@map("archive_verification_logs")
@@ -1077,10 +1077,10 @@ model ArchivedDocument {
   retentionUntil           DateTime
   lastAccessedAt           DateTime?
   accessCount              Int                  @default(0)
-  archivedBy                    User                 @relation(fields: [archivedById], references: [id])
-  previousArchive          ArchivedDocument?  @relation("ArchiveChain", fields: [previousArchiveId], references: [id])
+  archivedBy                    User                 @relation(fields: [archivedById], references: [id], onDelete: Restrict)
+  previousArchive          ArchivedDocument?  @relation("ArchiveChain", fields: [previousArchiveId], references: [id], onDelete: SetNull)
   subsequentArchives       ArchivedDocument[] @relation("ArchiveChain")
-  tenant                  Tenant               @relation(fields: [tenantId], references: [id])
+  tenant                  Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, referenceId, documentType])
   @@index([tenantId, chainHash])
@@ -1141,7 +1141,7 @@ model DistributionItem {
   shareholderId  String
   invoiceId      String?       @unique
   distribution   Distribution @relation(fields: [distributionId], references: [id], onDelete: Cascade)
-  invoice        Invoice?      @relation(fields: [invoiceId], references: [id])
+  invoice        Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
   shareholder    Shareholder   @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
 
   @@index([distributionId])
@@ -1164,7 +1164,7 @@ model Distribution {
   tenantId           String
   createdById        String?
   items              DistributionItem[]
-  createdBy              User?                @relation(fields: [createdById], references: [id])
+  createdBy              User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
   fund               Fund                 @relation(fields: [fundId], references: [id], onDelete: Cascade)
   tenant            Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -1187,7 +1187,7 @@ model DocumentTemplate {
   updatedAt    DateTime @updatedAt
   tenantId     String
   parkId       String?
-  park        Park?        @relation(fields: [parkId], references: [id])
+  park        Park?        @relation(fields: [parkId], references: [id], onDelete: SetNull)
   tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices     Invoice[]
 
@@ -1250,10 +1250,10 @@ model EnergyReportConfig {
   createdById   String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  createdBy         User     @relation(fields: [createdById], references: [id])
-  park         Park?    @relation(fields: [parkId], references: [id])
+  createdBy         User     @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  park         Park?    @relation(fields: [parkId], references: [id], onDelete: SetNull)
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  turbine      Turbine? @relation(fields: [turbineId], references: [id])
+  turbine      Turbine? @relation(fields: [turbineId], references: [id], onDelete: SetNull)
 
   @@index([portalVisible])
   @@index([tenantId])
@@ -1296,9 +1296,9 @@ model EnergySettlementItem {
   invoiceId            String?
   turbineId            String?
   energySettlement     EnergySettlement @relation(fields: [energySettlementId], references: [id], onDelete: Cascade)
-  invoice              Invoice?           @relation(fields: [invoiceId], references: [id])
-  recipientFund        Fund               @relation(fields: [recipientFundId], references: [id])
-  turbine              Turbine?           @relation(fields: [turbineId], references: [id])
+  invoice              Invoice?           @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  recipientFund        Fund               @relation(fields: [recipientFundId], references: [id], onDelete: Cascade)
+  turbine              Turbine?           @relation(fields: [turbineId], references: [id], onDelete: SetNull)
 
   @@index([energySettlementId])
   @@index([energySettlementId, recipientFundId])
@@ -1390,7 +1390,7 @@ model GeneratedReport {
   generatedAt   DateTime     @default(now())
   tenantId      String
   generatedById String
-  generatedBy         User         @relation(fields: [generatedById], references: [id])
+  generatedBy         User         @relation(fields: [generatedById], references: [id], onDelete: Restrict)
   tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([generatedAt])
@@ -1520,12 +1520,12 @@ model LeaseRevenueSettlementItem {
   directBillingFundId                                                   String?
   advanceInvoiceId                                                      String?                   @unique
   settlementInvoiceId                                                   String?                   @unique
-  advanceInvoice    Invoice?                  @relation("AdvanceInvoice", fields: [advanceInvoiceId], references: [id])
-  directBillingFund                                                     Fund?                     @relation(fields: [directBillingFundId], references: [id])
-  lease                                                                 Lease                     @relation(fields: [leaseId], references: [id])
-  lessorPerson                                                          Person                    @relation(fields: [lessorPersonId], references: [id])
+  advanceInvoice    Invoice?                  @relation("AdvanceInvoice", fields: [advanceInvoiceId], references: [id], onDelete: SetNull)
+  directBillingFund                                                     Fund?                     @relation(fields: [directBillingFundId], references: [id], onDelete: SetNull)
+  lease                                                                 Lease                     @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  lessorPerson                                                          Person                    @relation(fields: [lessorPersonId], references: [id], onDelete: Cascade)
   settlement                                                            LeaseRevenueSettlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
-  settlementInvoice Invoice?                  @relation("SettlementInvoice", fields: [settlementInvoiceId], references: [id])
+  settlementInvoice Invoice?                  @relation("SettlementInvoice", fields: [settlementInvoiceId], references: [id], onDelete: SetNull)
 
   @@index([leaseId])
   @@index([lessorPersonId])
@@ -1566,10 +1566,10 @@ model LeaseRevenueSettlement {
   reviewNotes                                         String?
   notes                                               String?
   items                                               LeaseRevenueSettlementItem[]
-  createdBy  User?                            @relation("LeaseRevenueSettlementCreatedBy", fields: [createdById], references: [id])
-  linkedEnergySettlement                              EnergySettlement?              @relation(fields: [linkedEnergySettlementId], references: [id])
-  park                                               Park                             @relation(fields: [parkId], references: [id])
-  reviewedBy User?                            @relation("LeaseRevenueSettlementReviewedBy", fields: [reviewedById], references: [id])
+  createdBy  User?                            @relation("LeaseRevenueSettlementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  linkedEnergySettlement                              EnergySettlement?              @relation(fields: [linkedEnergySettlementId], references: [id], onDelete: SetNull)
+  park                                               Park                             @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  reviewedBy User?                            @relation("LeaseRevenueSettlementReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
   tenant                                             Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   costAllocations                                     ParkCostAllocation[]
 
@@ -1604,10 +1604,10 @@ model LeaseSettlementPeriod {
   reviewedAt                                         DateTime?
   reviewNotes                                        String?
   invoices                                           Invoice[]
-  createdBy  User?                  @relation("LeaseSettlementPeriodCreatedBy", fields: [createdById], references: [id])
-  linkedEnergySettlement                             EnergySettlement?    @relation(fields: [linkedEnergySettlementId], references: [id])
+  createdBy  User?                  @relation("LeaseSettlementPeriodCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  linkedEnergySettlement                             EnergySettlement?    @relation(fields: [linkedEnergySettlementId], references: [id], onDelete: SetNull)
   park                                              Park                   @relation(fields: [parkId], references: [id], onDelete: Cascade)
-  reviewedBy User?                  @relation("LeaseSettlementPeriodReviewedBy", fields: [reviewedById], references: [id])
+  reviewedBy User?                  @relation("LeaseSettlementPeriodReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
   tenant                                            Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, parkId, year, month, periodType])
@@ -1652,8 +1652,8 @@ model Letterhead {
   backgroundPdfName String?
   fundId            String?
   invoices          Invoice[]
-  fund             Fund?     @relation(fields: [fundId], references: [id])
-  park             Park?     @relation(fields: [parkId], references: [id])
+  fund             Fund?     @relation(fields: [fundId], references: [id], onDelete: SetNull)
+  park             Park?     @relation(fields: [parkId], references: [id], onDelete: SetNull)
   tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, fundId, parkId, isDefault])
@@ -1700,7 +1700,7 @@ model MassCommunication {
   updatedAt       DateTime @updatedAt
   tenantId        String
   createdById     String
-  createdBy           User      @relation(fields: [createdById], references: [id])
+  createdBy           User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
@@ -1744,7 +1744,7 @@ model NetworkNode {
   toConnections   NetworkConnection[] @relation("NetworkConnectionTo")
   park                                                             Park                  @relation(fields: [parkId], references: [id], onDelete: Cascade)
   tenant                                                           Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  turbine                                                          Turbine?              @relation(fields: [turbineId], references: [id])
+  turbine                                                          Turbine?              @relation(fields: [turbineId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, parkId])
   @@map("network_nodes")
@@ -1765,9 +1765,9 @@ model ParkCostAllocationItem {
   vatInvoiceId                                                  String?               @unique
   exemptInvoiceId                                               String?               @unique
   allocation                                                     ParkCostAllocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
-  exemptInvoice                                                  Invoice?              @relation("ExemptInvoice", fields: [exemptInvoiceId], references: [id])
-  operatorFund                                                   Fund                  @relation(fields: [operatorFundId], references: [id])
-  vatInvoice                                                     Invoice?              @relation("VatInvoice", fields: [vatInvoiceId], references: [id])
+  exemptInvoice                                                  Invoice?              @relation("ExemptInvoice", fields: [exemptInvoiceId], references: [id], onDelete: SetNull)
+  operatorFund                                                   Fund                  @relation(fields: [operatorFundId], references: [id], onDelete: Cascade)
+  vatInvoice                                                     Invoice?              @relation("VatInvoice", fields: [vatInvoiceId], references: [id], onDelete: SetNull)
 
   @@index([allocationId])
   @@index([operatorFundId])
@@ -1787,7 +1787,7 @@ model ParkCostAllocation {
   createdAt                  DateTime                     @default(now())
   updatedAt                  DateTime @updatedAt
   items                      ParkCostAllocationItem[]
-  leaseRevenueSettlement     LeaseRevenueSettlement    @relation(fields: [leaseRevenueSettlementId], references: [id])
+  leaseRevenueSettlement     LeaseRevenueSettlement    @relation(fields: [leaseRevenueSettlementId], references: [id], onDelete: Cascade)
   tenant                    Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([leaseRevenueSettlementId])
@@ -1831,7 +1831,7 @@ model ParkStakeholder {
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime @updatedAt
   managementBillings      ManagementBilling[]
-  stakeholderTenant      Tenant                    @relation(fields: [stakeholderTenantId], references: [id])
+  stakeholderTenant      Tenant                    @relation(fields: [stakeholderTenantId], references: [id], onDelete: Cascade)
   stakeholderFeeHistory   StakeholderFeeHistory[]
 
   @@unique([stakeholderTenantId, parkId, role])
@@ -1915,7 +1915,7 @@ model RecurringInvoice {
   createdById      String
   fundId           String?
   parkId           String?
-  createdBy            User      @relation(fields: [createdById], references: [id])
+  createdBy            User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
   tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([nextRunAt])
@@ -2014,7 +2014,7 @@ model ScadaAnomaly {
   notes            String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime @updatedAt
-  acknowledgedBy            User?     @relation(fields: [acknowledgedById], references: [id])
+  acknowledgedBy            User?     @relation(fields: [acknowledgedById], references: [id], onDelete: SetNull)
   tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   turbine         Turbine   @relation(fields: [turbineId], references: [id], onDelete: Cascade)
 
@@ -2135,6 +2135,7 @@ model ScadaMeasurement {
   @@unique([turbineId, timestamp, sourceFile])
   @@index([tenantId])
   @@index([tenantId, turbineId])
+  @@index([tenantId, turbineId, timestamp(sort: Desc)])
   @@index([turbineId, timestamp])
   @@index([tenantId, timestamp(sort: Desc)])
   @@map("scada_measurements")
@@ -2336,7 +2337,7 @@ model ScheduledReport {
   updatedAt   DateTime @updatedAt
   tenantId    String
   createdById String
-  createdBy       User                    @relation(fields: [createdById], references: [id])
+  createdBy       User                    @relation(fields: [createdById], references: [id], onDelete: Restrict)
   tenant     Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([enabled, nextRunAt])
@@ -2389,7 +2390,7 @@ model TurbineOperator {
   updatedAt           DateTime @updatedAt
   turbineId           String
   operatorFundId      String
-  operatorFund        Fund      @relation(fields: [operatorFundId], references: [id])
+  operatorFund        Fund      @relation(fields: [operatorFundId], references: [id], onDelete: Cascade)
   turbine             Turbine   @relation(fields: [turbineId], references: [id], onDelete: Cascade)
 
   @@index([operatorFundId])
@@ -2811,7 +2812,7 @@ enum PostingSource {
 model JournalEntry {
   id            String             @id @default(uuid())
   tenantId      String
-  tenant        Tenant             @relation(fields: [tenantId], references: [id])
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   entryDate     DateTime
   description   String             @db.VarChar(200)
   reference     String?            @db.VarChar(100)
@@ -2820,7 +2821,7 @@ model JournalEntry {
   referenceType String?            @db.VarChar(50)
   referenceId   String?
   createdById   String
-  createdBy     User               @relation("JournalEntryCreatedBy", fields: [createdById], references: [id])
+  createdBy     User               @relation("JournalEntryCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   deletedAt     DateTime?
@@ -2865,7 +2866,7 @@ enum CrmActivityType {
 model CrmActivity {
   id          String          @id @default(uuid())
   tenantId    String
-  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   type        CrmActivityType
   title       String          @db.VarChar(200)
   description String?         @db.Text
@@ -2885,9 +2886,9 @@ model CrmActivity {
   park        Park?           @relation(fields: [parkId], references: [id], onDelete: Cascade)
 
   assignedToId String?
-  assignedTo   User?          @relation("CrmActivityAssignee", fields: [assignedToId], references: [id])
+  assignedTo   User?          @relation("CrmActivityAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdById  String
-  createdBy    User           @relation("CrmActivityCreator", fields: [createdById], references: [id])
+  createdBy    User           @relation("CrmActivityCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
@@ -2948,7 +2949,7 @@ model Vendor {
   updatedAt   DateTime @updatedAt
   deletedAt   DateTime?
 
-  person      Person?           @relation(fields: [personId], references: [id])
+  person      Person?           @relation(fields: [personId], references: [id], onDelete: SetNull)
   tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices    IncomingInvoice[]
 
@@ -2993,10 +2994,10 @@ model IncomingInvoice {
   updatedAt          DateTime              @updatedAt
   deletedAt          DateTime?
 
-  vendor              Vendor?               @relation(fields: [vendorId], references: [id])
-  recipientFund       Fund?                 @relation(fields: [recipientFundId], references: [id])
+  vendor              Vendor?               @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  recipientFund       Fund?                 @relation(fields: [recipientFundId], references: [id], onDelete: SetNull)
   tenant              Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdBy           User                  @relation("IncomingInvoiceCreator", fields: [createdById], references: [id])
+  createdBy           User                  @relation("IncomingInvoiceCreator", fields: [createdById], references: [id], onDelete: Restrict)
   splits              IncomingInvoiceSplit[]
   lines               IncomingInvoiceLine[]
 
@@ -3037,8 +3038,8 @@ model IncomingInvoiceSplit {
   outgoingInvoiceId String?         @unique
 
   invoice           IncomingInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  fund              Fund            @relation(fields: [fundId], references: [id])
-  outgoingInvoice   Invoice?        @relation(fields: [outgoingInvoiceId], references: [id])
+  fund              Fund            @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  outgoingInvoice   Invoice?        @relation(fields: [outgoingInvoiceId], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
   @@index([fundId])
@@ -3072,7 +3073,7 @@ model MapAnnotation {
 
   tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   park        Park                @relation(fields: [parkId], references: [id], onDelete: Cascade)
-  createdBy   User                @relation(fields: [createdById], references: [id])
+  createdBy   User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   @@index([tenantId, parkId])
   @@map("map_annotations")
@@ -3160,14 +3161,14 @@ model CostCenter {
   isActive    Boolean        @default(true)
 
   parkId    String?
-  park      Park?    @relation(fields: [parkId], references: [id])
+  park      Park?    @relation(fields: [parkId], references: [id], onDelete: SetNull)
   turbineId String?
-  turbine   Turbine? @relation(fields: [turbineId], references: [id])
+  turbine   Turbine? @relation(fields: [turbineId], references: [id], onDelete: SetNull)
   fundId    String?
-  fund      Fund?    @relation(fields: [fundId], references: [id])
+  fund      Fund?    @relation(fields: [fundId], references: [id], onDelete: SetNull)
 
   parentId String?
-  parent   CostCenter?  @relation("CostCenterHierarchy", fields: [parentId], references: [id])
+  parent   CostCenter?  @relation("CostCenterHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children CostCenter[] @relation("CostCenterHierarchy")
 
   budgetLines BudgetLine[]
@@ -3223,7 +3224,7 @@ model BudgetLine {
   dec Decimal @default(0) @db.Decimal(14, 2)
 
   budget     AnnualBudget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  costCenter CostCenter   @relation(fields: [costCenterId], references: [id])
+  costCenter CostCenter   @relation(fields: [costCenterId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

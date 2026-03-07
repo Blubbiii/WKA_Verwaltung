@@ -13,6 +13,7 @@ import type {
 import type { SettlementPdfDetails, CalculationSummary, RevenueTableEntry, TurbineProductionEntry } from "@/types/pdf";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { formatDate } from "@/lib/format";
 
 const revenueSourceSchema = z.object({
   category: z.string(),
@@ -921,9 +922,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
     // 2. Verrechnung: Mirror each advance item as negative
     const leaseAdvances = advanceByLease.get(leaseCalc.leaseId) || [];
     for (const advInvoice of leaseAdvances) {
-      const advDate = new Intl.DateTimeFormat("de-DE", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-      }).format(advInvoice.invoiceDate);
+      const advDate = formatDate(advInvoice.invoiceDate);
 
       for (const advItem of advInvoice.items) {
         const advNet = Number(advItem.netAmount);

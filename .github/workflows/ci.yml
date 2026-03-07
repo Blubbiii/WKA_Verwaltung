@@ -149,8 +149,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: lint
-    # Tests sind optional - Pipeline schlaegt nicht fehl wenn dieser Job scheitert
-    continue-on-error: true
+    # Tests muessen bestehen - Pipeline schlaegt fehl bei Test-Fehlern
+    continue-on-error: false
 
     steps:
       - name: Checkout Repository
