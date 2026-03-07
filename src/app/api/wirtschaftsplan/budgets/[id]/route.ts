@@ -71,7 +71,7 @@ async function putHandler(
     const data = updateSchema.parse(body);
 
     const updated = await prisma.annualBudget.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data,
     });
 
@@ -105,7 +105,7 @@ async function deleteHandler(
       return NextResponse.json({ error: "Gesperrter Budget kann nicht gelöscht werden" }, { status: 403 });
     }
 
-    await prisma.annualBudget.delete({ where: { id } });
+    await prisma.annualBudget.delete({ where: { id, tenantId: check.tenantId! } });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting budget");

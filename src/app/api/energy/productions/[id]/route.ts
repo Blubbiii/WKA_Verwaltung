@@ -39,8 +39,8 @@ export async function GET(
     const { id } = await params;
 
     // Produktionsdaten mit allen Relationen laden
-    const production = await prisma.turbineProduction.findUnique({
-      where: { id },
+    const production = await prisma.turbineProduction.findFirst({
+      where: { id, tenantId: check.tenantId! },
       include: {
         turbine: {
           select: {
@@ -66,14 +66,6 @@ export async function GET(
       return NextResponse.json(
         { error: "Produktionsdaten nicht gefunden" },
         { status: 404 }
-      );
-    }
-
-    // Multi-Tenancy Prüfung
-    if (production.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
       );
     }
 
@@ -104,8 +96,8 @@ export async function PATCH(
     const validatedData = productionUpdateSchema.parse(body);
 
     // Existenz und Tenant prüfen
-    const existing = await prisma.turbineProduction.findUnique({
-      where: { id },
+    const existing = await prisma.turbineProduction.findFirst({
+      where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
         tenantId: true,
@@ -123,13 +115,6 @@ export async function PATCH(
       );
     }
 
-    if (existing.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
-    }
-
     // Status-Prüfung: INVOICED-Einträge können nicht bearbeitet werden
     if (existing.status === "INVOICED") {
       return NextResponse.json(
@@ -143,7 +128,7 @@ export async function PATCH(
 
     // Update durchfuehren
     const production = await prisma.turbineProduction.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: {
         ...(validatedData.productionKwh !== undefined && {
           productionKwh: validatedData.productionKwh,
@@ -221,8 +206,8 @@ export async function DELETE(
     const { id } = await params;
 
     // Existenz und Tenant prüfen
-    const existing = await prisma.turbineProduction.findUnique({
-      where: { id },
+    const existing = await prisma.turbineProduction.findFirst({
+      where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
         tenantId: true,
@@ -243,13 +228,6 @@ export async function DELETE(
       );
     }
 
-    if (existing.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
-    }
-
     // Status-Prüfung: INVOICED-Einträge können nicht gelöscht werden
     if (existing.status === "INVOICED") {
       return NextResponse.json(
@@ -262,7 +240,7 @@ export async function DELETE(
     }
 
     // Löschen
-    await prisma.turbineProduction.delete({ where: { id } });
+    await prisma.turbineProduction.delete({ where: { id, tenantId: check.tenantId! } });
 
     // Audit Log
     await logDeletion("TurbineProduction", id, {

@@ -247,10 +247,11 @@ export async function GET(request: NextRequest) {
         validTo: h.validTo,
       });
 
+      const children = parentToChildren.get(h.parentFundId) ?? [];
       if (!parentToChildren.has(h.parentFundId)) {
-        parentToChildren.set(h.parentFundId, []);
+        parentToChildren.set(h.parentFundId, children);
       }
-      parentToChildren.get(h.parentFundId)!.push(h.childFundId);
+      children.push(h.childFundId);
     }
 
     // Finde Root-Funds (Funds die kein Parent haben, aber Children haben könnten)

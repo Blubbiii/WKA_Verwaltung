@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const validTypes = ["CABLE_ROUTE", "COMPENSATION_AREA", "ACCESS_ROAD", "EXCLUSION_ZONE", "CUSTOM"];
 
     const updated = await prisma.mapAnnotation.update({
-      where: { id: annotationId },
+      where: { id: annotationId, tenantId: check.tenantId! },
       data: {
         ...(name !== undefined ? { name: name.trim() } : {}),
         ...(type !== undefined && validTypes.includes(type) ? { type } : {}),
@@ -75,7 +75,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    await prisma.mapAnnotation.delete({ where: { id: annotationId } });
+    await prisma.mapAnnotation.delete({ where: { id: annotationId, tenantId: check.tenantId! } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

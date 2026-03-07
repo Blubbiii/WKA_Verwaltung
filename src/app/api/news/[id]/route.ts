@@ -130,7 +130,7 @@ const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
     }
 
     const news = await prisma.news.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: {
         ...(validatedData.title && { title: validatedData.title }),
         ...(validatedData.content && { content: validatedData.content }),
@@ -196,7 +196,7 @@ const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
     }
 
     // Hard-delete: Meldung unwiderruflich löschen
-    await prisma.news.delete({ where: { id } });
+    await prisma.news.delete({ where: { id, tenantId: check.tenantId! } });
 
     // Log deletion for audit trail
     await logDeletion("News", id, existingNews);

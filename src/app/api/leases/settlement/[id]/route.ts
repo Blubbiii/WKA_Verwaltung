@@ -22,8 +22,8 @@ export async function GET(
 
     const { id } = await params;
 
-    const settlement = await prisma.leaseRevenueSettlement.findUnique({
-      where: { id },
+    const settlement = await prisma.leaseRevenueSettlement.findFirst({
+      where: { id, tenantId: check.tenantId! },
       include: {
         park: {
           select: {
@@ -130,14 +130,6 @@ export async function GET(
       );
     }
 
-    // Tenant check
-    if (check.tenantId && settlement.tenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
-    }
-
     return NextResponse.json({
       settlement: serializePrisma(settlement),
     });
@@ -170,8 +162,8 @@ export async function PUT(
     const validatedData = updateLeaseRevenueSettlementSchema.parse(body);
 
     // Check settlement exists and belongs to tenant
-    const existing = await prisma.leaseRevenueSettlement.findUnique({
-      where: { id },
+    const existing = await prisma.leaseRevenueSettlement.findFirst({
+      where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
         tenantId: true,
@@ -183,13 +175,6 @@ export async function PUT(
       return NextResponse.json(
         { error: "Nutzungsentgelt-Abrechnung nicht gefunden" },
         { status: 404 }
-      );
-    }
-
-    if (check.tenantId && existing.tenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
       );
     }
 
@@ -227,7 +212,7 @@ export async function PUT(
     }
 
     const settlement = await prisma.leaseRevenueSettlement.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: updateData,
       include: {
         park: {
@@ -275,8 +260,8 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const existing = await prisma.leaseRevenueSettlement.findUnique({
-      where: { id },
+    const existing = await prisma.leaseRevenueSettlement.findFirst({
+      where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
         tenantId: true,
@@ -295,13 +280,6 @@ export async function DELETE(
       );
     }
 
-    if (check.tenantId && existing.tenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
-    }
-
     // Only allow deletion if status is OPEN
     if (existing.status !== "OPEN") {
       return NextResponse.json(
@@ -314,7 +292,7 @@ export async function DELETE(
     }
 
     // Delete settlement (items cascade via onDelete: Cascade in schema)
-    await prisma.leaseRevenueSettlement.delete({ where: { id } });
+    await prisma.leaseRevenueSettlement.delete({ where: { id, tenantId: check.tenantId! } });
 
     // Log deletion for audit trail
     await logDeletion("LeaseRevenueSettlement", id, {

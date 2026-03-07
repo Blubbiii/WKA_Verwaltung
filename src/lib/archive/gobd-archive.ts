@@ -727,14 +727,6 @@ export async function getArchiveExportData(
 // ---------------------------------------------------------------------------
 
 /**
- * Check if a document is within its retention period.
- * Returns true if the document CANNOT be deleted yet.
- */
-export function isWithinRetention(retentionUntil: Date): boolean {
-  return new Date() < retentionUntil;
-}
-
-/**
  * Get archive statistics for a tenant.
  */
 export async function getArchiveStats(tenantId: string) {

@@ -98,7 +98,7 @@ export async function PATCH(
     }
 
     const revenueType = await prisma.energyRevenueType.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: parsed.data,
     });
 
@@ -142,7 +142,7 @@ export async function DELETE(
     if (usageCount > 0) {
       // Soft delete - just deactivate
       await prisma.energyRevenueType.update({
-        where: { id },
+        where: { id, tenantId: check.tenantId! },
         data: { isActive: false },
       });
       return NextResponse.json({
@@ -152,7 +152,7 @@ export async function DELETE(
     }
 
     // Hard delete if unused
-    await prisma.energyRevenueType.delete({ where: { id } });
+    await prisma.energyRevenueType.delete({ where: { id, tenantId: check.tenantId! } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

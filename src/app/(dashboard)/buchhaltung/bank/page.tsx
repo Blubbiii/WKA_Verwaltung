@@ -177,7 +177,7 @@ export default function BankPage() {
                           <div className="flex justify-end gap-1">
                             {tx.matchStatus === "SUGGESTED" && tx.matchedInvoice && (
                               <Button size="icon" variant="ghost" title="Zuordnung bestaetigen"
-                                onClick={() => handleAction(tx.id, "match", tx.matchedInvoice!.id)}>
+                                onClick={() => handleAction(tx.id, "match", tx.matchedInvoice?.id)}>
                                 <Check className="h-4 w-4 text-green-600" />
                               </Button>
                             )}

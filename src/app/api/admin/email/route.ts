@@ -226,6 +226,9 @@ export async function PUT(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     const body = await request.json();
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
+    }
     const { smtp, notifications } = body;
 
     // Get current settings

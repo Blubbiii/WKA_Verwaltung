@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       if (existing.status === "CANCELLED") {
         // Allow creation - the unique constraint includes periodType,
         // but we need to skip this cancelled record. Delete it first.
-        await prisma.leaseSettlementPeriod.delete({ where: { id: existing.id } });
+        await prisma.leaseSettlementPeriod.delete({ where: { id: existing.id, tenantId: check.tenantId! } });
       } else {
         const periodDesc = month
           ? `${month}/${year} (${periodType})`

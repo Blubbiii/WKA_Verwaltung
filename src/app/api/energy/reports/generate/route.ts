@@ -326,7 +326,7 @@ async function fetchWindRoseData(
     if (!countMap.has(row.direction_sector)) {
       countMap.set(row.direction_sector, new Map());
     }
-    countMap.get(row.direction_sector)!.set(row.speed_range, Number(row.count));
+    countMap.get(row.direction_sector)?.set(row.speed_range, Number(row.count));
   }
 
   // Calculate totals per direction for dominant direction

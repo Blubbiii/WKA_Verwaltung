@@ -70,7 +70,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     }
 
     // Delete recipients first (cascade should handle this, but be explicit)
-    await prisma.mailing.delete({ where: { id } });
+    await prisma.mailing.delete({ where: { id, tenantId: check.tenantId! } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

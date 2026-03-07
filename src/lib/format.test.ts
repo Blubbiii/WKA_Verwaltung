@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCurrency, formatCurrencyCompact } from "./format";
+import { formatCurrency, formatCurrencyCompact, formatDate, formatDateTime } from "./format";
 
 // =============================================================================
 // formatCurrency
@@ -112,5 +112,52 @@ describe("formatCurrencyCompact", () => {
     const result = formatCurrencyCompact(0);
     expect(result).toMatch(/0/);
     expect(result).toContain("€");
+  });
+});
+
+// =============================================================================
+// formatDate
+// =============================================================================
+
+describe("formatDate", () => {
+  it("formatiert ein Date-Objekt als dd.MM.yyyy", () => {
+    const result = formatDate(new Date(2026, 0, 15)); // 15. Jan 2026
+    expect(result).toBe("15.01.2026");
+  });
+
+  it("formatiert einen ISO-String als dd.MM.yyyy", () => {
+    const result = formatDate("2026-03-07T12:00:00Z");
+    expect(result).toMatch(/07\.03\.2026/);
+  });
+
+  it('gibt "\u2013" zurueck fuer null', () => {
+    expect(formatDate(null)).toBe("\u2013");
+  });
+
+  it('gibt "\u2013" zurueck fuer undefined', () => {
+    expect(formatDate(undefined)).toBe("\u2013");
+  });
+
+  it('gibt "\u2013" zurueck fuer ungueltigen Datums-String', () => {
+    expect(formatDate("kein-datum")).toBe("\u2013");
+  });
+});
+
+// =============================================================================
+// formatDateTime
+// =============================================================================
+
+describe("formatDateTime", () => {
+  it("formatiert mit Datum und Uhrzeit (dd.MM.yyyy, HH:mm)", () => {
+    // Use a fixed UTC date and check that both date and time parts appear
+    const result = formatDateTime(new Date("2026-03-07T14:30:00Z"));
+    // Date part
+    expect(result).toMatch(/07\.03\.2026/);
+    // Time part (hour may differ due to timezone, but minutes should be :30)
+    expect(result).toMatch(/\d{2}:\d{2}/);
+  });
+
+  it('gibt "\u2013" zurueck fuer null', () => {
+    expect(formatDateTime(null)).toBe("\u2013");
   });
 });

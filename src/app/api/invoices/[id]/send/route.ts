@@ -16,8 +16,8 @@ export async function POST(
 
     const { id } = await params;
 
-    const invoice = await prisma.invoice.findUnique({
-      where: { id },
+    const invoice = await prisma.invoice.findFirst({
+      where: { id, tenantId: check.tenantId! },
       select: { id: true, tenantId: true, status: true },
     });
 
@@ -25,13 +25,6 @@ export async function POST(
       return NextResponse.json(
         { error: "Rechnung nicht gefunden" },
         { status: 404 }
-      );
-    }
-
-    if (invoice.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
       );
     }
 
@@ -55,7 +48,7 @@ export async function POST(
     }
 
     const updated = await prisma.invoice.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: {
         status: "SENT",
         sentAt: new Date(),

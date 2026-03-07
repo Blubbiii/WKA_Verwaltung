@@ -119,18 +119,4 @@ export const numberFormatter = new Intl.NumberFormat("de-DE", {
   maximumFractionDigits: 0,
 });
 
-/**
- * German number formatter (1 decimal).
- */
-export const decimal1Formatter = new Intl.NumberFormat("de-DE", {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
 
-/**
- * German number formatter (2 decimals).
- */
-export const decimal2Formatter = new Intl.NumberFormat("de-DE", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});

@@ -198,7 +198,7 @@ export async function GET(request: NextRequest) {
       if (!countMap.has(row.direction_sector)) {
         countMap.set(row.direction_sector, new Map());
       }
-      countMap.get(row.direction_sector)!.set(row.speed_range, Number(row.count));
+      countMap.get(row.direction_sector)?.set(row.speed_range, Number(row.count));
     }
 
     // Totals pro Richtung berechnen (für dominantDirection)

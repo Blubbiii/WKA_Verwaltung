@@ -150,7 +150,7 @@ function groupByNetzAndOperator(turbines: Turbine[]): NetzWithBetreiber[] {
       if (!operatorMap.has(k)) {
         operatorMap.set(k, { fund: op.operatorFund, turbines: [] });
       }
-      operatorMap.get(k)!.turbines.push(t);
+      operatorMap.get(k)?.turbines.push(t);
     }
 
     // Look up ownership percentages from FundHierarchy (Netz → Betreiber)
@@ -360,7 +360,8 @@ export function NetworkTopology({
         if (!seen.has(b.fund.id)) {
           seen.set(b.fund.id, { fund: b.fund, count: b.turbines.length });
         } else {
-          seen.get(b.fund.id)!.count += b.turbines.length;
+          const entry = seen.get(b.fund.id);
+          if (entry) entry.count += b.turbines.length;
         }
       }
     }
@@ -538,8 +539,12 @@ export function NetworkTopology({
       const k = cat?.id || ng.fundId || "__none__";
       const name = cat?.name || ng.fund?.name || "Nicht zugeordnet";
       const color = cat?.color || DEFAULT_COLOR;
-      if (!seen.has(k)) seen.set(k, { name, color, count: ng.turbines.length });
-      else seen.get(k)!.count += ng.turbines.length;
+      if (!seen.has(k)) {
+        seen.set(k, { name, color, count: ng.turbines.length });
+      } else {
+        const entry = seen.get(k);
+        if (entry) entry.count += ng.turbines.length;
+      }
     }
     return Array.from(seen.values());
   }, [netzGroups]);

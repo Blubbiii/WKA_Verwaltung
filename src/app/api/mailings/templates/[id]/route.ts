@@ -67,7 +67,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     }
 
     const template = await prisma.mailingTemplate.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data,
     });
 
@@ -94,7 +94,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Vorlage nicht gefunden" }, { status: 404 });
     }
 
-    await prisma.mailingTemplate.delete({ where: { id } });
+    await prisma.mailingTemplate.delete({ where: { id, tenantId: check.tenantId! } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

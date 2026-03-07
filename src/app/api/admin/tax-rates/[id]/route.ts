@@ -53,7 +53,7 @@ export async function PATCH(
     if (parsed.data.label !== undefined) updateData.label = parsed.data.label;
 
     const taxRate = await prisma.taxRateConfig.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: updateData,
     });
 
@@ -89,7 +89,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.taxRateConfig.delete({ where: { id } });
+    await prisma.taxRateConfig.delete({ where: { id, tenantId: check.tenantId! } });
 
     return NextResponse.json({
       success: true,

@@ -142,7 +142,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     }
 
     const person = await prisma.person.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: {
         ...validatedData,
         email: validatedData.email || null,
@@ -215,7 +215,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     }
 
     // Hard-delete: Person unwiderruflich löschen
-    await prisma.person.delete({ where: { id } });
+    await prisma.person.delete({ where: { id, tenantId: check.tenantId! } });
 
     // Log deletion for audit trail
     await logDeletion("Person", id, existingPerson);

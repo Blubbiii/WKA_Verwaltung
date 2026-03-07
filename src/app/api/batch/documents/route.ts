@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
             `Dokument hat Status ${doc.approvalStatus}, nur DRAFT/REJECTED kann gelöscht werden`
           );
         }
-        await prisma.document.delete({ where: { id } });
+        await prisma.document.delete({ where: { id, tenantId: check.tenantId! } });
       } else {
         if (!allowedStatuses.includes(doc.approvalStatus)) {
           throw new Error(
