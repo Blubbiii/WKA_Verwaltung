@@ -44,6 +44,7 @@ interface ModuleFlags {
   "communication": boolean;
   "crm": boolean;
   "inbox": boolean;
+  "accounting": boolean;
 }
 
 interface TenantWithFlags {
@@ -75,6 +76,7 @@ const MODULE_LABELS: Record<keyof ModuleFlags, string> = {
   "communication": "Kommunikation",
   "crm": "CRM",
   "inbox": "Inbox",
+  "accounting": "Buchhaltung",
 };
 
 // =============================================================================
