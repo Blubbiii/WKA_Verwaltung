@@ -10,6 +10,7 @@ import type { ParsedTransaction } from "./types";
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
+  processEntities: false, // Prevent XXE attacks
   // Ensure arrays even for single-element lists
   isArray: (name) =>
     ["Ntfctn", "Ntry", "TxDtls", "Ustrd"].includes(name),
