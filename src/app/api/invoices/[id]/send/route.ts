@@ -66,7 +66,7 @@ export async function POST(
     });
 
     // Fire-and-forget auto-posting
-    createAutoPosting(id, check.userId!).catch((err) => {
+    createAutoPosting(id, check.userId!, check.tenantId!).catch((err) => {
       logger.warn({ err, invoiceId: id }, "[AutoPosting] Failed to create auto-posting");
     });
 

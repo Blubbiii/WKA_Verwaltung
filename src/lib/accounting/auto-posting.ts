@@ -28,12 +28,14 @@ const DEFAULT_ACCOUNT_MAP: Record<string, { debit: string; credit: string }> = {
  */
 export async function createAutoPosting(
   invoiceId: string,
-  userId: string
+  userId: string,
+  tenantId: string
 ): Promise<AutoPostingResult> {
   try {
     // Check if auto-entry already exists
     const existing = await prisma.journalEntry.findFirst({
       where: {
+        tenantId,
         referenceType: "Invoice",
         referenceId: invoiceId,
         source: "AUTO",
@@ -128,11 +130,13 @@ export async function createAutoPosting(
  */
 export async function reverseAutoPosting(
   invoiceId: string,
-  userId: string
+  userId: string,
+  tenantId: string
 ): Promise<AutoPostingResult> {
   try {
     const original = await prisma.journalEntry.findFirst({
       where: {
+        tenantId,
         referenceType: "Invoice",
         referenceId: invoiceId,
         source: "AUTO",
@@ -148,6 +152,7 @@ export async function reverseAutoPosting(
     // Check if reversal already exists
     const existingReversal = await prisma.journalEntry.findFirst({
       where: {
+        tenantId,
         referenceType: "InvoiceReversal",
         referenceId: invoiceId,
         source: "AUTO",
