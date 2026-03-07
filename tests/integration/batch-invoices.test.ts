@@ -1,41 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createMockRequest, resetMocks } from "./setup";
+import { createMockRequest, mockPrisma, resetMocks } from "./setup";
+import { requirePermission } from "@/lib/auth/withPermission";
 import { createMockInvoice } from "./helpers";
 
-const { requirePermission } = await vi.importMock<
-  typeof import("@/lib/auth/withPermission")
->("@/lib/auth/withPermission");
-
-const { prisma } = await vi.importMock<typeof import("@/lib/prisma")>(
-  "@/lib/prisma"
-);
+const UUID1 = "550e8400-e29b-41d4-a716-446655440001";
+const UUID2 = "550e8400-e29b-41d4-a716-446655440002";
 
 describe("Batch Invoice API", () => {
   beforeEach(() => {
     resetMocks();
     vi.clearAllMocks();
-    (requirePermission as ReturnType<typeof vi.fn>).mockResolvedValue({
+    vi.mocked(requirePermission).mockResolvedValue({
       authorized: true,
       userId: "user-1",
       tenantId: "tenant-1",
-    });
+    } as never);
   });
 
   describe("POST /api/batch/invoices - Approve", () => {
     it("should approve multiple DRAFT invoices", async () => {
       const invoices = [
-        createMockInvoice({ id: "inv-1", status: "DRAFT" }),
-        createMockInvoice({ id: "inv-2", status: "DRAFT" }),
+        createMockInvoice({ id: UUID1, status: "DRAFT" }),
+        createMockInvoice({ id: UUID2, status: "DRAFT" }),
       ];
-      (prisma.invoice.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      mockPrisma.invoice.findMany.mockResolvedValueOnce(
         invoices.map((i) => ({ id: i.id, status: i.status }))
       );
-      (prisma.invoice.update as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      mockPrisma.invoice.update.mockResolvedValue({});
 
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "approve",
-        invoiceIds: ["inv-1", "inv-2"],
+        invoiceIds: [UUID1, UUID2],
       });
 
       const response = await POST(req);
@@ -47,14 +43,14 @@ describe("Batch Invoice API", () => {
     });
 
     it("should fail for non-DRAFT invoices", async () => {
-      (prisma.invoice.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "inv-1", status: "SENT" },
+      mockPrisma.invoice.findMany.mockResolvedValueOnce([
+        { id: UUID1, status: "SENT" },
       ]);
 
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "approve",
-        invoiceIds: ["inv-1"],
+        invoiceIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -67,16 +63,16 @@ describe("Batch Invoice API", () => {
     });
 
     it("should handle partial success", async () => {
-      (prisma.invoice.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "inv-1", status: "DRAFT" },
-        { id: "inv-2", status: "PAID" },
+      mockPrisma.invoice.findMany.mockResolvedValueOnce([
+        { id: UUID1, status: "DRAFT" },
+        { id: UUID2, status: "PAID" },
       ]);
-      (prisma.invoice.update as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      mockPrisma.invoice.update.mockResolvedValue({});
 
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "approve",
-        invoiceIds: ["inv-1", "inv-2"],
+        invoiceIds: [UUID1, UUID2],
       });
 
       const response = await POST(req);
@@ -90,15 +86,15 @@ describe("Batch Invoice API", () => {
 
   describe("POST /api/batch/invoices - Cancel", () => {
     it("should cancel invoices", async () => {
-      (prisma.invoice.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "inv-1", status: "SENT" },
+      mockPrisma.invoice.findMany.mockResolvedValueOnce([
+        { id: UUID1, status: "SENT" },
       ]);
-      (prisma.invoice.update as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      mockPrisma.invoice.update.mockResolvedValue({});
 
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "cancel",
-        invoiceIds: ["inv-1"],
+        invoiceIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -109,14 +105,14 @@ describe("Batch Invoice API", () => {
     });
 
     it("should fail for already cancelled invoices", async () => {
-      (prisma.invoice.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "inv-1", status: "CANCELLED" },
+      mockPrisma.invoice.findMany.mockResolvedValueOnce([
+        { id: UUID1, status: "CANCELLED" },
       ]);
 
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "cancel",
-        invoiceIds: ["inv-1"],
+        invoiceIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -132,7 +128,7 @@ describe("Batch Invoice API", () => {
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "invalid",
-        invoiceIds: ["inv-1"],
+        invoiceIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -164,12 +160,12 @@ describe("Batch Invoice API", () => {
 
   describe("Not Found", () => {
     it("should return 404 for non-existent invoices", async () => {
-      (prisma.invoice.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
+      mockPrisma.invoice.findMany.mockResolvedValueOnce([]);
 
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "approve",
-        invoiceIds: ["550e8400-e29b-41d4-a716-446655440000"],
+        invoiceIds: [UUID1],
       });
 
       const response = await POST(req);

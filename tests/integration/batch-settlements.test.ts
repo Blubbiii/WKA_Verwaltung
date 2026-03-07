@@ -1,37 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createMockRequest, resetMocks } from "./setup";
+import { createMockRequest, mockPrisma, resetMocks } from "./setup";
+import { requirePermission } from "@/lib/auth/withPermission";
 
-const { requirePermission } = await vi.importMock<
-  typeof import("@/lib/auth/withPermission")
->("@/lib/auth/withPermission");
-
-const { prisma } = await vi.importMock<typeof import("@/lib/prisma")>(
-  "@/lib/prisma"
-);
+const UUID1 = "550e8400-e29b-41d4-a716-446655440001";
+const UUID2 = "550e8400-e29b-41d4-a716-446655440002";
 
 describe("Batch Settlement API", () => {
   beforeEach(() => {
     resetMocks();
     vi.clearAllMocks();
-    (requirePermission as ReturnType<typeof vi.fn>).mockResolvedValue({
+    vi.mocked(requirePermission).mockResolvedValue({
       authorized: true,
       userId: "user-1",
       tenantId: "tenant-1",
-    });
+    } as never);
   });
 
   describe("POST /api/batch/settlements - Approve", () => {
     it("should approve CALCULATED settlements", async () => {
-      (prisma.energySettlement.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "s-1", status: "CALCULATED", park: { tenantId: "tenant-1" } },
-        { id: "s-2", status: "CALCULATED", park: { tenantId: "tenant-1" } },
+      mockPrisma.energySettlement.findMany.mockResolvedValueOnce([
+        { id: UUID1, status: "CALCULATED", park: { tenantId: "tenant-1" } },
+        { id: UUID2, status: "CALCULATED", park: { tenantId: "tenant-1" } },
       ]);
-      (prisma.energySettlement.update as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      mockPrisma.energySettlement.update.mockResolvedValue({});
 
       const { POST } = await import("@/app/api/batch/settlements/route");
       const req = createMockRequest("POST", "/api/batch/settlements", {
         action: "approve",
-        settlementIds: ["s-1", "s-2"],
+        settlementIds: [UUID1, UUID2],
       });
 
       const response = await POST(req);
@@ -43,14 +39,14 @@ describe("Batch Settlement API", () => {
     });
 
     it("should fail for DRAFT settlements", async () => {
-      (prisma.energySettlement.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "s-1", status: "DRAFT", park: { tenantId: "tenant-1" } },
+      mockPrisma.energySettlement.findMany.mockResolvedValueOnce([
+        { id: UUID1, status: "DRAFT", park: { tenantId: "tenant-1" } },
       ]);
 
       const { POST } = await import("@/app/api/batch/settlements/route");
       const req = createMockRequest("POST", "/api/batch/settlements", {
         action: "approve",
-        settlementIds: ["s-1"],
+        settlementIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -63,15 +59,15 @@ describe("Batch Settlement API", () => {
 
   describe("POST /api/batch/settlements - Reject", () => {
     it("should reject CALCULATED settlements with reason", async () => {
-      (prisma.energySettlement.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "s-1", status: "CALCULATED", park: { tenantId: "tenant-1" } },
+      mockPrisma.energySettlement.findMany.mockResolvedValueOnce([
+        { id: UUID1, status: "CALCULATED", park: { tenantId: "tenant-1" } },
       ]);
-      (prisma.energySettlement.update as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      mockPrisma.energySettlement.update.mockResolvedValue({});
 
       const { POST } = await import("@/app/api/batch/settlements/route");
       const req = createMockRequest("POST", "/api/batch/settlements", {
         action: "reject",
-        settlementIds: ["s-1"],
+        settlementIds: [UUID1],
         reason: "Werte fehlerhaft",
       });
 
@@ -83,14 +79,14 @@ describe("Batch Settlement API", () => {
     });
 
     it("should fail for CLOSED settlements", async () => {
-      (prisma.energySettlement.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "s-1", status: "CLOSED", park: { tenantId: "tenant-1" } },
+      mockPrisma.energySettlement.findMany.mockResolvedValueOnce([
+        { id: UUID1, status: "CLOSED", park: { tenantId: "tenant-1" } },
       ]);
 
       const { POST } = await import("@/app/api/batch/settlements/route");
       const req = createMockRequest("POST", "/api/batch/settlements", {
         action: "reject",
-        settlementIds: ["s-1"],
+        settlementIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -102,14 +98,14 @@ describe("Batch Settlement API", () => {
 
   describe("Tenant Isolation", () => {
     it("should reject settlements from other tenants", async () => {
-      (prisma.energySettlement.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "s-1", status: "CALCULATED", park: { tenantId: "other-tenant" } },
+      mockPrisma.energySettlement.findMany.mockResolvedValueOnce([
+        { id: UUID1, status: "CALCULATED", park: { tenantId: "other-tenant" } },
       ]);
 
       const { POST } = await import("@/app/api/batch/settlements/route");
       const req = createMockRequest("POST", "/api/batch/settlements", {
         action: "approve",
-        settlementIds: ["s-1"],
+        settlementIds: [UUID1],
       });
 
       const response = await POST(req);

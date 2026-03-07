@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextResponse } from "next/server";
-import { createMockRequest, resetMocks } from "./setup";
+import { createMockRequest, mockPrisma, resetMocks } from "./setup";
+import { requirePermission, requireAdmin } from "@/lib/auth/withPermission";
 
-// Import mocked modules
-const { requirePermission, requireAdmin } = await vi.importMock<
-  typeof import("@/lib/auth/withPermission")
->("@/lib/auth/withPermission");
+const UUID1 = "550e8400-e29b-41d4-a716-446655440001";
+const UUID2 = "550e8400-e29b-41d4-a716-446655440002";
 
 describe("Auth & Permission System", () => {
   beforeEach(() => {
@@ -15,15 +14,15 @@ describe("Auth & Permission System", () => {
 
   describe("Unauthenticated Access", () => {
     it("should return 401 when not authenticated", async () => {
-      (requirePermission as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      vi.mocked(requirePermission).mockResolvedValueOnce({
         authorized: false,
         error: NextResponse.json({ error: "Not authenticated" }, { status: 401 }),
-      });
+      } as never);
 
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "approve",
-        invoiceIds: ["inv-1"],
+        invoiceIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -31,22 +30,21 @@ describe("Auth & Permission System", () => {
     });
 
     it("should return 401 for admin routes without auth", async () => {
-      (requireAdmin as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      vi.mocked(requireAdmin).mockResolvedValueOnce({
         authorized: false,
         error: NextResponse.json({ error: "Not authenticated" }, { status: 401 }),
-      });
+      } as never);
 
-      // Admin permission check returns unauthorized
-      (requirePermission as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      vi.mocked(requirePermission).mockResolvedValueOnce({
         authorized: false,
         error: NextResponse.json({ error: "Admin required" }, { status: 403 }),
-      });
+      } as never);
 
       const { POST } = await import("@/app/api/batch/email/route");
       const req = createMockRequest("POST", "/api/batch/email", {
         subject: "Test",
         body: "Test body",
-        recipientIds: ["user-1"],
+        recipientIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -56,15 +54,15 @@ describe("Auth & Permission System", () => {
 
   describe("Permission Checks", () => {
     it("should return 403 when permission is missing", async () => {
-      (requirePermission as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      vi.mocked(requirePermission).mockResolvedValueOnce({
         authorized: false,
         error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
-      });
+      } as never);
 
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "approve",
-        invoiceIds: ["inv-1"],
+        invoiceIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -72,24 +70,21 @@ describe("Auth & Permission System", () => {
     });
 
     it("should allow access with correct permission", async () => {
-      (requirePermission as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      vi.mocked(requirePermission).mockResolvedValueOnce({
         authorized: true,
         userId: "user-1",
         tenantId: "tenant-1",
-      });
+      } as never);
 
-      const { prisma } = await vi.importMock<typeof import("@/lib/prisma")>(
-        "@/lib/prisma"
-      );
-      (prisma.invoice.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "inv-1", status: "DRAFT" },
+      mockPrisma.invoice.findMany.mockResolvedValueOnce([
+        { id: UUID1, status: "DRAFT" },
       ]);
-      (prisma.invoice.update as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});
+      mockPrisma.invoice.update.mockResolvedValueOnce({});
 
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "approve",
-        invoiceIds: ["inv-1"],
+        invoiceIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -98,23 +93,19 @@ describe("Auth & Permission System", () => {
   });
 
   describe("Tenant Isolation", () => {
-    it("should not return resources from other tenants", async () => {
-      (requirePermission as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    it("should return 404 for invoices not found in tenant", async () => {
+      vi.mocked(requirePermission).mockResolvedValueOnce({
         authorized: true,
         userId: "user-1",
         tenantId: "tenant-1",
-      });
+      } as never);
 
-      const { prisma } = await vi.importMock<typeof import("@/lib/prisma")>(
-        "@/lib/prisma"
-      );
-      // Invoice belongs to different tenant → findMany returns empty (tenant filter)
-      (prisma.invoice.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
+      mockPrisma.invoice.findMany.mockResolvedValueOnce([]);
 
       const { POST } = await import("@/app/api/batch/invoices/route");
       const req = createMockRequest("POST", "/api/batch/invoices", {
         action: "approve",
-        invoiceIds: ["inv-other-tenant"],
+        invoiceIds: [UUID1],
       });
 
       const response = await POST(req);

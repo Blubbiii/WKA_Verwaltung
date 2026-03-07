@@ -1,37 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createMockRequest, resetMocks } from "./setup";
+import { createMockRequest, mockPrisma, resetMocks } from "./setup";
+import { requirePermission } from "@/lib/auth/withPermission";
 
-const { requirePermission } = await vi.importMock<
-  typeof import("@/lib/auth/withPermission")
->("@/lib/auth/withPermission");
-
-const { prisma } = await vi.importMock<typeof import("@/lib/prisma")>(
-  "@/lib/prisma"
-);
+const UUID1 = "550e8400-e29b-41d4-a716-446655440001";
+const UUID2 = "550e8400-e29b-41d4-a716-446655440002";
 
 describe("Batch Document API", () => {
   beforeEach(() => {
     resetMocks();
     vi.clearAllMocks();
-    (requirePermission as ReturnType<typeof vi.fn>).mockResolvedValue({
+    vi.mocked(requirePermission).mockResolvedValue({
       authorized: true,
       userId: "user-1",
       tenantId: "tenant-1",
-    });
+    } as never);
   });
 
   describe("POST /api/batch/documents - Approve", () => {
     it("should approve PENDING_REVIEW documents", async () => {
-      (prisma.document.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "doc-1", approvalStatus: "PENDING_REVIEW", isArchived: false },
-        { id: "doc-2", approvalStatus: "PENDING_REVIEW", isArchived: false },
+      mockPrisma.document.findMany.mockResolvedValueOnce([
+        { id: UUID1, approvalStatus: "PENDING_REVIEW", isArchived: false },
+        { id: UUID2, approvalStatus: "PENDING_REVIEW", isArchived: false },
       ]);
-      (prisma.document.update as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      mockPrisma.document.update.mockResolvedValue({});
 
       const { POST } = await import("@/app/api/batch/documents/route");
       const req = createMockRequest("POST", "/api/batch/documents", {
         action: "approve",
-        documentIds: ["doc-1", "doc-2"],
+        documentIds: [UUID1, UUID2],
       });
 
       const response = await POST(req);
@@ -43,14 +39,14 @@ describe("Batch Document API", () => {
     });
 
     it("should fail for DRAFT documents", async () => {
-      (prisma.document.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "doc-1", approvalStatus: "DRAFT", isArchived: false },
+      mockPrisma.document.findMany.mockResolvedValueOnce([
+        { id: UUID1, approvalStatus: "DRAFT", isArchived: false },
       ]);
 
       const { POST } = await import("@/app/api/batch/documents/route");
       const req = createMockRequest("POST", "/api/batch/documents", {
         action: "approve",
-        documentIds: ["doc-1"],
+        documentIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -63,15 +59,15 @@ describe("Batch Document API", () => {
 
   describe("POST /api/batch/documents - Publish", () => {
     it("should publish APPROVED documents", async () => {
-      (prisma.document.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "doc-1", approvalStatus: "APPROVED", isArchived: false },
+      mockPrisma.document.findMany.mockResolvedValueOnce([
+        { id: UUID1, approvalStatus: "APPROVED", isArchived: false },
       ]);
-      (prisma.document.update as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      mockPrisma.document.update.mockResolvedValue({});
 
       const { POST } = await import("@/app/api/batch/documents/route");
       const req = createMockRequest("POST", "/api/batch/documents", {
         action: "publish",
-        documentIds: ["doc-1"],
+        documentIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -84,15 +80,15 @@ describe("Batch Document API", () => {
 
   describe("POST /api/batch/documents - Archive", () => {
     it("should archive non-archived documents", async () => {
-      (prisma.document.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "doc-1", approvalStatus: "PUBLISHED", isArchived: false },
+      mockPrisma.document.findMany.mockResolvedValueOnce([
+        { id: UUID1, approvalStatus: "PUBLISHED", isArchived: false },
       ]);
-      (prisma.document.update as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      mockPrisma.document.update.mockResolvedValue({});
 
       const { POST } = await import("@/app/api/batch/documents/route");
       const req = createMockRequest("POST", "/api/batch/documents", {
         action: "archive",
-        documentIds: ["doc-1"],
+        documentIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -102,14 +98,14 @@ describe("Batch Document API", () => {
     });
 
     it("should fail for already archived documents", async () => {
-      (prisma.document.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "doc-1", approvalStatus: "PUBLISHED", isArchived: true },
+      mockPrisma.document.findMany.mockResolvedValueOnce([
+        { id: UUID1, approvalStatus: "PUBLISHED", isArchived: true },
       ]);
 
       const { POST } = await import("@/app/api/batch/documents/route");
       const req = createMockRequest("POST", "/api/batch/documents", {
         action: "archive",
-        documentIds: ["doc-1"],
+        documentIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -122,15 +118,24 @@ describe("Batch Document API", () => {
 
   describe("POST /api/batch/documents - Delete", () => {
     it("should delete DRAFT documents", async () => {
-      (prisma.document.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "doc-1", approvalStatus: "DRAFT", isArchived: false },
+      // Two permission checks: documents:update then documents:delete
+      vi.mocked(requirePermission)
+        .mockResolvedValueOnce({
+          authorized: true, userId: "user-1", tenantId: "tenant-1",
+        } as never)
+        .mockResolvedValueOnce({
+          authorized: true, userId: "user-1", tenantId: "tenant-1",
+        } as never);
+
+      mockPrisma.document.findMany.mockResolvedValueOnce([
+        { id: UUID1, approvalStatus: "DRAFT", isArchived: false },
       ]);
-      (prisma.document.delete as ReturnType<typeof vi.fn>).mockResolvedValue({});
+      mockPrisma.document.delete.mockResolvedValue({});
 
       const { POST } = await import("@/app/api/batch/documents/route");
       const req = createMockRequest("POST", "/api/batch/documents", {
         action: "delete",
-        documentIds: ["doc-1"],
+        documentIds: [UUID1],
       });
 
       const response = await POST(req);
@@ -140,14 +145,23 @@ describe("Batch Document API", () => {
     });
 
     it("should fail for APPROVED documents", async () => {
-      (prisma.document.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-        { id: "doc-1", approvalStatus: "APPROVED", isArchived: false },
+      // Two permission checks: documents:update then documents:delete
+      vi.mocked(requirePermission)
+        .mockResolvedValueOnce({
+          authorized: true, userId: "user-1", tenantId: "tenant-1",
+        } as never)
+        .mockResolvedValueOnce({
+          authorized: true, userId: "user-1", tenantId: "tenant-1",
+        } as never);
+
+      mockPrisma.document.findMany.mockResolvedValueOnce([
+        { id: UUID1, approvalStatus: "APPROVED", isArchived: false },
       ]);
 
       const { POST } = await import("@/app/api/batch/documents/route");
       const req = createMockRequest("POST", "/api/batch/documents", {
         action: "delete",
-        documentIds: ["doc-1"],
+        documentIds: [UUID1],
       });
 
       const response = await POST(req);
