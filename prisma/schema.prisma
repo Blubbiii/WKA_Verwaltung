@@ -101,6 +101,11 @@ model Tenant {
   costCenters               CostCenter[]
   annualBudgets             AnnualBudget[]
   ledgerAccounts            LedgerAccount[]
+  bankTransactions          BankTransaction[]
+  dunningRuns               DunningRun[]
+  sepaPaymentBatches        SepaPaymentBatch[]
+  fixedAssets               FixedAsset[]
+  cashBookEntries           CashBookEntry[]
 
   @@map("tenants")
 }
@@ -157,6 +162,9 @@ model User {
   journalEntriesCreated                                                   JournalEntry[]              @relation("JournalEntryCreatedBy")
   crmActivitiesCreated                                                    CrmActivity[]               @relation("CrmActivityCreator")
   crmActivitiesAssigned                                                   CrmActivity[]               @relation("CrmActivityAssignee")
+  dunningRunsCreated                                                      DunningRun[]                @relation("DunningRunCreatedBy")
+  sepaPaymentBatchesCreated                                               SepaPaymentBatch[]          @relation("SepaPaymentBatchCreatedBy")
+  cashBookEntriesCreated                                                  CashBookEntry[]             @relation("CashBookEntryCreatedBy")
   incomingInvoicesCreated                                                 IncomingInvoice[]           @relation("IncomingInvoiceCreator")
   mapAnnotations                                                          MapAnnotation[]
 
@@ -421,6 +429,7 @@ model Fund {
   incomingInvoicesAsRecipient                           IncomingInvoice[]
   incomingInvoiceSplits                                 IncomingInvoiceSplit[]
   costCenters                                           CostCenter[]
+  bankTransactions                                      BankTransaction[]     @relation("BankTransactionFund")
 
   @@index([tenantId])
   @@index([fundCategoryId])
@@ -842,6 +851,9 @@ model Invoice {
   exemptAllocationItem             ParkCostAllocationItem?     @relation("ExemptInvoice")
   vatAllocationItem                ParkCostAllocationItem?     @relation("VatInvoice")
   fromIncomingInvoiceSplit         IncomingInvoiceSplit?
+  bankTransactions                 BankTransaction[]       @relation("BankTxMatchedInvoice")
+  dunningItems                     DunningItem[]           @relation("DunningItemInvoice")
+  sepaPaymentItems                 SepaPaymentItem[]       @relation("SepaPaymentItemInvoice")
 
   @@index([tenantId])
   @@index([invoiceNumber])
@@ -3261,4 +3273,230 @@ model LedgerAccount {
   @@index([tenantId])
   @@index([tenantId, category])
   @@map("ledger_accounts")
+}
+
+// =============================================================================
+// Bank Transactions — Persistent storage for imported bank statements
+// =============================================================================
+
+enum BankTxStatus {
+  UNMATCHED
+  SUGGESTED
+  MATCHED
+  IGNORED
+}
+
+model BankTransaction {
+  id                String        @id @default(uuid())
+  tenantId          String
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fundId            String?
+  fund              Fund?         @relation("BankTransactionFund", fields: [fundId], references: [id])
+  bankAccountIban   String        @db.VarChar(34)
+  bookingDate       DateTime
+  amount            Decimal       @db.Decimal(15, 2)
+  currency          String        @default("EUR") @db.VarChar(3)
+  counterpartName   String?       @db.VarChar(200)
+  counterpartIban   String?       @db.VarChar(34)
+  reference         String?       @db.Text
+  bankReference     String?       @db.VarChar(100)
+  matchStatus       BankTxStatus  @default(UNMATCHED)
+  matchedInvoiceId  String?
+  matchedInvoice    Invoice?      @relation("BankTxMatchedInvoice", fields: [matchedInvoiceId], references: [id])
+  matchConfidence   Float?
+  importBatchId     String?       @db.VarChar(50)
+  importFileName    String?       @db.VarChar(200)
+  importedAt        DateTime      @default(now())
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, bookingDate])
+  @@index([tenantId, matchStatus])
+  @@index([importBatchId])
+  @@map("bank_transactions")
+}
+
+// =============================================================================
+// Dunning (Mahnwesen)
+// =============================================================================
+
+enum DunningStatus {
+  DRAFT
+  EXECUTED
+  CANCELLED
+}
+
+model DunningRun {
+  id          String        @id @default(uuid())
+  tenantId    String
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  runDate     DateTime      @default(now())
+  status      DunningStatus @default(DRAFT)
+  createdById String
+  createdBy   User          @relation("DunningRunCreatedBy", fields: [createdById], references: [id])
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  items       DunningItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, runDate])
+  @@map("dunning_runs")
+}
+
+model DunningItem {
+  id            String     @id @default(uuid())
+  dunningRunId  String
+  dunningRun    DunningRun @relation(fields: [dunningRunId], references: [id], onDelete: Cascade)
+  invoiceId     String
+  invoice       Invoice    @relation("DunningItemInvoice", fields: [invoiceId], references: [id])
+  level         Int        @default(1) // Mahnstufe 1-3
+  overdueDays   Int
+  amount        Decimal    @db.Decimal(15, 2)
+  feeAmount     Decimal    @default(0) @db.Decimal(15, 2)
+  letterPdfUrl  String?
+  emailSentAt   DateTime?
+  createdAt     DateTime   @default(now())
+
+  @@index([dunningRunId])
+  @@index([invoiceId])
+  @@map("dunning_items")
+}
+
+// =============================================================================
+// SEPA Payment Batches
+// =============================================================================
+
+enum SepaStatus {
+  DRAFT
+  APPROVED
+  EXPORTED
+  CANCELLED
+}
+
+model SepaPaymentBatch {
+  id                String     @id @default(uuid())
+  tenantId          String
+  tenant            Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  batchNumber       String     @db.VarChar(50)
+  executionDate     DateTime
+  debtorName        String     @db.VarChar(200)
+  debtorIban        String     @db.VarChar(34)
+  debtorBic         String?    @db.VarChar(11)
+  status            SepaStatus @default(DRAFT)
+  totalAmount       Decimal    @db.Decimal(15, 2)
+  paymentCount      Int        @default(0)
+  xmlContent        String?    @db.Text
+  createdById       String
+  createdBy         User       @relation("SepaPaymentBatchCreatedBy", fields: [createdById], references: [id])
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  items             SepaPaymentItem[]
+
+  @@unique([tenantId, batchNumber])
+  @@index([tenantId])
+  @@map("sepa_payment_batches")
+}
+
+model SepaPaymentItem {
+  id              String           @id @default(uuid())
+  batchId         String
+  batch           SepaPaymentBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  invoiceId       String?
+  invoice         Invoice?         @relation("SepaPaymentItemInvoice", fields: [invoiceId], references: [id])
+  creditorName    String           @db.VarChar(200)
+  creditorIban    String           @db.VarChar(34)
+  creditorBic     String?          @db.VarChar(11)
+  amount          Decimal          @db.Decimal(15, 2)
+  remittanceInfo  String           @db.VarChar(140)
+  endToEndId      String           @db.VarChar(35)
+  createdAt       DateTime         @default(now())
+
+  @@index([batchId])
+  @@map("sepa_payment_items")
+}
+
+// =============================================================================
+// Fixed Assets (Anlagenbuchhaltung)
+// =============================================================================
+
+enum DepreciationMethod {
+  LINEAR
+  DECLINING_BALANCE
+}
+
+enum AssetStatus {
+  ACTIVE
+  DISPOSED
+  FULLY_DEPRECIATED
+}
+
+model FixedAsset {
+  id                  String              @id @default(uuid())
+  tenantId            String
+  tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assetNumber         String              @db.VarChar(20)
+  name                String              @db.VarChar(200)
+  description         String?
+  category            String              @db.VarChar(50)
+  acquisitionDate     DateTime
+  acquisitionCost     Decimal             @db.Decimal(15, 2)
+  usefulLifeMonths    Int
+  depreciationMethod  DepreciationMethod  @default(LINEAR)
+  residualValue       Decimal             @default(0) @db.Decimal(15, 2)
+  accountNumber       String?             @db.VarChar(10) // SKR03 asset account
+  depAccountNumber    String?             @db.VarChar(10) // SKR03 depreciation expense account
+  status              AssetStatus         @default(ACTIVE)
+  disposalDate        DateTime?
+  disposalProceeds    Decimal?            @db.Decimal(15, 2)
+  notes               String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  depreciations       FixedAssetDepreciation[]
+
+  @@unique([tenantId, assetNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("fixed_assets")
+}
+
+model FixedAssetDepreciation {
+  id            String     @id @default(uuid())
+  assetId       String
+  asset         FixedAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  periodStart   DateTime
+  periodEnd     DateTime
+  amount        Decimal    @db.Decimal(15, 2)
+  bookValue     Decimal    @db.Decimal(15, 2) // remaining book value after this depreciation
+  journalEntryId String?
+  createdAt     DateTime   @default(now())
+
+  @@index([assetId])
+  @@map("fixed_asset_depreciations")
+}
+
+// =============================================================================
+// Cash Book (Kassenbuch)
+// =============================================================================
+
+model CashBookEntry {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entryDate     DateTime
+  entryNumber   Int
+  description   String   @db.VarChar(200)
+  amount        Decimal  @db.Decimal(15, 2) // positive = income, negative = expense
+  runningBalance Decimal @db.Decimal(15, 2)
+  account       String?  @db.VarChar(10) // SKR03 counter-account
+  receiptNumber String?  @db.VarChar(50)
+  createdById   String
+  createdBy     User     @relation("CashBookEntryCreatedBy", fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, entryDate])
+  @@map("cash_book_entries")
 }
