@@ -19,6 +19,9 @@ export {
   generateDatevExportBuffer,
   generateDatevFilename,
   invoiceToBookingEntries,
+  journalEntryToBookingEntries,
+  generateDatevJournalExport,
+  generateDatevJournalExportBuffer,
 } from './datev-export';
 export type {
   DatevExportOptions,
@@ -26,6 +29,7 @@ export type {
   DatevBookingEntry,
   DatevInvoiceData,
   DatevInvoiceItemData,
+  DatevJournalEntryData,
 } from './datev-export';
 
 // Column definitions

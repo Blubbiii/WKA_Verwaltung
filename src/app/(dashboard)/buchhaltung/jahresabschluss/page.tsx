@@ -46,7 +46,7 @@ const CHECKLIST_SECTIONS: Array<{
     items: [
       { id: "ustva", label: "UStVA-Daten pruefen", description: "Umsatzsteuervoranmeldung(en) abstimmen", link: "/buchhaltung/ustva", linkLabel: "UStVA" },
       { id: "ust-jahreserkl", label: "USt-Jahreserklaerung vorbereiten", description: "Jahressummen fuer ELSTER zusammenstellen" },
-      { id: "datev", label: "DATEV-Export erstellen", description: "Buchungsstapel fuer Steuerberater exportieren" },
+      { id: "datev", label: "DATEV-Export erstellen", description: "Buchungsstapel fuer Steuerberater exportieren", link: "/buchhaltung/datev", linkLabel: "DATEV-Export" },
     ],
   },
   {

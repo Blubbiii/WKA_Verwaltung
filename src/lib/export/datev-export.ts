@@ -732,10 +732,159 @@ export function generateDatevExportBuffer(
  *
  * @param from - Start date of the export period
  * @param to - End date of the export period
+ * @param prefix - Optional filename prefix (default: "Buchungen")
  * @returns Filename string
  */
-export function generateDatevFilename(from: Date, to: Date): string {
+export function generateDatevFilename(from: Date, to: Date, prefix = "Buchungen"): string {
   const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}`;
   const toStr = `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, "0")}`;
-  return `EXTF_Buchungen_${fromStr}_${toStr}.csv`;
+  return `EXTF_${prefix}_${fromStr}_${toStr}.csv`;
+}
+
+// ============================================================================
+// JOURNAL ENTRY BASED EXPORT
+// ============================================================================
+
+/**
+ * Input data for JournalEntry-based DATEV export
+ */
+export interface DatevJournalEntryData {
+  id: string;
+  entryDate: Date | string;
+  description: string;
+  reference: string | null;
+  source: string;
+  lines: Array<{
+    account: string;
+    accountName: string | null;
+    description: string | null;
+    debitAmount: number | null;
+    creditAmount: number | null;
+    taxKey: string | null;
+    costCenter: string | null;
+  }>;
+}
+
+/**
+ * Convert JournalEntry lines to DATEV booking entries.
+ *
+ * Each JournalEntry has debit and credit lines. We pair them into
+ * DATEV booking entries: account = debit side, counterAccount = credit side.
+ * For entries with multiple lines, we create one DATEV row per line,
+ * using the "other side" as the counter account.
+ */
+export function journalEntryToBookingEntries(
+  entry: DatevJournalEntryData
+): DatevBookingEntry[] {
+  const entries: DatevBookingEntry[] = [];
+  const entryDate = typeof entry.entryDate === "string"
+    ? new Date(entry.entryDate)
+    : entry.entryDate;
+
+  const debitLines = entry.lines.filter((l) => l.debitAmount && l.debitAmount > 0);
+  const creditLines = entry.lines.filter((l) => l.creditAmount && l.creditAmount > 0);
+
+  // Simple case: one debit, one credit → single DATEV row
+  if (debitLines.length === 1 && creditLines.length === 1) {
+    const d = debitLines[0];
+    const c = creditLines[0];
+    entries.push({
+      amount: d.debitAmount!,
+      debitCredit: "S",
+      currency: "EUR",
+      account: d.account,
+      counterAccount: c.account,
+      taxKey: d.taxKey || "",
+      documentDate: entryDate,
+      documentNumber: truncate(entry.reference || entry.id.slice(0, 8), MAX_DOCUMENT_NUMBER_LENGTH),
+      bookingText: truncate(
+        d.description || entry.description,
+        MAX_BOOKING_TEXT_LENGTH
+      ),
+      taxRate: d.taxKey === "9" ? 19 : d.taxKey === "8" ? 7 : undefined,
+      costCenter1: d.costCenter || undefined,
+    });
+    return entries;
+  }
+
+  // Complex case: multiple lines. Create one row per debit line,
+  // using the first credit account as counter. Then one row per credit
+  // line using the first debit account as counter.
+  const primaryCreditAccount = creditLines[0]?.account || "9999";
+  const primaryDebitAccount = debitLines[0]?.account || "9999";
+
+  for (const d of debitLines) {
+    entries.push({
+      amount: d.debitAmount!,
+      debitCredit: "S",
+      currency: "EUR",
+      account: d.account,
+      counterAccount: primaryCreditAccount,
+      taxKey: d.taxKey || "",
+      documentDate: entryDate,
+      documentNumber: truncate(entry.reference || entry.id.slice(0, 8), MAX_DOCUMENT_NUMBER_LENGTH),
+      bookingText: truncate(
+        d.description || entry.description,
+        MAX_BOOKING_TEXT_LENGTH
+      ),
+      costCenter1: d.costCenter || undefined,
+    });
+  }
+
+  // For multi-credit entries where there's more than one credit line
+  // (the first credit is already the counter for debit lines)
+  if (creditLines.length > 1) {
+    for (let i = 1; i < creditLines.length; i++) {
+      const c = creditLines[i];
+      entries.push({
+        amount: c.creditAmount!,
+        debitCredit: "H",
+        currency: "EUR",
+        account: c.account,
+        counterAccount: primaryDebitAccount,
+        taxKey: c.taxKey || "",
+        documentDate: entryDate,
+        documentNumber: truncate(entry.reference || entry.id.slice(0, 8), MAX_DOCUMENT_NUMBER_LENGTH),
+        bookingText: truncate(
+          c.description || entry.description,
+          MAX_BOOKING_TEXT_LENGTH
+        ),
+        costCenter1: c.costCenter || undefined,
+      });
+    }
+  }
+
+  return entries;
+}
+
+/**
+ * Generate a complete DATEV Buchungsstapel CSV from JournalEntries.
+ */
+export function generateDatevJournalExport(
+  journalEntries: DatevJournalEntryData[],
+  options: DatevExportOptions
+): string {
+  const allEntries: DatevBookingEntry[] = [];
+  for (const je of journalEntries) {
+    allEntries.push(...journalEntryToBookingEntries(je));
+  }
+
+  const rows: string[] = [];
+  rows.push(generateDatevHeader(options));
+  rows.push(generateDatevColumnHeaders());
+  for (const entry of allEntries) {
+    rows.push(bookingEntryToRow(entry));
+  }
+
+  return UTF8_BOM + rows.join(LINE_ENDING) + LINE_ENDING;
+}
+
+/**
+ * Generate DATEV JournalEntry export as Buffer
+ */
+export function generateDatevJournalExportBuffer(
+  journalEntries: DatevJournalEntryData[],
+  options: DatevExportOptions
+): Buffer {
+  return Buffer.from(generateDatevJournalExport(journalEntries, options), "utf-8");
 }

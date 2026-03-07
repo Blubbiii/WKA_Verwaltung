@@ -63,6 +63,7 @@ import {
   GripVertical,
   RotateCcw,
   Wallet,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   DndContext,
@@ -316,6 +317,7 @@ const navGroups: NavGroup[] = [
           { title: "UStVA", titleKey: "accountingUstva", href: "/buchhaltung/ustva", icon: Percent },
           { title: "Anlagen", titleKey: "accountingAssets", href: "/buchhaltung/anlagen", icon: HardDrive },
           { title: "Kassenbuch", titleKey: "accountingCashbook", href: "/buchhaltung/kassenbuch", icon: Coins },
+          { title: "DATEV-Export", titleKey: "accountingDatev", href: "/buchhaltung/datev", icon: FileSpreadsheet },
           { title: "Jahresabschluss", titleKey: "accountingYearEnd", href: "/buchhaltung/jahresabschluss", icon: Archive },
         ],
       },
