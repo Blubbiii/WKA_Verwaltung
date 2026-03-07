@@ -211,7 +211,7 @@ export default function AnlagenPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
-            <Button onClick={handleCreate} disabled={saving || !form.assetNumber || !form.name || !form.acquisitionCost}>
+            <Button onClick={handleCreate} disabled={saving || !form.assetNumber || !form.name || !form.acquisitionCost || !form.acquisitionDate || !form.usefulLifeMonths}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Erstellen
             </Button>
           </DialogFooter>
