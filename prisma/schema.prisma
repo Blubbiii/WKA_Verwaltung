@@ -3291,7 +3291,7 @@ model BankTransaction {
   tenantId          String
   tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   fundId            String?
-  fund              Fund?         @relation("BankTransactionFund", fields: [fundId], references: [id])
+  fund              Fund?         @relation("BankTransactionFund", fields: [fundId], references: [id], onDelete: SetNull)
   bankAccountIban   String        @db.VarChar(34)
   bookingDate       DateTime
   amount            Decimal       @db.Decimal(15, 2)
@@ -3350,7 +3350,7 @@ model DunningItem {
   dunningRunId  String
   dunningRun    DunningRun @relation(fields: [dunningRunId], references: [id], onDelete: Cascade)
   invoiceId     String
-  invoice       Invoice    @relation("DunningItemInvoice", fields: [invoiceId], references: [id])
+  invoice       Invoice    @relation("DunningItemInvoice", fields: [invoiceId], references: [id], onDelete: Cascade)
   level         Int        @default(1) // Mahnstufe 1-3
   overdueDays   Int
   amount        Decimal    @db.Decimal(15, 2)
@@ -3404,7 +3404,7 @@ model SepaPaymentItem {
   batchId         String
   batch           SepaPaymentBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
   invoiceId       String?
-  invoice         Invoice?         @relation("SepaPaymentItemInvoice", fields: [invoiceId], references: [id])
+  invoice         Invoice?         @relation("SepaPaymentItemInvoice", fields: [invoiceId], references: [id], onDelete: SetNull)
   creditorName    String           @db.VarChar(200)
   creditorIban    String           @db.VarChar(34)
   creditorBic     String?          @db.VarChar(11)
@@ -3473,6 +3473,7 @@ model FixedAssetDepreciation {
   createdAt     DateTime   @default(now())
 
   @@index([assetId])
+  @@index([assetId, periodStart])
   @@map("fixed_asset_depreciations")
 }
 
@@ -3496,7 +3497,7 @@ model CashBookEntry {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@index([tenantId])
+  @@unique([tenantId, entryNumber])
   @@index([tenantId, entryDate])
   @@map("cash_book_entries")
 }

@@ -48,7 +48,7 @@ export async function PUT(
     }
 
     const updated = await prisma.ledgerAccount.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: parsed.data,
     });
 
@@ -84,7 +84,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.ledgerAccount.delete({ where: { id } });
+    await prisma.ledgerAccount.delete({ where: { id, tenantId: check.tenantId! } });
 
     return NextResponse.json({ message: "Konto geloescht" });
   } catch (error) {

@@ -32,21 +32,30 @@ export async function generateUstva(
   periodStart: Date,
   periodEnd: Date
 ): Promise<UstvaResult> {
-  const journalLines = await prisma.journalEntryLine.findMany({
-    where: {
-      journalEntry: {
-        tenantId,
-        status: "POSTED",
-        deletedAt: null,
-        entryDate: { gte: periodStart, lte: periodEnd },
+  const [journalLines, ledgerAccounts] = await Promise.all([
+    prisma.journalEntryLine.findMany({
+      where: {
+        journalEntry: {
+          tenantId,
+          status: "POSTED",
+          deletedAt: null,
+          entryDate: { gte: periodStart, lte: periodEnd },
+        },
       },
-    },
-    select: {
-      account: true,
-      debitAmount: true,
-      creditAmount: true,
-    },
-  });
+      select: {
+        account: true,
+        debitAmount: true,
+        creditAmount: true,
+      },
+    }),
+    prisma.ledgerAccount.findMany({
+      where: { tenantId, isActive: true },
+      select: { accountNumber: true, taxBehavior: true },
+    }),
+  ]);
+
+  // Build tax behavior lookup from LedgerAccount
+  const taxBehaviorMap = new Map(ledgerAccounts.map((a) => [a.accountNumber, a.taxBehavior]));
 
   // Aggregate by tax-relevant accounts
   let revenue19 = 0;     // KZ 81: Steuerpflichtige Umsaetze 19%
@@ -62,12 +71,14 @@ export async function generateUstva(
     const debit = toNum(line.debitAmount);
     const acc = line.account;
 
-    // Revenue accounts (8xxx)
+    // Revenue accounts (8xxx) — classify by LedgerAccount.taxBehavior
     if (acc.startsWith("8")) {
       const net = credit - debit;
-      // Simple heuristic: accounts ending with specific patterns
-      if (acc === "8200" || acc === "8335" || acc === "8910") {
+      const taxBehavior = taxBehaviorMap.get(acc);
+      if (taxBehavior === "EXEMPT") {
         revenueExempt += net;
+      } else if (taxBehavior === "TAXABLE_7") {
+        revenue7 += net;
       } else {
         revenue19 += net; // Default to 19%
       }

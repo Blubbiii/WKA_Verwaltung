@@ -68,11 +68,13 @@ async function aggregateByPeriod(
 
     if (acc.startsWith("8")) {
       revenue += net;
-    } else if (acc.startsWith("48") && (acc.startsWith("483") || acc.startsWith("485"))) {
+    } else if (acc.startsWith("480") || acc.startsWith("481") || acc.startsWith("482") || acc.startsWith("483") || acc.startsWith("485") || acc.startsWith("488")) {
+      // SKR03: 48xx = AfA (Abschreibungen auf Sachanlagen)
       depreciation += toNum(line.debitAmount) - toNum(line.creditAmount);
     } else if (acc.startsWith("7")) {
       interest += toNum(line.debitAmount) - toNum(line.creditAmount);
     } else if (acc.startsWith("4") || acc.startsWith("3")) {
+      // SKR03: 4xxx = Betriebliche Aufwendungen, 3xxx = Wareneingang/Material
       expense += toNum(line.debitAmount) - toNum(line.creditAmount);
     } else {
       other += net;

@@ -31,6 +31,7 @@ const MODULE_FLAG_KEYS = [
   "communication.enabled",
   "crm.enabled",
   "inbox.enabled",
+  "wirtschaftsplan.enabled",
   "accounting.enabled",
 ] as const;
 
@@ -40,6 +41,7 @@ export interface ModuleFlags {
   "communication": boolean;
   "crm": boolean;
   "inbox": boolean;
+  "wirtschaftsplan": boolean;
   "accounting": boolean;
 }
 
@@ -49,6 +51,7 @@ const DEFAULT_MODULE_FLAGS: ModuleFlags = {
   "communication": false,
   "crm": false,
   "inbox": false,
+  "wirtschaftsplan": false,
   "accounting": false,
 };
 

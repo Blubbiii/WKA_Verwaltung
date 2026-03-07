@@ -21,7 +21,9 @@ export function calculateLinearDepreciation(
   usefulLifeMonths: number,
   alreadyDepreciated: number
 ): number {
+  if (usefulLifeMonths <= 0) return 0;
   const depreciableAmount = acquisitionCost - residualValue;
+  if (depreciableAmount <= 0) return 0;
   const totalRemaining = depreciableAmount - alreadyDepreciated;
   if (totalRemaining <= 0) return 0;
   const monthlyAmount = depreciableAmount / usefulLifeMonths;
@@ -52,15 +54,21 @@ export async function runDepreciation(
   let totalAmount = 0;
 
   for (const asset of assets) {
+    // Skip if this period was already depreciated for this asset
+    const alreadyRun = asset.depreciations.some(
+      (d) => d.periodStart.getTime() === periodStart.getTime() && d.periodEnd.getTime() === periodEnd.getTime()
+    );
+    if (alreadyRun) continue;
+
     const alreadyDepreciated = asset.depreciations.reduce(
       (sum, d) => sum + Number(d.amount), 0
     );
     const acquisitionCost = Number(asset.acquisitionCost);
     const residualValue = Number(asset.residualValue);
 
-    // Calculate months in period
-    const months = (periodEnd.getFullYear() - periodStart.getFullYear()) * 12
-      + periodEnd.getMonth() - periodStart.getMonth() + 1;
+    // Calculate months in period (day-based, rounded up)
+    const daysDiff = (periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24) + 1;
+    const months = Math.max(1, Math.round(daysDiff / 30.44));
 
     let periodAmount: number;
     if (asset.depreciationMethod === "LINEAR") {
@@ -70,6 +78,7 @@ export async function runDepreciation(
       periodAmount = monthly * months;
     } else {
       // Declining balance: 2x linear rate applied to book value
+      if (asset.usefulLifeMonths <= 0) continue;
       const linearRate = 1 / (asset.usefulLifeMonths / 12);
       const decliningRate = Math.min(linearRate * 2, 0.3); // max 30%
       const bookValue = acquisitionCost - alreadyDepreciated;

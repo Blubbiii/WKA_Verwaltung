@@ -53,7 +53,7 @@ export async function PUT(
     }
 
     const updated = await prisma.fixedAsset.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: {
         name: body.name,
         description: body.description,

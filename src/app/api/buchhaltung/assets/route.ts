@@ -5,6 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { runDepreciation } from "@/lib/accounting/depreciation";
 import { z } from "zod";
 
+const depreciationSchema = z.object({
+  action: z.literal("depreciate"),
+  periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Ungültiges Datumsformat"),
+  periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Ungültiges Datumsformat"),
+  createPostings: z.boolean().optional().default(false),
+});
+
 const createAssetSchema = z.object({
   assetNumber: z.string().min(1),
   name: z.string().min(1),
@@ -62,13 +69,13 @@ export async function POST(request: NextRequest) {
 
     // Special action: run depreciation
     if (body.action === "depreciate") {
-      const { periodStart, periodEnd, createPostings } = body;
+      const parsed = depreciationSchema.parse(body);
       const result = await runDepreciation(
         check.tenantId!,
-        new Date(periodStart),
-        new Date(periodEnd),
+        new Date(parsed.periodStart),
+        new Date(parsed.periodEnd),
         check.userId!,
-        createPostings ?? false
+        parsed.createPostings
       );
       return NextResponse.json(result);
     }

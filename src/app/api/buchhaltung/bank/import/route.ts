@@ -21,6 +21,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Keine Datei hochgeladen" }, { status: 400 });
     }
 
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: "Datei zu groß (max. 10 MB)" }, { status: 400 });
+    }
+
     const content = await file.text();
     const isXml = content.trimStart().startsWith("<?xml") || content.trimStart().startsWith("<");
 

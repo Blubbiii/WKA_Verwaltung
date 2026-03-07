@@ -37,14 +37,21 @@ export async function PATCH(
         if (!invoiceId) {
           return NextResponse.json({ error: "invoiceId erforderlich" }, { status: 400 });
         }
+        // Verify invoice belongs to the same tenant
+        const invoice = await prisma.invoice.findFirst({
+          where: { id: invoiceId, tenantId: check.tenantId! },
+        });
+        if (!invoice) {
+          return NextResponse.json({ error: "Rechnung nicht gefunden" }, { status: 404 });
+        }
         updateData = {
           matchStatus: "MATCHED",
           matchedInvoiceId: invoiceId,
           matchConfidence: 1.0,
         };
-        // Also mark invoice as paid
+        // Mark invoice as paid
         await prisma.invoice.update({
-          where: { id: invoiceId },
+          where: { id: invoiceId, tenantId: check.tenantId! },
           data: {
             status: "PAID",
             paidAt: tx.bookingDate,
@@ -63,7 +70,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.bankTransaction.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: updateData,
     });
 

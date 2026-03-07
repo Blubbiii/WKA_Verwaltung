@@ -3,6 +3,11 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { findDunningCandidates, executeDunningRun } from "@/lib/accounting/dunning";
+import { z } from "zod";
+
+const dunningRunSchema = z.object({
+  invoiceIds: z.array(z.string().uuid()).min(1, "Keine Rechnungen ausgewählt"),
+});
 
 // GET /api/buchhaltung/dunning — List dunning runs OR get candidates
 export async function GET(request: NextRequest) {
@@ -42,15 +47,14 @@ export async function POST(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     const body = await request.json();
-    const invoiceIds: string[] = body.invoiceIds || [];
+    const parsed = dunningRunSchema.parse(body);
 
-    if (invoiceIds.length === 0) {
-      return NextResponse.json({ error: "Keine Rechnungen ausgewählt" }, { status: 400 });
-    }
-
-    const result = await executeDunningRun(check.tenantId!, check.userId!, invoiceIds);
+    const result = await executeDunningRun(check.tenantId!, check.userId!, parsed.invoiceIds);
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Validierungsfehler", details: error.errors }, { status: 400 });
+    }
     logger.error({ err: error }, "Error executing dunning run");
     return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
   }

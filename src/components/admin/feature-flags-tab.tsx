@@ -44,6 +44,7 @@ interface ModuleFlags {
   "communication": boolean;
   "crm": boolean;
   "inbox": boolean;
+  "wirtschaftsplan": boolean;
   "accounting": boolean;
 }
 
@@ -76,6 +77,7 @@ const MODULE_LABELS: Record<keyof ModuleFlags, string> = {
   "communication": "Kommunikation",
   "crm": "CRM",
   "inbox": "Inbox",
+  "wirtschaftsplan": "Wirtschaftsplan",
   "accounting": "Buchhaltung",
 };
 

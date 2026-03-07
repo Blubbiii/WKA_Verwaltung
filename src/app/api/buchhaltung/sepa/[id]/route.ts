@@ -75,7 +75,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.sepaPaymentBatch.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: { status },
     });
 

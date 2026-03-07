@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const batchId = searchParams.get("batchId");
-    const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500);
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "100") || 100, 1), 500);
+    const offset = Math.max(parseInt(searchParams.get("offset") || "0") || 0, 0);
 
     const where: Record<string, unknown> = { tenantId: check.tenantId! };
     if (status) where.matchStatus = status;
