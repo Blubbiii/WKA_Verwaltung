@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, EntityStatus, EnergyCalculationType, TaxType } from "@prisma/client";
+import { PrismaClient, UserRole, EntityStatus, EnergyCalculationType, TaxType, AccountCategory, TaxBehavior } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -157,6 +157,12 @@ const permissionsData = [
   { name: "system:revenue-types", displayName: "Vergütungsarten verwalten", module: "system", action: "revenue-types", sortOrder: 227 },
   { name: "system:fund-categories", displayName: "Gesellschaftstypen verwalten", module: "system", action: "fund-categories", sortOrder: 228 },
 
+  // Accounting Module (Buchhaltung)
+  { name: "accounting:read", displayName: "Buchhaltung anzeigen", module: "accounting", action: "read", sortOrder: 230 },
+  { name: "accounting:create", displayName: "Buchungen erstellen", module: "accounting", action: "create", sortOrder: 231 },
+  { name: "accounting:update", displayName: "Buchungen bearbeiten", module: "accounting", action: "update", sortOrder: 232 },
+  { name: "accounting:delete", displayName: "Buchungen loeschen", module: "accounting", action: "delete", sortOrder: 233 },
+
   // Management Billing Module (Betriebsfuehrung)
   { name: "management-billing:read", displayName: "BF-Abrechnungen anzeigen", description: "Betriebsfuehrungsvertraege und Abrechnungen einsehen", module: "management-billing", action: "read", sortOrder: 240 },
   { name: "management-billing:create", displayName: "BF-Vertraege erstellen", description: "Neue Betriebsfuehrungsvertraege anlegen", module: "management-billing", action: "create", sortOrder: 241 },
@@ -225,6 +231,8 @@ const systemRolesData = [
       "reports:read", "reports:create", "reports:export",
       // Mailings - full access
       "mailings:read", "mailings:write", "mailings:send",
+      // Accounting - full access
+      "accounting:read", "accounting:create", "accounting:update",
       // Settings - read only
       "settings:read",
     ],
@@ -244,6 +252,8 @@ const systemRolesData = [
       // Limited create/update
       "documents:create", "documents:download",
       "service-events:create", "service-events:update",
+      // Accounting - read only
+      "accounting:read",
     ],
   },
   {
@@ -600,6 +610,166 @@ async function seedSystemRoles() {
   }
 }
 
+// ============================================================================
+// SKR03 LEDGER ACCOUNTS (Kontenrahmen)
+// ============================================================================
+const skr03Accounts: Array<{
+  accountNumber: string;
+  name: string;
+  category: AccountCategory;
+  taxBehavior: TaxBehavior;
+  parentNumber?: string;
+}> = [
+  // Klasse 0: Anlage- und Kapitalkonten
+  { accountNumber: "0100", name: "Immaterielle Vermoegensgegenstande", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "0200", name: "Grundstuecke und Gebaeude", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "0210", name: "Geschaeftsbauten", category: "ASSET", taxBehavior: "NONE", parentNumber: "0200" },
+  { accountNumber: "0300", name: "Technische Anlagen und Maschinen", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "0310", name: "Windenergieanlagen", category: "ASSET", taxBehavior: "NONE", parentNumber: "0300" },
+  { accountNumber: "0320", name: "Netzanbindung / Verkabelung", category: "ASSET", taxBehavior: "NONE", parentNumber: "0300" },
+  { accountNumber: "0400", name: "Betriebs- und Geschaeftsausstattung", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "0520", name: "Fahrzeuge", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "0580", name: "GWG (Geringwertige Wirtschaftsgueter)", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "0630", name: "Geleistete Anzahlungen auf Sachanlagen", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "0800", name: "Gezeichnetes Kapital", category: "EQUITY", taxBehavior: "NONE" },
+  { accountNumber: "0810", name: "Kapitalruecklage", category: "EQUITY", taxBehavior: "NONE" },
+  { accountNumber: "0840", name: "Kommanditkapital", category: "EQUITY", taxBehavior: "NONE" },
+  { accountNumber: "0860", name: "Gewinnvortrag", category: "EQUITY", taxBehavior: "NONE" },
+  { accountNumber: "0868", name: "Verlustvortrag", category: "EQUITY", taxBehavior: "NONE" },
+  { accountNumber: "0880", name: "Nicht durch Kapital gedeckter Verlust", category: "EQUITY", taxBehavior: "NONE" },
+
+  // Klasse 1: Finanz- und Privatkonten
+  { accountNumber: "1000", name: "Kasse", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1200", name: "Forderungen aus Lieferungen und Leistungen", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1210", name: "Forderungen gegen Gesellschafter", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1300", name: "Sonstige Forderungen", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1360", name: "Geldtransit", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1400", name: "Forderungen gegen verbundene Unternehmen", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1410", name: "Forderungen Netzbetreiber", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1420", name: "Forderungen Direktvermarkter", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1576", name: "Abziehbare Vorsteuer 19%", category: "ASSET", taxBehavior: "INPUT_TAX" },
+  { accountNumber: "1571", name: "Abziehbare Vorsteuer 7%", category: "ASSET", taxBehavior: "INPUT_TAX" },
+  { accountNumber: "1580", name: "Noch abzuführende USt", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1600", name: "Verbindlichkeiten aus Lieferungen und Leistungen", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1610", name: "Verbindlichkeiten gegen Gesellschafter", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1700", name: "Sonstige Verbindlichkeiten", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1710", name: "Erhaltene Anzahlungen", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1740", name: "Verbindlichkeiten Pachtzahlungen", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1750", name: "Verbindlichkeiten aus Steuern", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1760", name: "Umsatzsteuervorauszahlung", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1776", name: "Umsatzsteuer 19%", category: "LIABILITY", taxBehavior: "OUTPUT_TAX" },
+  { accountNumber: "1771", name: "Umsatzsteuer 7%", category: "LIABILITY", taxBehavior: "OUTPUT_TAX" },
+  { accountNumber: "1780", name: "Umsatzsteuer-Vorauszahlungen", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1790", name: "Umsatzsteuer laufendes Jahr", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1800", name: "Bankkonten (Girokonto)", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1810", name: "Bankkonten (Festgeld)", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1820", name: "Bankkonten (Ruecklagenkonto)", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "1890", name: "Rueckstellungen", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "1900", name: "Privatentnahmen allgemein", category: "EQUITY", taxBehavior: "NONE" },
+
+  // Klasse 2: Abgrenzungskonten
+  { accountNumber: "2000", name: "Aktive Rechnungsabgrenzung", category: "ASSET", taxBehavior: "NONE" },
+  { accountNumber: "2100", name: "Passive Rechnungsabgrenzung", category: "LIABILITY", taxBehavior: "NONE" },
+  { accountNumber: "2900", name: "Sonstige Rueckstellungen", category: "LIABILITY", taxBehavior: "NONE" },
+
+  // Klasse 3: Wareneingang (i.d.R. bei Windpark nicht relevant, nur Platzhalter)
+  { accountNumber: "3000", name: "Wareneingang", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+
+  // Klasse 4: Betriebliche Aufwendungen
+  { accountNumber: "4100", name: "Loehne und Gehaelter", category: "EXPENSE", taxBehavior: "NONE" },
+  { accountNumber: "4120", name: "Betriebsfuehrungsverguetung", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4130", name: "Soziale Abgaben und Aufwendungen", category: "EXPENSE", taxBehavior: "NONE" },
+  { accountNumber: "4200", name: "Raumkosten", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4210", name: "Pachtaufwendungen", category: "EXPENSE", taxBehavior: "EXEMPT" },
+  { accountNumber: "4211", name: "Pacht Poolflaeche", category: "EXPENSE", taxBehavior: "TAXABLE_19", parentNumber: "4210" },
+  { accountNumber: "4212", name: "Pacht Standort / Kabeltrasse", category: "EXPENSE", taxBehavior: "EXEMPT", parentNumber: "4210" },
+  { accountNumber: "4220", name: "Pacht Nutzungsentgelt", category: "EXPENSE", taxBehavior: "EXEMPT", parentNumber: "4210" },
+  { accountNumber: "4360", name: "Versicherungen", category: "EXPENSE", taxBehavior: "EXEMPT" },
+  { accountNumber: "4380", name: "Beitraege und Gebuehren", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4500", name: "Fahrzeugkosten", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4520", name: "Leasingkosten Fahrzeuge", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4600", name: "Werbe- und Reisekosten", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4700", name: "Kosten der Warenabgabe", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4800", name: "Reparaturen und Instandhaltung", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4830", name: "AfA Sachanlagen", category: "EXPENSE", taxBehavior: "NONE" },
+  { accountNumber: "4831", name: "AfA Windenergieanlagen", category: "EXPENSE", taxBehavior: "NONE", parentNumber: "4830" },
+  { accountNumber: "4832", name: "AfA Netzanbindung", category: "EXPENSE", taxBehavior: "NONE", parentNumber: "4830" },
+  { accountNumber: "4855", name: "AfA immaterielle Vermoegensgegenstande", category: "EXPENSE", taxBehavior: "NONE" },
+  { accountNumber: "4900", name: "Sonstige betriebliche Aufwendungen", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4910", name: "Porto / Telefon", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4920", name: "Rechts- und Beratungskosten", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4930", name: "Buchfuehrungskosten", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4940", name: "Wirtschaftspruefung / Abschlusskosten", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4945", name: "Jahresabschlusskosten", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4950", name: "Wartung und Instandsetzung", category: "EXPENSE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "4955", name: "Wartungsvertraege WEA", category: "EXPENSE", taxBehavior: "TAXABLE_19", parentNumber: "4950" },
+  { accountNumber: "4960", name: "Bankgebuehren", category: "EXPENSE", taxBehavior: "EXEMPT" },
+  { accountNumber: "4970", name: "Nebenkosten des Geldverkehrs", category: "EXPENSE", taxBehavior: "EXEMPT" },
+
+  // Klasse 7: Sonstige Erloese und Aufwendungen
+  { accountNumber: "7000", name: "Zinsen und aehnliche Aufwendungen", category: "EXPENSE", taxBehavior: "NONE" },
+  { accountNumber: "7010", name: "Zinsen Bankdarlehen", category: "EXPENSE", taxBehavior: "NONE", parentNumber: "7000" },
+  { accountNumber: "7020", name: "Zinsen Gesellschafterdarlehen", category: "EXPENSE", taxBehavior: "NONE", parentNumber: "7000" },
+  { accountNumber: "7100", name: "Sonstige Zinsertraege", category: "REVENUE", taxBehavior: "NONE" },
+
+  // Klasse 8: Erloeskonten
+  { accountNumber: "8100", name: "Erloese Inland", category: "REVENUE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "8200", name: "Erloese steuerfreie Umsaetze", category: "REVENUE", taxBehavior: "EXEMPT" },
+  { accountNumber: "8300", name: "Erloese Energieerzeugung", category: "REVENUE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "8330", name: "Erloese EEG-Einspeiseverguetung", category: "REVENUE", taxBehavior: "TAXABLE_19", parentNumber: "8300" },
+  { accountNumber: "8335", name: "Erloese Marktpraemie", category: "REVENUE", taxBehavior: "EXEMPT", parentNumber: "8300" },
+  { accountNumber: "8338", name: "Erloese Direktvermarktung", category: "REVENUE", taxBehavior: "TAXABLE_19", parentNumber: "8300" },
+  { accountNumber: "8340", name: "Erloese Redispatch", category: "REVENUE", taxBehavior: "TAXABLE_19", parentNumber: "8300" },
+  { accountNumber: "8400", name: "Erloese Einspeiseverguetung allgemein", category: "REVENUE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "8500", name: "Provisionserloese", category: "REVENUE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "8900", name: "Sonstige betriebliche Ertraege", category: "REVENUE", taxBehavior: "TAXABLE_19" },
+  { accountNumber: "8910", name: "Versicherungsentschaedigungen", category: "REVENUE", taxBehavior: "EXEMPT" },
+  { accountNumber: "8920", name: "Ertraege aus Anlagenabgaengen", category: "REVENUE", taxBehavior: "TAXABLE_19" },
+];
+
+async function seedLedgerAccounts(tenantId: string) {
+  console.log("Seeding SKR03 ledger accounts...");
+
+  let createdCount = 0;
+  let updatedCount = 0;
+
+  for (const acc of skr03Accounts) {
+    const existing = await prisma.ledgerAccount.findUnique({
+      where: { tenantId_accountNumber: { tenantId, accountNumber: acc.accountNumber } },
+    });
+
+    if (existing) {
+      await prisma.ledgerAccount.update({
+        where: { id: existing.id },
+        data: {
+          name: acc.name,
+          category: acc.category,
+          taxBehavior: acc.taxBehavior,
+          parentNumber: acc.parentNumber || null,
+          isSystem: true,
+        },
+      });
+      updatedCount++;
+    } else {
+      await prisma.ledgerAccount.create({
+        data: {
+          tenantId,
+          accountNumber: acc.accountNumber,
+          name: acc.name,
+          category: acc.category,
+          taxBehavior: acc.taxBehavior,
+          parentNumber: acc.parentNumber || null,
+          isSystem: true,
+          isActive: true,
+        },
+      });
+      createdCount++;
+    }
+  }
+
+  console.log(`SKR03 ledger accounts: ${createdCount} created, ${updatedCount} updated`);
+}
+
 async function main() {
   console.log("Seeding database...");
 
@@ -655,6 +825,10 @@ async function main() {
   // Seed Position Tax Mappings for all tenants
   await seedPositionTaxMappings(systemTenant.id);
   await seedPositionTaxMappings(demoTenant.id);
+
+  // Seed SKR03 Ledger Accounts for all tenants
+  await seedLedgerAccounts(systemTenant.id);
+  await seedLedgerAccounts(demoTenant.id);
 
   // Create Superadmin User
   const superadminPassword = await bcrypt.hash("admin123", 12);

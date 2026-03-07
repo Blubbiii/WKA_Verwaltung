@@ -451,6 +451,12 @@ export const PERMISSIONS = {
   WIRTSCHAFTSPLAN_UPDATE: "wirtschaftsplan:update",
   WIRTSCHAFTSPLAN_DELETE: "wirtschaftsplan:delete",
 
+  // Accounting (Buchhaltung)
+  ACCOUNTING_READ: "accounting:read",
+  ACCOUNTING_CREATE: "accounting:create",
+  ACCOUNTING_UPDATE: "accounting:update",
+  ACCOUNTING_DELETE: "accounting:delete",
+
   // Reports
   REPORTS_READ: "reports:read",
   REPORTS_CREATE: "reports:create",

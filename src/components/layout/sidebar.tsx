@@ -97,7 +97,7 @@ interface NavChild {
   href: string;
   icon?: React.ElementType;
   /** Feature flag that must be enabled for this child to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting";
 }
 
 interface NavItem {
@@ -111,7 +111,7 @@ interface NavItem {
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
   /** Feature flag that must be enabled for this item to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting";
 }
 
 interface NavGroup {
@@ -297,6 +297,26 @@ const navGroups: NavGroup[] = [
           { title: "Gewinn & Verlust", titleKey: "wirtschaftsplanPL", href: "/wirtschaftsplan/pl", icon: TrendingUp },
           { title: "Budgetplanung", titleKey: "wirtschaftsplanBudget", href: "/wirtschaftsplan/budget", icon: Wallet },
           { title: "Kostenstellen", titleKey: "wirtschaftsplanCostCenters", href: "/wirtschaftsplan/cost-centers", icon: Building2 },
+        ],
+      },
+      {
+        title: "Buchhaltung",
+        titleKey: "accounting",
+        href: "/buchhaltung",
+        icon: Calculator,
+        permission: "accounting:read",
+        featureFlag: "accounting",
+        children: [
+          { title: "Kontenrahmen", titleKey: "accountingAccounts", href: "/admin/kontenrahmen", icon: BookOpen },
+          { title: "Summen & Salden", titleKey: "accountingSusa", href: "/buchhaltung/susa", icon: Scale },
+          { title: "BWA", titleKey: "accountingBwa", href: "/buchhaltung/bwa", icon: BarChart3 },
+          { title: "Bankimport", titleKey: "accountingBank", href: "/buchhaltung/bank", icon: Landmark },
+          { title: "Mahnwesen", titleKey: "accountingDunning", href: "/buchhaltung/mahnwesen", icon: AlertTriangle },
+          { title: "SEPA-Export", titleKey: "accountingSepa", href: "/buchhaltung/sepa", icon: Send },
+          { title: "UStVA", titleKey: "accountingUstva", href: "/buchhaltung/ustva", icon: Percent },
+          { title: "Anlagen", titleKey: "accountingAssets", href: "/buchhaltung/anlagen", icon: HardDrive },
+          { title: "Kassenbuch", titleKey: "accountingCashbook", href: "/buchhaltung/kassenbuch", icon: Coins },
+          { title: "Jahresabschluss", titleKey: "accountingYearEnd", href: "/buchhaltung/jahresabschluss", icon: Archive },
         ],
       },
     ],

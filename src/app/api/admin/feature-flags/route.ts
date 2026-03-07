@@ -31,6 +31,7 @@ const MODULE_FLAG_KEYS = [
   "communication.enabled",
   "crm.enabled",
   "inbox.enabled",
+  "accounting.enabled",
 ] as const;
 
 export interface ModuleFlags {
@@ -39,6 +40,7 @@ export interface ModuleFlags {
   "communication": boolean;
   "crm": boolean;
   "inbox": boolean;
+  "accounting": boolean;
 }
 
 const DEFAULT_MODULE_FLAGS: ModuleFlags = {
@@ -47,6 +49,7 @@ const DEFAULT_MODULE_FLAGS: ModuleFlags = {
   "communication": false,
   "crm": false,
   "inbox": false,
+  "accounting": false,
 };
 
 // GET /api/admin/feature-flags - List all tenants with their feature flags (SUPERADMIN only)

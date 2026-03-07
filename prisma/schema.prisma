@@ -100,6 +100,7 @@ model Tenant {
   contactLinks              ContactLink[]
   costCenters               CostCenter[]
   annualBudgets             AnnualBudget[]
+  ledgerAccounts            LedgerAccount[]
 
   @@map("tenants")
 }
@@ -2789,24 +2790,34 @@ enum JournalEntryStatus {
   POSTED
 }
 
+enum PostingSource {
+  MANUAL
+  AUTO
+  IMPORT
+}
+
 model JournalEntry {
-  id          String             @id @default(uuid())
-  tenantId    String
-  tenant      Tenant             @relation(fields: [tenantId], references: [id])
-  entryDate   DateTime
-  description String             @db.VarChar(200)
-  reference   String?            @db.VarChar(100)
-  status      JournalEntryStatus @default(DRAFT)
-  createdById String
-  createdBy   User               @relation("JournalEntryCreatedBy", fields: [createdById], references: [id])
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  deletedAt   DateTime?
-  lines       JournalEntryLine[]
+  id            String             @id @default(uuid())
+  tenantId      String
+  tenant        Tenant             @relation(fields: [tenantId], references: [id])
+  entryDate     DateTime
+  description   String             @db.VarChar(200)
+  reference     String?            @db.VarChar(100)
+  status        JournalEntryStatus @default(DRAFT)
+  source        PostingSource      @default(MANUAL)
+  referenceType String?            @db.VarChar(50)
+  referenceId   String?
+  createdById   String
+  createdBy     User               @relation("JournalEntryCreatedBy", fields: [createdById], references: [id])
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  deletedAt     DateTime?
+  lines         JournalEntryLine[]
 
   @@index([tenantId])
   @@index([tenantId, entryDate])
   @@index([tenantId, status])
+  @@index([referenceType, referenceId])
   @@map("journal_entries")
 }
 
@@ -3208,4 +3219,46 @@ model BudgetLine {
   @@index([budgetId])
   @@index([costCenterId])
   @@map("budget_lines")
+}
+
+// =============================================================================
+// ACCOUNTING MODULE — Kontenrahmen (SKR03)
+// =============================================================================
+
+enum AccountCategory {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum TaxBehavior {
+  TAXABLE_19
+  TAXABLE_7
+  EXEMPT
+  INPUT_TAX
+  OUTPUT_TAX
+  NONE
+}
+
+model LedgerAccount {
+  id            String          @id @default(uuid())
+  tenantId      String
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  accountNumber String          @db.VarChar(10)
+  name          String          @db.VarChar(200)
+  category      AccountCategory
+  taxBehavior   TaxBehavior     @default(NONE)
+  isActive      Boolean         @default(true)
+  isSystem      Boolean         @default(false)
+  parentNumber  String?         @db.VarChar(10)
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([tenantId, accountNumber])
+  @@index([tenantId])
+  @@index([tenantId, category])
+  @@map("ledger_accounts")
 }

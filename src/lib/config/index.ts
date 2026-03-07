@@ -234,6 +234,13 @@ export const CONFIG_KEYS = {
     envFallback: "WIRTSCHAFTSPLAN_ENABLED",
     defaultValue: "false",
   },
+  "accounting.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Buchhaltung (SKR03, Auto-Buchung, Reports)",
+    encrypted: false,
+    envFallback: "ACCOUNTING_ENABLED",
+    defaultValue: "false",
+  },
   "meilisearch.enabled": {
     category: "features" as ConfigCategory,
     label: "Meilisearch Volltextsuche",

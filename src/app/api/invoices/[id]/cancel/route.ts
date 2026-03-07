@@ -5,6 +5,7 @@ import { getNextInvoiceNumber } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { reverseAutoPosting } from "@/lib/accounting/auto-posting";
 
 const cancelSchema = z.object({
   reason: z.string().min(1, "Storno-Grund erforderlich"),
@@ -147,6 +148,11 @@ export async function POST(
           select: { id: true, invoiceNumber: true },
         },
       },
+    });
+
+    // Fire-and-forget auto-posting reversal
+    reverseAutoPosting(id, check.userId!).catch((err) => {
+      logger.warn({ err, invoiceId: id }, "[AutoPosting] Failed to reverse auto-posting");
     });
 
     // Invalidate dashboard caches after invoice cancellation (both original and storno created)
