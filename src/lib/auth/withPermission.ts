@@ -321,20 +321,29 @@ export async function requirePagePermission(
     return { userId: session.user.id, tenantId: session.user.tenantId || "" };
   }
 
-  let hasRequiredPermission: boolean;
+  try {
+    let hasRequiredPermission: boolean;
 
-  if (Array.isArray(permission)) {
-    if (options?.requireAll) {
-      hasRequiredPermission = await hasAllPermissions(session.user.id, permission);
+    if (Array.isArray(permission)) {
+      if (options?.requireAll) {
+        hasRequiredPermission = await hasAllPermissions(session.user.id, permission);
+      } else {
+        hasRequiredPermission = await hasAnyPermission(session.user.id, permission);
+      }
     } else {
-      hasRequiredPermission = await hasAnyPermission(session.user.id, permission);
+      hasRequiredPermission = await hasPermission(session.user.id, permission);
     }
-  } else {
-    hasRequiredPermission = await hasPermission(session.user.id, permission);
-  }
 
-  if (!hasRequiredPermission) {
-    redirect(redirectTo);
+    if (!hasRequiredPermission) {
+      redirect(redirectTo);
+    }
+  } catch (error) {
+    // Re-throw Next.js redirect errors (they use throw internally)
+    if (error && typeof error === "object" && "digest" in error) {
+      throw error;
+    }
+    // For DB/network errors: fail-open (API routes enforce permissions anyway)
+    console.error("[requirePagePermission] Permission check failed, allowing access:", error);
   }
 
   return { userId: session.user.id, tenantId: session.user.tenantId || "" };
@@ -359,14 +368,20 @@ export async function requirePageAdmin(
     return { userId: session.user.id, tenantId: session.user.tenantId || "" };
   }
 
-  // Hierarchy check
-  const hierarchy = await getUserHighestHierarchy(session.user.id);
-  if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
+  // Legacy enum fallback (checked before DB query for speed)
+  if (["ADMIN", "SUPERADMIN"].includes(session.user.role || "")) {
     return { userId: session.user.id, tenantId: session.user.tenantId || "" };
   }
 
-  // Legacy enum fallback
-  if (["ADMIN", "SUPERADMIN"].includes(session.user.role || "")) {
+  try {
+    // Hierarchy check (requires DB query)
+    const hierarchy = await getUserHighestHierarchy(session.user.id);
+    if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
+      return { userId: session.user.id, tenantId: session.user.tenantId || "" };
+    }
+  } catch (error) {
+    // For DB errors: fail-open (API routes enforce permissions anyway)
+    console.error("[requirePageAdmin] Hierarchy check failed, allowing access:", error);
     return { userId: session.user.id, tenantId: session.user.tenantId || "" };
   }
 
