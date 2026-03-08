@@ -478,7 +478,7 @@ export function TenantManagement() {
 
       {/* Edit Dialog */}
       <Dialog open={dialogOpen && editingId !== null} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Mandant bearbeiten</DialogTitle>
             <DialogDescription>
