@@ -12,9 +12,6 @@ const batchInvoiceSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const check = await requirePermission("invoices:update");
-    if (!check.authorized) return check.error;
-
     const body = await request.json();
     const parsed = batchInvoiceSchema.safeParse(body);
     if (!parsed.success) {
@@ -25,6 +22,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { action, invoiceIds } = parsed.data;
+
+    // Granular permission check per action (falls back to invoices:update)
+    const permissionMap: Record<string, string[]> = {
+      approve: ["invoices:approve", "invoices:update"],
+      send: ["invoices:send", "invoices:update"],
+      cancel: ["invoices:cancel", "invoices:update"],
+    };
+    const check = await requirePermission(permissionMap[action] || ["invoices:update"]);
+    if (!check.authorized) return check.error;
 
     // Verify all invoices belong to the user's tenant
     const invoices = await prisma.invoice.findMany({

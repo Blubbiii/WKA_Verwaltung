@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth/withPermission";
+import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { parsePaginationParams, parseSortParams } from "@/lib/api-utils";
@@ -56,7 +56,7 @@ const parkCreateSchema = z.object({
 // GET /api/parks - Liste aller Parks
 async function getHandler(request: NextRequest) {
   try {
-    const check = await requirePermission(PERMISSIONS.PARKS_READ);
+    const check = await requirePermissionWithResources(PERMISSIONS.PARKS_READ, "Park");
     if (!check.authorized) return check.error;
 
     const { searchParams } = new URL(request.url);
@@ -74,6 +74,10 @@ async function getHandler(request: NextRequest) {
 
     const where = {
       tenantId: check.tenantId!,
+      // Resource-level filtering: only show parks the user has access to
+      ...(check.resourceRestricted && check.allowedResourceIds?.length && {
+        id: { in: check.allowedResourceIds },
+      }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: "insensitive" as const } },

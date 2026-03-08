@@ -400,6 +400,9 @@ export const PERMISSIONS = {
   DOCUMENTS_DELETE: "documents:delete",
   DOCUMENTS_DOWNLOAD: "documents:download",
   DOCUMENTS_EXPORT: "documents:export",
+  DOCUMENTS_APPROVE: "documents:approve",
+  DOCUMENTS_PUBLISH: "documents:publish",
+  DOCUMENTS_ARCHIVE: "documents:archive",
 
   // Invoices
   INVOICES_READ: "invoices:read",
@@ -407,6 +410,10 @@ export const PERMISSIONS = {
   INVOICES_UPDATE: "invoices:update",
   INVOICES_DELETE: "invoices:delete",
   INVOICES_EXPORT: "invoices:export",
+  INVOICES_APPROVE: "invoices:approve",
+  INVOICES_SEND: "invoices:send",
+  INVOICES_CANCEL: "invoices:cancel",
+  INVOICES_CORRECT: "invoices:correct",
 
   // Votes
   VOTES_READ: "votes:read",

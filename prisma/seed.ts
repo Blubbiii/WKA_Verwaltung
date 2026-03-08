@@ -63,6 +63,9 @@ const permissionsData = [
   { name: "documents:delete", displayName: "Dokumente löschen", module: "documents", action: "delete", sortOrder: 73 },
   { name: "documents:download", displayName: "Dokumente herunterladen", module: "documents", action: "download", sortOrder: 74 },
   { name: "documents:export", displayName: "Dokumente exportieren", module: "documents", action: "export", sortOrder: 75 },
+  { name: "documents:approve", displayName: "Dokumente freigeben", module: "documents", action: "approve", sortOrder: 76 },
+  { name: "documents:publish", displayName: "Dokumente veröffentlichen", module: "documents", action: "publish", sortOrder: 77 },
+  { name: "documents:archive", displayName: "Dokumente archivieren", module: "documents", action: "archive", sortOrder: 78 },
 
   // Invoices Module
   { name: "invoices:read", displayName: "Rechnungen anzeigen", module: "invoices", action: "read", sortOrder: 80 },
@@ -70,6 +73,10 @@ const permissionsData = [
   { name: "invoices:update", displayName: "Rechnungen bearbeiten", module: "invoices", action: "update", sortOrder: 82 },
   { name: "invoices:delete", displayName: "Rechnungen löschen", module: "invoices", action: "delete", sortOrder: 83 },
   { name: "invoices:export", displayName: "Rechnungen exportieren", module: "invoices", action: "export", sortOrder: 84 },
+  { name: "invoices:approve", displayName: "Rechnungen freigeben", module: "invoices", action: "approve", sortOrder: 85 },
+  { name: "invoices:send", displayName: "Rechnungen versenden", module: "invoices", action: "send", sortOrder: 86 },
+  { name: "invoices:cancel", displayName: "Rechnungen stornieren", module: "invoices", action: "cancel", sortOrder: 87 },
+  { name: "invoices:correct", displayName: "Rechnungen korrigieren", module: "invoices", action: "correct", sortOrder: 88 },
 
   // Votes Module
   { name: "votes:read", displayName: "Abstimmungen anzeigen", module: "votes", action: "read", sortOrder: 90 },
@@ -217,8 +224,10 @@ const systemRolesData = [
       "contracts:read", "contracts:create", "contracts:update", "contracts:export",
       // Documents - full access
       "documents:read", "documents:create", "documents:update", "documents:download", "documents:export",
+      "documents:approve", "documents:publish", "documents:archive",
       // Invoices - full access
       "invoices:read", "invoices:create", "invoices:update", "invoices:export",
+      "invoices:approve", "invoices:send", "invoices:cancel", "invoices:correct",
       // Votes - full access
       "votes:read", "votes:create", "votes:update", "votes:manage",
       // Service Events - full access

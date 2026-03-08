@@ -26,11 +26,6 @@ const batchDocumentSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const permissionNeeded =
-      "documents:update";
-    const check = await requirePermission(permissionNeeded);
-    if (!check.authorized) return check.error;
-
     const body = await request.json();
     const parsed = batchDocumentSchema.safeParse(body);
     if (!parsed.success) {
@@ -42,11 +37,15 @@ export async function POST(request: NextRequest) {
 
     const { action, documentIds } = parsed.data;
 
-    // For delete, check delete permission
-    if (action === "delete") {
-      const deleteCheck = await requirePermission("documents:delete");
-      if (!deleteCheck.authorized) return deleteCheck.error;
-    }
+    // Granular permission check per action (falls back to documents:update)
+    const permissionMap: Record<string, string[]> = {
+      approve: ["documents:approve", "documents:update"],
+      publish: ["documents:publish", "documents:update"],
+      archive: ["documents:archive", "documents:update"],
+      delete: ["documents:delete"],
+    };
+    const check = await requirePermission(permissionMap[action] || ["documents:update"]);
+    if (!check.authorized) return check.error;
 
     const documents = await prisma.document.findMany({
       where: { id: { in: documentIds }, tenantId: check.tenantId },

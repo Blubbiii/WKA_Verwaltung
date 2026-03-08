@@ -1,10 +1,10 @@
 import { requirePagePermission } from "@/lib/auth/withPermission";
 
-export default async function EnergyLayout({
+export default async function ContractsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await requirePagePermission("energy:read");
+  await requirePagePermission("contracts:read");
   return <>{children}</>;
 }

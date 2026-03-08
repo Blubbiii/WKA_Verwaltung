@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth/withPermission";
+import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -55,10 +55,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requirePermission(PERMISSIONS.PARKS_READ);
+    const check = await requirePermissionWithResources(PERMISSIONS.PARKS_READ, "Park");
     if (!check.authorized) return check.error;
 
     const { id } = await params;
+
+    // Resource-level check: deny access if user is restricted and park not in allowed list
+    if (check.resourceRestricted && check.allowedResourceIds?.length && !check.allowedResourceIds.includes(id)) {
+      return NextResponse.json({ error: "Keine Berechtigung für diesen Park" }, { status: 403 });
+    }
 
     const park = await prisma.park.findFirst({
       where: {
@@ -229,10 +234,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
+    const check = await requirePermissionWithResources(PERMISSIONS.PARKS_UPDATE, "Park");
     if (!check.authorized) return check.error;
 
     const { id } = await params;
+
+    // Resource-level check
+    if (check.resourceRestricted && check.allowedResourceIds?.length && !check.allowedResourceIds.includes(id)) {
+      return NextResponse.json({ error: "Keine Berechtigung für diesen Park" }, { status: 403 });
+    }
 
     // Prüfe ob Park existiert und zum Tenant gehört
     const existingPark = await prisma.park.findFirst({
@@ -293,10 +303,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requirePermission(PERMISSIONS.PARKS_DELETE);
+    const check = await requirePermissionWithResources(PERMISSIONS.PARKS_DELETE, "Park");
     if (!check.authorized) return check.error;
 
     const { id } = await params;
+
+    // Resource-level check
+    if (check.resourceRestricted && check.allowedResourceIds?.length && !check.allowedResourceIds.includes(id)) {
+      return NextResponse.json({ error: "Keine Berechtigung für diesen Park" }, { status: 403 });
+    }
 
     // Prüfe ob Park existiert und zum Tenant gehört
     const existingPark = await prisma.park.findFirst({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth/withPermission";
+import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { parsePaginationParams } from "@/lib/api-utils";
@@ -32,7 +32,7 @@ const fundCreateSchema = z.object({
 // GET /api/funds - Liste aller Gesellschaften
 export async function GET(request: NextRequest) {
   try {
-    const check = await requirePermission(PERMISSIONS.FUNDS_READ);
+    const check = await requirePermissionWithResources(PERMISSIONS.FUNDS_READ, "Fund");
     if (!check.authorized) return check.error;
 
     const { searchParams } = new URL(request.url);
@@ -45,6 +45,10 @@ export async function GET(request: NextRequest) {
 
     const where = {
       tenantId: check.tenantId!,
+      // Resource-level filtering: only show funds the user has access to
+      ...(check.resourceRestricted && check.allowedResourceIds?.length && {
+        id: { in: check.allowedResourceIds },
+      }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: "insensitive" as const } },

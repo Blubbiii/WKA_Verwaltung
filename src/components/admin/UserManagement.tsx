@@ -120,6 +120,23 @@ interface UserRoleAssignment {
   roleName: string;
   roleColor: string;
   permissions: Permission[];
+  resourceType?: string;
+  resourceIds?: string[];
+}
+
+interface RoleResourceScope {
+  resourceType: string;
+  resourceIds: string[];
+}
+
+interface ParkOption {
+  id: string;
+  name: string;
+}
+
+interface FundOption {
+  id: string;
+  name: string;
 }
 
 interface PermissionGroup {
@@ -214,6 +231,12 @@ export function UserManagement() {
   const [originalUserRoles, setOriginalUserRoles] = useState<string[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
 
+  // Resource scoping per role (roleId -> scope)
+  const [roleScopes, setRoleScopes] = useState<Record<string, RoleResourceScope>>({});
+  const [originalRoleScopes, setOriginalRoleScopes] = useState<Record<string, RoleResourceScope>>({});
+  const [availableParks, setAvailableParks] = useState<ParkOption[]>([]);
+  const [availableFunds, setAvailableFunds] = useState<FundOption[]>([]);
+
   // Form
   const userForm = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
@@ -307,6 +330,19 @@ export function UserManagement() {
         );
         setUserRoles(roleIds);
         setOriginalUserRoles(roleIds);
+
+        // Load resource scopes per role
+        const scopes: Record<string, RoleResourceScope> = {};
+        for (const assignment of data) {
+          if (assignment.resourceType && assignment.resourceType !== "__global__") {
+            scopes[assignment.roleId] = {
+              resourceType: assignment.resourceType,
+              resourceIds: assignment.resourceIds || [],
+            };
+          }
+        }
+        setRoleScopes(scopes);
+        setOriginalRoleScopes(scopes);
       }
     } catch {
       toast.error("Fehler beim Laden der Benutzer-Rollen");
@@ -322,6 +358,12 @@ export function UserManagement() {
       setUserRoles((prev) => [...prev, roleId]);
     } else {
       setUserRoles((prev) => prev.filter((id) => id !== roleId));
+      // Clean up scope when role is removed
+      setRoleScopes((prev) => {
+        const next = { ...prev };
+        delete next[roleId];
+        return next;
+      });
     }
   };
 
@@ -330,6 +372,8 @@ export function UserManagement() {
   const saveRoleChanges = async (userId: string) => {
     const addedRoles = userRoles.filter((id) => !originalUserRoles.includes(id));
     const removedRoles = originalUserRoles.filter((id) => !userRoles.includes(id));
+    // Roles that stayed but may have changed scope
+    const keptRoles = userRoles.filter((id) => originalUserRoles.includes(id));
 
     for (const roleId of removedRoles) {
       const res = await fetch(
@@ -343,19 +387,83 @@ export function UserManagement() {
     }
 
     for (const roleId of addedRoles) {
+      const scope = roleScopes[roleId];
       const res = await fetch(`/api/admin/users/${userId}/roles`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roleId }),
+        body: JSON.stringify({
+          roleId,
+          resourceType: scope?.resourceType || "__global__",
+          resourceIds: scope?.resourceIds || [],
+        }),
       });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Fehler beim Zuweisen der Rolle");
       }
     }
+
+    // Update scope for kept roles if it changed
+    for (const roleId of keptRoles) {
+      const oldScope = originalRoleScopes[roleId];
+      const newScope = roleScopes[roleId];
+      const oldType = oldScope?.resourceType || "__global__";
+      const newType = newScope?.resourceType || "__global__";
+      const oldIds = JSON.stringify(oldScope?.resourceIds || []);
+      const newIds = JSON.stringify(newScope?.resourceIds || []);
+
+      if (oldType !== newType || oldIds !== newIds) {
+        // Delete old assignment and create new one with updated scope
+        await fetch(`/api/admin/users/${userId}/roles?roleId=${roleId}`, {
+          method: "DELETE",
+        });
+        const res = await fetch(`/api/admin/users/${userId}/roles`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roleId,
+            resourceType: newType,
+            resourceIds: newScope?.resourceIds || [],
+          }),
+        });
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || "Fehler beim Aktualisieren der Rolle");
+        }
+      }
+    }
   };
 
   // ─── Create / Edit ────────────────────────────────────────────────────
+
+  const loadResourceOptions = async () => {
+    try {
+      const [parksRes, fundsRes] = await Promise.all([
+        fetch("/api/parks?limit=200"),
+        fetch("/api/funds?limit=200"),
+      ]);
+      if (parksRes.ok) {
+        const json = await parksRes.json();
+        setAvailableParks(
+          (json.data ?? []).map((p: { id: string; name: string }) => ({
+            id: p.id,
+            name: p.name,
+          }))
+        );
+      }
+      if (fundsRes.ok) {
+        const json = await fundsRes.json();
+        setAvailableFunds(
+          (json.data ?? []).map((f: { id: string; name: string }) => ({
+            id: f.id,
+            name: f.name,
+          }))
+        );
+      }
+    } catch {
+      // Non-critical
+    }
+  };
 
   const openCreateDialog = async () => {
     setSelectedUser(null);
@@ -370,8 +478,10 @@ export function UserManagement() {
     });
     setUserRoles([]);
     setOriginalUserRoles([]);
+    setRoleScopes({});
+    setOriginalRoleScopes({});
     setDialogOpen(true);
-    await loadAvailableRoles();
+    await Promise.all([loadAvailableRoles(), loadResourceOptions()]);
   };
 
   const openEditDialog = async (user: User) => {
@@ -387,8 +497,10 @@ export function UserManagement() {
     });
     setUserRoles([]);
     setOriginalUserRoles([]);
+    setRoleScopes({});
+    setOriginalRoleScopes({});
     setDialogOpen(true);
-    await Promise.all([loadAvailableRoles(), loadUserRoles(user.id)]);
+    await Promise.all([loadAvailableRoles(), loadUserRoles(user.id), loadResourceOptions()]);
   };
 
   const handleSave = async (data: UserFormValues) => {
@@ -859,47 +971,180 @@ export function UserManagement() {
                     Keine Rollen verfügbar
                   </p>
                 ) : (
-                  <div className="max-h-48 overflow-y-auto space-y-2 border rounded-md p-3">
-                    {availableRoles.map((role) => (
-                      <div
-                        key={role.id}
-                        className="flex items-center gap-3 py-1"
-                      >
-                        <Checkbox
-                          id={`role-${role.id}`}
-                          checked={userRoles.includes(role.id)}
-                          onCheckedChange={(checked) =>
-                            toggleRole(role.id, checked === true)
-                          }
-                        />
-                        <label
-                          htmlFor={`role-${role.id}`}
-                          className="flex items-center gap-2 text-sm cursor-pointer flex-1"
-                        >
-                          <span
-                            className="h-3 w-3 rounded-full shrink-0"
-                            style={{
-                              backgroundColor: role.color || "#6b7280",
-                            }}
-                          />
-                          <span>{role.name}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            {role._count.userAssignments} Berechtigungen
-                          </Badge>
-                          {role.isSystem && (
-                            <Badge variant="outline" className="text-xs">
-                              System
-                            </Badge>
+                  <div className="max-h-[400px] overflow-y-auto space-y-2 border rounded-md p-3">
+                    {availableRoles.map((role) => {
+                      const isChecked = userRoles.includes(role.id);
+                      const scope = roleScopes[role.id];
+                      const isScoped = !!scope && scope.resourceType !== "__global__";
+
+                      return (
+                        <div key={role.id} className="space-y-2">
+                          <div className="flex items-center gap-3 py-1">
+                            <Checkbox
+                              id={`role-${role.id}`}
+                              checked={isChecked}
+                              onCheckedChange={(checked) =>
+                                toggleRole(role.id, checked === true)
+                              }
+                            />
+                            <label
+                              htmlFor={`role-${role.id}`}
+                              className="flex items-center gap-2 text-sm cursor-pointer flex-1"
+                            >
+                              <span
+                                className="h-3 w-3 rounded-full shrink-0"
+                                style={{
+                                  backgroundColor: role.color || "#6b7280",
+                                }}
+                              />
+                              <span>{role.name}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {role._count.userAssignments} Berechtigungen
+                              </Badge>
+                              {role.isSystem && (
+                                <Badge variant="outline" className="text-xs">
+                                  System
+                                </Badge>
+                              )}
+                              {isScoped && (
+                                <Badge variant="default" className="text-xs">
+                                  Eingeschränkt
+                                </Badge>
+                              )}
+                            </label>
+                          </div>
+
+                          {/* Resource Scoping (only for checked non-superadmin roles) */}
+                          {isChecked && role.name !== "Superadmin" && (
+                            <div className="ml-8 space-y-2 border-l-2 border-muted pl-3 pb-2">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs text-muted-foreground">Zugriff:</Label>
+                                <Select
+                                  value={scope?.resourceType || "__global__"}
+                                  onValueChange={(val) => {
+                                    if (val === "__global__") {
+                                      setRoleScopes((prev) => {
+                                        const next = { ...prev };
+                                        delete next[role.id];
+                                        return next;
+                                      });
+                                    } else {
+                                      setRoleScopes((prev) => ({
+                                        ...prev,
+                                        [role.id]: { resourceType: val, resourceIds: [] },
+                                      }));
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className="h-7 text-xs w-[180px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__global__">Alle Ressourcen</SelectItem>
+                                    <SelectItem value="Park">Nur bestimmte Parks</SelectItem>
+                                    <SelectItem value="Fund">Nur bestimmte Gesellschaften</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Park selection */}
+                              {scope?.resourceType === "Park" && (
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Parks auswählen:</Label>
+                                  <div className="max-h-32 overflow-y-auto space-y-1 border rounded p-2 bg-background">
+                                    {availableParks.length === 0 ? (
+                                      <p className="text-xs text-muted-foreground">Keine Parks verfügbar</p>
+                                    ) : (
+                                      availableParks.map((park) => (
+                                        <div key={park.id} className="flex items-center gap-2">
+                                          <Checkbox
+                                            id={`park-${role.id}-${park.id}`}
+                                            checked={scope.resourceIds.includes(park.id)}
+                                            onCheckedChange={(checked) => {
+                                              setRoleScopes((prev) => {
+                                                const current = prev[role.id];
+                                                const ids = checked
+                                                  ? [...(current?.resourceIds || []), park.id]
+                                                  : (current?.resourceIds || []).filter((id) => id !== park.id);
+                                                return {
+                                                  ...prev,
+                                                  [role.id]: { ...current, resourceIds: ids },
+                                                };
+                                              });
+                                            }}
+                                          />
+                                          <label
+                                            htmlFor={`park-${role.id}-${park.id}`}
+                                            className="text-xs cursor-pointer"
+                                          >
+                                            {park.name}
+                                          </label>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                  {scope.resourceIds.length > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {scope.resourceIds.length} Park{scope.resourceIds.length !== 1 ? "s" : ""} ausgewählt
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Fund selection */}
+                              {scope?.resourceType === "Fund" && (
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Gesellschaften auswählen:</Label>
+                                  <div className="max-h-32 overflow-y-auto space-y-1 border rounded p-2 bg-background">
+                                    {availableFunds.length === 0 ? (
+                                      <p className="text-xs text-muted-foreground">Keine Gesellschaften verfügbar</p>
+                                    ) : (
+                                      availableFunds.map((fund) => (
+                                        <div key={fund.id} className="flex items-center gap-2">
+                                          <Checkbox
+                                            id={`fund-${role.id}-${fund.id}`}
+                                            checked={scope.resourceIds.includes(fund.id)}
+                                            onCheckedChange={(checked) => {
+                                              setRoleScopes((prev) => {
+                                                const current = prev[role.id];
+                                                const ids = checked
+                                                  ? [...(current?.resourceIds || []), fund.id]
+                                                  : (current?.resourceIds || []).filter((id) => id !== fund.id);
+                                                return {
+                                                  ...prev,
+                                                  [role.id]: { ...current, resourceIds: ids },
+                                                };
+                                              });
+                                            }}
+                                          />
+                                          <label
+                                            htmlFor={`fund-${role.id}-${fund.id}`}
+                                            className="text-xs cursor-pointer"
+                                          >
+                                            {fund.name}
+                                          </label>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                  {scope.resourceIds.length > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {scope.resourceIds.length} Gesellschaft{scope.resourceIds.length !== 1 ? "en" : ""} ausgewählt
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           )}
-                        </label>
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 {userRoles.length > 0 && (
                   <p className="text-xs text-muted-foreground">
                     {userRoles.length} Rolle
-                    {userRoles.length !== 1 ? "n" : ""} ausgewaehlt
+                    {userRoles.length !== 1 ? "n" : ""} ausgewählt
                   </p>
                 )}
               </div>

@@ -43,7 +43,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requirePermission("invoices:create");
+    const check = await requirePermission(["invoices:update", "invoices:correct"]);
     if (!check.authorized) return check.error;
 
     const { id } = await params;
