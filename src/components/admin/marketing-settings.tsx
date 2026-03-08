@@ -125,7 +125,7 @@ export function MarketingSettings() {
         // Add local IDs to features for UI state management
         const features = (data.features ?? []).map((f: FeatureConfig) => ({
           ...f,
-          id: crypto.randomUUID(),
+          id: Math.random().toString(36).slice(2),
         }));
         setConfig({
           hero: data.hero ?? DEFAULT_CONFIG.hero,
@@ -235,7 +235,7 @@ export function MarketingSettings() {
     }
 
     const newFeature: Feature = {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).slice(2),
       icon: "activity",
       title: "",
       description: "",

@@ -256,7 +256,7 @@ export default function EditInvoicePage({
     setItems([
       ...items,
       {
-        id: crypto.randomUUID(),
+        id: Math.random().toString(36).slice(2),
         isNew: true,
         description: "",
         quantity: 1,

@@ -103,7 +103,7 @@ function NewInvoiceContent() {
 
   const [items, setItems] = useState<InvoiceItem[]>([
     {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).slice(2),
       description: "",
       quantity: 1,
       unit: "Stueck",
@@ -140,7 +140,7 @@ function NewInvoiceContent() {
     setItems([
       ...items,
       {
-        id: crypto.randomUUID(),
+        id: Math.random().toString(36).slice(2),
         description: "",
         quantity: 1,
         unit: "Stueck",
