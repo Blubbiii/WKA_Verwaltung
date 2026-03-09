@@ -132,7 +132,17 @@ interface Invoice {
   emailedTo: string | null;
   createdAt: string;
   items: InvoiceItem[];
-  fund: { id: string; name: string } | null;
+  fund: {
+    id: string;
+    name: string;
+    legalForm: string | null;
+    street: string | null;
+    houseNumber: string | null;
+    postalCode: string | null;
+    city: string | null;
+    address: string | null;
+    managingDirector: string | null;
+  } | null;
   park: {
     id: string;
     name: string;
@@ -780,7 +790,31 @@ export default function InvoiceDetailPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {invoice.park?.billingEntityFund ? (
+            {invoice.fund ? (
+              <div className="space-y-1">
+                <p className="font-medium">
+                  {invoice.fund.name}
+                  {invoice.fund.legalForm && (
+                    <span className="text-muted-foreground font-normal ml-1">
+                      {invoice.fund.legalForm}
+                    </span>
+                  )}
+                </p>
+                {(invoice.fund.street || invoice.fund.address) ? (
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">
+                    {invoice.fund.address || [
+                      invoice.fund.street && `${invoice.fund.street}${invoice.fund.houseNumber ? ` ${invoice.fund.houseNumber}` : ""}`,
+                      (invoice.fund.postalCode || invoice.fund.city) && `${invoice.fund.postalCode ?? ""} ${invoice.fund.city ?? ""}`.trim(),
+                    ].filter(Boolean).join("\n")}
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-600">Keine Adresse hinterlegt</p>
+                )}
+                {invoice.fund.managingDirector && (
+                  <p className="text-xs text-muted-foreground">GF: {invoice.fund.managingDirector}</p>
+                )}
+              </div>
+            ) : invoice.park?.billingEntityFund ? (
               <div className="space-y-1">
                 <p className="font-medium">
                   {invoice.park.billingEntityFund.name}

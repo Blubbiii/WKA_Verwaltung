@@ -259,7 +259,7 @@ export function InvoiceTemplate({ invoice, template, letterhead, watermark, comp
           recipient={recipient}
           layout={layout}
           marginLeft={0}
-          senderLine={letterhead.senderAddress ?? undefined}
+          senderLine={senderAddress ?? undefined}
         />
 
         {/* Metadaten (rechts) */}

@@ -963,7 +963,7 @@ export default function EditInvoicePage({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fundId">Gesellschaft</Label>
+                <Label htmlFor="fundId">Rechnungssteller (Gesellschaft)</Label>
                 <Select
                   value={formData.fundId || "none"}
                   onValueChange={(value) =>

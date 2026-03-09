@@ -46,7 +46,17 @@ export async function GET(
           orderBy: { position: "asc" },
         },
         fund: {
-          select: { id: true, name: true },
+          select: {
+            id: true,
+            name: true,
+            legalForm: true,
+            street: true,
+            houseNumber: true,
+            postalCode: true,
+            city: true,
+            address: true,
+            managingDirector: true,
+          },
         },
         shareholder: {
           select: {
