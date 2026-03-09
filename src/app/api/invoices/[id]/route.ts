@@ -6,6 +6,7 @@ import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { serializePrisma } from "@/lib/serialize";
 
 const invoiceUpdateSchema = z.object({
   invoiceDate: z.string().optional(),
@@ -171,7 +172,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(invoice);
+    return NextResponse.json(serializePrisma(invoice));
   } catch (error) {
     logger.error({ err: error }, "Error fetching invoice");
     return NextResponse.json(
@@ -319,7 +320,7 @@ export async function PATCH(
       logger.warn({ err }, '[Invoices] Cache invalidation error after update');
     });
 
-    return NextResponse.json(invoice);
+    return NextResponse.json(serializePrisma(invoice));
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

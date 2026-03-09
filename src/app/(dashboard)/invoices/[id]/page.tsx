@@ -946,11 +946,12 @@ export default function InvoiceDetailPage({
             {(() => {
               const taxGroups = new Map<number, number>();
               for (const item of invoice.items) {
-                taxGroups.set(item.taxRate, (taxGroups.get(item.taxRate) || 0) + item.taxAmount);
+                const rate = Number(item.taxRate);
+                taxGroups.set(rate, (taxGroups.get(rate) || 0) + Number(item.taxAmount));
               }
               // Fallback to invoice-level if no items
               if (taxGroups.size === 0) {
-                taxGroups.set(invoice.taxRate, invoice.taxAmount || 0);
+                taxGroups.set(Number(invoice.taxRate), Number(invoice.taxAmount) || 0);
               }
               return Array.from(taxGroups.entries())
                 .sort(([a], [b]) => a - b)
