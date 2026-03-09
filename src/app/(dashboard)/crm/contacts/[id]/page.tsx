@@ -3,7 +3,7 @@
 import { use, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/format";
-import { ArrowLeft, Mail, Phone, MapPin, Building2, User, Users } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Building2, User, Users, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";
+import { ContactEditDialog } from "@/components/crm/contact-edit-dialog";
 
 // ============================================================================
 // Types
@@ -78,6 +79,7 @@ export default function CrmContactDetailPage({
   const [contact, setContact] = useState<CrmContactDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingType, setSavingType] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -146,21 +148,27 @@ export default function CrmContactDetailPage({
   return (
     <div className="space-y-6">
       {/* Back + Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold">{displayName}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            {contact.contactType ? (
-              <Badge variant="secondary">{contact.contactType}</Badge>
-            ) : null}
-            <Badge variant={contact.status === "ACTIVE" ? "default" : "outline"}>
-              {contact.status === "ACTIVE" ? "Aktiv" : contact.status}
-            </Badge>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold">{displayName}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              {contact.contactType ? (
+                <Badge variant="secondary">{contact.contactType}</Badge>
+              ) : null}
+              <Badge variant={contact.status === "ACTIVE" ? "default" : "outline"}>
+                {contact.status === "ACTIVE" ? "Aktiv" : contact.status}
+              </Badge>
+            </div>
           </div>
         </div>
+        <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+          <Pencil className="mr-2 h-4 w-4" />
+          Bearbeiten
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -321,6 +329,14 @@ export default function CrmContactDetailPage({
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Edit Dialog */}
+      <ContactEditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        contact={contact}
+        onSaved={load}
+      />
     </div>
   );
 }

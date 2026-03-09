@@ -7,6 +7,18 @@ import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
 const updateSchema = z.object({
+  salutation: z.string().max(20).optional().nullable(),
+  firstName: z.string().max(100).optional().nullable(),
+  lastName: z.string().max(100).optional().nullable(),
+  companyName: z.string().max(200).optional().nullable(),
+  email: z.string().email().max(200).optional().nullable().or(z.literal("")),
+  phone: z.string().max(50).optional().nullable(),
+  mobile: z.string().max(50).optional().nullable(),
+  street: z.string().max(200).optional().nullable(),
+  houseNumber: z.string().max(20).optional().nullable(),
+  postalCode: z.string().max(10).optional().nullable(),
+  city: z.string().max(100).optional().nullable(),
+  country: z.string().max(100).optional(),
   contactType: z.string().max(50).optional().nullable(),
   notes: z.string().optional().nullable(),
 });
@@ -88,12 +100,18 @@ export async function PUT(
       );
     }
 
+    // Build update data from all provided fields
+    const updateData: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(parsed.data)) {
+      if (value !== undefined) {
+        // Treat empty string email as null
+        updateData[key] = key === "email" && value === "" ? null : value;
+      }
+    }
+
     const updated = await prisma.person.update({
       where: { id },
-      data: {
-        ...(parsed.data.contactType !== undefined && { contactType: parsed.data.contactType }),
-        ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
-      },
+      data: updateData,
     });
 
     return NextResponse.json(serializePrisma(updated));
