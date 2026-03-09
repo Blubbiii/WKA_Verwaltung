@@ -70,7 +70,7 @@ function buildCompanyInfoFromFund(fund: {
   registrationCourt: string | null;
   managingDirector: string | null;
 }): LetterheadCompanyInfo {
-  const fullName = fund.legalForm
+  const fullName = fund.legalForm && !fund.name.includes(fund.legalForm)
     ? `${fund.name} ${fund.legalForm}`
     : fund.name;
 

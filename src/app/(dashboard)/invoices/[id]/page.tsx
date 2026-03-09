@@ -794,7 +794,7 @@ export default function InvoiceDetailPage({
               <div className="space-y-1">
                 <p className="font-medium">
                   {invoice.fund.name}
-                  {invoice.fund.legalForm && (
+                  {invoice.fund.legalForm && !invoice.fund.name.includes(invoice.fund.legalForm) && (
                     <span className="text-muted-foreground font-normal ml-1">
                       {invoice.fund.legalForm}
                     </span>
@@ -818,7 +818,7 @@ export default function InvoiceDetailPage({
               <div className="space-y-1">
                 <p className="font-medium">
                   {invoice.park.billingEntityFund.name}
-                  {invoice.park.billingEntityFund.legalForm && (
+                  {invoice.park.billingEntityFund.legalForm && !invoice.park.billingEntityFund.name.includes(invoice.park.billingEntityFund.legalForm) && (
                     <span className="text-muted-foreground font-normal ml-1">
                       ({invoice.park.billingEntityFund.legalForm})
                     </span>
@@ -936,12 +936,27 @@ export default function InvoiceDetailPage({
               <span className="text-sm text-muted-foreground">Netto</span>
               <span>{formatCurrency(invoice.netAmount)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">
-                MwSt ({invoice.taxRate}%)
-              </span>
-              <span>{formatCurrency(invoice.taxAmount || 0)}</span>
-            </div>
+            {/* Tax breakdown grouped by rate from items */}
+            {(() => {
+              const taxGroups = new Map<number, number>();
+              for (const item of invoice.items) {
+                taxGroups.set(item.taxRate, (taxGroups.get(item.taxRate) || 0) + item.taxAmount);
+              }
+              // Fallback to invoice-level if no items
+              if (taxGroups.size === 0) {
+                taxGroups.set(invoice.taxRate, invoice.taxAmount || 0);
+              }
+              return Array.from(taxGroups.entries())
+                .sort(([a], [b]) => a - b)
+                .map(([rate, amount]) => (
+                  <div key={rate} className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      MwSt ({rate}%)
+                    </span>
+                    <span>{formatCurrency(amount)}</span>
+                  </div>
+                ));
+            })()}
             <Separator className="my-2" />
             <div className="flex justify-between font-medium">
               <span>Brutto</span>

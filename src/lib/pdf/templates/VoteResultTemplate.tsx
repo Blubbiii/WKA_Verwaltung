@@ -374,7 +374,7 @@ export function VoteResultTemplate({
             <Text style={styles.metaLabel}>Gesellschaft:</Text>
             <Text style={styles.metaValue}>
               {data.fund.name}
-              {data.fund.legalForm ? ` ${data.fund.legalForm}` : ""}
+              {data.fund.legalForm && !data.fund.name.includes(data.fund.legalForm) ? ` ${data.fund.legalForm}` : ""}
             </Text>
           </View>
           <View style={styles.metaRow}>
