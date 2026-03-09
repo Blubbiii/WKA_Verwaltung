@@ -241,6 +241,13 @@ export const CONFIG_KEYS = {
     envFallback: "ACCOUNTING_ENABLED",
     defaultValue: "false",
   },
+  "document-routing.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Dokument-Routing (OneDrive/DATEV Ordner-Zuordnung)",
+    encrypted: false,
+    envFallback: "DOCUMENT_ROUTING_ENABLED",
+    defaultValue: "false",
+  },
   "meilisearch.enabled": {
     category: "features" as ConfigCategory,
     label: "Meilisearch Volltextsuche",

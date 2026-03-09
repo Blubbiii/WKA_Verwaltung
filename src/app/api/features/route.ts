@@ -55,6 +55,12 @@ export async function GET() {
       false
     );
 
+    const documentRoutingEnabled = await getConfigBoolean(
+      "document-routing.enabled",
+      check.tenantId,
+      false
+    );
+
     return NextResponse.json({
       "management-billing": managementBillingEnabled,
       "paperless": paperlessEnabled,
@@ -63,6 +69,7 @@ export async function GET() {
       "inbox": inboxEnabled,
       "wirtschaftsplan": wirtschaftsplanEnabled,
       "accounting": accountingEnabled,
+      "document-routing": documentRoutingEnabled,
     });
   } catch {
     return NextResponse.json({
@@ -73,6 +80,7 @@ export async function GET() {
       "inbox": false,
       "wirtschaftsplan": false,
       "accounting": false,
+      "document-routing": false,
     });
   }
 }

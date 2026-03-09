@@ -106,6 +106,7 @@ model Tenant {
   sepaPaymentBatches        SepaPaymentBatch[]
   fixedAssets               FixedAsset[]
   cashBookEntries           CashBookEntry[]
+  documentRoutingRules      DocumentRoutingRule[]
 
   @@map("tenants")
 }
@@ -430,6 +431,7 @@ model Fund {
   incomingInvoiceSplits                                 IncomingInvoiceSplit[]
   costCenters                                           CostCenter[]
   bankTransactions                                      BankTransaction[]     @relation("BankTransactionFund")
+  documentRoutingRules                                  DocumentRoutingRule[]
 
   @@index([tenantId])
   @@index([fundCategoryId])
@@ -3501,4 +3503,27 @@ model CashBookEntry {
   @@unique([tenantId, entryNumber])
   @@index([tenantId, entryDate])
   @@map("cash_book_entries")
+}
+
+// =============================================================================
+// Document Routing Rules (OneDrive / DATEV folder mapping)
+// =============================================================================
+
+model DocumentRoutingRule {
+  id            String      @id @default(uuid())
+  tenantId      String
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fundId        String?
+  fund          Fund?       @relation(fields: [fundId], references: [id], onDelete: SetNull)
+  invoiceType   InvoiceType // INVOICE or CREDIT_NOTE
+  targetPath    String      @db.VarChar(500) // e.g. "41068-BIH GmbH -> Rechnungseingang"
+  targetType    String      @default("onedrive") @db.VarChar(50) // onedrive, smb, dropbox
+  isActive      Boolean     @default(true)
+  description   String?     @db.VarChar(200)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([tenantId, fundId, invoiceType, targetType])
+  @@index([tenantId])
+  @@map("document_routing_rules")
 }

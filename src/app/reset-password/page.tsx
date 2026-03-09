@@ -350,7 +350,7 @@ export default function ResetPasswordPage() {
         <ResetPasswordForm />
       </Suspense>
       <div className="fixed bottom-4 text-center text-sm text-muted-foreground">
-        WindparkManager v0.1.0
+        WindparkManager v{process.env.NEXT_PUBLIC_APP_VERSION || "0.4.0"}
       </div>
     </div>
   );

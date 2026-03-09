@@ -33,6 +33,7 @@ const MODULE_FLAG_KEYS = [
   "inbox.enabled",
   "wirtschaftsplan.enabled",
   "accounting.enabled",
+  "document-routing.enabled",
 ] as const;
 
 export interface ModuleFlags {
@@ -43,6 +44,7 @@ export interface ModuleFlags {
   "inbox": boolean;
   "wirtschaftsplan": boolean;
   "accounting": boolean;
+  "document-routing": boolean;
 }
 
 const DEFAULT_MODULE_FLAGS: ModuleFlags = {
@@ -53,6 +55,7 @@ const DEFAULT_MODULE_FLAGS: ModuleFlags = {
   "inbox": false,
   "wirtschaftsplan": false,
   "accounting": false,
+  "document-routing": false,
 };
 
 // GET /api/admin/feature-flags - List all tenants with their feature flags (SUPERADMIN only)

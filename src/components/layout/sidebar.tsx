@@ -64,6 +64,8 @@ import {
   RotateCcw,
   Wallet,
   FileSpreadsheet,
+  FolderSync,
+  Tag,
 } from "lucide-react";
 import {
   DndContext,
@@ -98,7 +100,7 @@ interface NavChild {
   href: string;
   icon?: React.ElementType;
   /** Feature flag that must be enabled for this child to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing";
 }
 
 interface NavItem {
@@ -112,7 +114,7 @@ interface NavItem {
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
   /** Feature flag that must be enabled for this item to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing";
 }
 
 interface NavGroup {
@@ -476,6 +478,14 @@ const navGroups: NavGroup[] = [
         icon: Archive,
         permission: "admin:manage",
       },
+      {
+        title: "Dokument-Routing",
+        titleKey: "documentRouting",
+        href: "/admin/document-routing",
+        icon: FolderSync,
+        permission: "admin:manage",
+        featureFlag: "document-routing",
+      },
     ],
   },
 
@@ -575,6 +585,13 @@ const navGroups: NavGroup[] = [
         href: "/admin/webhooks",
         icon: Radio,
         permission: "admin:manage",
+      },
+      {
+        title: "Versionsverwaltung",
+        titleKey: "versionManagement",
+        href: "/admin/version",
+        icon: Tag,
+        permission: "system:config",
       },
     ],
   },

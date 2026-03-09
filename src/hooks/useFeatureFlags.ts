@@ -9,6 +9,7 @@ interface FeatureFlags {
   "wirtschaftsplan": boolean;
   "meilisearch": boolean;
   "accounting": boolean;
+  "document-routing": boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -20,6 +21,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   "wirtschaftsplan": false,
   "meilisearch": false,
   "accounting": false,
+  "document-routing": false,
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : DEFAULT_FLAGS);
