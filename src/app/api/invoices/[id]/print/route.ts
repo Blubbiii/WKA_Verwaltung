@@ -21,6 +21,7 @@ export async function POST(
       select: {
         id: true,
         invoiceNumber: true,
+        invoiceType: true,
         tenantId: true,
         status: true,
       },
@@ -33,10 +34,8 @@ export async function POST(
       );
     }
 
-    // PDF generieren (laedt Invoice intern mit allen Relationen)
-    const pdfBuffer = await generateInvoicePdf(invoice.id);
-
     // Druck-Zeitstempel setzen + bei DRAFT automatisch als versendet markieren
+    // WICHTIG: Status ZUERST ändern, damit PDF ohne ENTWURF-Wasserzeichen generiert wird
     await prisma.invoice.update({
       where: { id },
       data: {
@@ -48,8 +47,12 @@ export async function POST(
       },
     });
 
-    // Dateiname erstellen
-    const filename = `Gutschrift_${invoice.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, "_")}.pdf`;
+    // PDF generieren (laedt Invoice intern mit allen Relationen)
+    const pdfBuffer = await generateInvoicePdf(invoice.id);
+
+    // Dateiname basierend auf Rechnungstyp
+    const typePrefix = invoice.invoiceType === "CREDIT_NOTE" ? "Gutschrift" : "Rechnung";
+    const filename = `${typePrefix}_${invoice.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, "_")}.pdf`;
 
     // PDF als Response zurückgeben
     return new NextResponse(new Uint8Array(pdfBuffer), {

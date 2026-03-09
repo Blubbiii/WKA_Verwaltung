@@ -150,13 +150,15 @@ export async function POST(request: NextRequest) {
         const pdfBuffer = await generateInvoicePdf(invoice.id);
 
         // Send email
+        const isCredit = invoice.invoiceType === "CREDIT_NOTE";
+        const docLabel = isCredit ? "Gutschrift" : "Rechnung";
         const emailResult = await sendEmailSync({
           to: emailAddress,
-          subject: `Gutschrift ${invoice.invoiceNumber}`,
-          html: `<p>Sehr geehrte Damen und Herren,</p><p>anbei erhalten Sie die Gutschrift Nr. ${invoice.invoiceNumber}.</p><p>Mit freundlichen Gruessen</p>`,
+          subject: `${docLabel} ${invoice.invoiceNumber}`,
+          html: `<p>Sehr geehrte Damen und Herren,</p><p>anbei erhalten Sie die ${docLabel} Nr. ${invoice.invoiceNumber}.</p><p>Mit freundlichen Grüßen</p>`,
           attachments: [
             {
-              filename: `Gutschrift_${invoice.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, "_")}.pdf`,
+              filename: `${docLabel}_${invoice.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, "_")}.pdf`,
               content: pdfBuffer,
               contentType: "application/pdf",
             },
