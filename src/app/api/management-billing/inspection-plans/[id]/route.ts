@@ -1,0 +1,203 @@
+/**
+ * Inspection Plan Detail API
+ *
+ * GET    - Get plan details with recent reports
+ * PUT    - Update plan fields
+ * DELETE - Delete plan
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { requirePermission } from "@/lib/auth/withPermission";
+import { prisma } from "@/lib/prisma";
+import { getConfigBoolean } from "@/lib/config";
+import { apiLogger as logger } from "@/lib/logger";
+
+async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
+  const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
+  if (!enabled) {
+    return NextResponse.json(
+      { error: "Management-Billing Feature ist nicht aktiviert" },
+      { status: 404 }
+    );
+  }
+  return null;
+}
+
+// =============================================================================
+// GET /api/management-billing/inspection-plans/[id]
+// =============================================================================
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const check = await requirePermission("management-billing:read");
+    if (!check.authorized) return check.error;
+
+    const featureCheck = await checkFeatureEnabled(check.tenantId);
+    if (featureCheck) return featureCheck;
+
+    const { id } = await params;
+
+    const plan = await prisma.inspectionPlan.findUnique({
+      where: { id },
+      include: {
+        park: { select: { id: true, name: true } },
+        turbine: { select: { id: true, designation: true } },
+        inspectionReports: {
+          take: 5,
+          orderBy: { inspectionDate: "desc" },
+          include: {
+            _count: { select: { defects: true } },
+          },
+        },
+      },
+    });
+
+    if (!plan) {
+      return NextResponse.json(
+        { error: "Begehungsplan nicht gefunden" },
+        { status: 404 }
+      );
+    }
+
+    // Access control: non-superadmin can only see their own tenant's plans
+    if (check.tenantId && plan.tenantId !== check.tenantId) {
+      return NextResponse.json(
+        { error: "Keine Berechtigung" },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json({ plan });
+  } catch (error) {
+    logger.error({ err: error }, "[Inspections] GET inspection-plan detail error");
+    return NextResponse.json(
+      { error: "Fehler beim Laden des Begehungsplans" },
+      { status: 500 }
+    );
+  }
+}
+
+// =============================================================================
+// PUT /api/management-billing/inspection-plans/[id]
+// =============================================================================
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const check = await requirePermission("management-billing:create");
+    if (!check.authorized) return check.error;
+
+    const featureCheck = await checkFeatureEnabled(check.tenantId);
+    if (featureCheck) return featureCheck;
+
+    const { id } = await params;
+    const body = await request.json();
+
+    const existing = await prisma.inspectionPlan.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Begehungsplan nicht gefunden" },
+        { status: 404 }
+      );
+    }
+
+    // Access control
+    if (check.tenantId && existing.tenantId !== check.tenantId) {
+      return NextResponse.json(
+        { error: "Keine Berechtigung" },
+        { status: 403 }
+      );
+    }
+
+    const { title, description, recurrence, nextDueDate, parkId, turbineId, isActive } = body;
+
+    const updated = await prisma.inspectionPlan.update({
+      where: { id },
+      data: {
+        ...(title !== undefined && { title }),
+        ...(description !== undefined && { description }),
+        ...(recurrence !== undefined && { recurrence }),
+        ...(nextDueDate !== undefined && { nextDueDate: new Date(nextDueDate) }),
+        ...(parkId !== undefined && { parkId: parkId || null }),
+        ...(turbineId !== undefined && { turbineId: turbineId || null }),
+        ...(isActive !== undefined && { isActive }),
+      },
+    });
+
+    logger.info(
+      { planId: id },
+      "[Inspections] Inspection plan updated"
+    );
+
+    return NextResponse.json({ plan: updated });
+  } catch (error) {
+    logger.error({ err: error }, "[Inspections] PUT inspection-plan error");
+    return NextResponse.json(
+      { error: "Fehler beim Aktualisieren des Begehungsplans" },
+      { status: 500 }
+    );
+  }
+}
+
+// =============================================================================
+// DELETE /api/management-billing/inspection-plans/[id]
+// =============================================================================
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const check = await requirePermission("management-billing:create");
+    if (!check.authorized) return check.error;
+
+    const featureCheck = await checkFeatureEnabled(check.tenantId);
+    if (featureCheck) return featureCheck;
+
+    const { id } = await params;
+
+    const existing = await prisma.inspectionPlan.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: "Begehungsplan nicht gefunden" },
+        { status: 404 }
+      );
+    }
+
+    // Access control
+    if (check.tenantId && existing.tenantId !== check.tenantId) {
+      return NextResponse.json(
+        { error: "Keine Berechtigung" },
+        { status: 403 }
+      );
+    }
+
+    await prisma.inspectionPlan.delete({
+      where: { id },
+    });
+
+    logger.info(
+      { planId: id },
+      "[Inspections] Inspection plan deleted"
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    logger.error({ err: error }, "[Inspections] DELETE inspection-plan error");
+    return NextResponse.json(
+      { error: "Fehler beim Loeschen des Begehungsplans" },
+      { status: 500 }
+    );
+  }
+}

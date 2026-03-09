@@ -286,6 +286,10 @@ const navGroups: NavGroup[] = [
           { title: "Übersicht", titleKey: "managementBillingOverview", href: "/management-billing" },
           { title: "BF-Verträge", titleKey: "managementStakeholders", href: "/management-billing/stakeholders" },
           { title: "Abrechnungen", titleKey: "managementBillings", href: "/management-billing/billings" },
+          { title: "Tagesgeschäft", titleKey: "managementTasks", href: "/management-billing/tasks" },
+          { title: "Begehungen", titleKey: "managementInspections", href: "/management-billing/inspections" },
+          { title: "Versicherungen", titleKey: "managementInsurance", href: "/management-billing/insurance" },
+          { title: "Optimierung", titleKey: "managementOptimization", href: "/management-billing/optimization" },
         ],
       },
       {

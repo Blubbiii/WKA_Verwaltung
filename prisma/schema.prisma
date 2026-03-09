@@ -107,6 +107,12 @@ model Tenant {
   fixedAssets               FixedAsset[]
   cashBookEntries           CashBookEntry[]
   documentRoutingRules      DocumentRoutingRule[]
+  operationalChecklists     OperationalChecklist[]
+  operationalTasks          OperationalTask[]
+  inspectionPlans           InspectionPlan[]
+  inspectionReports         InspectionReport[]
+  defects                   Defect[]
+  insuranceClaims           InsuranceClaim[]
 
   @@map("tenants")
 }
@@ -168,6 +174,11 @@ model User {
   cashBookEntriesCreated                                                  CashBookEntry[]             @relation("CashBookEntryCreatedBy")
   incomingInvoicesCreated                                                 IncomingInvoice[]           @relation("IncomingInvoiceCreator")
   mapAnnotations                                                          MapAnnotation[]
+  operationalTasksCreated                                                 OperationalTask[]           @relation("OperationalTaskCreator")
+  operationalTasksAssigned                                                OperationalTask[]           @relation("OperationalTaskAssignee")
+  inspectionReportsCreated                                                InspectionReport[]          @relation("InspectionReportCreator")
+  defectsCreated                                                          Defect[]                    @relation("DefectCreator")
+  insuranceClaimsCreated                                                  InsuranceClaim[]            @relation("InsuranceClaimCreator")
 
   @@index([tenantId])
   @@index([email])
@@ -269,6 +280,12 @@ model Park {
   crmActivities                          CrmActivity[]
   mapAnnotations                         MapAnnotation[]
   costCenters                            CostCenter[]
+  operationalChecklists                  OperationalChecklist[]
+  operationalTasks                       OperationalTask[]
+  inspectionPlans                        InspectionPlan[]
+  inspectionReports                      InspectionReport[]
+  defects                                Defect[]
+  insuranceClaims                        InsuranceClaim[]
 
   @@index([tenantId])
   @@map("parks")
@@ -328,6 +345,11 @@ model Turbine {
   netzgesellschaftFund           Fund?                     @relation(fields: [netzgesellschaftFundId], references: [id], onDelete: SetNull)
   park                           Park                      @relation(fields: [parkId], references: [id], onDelete: Cascade)
   costCenters                    CostCenter[]
+  operationalTasks               OperationalTask[]
+  inspectionPlans                InspectionPlan[]
+  inspectionReports              InspectionReport[]
+  defects                        Defect[]
+  insuranceClaims                InsuranceClaim[]
 
   @@index([parkId])
   @@index([netzgesellschaftFundId])
@@ -351,6 +373,7 @@ model ServiceEvent {
   technicianSessions TechnicianSession[]
   createdBy          User?      @relation("ServiceEventCreatedBy", fields: [createdById], references: [id])
   turbine            Turbine    @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+  inspectionReports  InspectionReport[]
 
   @@index([turbineId])
   @@index([eventDate])
@@ -633,6 +656,7 @@ model Contract {
   tenant              Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   turbine             Turbine?       @relation(fields: [turbineId], references: [id], onDelete: SetNull)
   documents           Document[]
+  insuranceClaims     InsuranceClaim[]
 
   @@index([tenantId])
   @@index([contractType])
@@ -2954,6 +2978,7 @@ model Vendor {
   person      Person?           @relation(fields: [personId], references: [id], onDelete: SetNull)
   tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices    IncomingInvoice[]
+  insuranceClaims InsuranceClaim[]
 
   @@index([tenantId])
   @@index([name])
@@ -3526,4 +3551,216 @@ model DocumentRoutingRule {
   @@unique([tenantId, fundId, invoiceType, targetType])
   @@index([tenantId])
   @@map("document_routing_rules")
+}
+
+// =============================================================================
+// BETRIEBSFÜHRUNG — OPERATIVE SUB-MODULE
+// =============================================================================
+
+enum OperationalTaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum ClaimStatus {
+  REPORTED
+  CLAIM_IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+enum DefectSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model OperationalChecklist {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title       String   @db.VarChar(200)
+  description String?  @db.Text
+  items       Json     @default("[]")
+  recurrence  String?  @db.VarChar(50)
+  parkId      String?
+  park        Park?    @relation(fields: [parkId], references: [id], onDelete: SetNull)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks       OperationalTask[]
+
+  @@index([tenantId])
+  @@index([parkId])
+  @@map("operational_checklists")
+}
+
+model OperationalTask {
+  id              String                @id @default(uuid())
+  tenantId        String
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title           String                @db.VarChar(200)
+  description     String?               @db.Text
+  status          OperationalTaskStatus @default(OPEN)
+  priority        Int                   @default(2)
+  taskType        String                @default("OPERATIONAL") @db.VarChar(30)
+  category        String?               @db.VarChar(100)
+  dueDate         DateTime?
+  completedAt     DateTime?
+  notes           String?               @db.Text
+  checklistData   Json?
+  costEstimateEur Decimal?              @db.Decimal(12, 2)
+  actualCostEur   Decimal?              @db.Decimal(12, 2)
+  benefitNotes    String?               @db.Text
+  parkId          String?
+  park            Park?                 @relation(fields: [parkId], references: [id], onDelete: SetNull)
+  turbineId       String?
+  turbine         Turbine?              @relation(fields: [turbineId], references: [id], onDelete: SetNull)
+  checklistId     String?
+  checklist       OperationalChecklist? @relation(fields: [checklistId], references: [id], onDelete: SetNull)
+  assignedToId    String?
+  assignedTo      User?                 @relation("OperationalTaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdById     String
+  createdBy       User                  @relation("OperationalTaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([tenantId])
+  @@index([parkId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([assignedToId])
+  @@index([taskType])
+  @@map("operational_tasks")
+}
+
+model InspectionPlan {
+  id           String    @id @default(uuid())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title        String    @db.VarChar(200)
+  description  String?   @db.Text
+  recurrence   String    @db.VarChar(50)
+  nextDueDate  DateTime
+  lastExecuted DateTime?
+  parkId       String?
+  park         Park?     @relation(fields: [parkId], references: [id], onDelete: SetNull)
+  turbineId    String?
+  turbine      Turbine?  @relation(fields: [turbineId], references: [id], onDelete: SetNull)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  inspectionReports InspectionReport[]
+
+  @@index([tenantId])
+  @@index([nextDueDate])
+  @@index([parkId])
+  @@map("inspection_plans")
+}
+
+model InspectionReport {
+  id               String          @id @default(uuid())
+  tenantId         String
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inspectionPlanId String?
+  inspectionPlan   InspectionPlan? @relation(fields: [inspectionPlanId], references: [id], onDelete: SetNull)
+  serviceEventId   String?
+  serviceEvent     ServiceEvent?   @relation(fields: [serviceEventId], references: [id], onDelete: SetNull)
+  inspectionDate   DateTime
+  inspector        String?         @db.VarChar(200)
+  result           String?         @db.VarChar(50)
+  summary          String?         @db.Text
+  parkId           String?
+  park             Park?           @relation(fields: [parkId], references: [id], onDelete: SetNull)
+  turbineId        String?
+  turbine          Turbine?        @relation(fields: [turbineId], references: [id], onDelete: SetNull)
+  createdById      String
+  createdBy        User            @relation("InspectionReportCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  defects          Defect[]
+
+  @@index([tenantId])
+  @@index([inspectionDate])
+  @@index([parkId])
+  @@map("inspection_reports")
+}
+
+model Defect {
+  id                 String                @id @default(uuid())
+  tenantId           String
+  tenant             Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title              String                @db.VarChar(200)
+  description        String?               @db.Text
+  severity           DefectSeverity        @default(MEDIUM)
+  status             OperationalTaskStatus @default(OPEN)
+  dueDate            DateTime?
+  resolvedAt         DateTime?
+  resolutionNotes    String?               @db.Text
+  costEstimateEur    Decimal?              @db.Decimal(12, 2)
+  actualCostEur      Decimal?              @db.Decimal(12, 2)
+  inspectionReportId String?
+  inspectionReport   InspectionReport?     @relation(fields: [inspectionReportId], references: [id], onDelete: SetNull)
+  parkId             String?
+  park               Park?                 @relation(fields: [parkId], references: [id], onDelete: SetNull)
+  turbineId          String?
+  turbine            Turbine?              @relation(fields: [turbineId], references: [id], onDelete: SetNull)
+  createdById        String
+  createdBy          User                  @relation("DefectCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  insuranceClaims    InsuranceClaim[]
+
+  @@index([tenantId])
+  @@index([severity])
+  @@index([status])
+  @@index([dueDate])
+  @@index([parkId])
+  @@map("defects")
+}
+
+model InsuranceClaim {
+  id               String      @id @default(uuid())
+  tenantId         String
+  tenant           Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  claimNumber      String?     @db.VarChar(100)
+  title            String      @db.VarChar(200)
+  description      String?     @db.Text
+  incidentDate     DateTime
+  reportedDate     DateTime    @default(now())
+  status           ClaimStatus @default(REPORTED)
+  claimType        String      @db.VarChar(50)
+  estimatedCostEur Decimal?    @db.Decimal(12, 2)
+  actualCostEur    Decimal?    @db.Decimal(12, 2)
+  reimbursedEur    Decimal?    @db.Decimal(12, 2)
+  resolvedAt       DateTime?
+  resolutionNotes  String?     @db.Text
+  contractId       String?
+  contract         Contract?   @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  vendorId         String?
+  vendor           Vendor?     @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  defectId         String?
+  defect           Defect?     @relation(fields: [defectId], references: [id], onDelete: SetNull)
+  parkId           String?
+  park             Park?       @relation(fields: [parkId], references: [id], onDelete: SetNull)
+  turbineId        String?
+  turbine          Turbine?    @relation(fields: [turbineId], references: [id], onDelete: SetNull)
+  createdById      String
+  createdBy        User        @relation("InsuranceClaimCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([contractId])
+  @@index([parkId])
+  @@index([incidentDate])
+  @@map("insurance_claims")
 }
