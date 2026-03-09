@@ -1,11 +1,11 @@
 /**
- * Monthly Report (Monatsbericht) PDF Template
+ * Monthly Report (Monatsbericht) PDF Template — Premium Design
  *
  * Generates a multi-page monthly report for a wind park containing:
- * - Page 1: Summary with KPIs and year-over-year comparison
- * - Page 2: Production per turbine table with bar chart
- * - Page 3: Availability per turbine
- * - Page 4: Service events
+ * - Page 1: Executive summary with KPIs, trend indicators, and YoY comparison
+ * - Page 2: Production per turbine table with visual bar chart
+ * - Page 3: Availability per turbine with stacked-bar breakdown (IEC 61400-26)
+ * - Page 4: Service events with type badges
  */
 
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
@@ -16,297 +16,488 @@ import { formatNumber, formatDate } from "../utils/formatters";
 import { formatCurrency } from "@/lib/format";
 
 // ===========================================
-// STYLES
+// DESIGN TOKENS
 // ===========================================
 
-const COLORS = {
-  primary: "#1E3A5F",
-  secondary: "#335E99",
-  accent: "#10B981",
-  warning: "#F59E0B",
-  danger: "#DC2626",
-  muted: "#666666",
-  light: "#F5F5F5",
-  border: "#E0E0E0",
+const C = {
+  // Brand (warm navy)
+  navy: "#1E3A5F",
+  navyLight: "#335E99",
+  navyPale: "#E8EEF5",
+  navyDark: "#142940",
+
+  // Semantic
+  green: "#16A34A",
+  greenLight: "#DCFCE7",
+  amber: "#D97706",
+  amberLight: "#FEF3C7",
+  red: "#DC2626",
+  redLight: "#FEE2E2",
+  blue: "#2563EB",
+  blueLight: "#DBEAFE",
+
+  // Neutrals
   white: "#FFFFFF",
-  text: "#333333",
+  gray50: "#F9FAFB",
+  gray100: "#F3F4F6",
+  gray200: "#E5E7EB",
+  gray300: "#D1D5DB",
+  gray400: "#9CA3AF",
+  gray500: "#6B7280",
+  gray600: "#4B5563",
+  gray700: "#374151",
+  gray800: "#1F2937",
+  gray900: "#111827",
 };
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   page: {
     fontFamily: "Helvetica",
-    fontSize: 10,
-    color: COLORS.text,
+    fontSize: 9,
+    color: C.gray800,
   },
-  content: {
-    flex: 1,
+  content: { flex: 1 },
+
+  // ---- Title Banner ----
+  titleBanner: {
+    backgroundColor: C.navy,
+    marginHorizontal: -25,
+    marginTop: -5,
+    paddingHorizontal: 25,
+    paddingVertical: 20,
+    marginBottom: 18,
+  },
+  titleText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: C.white,
+    letterSpacing: 0.5,
+  },
+  titleSubText: {
+    fontSize: 12,
+    color: C.navyPale,
+    marginTop: 4,
+  },
+  titleMeta: {
+    flexDirection: "row",
+    marginTop: 10,
+    gap: 20,
+  },
+  titleMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  titleMetaLabel: {
+    fontSize: 7,
+    color: C.navyPale,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
+  },
+  titleMetaValue: {
+    fontSize: 8,
+    color: C.white,
+    fontWeight: "bold",
   },
 
-  // Title
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: COLORS.primary,
-    marginBottom: 5,
+  // ---- Section headers ----
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    marginTop: 4,
   },
-  subtitle: {
-    fontSize: 12,
-    color: COLORS.muted,
-    marginBottom: 20,
+  sectionAccent: {
+    width: 3,
+    height: 16,
+    backgroundColor: C.navyLight,
+    borderRadius: 1,
+    marginRight: 8,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "bold",
-    color: COLORS.primary,
-    marginBottom: 10,
-    marginTop: 5,
+    color: C.navy,
+  },
+  sectionSubtitle: {
+    fontSize: 8,
+    color: C.gray500,
+    marginLeft: "auto",
   },
 
-  // KPI Cards
-  kpiRow: {
+  // ---- KPI Cards ----
+  kpiGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
-    marginBottom: 20,
+    marginBottom: 18,
   },
   kpiCard: {
-    flex: 1,
-    backgroundColor: COLORS.light,
-    padding: 12,
-    borderRadius: 3,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.secondary,
-  },
-  kpiCardAccent: {
-    borderLeftColor: COLORS.accent,
-  },
-  kpiCardWarning: {
-    borderLeftColor: COLORS.warning,
+    width: "31%",
+    backgroundColor: C.white,
+    borderWidth: 1,
+    borderColor: C.gray200,
+    borderRadius: 4,
+    padding: 10,
+    borderTopWidth: 3,
   },
   kpiLabel: {
-    fontSize: 8,
-    color: COLORS.muted,
+    fontSize: 7,
+    color: C.gray500,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.3,
     marginBottom: 4,
   },
+  kpiValueRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+  },
   kpiValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
-    color: COLORS.primary,
+    color: C.navy,
   },
   kpiUnit: {
     fontSize: 8,
-    color: COLORS.muted,
-    marginTop: 2,
+    color: C.gray400,
+    marginBottom: 2,
+  },
+  kpiTrend: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    gap: 3,
+  },
+  kpiTrendDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  kpiTrendText: {
+    fontSize: 7,
   },
 
-  // Comparison box
-  comparisonBox: {
-    backgroundColor: COLORS.light,
-    padding: 15,
-    borderRadius: 3,
-    marginBottom: 20,
+  // ---- Comparison Table ----
+  compBox: {
+    backgroundColor: C.gray50,
+    borderWidth: 1,
+    borderColor: C.gray200,
+    borderRadius: 4,
+    padding: 12,
+    marginBottom: 18,
   },
-  comparisonTitle: {
+  compTitle: {
     fontSize: 10,
     fontWeight: "bold",
-    marginBottom: 10,
-    color: COLORS.primary,
+    color: C.navy,
+    marginBottom: 8,
   },
-  comparisonRow: {
+  compHeader: {
     flexDirection: "row",
-    marginBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: C.gray300,
+    paddingBottom: 4,
+    marginBottom: 6,
   },
-  comparisonLabel: {
+  compHeaderText: {
+    fontSize: 7,
+    fontWeight: "bold",
+    color: C.gray500,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.3,
+  },
+  compRow: {
+    flexDirection: "row",
+    paddingVertical: 3,
+  },
+  compLabel: {
     fontSize: 9,
-    color: COLORS.muted,
-    width: 180,
+    color: C.gray600,
+    width: "35%",
   },
-  comparisonCurrent: {
+  compCurrent: {
     fontSize: 9,
     fontWeight: "bold",
-    width: 100,
+    width: "22%",
     textAlign: "right",
   },
-  comparisonPrev: {
+  compPrev: {
     fontSize: 9,
-    color: COLORS.muted,
-    width: 100,
+    color: C.gray500,
+    width: "22%",
     textAlign: "right",
   },
-  comparisonDiff: {
+  compDiff: {
     fontSize: 9,
-    width: 80,
+    fontWeight: "bold",
+    width: "21%",
     textAlign: "right",
   },
-  comparisonHeader: {
-    flexDirection: "row",
-    marginBottom: 6,
+
+  // ---- Info Panel ----
+  infoPanel: {
+    backgroundColor: C.gray50,
+    borderWidth: 1,
+    borderColor: C.gray200,
+    borderRadius: 4,
+    padding: 12,
+    marginBottom: 16,
+  },
+  infoPanelTitle: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: C.navy,
+    marginBottom: 8,
     paddingBottom: 4,
     borderBottomWidth: 0.5,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: C.gray300,
   },
-  comparisonHeaderText: {
+  infoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  infoItem: {
+    width: "50%",
+    flexDirection: "row",
+    paddingVertical: 2,
+  },
+  infoLabel: {
+    fontSize: 8,
+    color: C.gray500,
+    width: 100,
+  },
+  infoValue: {
     fontSize: 8,
     fontWeight: "bold",
-    color: COLORS.muted,
+    color: C.gray700,
+    flex: 1,
   },
 
-  // Tables
+  // ---- Tables ----
   table: {
-    marginTop: 10,
-    marginBottom: 15,
+    marginBottom: 14,
   },
-  tableHeader: {
+  tHead: {
     flexDirection: "row",
-    backgroundColor: COLORS.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 5,
+    backgroundColor: C.navy,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
   },
-  tableHeaderText: {
-    fontSize: 8,
+  tHeadText: {
+    fontSize: 7,
     fontWeight: "bold",
-    color: COLORS.white,
+    color: C.white,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.3,
   },
-  tableRow: {
+  tRow: {
     flexDirection: "row",
     paddingVertical: 6,
-    paddingHorizontal: 5,
+    paddingHorizontal: 8,
     borderBottomWidth: 0.5,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: C.gray200,
   },
-  tableRowAlt: {
-    backgroundColor: "#FAFAFA",
+  tRowAlt: {
+    backgroundColor: C.gray50,
   },
-  tableCell: {
+  tCell: {
     fontSize: 8,
+    color: C.gray700,
   },
-  tableCellRight: {
+  tCellRight: {
     fontSize: 8,
+    color: C.gray700,
     textAlign: "right",
   },
-  summaryRow: {
+  tCellBold: {
+    fontSize: 8,
+    fontWeight: "bold",
+  },
+  tFoot: {
     flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 5,
-    backgroundColor: COLORS.primary,
-    marginTop: 2,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    backgroundColor: C.navyDark,
+    borderBottomLeftRadius: 3,
+    borderBottomRightRadius: 3,
   },
-  summaryText: {
-    fontSize: 9,
+  tFootText: {
+    fontSize: 8,
     fontWeight: "bold",
-    color: COLORS.white,
+    color: C.white,
   },
-  summaryTextRight: {
-    fontSize: 9,
+  tFootRight: {
+    fontSize: 8,
     fontWeight: "bold",
-    color: COLORS.white,
+    color: C.white,
     textAlign: "right",
   },
 
-  // Column widths - Production table
-  colTurbine: { width: "20%" },
-  colProduction: { width: "20%", textAlign: "right" },
-  colHours: { width: "20%", textAlign: "right" },
-  colAvailability: { width: "20%", textAlign: "right" },
+  // ---- Production columns ----
+  colTurbine: { width: "22%" },
+  colProd: { width: "20%", textAlign: "right" },
+  colHours: { width: "18%", textAlign: "right" },
+  colAvail: { width: "20%", textAlign: "right" },
   colCf: { width: "20%", textAlign: "right" },
 
-  // Column widths - Availability table
-  colAvTurbine: { width: "14%" },
-  colAvT1: { width: "12%", textAlign: "right" },
-  colAvT2: { width: "12%", textAlign: "right" },
-  colAvT3: { width: "12%", textAlign: "right" },
-  colAvT4: { width: "12%", textAlign: "right" },
-  colAvT5: { width: "12%", textAlign: "right" },
-  colAvT6: { width: "12%", textAlign: "right" },
-  colAvPct: { width: "14%", textAlign: "right" },
+  // ---- Availability columns ----
+  colAvTurb: { width: "14%" },
+  colAvT1: { width: "11%", textAlign: "right" },
+  colAvT2: { width: "11%", textAlign: "right" },
+  colAvT3: { width: "11%", textAlign: "right" },
+  colAvT4: { width: "11%", textAlign: "right" },
+  colAvT5: { width: "11%", textAlign: "right" },
+  colAvT6: { width: "11%", textAlign: "right" },
+  colAvPct: { width: "20%", textAlign: "right" },
 
-  // Column widths - Events table
-  colEvDate: { width: "15%" },
-  colEvType: { width: "15%" },
-  colEvTurbine: { width: "15%" },
+  // ---- Event columns ----
+  colEvDate: { width: "14%" },
+  colEvType: { width: "16%" },
+  colEvTurb: { width: "14%" },
   colEvDesc: { width: "40%" },
-  colEvDuration: { width: "15%", textAlign: "right" },
+  colEvDur: { width: "16%", textAlign: "right" },
 
-  // Bar chart
-  chartContainer: {
-    marginTop: 15,
-    marginBottom: 10,
-    paddingTop: 10,
+  // ---- Bar Chart ----
+  chartWrap: {
+    marginTop: 14,
+    marginBottom: 8,
   },
-  chartTitle: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: COLORS.primary,
-    marginBottom: 10,
+  chartRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
   },
-  chartBarRow: {
+  chartLabel: {
+    width: 65,
+    fontSize: 7,
+    color: C.gray600,
+  },
+  chartTrack: {
+    flex: 1,
+    height: 16,
+    backgroundColor: C.gray100,
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  chartBar: {
+    height: 16,
+    borderRadius: 3,
+  },
+  chartValLabel: {
+    width: 60,
+    fontSize: 7,
+    textAlign: "right",
+    color: C.gray500,
+    paddingLeft: 6,
+  },
+
+  // ---- Stacked Availability Bar ----
+  stackedBarWrap: {
+    marginBottom: 14,
+  },
+  stackedRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 4,
   },
-  chartLabel: {
-    width: 60,
+  stackedLabel: {
+    width: 65,
     fontSize: 7,
-    color: COLORS.muted,
+    color: C.gray600,
   },
-  chartBarContainer: {
+  stackedTrack: {
     flex: 1,
     height: 14,
-    backgroundColor: "#E8E8E8",
+    flexDirection: "row",
     borderRadius: 2,
     overflow: "hidden",
   },
-  chartBar: {
-    height: 14,
-    borderRadius: 2,
-  },
-  chartValue: {
-    width: 55,
+  stackedPct: {
+    width: 42,
     fontSize: 7,
     textAlign: "right",
-    color: COLORS.muted,
-    paddingLeft: 5,
+    fontWeight: "bold",
+    paddingLeft: 4,
+  },
+  stackedLegend: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 1,
+  },
+  legendText: {
+    fontSize: 6,
+    color: C.gray500,
   },
 
-  // Info box
-  infoBox: {
-    backgroundColor: COLORS.light,
-    padding: 15,
-    borderRadius: 3,
-    marginBottom: 15,
-  },
-  infoRow: {
-    flexDirection: "row",
-    marginBottom: 4,
-  },
-  infoLabel: {
-    fontSize: 9,
-    color: COLORS.muted,
-    width: 150,
-  },
-  infoValue: {
-    fontSize: 9,
+  // ---- Event Type Badge ----
+  badge: {
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 2,
+    fontSize: 7,
     fontWeight: "bold",
   },
 
-  // No data
+  // ---- Notable downtimes ----
+  alertBox: {
+    backgroundColor: C.amberLight,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    borderRadius: 4,
+    padding: 10,
+    marginBottom: 14,
+  },
+  alertTitle: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: C.amber,
+    marginBottom: 6,
+  },
+  alertItem: {
+    fontSize: 8,
+    color: C.gray700,
+    marginBottom: 2,
+  },
+
+  // ---- No data ----
   noData: {
     padding: 30,
     textAlign: "center",
-    color: COLORS.muted,
+    color: C.gray400,
     fontSize: 10,
     fontStyle: "italic",
+    backgroundColor: C.gray50,
+    borderRadius: 4,
   },
 
-  // Status indicators
-  positiveValue: { color: "#16A34A" },
-  negativeValue: { color: COLORS.danger },
-
-  // Generated at
+  // ---- Footer meta ----
   generatedAt: {
     fontSize: 7,
-    color: COLORS.muted,
+    color: C.gray400,
     textAlign: "right",
-    marginTop: 10,
+    marginTop: "auto",
+    paddingTop: 8,
+  },
+
+  // ---- Divider ----
+  divider: {
+    height: 1,
+    backgroundColor: C.gray200,
+    marginVertical: 12,
   },
 });
 
@@ -320,19 +511,19 @@ export interface TurbineProductionRow {
   productionMwh: number;
   operatingHours: number | null;
   availabilityPct: number | null;
-  capacityFactor: number | null; // CF% = production / (ratedPower * hours in month)
+  capacityFactor: number | null;
   ratedPowerKw: number | null;
 }
 
 export interface TurbineAvailabilityRow {
   turbineId: string;
   designation: string;
-  t1Hours: number; // Production time
-  t2Hours: number; // Waiting for wind
-  t3Hours: number; // Environmental stop
-  t4Hours: number; // Routine maintenance
-  t5Hours: number; // Equipment failure
-  t6Hours: number; // Other downtime
+  t1Hours: number;
+  t2Hours: number;
+  t3Hours: number;
+  t4Hours: number;
+  t5Hours: number;
+  t6Hours: number;
   availabilityPct: number | null;
 }
 
@@ -346,41 +537,26 @@ export interface ServiceEventRow {
 }
 
 export interface MonthlyReportData {
-  // Park info
   parkName: string;
   parkAddress: string | null;
   fundName: string | null;
   operatorName: string | null;
-
-  // Period
   year: number;
-  month: number; // 1-12
+  month: number;
   monthName: string;
-
-  // KPIs
   totalProductionMwh: number;
   avgAvailabilityPct: number | null;
   avgWindSpeedMs: number | null;
   specificYieldKwhPerKw: number | null;
   totalRevenueEur: number | null;
-
-  // Previous year comparison
   prevYearProductionMwh: number | null;
   prevYearAvailabilityPct: number | null;
   prevYearWindSpeedMs: number | null;
   prevYearRevenueEur: number | null;
-
-  // Per-turbine data
   turbineProduction: TurbineProductionRow[];
   turbineAvailability: TurbineAvailabilityRow[];
-
-  // Events
   serviceEvents: ServiceEventRow[];
-
-  // Notable downtimes
   notableDowntimes: string[];
-
-  // Generated timestamp
   generatedAt: string;
 }
 
@@ -391,56 +567,72 @@ interface MonthlyReportTemplateProps {
 }
 
 // ===========================================
-// HELPER FUNCTIONS
+// HELPERS
 // ===========================================
 
-function formatPercent1(value: number | null | undefined): string {
-  if (value == null) return "k.A.";
-  return `${formatNumber(value, 1)} %`;
+function fmtPct(v: number | null | undefined): string {
+  if (v == null) return "k.A.";
+  return `${formatNumber(v, 1)} %`;
 }
 
-function formatMwh(value: number | null | undefined): string {
-  if (value == null) return "k.A.";
-  return `${formatNumber(value, 2)} MWh`;
+function fmtMwh(v: number | null | undefined): string {
+  if (v == null) return "k.A.";
+  return `${formatNumber(v, 2)} MWh`;
 }
 
-function formatHours(value: number | null | undefined): string {
-  if (value == null) return "k.A.";
-  return `${formatNumber(value, 0)} h`;
+function fmtHours(v: number | null | undefined): string {
+  if (v == null) return "k.A.";
+  return `${formatNumber(v, 0)} h`;
 }
 
-function formatWindSpeed(value: number | null | undefined): string {
-  if (value == null) return "k.A.";
-  return `${formatNumber(value, 1)} m/s`;
+function fmtWind(v: number | null | undefined): string {
+  if (v == null) return "k.A.";
+  return `${formatNumber(v, 1)} m/s`;
 }
 
-function formatDiffPercent(current: number | null, previous: number | null): string {
-  if (current == null || previous == null || previous === 0) return "-";
-  const diff = ((current - previous) / previous) * 100;
+function diffPct(cur: number | null, prev: number | null): { text: string; positive: boolean | null } {
+  if (cur == null || prev == null || prev === 0) return { text: "-", positive: null };
+  const diff = ((cur - prev) / prev) * 100;
   const sign = diff >= 0 ? "+" : "";
-  return `${sign}${formatNumber(diff, 1)} %`;
+  return { text: `${sign}${formatNumber(diff, 1)} %`, positive: diff >= 0 };
 }
 
-function translateEventType(type: string): string {
-  const translations: Record<string, string> = {
-    MAINTENANCE: "Wartung",
-    REPAIR: "Reparatur",
-    INSPECTION: "Inspektion",
-    COMMISSIONING: "Inbetriebnahme",
-    DECOMMISSIONING: "Stilllegung",
-    INCIDENT: "Vorfall",
-    GRID_OUTAGE: "Netzausfall",
-    CURTAILMENT: "Abregelung",
-    OTHER: "Sonstiges",
-  };
-  return translations[type] || type;
-}
+const EVENT_LABELS: Record<string, string> = {
+  MAINTENANCE: "Wartung",
+  REPAIR: "Reparatur",
+  INSPECTION: "Inspektion",
+  COMMISSIONING: "IBN",
+  DECOMMISSIONING: "Stilllegung",
+  INCIDENT: "Vorfall",
+  GRID_OUTAGE: "Netzausfall",
+  CURTAILMENT: "Abregelung",
+  OTHER: "Sonstiges",
+};
+
+const EVENT_COLORS: Record<string, { bg: string; fg: string }> = {
+  MAINTENANCE: { bg: C.blueLight, fg: C.blue },
+  REPAIR: { bg: C.redLight, fg: C.red },
+  INSPECTION: { bg: C.navyPale, fg: C.navy },
+  INCIDENT: { bg: C.amberLight, fg: C.amber },
+  GRID_OUTAGE: { bg: C.redLight, fg: C.red },
+  CURTAILMENT: { bg: C.amberLight, fg: C.amber },
+};
+
+// IEC 61400-26 availability category colors
+const T_COLORS = {
+  t1: "#16A34A", // Production - green
+  t2: "#60A5FA", // Waiting for wind - sky blue
+  t3: "#A78BFA", // Environmental stop - violet
+  t4: "#F59E0B", // Routine maintenance - amber
+  t5: "#EF4444", // Equipment failure - red
+  t6: "#9CA3AF", // Other downtime - gray
+};
 
 // ===========================================
 // SUB-COMPONENTS
 // ===========================================
 
-function PageWrapper({
+function PageWrap({
   children,
   letterhead,
   layout,
@@ -453,20 +645,16 @@ function PageWrapper({
   template: ResolvedTemplate;
   companyName?: string;
 }) {
-  // When a background PDF is configured, the letterhead already contains
-  // header/footer graphics, so we skip rendering them and leave the page
-  // background transparent so the letterhead shows through.
-  const hasBackground = !!letterhead.backgroundPdfKey;
-
+  const hasBg = !!letterhead.backgroundPdfKey;
   return (
     <Page
       size="A4"
       style={[
-        styles.page,
-        hasBackground ? {} : { backgroundColor: COLORS.white },
+        s.page,
+        hasBg ? {} : { backgroundColor: C.white },
         {
           paddingTop: letterhead.marginTop,
-          paddingBottom: hasBackground
+          paddingBottom: hasBg
             ? letterhead.marginBottom
             : letterhead.marginBottom + letterhead.footerHeight,
           paddingLeft: letterhead.marginLeft,
@@ -474,52 +662,165 @@ function PageWrapper({
         },
       ]}
     >
-      {!hasBackground && (
-        <Header letterhead={letterhead} layout={layout} companyName={companyName} />
-      )}
-      <View style={styles.content}>{children}</View>
-      {!hasBackground && (
-        <Footer letterhead={letterhead} layout={layout} customText={template.footerText} />
-      )}
+      {!hasBg && <Header letterhead={letterhead} layout={layout} companyName={companyName} />}
+      <View style={s.content}>{children}</View>
+      {!hasBg && <Footer letterhead={letterhead} layout={layout} customText={template.footerText} />}
       <PageNumber />
     </Page>
   );
 }
 
-/**
- * Simple horizontal bar chart using @react-pdf/renderer primitives
- */
-function ProductionBarChart({
-  turbines,
+function SectionHead({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <View style={s.sectionHeader}>
+      <View style={s.sectionAccent} />
+      <Text style={s.sectionTitle}>{title}</Text>
+      {subtitle && <Text style={s.sectionSubtitle}>{subtitle}</Text>}
+    </View>
+  );
+}
+
+function KpiCard({
+  label,
+  value,
+  unit,
+  color,
+  trend,
 }: {
-  turbines: TurbineProductionRow[];
+  label: string;
+  value: string;
+  unit: string;
+  color: string;
+  trend?: { text: string; positive: boolean | null };
 }) {
+  return (
+    <View style={[s.kpiCard, { borderTopColor: color }]}>
+      <Text style={s.kpiLabel}>{label}</Text>
+      <View style={s.kpiValueRow}>
+        <Text style={s.kpiValue}>{value}</Text>
+        <Text style={s.kpiUnit}>{unit}</Text>
+      </View>
+      {trend && trend.positive !== null && (
+        <View style={s.kpiTrend}>
+          <View
+            style={[
+              s.kpiTrendDot,
+              { backgroundColor: trend.positive ? C.green : C.red },
+            ]}
+          />
+          <Text
+            style={[
+              s.kpiTrendText,
+              { color: trend.positive ? C.green : C.red },
+            ]}
+          >
+            {trend.text} gg. Vorjahr
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function ProductionChart({ turbines }: { turbines: TurbineProductionRow[] }) {
   if (turbines.length === 0) return null;
-  const maxProduction = Math.max(...turbines.map((t) => t.productionMwh), 1);
+  const maxProd = Math.max(...turbines.map((t) => t.productionMwh), 1);
 
   return (
-    <View style={styles.chartContainer}>
-      <Text style={styles.chartTitle}>Produktion nach Anlage (MWh)</Text>
-      {turbines.map((t) => {
-        const barWidth = Math.max((t.productionMwh / maxProduction) * 100, 1);
+    <View style={s.chartWrap}>
+      <SectionHead title="Produktion nach Anlage" />
+      {turbines.map((t, i) => {
+        const pct = Math.max((t.productionMwh / maxProd) * 100, 2);
+        // Alternate between navy and lighter blue
+        const barColor = i % 2 === 0 ? C.navyLight : C.navy;
         return (
-          <View key={t.turbineId} style={styles.chartBarRow}>
-            <Text style={styles.chartLabel}>{t.designation}</Text>
-            <View style={styles.chartBarContainer}>
-              <View
-                style={[
-                  styles.chartBar,
-                  {
-                    width: `${barWidth}%`,
-                    backgroundColor: COLORS.secondary,
-                  },
-                ]}
-              />
+          <View key={t.turbineId} style={s.chartRow}>
+            <Text style={s.chartLabel}>{t.designation}</Text>
+            <View style={s.chartTrack}>
+              <View style={[s.chartBar, { width: `${pct}%`, backgroundColor: barColor }]} />
             </View>
-            <Text style={styles.chartValue}>{formatNumber(t.productionMwh, 1)} MWh</Text>
+            <Text style={s.chartValLabel}>{formatNumber(t.productionMwh, 1)} MWh</Text>
           </View>
         );
       })}
+    </View>
+  );
+}
+
+function AvailabilityStackedBars({ rows }: { rows: TurbineAvailabilityRow[] }) {
+  if (rows.length === 0) return null;
+
+  return (
+    <View style={s.stackedBarWrap}>
+      <SectionHead title="Verfügbarkeitsverteilung (IEC 61400-26)" />
+
+      {/* Legend */}
+      <View style={s.stackedLegend}>
+        {[
+          { color: T_COLORS.t1, label: "T1 Produktion" },
+          { color: T_COLORS.t2, label: "T2 Wind" },
+          { color: T_COLORS.t3, label: "T3 Umwelt" },
+          { color: T_COLORS.t4, label: "T4 Wartung" },
+          { color: T_COLORS.t5, label: "T5 Störung" },
+          { color: T_COLORS.t6, label: "T6 Sonstige" },
+        ].map((item) => (
+          <View key={item.label} style={s.legendItem}>
+            <View style={[s.legendDot, { backgroundColor: item.color }]} />
+            <Text style={s.legendText}>{item.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {rows.map((r) => {
+        const total = r.t1Hours + r.t2Hours + r.t3Hours + r.t4Hours + r.t5Hours + r.t6Hours;
+        if (total === 0) return null;
+        const pcts = [
+          { color: T_COLORS.t1, val: r.t1Hours },
+          { color: T_COLORS.t2, val: r.t2Hours },
+          { color: T_COLORS.t3, val: r.t3Hours },
+          { color: T_COLORS.t4, val: r.t4Hours },
+          { color: T_COLORS.t5, val: r.t5Hours },
+          { color: T_COLORS.t6, val: r.t6Hours },
+        ];
+        const availColor =
+          r.availabilityPct != null && r.availabilityPct < 90
+            ? C.red
+            : r.availabilityPct != null && r.availabilityPct >= 97
+            ? C.green
+            : C.gray700;
+
+        return (
+          <View key={r.turbineId} style={s.stackedRow}>
+            <Text style={s.stackedLabel}>{r.designation}</Text>
+            <View style={s.stackedTrack}>
+              {pcts.map((p, i) => {
+                const w = (p.val / total) * 100;
+                if (w < 0.5) return null;
+                return (
+                  <View
+                    key={i}
+                    style={{ width: `${w}%`, height: 14, backgroundColor: p.color }}
+                  />
+                );
+              })}
+            </View>
+            <Text style={[s.stackedPct, { color: availColor }]}>
+              {fmtPct(r.availabilityPct)}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function EventBadge({ type }: { type: string }) {
+  const colors = EVENT_COLORS[type] || { bg: C.gray100, fg: C.gray600 };
+  return (
+    <View style={[s.badge, { backgroundColor: colors.bg }]}>
+      <Text style={{ fontSize: 7, fontWeight: "bold", color: colors.fg }}>
+        {EVENT_LABELS[type] || type}
+      </Text>
     </View>
   );
 }
@@ -537,482 +838,428 @@ export function MonthlyReportTemplate({
   const hasPrevYear =
     data.prevYearProductionMwh != null || data.prevYearAvailabilityPct != null;
   const hasRevenue = data.totalRevenueEur != null;
-  const hasAvailabilityData = data.turbineAvailability.length > 0;
+  const hasAvailData = data.turbineAvailability.length > 0;
   const hasEvents = data.serviceEvents.length > 0;
 
-  // Calculate park totals from turbine data
   const totalHours = data.turbineProduction.reduce(
     (sum, t) => sum + (t.operatingHours ?? 0),
     0
   );
 
+  // Trend calculations
+  const prodTrend = diffPct(data.totalProductionMwh, data.prevYearProductionMwh);
+  const availTrend = diffPct(data.avgAvailabilityPct, data.prevYearAvailabilityPct);
+  const windTrend = diffPct(data.avgWindSpeedMs, data.prevYearWindSpeedMs);
+  const revTrend = diffPct(data.totalRevenueEur, data.prevYearRevenueEur);
+
   return (
     <Document>
-      {/* ========== PAGE 1: ZUSAMMENFASSUNG ========== */}
-      <PageWrapper
+      {/* ========== PAGE 1: EXECUTIVE SUMMARY ========== */}
+      <PageWrap
         letterhead={letterhead}
         layout={layout}
         template={template}
         companyName={data.operatorName ?? undefined}
       >
-        {/* Title */}
-        <Text style={styles.title}>
-          Monatsbericht {data.monthName} {data.year}
-        </Text>
-        <Text style={styles.subtitle}>{data.parkName}</Text>
-
-        {/* Park info */}
-        <View style={styles.infoBox}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Windpark:</Text>
-            <Text style={styles.infoValue}>{data.parkName}</Text>
-          </View>
-          {data.parkAddress && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Standort:</Text>
-              <Text style={styles.infoValue}>{data.parkAddress}</Text>
+        {/* Title Banner */}
+        <View style={s.titleBanner}>
+          <Text style={s.titleText}>
+            Monatsbericht {data.monthName} {data.year}
+          </Text>
+          <Text style={s.titleSubText}>{data.parkName}</Text>
+          <View style={s.titleMeta}>
+            <View style={s.titleMetaItem}>
+              <Text style={s.titleMetaLabel}>Anlagen </Text>
+              <Text style={s.titleMetaValue}>{data.turbineProduction.length}</Text>
             </View>
-          )}
-          {data.fundName && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Gesellschaft:</Text>
-              <Text style={styles.infoValue}>{data.fundName}</Text>
-            </View>
-          )}
-          {data.operatorName && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Betreiber:</Text>
-              <Text style={styles.infoValue}>{data.operatorName}</Text>
-            </View>
-          )}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Berichtszeitraum:</Text>
-            <Text style={styles.infoValue}>
-              {data.monthName} {data.year}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Anzahl Anlagen:</Text>
-            <Text style={styles.infoValue}>{data.turbineProduction.length}</Text>
+            {data.fundName && (
+              <View style={s.titleMetaItem}>
+                <Text style={s.titleMetaLabel}>Gesellschaft </Text>
+                <Text style={s.titleMetaValue}>{data.fundName}</Text>
+              </View>
+            )}
+            {data.parkAddress && (
+              <View style={s.titleMetaItem}>
+                <Text style={s.titleMetaLabel}>Standort </Text>
+                <Text style={s.titleMetaValue}>{data.parkAddress}</Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {/* KPI Summary */}
-        <Text style={styles.sectionTitle}>Kennzahlen</Text>
+        {/* KPI Cards */}
+        <SectionHead title="Kennzahlen" subtitle={`${data.monthName} ${data.year}`} />
 
-        <View style={styles.kpiRow}>
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>Gesamtproduktion</Text>
-            <Text style={styles.kpiValue}>{formatNumber(data.totalProductionMwh, 1)}</Text>
-            <Text style={styles.kpiUnit}>MWh</Text>
-          </View>
-          <View style={[styles.kpiCard, styles.kpiCardAccent]}>
-            <Text style={styles.kpiLabel}>Verfügbarkeit</Text>
-            <Text style={styles.kpiValue}>
-              {data.avgAvailabilityPct != null
-                ? formatNumber(data.avgAvailabilityPct, 1)
-                : "k.A."}
-            </Text>
-            <Text style={styles.kpiUnit}>%</Text>
-          </View>
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>Mittl. Windgeschwindigkeit</Text>
-            <Text style={styles.kpiValue}>
-              {data.avgWindSpeedMs != null
-                ? formatNumber(data.avgWindSpeedMs, 1)
-                : "k.A."}
-            </Text>
-            <Text style={styles.kpiUnit}>m/s</Text>
-          </View>
-        </View>
-
-        <View style={styles.kpiRow}>
-          <View style={[styles.kpiCard, styles.kpiCardWarning]}>
-            <Text style={styles.kpiLabel}>Specific Yield</Text>
-            <Text style={styles.kpiValue}>
-              {data.specificYieldKwhPerKw != null
-                ? formatNumber(data.specificYieldKwhPerKw, 0)
-                : "k.A."}
-            </Text>
-            <Text style={styles.kpiUnit}>kWh/kW</Text>
-          </View>
+        <View style={s.kpiGrid}>
+          <KpiCard
+            label="Gesamtproduktion"
+            value={formatNumber(data.totalProductionMwh, 1)}
+            unit="MWh"
+            color={C.navyLight}
+            trend={hasPrevYear ? prodTrend : undefined}
+          />
+          <KpiCard
+            label="Verfügbarkeit"
+            value={data.avgAvailabilityPct != null ? formatNumber(data.avgAvailabilityPct, 1) : "k.A."}
+            unit="%"
+            color={C.green}
+            trend={hasPrevYear ? availTrend : undefined}
+          />
+          <KpiCard
+            label="Windgeschwindigkeit"
+            value={data.avgWindSpeedMs != null ? formatNumber(data.avgWindSpeedMs, 1) : "k.A."}
+            unit="m/s"
+            color={C.blue}
+            trend={hasPrevYear ? windTrend : undefined}
+          />
+          <KpiCard
+            label="Specific Yield"
+            value={data.specificYieldKwhPerKw != null ? formatNumber(data.specificYieldKwhPerKw, 0) : "k.A."}
+            unit="kWh/kW"
+            color={C.amber}
+          />
           {hasRevenue && (
-            <View style={[styles.kpiCard, styles.kpiCardAccent]}>
-              <Text style={styles.kpiLabel}>Erlöse</Text>
-              <Text style={styles.kpiValue}>
-                {formatCurrency(data.totalRevenueEur!)}
-              </Text>
-              <Text style={styles.kpiUnit}>EUR</Text>
-            </View>
+            <KpiCard
+              label="Erlöse"
+              value={formatCurrency(data.totalRevenueEur!)}
+              unit=""
+              color={C.green}
+              trend={hasPrevYear ? revTrend : undefined}
+            />
           )}
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>Betriebsstunden gesamt</Text>
-            <Text style={styles.kpiValue}>{formatNumber(totalHours, 0)}</Text>
-            <Text style={styles.kpiUnit}>h</Text>
-          </View>
+          <KpiCard
+            label="Betriebsstunden"
+            value={formatNumber(totalHours, 0)}
+            unit="h"
+            color={C.gray400}
+          />
         </View>
 
         {/* Year-over-year comparison */}
         {hasPrevYear && (
-          <View style={styles.comparisonBox}>
-            <Text style={styles.comparisonTitle}>
+          <View style={s.compBox}>
+            <Text style={s.compTitle}>
               Vergleich Vorjahresmonat ({data.monthName} {data.year - 1})
             </Text>
-            <View style={styles.comparisonHeader}>
-              <Text style={[styles.comparisonHeaderText, { width: 180 }]}>Kennzahl</Text>
-              <Text style={[styles.comparisonHeaderText, { width: 100, textAlign: "right" }]}>
-                Aktuell
-              </Text>
-              <Text style={[styles.comparisonHeaderText, { width: 100, textAlign: "right" }]}>
-                Vorjahr
-              </Text>
-              <Text style={[styles.comparisonHeaderText, { width: 80, textAlign: "right" }]}>
-                Abweichung
+            <View style={s.compHeader}>
+              <Text style={[s.compHeaderText, { width: "35%" }]}>Kennzahl</Text>
+              <Text style={[s.compHeaderText, { width: "22%", textAlign: "right" }]}>Aktuell</Text>
+              <Text style={[s.compHeaderText, { width: "22%", textAlign: "right" }]}>Vorjahr</Text>
+              <Text style={[s.compHeaderText, { width: "21%", textAlign: "right" }]}>Abweichung</Text>
+            </View>
+
+            <View style={s.compRow}>
+              <Text style={s.compLabel}>Produktion</Text>
+              <Text style={s.compCurrent}>{fmtMwh(data.totalProductionMwh)}</Text>
+              <Text style={s.compPrev}>{fmtMwh(data.prevYearProductionMwh)}</Text>
+              <Text style={[s.compDiff, { color: prodTrend.positive ? C.green : C.red }]}>
+                {prodTrend.text}
               </Text>
             </View>
-            <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonLabel}>Produktion</Text>
-              <Text style={styles.comparisonCurrent}>
-                {formatMwh(data.totalProductionMwh)}
-              </Text>
-              <Text style={styles.comparisonPrev}>
-                {formatMwh(data.prevYearProductionMwh)}
-              </Text>
-              <Text
-                style={[
-                  styles.comparisonDiff,
-                  data.prevYearProductionMwh != null &&
-                  data.totalProductionMwh >= data.prevYearProductionMwh
-                    ? styles.positiveValue
-                    : styles.negativeValue,
-                ]}
-              >
-                {formatDiffPercent(data.totalProductionMwh, data.prevYearProductionMwh)}
+            <View style={s.compRow}>
+              <Text style={s.compLabel}>Verfügbarkeit</Text>
+              <Text style={s.compCurrent}>{fmtPct(data.avgAvailabilityPct)}</Text>
+              <Text style={s.compPrev}>{fmtPct(data.prevYearAvailabilityPct)}</Text>
+              <Text style={[s.compDiff, { color: availTrend.positive ? C.green : C.red }]}>
+                {availTrend.text}
               </Text>
             </View>
-            <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonLabel}>Verfügbarkeit</Text>
-              <Text style={styles.comparisonCurrent}>
-                {formatPercent1(data.avgAvailabilityPct)}
-              </Text>
-              <Text style={styles.comparisonPrev}>
-                {formatPercent1(data.prevYearAvailabilityPct)}
-              </Text>
-              <Text
-                style={[
-                  styles.comparisonDiff,
-                  data.prevYearAvailabilityPct != null &&
-                  (data.avgAvailabilityPct ?? 0) >= data.prevYearAvailabilityPct
-                    ? styles.positiveValue
-                    : styles.negativeValue,
-                ]}
-              >
-                {formatDiffPercent(data.avgAvailabilityPct, data.prevYearAvailabilityPct)}
-              </Text>
-            </View>
-            <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonLabel}>Windgeschwindigkeit</Text>
-              <Text style={styles.comparisonCurrent}>
-                {formatWindSpeed(data.avgWindSpeedMs)}
-              </Text>
-              <Text style={styles.comparisonPrev}>
-                {formatWindSpeed(data.prevYearWindSpeedMs)}
-              </Text>
-              <Text
-                style={[
-                  styles.comparisonDiff,
-                  data.prevYearWindSpeedMs != null &&
-                  (data.avgWindSpeedMs ?? 0) >= data.prevYearWindSpeedMs
-                    ? styles.positiveValue
-                    : styles.negativeValue,
-                ]}
-              >
-                {formatDiffPercent(data.avgWindSpeedMs, data.prevYearWindSpeedMs)}
+            <View style={s.compRow}>
+              <Text style={s.compLabel}>Windgeschwindigkeit</Text>
+              <Text style={s.compCurrent}>{fmtWind(data.avgWindSpeedMs)}</Text>
+              <Text style={s.compPrev}>{fmtWind(data.prevYearWindSpeedMs)}</Text>
+              <Text style={[s.compDiff, { color: windTrend.positive ? C.green : C.red }]}>
+                {windTrend.text}
               </Text>
             </View>
             {hasRevenue && data.prevYearRevenueEur != null && (
-              <View style={styles.comparisonRow}>
-                <Text style={styles.comparisonLabel}>Erlöse</Text>
-                <Text style={styles.comparisonCurrent}>
-                  {formatCurrency(data.totalRevenueEur!)}
-                </Text>
-                <Text style={styles.comparisonPrev}>
-                  {formatCurrency(data.prevYearRevenueEur)}
-                </Text>
-                <Text
-                  style={[
-                    styles.comparisonDiff,
-                    data.totalRevenueEur! >= data.prevYearRevenueEur
-                      ? styles.positiveValue
-                      : styles.negativeValue,
-                  ]}
-                >
-                  {formatDiffPercent(data.totalRevenueEur, data.prevYearRevenueEur)}
+              <View style={s.compRow}>
+                <Text style={s.compLabel}>Erlöse</Text>
+                <Text style={s.compCurrent}>{formatCurrency(data.totalRevenueEur!)}</Text>
+                <Text style={s.compPrev}>{formatCurrency(data.prevYearRevenueEur)}</Text>
+                <Text style={[s.compDiff, { color: revTrend.positive ? C.green : C.red }]}>
+                  {revTrend.text}
                 </Text>
               </View>
             )}
           </View>
         )}
 
-        <Text style={styles.generatedAt}>
+        <Text style={s.generatedAt}>
           Erstellt am {formatDate(new Date(data.generatedAt))}
         </Text>
-      </PageWrapper>
+      </PageWrap>
 
       {/* ========== PAGE 2: PRODUKTION ========== */}
-      <PageWrapper
+      <PageWrap
         letterhead={letterhead}
         layout={layout}
         template={template}
         companyName={data.operatorName ?? undefined}
       >
-        <Text style={styles.sectionTitle}>
-          Produktion - {data.monthName} {data.year}
-        </Text>
+        <SectionHead
+          title="Produktion"
+          subtitle={`${data.parkName} — ${data.monthName} ${data.year}`}
+        />
 
         {data.turbineProduction.length > 0 ? (
           <>
-            {/* Production table */}
-            <View style={styles.table}>
-              <View style={styles.tableHeader}>
-                <Text style={[styles.tableHeaderText, styles.colTurbine]}>Anlage</Text>
-                <Text style={[styles.tableHeaderText, styles.colProduction]}>Produktion</Text>
-                <Text style={[styles.tableHeaderText, styles.colHours]}>Betriebsstd.</Text>
-                <Text style={[styles.tableHeaderText, styles.colAvailability]}>
-                  Verfügbarkeit
-                </Text>
-                <Text style={[styles.tableHeaderText, styles.colCf]}>CF %</Text>
+            <View style={s.table}>
+              <View style={s.tHead}>
+                <Text style={[s.tHeadText, s.colTurbine]}>Anlage</Text>
+                <Text style={[s.tHeadText, s.colProd]}>Produktion</Text>
+                <Text style={[s.tHeadText, s.colHours]}>Betriebsstd.</Text>
+                <Text style={[s.tHeadText, s.colAvail]}>Verfügbarkeit</Text>
+                <Text style={[s.tHeadText, s.colCf]}>Capacity Factor</Text>
               </View>
 
-              {data.turbineProduction.map((t, index) => (
-                <View
-                  key={t.turbineId}
-                  style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : {}]}
-                >
-                  <Text style={[styles.tableCell, styles.colTurbine]}>{t.designation}</Text>
-                  <Text style={[styles.tableCellRight, styles.colProduction]}>
+              {data.turbineProduction.map((t, i) => (
+                <View key={t.turbineId} style={[s.tRow, i % 2 === 1 ? s.tRowAlt : {}]}>
+                  <Text style={[s.tCellBold, s.colTurbine]}>{t.designation}</Text>
+                  <Text style={[s.tCellRight, s.colProd]}>
                     {formatNumber(t.productionMwh, 2)} MWh
                   </Text>
-                  <Text style={[styles.tableCellRight, styles.colHours]}>
-                    {formatHours(t.operatingHours)}
+                  <Text style={[s.tCellRight, s.colHours]}>{fmtHours(t.operatingHours)}</Text>
+                  <Text
+                    style={[
+                      s.tCellRight,
+                      s.colAvail,
+                      {
+                        color:
+                          t.availabilityPct != null && t.availabilityPct < 90
+                            ? C.red
+                            : t.availabilityPct != null && t.availabilityPct >= 97
+                            ? C.green
+                            : C.gray700,
+                        fontWeight: "bold",
+                      },
+                    ]}
+                  >
+                    {fmtPct(t.availabilityPct)}
                   </Text>
-                  <Text style={[styles.tableCellRight, styles.colAvailability]}>
-                    {formatPercent1(t.availabilityPct)}
-                  </Text>
-                  <Text style={[styles.tableCellRight, styles.colCf]}>
-                    {formatPercent1(t.capacityFactor)}
-                  </Text>
+                  <Text style={[s.tCellRight, s.colCf]}>{fmtPct(t.capacityFactor)}</Text>
                 </View>
               ))}
 
-              {/* Totals row */}
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryText, styles.colTurbine]}>GESAMT</Text>
-                <Text style={[styles.summaryTextRight, styles.colProduction]}>
+              <View style={s.tFoot}>
+                <Text style={[s.tFootText, s.colTurbine]}>GESAMT / DURCHSCHNITT</Text>
+                <Text style={[s.tFootRight, s.colProd]}>
                   {formatNumber(data.totalProductionMwh, 2)} MWh
                 </Text>
-                <Text style={[styles.summaryTextRight, styles.colHours]}>
-                  {formatHours(totalHours)}
-                </Text>
-                <Text style={[styles.summaryTextRight, styles.colAvailability]}>
-                  {formatPercent1(data.avgAvailabilityPct)}
-                </Text>
-                <Text style={[styles.summaryTextRight, styles.colCf]}>-</Text>
+                <Text style={[s.tFootRight, s.colHours]}>{fmtHours(totalHours)}</Text>
+                <Text style={[s.tFootRight, s.colAvail]}>{fmtPct(data.avgAvailabilityPct)}</Text>
+                <Text style={[s.tFootRight, s.colCf]}>-</Text>
               </View>
             </View>
 
-            {/* Bar chart */}
-            <ProductionBarChart turbines={data.turbineProduction} />
+            <ProductionChart turbines={data.turbineProduction} />
           </>
         ) : (
-          <Text style={styles.noData}>
-            Keine Produktionsdaten für diesen Monat vorhanden.
-          </Text>
+          <Text style={s.noData}>Keine Produktionsdaten für diesen Monat vorhanden.</Text>
         )}
-      </PageWrapper>
+      </PageWrap>
 
-      {/* ========== PAGE 3: VERFUEGBARKEIT ========== */}
-      {hasAvailabilityData && (
-        <PageWrapper
+      {/* ========== PAGE 3: VERFÜGBARKEIT ========== */}
+      {hasAvailData && (
+        <PageWrap
           letterhead={letterhead}
           layout={layout}
           template={template}
           companyName={data.operatorName ?? undefined}
         >
-          <Text style={styles.sectionTitle}>
-            Verfügbarkeit - {data.monthName} {data.year}
-          </Text>
+          <SectionHead
+            title="Verfügbarkeit"
+            subtitle={`${data.parkName} — ${data.monthName} ${data.year}`}
+          />
 
-          {/* Availability table */}
-          <View style={styles.table}>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderText, styles.colAvTurbine]}>Anlage</Text>
-              <Text style={[styles.tableHeaderText, styles.colAvT1]}>T1 (Prod.)</Text>
-              <Text style={[styles.tableHeaderText, styles.colAvT2]}>T2 (Wind)</Text>
-              <Text style={[styles.tableHeaderText, styles.colAvT3]}>T3 (Umwelt)</Text>
-              <Text style={[styles.tableHeaderText, styles.colAvT4]}>T4 (Wartung)</Text>
-              <Text style={[styles.tableHeaderText, styles.colAvT5]}>T5 (Störung)</Text>
-              <Text style={[styles.tableHeaderText, styles.colAvT6]}>T6 (Sonstige)</Text>
-              <Text style={[styles.tableHeaderText, styles.colAvPct]}>Verfueg. %</Text>
+          {/* Stacked availability bars */}
+          <AvailabilityStackedBars rows={data.turbineAvailability} />
+
+          {/* Detailed table */}
+          <View style={s.table}>
+            <View style={s.tHead}>
+              <Text style={[s.tHeadText, s.colAvTurb]}>Anlage</Text>
+              <Text style={[s.tHeadText, s.colAvT1]}>T1 Prod.</Text>
+              <Text style={[s.tHeadText, s.colAvT2]}>T2 Wind</Text>
+              <Text style={[s.tHeadText, s.colAvT3]}>T3 Umwelt</Text>
+              <Text style={[s.tHeadText, s.colAvT4]}>T4 Wart.</Text>
+              <Text style={[s.tHeadText, s.colAvT5]}>T5 Stör.</Text>
+              <Text style={[s.tHeadText, s.colAvT6]}>T6 Sonst.</Text>
+              <Text style={[s.tHeadText, s.colAvPct]}>Verfüg.</Text>
             </View>
 
-            {data.turbineAvailability.map((t, index) => (
-              <View
-                key={t.turbineId}
-                style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : {}]}
-              >
-                <Text style={[styles.tableCell, styles.colAvTurbine]}>{t.designation}</Text>
-                <Text style={[styles.tableCellRight, styles.colAvT1]}>
-                  {formatNumber(t.t1Hours, 0)} h
+            {data.turbineAvailability.map((t, i) => (
+              <View key={t.turbineId} style={[s.tRow, i % 2 === 1 ? s.tRowAlt : {}]}>
+                <Text style={[s.tCellBold, s.colAvTurb]}>{t.designation}</Text>
+                <Text style={[s.tCellRight, s.colAvT1]}>{formatNumber(t.t1Hours, 0)} h</Text>
+                <Text style={[s.tCellRight, s.colAvT2]}>{formatNumber(t.t2Hours, 0)} h</Text>
+                <Text style={[s.tCellRight, s.colAvT3]}>{formatNumber(t.t3Hours, 0)} h</Text>
+                <Text style={[s.tCellRight, s.colAvT4]}>{formatNumber(t.t4Hours, 0)} h</Text>
+                <Text style={[s.tCellRight, s.colAvT5]}>
+                  <Text
+                    style={{
+                      color: t.t5Hours > 24 ? C.red : C.gray700,
+                      fontWeight: t.t5Hours > 24 ? "bold" : "normal",
+                    }}
+                  >
+                    {formatNumber(t.t5Hours, 0)} h
+                  </Text>
                 </Text>
-                <Text style={[styles.tableCellRight, styles.colAvT2]}>
-                  {formatNumber(t.t2Hours, 0)} h
-                </Text>
-                <Text style={[styles.tableCellRight, styles.colAvT3]}>
-                  {formatNumber(t.t3Hours, 0)} h
-                </Text>
-                <Text style={[styles.tableCellRight, styles.colAvT4]}>
-                  {formatNumber(t.t4Hours, 0)} h
-                </Text>
-                <Text style={[styles.tableCellRight, styles.colAvT5]}>
-                  {formatNumber(t.t5Hours, 0)} h
-                </Text>
-                <Text style={[styles.tableCellRight, styles.colAvT6]}>
-                  {formatNumber(t.t6Hours, 0)} h
-                </Text>
+                <Text style={[s.tCellRight, s.colAvT6]}>{formatNumber(t.t6Hours, 0)} h</Text>
                 <Text
                   style={[
-                    styles.tableCellRight,
-                    styles.colAvPct,
+                    s.tCellRight,
+                    s.colAvPct,
                     {
                       fontWeight: "bold",
                       color:
                         t.availabilityPct != null && t.availabilityPct < 90
-                          ? COLORS.danger
+                          ? C.red
                           : t.availabilityPct != null && t.availabilityPct >= 97
-                          ? "#16A34A"
-                          : COLORS.text,
+                          ? C.green
+                          : C.gray700,
                     },
                   ]}
                 >
-                  {formatPercent1(t.availabilityPct)}
+                  {fmtPct(t.availabilityPct)}
                 </Text>
               </View>
             ))}
 
-            {/* Park average */}
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryText, styles.colAvTurbine]}>PARK</Text>
-              <Text style={[styles.summaryTextRight, styles.colAvT1]}>
+            <View style={s.tFoot}>
+              <Text style={[s.tFootText, s.colAvTurb]}>PARK ∅</Text>
+              <Text style={[s.tFootRight, s.colAvT1]}>
                 {formatNumber(
-                  data.turbineAvailability.reduce((s, t) => s + t.t1Hours, 0) /
+                  data.turbineAvailability.reduce((sum, t) => sum + t.t1Hours, 0) /
                     Math.max(data.turbineAvailability.length, 1),
                   0
                 )} h
               </Text>
-              <Text style={[styles.summaryTextRight, styles.colAvT2]}>
+              <Text style={[s.tFootRight, s.colAvT2]}>
                 {formatNumber(
-                  data.turbineAvailability.reduce((s, t) => s + t.t2Hours, 0) /
+                  data.turbineAvailability.reduce((sum, t) => sum + t.t2Hours, 0) /
                     Math.max(data.turbineAvailability.length, 1),
                   0
                 )} h
               </Text>
-              <Text style={[styles.summaryTextRight, styles.colAvT3]}>-</Text>
-              <Text style={[styles.summaryTextRight, styles.colAvT4]}>-</Text>
-              <Text style={[styles.summaryTextRight, styles.colAvT5]}>-</Text>
-              <Text style={[styles.summaryTextRight, styles.colAvT6]}>-</Text>
-              <Text style={[styles.summaryTextRight, styles.colAvPct]}>
-                {formatPercent1(data.avgAvailabilityPct)}
-              </Text>
+              <Text style={[s.tFootRight, s.colAvT3]}>-</Text>
+              <Text style={[s.tFootRight, s.colAvT4]}>-</Text>
+              <Text style={[s.tFootRight, s.colAvT5]}>-</Text>
+              <Text style={[s.tFootRight, s.colAvT6]}>-</Text>
+              <Text style={[s.tFootRight, s.colAvPct]}>{fmtPct(data.avgAvailabilityPct)}</Text>
             </View>
           </View>
 
           {/* Notable downtimes */}
           {data.notableDowntimes.length > 0 && (
-            <View style={styles.comparisonBox}>
-              <Text style={styles.comparisonTitle}>Besondere Vorkommnisse</Text>
+            <View style={s.alertBox}>
+              <Text style={s.alertTitle}>
+                Auffällige Anlagen (Verfügbarkeit &lt; 90%)
+              </Text>
               {data.notableDowntimes.map((note, i) => (
-                <Text key={i} style={{ fontSize: 9, color: COLORS.muted, marginBottom: 3 }}>
+                <Text key={i} style={s.alertItem}>
                   {"\u2022"} {note}
                 </Text>
               ))}
             </View>
           )}
-        </PageWrapper>
+        </PageWrap>
       )}
 
       {/* ========== PAGE 4: EREIGNISSE ========== */}
-      <PageWrapper
+      <PageWrap
         letterhead={letterhead}
         layout={layout}
         template={template}
         companyName={data.operatorName ?? undefined}
       >
-        <Text style={styles.sectionTitle}>
-          Ereignisse - {data.monthName} {data.year}
-        </Text>
+        <SectionHead
+          title="Ereignisse"
+          subtitle={`${data.parkName} — ${data.monthName} ${data.year}`}
+        />
 
         {hasEvents ? (
-          <View style={styles.table}>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderText, styles.colEvDate]}>Datum</Text>
-              <Text style={[styles.tableHeaderText, styles.colEvType]}>Typ</Text>
-              <Text style={[styles.tableHeaderText, styles.colEvTurbine]}>Anlage</Text>
-              <Text style={[styles.tableHeaderText, styles.colEvDesc]}>Beschreibung</Text>
-              <Text style={[styles.tableHeaderText, styles.colEvDuration]}>Dauer</Text>
+          <>
+            {/* Summary badges */}
+            <View style={[s.infoPanel, { marginBottom: 12 }]}>
+              <View style={{ flexDirection: "row", gap: 16 }}>
+                <View>
+                  <Text style={{ fontSize: 7, color: C.gray500, marginBottom: 2 }}>Ereignisse</Text>
+                  <Text style={{ fontSize: 16, fontWeight: "bold", color: C.navy }}>
+                    {data.serviceEvents.length}
+                  </Text>
+                </View>
+                <View>
+                  <Text style={{ fontSize: 7, color: C.gray500, marginBottom: 2 }}>
+                    Gesamtdauer
+                  </Text>
+                  <Text style={{ fontSize: 16, fontWeight: "bold", color: C.navy }}>
+                    {formatNumber(
+                      data.serviceEvents.reduce((sum, e) => sum + (e.durationHours ?? 0), 0),
+                      1
+                    )} h
+                  </Text>
+                </View>
+                <View>
+                  <Text style={{ fontSize: 7, color: C.gray500, marginBottom: 2 }}>
+                    Betroffene Anlagen
+                  </Text>
+                  <Text style={{ fontSize: 16, fontWeight: "bold", color: C.navy }}>
+                    {new Set(data.serviceEvents.map((e) => e.turbineDesignation)).size}
+                  </Text>
+                </View>
+              </View>
             </View>
 
-            {data.serviceEvents.map((event, index) => (
-              <View
-                key={event.id}
-                style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : {}]}
-              >
-                <Text style={[styles.tableCell, styles.colEvDate]}>
-                  {formatDate(event.eventDate)}
+            {/* Events table */}
+            <View style={s.table}>
+              <View style={s.tHead}>
+                <Text style={[s.tHeadText, s.colEvDate]}>Datum</Text>
+                <Text style={[s.tHeadText, s.colEvType]}>Typ</Text>
+                <Text style={[s.tHeadText, s.colEvTurb]}>Anlage</Text>
+                <Text style={[s.tHeadText, s.colEvDesc]}>Beschreibung</Text>
+                <Text style={[s.tHeadText, s.colEvDur]}>Dauer</Text>
+              </View>
+
+              {data.serviceEvents.map((ev, i) => (
+                <View key={ev.id} style={[s.tRow, i % 2 === 1 ? s.tRowAlt : {}]}>
+                  <Text style={[s.tCell, s.colEvDate]}>{formatDate(ev.eventDate)}</Text>
+                  <View style={s.colEvType}>
+                    <EventBadge type={ev.eventType} />
+                  </View>
+                  <Text style={[s.tCellBold, s.colEvTurb]}>{ev.turbineDesignation}</Text>
+                  <Text style={[s.tCell, s.colEvDesc]}>{ev.description || "-"}</Text>
+                  <Text style={[s.tCellRight, s.colEvDur]}>
+                    {ev.durationHours != null ? `${formatNumber(ev.durationHours, 1)} h` : "-"}
+                  </Text>
+                </View>
+              ))}
+
+              <View style={s.tFoot}>
+                <Text style={[s.tFootText, { width: "70%" }]}>
+                  {data.serviceEvents.length} Ereignisse
                 </Text>
-                <Text style={[styles.tableCell, styles.colEvType]}>
-                  {translateEventType(event.eventType)}
-                </Text>
-                <Text style={[styles.tableCell, styles.colEvTurbine]}>
-                  {event.turbineDesignation}
-                </Text>
-                <Text style={[styles.tableCell, styles.colEvDesc]}>
-                  {event.description || "-"}
-                </Text>
-                <Text style={[styles.tableCellRight, styles.colEvDuration]}>
-                  {event.durationHours != null
-                    ? `${formatNumber(event.durationHours, 1)} h`
-                    : "-"}
+                <Text style={[s.tFootRight, { width: "30%" }]}>
+                  {formatNumber(
+                    data.serviceEvents.reduce((sum, e) => sum + (e.durationHours ?? 0), 0),
+                    1
+                  )} h
                 </Text>
               </View>
-            ))}
-
-            {/* Summary row */}
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryText, { width: "70%" }]}>
-                Gesamt: {data.serviceEvents.length} Ereignisse
-              </Text>
-              <Text style={[styles.summaryTextRight, { width: "30%" }]}>
-                {formatNumber(
-                  data.serviceEvents.reduce((s, e) => s + (e.durationHours ?? 0), 0),
-                  1
-                )}{" "}
-                h
-              </Text>
             </View>
-          </View>
+          </>
         ) : (
-          <View style={styles.infoBox}>
-            <Text style={{ fontSize: 10, textAlign: "center", color: COLORS.muted }}>
+          <View style={s.infoPanel}>
+            <Text style={{ fontSize: 10, textAlign: "center", color: C.gray400 }}>
               Keine besonderen Ereignisse im Berichtszeitraum.
             </Text>
           </View>
         )}
 
-        <Text style={styles.generatedAt}>
+        <Text style={s.generatedAt}>
           Erstellt am {formatDate(new Date(data.generatedAt))}
         </Text>
-      </PageWrapper>
+      </PageWrap>
     </Document>
   );
 }
