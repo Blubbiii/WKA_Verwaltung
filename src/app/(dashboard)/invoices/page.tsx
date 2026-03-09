@@ -27,6 +27,9 @@ import {
   Loader2,
   Printer,
   Mail,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,6 +112,42 @@ interface InvoicesResponse {
   data: Invoice[];
 }
 
+type SortField = "invoiceNumber" | "invoiceType" | "fund" | "recipient" | "invoiceDate" | "netAmount" | "grossAmount" | "status";
+type SortDirection = "asc" | "desc";
+
+function SortableHeader({
+  field,
+  label,
+  currentField,
+  currentDirection,
+  onSort,
+  className,
+}: {
+  field: SortField;
+  label: string;
+  currentField: SortField;
+  currentDirection: SortDirection;
+  onSort: (field: SortField) => void;
+  className?: string;
+}) {
+  const isActive = currentField === field;
+  return (
+    <TableHead className={className}>
+      <button
+        className="flex items-center gap-1 hover:text-foreground transition-colors -ml-1 px-1 py-0.5 rounded text-left"
+        onClick={(e) => { e.stopPropagation(); onSort(field); }}
+      >
+        {label}
+        {isActive ? (
+          currentDirection === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 opacity-30" />
+        )}
+      </button>
+    </TableHead>
+  );
+}
+
 export default function InvoicesPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -117,6 +156,8 @@ export default function InvoicesPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDatevExport, setShowDatevExport] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("invoiceDate");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
 
@@ -179,6 +220,50 @@ export default function InvoicesPage() {
     );
   });
 
+  // Sort handler
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection(field === "invoiceDate" || field === "grossAmount" || field === "netAmount" ? "desc" : "asc");
+    }
+  }
+
+  // Sort invoices
+  const sortedInvoices = [...filteredInvoices].sort((a, b) => {
+    let cmp = 0;
+    switch (sortField) {
+      case "invoiceNumber":
+        cmp = a.invoiceNumber.localeCompare(b.invoiceNumber, "de", { numeric: true });
+        break;
+      case "invoiceType":
+        cmp = a.invoiceType.localeCompare(b.invoiceType);
+        break;
+      case "fund":
+        cmp = (a.fund?.name || "").localeCompare(b.fund?.name || "", "de");
+        break;
+      case "recipient":
+        cmp = getRecipientName(a).localeCompare(getRecipientName(b), "de");
+        break;
+      case "invoiceDate":
+        cmp = new Date(a.invoiceDate).getTime() - new Date(b.invoiceDate).getTime();
+        break;
+      case "netAmount":
+        cmp = a.netAmount - b.netAmount;
+        break;
+      case "grossAmount":
+        cmp = a.grossAmount - b.grossAmount;
+        break;
+      case "status": {
+        const order = { DRAFT: 0, SENT: 1, PAID: 2, CANCELLED: 3 };
+        cmp = order[a.status] - order[b.status];
+        break;
+      }
+    }
+    return sortDirection === "asc" ? cmp : -cmp;
+  });
+
   // Batch selection
   const {
     selectedIds,
@@ -188,7 +273,7 @@ export default function InvoicesPage() {
     toggleAll,
     clearSelection,
     selectedCount,
-  } = useBatchSelection({ items: filteredInvoices });
+  } = useBatchSelection({ items: sortedInvoices });
 
   // Clear selection when filters change
   useEffect(() => {
@@ -197,7 +282,7 @@ export default function InvoicesPage() {
 
   // Batch: delete selected (only DRAFT invoices)
   async function handleBatchDelete() {
-    const draftIds = filteredInvoices
+    const draftIds = sortedInvoices
       .filter((inv) => selectedIds.has(inv.id) && inv.status === "DRAFT")
       .map((inv) => inv.id);
 
@@ -236,7 +321,7 @@ export default function InvoicesPage() {
 
   // Batch: mark selected as paid
   async function handleBatchMarkPaid() {
-    const sentIds = filteredInvoices
+    const sentIds = sortedInvoices
       .filter((inv) => selectedIds.has(inv.id) && inv.status === "SENT")
       .map((inv) => inv.id);
 
@@ -279,7 +364,7 @@ export default function InvoicesPage() {
 
   // Batch: export selected as CSV
   function handleBatchExport() {
-    const selected = filteredInvoices.filter((inv) => selectedIds.has(inv.id));
+    const selected = sortedInvoices.filter((inv) => selectedIds.has(inv.id));
     if (selected.length === 0) return;
 
     const header = ["Nummer", "Typ", "Empfänger", "Datum", "Netto", "Brutto", "Status"];
@@ -416,14 +501,14 @@ export default function InvoicesPage() {
                       onClick={(e) => e.stopPropagation()}
                     />
                   </TableHead>
-                  <TableHead>Nummer</TableHead>
-                  <TableHead>Typ</TableHead>
-                  <TableHead>Versender</TableHead>
-                  <TableHead>Empfänger</TableHead>
-                  <TableHead>Datum</TableHead>
-                  <TableHead className="text-right">Netto</TableHead>
-                  <TableHead className="text-right">Brutto</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableHeader field="invoiceNumber" label="Nummer" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <SortableHeader field="invoiceType" label="Typ" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <SortableHeader field="fund" label="Versender" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <SortableHeader field="recipient" label="Empfänger" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <SortableHeader field="invoiceDate" label="Datum" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <SortableHeader field="netAmount" label="Netto" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} className="text-right" />
+                  <SortableHeader field="grossAmount" label="Brutto" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} className="text-right" />
+                  <SortableHeader field="status" label="Status" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
                   <TableHead className="w-10 text-center" title="Gedruckt"><Printer className="h-4 w-4 mx-auto text-muted-foreground" /></TableHead>
                   <TableHead className="w-10 text-center" title="E-Mail"><Mail className="h-4 w-4 mx-auto text-muted-foreground" /></TableHead>
                   <TableHead className="w-[120px]"></TableHead>
@@ -440,14 +525,14 @@ export default function InvoicesPage() {
                       ))}
                     </TableRow>
                   ))
-                ) : filteredInvoices.length === 0 ? (
+                ) : sortedInvoices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={12} className="h-32 text-center text-muted-foreground">
                       Keine Belege gefunden
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredInvoices.map((invoice) => (
+                  sortedInvoices.map((invoice) => (
                     <TableRow
                       key={invoice.id}
                       className={`cursor-pointer hover:bg-muted/50 ${selectedIds.has(invoice.id) ? "bg-primary/5" : ""}`}

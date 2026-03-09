@@ -215,6 +215,12 @@ const taxTypeLabels: Record<string, string> = {
   EXEMPT: "Steuerfrei",
 };
 
+/** Check if name already contains the legal form (normalizing + vs &) */
+function nameIncludesLegalForm(name: string, legalForm: string): boolean {
+  const norm = (s: string) => s.replace(/[+&]/g, "").replace(/\s+/g, " ").toLowerCase();
+  return norm(name).includes(norm(legalForm));
+}
+
 const correctionTypeLabels: Record<string, string> = {
   FULL_CANCEL: "Vollstorno",
   PARTIAL_CANCEL: "Teilstorno",
@@ -794,7 +800,7 @@ export default function InvoiceDetailPage({
               <div className="space-y-1">
                 <p className="font-medium">
                   {invoice.fund.name}
-                  {invoice.fund.legalForm && !invoice.fund.name.includes(invoice.fund.legalForm) && (
+                  {invoice.fund.legalForm && !nameIncludesLegalForm(invoice.fund.name, invoice.fund.legalForm) && (
                     <span className="text-muted-foreground font-normal ml-1">
                       {invoice.fund.legalForm}
                     </span>
@@ -818,7 +824,7 @@ export default function InvoiceDetailPage({
               <div className="space-y-1">
                 <p className="font-medium">
                   {invoice.park.billingEntityFund.name}
-                  {invoice.park.billingEntityFund.legalForm && !invoice.park.billingEntityFund.name.includes(invoice.park.billingEntityFund.legalForm) && (
+                  {invoice.park.billingEntityFund.legalForm && !nameIncludesLegalForm(invoice.park.billingEntityFund.name, invoice.park.billingEntityFund.legalForm) && (
                     <span className="text-muted-foreground font-normal ml-1">
                       ({invoice.park.billingEntityFund.legalForm})
                     </span>

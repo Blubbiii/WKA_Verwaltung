@@ -553,7 +553,7 @@ async function fetchAnnualReportData(
     // Topology
     topologyTurbines,
     billingEntityName: park.billingEntityFund
-      ? `${park.billingEntityFund.name}${park.billingEntityFund.legalForm && !park.billingEntityFund.name.includes(park.billingEntityFund.legalForm) ? ` ${park.billingEntityFund.legalForm}` : ""}`
+      ? `${park.billingEntityFund.name}${park.billingEntityFund.legalForm && !park.billingEntityFund.name.replace(/[+&]/g, "").toLowerCase().includes(park.billingEntityFund.legalForm.replace(/[+&]/g, "").toLowerCase()) ? ` ${park.billingEntityFund.legalForm}` : ""}`
       : null,
   };
 }

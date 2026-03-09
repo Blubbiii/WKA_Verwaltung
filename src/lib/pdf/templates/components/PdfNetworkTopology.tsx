@@ -153,7 +153,8 @@ function fmtPower(kw: number) {
 }
 
 function fundLabel(fund: TopologyFund): string {
-  return `${fund.name}${fund.legalForm && !fund.name.includes(fund.legalForm) ? ` ${fund.legalForm}` : ""}`;
+  const norm = (s: string) => s.replace(/[+&]/g, "").toLowerCase();
+  return `${fund.name}${fund.legalForm && !norm(fund.name).includes(norm(fund.legalForm)) ? ` ${fund.legalForm}` : ""}`;
 }
 
 // ---------------------------------------------------------------------------
