@@ -33,12 +33,22 @@ export interface InvoicePdfOptions {
 function resolvePaymentText(
   template: string,
   invoiceNumber: string,
-  dueDate: Date | null
+  dueDate: Date | null,
+  bankInfo?: { iban?: string; bic?: string; bankName?: string }
 ): string {
   let text = template;
   text = text.replace(/\{invoiceNumber\}/g, invoiceNumber);
   if (dueDate) {
     text = text.replace(/\{dueDate\}/g, formatDate(dueDate));
+  }
+  if (bankInfo?.iban) {
+    text = text.replace(/\{iban\}/g, bankInfo.iban);
+  }
+  if (bankInfo?.bic) {
+    text = text.replace(/\{bic\}/g, bankInfo.bic);
+  }
+  if (bankInfo?.bankName) {
+    text = text.replace(/\{bankName\}/g, bankInfo.bankName);
   }
   return text;
 }
@@ -192,14 +202,21 @@ export async function generateInvoicePdf(
     // Zahlungstext basierend auf Rechnungstyp aus Tenant-Einstellungen
     paymentText: (() => {
       const isCredit = invoice.invoiceType === "CREDIT_NOTE";
-      const defaultInvoiceText = "Bitte überweisen Sie den Betrag bis zum {dueDate} auf das unten angegebene Konto. Geben Sie als Verwendungszweck bitte die Rechnungsnummer {invoiceNumber} an.";
+      const defaultInvoiceText = "Bitte überweisen Sie den Betrag bis zum {dueDate} auf folgendes Konto:\nIBAN: {iban}\nBank: {bankName}\nVerwendungszweck: {invoiceNumber}";
       const defaultCreditText = "Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto überwiesen. Referenz: Gutschriftsnummer {invoiceNumber}.";
 
       const textTemplate = isCredit
         ? (tenantSettings.creditNotePaymentText as string) || defaultCreditText
         : (tenantSettings.invoicePaymentText as string) || defaultInvoiceText;
 
-      return resolvePaymentText(textTemplate, invoice.invoiceNumber, invoice.dueDate);
+      // Resolve bank details from Fund companyInfo or Tenant
+      const bankInfo = {
+        iban: effectiveCompanyInfo?.bankDetails?.iban ?? invoice.tenant?.iban ?? undefined,
+        bic: effectiveCompanyInfo?.bankDetails?.bic ?? invoice.tenant?.bic ?? undefined,
+        bankName: effectiveCompanyInfo?.bankDetails?.bankName ?? invoice.tenant?.bankName ?? undefined,
+      };
+
+      return resolvePaymentText(textTemplate, invoice.invoiceNumber, invoice.dueDate, bankInfo);
     })(),
     // Skonto data
     skontoPercent: invoice.skontoPercent ? Number(invoice.skontoPercent) : null,

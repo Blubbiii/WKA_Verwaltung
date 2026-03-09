@@ -7,8 +7,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   recipientWindow: {
-    width: 85, // 85mm Adressfenster
-    height: 45, // 45mm Hoehe
+    width: 241, // 85mm Adressfenster (85 * 2.835 pt/mm)
+    minHeight: 128, // 45mm Mindesthöhe (45 * 2.835 pt/mm)
     paddingTop: 5,
   },
   senderLine: {
