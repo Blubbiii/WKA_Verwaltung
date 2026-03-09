@@ -1,11 +1,17 @@
 /**
- * Monthly Report (Monatsbericht) PDF Template — Premium Design
+ * Operational Report PDF Template — Premium Design
  *
- * Generates a multi-page monthly report for a wind park containing:
+ * Supports MONTHLY, QUARTERLY, and ANNUAL period types.
+ *
+ * Common pages (all period types):
  * - Page 1: Executive summary with KPIs, trend indicators, and YoY comparison
  * - Page 2: Production per turbine table with visual bar chart
  * - Page 3: Availability per turbine with stacked-bar breakdown (IEC 61400-26)
  * - Page 4: Service events with type badges
+ *
+ * Extra pages for QUARTERLY / ANNUAL:
+ * - Monthly production trend table (per turbine × month)
+ * - Monthly availability trend table
  */
 
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
@@ -536,6 +542,24 @@ export interface ServiceEventRow {
   durationHours: number | null;
 }
 
+export type ReportPeriodType = "MONTHLY" | "QUARTERLY" | "ANNUAL";
+
+export interface MonthlyTrendEntry {
+  month: number;
+  monthNameShort: string; // "Jan", "Feb", etc.
+  productionMwh: number;
+  avgAvailabilityPct: number | null;
+  avgWindSpeedMs: number | null;
+  revenueEur: number | null;
+}
+
+export interface TurbineMonthlyProduction {
+  turbineId: string;
+  designation: string;
+  monthlyMwh: (number | null)[]; // indexed by position (0 = first month in range)
+  totalMwh: number;
+}
+
 export interface MonthlyReportData {
   parkName: string;
   parkAddress: string | null;
@@ -558,6 +582,17 @@ export interface MonthlyReportData {
   serviceEvents: ServiceEventRow[];
   notableDowntimes: string[];
   generatedAt: string;
+
+  // Period support (optional — defaults to MONTHLY if missing)
+  periodType?: ReportPeriodType;
+  periodLabel?: string; // e.g. "Q4 2025", "Oktober - Dezember 2025"
+
+  // Monthly trend data (only for QUARTERLY/ANNUAL)
+  monthlyTrend?: MonthlyTrendEntry[];
+  turbineMonthlyProduction?: TurbineMonthlyProduction[];
+
+  // Turbine type info (optional, from Park)
+  turbineTypeInfo?: string; // e.g. "3 Windenergieanlagen E82 2,0 MW"
 }
 
 interface MonthlyReportTemplateProps {
@@ -835,16 +870,30 @@ export function MonthlyReportTemplate({
   letterhead,
 }: MonthlyReportTemplateProps) {
   const layout = template.layout;
+  const periodType = data.periodType ?? "MONTHLY";
   const hasPrevYear =
     data.prevYearProductionMwh != null || data.prevYearAvailabilityPct != null;
   const hasRevenue = data.totalRevenueEur != null;
   const hasAvailData = data.turbineAvailability.length > 0;
   const hasEvents = data.serviceEvents.length > 0;
+  const hasTrend = (periodType === "QUARTERLY" || periodType === "ANNUAL") &&
+    data.monthlyTrend && data.monthlyTrend.length > 0;
+  const hasTurbineTrend = hasTrend && data.turbineMonthlyProduction &&
+    data.turbineMonthlyProduction.length > 0;
 
   const totalHours = data.turbineProduction.reduce(
     (sum, t) => sum + (t.operatingHours ?? 0),
     0
   );
+
+  // Report title based on period type
+  const reportTitle = periodType === "ANNUAL"
+    ? `Jahresbericht ${data.year}`
+    : periodType === "QUARTERLY"
+    ? `Quartalsbericht ${data.periodLabel || data.monthName + " " + data.year}`
+    : `Monatsbericht ${data.monthName} ${data.year}`;
+
+  const periodSubtitle = data.periodLabel || `${data.monthName} ${data.year}`;
 
   // Trend calculations
   const prodTrend = diffPct(data.totalProductionMwh, data.prevYearProductionMwh);
@@ -863,9 +912,7 @@ export function MonthlyReportTemplate({
       >
         {/* Title Banner */}
         <View style={s.titleBanner}>
-          <Text style={s.titleText}>
-            Monatsbericht {data.monthName} {data.year}
-          </Text>
+          <Text style={s.titleText}>{reportTitle}</Text>
           <Text style={s.titleSubText}>{data.parkName}</Text>
           <View style={s.titleMeta}>
             <View style={s.titleMetaItem}>
@@ -888,7 +935,7 @@ export function MonthlyReportTemplate({
         </View>
 
         {/* KPI Cards */}
-        <SectionHead title="Kennzahlen" subtitle={`${data.monthName} ${data.year}`} />
+        <SectionHead title="Kennzahlen" subtitle={periodSubtitle} />
 
         <View style={s.kpiGrid}>
           <KpiCard
@@ -939,7 +986,7 @@ export function MonthlyReportTemplate({
         {hasPrevYear && (
           <View style={s.compBox}>
             <Text style={s.compTitle}>
-              Vergleich Vorjahresmonat ({data.monthName} {data.year - 1})
+              Vergleich Vorjahreszeitraum ({data.year - 1})
             </Text>
             <View style={s.compHeader}>
               <Text style={[s.compHeaderText, { width: "35%" }]}>Kennzahl</Text>
@@ -999,7 +1046,7 @@ export function MonthlyReportTemplate({
       >
         <SectionHead
           title="Produktion"
-          subtitle={`${data.parkName} — ${data.monthName} ${data.year}`}
+          subtitle={`${data.parkName} — ${periodSubtitle}`}
         />
 
         {data.turbineProduction.length > 0 ? (
@@ -1069,7 +1116,7 @@ export function MonthlyReportTemplate({
         >
           <SectionHead
             title="Verfügbarkeit"
-            subtitle={`${data.parkName} — ${data.monthName} ${data.year}`}
+            subtitle={`${data.parkName} — ${periodSubtitle}`}
           />
 
           {/* Stacked availability bars */}
@@ -1175,7 +1222,7 @@ export function MonthlyReportTemplate({
       >
         <SectionHead
           title="Ereignisse"
-          subtitle={`${data.parkName} — ${data.monthName} ${data.year}`}
+          subtitle={`${data.parkName} — ${periodSubtitle}`}
         />
 
         {hasEvents ? (
@@ -1260,6 +1307,196 @@ export function MonthlyReportTemplate({
           Erstellt am {formatDate(new Date(data.generatedAt))}
         </Text>
       </PageWrap>
+
+      {/* ========== EXTRA: MONTHLY TREND (QUARTERLY/ANNUAL) ========== */}
+      {hasTrend && data.monthlyTrend && (
+        <PageWrap
+          letterhead={letterhead}
+          layout={layout}
+          template={template}
+          companyName={data.operatorName ?? undefined}
+        >
+          <SectionHead
+            title="Monatliche Entwicklung"
+            subtitle={`${data.parkName} — ${periodSubtitle}`}
+          />
+
+          {/* Monthly KPI trend table */}
+          <View style={s.table}>
+            <View style={s.tHead}>
+              <Text style={[s.tHeadText, { width: "20%" }]}>Monat</Text>
+              <Text style={[s.tHeadText, { width: "20%", textAlign: "right" }]}>Produktion</Text>
+              <Text style={[s.tHeadText, { width: "20%", textAlign: "right" }]}>Verfüg.</Text>
+              <Text style={[s.tHeadText, { width: "20%", textAlign: "right" }]}>Wind</Text>
+              <Text style={[s.tHeadText, { width: "20%", textAlign: "right" }]}>Erlöse</Text>
+            </View>
+
+            {data.monthlyTrend.map((m, i) => (
+              <View key={m.month} style={[s.tRow, i % 2 === 1 ? s.tRowAlt : {}]}>
+                <Text style={[s.tCellBold, { width: "20%" }]}>{m.monthNameShort}</Text>
+                <Text style={[s.tCellRight, { width: "20%" }]}>
+                  {formatNumber(m.productionMwh, 1)} MWh
+                </Text>
+                <Text
+                  style={[
+                    s.tCellRight,
+                    { width: "20%" },
+                    {
+                      color:
+                        m.avgAvailabilityPct != null && m.avgAvailabilityPct < 90
+                          ? C.red
+                          : m.avgAvailabilityPct != null && m.avgAvailabilityPct >= 97
+                          ? C.green
+                          : C.gray700,
+                      fontWeight: "bold",
+                    },
+                  ]}
+                >
+                  {fmtPct(m.avgAvailabilityPct)}
+                </Text>
+                <Text style={[s.tCellRight, { width: "20%" }]}>{fmtWind(m.avgWindSpeedMs)}</Text>
+                <Text style={[s.tCellRight, { width: "20%" }]}>
+                  {m.revenueEur != null ? formatCurrency(m.revenueEur) : "-"}
+                </Text>
+              </View>
+            ))}
+
+            <View style={s.tFoot}>
+              <Text style={[s.tFootText, { width: "20%" }]}>GESAMT</Text>
+              <Text style={[s.tFootRight, { width: "20%" }]}>
+                {formatNumber(data.totalProductionMwh, 1)} MWh
+              </Text>
+              <Text style={[s.tFootRight, { width: "20%" }]}>
+                {fmtPct(data.avgAvailabilityPct)}
+              </Text>
+              <Text style={[s.tFootRight, { width: "20%" }]}>
+                {fmtWind(data.avgWindSpeedMs)}
+              </Text>
+              <Text style={[s.tFootRight, { width: "20%" }]}>
+                {data.totalRevenueEur != null ? formatCurrency(data.totalRevenueEur) : "-"}
+              </Text>
+            </View>
+          </View>
+
+          {/* Monthly production bar chart */}
+          <View style={s.chartWrap}>
+            <SectionHead title="Produktion pro Monat" />
+            {(() => {
+              const maxMwh = Math.max(...data.monthlyTrend.map((m) => m.productionMwh), 1);
+              return data.monthlyTrend.map((m, i) => {
+                const pct = Math.max((m.productionMwh / maxMwh) * 100, 2);
+                return (
+                  <View key={m.month} style={s.chartRow}>
+                    <Text style={s.chartLabel}>{m.monthNameShort}</Text>
+                    <View style={s.chartTrack}>
+                      <View
+                        style={[
+                          s.chartBar,
+                          {
+                            width: `${pct}%`,
+                            backgroundColor: i % 2 === 0 ? C.navyLight : C.navy,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={s.chartValLabel}>
+                      {formatNumber(m.productionMwh, 0)} MWh
+                    </Text>
+                  </View>
+                );
+              });
+            })()}
+          </View>
+        </PageWrap>
+      )}
+
+      {/* ========== EXTRA: TURBINE × MONTH PRODUCTION (QUARTERLY/ANNUAL) ========== */}
+      {hasTurbineTrend && data.turbineMonthlyProduction && data.monthlyTrend && (
+        <PageWrap
+          letterhead={letterhead}
+          layout={layout}
+          template={template}
+          companyName={data.operatorName ?? undefined}
+        >
+          <SectionHead
+            title="Produktion pro Anlage und Monat"
+            subtitle={`${data.parkName} — ${periodSubtitle}`}
+          />
+
+          <View style={s.table}>
+            {/* Header row with month names */}
+            <View style={s.tHead}>
+              <Text style={[s.tHeadText, { width: "16%" }]}>Anlage</Text>
+              {data.monthlyTrend.map((m) => (
+                <Text
+                  key={m.month}
+                  style={[
+                    s.tHeadText,
+                    {
+                      width: `${Math.floor(68 / data.monthlyTrend!.length)}%`,
+                      textAlign: "right",
+                    },
+                  ]}
+                >
+                  {m.monthNameShort}
+                </Text>
+              ))}
+              <Text style={[s.tHeadText, { width: "16%", textAlign: "right" }]}>Summe</Text>
+            </View>
+
+            {/* Turbine rows */}
+            {data.turbineMonthlyProduction.map((t, i) => (
+              <View key={t.turbineId} style={[s.tRow, i % 2 === 1 ? s.tRowAlt : {}]}>
+                <Text style={[s.tCellBold, { width: "16%" }]}>{t.designation}</Text>
+                {t.monthlyMwh.map((mwh, mi) => (
+                  <Text
+                    key={mi}
+                    style={[
+                      s.tCellRight,
+                      {
+                        width: `${Math.floor(68 / data.monthlyTrend!.length)}%`,
+                        fontSize: 7,
+                      },
+                    ]}
+                  >
+                    {mwh != null ? formatNumber(mwh, 0) : "-"}
+                  </Text>
+                ))}
+                <Text style={[s.tCellRight, { width: "16%", fontWeight: "bold" }]}>
+                  {formatNumber(t.totalMwh, 0)}
+                </Text>
+              </View>
+            ))}
+
+            {/* Sum row */}
+            <View style={s.tFoot}>
+              <Text style={[s.tFootText, { width: "16%" }]}>Summe</Text>
+              {data.monthlyTrend.map((m) => (
+                <Text
+                  key={m.month}
+                  style={[
+                    s.tFootRight,
+                    {
+                      width: `${Math.floor(68 / data.monthlyTrend!.length)}%`,
+                      fontSize: 7,
+                    },
+                  ]}
+                >
+                  {formatNumber(m.productionMwh, 0)}
+                </Text>
+              ))}
+              <Text style={[s.tFootRight, { width: "16%" }]}>
+                {formatNumber(data.totalProductionMwh, 0)}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={{ fontSize: 7, color: C.gray400, marginTop: 4 }}>
+            Alle Werte in MWh
+          </Text>
+        </PageWrap>
+      )}
+
     </Document>
   );
 }
