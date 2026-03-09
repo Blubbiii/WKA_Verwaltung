@@ -199,7 +199,7 @@ const navGroups: NavGroup[] = [
     ],
   },
 
-  // ---- Windparks ----
+  // ---- Windparks (inkl. Energie & SCADA) ----
   {
     label: "Windparks",
     labelKey: "windparks",
@@ -221,10 +221,74 @@ const navGroups: NavGroup[] = [
         icon: Wrench,
         permission: "service-events:read",
       },
+      {
+        title: "Energie",
+        titleKey: "energy",
+        href: "/energy",
+        icon: Zap,
+        permission: "energy:read",
+        children: [
+          { title: "Übersicht", titleKey: "energyOverview", href: "/energy", icon: LayoutDashboard },
+          { title: "Produktionsdaten", titleKey: "productionData", href: "/energy/productions", icon: BarChart3 },
+          { title: "Netzbetreiber-Daten", titleKey: "gridOperatorData", href: "/energy/settlements", icon: FileBarChart },
+          { title: "SCADA-Messdaten", titleKey: "scadaMeasurements", href: "/energy/scada/data", icon: Activity },
+          { title: "SCADA-Zuordnung", titleKey: "scadaMapping", href: "/energy/scada", icon: Radio },
+          { title: "Netz-Topologie", titleKey: "networkTopology", href: "/energy/topology", icon: Network },
+          { title: "Analysen", titleKey: "energyAnalytics", href: "/energy/analytics", icon: TrendingUp },
+          { title: "Anomalie-Erkennung", titleKey: "anomalyDetection", href: "/energy/scada/anomalies", icon: AlertTriangle },
+        ],
+      },
     ],
   },
 
-  // ---- Finanzen ----
+  // ---- Betriebsführung (eigene Gruppe) ----
+  {
+    label: "Betriebsführung",
+    labelKey: "managementBilling",
+    items: [
+      {
+        title: "Betriebsführung",
+        titleKey: "managementBilling",
+        href: "/management-billing",
+        icon: Briefcase,
+        permission: "management-billing:read",
+        featureFlag: "management-billing",
+        children: [
+          { title: "Übersicht", titleKey: "managementBillingOverview", href: "/management-billing" },
+          { title: "BF-Verträge", titleKey: "managementStakeholders", href: "/management-billing/stakeholders" },
+          { title: "Abrechnungen", titleKey: "managementBillings", href: "/management-billing/billings" },
+          { title: "Tagesgeschäft", titleKey: "managementTasks", href: "/management-billing/tasks" },
+          { title: "Begehungen", titleKey: "managementInspections", href: "/management-billing/inspections" },
+          { title: "Versicherungen", titleKey: "managementInsurance", href: "/management-billing/insurance" },
+          { title: "Optimierung", titleKey: "managementOptimization", href: "/management-billing/optimization" },
+        ],
+      },
+    ],
+  },
+
+  // ---- Grundstücke & Pachten ----
+  {
+    label: "Grundstücke & Pachten",
+    labelKey: "groundLeases",
+    items: [
+      {
+        title: "Pacht",
+        titleKey: "leases",
+        href: "/leases",
+        icon: LandPlot,
+        permission: "leases:read",
+        children: [
+          { title: "Pachtverträge", titleKey: "leaseContracts", href: "/leases", icon: ScrollText },
+          { title: "Pachtabrechnung", titleKey: "leaseSettlement", href: "/leases/settlement", icon: Calculator },
+          { title: "Vorschüsse", titleKey: "advances", href: "/leases/advances", icon: Banknote },
+          { title: "Zahlungen", titleKey: "payments", href: "/leases/payments", icon: CreditCard },
+          { title: "SHP-Import", titleKey: "shpImport", href: "/leases/import-shp", icon: Upload },
+        ],
+      },
+    ],
+  },
+
+  // ---- Finanzen (verschlankt) ----
   {
     label: "Finanzen",
     labelKey: "finances",
@@ -257,40 +321,6 @@ const navGroups: NavGroup[] = [
         href: "/funds",
         icon: Building2,
         permission: "funds:read",
-      },
-      {
-        title: "Energie",
-        titleKey: "energy",
-        href: "/energy",
-        icon: Zap,
-        permission: "energy:read",
-        children: [
-          { title: "Übersicht", titleKey: "energyOverview", href: "/energy", icon: LayoutDashboard },
-          { title: "Produktionsdaten", titleKey: "productionData", href: "/energy/productions", icon: BarChart3 },
-          { title: "Netzbetreiber-Daten", titleKey: "gridOperatorData", href: "/energy/settlements", icon: FileBarChart },
-          { title: "SCADA-Messdaten", titleKey: "scadaMeasurements", href: "/energy/scada/data", icon: Activity },
-          { title: "SCADA-Zuordnung", titleKey: "scadaMapping", href: "/energy/scada", icon: Radio },
-          { title: "Netz-Topologie", titleKey: "networkTopology", href: "/energy/topology", icon: Network },
-          { title: "Analysen", titleKey: "energyAnalytics", href: "/energy/analytics", icon: TrendingUp },
-          { title: "Anomalie-Erkennung", titleKey: "anomalyDetection", href: "/energy/scada/anomalies", icon: AlertTriangle },
-        ],
-      },
-      {
-        title: "Betriebsführung",
-        titleKey: "managementBilling",
-        href: "/management-billing",
-        icon: Briefcase,
-        permission: "management-billing:read",
-        featureFlag: "management-billing",
-        children: [
-          { title: "Übersicht", titleKey: "managementBillingOverview", href: "/management-billing" },
-          { title: "BF-Verträge", titleKey: "managementStakeholders", href: "/management-billing/stakeholders" },
-          { title: "Abrechnungen", titleKey: "managementBillings", href: "/management-billing/billings" },
-          { title: "Tagesgeschäft", titleKey: "managementTasks", href: "/management-billing/tasks" },
-          { title: "Begehungen", titleKey: "managementInspections", href: "/management-billing/inspections" },
-          { title: "Versicherungen", titleKey: "managementInsurance", href: "/management-billing/insurance" },
-          { title: "Optimierung", titleKey: "managementOptimization", href: "/management-billing/optimization" },
-        ],
       },
       {
         title: "Wirtschaftsplan",
@@ -330,65 +360,7 @@ const navGroups: NavGroup[] = [
     ],
   },
 
-  // ---- Verwaltung ----
-  {
-    label: "Verwaltung",
-    labelKey: "administration",
-    items: [
-      {
-        title: "Pacht",
-        titleKey: "leases",
-        href: "/leases",
-        icon: LandPlot,
-        permission: "leases:read",
-        children: [
-          { title: "Pachtverträge", titleKey: "leaseContracts", href: "/leases", icon: ScrollText },
-          { title: "Pachtabrechnung", titleKey: "leaseSettlement", href: "/leases/settlement", icon: Calculator },
-          { title: "Vorschüsse", titleKey: "advances", href: "/leases/advances", icon: Banknote },
-          { title: "Zahlungen", titleKey: "payments", href: "/leases/payments", icon: CreditCard },
-          { title: "SHP-Import", titleKey: "shpImport", href: "/leases/import-shp", icon: Upload },
-        ],
-      },
-      {
-        title: "Dokumente",
-        titleKey: "documents",
-        href: "/documents",
-        icon: FolderOpen,
-        permission: "documents:read",
-        children: [
-          { title: "Übersicht", titleKey: "documentOverview", href: "/documents" },
-          { title: "Paperless-ngx", titleKey: "paperless", href: "/documents/paperless", featureFlag: "paperless" },
-        ],
-      },
-      {
-        title: "Abstimmungen",
-        titleKey: "votes",
-        href: "/votes",
-        icon: Vote,
-        permission: "votes:read",
-      },
-      {
-        title: "Meldungen",
-        titleKey: "news",
-        href: "/news",
-        icon: Newspaper,
-        permission: "news:read",
-      },
-      {
-        title: "Berichte",
-        titleKey: "reports",
-        href: "/reports",
-        icon: BarChart3,
-        permission: "reports:read",
-        children: [
-          { title: "Berichte erstellen", titleKey: "createReports", href: "/reports", icon: BarChart3 },
-          { title: "Berichtsarchiv", titleKey: "reportArchive", href: "/reports/archive", icon: Archive },
-        ],
-      },
-    ],
-  },
-
-  // ---- Kommunikation (Feature-Flag-gesteuertes Modul) ----
+  // ---- Kommunikation (inkl. Votes & News) ----
   {
     label: "Kommunikation",
     labelKey: "communication",
@@ -416,6 +388,50 @@ const navGroups: NavGroup[] = [
         icon: Cog,
         permission: "admin:email",
         featureFlag: "communication",
+      },
+      {
+        title: "Abstimmungen",
+        titleKey: "votes",
+        href: "/votes",
+        icon: Vote,
+        permission: "votes:read",
+      },
+      {
+        title: "Meldungen",
+        titleKey: "news",
+        href: "/news",
+        icon: Newspaper,
+        permission: "news:read",
+      },
+    ],
+  },
+
+  // ---- Berichte & Dokumente ----
+  {
+    label: "Berichte & Dokumente",
+    labelKey: "reportsDocuments",
+    items: [
+      {
+        title: "Dokumente",
+        titleKey: "documents",
+        href: "/documents",
+        icon: FolderOpen,
+        permission: "documents:read",
+        children: [
+          { title: "Übersicht", titleKey: "documentOverview", href: "/documents" },
+          { title: "Paperless-ngx", titleKey: "paperless", href: "/documents/paperless", featureFlag: "paperless" },
+        ],
+      },
+      {
+        title: "Berichte",
+        titleKey: "reports",
+        href: "/reports",
+        icon: BarChart3,
+        permission: "reports:read",
+        children: [
+          { title: "Berichte erstellen", titleKey: "createReports", href: "/reports", icon: BarChart3 },
+          { title: "Berichtsarchiv", titleKey: "reportArchive", href: "/reports/archive", icon: Archive },
+        ],
       },
     ],
   },
