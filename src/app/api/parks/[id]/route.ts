@@ -47,6 +47,9 @@ const parkUpdateSchema = z.object({
     accountNumber: z.string(),
   })).optional().nullable(),
   defaultPaymentDay: z.number().int().min(1).max(28).optional().nullable(),
+
+  // Report cover image
+  reportCoverImageKey: z.string().optional().nullable(),
 });
 
 // GET /api/parks/[id] - Einzelnen Park laden

@@ -23,6 +23,7 @@ interface Park {
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   settlementArticles: { type: string; label: string; taxRate: number; accountNumber: string }[] | null;
   defaultPaymentDay: number | null;
+  reportCoverImageKey: string | null;
 }
 
 export default function EditParkPage({

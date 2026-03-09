@@ -258,6 +258,7 @@ model Park {
   tenantId                               String
   houseNumber                            String?
   street                                 String?
+  reportCoverImageKey                    String?
   contracts                              Contract[]
   documentTemplates                      DocumentTemplate[]
   documents                              Document[]

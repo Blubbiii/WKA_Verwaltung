@@ -14,7 +14,7 @@
  * - Monthly availability trend table
  */
 
-import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import type { ResolvedLetterhead, ResolvedTemplate } from "../utils/templateResolver";
 import { Header } from "./components/Header";
 import { Footer, PageNumber } from "./components/Footer";
@@ -505,6 +505,72 @@ const s = StyleSheet.create({
     backgroundColor: C.gray200,
     marginVertical: 12,
   },
+
+  // ---- Cover Page ----
+  coverPage: {
+    position: "relative",
+    fontFamily: "Helvetica",
+  },
+  coverImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+  coverOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "45%",
+    // Gradient simulation: solid overlay at bottom
+  },
+  coverContent: {
+    position: "absolute",
+    bottom: 80,
+    left: 50,
+    right: 50,
+  },
+  coverTitle: {
+    fontSize: 36,
+    fontWeight: "bold",
+    color: C.white,
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  coverParkName: {
+    fontSize: 20,
+    color: C.white,
+    opacity: 0.9,
+    marginBottom: 24,
+  },
+  coverDivider: {
+    width: 60,
+    height: 3,
+    backgroundColor: C.white,
+    opacity: 0.6,
+    marginBottom: 20,
+  },
+  coverMetaRow: {
+    flexDirection: "row",
+    gap: 30,
+    marginBottom: 6,
+  },
+  coverMetaLabel: {
+    fontSize: 8,
+    color: C.white,
+    opacity: 0.6,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
+  },
+  coverMetaValue: {
+    fontSize: 11,
+    color: C.white,
+    fontWeight: "bold",
+    marginTop: 2,
+  },
 });
 
 // ===========================================
@@ -593,6 +659,9 @@ export interface MonthlyReportData {
 
   // Turbine type info (optional, from Park)
   turbineTypeInfo?: string; // e.g. "3 Windenergieanlagen E82 2,0 MW"
+
+  // Cover page image (optional — signed URL to park cover photo)
+  coverImageUrl?: string | null;
 }
 
 interface MonthlyReportTemplateProps {
@@ -861,6 +930,96 @@ function EventBadge({ type }: { type: string }) {
 }
 
 // ===========================================
+// COVER PAGE
+// ===========================================
+
+function CoverPage({
+  data,
+  reportTitle,
+  periodSubtitle,
+}: {
+  data: MonthlyReportData;
+  reportTitle: string;
+  periodSubtitle: string;
+}) {
+  return (
+    <Page size="A4" style={s.coverPage}>
+      {/* Background image */}
+      {data.coverImageUrl && (
+        <Image src={data.coverImageUrl} style={s.coverImage} />
+      )}
+
+      {/* Dark overlay gradient (bottom half) */}
+      <View
+        style={[
+          s.coverOverlay,
+          {
+            backgroundColor: C.navyDark,
+            opacity: data.coverImageUrl ? 0.75 : 1,
+          },
+        ]}
+      />
+
+      {/* If no cover image, fill entire page with navy */}
+      {!data.coverImageUrl && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: C.navy,
+          }}
+        />
+      )}
+
+      {/* Content overlay */}
+      <View style={s.coverContent}>
+        <Text style={s.coverTitle}>{reportTitle}</Text>
+        <Text style={s.coverParkName}>{data.parkName}</Text>
+        <View style={s.coverDivider} />
+
+        <View style={s.coverMetaRow}>
+          <View>
+            <Text style={s.coverMetaLabel}>Zeitraum</Text>
+            <Text style={s.coverMetaValue}>{periodSubtitle}</Text>
+          </View>
+          <View>
+            <Text style={s.coverMetaLabel}>Anlagen</Text>
+            <Text style={s.coverMetaValue}>{data.turbineProduction.length}</Text>
+          </View>
+          {data.fundName && (
+            <View>
+              <Text style={s.coverMetaLabel}>Gesellschaft</Text>
+              <Text style={s.coverMetaValue}>{data.fundName}</Text>
+            </View>
+          )}
+        </View>
+
+        {data.operatorName && (
+          <View style={{ marginTop: 8 }}>
+            <Text style={s.coverMetaRow}>
+              <Text style={s.coverMetaLabel}>Betriebsführung  </Text>
+              <Text style={[s.coverMetaValue, { fontSize: 10 }]}>{data.operatorName}</Text>
+            </Text>
+          </View>
+        )}
+
+        {data.parkAddress && (
+          <View style={{ marginTop: 4 }}>
+            <Text style={s.coverMetaRow}>
+              <Text style={s.coverMetaLabel}>Standort  </Text>
+              <Text style={[s.coverMetaValue, { fontSize: 10 }]}>{data.parkAddress}</Text>
+            </Text>
+          </View>
+        )}
+      </View>
+    </Page>
+  );
+}
+
+// ===========================================
 // MAIN TEMPLATE
 // ===========================================
 
@@ -903,6 +1062,9 @@ export function MonthlyReportTemplate({
 
   return (
     <Document>
+      {/* ========== COVER PAGE ========== */}
+      <CoverPage data={data} reportTitle={reportTitle} periodSubtitle={periodSubtitle} />
+
       {/* ========== PAGE 1: EXECUTIVE SUMMARY ========== */}
       <PageWrap
         letterhead={letterhead}

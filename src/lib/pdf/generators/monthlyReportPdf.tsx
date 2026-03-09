@@ -15,6 +15,7 @@ import {
 } from "../templates/MonthlyReportTemplate";
 import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../utils/templateResolver";
 import { prisma } from "@/lib/prisma";
+import { getSignedUrl } from "@/lib/storage";
 
 // German month names
 const MONTH_NAMES = [
@@ -327,6 +328,16 @@ async function fetchMonthlyReportData(
     `${park.postalCode || ""} ${park.city || ""}`.trim()
   ].filter(Boolean).join(", ");
 
+  // Cover image
+  let coverImageUrl: string | null = null;
+  if (park.reportCoverImageKey) {
+    try {
+      coverImageUrl = await getSignedUrl(park.reportCoverImageKey);
+    } catch {
+      // Graceful degradation — report renders without cover image
+    }
+  }
+
   return {
     parkName: park.name,
     parkAddress: parkAddress || null,
@@ -348,6 +359,7 @@ async function fetchMonthlyReportData(
     turbineAvailability,
     serviceEvents: serviceEventRows,
     notableDowntimes,
+    coverImageUrl,
     generatedAt: new Date().toISOString(),
   };
 }

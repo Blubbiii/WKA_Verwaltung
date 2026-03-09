@@ -17,6 +17,7 @@ import {
 } from "../templates/MonthlyReportTemplate";
 import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../utils/templateResolver";
 import { prisma } from "@/lib/prisma";
+import { getSignedUrl } from "@/lib/storage";
 
 const MONTH_NAMES = [
   "Januar", "Februar", "März", "April", "Mai", "Juni",
@@ -332,6 +333,16 @@ async function fetchQuarterlyReportData(
 
   const periodLabel = `${MONTH_NAMES[startMonth - 1]} – ${MONTH_NAMES[endMonth - 1]} ${year}`;
 
+  // Cover image
+  let coverImageUrl: string | null = null;
+  if (park.reportCoverImageKey) {
+    try {
+      coverImageUrl = await getSignedUrl(park.reportCoverImageKey);
+    } catch {
+      // Graceful degradation
+    }
+  }
+
   return {
     parkName: park.name,
     parkAddress: parkAddress || null,
@@ -357,6 +368,7 @@ async function fetchQuarterlyReportData(
     notableDowntimes,
     monthlyTrend,
     turbineMonthlyProduction,
+    coverImageUrl,
     generatedAt: new Date().toISOString(),
   };
 }

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { ImageIcon, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,6 +63,7 @@ interface ParkFormProps {
     status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
     settlementArticles?: SettlementArticle[] | null;
     defaultPaymentDay?: number | null;
+    reportCoverImageKey?: string | null;
   };
 }
 
@@ -77,6 +78,11 @@ export function ParkForm({ initialData }: ParkFormProps) {
   const [paymentDay, setPaymentDay] = useState<string>(
     initialData?.defaultPaymentDay ? String(initialData.defaultPaymentDay) : "15"
   );
+  const [coverImageKey, setCoverImageKey] = useState<string | null>(
+    initialData?.reportCoverImageKey ?? null
+  );
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   const form = useForm<ParkFormValues>({
     resolver: zodResolver(parkFormSchema),
@@ -107,6 +113,47 @@ export function ParkForm({ initialData }: ParkFormProps) {
     ]);
   }
 
+  async function handleCoverImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type and size
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Nur JPG, PNG oder WebP Bilder erlaubt");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Maximale Dateigröße: 10 MB");
+      return;
+    }
+
+    try {
+      setIsUploadingCover(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload fehlgeschlagen");
+
+      const { key, url } = await res.json();
+      setCoverImageKey(key);
+      setCoverImagePreview(url);
+      toast.success("Titelbild hochgeladen");
+    } catch {
+      toast.error("Fehler beim Hochladen des Titelbilds");
+    } finally {
+      setIsUploadingCover(false);
+      // Reset the input
+      e.target.value = "";
+    }
+  }
+
+  function removeCoverImage() {
+    setCoverImageKey(null);
+    setCoverImagePreview(null);
+  }
+
   async function onSubmit(data: ParkFormValues) {
     try {
       setIsLoading(true);
@@ -118,6 +165,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
         status: data.status,
         settlementArticles: articles.filter((a) => a.type && a.label),
         defaultPaymentDay: paymentDay ? parseInt(paymentDay, 10) : null,
+        reportCoverImageKey: coverImageKey,
       };
 
       const url = initialData ? `/api/parks/${initialData.id}` : "/api/parks";
@@ -231,6 +279,68 @@ export function ParkForm({ initialData }: ParkFormProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Titelbild für Berichte (nur bei Edit) */}
+        {initialData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Berichts-Titelbild</CardTitle>
+              <CardDescription>
+                Bild für die Titelseite der monatlichen/quartalsweisen Berichte (z.B. Foto des Windparks)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(coverImageKey || coverImagePreview) ? (
+                <div className="relative inline-block">
+                  <div className="relative w-80 h-48 rounded-lg overflow-hidden border bg-muted">
+                    {coverImagePreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={coverImagePreview}
+                        alt="Titelbild Vorschau"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        <ImageIcon className="h-8 w-8 mr-2" />
+                        <span className="text-sm">Titelbild hinterlegt</span>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-7 w-7 rounded-full"
+                    onClick={removeCoverImage}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-80 h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleCoverImageUpload}
+                    disabled={isUploadingCover}
+                  />
+                  {isUploadingCover ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                      <span className="text-sm text-muted-foreground">
+                        Bild hochladen (JPG, PNG, WebP, max. 10 MB)
+                      </span>
+                    </>
+                  )}
+                </label>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Pachtabrechnungs-Konfiguration (nur bei Edit anzeigen) */}
         {initialData && (
