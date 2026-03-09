@@ -37,22 +37,47 @@ export async function GET(request: NextRequest) {
 
     // Extract marketing config from tenant settings
     const allSettings = (tenant.settings as Record<string, unknown>) || {};
-    const storedMarketing = (allSettings.marketing as Record<string, unknown>) || {};
+    const stored = (allSettings.marketing as Record<string, unknown>) || {};
 
-    // Deep-merge stored config over defaults
+    // Deep-merge stored config over defaults for all sections
     const merged = {
+      sections: stored.sections || DEFAULT_MARKETING_CONFIG.sections,
       hero: {
         ...DEFAULT_MARKETING_CONFIG.hero,
-        ...(storedMarketing.hero as Record<string, unknown> || {}),
+        ...(stored.hero as Record<string, unknown> || {}),
       },
-      features: storedMarketing.features || DEFAULT_MARKETING_CONFIG.features,
+      trustBar: {
+        ...DEFAULT_MARKETING_CONFIG.trustBar,
+        ...(stored.trustBar as Record<string, unknown> || {}),
+      },
+      features: stored.features || DEFAULT_MARKETING_CONFIG.features,
+      showcase: {
+        ...DEFAULT_MARKETING_CONFIG.showcase,
+        ...(stored.showcase as Record<string, unknown> || {}),
+      },
+      stats: {
+        ...DEFAULT_MARKETING_CONFIG.stats,
+        ...(stored.stats as Record<string, unknown> || {}),
+      },
+      workflow: {
+        ...DEFAULT_MARKETING_CONFIG.workflow,
+        ...(stored.workflow as Record<string, unknown> || {}),
+      },
+      modules: {
+        ...DEFAULT_MARKETING_CONFIG.modules,
+        ...(stored.modules as Record<string, unknown> || {}),
+      },
       pricing: {
         ...DEFAULT_MARKETING_CONFIG.pricing,
-        ...(storedMarketing.pricing as Record<string, unknown> || {}),
+        ...(stored.pricing as Record<string, unknown> || {}),
+      },
+      testimonials: {
+        ...DEFAULT_MARKETING_CONFIG.testimonials,
+        ...(stored.testimonials as Record<string, unknown> || {}),
       },
       cta: {
         ...DEFAULT_MARKETING_CONFIG.cta,
-        ...(storedMarketing.cta as Record<string, unknown> || {}),
+        ...(stored.cta as Record<string, unknown> || {}),
       },
     };
 

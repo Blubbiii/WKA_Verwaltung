@@ -11,44 +11,64 @@ import { DEFAULT_MARKETING_CONFIG, DEFAULT_LEGAL_PAGES } from "@/lib/marketing/d
 
 export async function GET() {
   try {
-    // No auth required - this is a public endpoint for the marketing/landing page.
-    // Since we have no tenant context without auth, we load the first active tenant.
     const tenant = await prisma.tenant.findFirst({
       where: { status: "ACTIVE" },
       select: { settings: true },
     });
 
     if (!tenant) {
-      // No tenant found - return defaults
       return NextResponse.json({
         marketing: DEFAULT_MARKETING_CONFIG,
         legalPages: DEFAULT_LEGAL_PAGES,
       });
     }
 
-    // Extract marketing config and legal pages from tenant settings
     const allSettings = (tenant.settings as Record<string, unknown>) || {};
-    const storedMarketing = (allSettings.marketing as Record<string, unknown>) || {};
+    const stored = (allSettings.marketing as Record<string, unknown>) || {};
     const storedLegalPages = (allSettings.legalPages as Record<string, unknown>) || {};
 
-    // Deep-merge stored marketing config over defaults
+    // Deep-merge stored marketing config over defaults for all sections
     const marketing = {
+      sections: stored.sections || DEFAULT_MARKETING_CONFIG.sections,
       hero: {
         ...DEFAULT_MARKETING_CONFIG.hero,
-        ...(storedMarketing.hero as Record<string, unknown> || {}),
+        ...(stored.hero as Record<string, unknown> || {}),
       },
-      features: storedMarketing.features || DEFAULT_MARKETING_CONFIG.features,
+      trustBar: {
+        ...DEFAULT_MARKETING_CONFIG.trustBar,
+        ...(stored.trustBar as Record<string, unknown> || {}),
+      },
+      features: stored.features || DEFAULT_MARKETING_CONFIG.features,
+      showcase: {
+        ...DEFAULT_MARKETING_CONFIG.showcase,
+        ...(stored.showcase as Record<string, unknown> || {}),
+      },
+      stats: {
+        ...DEFAULT_MARKETING_CONFIG.stats,
+        ...(stored.stats as Record<string, unknown> || {}),
+      },
+      workflow: {
+        ...DEFAULT_MARKETING_CONFIG.workflow,
+        ...(stored.workflow as Record<string, unknown> || {}),
+      },
+      modules: {
+        ...DEFAULT_MARKETING_CONFIG.modules,
+        ...(stored.modules as Record<string, unknown> || {}),
+      },
       pricing: {
         ...DEFAULT_MARKETING_CONFIG.pricing,
-        ...(storedMarketing.pricing as Record<string, unknown> || {}),
+        ...(stored.pricing as Record<string, unknown> || {}),
+      },
+      testimonials: {
+        ...DEFAULT_MARKETING_CONFIG.testimonials,
+        ...(stored.testimonials as Record<string, unknown> || {}),
       },
       cta: {
         ...DEFAULT_MARKETING_CONFIG.cta,
-        ...(storedMarketing.cta as Record<string, unknown> || {}),
+        ...(stored.cta as Record<string, unknown> || {}),
       },
     };
 
-    // Merge legal pages with defaults
     const legalPages = {
       ...DEFAULT_LEGAL_PAGES,
       ...storedLegalPages,
