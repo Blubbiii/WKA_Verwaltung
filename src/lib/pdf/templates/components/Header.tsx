@@ -24,14 +24,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 42, // ~15mm from top
   },
-  senderLine: {
-    fontSize: 7,
-    color: "#666666",
-    marginTop: 108, // ~38mm from top (just above address window at 45mm)
-    marginBottom: 5,
-    textDecoration: "underline",
-    textDecorationColor: "#666666",
-  },
+  // senderLine removed — rendered by RecipientBlock per DIN 5008
 });
 
 interface HeaderProps {
@@ -94,12 +87,7 @@ export function Header({ letterhead, layout, companyName }: HeaderProps) {
         </Text>
       )}
 
-      {/* Absenderzeile (unter dem Logo, über dem Adressfenster) */}
-      {letterhead.senderAddress && (
-        <Text style={[styles.senderLine, { marginLeft: letterhead.marginLeft }]}>
-          {letterhead.senderAddress}
-        </Text>
-      )}
+      {/* Absenderzeile wird in RecipientBlock gerendert (DIN 5008) */}
     </View>
   );
 }

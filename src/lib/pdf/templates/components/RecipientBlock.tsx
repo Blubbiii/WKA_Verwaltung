@@ -3,13 +3,12 @@ import type { DocumentTemplateLayout } from "@/types/pdf";
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 14, // ~5mm gap after header/sender line
-    marginBottom: 14, // ~5mm gap before meta section
+    marginTop: 0,
+    marginBottom: 8, // ~3mm gap before meta section
   },
   recipientWindow: {
     width: 241, // 85mm Adressfenster (85 * 2.835 pt/mm)
-    minHeight: 128, // 45mm Mindesthöhe (45 * 2.835 pt/mm)
-    paddingTop: 4,
+    paddingTop: 2,
   },
   senderLine: {
     fontSize: 6,

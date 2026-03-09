@@ -12,7 +12,7 @@ const styles = StyleSheet.create({
   metaSection: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 12,
   },
   metaBlock: {
     alignItems: "flex-end",
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 5,
-    marginTop: 10,
+    marginTop: 4,
   },
   documentSubtitle: {
     fontSize: 10,
