@@ -12,6 +12,12 @@ import type { DocumentType } from "@prisma/client";
 import { mergeWithLetterhead } from "./letterheadMerge";
 import { logger } from "@/lib/logger";
 
+/** Convert millimeters to points (1mm = 2.83465pt) */
+export const MM_TO_PT = 2.83465;
+export function mm(value: number): number {
+  return Math.round(value * MM_TO_PT * 100) / 100;
+}
+
 /**
  * Deep-merge eines partiellen Layouts mit dem Default-Layout
  * Stellt sicher, dass alle Properties existieren
@@ -116,20 +122,20 @@ const DEFAULT_LETTERHEAD: ResolvedLetterhead = {
   id: null,
   name: "System Default",
   headerImageUrl: null,
-  headerHeight: 100,
+  headerHeight: mm(60),     // 60mm header area
   logoPosition: "top-left",
-  logoWidth: 50,
-  logoMarginTop: 15,
-  logoMarginLeft: 25,
+  logoWidth: mm(50),        // 50mm logo width
+  logoMarginTop: mm(15),    // 15mm from top
+  logoMarginLeft: mm(25),   // 25mm from left (= left margin)
   senderAddress: null,
   companyInfo: null,
   footerImageUrl: null,
-  footerHeight: 25,
+  footerHeight: mm(25),     // 25mm footer area
   footerText: null,
-  marginTop: 45,
-  marginBottom: 30,
-  marginLeft: 25,
-  marginRight: 20,
+  marginTop: mm(45),        // 45mm DIN 5008 Form B
+  marginBottom: mm(25),     // 25mm bottom margin
+  marginLeft: mm(25),       // 25mm DIN 5008
+  marginRight: mm(20),      // 20mm DIN 5008
   primaryColor: null,
   secondaryColor: null,
   backgroundPdfKey: null,
@@ -303,24 +309,25 @@ function mapLetterhead(letterhead: {
   backgroundPdfKey: string | null;
   backgroundPdfName: string | null;
 }): ResolvedLetterhead {
+  // DB stores values in mm (UI shows "mm" labels) — convert to pt for react-pdf
   return {
     id: letterhead.id,
     name: letterhead.name,
     headerImageUrl: letterhead.headerImageUrl,
-    headerHeight: letterhead.headerHeight ?? 100,
+    headerHeight: mm(letterhead.headerHeight ?? 60),
     logoPosition: letterhead.logoPosition,
-    logoWidth: letterhead.logoWidth ?? 50,
-    logoMarginTop: letterhead.logoMarginTop ?? 15,
-    logoMarginLeft: letterhead.logoMarginLeft ?? 25,
+    logoWidth: mm(letterhead.logoWidth ?? 50),
+    logoMarginTop: mm(letterhead.logoMarginTop ?? 15),
+    logoMarginLeft: mm(letterhead.logoMarginLeft ?? 25),
     senderAddress: letterhead.senderAddress,
     companyInfo: letterhead.companyInfo as Record<string, unknown> | null,
     footerImageUrl: letterhead.footerImageUrl,
-    footerHeight: letterhead.footerHeight ?? 25,
+    footerHeight: mm(letterhead.footerHeight ?? 25),
     footerText: letterhead.footerText,
-    marginTop: letterhead.marginTop,
-    marginBottom: letterhead.marginBottom,
-    marginLeft: letterhead.marginLeft,
-    marginRight: letterhead.marginRight,
+    marginTop: mm(letterhead.marginTop),
+    marginBottom: mm(letterhead.marginBottom),
+    marginLeft: mm(letterhead.marginLeft),
+    marginRight: mm(letterhead.marginRight),
     primaryColor: letterhead.primaryColor,
     secondaryColor: letterhead.secondaryColor,
     backgroundPdfKey: letterhead.backgroundPdfKey,

@@ -55,8 +55,8 @@ const styles = StyleSheet.create({
   },
   pageNumber: {
     position: "absolute",
-    bottom: 10,
-    right: 10,
+    bottom: 14, // ~5mm from bottom
+    right: 28, // ~10mm from right
     fontSize: 8,
     color: "#999999",
   },

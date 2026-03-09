@@ -22,12 +22,12 @@ const styles = StyleSheet.create({
   companyName: {
     fontSize: 16,
     fontWeight: "bold",
-    marginTop: 15,
+    marginTop: 42, // ~15mm from top
   },
   senderLine: {
     fontSize: 7,
     color: "#666666",
-    marginTop: 45,
+    marginTop: 108, // ~38mm from top (just above address window at 45mm)
     marginBottom: 5,
     textDecoration: "underline",
     textDecorationColor: "#666666",
