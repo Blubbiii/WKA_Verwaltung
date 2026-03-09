@@ -89,15 +89,16 @@ export async function calculateKPIs(tenantId: string): Promise<DashboardKPIs> {
       where: { tenantId },
       _count: true,
     }),
-    // Turbines aggregation
+    // Turbines aggregation (only WEA, not Parkrechner/NVP)
     prisma.turbine.aggregate({
-      where: { park: { tenantId } },
+      where: { park: { tenantId }, deviceType: "WEA" },
       _count: true,
     }),
     // Turbines in maintenance (based on service events)
     prisma.turbine.count({
       where: {
         park: { tenantId },
+        deviceType: "WEA",
         status: "INACTIVE",
       },
     }),
@@ -199,20 +200,22 @@ export async function calculateKPIs(tenantId: string): Promise<DashboardKPIs> {
     where: { tenantId, status: "ACTIVE" },
   });
 
-  // Calculate total capacity
+  // Calculate total capacity (only WEA)
   const capacityData = await prisma.turbine.aggregate({
     where: {
       park: { tenantId },
       status: "ACTIVE",
+      deviceType: "WEA",
     },
     _sum: { ratedPowerKw: true },
   });
   const totalCapacityMW = Number(capacityData._sum.ratedPowerKw || 0) / 1000;
 
-  // Calculate average turbine age
+  // Calculate average turbine age (only WEA)
   const turbinesWithCommissionDate = await prisma.turbine.findMany({
     where: {
       park: { tenantId },
+      deviceType: "WEA",
       commissioningDate: { not: null },
     },
     select: { commissioningDate: true },

@@ -81,9 +81,9 @@ async function fetchTenantStats(
     // Parks (filtered by user access)
     prisma.park.count({ where: parkWhere }),
 
-    // Turbines in user-accessible parks
+    // Turbines in user-accessible parks (only WEA, not Parkrechner/NVP)
     prisma.turbine.count({
-      where: { park: parkWhere },
+      where: { park: parkWhere, deviceType: "WEA" },
     }),
 
     // Funds (filtered by user access)
