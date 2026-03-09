@@ -132,7 +132,7 @@ const DEFAULT_LETTERHEAD: ResolvedLetterhead = {
   footerImageUrl: null,
   footerHeight: mm(25),     // 25mm footer area
   footerText: null,
-  marginTop: mm(30),        // 30mm compact top margin (no letterhead image)
+  marginTop: mm(45),        // 45mm DIN 5008 Form B
   marginBottom: mm(25),     // 25mm bottom margin
   marginLeft: mm(25),       // 25mm DIN 5008
   marginRight: mm(20),      // 20mm DIN 5008
