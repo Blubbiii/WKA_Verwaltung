@@ -27,6 +27,10 @@ services:
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_FROM=${SMTP_FROM}
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+      - SCADA_BASE_PATH=/data/scada
+      - SCADA_API_KEY=${SCADA_API_KEY}
+    volumes:
+      - scada_data:/data/scada
     depends_on:
       db:
         condition: service_healthy
@@ -173,6 +177,7 @@ services:
       - TZ=Europe/Berlin
     volumes:
       - n8n_data:/home/node/.n8n
+      - scada_data:/data/scada
     depends_on:
       db:
         condition: service_healthy
@@ -245,4 +250,6 @@ volumes:
   traefik_certs:
     driver: local
   n8n_data:
+    driver: local
+  scada_data:
     driver: local

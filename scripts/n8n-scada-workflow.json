@@ -1,0 +1,198 @@
+{
+  "name": "SCADA Import Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Alle 6 Stunden",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://app:3050/api/energy/scada/n8n/trigger",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ locationCode: $json.locationCode || 'Loc_5842' }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "trigger-import",
+      "name": "Import starten",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "WPM SCADA API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-imports",
+              "leftValue": "={{ $json.imports.length }}",
+              "rightValue": "0",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-imports",
+      "name": "Imports gestartet?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "summary",
+              "name": "summary",
+              "value": "={{ 'SCADA Import fuer ' + $json.locationCode + ': ' + $json.imports.length + ' Dateitypen gestartet' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-success",
+      "name": "Zusammenfassung",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "summary",
+              "name": "summary",
+              "value": "={{ 'SCADA Import fuer ' + ($json.locationCode || 'unbekannt') + ': Keine neuen Dateien gefunden' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-empty",
+      "name": "Keine Dateien",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1100, 400]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "locationCode",
+              "value": "Loc_5842"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-location",
+      "name": "Standort konfigurieren",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 300]
+    }
+  ],
+  "connections": {
+    "Alle 6 Stunden": {
+      "main": [
+        [
+          {
+            "node": "Standort konfigurieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Standort konfigurieren": {
+      "main": [
+        [
+          {
+            "node": "Import starten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Import starten": {
+      "main": [
+        [
+          {
+            "node": "Imports gestartet?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Imports gestartet?": {
+      "main": [
+        [
+          {
+            "node": "Zusammenfassung",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keine Dateien",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "SCADA"
+    }
+  ],
+  "triggerCount": 1,
+  "pinData": {}
+}
