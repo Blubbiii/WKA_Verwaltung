@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { LucideIcon, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,6 +57,7 @@ export interface KPICardProps {
   isAlert?: boolean;
   accentColor?: string; // Tailwind color class for the value
   iconColor?: string; // Tailwind color class for the icon
+  href?: string; // Link target — makes the card clickable
   className?: string;
 }
 
@@ -74,6 +76,7 @@ export function KPICard({
   isAlert = false,
   accentColor,
   iconColor,
+  href,
   className,
 }: KPICardProps) {
   // Trend formatting
@@ -113,10 +116,11 @@ export function KPICard({
     );
   }
 
-  return (
+  const card = (
     <Card className={cn(
       "h-full overflow-hidden transition-all hover:shadow-md",
       "border border-border/60 dark:border-border/40",
+      href && "cursor-pointer hover:border-primary/30",
       className
     )}>
       <CardHeader className="flex flex-row items-center justify-between p-4 pb-1">
@@ -151,6 +155,16 @@ export function KPICard({
       </CardContent>
     </Card>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="block h-full no-underline">
+        {card}
+      </Link>
+    );
+  }
+
+  return card;
 }
 
 // =============================================================================

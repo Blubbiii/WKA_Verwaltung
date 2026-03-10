@@ -94,6 +94,26 @@ const WIDGET_TITLE_KEYS: Record<string, string> = {
 };
 
 // =============================================================================
+// WIDGET HREF TARGETS — where each KPI card navigates to on click
+// =============================================================================
+
+const WIDGET_HREFS: Record<string, string> = {
+  "kpi-parks": "/parks",
+  "kpi-turbines": "/parks",
+  "kpi-shareholders": "/funds",
+  "kpi-fund-capital": "/funds",
+  "kpi-open-invoices": "/invoices",
+  "kpi-contracts": "/contracts",
+  "kpi-documents": "/documents",
+  "kpi-votes": "/votes",
+  "kpi-energy-yield": "/energy",
+  "kpi-availability": "/energy",
+  "kpi-wind-speed": "/energy",
+  "kpi-lease-revenue": "/leases",
+  "kpi-budget-variance": "/wirtschaftsplan",
+};
+
+// =============================================================================
 // WIDGET RENDERER COMPONENT
 // =============================================================================
 
@@ -134,6 +154,7 @@ export function WidgetRenderer({
           isLoading={isLoading}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
+          href={WIDGET_HREFS[widgetId]}
         />
       );
     }
@@ -155,6 +176,7 @@ export function WidgetRenderer({
           isAlert={kpis ? kpis.turbinesInMaintenance > 0 : false}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
+          href={WIDGET_HREFS[widgetId]}
         />
       );
     }
@@ -170,6 +192,7 @@ export function WidgetRenderer({
           isLoading={isLoading}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
+          href={WIDGET_HREFS[widgetId]}
         />
       );
     }
@@ -185,6 +208,7 @@ export function WidgetRenderer({
           isLoading={isLoading}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
+          href={WIDGET_HREFS[widgetId]}
         />
       );
     }
@@ -200,6 +224,7 @@ export function WidgetRenderer({
           isAlert={kpis ? kpis.openInvoicesCount > 10 : false}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
+          href={WIDGET_HREFS[widgetId]}
         />
       );
     }
@@ -228,6 +253,7 @@ export function WidgetRenderer({
           }
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
+          href={WIDGET_HREFS[widgetId]}
         />
       );
     }
@@ -243,6 +269,7 @@ export function WidgetRenderer({
           isLoading={isLoading}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
+          href={WIDGET_HREFS[widgetId]}
         />
       );
     }
@@ -264,6 +291,7 @@ export function WidgetRenderer({
           isAlert={kpis ? kpis.pendingVotersCount > 5 : false}
           accentColor={KPI_ACCENT_COLORS[widgetId]}
           iconColor={KPI_ICON_COLORS[widgetId]}
+          href={WIDGET_HREFS[widgetId]}
         />
       );
     }
