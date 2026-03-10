@@ -8,6 +8,7 @@ import {
   Loader2,
   Play,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,13 @@ import {
   DEFAULT_SCAN_PATH_FALLBACK,
 } from "./types";
 
+interface UnmatchedPlant {
+  locationCode: string;
+  plantNo: number;
+  lastSeen: string;
+  skippedRecords: number;
+}
+
 export default function ScadaMappingsTab() {
   const { parks, isLoading: parksLoading } = useParks();
   const [mappings, setMappings] = useState<ScadaMapping[]>([]);
@@ -77,6 +85,15 @@ export default function ScadaMappingsTab() {
   const [parkTurbines, setParkTurbines] = useState<Turbine[]>([]);
   const [turbinesLoading, setTurbinesLoading] = useState(false);
 
+  // Unmatched plants state
+  const [unmatchedPlants, setUnmatchedPlants] = useState<UnmatchedPlant[]>([]);
+  const [unmatchedLoading, setUnmatchedLoading] = useState(false);
+  const [unmatchedSelections, setUnmatchedSelections] = useState<
+    Record<string, { parkId: string; turbineId: string; deviceType: "WEA" | "PARKRECHNER" | "NVP" }>
+  >({});
+  const [unmatchedParkTurbines, setUnmatchedParkTurbines] = useState<Record<string, Turbine[]>>({});
+  const [isSavingUnmatched, setIsSavingUnmatched] = useState(false);
+
   // Load mappings
   const loadMappings = useCallback(async () => {
     setIsLoading(true);
@@ -94,9 +111,25 @@ export default function ScadaMappingsTab() {
     }
   }, []);
 
+  // Load unmatched plants
+  const loadUnmatched = useCallback(async () => {
+    setUnmatchedLoading(true);
+    try {
+      const res = await fetch("/api/energy/scada/mappings/unmatched");
+      if (!res.ok) throw new Error("Fehler beim Laden");
+      const data = await res.json();
+      setUnmatchedPlants(data.data ?? []);
+    } catch {
+      // silent - not critical
+    } finally {
+      setUnmatchedLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadMappings();
-  }, [loadMappings]);
+    loadUnmatched();
+  }, [loadMappings, loadUnmatched]);
 
   // Poll for active import progress
   const pollImportProgress = useCallback(async () => {
@@ -245,6 +278,95 @@ export default function ScadaMappingsTab() {
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Load turbines for a park in the unmatched section
+  const loadUnmatchedTurbines = useCallback(async (parkId: string) => {
+    if (unmatchedParkTurbines[parkId]) return; // already loaded
+    try {
+      const res = await fetch(`/api/turbines?parkId=${parkId}&limit=100`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setUnmatchedParkTurbines((prev) => ({ ...prev, [parkId]: data.data ?? [] }));
+    } catch {
+      // ignore
+    }
+  }, [unmatchedParkTurbines]);
+
+  // Update selection for an unmatched plant
+  const updateUnmatchedSelection = useCallback(
+    (key: string, field: "parkId" | "turbineId" | "deviceType", value: string) => {
+      setUnmatchedSelections((prev) => {
+        const current = prev[key] || { parkId: "", turbineId: "", deviceType: "WEA" as const };
+        const updated = { ...current, [field]: value };
+        // Reset turbineId when park changes
+        if (field === "parkId") {
+          updated.turbineId = "";
+          if (value) loadUnmatchedTurbines(value);
+        }
+        // Reset turbineId when switching to non-WEA
+        if (field === "deviceType" && value !== "WEA") {
+          updated.turbineId = "";
+        }
+        return { ...prev, [key]: updated };
+      });
+    },
+    [loadUnmatchedTurbines],
+  );
+
+  // Save unmatched selections and trigger re-import
+  const handleSaveUnmatched = async () => {
+    const entries = Object.entries(unmatchedSelections).filter(([, sel]) => {
+      if (!sel.parkId) return false;
+      if (sel.deviceType === "WEA" && !sel.turbineId) return false;
+      return true;
+    });
+
+    if (entries.length === 0) {
+      toast.error("Bitte mindestens eine Zuordnung auswaehlen");
+      return;
+    }
+
+    setIsSavingUnmatched(true);
+    let saved = 0;
+    let failed = 0;
+
+    for (const [key, sel] of entries) {
+      const [locationCode, plantNoStr] = key.split(":");
+      try {
+        const res = await fetch("/api/energy/scada/mappings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            locationCode,
+            parkId: sel.parkId,
+            plantNo: Number(plantNoStr),
+            turbineId: sel.deviceType === "WEA" ? sel.turbineId : undefined,
+            deviceType: sel.deviceType,
+          }),
+        });
+
+        if (res.ok) {
+          saved++;
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+
+    setIsSavingUnmatched(false);
+
+    if (saved > 0) {
+      toast.success(`${saved} Zuordnung(en) erstellt`);
+      setUnmatchedSelections({});
+      loadMappings();
+      loadUnmatched();
+    }
+    if (failed > 0) {
+      toast.error(`${failed} Zuordnung(en) fehlgeschlagen`);
     }
   };
 
@@ -696,6 +818,154 @@ export default function ScadaMappingsTab() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Unmatched Plants Section */}
+        {!unmatchedLoading && unmatchedPlants.length > 0 && (
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <h3 className="font-semibold text-sm">
+                Nicht zugeordnete Anlagen ({unmatchedPlants.length})
+              </h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Diese PlantNos wurden beim Import erkannt, aber übersprungen, weil keine Zuordnung existiert.
+              Ordnen Sie sie zu, damit die Daten beim nächsten Import erfasst werden.
+            </p>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Standort</TableHead>
+                    <TableHead>PlantNo</TableHead>
+                    <TableHead>Gerätetyp</TableHead>
+                    <TableHead>Park</TableHead>
+                    <TableHead>WKA / Turbine</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {unmatchedPlants.map((plant) => {
+                    const key = `${plant.locationCode}:${plant.plantNo}`;
+                    const sel = unmatchedSelections[key] || {
+                      parkId: "",
+                      turbineId: "",
+                      deviceType: "WEA" as const,
+                    };
+                    const turbines = sel.parkId
+                      ? unmatchedParkTurbines[sel.parkId] ?? []
+                      : [];
+
+                    return (
+                      <TableRow key={key}>
+                        <TableCell className="font-mono font-medium">
+                          {plant.locationCode}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {plant.plantNo}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={sel.deviceType}
+                            onValueChange={(val) =>
+                              updateUnmatchedSelection(key, "deviceType", val)
+                            }
+                          >
+                            <SelectTrigger className="w-[140px] h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="WEA">WEA</SelectItem>
+                              <SelectItem value="PARKRECHNER">Parkrechner</SelectItem>
+                              <SelectItem value="NVP">NVP</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={sel.parkId}
+                            onValueChange={(val) =>
+                              updateUnmatchedSelection(key, "parkId", val)
+                            }
+                          >
+                            <SelectTrigger className="w-[180px] h-8 text-xs">
+                              <SelectValue placeholder="Park..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {parksLoading ? (
+                                <SelectItem value="__loading" disabled>
+                                  Laden...
+                                </SelectItem>
+                              ) : (
+                                parks?.map((park) => (
+                                  <SelectItem key={park.id} value={park.id}>
+                                    {park.name}
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          {sel.deviceType === "WEA" ? (
+                            <Select
+                              value={sel.turbineId}
+                              onValueChange={(val) =>
+                                updateUnmatchedSelection(key, "turbineId", val)
+                              }
+                              disabled={!sel.parkId}
+                            >
+                              <SelectTrigger className="w-[180px] h-8 text-xs">
+                                <SelectValue
+                                  placeholder={
+                                    !sel.parkId ? "Zuerst Park..." : "Turbine..."
+                                  }
+                                />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {turbines.map((t) => (
+                                  <SelectItem key={t.id} value={t.id}>
+                                    {t.designation}
+                                  </SelectItem>
+                                ))}
+                                {turbines.length === 0 && sel.parkId && (
+                                  <SelectItem value="__empty" disabled>
+                                    Keine Turbinen
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              Wird automatisch erstellt
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <Button
+                size="sm"
+                onClick={handleSaveUnmatched}
+                disabled={
+                  isSavingUnmatched ||
+                  Object.keys(unmatchedSelections).length === 0 ||
+                  !Object.values(unmatchedSelections).some(
+                    (s) => s.parkId && (s.deviceType !== "WEA" || s.turbineId),
+                  )
+                }
+              >
+                {isSavingUnmatched && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
+                Zuordnungen speichern
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

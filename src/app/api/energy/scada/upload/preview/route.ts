@@ -50,34 +50,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find first WSD or UID file
-    const wsdFile = files.find((f) => {
+    // Collect one sample file PER file type (WSD, UID, etc.) to discover all PlantNos
+    const sampleFilesByType = new Map<string, File>();
+    for (const f of files) {
       const ext = f.name.split(".").pop()?.toLowerCase();
-      return ext === "wsd";
-    });
-    const uidFile = files.find((f) => {
-      const ext = f.name.split(".").pop()?.toLowerCase();
-      return ext === "uid";
-    });
-    const sampleFile = wsdFile ?? uidFile;
+      if (ext && !sampleFilesByType.has(ext)) {
+        sampleFilesByType.set(ext, f);
+      }
+    }
 
-    if (!sampleFile) {
+    // Prefer WSD/UID but accept any readable SCADA file
+    const readableExts = ["wsd", "uid"];
+    const sampleFiles: File[] = [];
+    for (const ext of readableExts) {
+      const f = sampleFilesByType.get(ext);
+      if (f) sampleFiles.push(f);
+    }
+    // If no WSD/UID found, try any available file
+    if (sampleFiles.length === 0) {
+      const first = sampleFilesByType.values().next().value;
+      if (first) sampleFiles.push(first);
+    }
+
+    if (sampleFiles.length === 0) {
       return NextResponse.json(
         { error: "Keine WSD- oder UID-Datei unter den hochgeladenen Dateien gefunden" },
         { status: 400 },
       );
     }
 
-    // Save sample file to temp directory
+    // Save sample files to temp directory and read PlantNos from each
     tempDir = path.join(os.tmpdir(), "scada-preview", crypto.randomUUID());
     await fs.mkdir(tempDir, { recursive: true });
 
-    const safeName = path.basename(sampleFile.name);
-    const filePath = path.join(tempDir, safeName);
-    const buffer = Buffer.from(await sampleFile.arrayBuffer());
-    await fs.writeFile(filePath, buffer);
-
-    // Read the file to extract plant data
     const plantStats = new Map<
       number,
       {
@@ -89,40 +94,47 @@ export async function POST(request: NextRequest) {
       }
     >();
 
-    try {
-      const allRecords = await readWsdFile(filePath);
-      const sampleRecords = allRecords.slice(0, MAX_SAMPLE_RECORDS);
+    for (const sampleFile of sampleFiles) {
+      try {
+        const safeName = path.basename(sampleFile.name);
+        const filePath = path.join(tempDir, safeName);
+        const buffer = Buffer.from(await sampleFile.arrayBuffer());
+        await fs.writeFile(filePath, buffer);
 
-      for (const rec of sampleRecords) {
-        let stats = plantStats.get(rec.plantNo);
-        if (!stats) {
-          stats = {
-            count: 0,
-            windSpeedSum: 0,
-            windSpeedCount: 0,
-            powerSum: 0,
-            powerCount: 0,
-          };
-          plantStats.set(rec.plantNo, stats);
+        const allRecords = await readWsdFile(filePath);
+        const sampleRecords = allRecords.slice(0, MAX_SAMPLE_RECORDS);
+
+        for (const rec of sampleRecords) {
+          let stats = plantStats.get(rec.plantNo);
+          if (!stats) {
+            stats = {
+              count: 0,
+              windSpeedSum: 0,
+              windSpeedCount: 0,
+              powerSum: 0,
+              powerCount: 0,
+            };
+            plantStats.set(rec.plantNo, stats);
+          }
+
+          stats.count++;
+
+          if (rec.windSpeedMs != null) {
+            stats.windSpeedSum += rec.windSpeedMs;
+            stats.windSpeedCount++;
+          }
+
+          if (rec.powerW != null) {
+            stats.powerSum += rec.powerW;
+            stats.powerCount++;
+          }
         }
-
-        stats.count++;
-
-        if (rec.windSpeedMs != null) {
-          stats.windSpeedSum += rec.windSpeedMs;
-          stats.windSpeedCount++;
-        }
-
-        if (rec.powerW != null) {
-          stats.powerSum += rec.powerW;
-          stats.powerCount++;
-        }
+      } catch (error) {
+        logger.error(
+          { err: error },
+          `Fehler beim Lesen der Vorschau-Datei ${sampleFile.name} für ${locationCode}`,
+        );
       }
-    } catch (error) {
-      logger.error(
-        { err: error },
-        `Fehler beim Lesen der Vorschau-Datei für ${locationCode}`,
-      );
     }
 
     const sortedPlantNumbers = Array.from(plantStats.keys()).sort((a, b) => a - b);
