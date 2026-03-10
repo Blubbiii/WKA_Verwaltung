@@ -555,14 +555,21 @@ export default function ScadaImportTab() {
       if (singleGroup && validGroups.length === 1) {
         const group = validGroups[0];
 
-        // Find a WSD or UID file for preview
-        const previewFile = group.entries.find((e) => e.fileType === "WSD" || e.fileType === "UID");
-        if (previewFile) {
+        // Find one sample file per file type for preview (to discover all PlantNos)
+        const previewFilesByType = new Map<string, UploadEntry>();
+        for (const entry of group.entries) {
+          if ((entry.fileType === "WSD" || entry.fileType === "UID") && !previewFilesByType.has(entry.fileType)) {
+            previewFilesByType.set(entry.fileType, entry);
+          }
+        }
+        if (previewFilesByType.size > 0) {
           setIsLoadingUploadPreview(true);
           try {
             const formData = new FormData();
             formData.append("locationCode", group.locCode);
-            formData.append("files", previewFile.file);
+            for (const entry of previewFilesByType.values()) {
+              formData.append("files", entry.file);
+            }
 
             const res = await fetch("/api/energy/scada/upload/preview", {
               method: "POST",
