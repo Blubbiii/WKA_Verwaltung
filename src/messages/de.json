@@ -111,6 +111,8 @@
     "accountingAccounts": "Kontenrahmen",
     "accountingSusa": "Summen & Salden",
     "accountingBwa": "BWA",
+    "accountingEuer": "EÜR",
+    "accountingGuv": "GuV",
     "accountingBank": "Bankimport",
     "accountingDunning": "Mahnwesen",
     "accountingSepa": "SEPA-Export",

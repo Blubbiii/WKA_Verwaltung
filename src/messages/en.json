@@ -111,6 +111,8 @@
     "accountingAccounts": "Chart of Accounts",
     "accountingSusa": "Trial Balance",
     "accountingBwa": "P&L Report",
+    "accountingEuer": "Income Statement (Cash)",
+    "accountingGuv": "Income Statement (Accrual)",
     "accountingBank": "Bank Import",
     "accountingDunning": "Dunning",
     "accountingSepa": "SEPA Export",
