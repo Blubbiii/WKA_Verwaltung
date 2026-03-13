@@ -113,6 +113,8 @@ model Tenant {
   inspectionReports         InspectionReport[]
   defects                   Defect[]
   insuranceClaims           InsuranceClaim[]
+  quotes                    Quote[]
+  quoteNumberSequences      QuoteNumberSequence[]
 
   @@map("tenants")
 }
@@ -179,6 +181,7 @@ model User {
   inspectionReportsCreated                                                InspectionReport[]          @relation("InspectionReportCreator")
   defectsCreated                                                          Defect[]                    @relation("DefectCreator")
   insuranceClaimsCreated                                                  InsuranceClaim[]            @relation("InsuranceClaimCreator")
+  createdQuotes                                                           Quote[]                    @relation("QuoteCreatedBy")
 
   @@index([tenantId])
   @@index([email])
@@ -287,6 +290,7 @@ model Park {
   inspectionReports                      InspectionReport[]
   defects                                Defect[]
   insuranceClaims                        InsuranceClaim[]
+  quotes                                 Quote[]
 
   @@index([tenantId])
   @@map("parks")
@@ -456,6 +460,7 @@ model Fund {
   costCenters                                           CostCenter[]
   bankTransactions                                      BankTransaction[]     @relation("BankTransactionFund")
   documentRoutingRules                                  DocumentRoutingRule[]
+  quotes                                                Quote[]
 
   @@index([tenantId])
   @@index([fundCategoryId])
@@ -881,6 +886,7 @@ model Invoice {
   bankTransactions                 BankTransaction[]       @relation("BankTxMatchedInvoice")
   dunningItems                     DunningItem[]           @relation("DunningItemInvoice")
   sepaPaymentItems                 SepaPaymentItem[]       @relation("SepaPaymentItemInvoice")
+  sourceQuote                      Quote?
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
@@ -1679,6 +1685,7 @@ model Letterhead {
   backgroundPdfName String?
   fundId            String?
   invoices          Invoice[]
+  quotes            Quote[]
   fund             Fund?     @relation(fields: [fundId], references: [id], onDelete: SetNull)
   park             Park?     @relation(fields: [parkId], references: [id], onDelete: SetNull)
   tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -2610,6 +2617,7 @@ enum DocumentType {
   CREDIT_NOTE
   CONTRACT
   SETTLEMENT_REPORT
+  QUOTE
 }
 
 enum EnergyCalculationType {
@@ -3105,6 +3113,109 @@ model MapAnnotation {
 
   @@index([tenantId, parkId])
   @@map("map_annotations")
+}
+
+// =============================================================================
+// Quotes (Angebote)
+// =============================================================================
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  INVOICED
+  EXPIRED
+  CANCELLED
+}
+
+model Quote {
+  id                 String      @id @default(uuid())
+  quoteNumber        String
+  quoteDate          DateTime
+  validUntil         DateTime
+  status             QuoteStatus @default(DRAFT)
+  recipientType      String?
+  recipientName      String?
+  recipientAddress   String?
+  netAmount          Decimal     @db.Decimal(15, 2)
+  taxRate            Decimal     @default(19.00) @db.Decimal(5, 2)
+  taxAmount          Decimal?    @db.Decimal(15, 2)
+  grossAmount        Decimal     @db.Decimal(15, 2)
+  currency           String      @default("EUR")
+  notes              String?
+  internalReference  String?
+  serviceStartDate   DateTime?
+  serviceEndDate     DateTime?
+  pdfUrl             String?
+  sentAt             DateTime?
+  acceptedAt         DateTime?
+  cancelledAt        DateTime?
+  expiredAt          DateTime?
+  convertedAt        DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  deletedAt          DateTime?
+
+  tenantId           String
+  fundId             String?
+  parkId             String?
+  createdById        String?
+  convertedInvoiceId String?     @unique
+  letterheadId       String?
+
+  tenant             Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fund               Fund?       @relation(fields: [fundId], references: [id], onDelete: SetNull)
+  park               Park?       @relation(fields: [parkId], references: [id], onDelete: SetNull)
+  createdBy          User?       @relation("QuoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  convertedInvoice   Invoice?    @relation(fields: [convertedInvoiceId], references: [id], onDelete: SetNull)
+  letterhead         Letterhead? @relation(fields: [letterheadId], references: [id], onDelete: SetNull)
+  items              QuoteItem[]
+
+  @@unique([tenantId, quoteNumber])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([fundId])
+  @@index([parkId])
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id          String  @id @default(uuid())
+  position    Int
+  description String
+  quantity    Decimal @default(1) @db.Decimal(12, 4)
+  unit        String?
+  unitPrice   Decimal @db.Decimal(15, 2)
+  netAmount   Decimal @db.Decimal(15, 2)
+  taxType     TaxType @default(STANDARD)
+  taxRate     Decimal @db.Decimal(5, 2)
+  taxAmount   Decimal @db.Decimal(15, 2)
+  grossAmount Decimal @db.Decimal(15, 2)
+  createdAt   DateTime @default(now())
+
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_items")
+}
+
+model QuoteNumberSequence {
+  id          String   @id @default(uuid())
+  format      String   @default("AN-{YEAR}-{NUMBER}")
+  currentYear Int      @default(2026)
+  nextNumber  Int      @default(1)
+  digitCount  Int      @default(4)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenantId    String   @unique
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("quote_number_sequences")
 }
 
 // =============================================================================

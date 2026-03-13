@@ -115,6 +115,8 @@
     "accountingGuv": "GuV",
     "accountingCostcenter": "Kostenstellen",
     "accountingBudget": "Budget Soll/Ist",
+    "accountingQuotes": "Angebote",
+    "accountingLiquidity": "Liquidität",
     "accountingBank": "Bankimport",
     "accountingDunning": "Mahnwesen",
     "accountingSepa": "SEPA-Export",

@@ -66,6 +66,7 @@ import {
   FileSpreadsheet,
   FolderSync,
   Tag,
+  Droplets,
 } from "lucide-react";
 import {
   DndContext,
@@ -363,6 +364,10 @@ const navGroups: NavGroup[] = [
           { title: "Kostenstellen", titleKey: "accountingCostcenter", href: "/buchhaltung/kostenstellen", icon: BarChart3, featureFlag: "accounting.costcenter" },
           // Budget sub-module
           { title: "Budget Soll/Ist", titleKey: "accountingBudget", href: "/buchhaltung/budget", icon: TrendingUp, featureFlag: "accounting.budget" },
+          // Quotes sub-module
+          { title: "Angebote", titleKey: "accountingQuotes", href: "/buchhaltung/angebote", icon: FileText, featureFlag: "accounting.quotes" },
+          // Liquidity sub-module
+          { title: "Liquidität", titleKey: "accountingLiquidity", href: "/buchhaltung/liquiditaet", icon: Droplets, featureFlag: "accounting.liquidity" },
           // Banking sub-module
           { title: "Bankimport", titleKey: "accountingBank", href: "/buchhaltung/bank", icon: Landmark, featureFlag: "accounting.bank" },
           // Dunning sub-module

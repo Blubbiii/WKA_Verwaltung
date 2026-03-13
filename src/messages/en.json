@@ -115,6 +115,8 @@
     "accountingGuv": "Income Statement (Accrual)",
     "accountingCostcenter": "Cost Centers",
     "accountingBudget": "Budget Comparison",
+    "accountingQuotes": "Quotes",
+    "accountingLiquidity": "Liquidity",
     "accountingBank": "Bank Import",
     "accountingDunning": "Dunning",
     "accountingSepa": "SEPA Export",
