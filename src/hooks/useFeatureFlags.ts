@@ -26,6 +26,7 @@ interface FeatureFlags {
   "accounting.liquidity": boolean;
   "accounting.ocr": boolean;
   "accounting.multibanking": boolean;
+  "accounting.zm": boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -53,6 +54,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   "accounting.liquidity": false,
   "accounting.ocr": false,
   "accounting.multibanking": false,
+  "accounting.zm": false,
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : DEFAULT_FLAGS);

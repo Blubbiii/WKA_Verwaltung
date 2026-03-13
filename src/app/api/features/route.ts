@@ -25,6 +25,7 @@ const ACCOUNTING_SUB_KEYS = [
   "accounting.liquidity",
   "accounting.ocr",
   "accounting.multibanking",
+  "accounting.zm",
 ] as const;
 
 export async function GET() {
@@ -108,6 +109,7 @@ export async function GET() {
       "accounting.liquidity": false,
       "accounting.ocr": false,
       "accounting.multibanking": false,
+      "accounting.zm": false,
     });
   }
 }

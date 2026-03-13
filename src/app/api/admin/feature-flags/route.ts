@@ -53,6 +53,7 @@ const ACCOUNTING_SUB_FLAG_KEYS = [
   "accounting.liquidity.enabled",
   "accounting.ocr.enabled",
   "accounting.multibanking.enabled",
+  "accounting.zm.enabled",
 ] as const;
 
 // Default values for accounting sub-flags (most default to true)
@@ -72,6 +73,7 @@ const ACCOUNTING_SUB_DEFAULTS: Record<string, boolean> = {
   "accounting.liquidity": true,
   "accounting.ocr": false,
   "accounting.multibanking": false,
+  "accounting.zm": false,
 };
 
 export interface ModuleFlags {

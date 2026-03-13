@@ -71,6 +71,7 @@ interface AccountingSubFlags {
   "accounting.liquidity": boolean;
   "accounting.ocr": boolean;
   "accounting.multibanking": boolean;
+  "accounting.zm": boolean;
 }
 
 interface TenantWithFlags {
@@ -123,6 +124,7 @@ const ACCOUNTING_SUB_LABELS: Record<keyof AccountingSubFlags, string> = {
   "accounting.liquidity": "Liquiditätsplanung",
   "accounting.ocr": "OCR-Belegerfassung",
   "accounting.multibanking": "Multibanking",
+  "accounting.zm": "Zusammenfassende Meldung (ZM)",
 };
 
 const DEFAULT_ACCOUNTING_SUB: AccountingSubFlags = {
@@ -141,6 +143,7 @@ const DEFAULT_ACCOUNTING_SUB: AccountingSubFlags = {
   "accounting.liquidity": true,
   "accounting.ocr": false,
   "accounting.multibanking": false,
+  "accounting.zm": false,
 };
 
 // =============================================================================

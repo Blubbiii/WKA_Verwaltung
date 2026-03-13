@@ -67,6 +67,7 @@ import {
   FolderSync,
   Tag,
   Droplets,
+  Globe,
 } from "lucide-react";
 import {
   DndContext,
@@ -105,7 +106,7 @@ interface NavChild {
     | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
     | "accounting.assets" | "accounting.cashbook" | "accounting.datev" | "accounting.yearend"
     | "accounting.costcenter" | "accounting.budget" | "accounting.quotes" | "accounting.liquidity"
-    | "accounting.ocr" | "accounting.multibanking";
+    | "accounting.ocr" | "accounting.multibanking" | "accounting.zm";
 }
 
 interface NavItem {
@@ -123,7 +124,7 @@ interface NavItem {
     | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
     | "accounting.assets" | "accounting.cashbook" | "accounting.datev" | "accounting.yearend"
     | "accounting.costcenter" | "accounting.budget" | "accounting.quotes" | "accounting.liquidity"
-    | "accounting.ocr" | "accounting.multibanking";
+    | "accounting.ocr" | "accounting.multibanking" | "accounting.zm";
 }
 
 interface NavGroup {
@@ -370,12 +371,14 @@ const navGroups: NavGroup[] = [
           { title: "Liquidität", titleKey: "accountingLiquidity", href: "/buchhaltung/liquiditaet", icon: Droplets, featureFlag: "accounting.liquidity" },
           // Banking sub-module
           { title: "Bankimport", titleKey: "accountingBank", href: "/buchhaltung/bank", icon: Landmark, featureFlag: "accounting.bank" },
+          { title: "Bankkonten", titleKey: "accountingBankAccounts", href: "/buchhaltung/bank/konten", icon: CreditCard, featureFlag: "accounting.multibanking" },
           // Dunning sub-module
           { title: "Mahnwesen", titleKey: "accountingDunning", href: "/buchhaltung/mahnwesen", icon: AlertTriangle, featureFlag: "accounting.dunning" },
           // SEPA sub-module
           { title: "SEPA-Export", titleKey: "accountingSepa", href: "/buchhaltung/sepa", icon: Send, featureFlag: "accounting.sepa" },
           // Tax sub-module
           { title: "UStVA", titleKey: "accountingUstva", href: "/buchhaltung/ustva", icon: Percent, featureFlag: "accounting.ustva" },
+          { title: "ZM (EU-Meldung)", titleKey: "accountingZm", href: "/buchhaltung/zm", icon: Globe, featureFlag: "accounting.zm" },
           // Assets sub-module
           { title: "Anlagen", titleKey: "accountingAssets", href: "/buchhaltung/anlagen", icon: HardDrive, featureFlag: "accounting.assets" },
           // Cashbook sub-module

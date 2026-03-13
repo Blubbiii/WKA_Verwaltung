@@ -115,6 +115,7 @@ model Tenant {
   insuranceClaims           InsuranceClaim[]
   quotes                    Quote[]
   quoteNumberSequences      QuoteNumberSequence[]
+  bankAccounts              BankAccount[]
 
   @@map("tenants")
 }
@@ -461,6 +462,7 @@ model Fund {
   bankTransactions                                      BankTransaction[]     @relation("BankTransactionFund")
   documentRoutingRules                                  DocumentRoutingRule[]
   quotes                                                Quote[]
+  bankAccounts                                          BankAccount[]
 
   @@index([tenantId])
   @@index([fundCategoryId])
@@ -808,6 +810,8 @@ model Invoice {
   recipientType                                                                               String?
   recipientName                                                                               String?
   recipientAddress                                                                            String?
+  recipientCountry                                                                            String?                         @db.VarChar(2)
+  recipientVatId                                                                              String?                         @db.VarChar(50)
   netAmount                                                                                   Decimal                         @db.Decimal(15, 2)
   taxRate                                                                                     Decimal                         @default(19.00) @db.Decimal(5, 2)
   taxAmount                                                                                   Decimal?                        @db.Decimal(15, 2)
@@ -3116,6 +3120,34 @@ model MapAnnotation {
 }
 
 // =============================================================================
+// Bank Accounts (Multibanking)
+// =============================================================================
+
+model BankAccount {
+  id             String   @id @default(uuid())
+  tenantId       String
+  fundId         String?
+  name           String   @db.VarChar(200)
+  iban           String   @db.VarChar(34)
+  bic            String?  @db.VarChar(11)
+  bankName       String?  @db.VarChar(200)
+  currency       String   @default("EUR") @db.VarChar(3)
+  currentBalance Decimal? @db.Decimal(15, 2)
+  balanceDate    DateTime?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fund           Fund?    @relation(fields: [fundId], references: [id], onDelete: SetNull)
+  transactions   BankTransaction[]
+
+  @@unique([tenantId, iban])
+  @@index([tenantId])
+  @@map("bank_accounts")
+}
+
+// =============================================================================
 // Quotes (Angebote)
 // =============================================================================
 
@@ -3449,11 +3481,14 @@ model BankTransaction {
   importedAt        DateTime      @default(now())
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  bankAccountId     String?
+  bankAccount       BankAccount?  @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tenantId, bookingDate])
   @@index([tenantId, matchStatus])
   @@index([importBatchId])
+  @@index([bankAccountId])
   @@map("bank_transactions")
 }
 

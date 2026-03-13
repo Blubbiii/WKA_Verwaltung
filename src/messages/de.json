@@ -118,6 +118,8 @@
     "accountingQuotes": "Angebote",
     "accountingLiquidity": "Liquidität",
     "accountingBank": "Bankimport",
+    "accountingBankAccounts": "Bankkonten",
+    "accountingZm": "ZM (EU-Meldung)",
     "accountingDunning": "Mahnwesen",
     "accountingSepa": "SEPA-Export",
     "accountingUstva": "UStVA",

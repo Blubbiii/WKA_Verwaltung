@@ -118,6 +118,8 @@
     "accountingQuotes": "Quotes",
     "accountingLiquidity": "Liquidity",
     "accountingBank": "Bank Import",
+    "accountingBankAccounts": "Bank Accounts",
+    "accountingZm": "EC Sales List (ZM)",
     "accountingDunning": "Dunning",
     "accountingSepa": "SEPA Export",
     "accountingUstva": "VAT Return",

@@ -332,6 +332,12 @@ export const CONFIG_KEYS = {
     encrypted: false,
     defaultValue: "false",
   },
+  "accounting.zm.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Zusammenfassende Meldung (ZM)",
+    encrypted: false,
+    defaultValue: "false",
+  },
   "document-routing.enabled": {
     category: "features" as ConfigCategory,
     label: "Dokument-Routing (OneDrive/DATEV Ordner-Zuordnung)",
