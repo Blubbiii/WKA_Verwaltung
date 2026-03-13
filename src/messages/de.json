@@ -113,6 +113,8 @@
     "accountingBwa": "BWA",
     "accountingEuer": "EÜR",
     "accountingGuv": "GuV",
+    "accountingCostcenter": "Kostenstellen",
+    "accountingBudget": "Budget Soll/Ist",
     "accountingBank": "Bankimport",
     "accountingDunning": "Mahnwesen",
     "accountingSepa": "SEPA-Export",

@@ -113,6 +113,8 @@
     "accountingBwa": "P&L Report",
     "accountingEuer": "Income Statement (Cash)",
     "accountingGuv": "Income Statement (Accrual)",
+    "accountingCostcenter": "Cost Centers",
+    "accountingBudget": "Budget Comparison",
     "accountingBank": "Bank Import",
     "accountingDunning": "Dunning",
     "accountingSepa": "SEPA Export",

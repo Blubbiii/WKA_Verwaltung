@@ -359,6 +359,10 @@ const navGroups: NavGroup[] = [
           { title: "BWA", titleKey: "accountingBwa", href: "/buchhaltung/bwa", icon: BarChart3, featureFlag: "accounting.reports" },
           { title: "EÜR", titleKey: "accountingEuer", href: "/buchhaltung/euer", icon: BarChart3, featureFlag: "accounting.reports" },
           { title: "GuV", titleKey: "accountingGuv", href: "/buchhaltung/guv", icon: TrendingUp, featureFlag: "accounting.reports" },
+          // Costcenter sub-module
+          { title: "Kostenstellen", titleKey: "accountingCostcenter", href: "/buchhaltung/kostenstellen", icon: BarChart3, featureFlag: "accounting.costcenter" },
+          // Budget sub-module
+          { title: "Budget Soll/Ist", titleKey: "accountingBudget", href: "/buchhaltung/budget", icon: TrendingUp, featureFlag: "accounting.budget" },
           // Banking sub-module
           { title: "Bankimport", titleKey: "accountingBank", href: "/buchhaltung/bank", icon: Landmark, featureFlag: "accounting.bank" },
           // Dunning sub-module
