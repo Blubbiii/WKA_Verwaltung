@@ -236,9 +236,100 @@ export const CONFIG_KEYS = {
   },
   "accounting.enabled": {
     category: "features" as ConfigCategory,
-    label: "Buchhaltung (SKR03, Auto-Buchung, Reports)",
+    label: "Buchhaltung (Master-Schalter)",
     encrypted: false,
     envFallback: "ACCOUNTING_ENABLED",
+    defaultValue: "false",
+  },
+  // Accounting Sub-Modules (default true — visible when master is on, unless explicitly disabled)
+  "accounting.reports.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Reports (SuSa, BWA, EÜR, GuV)",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.bank.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Bankimport & Zahlungsabgleich",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.dunning.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Mahnwesen",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.sepa.enabled": {
+    category: "features" as ConfigCategory,
+    label: "SEPA-Export",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.ustva.enabled": {
+    category: "features" as ConfigCategory,
+    label: "UStVA & Zusammenfassende Meldung",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.assets.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Anlagen & Abschreibungen (AfA)",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.cashbook.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Kassenbuch",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.datev.enabled": {
+    category: "features" as ConfigCategory,
+    label: "DATEV-Export",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.yearend.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Jahresabschluss",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.costcenter.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Kostenstellen-Report",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.budget.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Budget Soll/Ist-Vergleich",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.quotes.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Angebote → Rechnungen",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.liquidity.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Liquiditätsplanung",
+    encrypted: false,
+    defaultValue: "true",
+  },
+  "accounting.ocr.enabled": {
+    category: "features" as ConfigCategory,
+    label: "OCR-Belegerfassung",
+    encrypted: false,
+    defaultValue: "false",
+  },
+  "accounting.multibanking.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Multibanking (Live-Anbindung)",
+    encrypted: false,
     defaultValue: "false",
   },
   "document-routing.enabled": {
@@ -315,8 +406,8 @@ export async function getConfig(
     if (!hasPrismaModel("systemConfig")) {
       // Model not yet available, fall back to env variables
       const keyConfig = CONFIG_KEYS[key as ConfigKey];
-      if (keyConfig?.envFallback) {
-        const envValue = process.env[keyConfig.envFallback];
+      if (keyConfig && "envFallback" in keyConfig && keyConfig.envFallback) {
+        const envValue = process.env[keyConfig.envFallback as string];
         if (envValue) return envValue;
       }
       if (keyConfig && "defaultValue" in keyConfig) {
@@ -357,8 +448,8 @@ export async function getConfig(
 
     // Fallback to environment variable
     const keyConfig = CONFIG_KEYS[key as ConfigKey];
-    if (keyConfig?.envFallback) {
-      const envValue = process.env[keyConfig.envFallback];
+    if (keyConfig && "envFallback" in keyConfig && keyConfig.envFallback) {
+      const envValue = process.env[keyConfig.envFallback as string];
       if (envValue) {
         return envValue;
       }
@@ -375,8 +466,8 @@ export async function getConfig(
 
     // Try environment fallback on error
     const keyConfig = CONFIG_KEYS[key as ConfigKey];
-    if (keyConfig?.envFallback) {
-      return process.env[keyConfig.envFallback] || null;
+    if (keyConfig && "envFallback" in keyConfig && keyConfig.envFallback) {
+      return process.env[keyConfig.envFallback as string] || null;
     }
 
     return null;
@@ -589,8 +680,8 @@ export async function getConfigsByCategory(
       let value = "";
 
       // Try environment variable
-      if (keyConfig.envFallback) {
-        const envValue = process.env[keyConfig.envFallback];
+      if ("envFallback" in keyConfig && keyConfig.envFallback) {
+        const envValue = process.env[keyConfig.envFallback as string];
         if (envValue) {
           value = keyConfig.encrypted && includeMasked
             ? maskSensitive(envValue)

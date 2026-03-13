@@ -36,6 +36,44 @@ const MODULE_FLAG_KEYS = [
   "document-routing.enabled",
 ] as const;
 
+// Accounting sub-module flags
+const ACCOUNTING_SUB_FLAG_KEYS = [
+  "accounting.reports.enabled",
+  "accounting.bank.enabled",
+  "accounting.dunning.enabled",
+  "accounting.sepa.enabled",
+  "accounting.ustva.enabled",
+  "accounting.assets.enabled",
+  "accounting.cashbook.enabled",
+  "accounting.datev.enabled",
+  "accounting.yearend.enabled",
+  "accounting.costcenter.enabled",
+  "accounting.budget.enabled",
+  "accounting.quotes.enabled",
+  "accounting.liquidity.enabled",
+  "accounting.ocr.enabled",
+  "accounting.multibanking.enabled",
+] as const;
+
+// Default values for accounting sub-flags (most default to true)
+const ACCOUNTING_SUB_DEFAULTS: Record<string, boolean> = {
+  "accounting.reports": true,
+  "accounting.bank": true,
+  "accounting.dunning": true,
+  "accounting.sepa": true,
+  "accounting.ustva": true,
+  "accounting.assets": true,
+  "accounting.cashbook": true,
+  "accounting.datev": true,
+  "accounting.yearend": true,
+  "accounting.costcenter": true,
+  "accounting.budget": true,
+  "accounting.quotes": true,
+  "accounting.liquidity": true,
+  "accounting.ocr": false,
+  "accounting.multibanking": false,
+};
+
 export interface ModuleFlags {
   "management-billing": boolean;
   "paperless": boolean;
@@ -76,28 +114,28 @@ export async function GET(request: NextRequest) {
       orderBy: { name: "asc" },
     });
 
-    // Load SystemConfig module flags for all tenants + global in one query
+    // Load all SystemConfig flags in one query (modules + accounting sub-flags)
     let systemConfigs: Array<{ key: string; value: string; tenantId: string | null }> = [];
     if (hasPrismaModel("systemConfig")) {
       const systemConfig = getPrismaModel("systemConfig");
       systemConfigs = await systemConfig.findMany({
         where: {
-          key: { in: [...MODULE_FLAG_KEYS] },
+          key: { in: [...MODULE_FLAG_KEYS, ...ACCOUNTING_SUB_FLAG_KEYS] },
         },
         select: { key: true, value: true, tenantId: true },
       }) as Array<{ key: string; value: string; tenantId: string | null }>;
     }
 
     // Build lookup: tenantId -> key -> value
-    const globalModuleFlags: Record<string, string> = {};
-    const tenantModuleFlags: Record<string, Record<string, string>> = {};
+    const globalFlags: Record<string, string> = {};
+    const tenantFlags: Record<string, Record<string, string>> = {};
 
     for (const sc of systemConfigs) {
       if (sc.tenantId === null) {
-        globalModuleFlags[sc.key] = sc.value;
+        globalFlags[sc.key] = sc.value;
       } else {
-        if (!tenantModuleFlags[sc.tenantId]) tenantModuleFlags[sc.tenantId] = {};
-        tenantModuleFlags[sc.tenantId][sc.key] = sc.value;
+        if (!tenantFlags[sc.tenantId]) tenantFlags[sc.tenantId] = {};
+        tenantFlags[sc.tenantId][sc.key] = sc.value;
       }
     }
 
@@ -105,15 +143,28 @@ export async function GET(request: NextRequest) {
       const settings = (tenant.settings as Record<string, unknown>) || {};
       const features = (settings.features as Partial<FeatureFlags>) || {};
 
-      // Resolve module flags: tenant-specific > global > env > default(false)
-      const tenantConfigs = tenantModuleFlags[tenant.id] || {};
+      // Resolve module flags: tenant-specific > global > default(false)
+      const tenantConfigs = tenantFlags[tenant.id] || {};
       const modules: ModuleFlags = { ...DEFAULT_MODULE_FLAGS };
       for (const key of MODULE_FLAG_KEYS) {
         const moduleName = key.replace(".enabled", "") as keyof ModuleFlags;
         const tenantVal = tenantConfigs[key];
-        const globalVal = globalModuleFlags[key];
+        const globalVal = globalFlags[key];
         const resolved = tenantVal ?? globalVal;
         modules[moduleName] = resolved === "true";
+      }
+
+      // Resolve accounting sub-flags
+      const accountingSub: Record<string, boolean> = {};
+      for (const key of ACCOUNTING_SUB_FLAG_KEYS) {
+        // "accounting.reports.enabled" → "accounting.reports"
+        const subName = key.replace(".enabled", "");
+        const tenantVal = tenantConfigs[key];
+        const globalVal = globalFlags[key];
+        const resolved = tenantVal ?? globalVal;
+        accountingSub[subName] = resolved !== undefined
+          ? resolved === "true"
+          : (ACCOUNTING_SUB_DEFAULTS[subName] ?? true);
       }
 
       return {
@@ -126,6 +177,7 @@ export async function GET(request: NextRequest) {
           ...features,
         },
         modules,
+        accountingSub,
       };
     });
 

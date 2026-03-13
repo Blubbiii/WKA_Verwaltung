@@ -100,7 +100,11 @@ interface NavChild {
   href: string;
   icon?: React.ElementType;
   /** Feature flag that must be enabled for this child to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing"
+    | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
+    | "accounting.assets" | "accounting.cashbook" | "accounting.datev" | "accounting.yearend"
+    | "accounting.costcenter" | "accounting.budget" | "accounting.quotes" | "accounting.liquidity"
+    | "accounting.ocr" | "accounting.multibanking";
 }
 
 interface NavItem {
@@ -114,7 +118,11 @@ interface NavItem {
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
   /** Feature flag that must be enabled for this item to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing"
+    | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
+    | "accounting.assets" | "accounting.cashbook" | "accounting.datev" | "accounting.yearend"
+    | "accounting.costcenter" | "accounting.budget" | "accounting.quotes" | "accounting.liquidity"
+    | "accounting.ocr" | "accounting.multibanking";
 }
 
 interface NavGroup {
@@ -344,17 +352,27 @@ const navGroups: NavGroup[] = [
         permission: "accounting:read",
         featureFlag: "accounting",
         children: [
+          // Basis (always visible when accounting master is on)
           { title: "Kontenrahmen", titleKey: "accountingAccounts", href: "/admin/kontenrahmen", icon: BookOpen },
-          { title: "Summen & Salden", titleKey: "accountingSusa", href: "/buchhaltung/susa", icon: Scale },
-          { title: "BWA", titleKey: "accountingBwa", href: "/buchhaltung/bwa", icon: BarChart3 },
-          { title: "Bankimport", titleKey: "accountingBank", href: "/buchhaltung/bank", icon: Landmark },
-          { title: "Mahnwesen", titleKey: "accountingDunning", href: "/buchhaltung/mahnwesen", icon: AlertTriangle },
-          { title: "SEPA-Export", titleKey: "accountingSepa", href: "/buchhaltung/sepa", icon: Send },
-          { title: "UStVA", titleKey: "accountingUstva", href: "/buchhaltung/ustva", icon: Percent },
-          { title: "Anlagen", titleKey: "accountingAssets", href: "/buchhaltung/anlagen", icon: HardDrive },
-          { title: "Kassenbuch", titleKey: "accountingCashbook", href: "/buchhaltung/kassenbuch", icon: Coins },
-          { title: "DATEV-Export", titleKey: "accountingDatev", href: "/buchhaltung/datev", icon: FileSpreadsheet },
-          { title: "Jahresabschluss", titleKey: "accountingYearEnd", href: "/buchhaltung/jahresabschluss", icon: Archive },
+          // Reports sub-module
+          { title: "Summen & Salden", titleKey: "accountingSusa", href: "/buchhaltung/susa", icon: Scale, featureFlag: "accounting.reports" },
+          { title: "BWA", titleKey: "accountingBwa", href: "/buchhaltung/bwa", icon: BarChart3, featureFlag: "accounting.reports" },
+          // Banking sub-module
+          { title: "Bankimport", titleKey: "accountingBank", href: "/buchhaltung/bank", icon: Landmark, featureFlag: "accounting.bank" },
+          // Dunning sub-module
+          { title: "Mahnwesen", titleKey: "accountingDunning", href: "/buchhaltung/mahnwesen", icon: AlertTriangle, featureFlag: "accounting.dunning" },
+          // SEPA sub-module
+          { title: "SEPA-Export", titleKey: "accountingSepa", href: "/buchhaltung/sepa", icon: Send, featureFlag: "accounting.sepa" },
+          // Tax sub-module
+          { title: "UStVA", titleKey: "accountingUstva", href: "/buchhaltung/ustva", icon: Percent, featureFlag: "accounting.ustva" },
+          // Assets sub-module
+          { title: "Anlagen", titleKey: "accountingAssets", href: "/buchhaltung/anlagen", icon: HardDrive, featureFlag: "accounting.assets" },
+          // Cashbook sub-module
+          { title: "Kassenbuch", titleKey: "accountingCashbook", href: "/buchhaltung/kassenbuch", icon: Coins, featureFlag: "accounting.cashbook" },
+          // DATEV sub-module
+          { title: "DATEV-Export", titleKey: "accountingDatev", href: "/buchhaltung/datev", icon: FileSpreadsheet, featureFlag: "accounting.datev" },
+          // Year-end sub-module
+          { title: "Jahresabschluss", titleKey: "accountingYearEnd", href: "/buchhaltung/jahresabschluss", icon: Archive, featureFlag: "accounting.yearend" },
         ],
       },
     ],

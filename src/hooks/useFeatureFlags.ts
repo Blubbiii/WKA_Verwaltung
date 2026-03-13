@@ -10,6 +10,22 @@ interface FeatureFlags {
   "meilisearch": boolean;
   "accounting": boolean;
   "document-routing": boolean;
+  // Accounting sub-modules
+  "accounting.reports": boolean;
+  "accounting.bank": boolean;
+  "accounting.dunning": boolean;
+  "accounting.sepa": boolean;
+  "accounting.ustva": boolean;
+  "accounting.assets": boolean;
+  "accounting.cashbook": boolean;
+  "accounting.datev": boolean;
+  "accounting.yearend": boolean;
+  "accounting.costcenter": boolean;
+  "accounting.budget": boolean;
+  "accounting.quotes": boolean;
+  "accounting.liquidity": boolean;
+  "accounting.ocr": boolean;
+  "accounting.multibanking": boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -22,6 +38,21 @@ const DEFAULT_FLAGS: FeatureFlags = {
   "meilisearch": false,
   "accounting": false,
   "document-routing": false,
+  "accounting.reports": false,
+  "accounting.bank": false,
+  "accounting.dunning": false,
+  "accounting.sepa": false,
+  "accounting.ustva": false,
+  "accounting.assets": false,
+  "accounting.cashbook": false,
+  "accounting.datev": false,
+  "accounting.yearend": false,
+  "accounting.costcenter": false,
+  "accounting.budget": false,
+  "accounting.quotes": false,
+  "accounting.liquidity": false,
+  "accounting.ocr": false,
+  "accounting.multibanking": false,
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : DEFAULT_FLAGS);
