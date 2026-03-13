@@ -1,0 +1,429 @@
+{
+  "name": "OneDrive Rechnungs-Export",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 22 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Taeglich 22:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const staticData = $getWorkflowStaticData('global');\nconst lastRun = staticData.lastRunTimestamp || '2020-01-01T00:00:00Z';\nstaticData.lastRunTimestamp = new Date().toISOString();\nreturn [{ json: { lastRun } }];"
+      },
+      "id": "get-last-run",
+      "name": "Letzten Lauf holen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://app:3050/api/invoices",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "SENT"
+            },
+            {
+              "name": "updatedAfter",
+              "value": "={{ $json.lastRun }}"
+            },
+            {
+              "name": "limit",
+              "value": "50"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "fetch-invoices",
+      "name": "Rechnungen abrufen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "WPM API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-data",
+              "leftValue": "={{ $json.data ? $json.data.length : 0 }}",
+              "rightValue": "0",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-invoices",
+      "name": "Rechnungen vorhanden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "summary",
+              "name": "summary",
+              "value": "Keine neuen Rechnungen zum Export",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "no-invoices",
+      "name": "Keine Rechnungen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1100, 500]
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        },
+        "batchSize": 1
+      },
+      "id": "split-batches",
+      "name": "Je Rechnung",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://app:3050/api/admin/document-routing/resolve",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fundId",
+              "value": "={{ $json.fundId }}"
+            },
+            {
+              "name": "invoiceType",
+              "value": "={{ $json.invoiceType }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "resolve-route",
+      "name": "Route aufloesen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "WPM API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-route",
+              "leftValue": "={{ $json.targetPath }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-found",
+      "name": "Route gefunden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1540, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://app:3050/api/invoices/{{ $('Je Rechnung').item.json.id }}/pdf",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "download-pdf",
+      "name": "PDF herunterladen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 100],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_ME",
+          "name": "WPM API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "fileName": "={{ $('Je Rechnung').item.json.invoiceNumber }}.pdf",
+        "parentPath": "={{ $('Route aufloesen').item.json.targetPath }}"
+      },
+      "id": "onedrive-upload",
+      "name": "OneDrive Upload",
+      "type": "n8n-nodes-base.microsoftOneDrive",
+      "typeVersion": 1,
+      "position": [1980, 100],
+      "credentials": {
+        "microsoftOneDriveOAuth2Api": {
+          "id": "REPLACE_ME",
+          "name": "Microsoft OneDrive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "log-no-route",
+              "name": "warning",
+              "value": "={{ 'Keine Route fuer Fund ' + $('Je Rechnung').item.json.fundId + ' / ' + $('Je Rechnung').item.json.invoiceType }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "no-route",
+      "name": "Keine Route",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1760, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "wait-1s",
+      "name": "1s Pause",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2200, 100],
+      "webhookId": "pause-rate-limit"
+    }
+  ],
+  "connections": {
+    "Taeglich 22:00": {
+      "main": [
+        [
+          {
+            "node": "Letzten Lauf holen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Letzten Lauf holen": {
+      "main": [
+        [
+          {
+            "node": "Rechnungen abrufen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rechnungen abrufen": {
+      "main": [
+        [
+          {
+            "node": "Rechnungen vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rechnungen vorhanden?": {
+      "main": [
+        [
+          {
+            "node": "Je Rechnung",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keine Rechnungen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Je Rechnung": {
+      "main": [
+        [
+          {
+            "node": "Route aufloesen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route aufloesen": {
+      "main": [
+        [
+          {
+            "node": "Route gefunden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route gefunden?": {
+      "main": [
+        [
+          {
+            "node": "PDF herunterladen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keine Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF herunterladen": {
+      "main": [
+        [
+          {
+            "node": "OneDrive Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OneDrive Upload": {
+      "main": [
+        [
+          {
+            "node": "1s Pause",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1s Pause": {
+      "main": [
+        [
+          {
+            "node": "Je Rechnung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keine Route": {
+      "main": [
+        [
+          {
+            "node": "Je Rechnung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "global": {
+      "lastRunTimestamp": null
+    }
+  },
+  "tags": [
+    {
+      "name": "OneDrive"
+    },
+    {
+      "name": "Rechnungen"
+    }
+  ],
+  "triggerCount": 1,
+  "pinData": {}
+}

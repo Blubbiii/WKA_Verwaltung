@@ -182,6 +182,93 @@ services:
       - wpm-network
 
   # ---------------------------------------------------------------------------
+  # Backup — Automatische DB-Sicherung mit Retention Policy
+  # TimescaleDB-Image wegen aktiver Hypertables (pg_dump braucht Extension)
+  # Cron: daily@02:00, weekly@Sun/03:00, monthly@1st/04:00
+  # ---------------------------------------------------------------------------
+  backup:
+    image: timescale/timescaledb:2.17.2-pg16
+    container_name: wpm-backup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: wpm
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: windparkmanager
+      PGPORT: "5432"
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION_DAILY: "7"
+      BACKUP_RETENTION_WEEKLY: "4"
+      BACKUP_RETENTION_MONTHLY: "3"
+      BACKUP_S3_ENABLED: "false"
+    configs:
+      - source: backup_script
+        target: /scripts/backup-db.sh
+        mode: 0755
+      - source: restore_script
+        target: /scripts/restore-db.sh
+        mode: 0755
+    volumes:
+      - backup_data:/backups
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        apt-get update && apt-get install -y --no-install-recommends cron && rm -rf /var/lib/apt/lists/*
+        echo '0 2 * * * root /scripts/backup-db.sh daily >> /var/log/backup.log 2>&1' > /etc/cron.d/wpm-backup
+        echo '0 3 * * 0 root /scripts/backup-db.sh weekly >> /var/log/backup.log 2>&1' >> /etc/cron.d/wpm-backup
+        echo '0 4 1 * * root /scripts/backup-db.sh monthly >> /var/log/backup.log 2>&1' >> /etc/cron.d/wpm-backup
+        chmod 0644 /etc/cron.d/wpm-backup
+        touch /var/log/backup.log
+        echo "[$$(date)] Backup scheduler started — daily@02:00, weekly@Sun/03:00, monthly@1st/04:00"
+        /scripts/backup-db.sh daily
+        echo "[$$(date)] Initial backup completed"
+        cron -f
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep cron || exit 1"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+    networks:
+      - wpm-network
+
+  # ---------------------------------------------------------------------------
+  # Backup Manual — On-Demand Backup (nur mit --profile tools starten)
+  # docker compose --profile tools run backup-manual daily
+  # ---------------------------------------------------------------------------
+  backup-manual:
+    image: timescale/timescaledb:2.17.2-pg16
+    container_name: wpm-backup-manual
+    profiles:
+      - tools
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: wpm
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: windparkmanager
+      BACKUP_DIR: /backups
+      BACKUP_S3_ENABLED: "false"
+    configs:
+      - source: backup_script
+        target: /scripts/backup-db.sh
+        mode: 0755
+      - source: restore_script
+        target: /scripts/restore-db.sh
+        mode: 0755
+    volumes:
+      - backup_data:/backups
+    entrypoint: /scripts/backup-db.sh
+    command: ["daily"]
+    networks:
+      - wpm-network
+
+  # ---------------------------------------------------------------------------
   # Prometheus — Metriken-Sammlung
   # Config wird als Docker-Config inline definiert (kein Host-Mount noetig)
   # ---------------------------------------------------------------------------
@@ -244,6 +331,13 @@ configs:
           metrics_path: /api/metrics
           params:
             token: ['${METRICS_TOKEN}']
+  # HINWEIS: Fuer Portainer-Deployment muessen die Scripts als inline `content:`
+  # eingefuegt werden (mit $$ statt $ fuer Shell-Variablen).
+  # Lokal funktionieren die `file:` Referenzen direkt.
+  backup_script:
+    file: ./scripts/backup-db.sh
+  restore_script:
+    file: ./scripts/restore-db.sh
 
 # =============================================================================
 # Volumes
@@ -260,6 +354,8 @@ volumes:
   prometheus_data:
     driver: local
   metabase_data:
+    driver: local
+  backup_data:
     driver: local
 
 # =============================================================================
