@@ -74,3 +74,19 @@ export const DrillDownMonthly = dynamic(
     ),
   { ssr: false, loading: () => <ChartSkeleton /> }
 );
+
+export const ShadowChart = dynamic(
+  () =>
+    import("@/components/energy/analytics/shadow-chart").then(
+      (mod) => mod.ShadowChart
+    ),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+
+export const PhaseSymmetryChart = dynamic(
+  () =>
+    import("@/components/energy/analytics/phase-symmetry-chart").then(
+      (mod) => mod.PhaseSymmetryChart
+    ),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);

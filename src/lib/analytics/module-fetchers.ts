@@ -28,6 +28,15 @@ import type {
   SeasonalPatternPoint,
   DirectionEfficiency,
   MonthlyRevenuePoint,
+  ShadowPerTurbine,
+  ShadowMonthlyTrend,
+  ShadowDailyProfile,
+  OperatingStateParetoItem,
+  OperatingStatePerTurbine,
+  OperatingStateTimelineEntry,
+  PhaseSymmetryTrendPoint,
+  PhaseSymmetryPerTurbine,
+  PhasePowersMonthly,
 } from "@/types/analytics";
 
 // =============================================================================
@@ -1213,4 +1222,519 @@ export async function fetchDirectionEfficiency(
       count: Number(r.cnt),
     }))
     .sort((a, b) => a.directionDeg - b.directionDeg);
+}
+
+// =============================================================================
+// Shadow Casting Module Fetchers
+// =============================================================================
+
+// --- Shadow Per Turbine ---
+
+interface ShadowCumRow {
+  turbineId: string;
+  min_cum: Prisma.Decimal | null;
+  max_cum: Prisma.Decimal | null;
+  avg_daily_shadow: Prisma.Decimal | null;
+}
+
+/**
+ * Fetch shadow casting hours per turbine for a given year.
+ * Uses cumulative shadow hours (setCumShadowH) to compute yearly total,
+ * and averages meanShadow for daily shadow minutes.
+ */
+export async function fetchShadowPerTurbine(
+  tenantId: string,
+  year: number,
+  parkId?: string | null
+): Promise<ShadowPerTurbine[]> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) return [];
+
+  const turbineMap = buildTurbineMap(turbines);
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  const rows = await prisma.$queryRaw<ShadowCumRow[]>`
+    SELECT
+      "turbineId",
+      MIN("setCumShadowH") AS min_cum,
+      MAX("setCumShadowH") AS max_cum,
+      AVG("meanShadow") AS avg_daily_shadow
+    FROM scada_shadow_casting
+    WHERE "tenantId" = ${tenantId}
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+      AND "setCumShadowH" IS NOT NULL
+    GROUP BY "turbineId"
+  `;
+
+  const rowMap = new Map(rows.map((r) => [r.turbineId, r]));
+
+  return turbines.map((t) => {
+    const row = rowMap.get(t.id);
+    const minCum = safeNumber(row?.min_cum);
+    const maxCum = safeNumber(row?.max_cum);
+    const totalShadowHoursYear = round(maxCum - minCum, 2);
+    const avgDailyShadowMinutes = round(safeNumber(row?.avg_daily_shadow), 2);
+
+    return {
+      turbineId: t.id,
+      designation: turbineMap.get(t.id)?.designation ?? t.designation,
+      totalShadowHoursYear: Math.max(totalShadowHoursYear, 0),
+      avgDailyShadowMinutes,
+    };
+  });
+}
+
+// --- Shadow Monthly Trend ---
+
+interface ShadowMonthRow {
+  month_num: number;
+  shadow_minutes: bigint;
+}
+
+/**
+ * Fetch monthly shadow trend: count of 1-minute intervals where shadow is active.
+ * Each WDD record with meanShadow > 0 represents 1 active minute.
+ */
+export async function fetchShadowMonthlyTrend(
+  tenantId: string,
+  year: number,
+  parkId?: string | null
+): Promise<ShadowMonthlyTrend[]> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) return [];
+
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  const rows = await prisma.$queryRaw<ShadowMonthRow[]>`
+    SELECT
+      EXTRACT(MONTH FROM "timestamp")::int AS month_num,
+      COUNT(*)::bigint AS shadow_minutes
+    FROM scada_shadow_casting
+    WHERE "tenantId" = ${tenantId}
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+      AND "meanShadow" IS NOT NULL
+      AND "meanShadow" > 0
+    GROUP BY EXTRACT(MONTH FROM "timestamp")
+    ORDER BY month_num
+  `;
+
+  return rows.map((r) => ({
+    month: r.month_num,
+    label: monthLabel(r.month_num),
+    shadowMinutes: Number(r.shadow_minutes),
+  }));
+}
+
+// --- Shadow Daily Profile ---
+
+interface ShadowHourRow {
+  hour: number;
+  shadow_minutes: bigint;
+}
+
+/**
+ * Fetch shadow daily profile: average shadow by hour of day (0-23).
+ * Counts records with meanShadow > 0 grouped by hour.
+ */
+export async function fetchShadowDailyProfile(
+  tenantId: string,
+  year: number,
+  parkId?: string | null
+): Promise<ShadowDailyProfile[]> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) return [];
+
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  const rows = await prisma.$queryRaw<ShadowHourRow[]>`
+    SELECT
+      EXTRACT(HOUR FROM "timestamp")::int AS hour,
+      COUNT(*)::bigint AS shadow_minutes
+    FROM scada_shadow_casting
+    WHERE "tenantId" = ${tenantId}
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+      AND "meanShadow" IS NOT NULL
+      AND "meanShadow" > 0
+    GROUP BY EXTRACT(HOUR FROM "timestamp")
+    ORDER BY hour
+  `;
+
+  return rows.map((r) => ({
+    hour: r.hour,
+    shadowMinutes: Number(r.shadow_minutes),
+  }));
+}
+
+// =============================================================================
+// Operating States Module Fetchers
+// =============================================================================
+
+// --- State Pareto ---
+
+interface StateKvRow {
+  state_code: string;
+  total_duration: bigint;
+  total_frequency: bigint;
+}
+
+/**
+ * Fetch top-20 operating state codes by total duration (Pareto analysis).
+ * Extracts JSON keys/values from the `states` column.
+ */
+export async function fetchOperatingStatePareto(
+  tenantId: string,
+  year: number,
+  parkId?: string | null
+): Promise<OperatingStateParetoItem[]> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) return [];
+
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  const rows = await prisma.$queryRaw<StateKvRow[]>`
+    SELECT
+      kv.key AS state_code,
+      SUM(kv.value::numeric)::bigint AS total_duration,
+      COUNT(CASE WHEN kv.value::numeric > 0 THEN 1 END)::bigint AS total_frequency
+    FROM scada_operating_states,
+         jsonb_each_text(states::jsonb) AS kv(key, value)
+    WHERE "tenantId" = ${tenantId}
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+    GROUP BY kv.key
+    ORDER BY total_duration DESC
+    LIMIT 20
+  `;
+
+  if (rows.length === 0) return [];
+
+  const totalDuration = rows.reduce((s, r) => s + Number(r.total_duration), 0);
+  let cumulative = 0;
+
+  return rows.map((r) => {
+    const duration = Number(r.total_duration);
+    const pct = totalDuration > 0 ? round((duration / totalDuration) * 100, 1) : 0;
+    cumulative += pct;
+
+    return {
+      stateCode: r.state_code,
+      totalDurationSeconds: duration,
+      totalFrequency: Number(r.total_frequency),
+      percentage: pct,
+      cumulative: round(cumulative, 1),
+    };
+  });
+}
+
+// --- Operating State Per Turbine ---
+
+interface OpStatePerTurbineRow {
+  turbineId: string;
+  total_non_a0_duration: bigint;
+  distinct_states: bigint;
+}
+
+/**
+ * Fetch operating state duration per turbine (excluding A0 = normal operation).
+ */
+export async function fetchOperatingStatePerTurbine(
+  tenantId: string,
+  year: number,
+  parkId?: string | null
+): Promise<OperatingStatePerTurbine[]> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) return [];
+
+  const turbineMap = buildTurbineMap(turbines);
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  const rows = await prisma.$queryRaw<OpStatePerTurbineRow[]>`
+    SELECT
+      os."turbineId",
+      SUM(CASE WHEN kv.key != 'A0' THEN kv.value::numeric ELSE 0 END)::bigint AS total_non_a0_duration,
+      COUNT(DISTINCT CASE WHEN kv.value::numeric > 0 THEN kv.key END)::bigint AS distinct_states
+    FROM scada_operating_states os,
+         jsonb_each_text(os.states::jsonb) AS kv(key, value)
+    WHERE os."tenantId" = ${tenantId}
+      AND ${Prisma.sql`os."turbineId" IN (${Prisma.join(turbineIds)})`}
+      AND os."timestamp" >= ${from}
+      AND os."timestamp" < ${to}
+    GROUP BY os."turbineId"
+  `;
+
+  const rowMap = new Map(rows.map((r) => [r.turbineId, r]));
+
+  return turbines.map((t) => {
+    const row = rowMap.get(t.id);
+    return {
+      turbineId: t.id,
+      designation: turbineMap.get(t.id)?.designation ?? t.designation,
+      totalNonA0DurationSeconds: Number(row?.total_non_a0_duration ?? 0),
+      distinctStates: Number(row?.distinct_states ?? 0),
+    };
+  });
+}
+
+// --- Operating State Timeline ---
+
+interface OpStateTimelineRow {
+  day: Date;
+  dominant_state: string;
+  duration_seconds: bigint;
+}
+
+/**
+ * Fetch daily dominant operating state timeline.
+ * For each day, finds the state with the highest total duration.
+ * If no turbineId filter, limits to last 90 days of data.
+ */
+export async function fetchOperatingStateTimeline(
+  tenantId: string,
+  year: number,
+  parkId?: string | null,
+  turbineId?: string | null
+): Promise<OperatingStateTimelineEntry[]> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) return [];
+
+  const turbineIds = turbineId
+    ? turbines.filter((t) => t.id === turbineId).map((t) => t.id)
+    : turbines.map((t) => t.id);
+
+  if (turbineIds.length === 0) return [];
+
+  const { from, to } = buildDateRange(year);
+
+  // If no specific turbine, limit to last 90 days for performance
+  const limitClause = turbineId
+    ? Prisma.sql``
+    : Prisma.sql`LIMIT 90`;
+
+  const rows = await prisma.$queryRaw<OpStateTimelineRow[]>`
+    SELECT day, dominant_state, duration_seconds
+    FROM (
+      SELECT
+        date_trunc('day', os."timestamp") AS day,
+        kv.key AS dominant_state,
+        SUM(kv.value::numeric)::bigint AS duration_seconds,
+        ROW_NUMBER() OVER (PARTITION BY date_trunc('day', os."timestamp") ORDER BY SUM(kv.value::numeric) DESC) AS rn
+      FROM scada_operating_states os,
+           jsonb_each_text(os.states::jsonb) AS kv(key, value)
+      WHERE os."tenantId" = ${tenantId}
+        AND ${Prisma.sql`os."turbineId" IN (${Prisma.join(turbineIds)})`}
+        AND os."timestamp" >= ${from}
+        AND os."timestamp" < ${to}
+      GROUP BY date_trunc('day', os."timestamp"), kv.key
+    ) ranked
+    WHERE rn = 1
+    ORDER BY day DESC
+    ${limitClause}
+  `;
+
+  return rows
+    .map((r) => ({
+      date: new Date(r.day).toISOString().slice(0, 10),
+      dominantState: r.dominant_state,
+      durationSeconds: Number(r.duration_seconds),
+    }))
+    .reverse(); // chronological order
+}
+
+// =============================================================================
+// Phase Symmetry Module Fetchers
+// =============================================================================
+
+// --- Symmetry Trend (Monthly) ---
+
+interface PhaseSymTrendRow {
+  month: Date;
+  avg_imbalance_kw: Prisma.Decimal | null;
+  avg_phase_power_kw: Prisma.Decimal | null;
+  data_points: bigint;
+}
+
+/**
+ * Fetch monthly phase symmetry trend.
+ * Calculates imbalance as (MAX(P1,P2,P3) - MIN(P1,P2,P3)) averaged monthly,
+ * and imbalance percent relative to average phase power.
+ */
+export async function fetchPhaseSymmetryTrend(
+  tenantId: string,
+  year: number,
+  parkId?: string | null
+): Promise<PhaseSymmetryTrendPoint[]> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) return [];
+
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  const rows = await prisma.$queryRaw<PhaseSymTrendRow[]>`
+    SELECT
+      date_trunc('month', "timestamp") AS month,
+      AVG(GREATEST("meanP1","meanP2","meanP3") - LEAST("meanP1","meanP2","meanP3")) AS avg_imbalance_kw,
+      AVG(("meanP1"+"meanP2"+"meanP3")/3.0) AS avg_phase_power_kw,
+      COUNT(*) AS data_points
+    FROM scada_electrical_phases
+    WHERE "tenantId" = ${tenantId}
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+      AND "periodType" = 'INTERVAL'
+      AND "meanP1" IS NOT NULL
+      AND "meanP2" IS NOT NULL
+      AND "meanP3" IS NOT NULL
+    GROUP BY date_trunc('month', "timestamp")
+    ORDER BY month
+  `;
+
+  return rows.map((r) => {
+    const d = new Date(r.month);
+    const avgImbalanceKw = round(safeNumber(r.avg_imbalance_kw), 2);
+    const avgPhasePowerKw = round(safeNumber(r.avg_phase_power_kw), 2);
+    const avgImbalancePct =
+      avgPhasePowerKw > 0
+        ? round((avgImbalanceKw / avgPhasePowerKw) * 100, 2)
+        : 0;
+
+    return {
+      month: d.getUTCMonth() + 1,
+      year: d.getUTCFullYear(),
+      label: monthLabel(d.getUTCMonth() + 1),
+      avgImbalanceKw,
+      avgImbalancePct,
+      avgPhasePowerKw,
+    };
+  });
+}
+
+// --- Phase Symmetry Per Turbine ---
+
+interface PhaseSymPerTurbineRow {
+  turbineId: string;
+  avg_imbalance_kw: Prisma.Decimal | null;
+  avg_phase_power_kw: Prisma.Decimal | null;
+  avg_reactive_power: Prisma.Decimal | null;
+  data_points: bigint;
+}
+
+/**
+ * Fetch per-turbine phase imbalance and reactive power metrics.
+ */
+export async function fetchPhaseSymmetryPerTurbine(
+  tenantId: string,
+  year: number,
+  parkId?: string | null
+): Promise<PhaseSymmetryPerTurbine[]> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) return [];
+
+  const turbineMap = buildTurbineMap(turbines);
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  const rows = await prisma.$queryRaw<PhaseSymPerTurbineRow[]>`
+    SELECT
+      "turbineId",
+      AVG(GREATEST("meanP1","meanP2","meanP3") - LEAST("meanP1","meanP2","meanP3")) AS avg_imbalance_kw,
+      AVG(("meanP1"+"meanP2"+"meanP3")/3.0) AS avg_phase_power_kw,
+      AVG(COALESCE("meanQ1",0) + COALESCE("meanQ2",0) + COALESCE("meanQ3",0)) AS avg_reactive_power,
+      COUNT(*) AS data_points
+    FROM scada_electrical_phases
+    WHERE "tenantId" = ${tenantId}
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+      AND "periodType" = 'INTERVAL'
+      AND "meanP1" IS NOT NULL
+      AND "meanP2" IS NOT NULL
+      AND "meanP3" IS NOT NULL
+    GROUP BY "turbineId"
+  `;
+
+  const rowMap = new Map(rows.map((r) => [r.turbineId, r]));
+
+  return turbines.map((t) => {
+    const row = rowMap.get(t.id);
+    const avgImbalanceKw = safeNumber(row?.avg_imbalance_kw);
+    const avgPhasePowerKw = safeNumber(row?.avg_phase_power_kw);
+    const avgImbalancePct =
+      avgPhasePowerKw > 0
+        ? round((avgImbalanceKw / avgPhasePowerKw) * 100, 2)
+        : 0;
+
+    return {
+      turbineId: t.id,
+      designation: turbineMap.get(t.id)?.designation ?? t.designation,
+      avgImbalancePct,
+      avgReactivePowerKvar: round(safeNumber(row?.avg_reactive_power), 2),
+      dataPoints: Number(row?.data_points ?? 0),
+    };
+  });
+}
+
+// --- Phase Powers Monthly ---
+
+interface PhasePowerRow {
+  month: Date;
+  avg_p1: Prisma.Decimal | null;
+  avg_p2: Prisma.Decimal | null;
+  avg_p3: Prisma.Decimal | null;
+}
+
+/**
+ * Fetch monthly average phase powers (P1, P2, P3) for comparison chart.
+ */
+export async function fetchPhasePowersMonthly(
+  tenantId: string,
+  year: number,
+  parkId?: string | null
+): Promise<PhasePowersMonthly[]> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) return [];
+
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  const rows = await prisma.$queryRaw<PhasePowerRow[]>`
+    SELECT
+      date_trunc('month', "timestamp") AS month,
+      AVG("meanP1") AS avg_p1,
+      AVG("meanP2") AS avg_p2,
+      AVG("meanP3") AS avg_p3
+    FROM scada_electrical_phases
+    WHERE "tenantId" = ${tenantId}
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+      AND "periodType" = 'INTERVAL'
+      AND "meanP1" IS NOT NULL
+      AND "meanP2" IS NOT NULL
+      AND "meanP3" IS NOT NULL
+    GROUP BY date_trunc('month', "timestamp")
+    ORDER BY month
+  `;
+
+  return rows.map((r) => {
+    const d = new Date(r.month);
+    return {
+      month: d.getUTCMonth() + 1,
+      label: monthLabel(d.getUTCMonth() + 1),
+      avgP1: round(safeNumber(r.avg_p1), 2),
+      avgP2: round(safeNumber(r.avg_p2), 2),
+      avgP3: round(safeNumber(r.avg_p3), 2),
+    };
+  });
 }

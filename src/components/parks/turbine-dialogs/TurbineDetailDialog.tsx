@@ -16,10 +16,17 @@ import {
   Eye,
   QrCode,
   Clock,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { DocumentPreviewDialog } from "@/components/documents";
 import { TurbineQrCodeTab } from "@/components/parks/TurbineQrCodeTab";
+import dynamic from "next/dynamic";
+
+const OperatingStateTimeline = dynamic(
+  () => import("@/components/energy/analytics/operating-state-timeline").then(mod => mod.OperatingStateTimeline),
+  { ssr: false }
+);
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -137,6 +144,10 @@ export function TurbineDetailDialog({
               <TabsTrigger value="qrcode">
                 <QrCode className="h-4 w-4 mr-1" />
                 QR-Code
+              </TabsTrigger>
+              <TabsTrigger value="operating-states">
+                <Activity className="h-4 w-4 mr-1" />
+                Betriebszustände
               </TabsTrigger>
             </TabsList>
 
@@ -550,6 +561,13 @@ export function TurbineDetailDialog({
                 turbineDesignation={turbine.designation}
                 parkName={turbineDetail?.park?.name}
                 onTokenChanged={fetchTurbineDetail}
+              />
+            </TabsContent>
+
+            <TabsContent value="operating-states" className="mt-4">
+              <OperatingStateTimeline
+                turbineId={turbine.id}
+                turbineDesignation={turbine.designation}
               />
             </TabsContent>
           </Tabs>

@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import useSWR from "swr";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
-import { BarChart3, Clock, GitCompare, AlertTriangle, Cloud, CreditCard, Search, ArrowLeftRight } from "lucide-react";
+import { BarChart3, Clock, GitCompare, AlertTriangle, Cloud, CreditCard, Search, ArrowLeftRight, Sun, Activity, Zap } from "lucide-react";
 import { AnalyticsFilterBar } from "@/components/energy/analytics/analytics-filter-bar";
 import { CreateReportDialog } from "@/components/energy/analytics/create-report-dialog";
 import { DrillDownBreadcrumb } from "@/components/energy/analytics/drill-down-breadcrumb";
@@ -22,6 +22,8 @@ import {
   FaultAnalysis,
   EnvironmentChart,
   FinancialAnalysis,
+  ShadowChart,
+  PhaseSymmetryChart,
 } from "@/components/energy/analytics/analytics-dynamic";
 import type {
   PerformanceOverviewResponse,
@@ -30,6 +32,8 @@ import type {
   FaultsResponse,
   EnvironmentResponse,
   FinancialResponse,
+  ShadowResponse,
+  PhaseSymmetryResponse,
 } from "@/types/analytics";
 
 // =============================================================================
@@ -147,6 +151,20 @@ export default function AnalyticsPage() {
     { revalidateOnFocus: false }
   );
 
+  // --- SWR: Shadow Casting ---
+  const { data: shadowData, error: shadowError, isLoading: shadowLoading } = useSWR<ShadowResponse>(
+    activeTab === "shadow" ? `/api/energy/analytics/shadow?${baseParams}` : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
+  // --- SWR: Phase Symmetry ---
+  const { data: phaseData, error: phaseError, isLoading: phaseLoading } = useSWR<PhaseSymmetryResponse>(
+    activeTab === "phase-symmetry" ? `/api/energy/analytics/phase-symmetry?${baseParams}` : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
   // Error display helper
   const ErrorState = ({ message }: { message: string }) => (
     <div className="flex items-center justify-center h-[400px] text-destructive">
@@ -197,6 +215,14 @@ export default function AnalyticsPage() {
           <TabsTrigger value="financial" className="gap-1">
             <CreditCard className="h-4 w-4 hidden sm:block" />
             <span>Finanzen</span>
+          </TabsTrigger>
+          <TabsTrigger value="shadow" className="gap-1">
+            <Sun className="h-4 w-4 hidden sm:block" />
+            <span>Schattenwurf</span>
+          </TabsTrigger>
+          <TabsTrigger value="phase-symmetry" className="gap-1">
+            <Zap className="h-4 w-4 hidden sm:block" />
+            <span>Phasen-Analyse</span>
           </TabsTrigger>
           <TabsTrigger value="data-explorer" className="gap-1">
             <Search className="h-4 w-4 hidden sm:block" />
@@ -332,6 +358,36 @@ export default function AnalyticsPage() {
               lostRevenue={finData?.lostRevenue ?? { totalLostKwh: 0, estimatedLostEur: 0, avgRevenuePerKwh: null }}
               summary={finData?.summary ?? { totalRevenueEur: 0, totalProductionKwh: 0, avgRevenuePerKwh: null }}
               isLoading={finLoading}
+            />
+          )}
+        </TabsContent>
+
+        {/* Shadow Casting Tab */}
+        <TabsContent value="shadow" className="mt-6">
+          {shadowError ? (
+            <ErrorState message="Fehler beim Laden der Schattenwurf-Daten" />
+          ) : (
+            <ShadowChart
+              perTurbine={shadowData?.perTurbine ?? []}
+              monthlyTrend={shadowData?.monthlyTrend ?? []}
+              dailyProfile={shadowData?.dailyProfile ?? []}
+              summary={shadowData?.summary ?? { totalShadowHoursYear: 0, budgetUsedPercent: 0, worstTurbineDesignation: null }}
+              isLoading={shadowLoading}
+            />
+          )}
+        </TabsContent>
+
+        {/* Phase Symmetry Tab */}
+        <TabsContent value="phase-symmetry" className="mt-6">
+          {phaseError ? (
+            <ErrorState message="Fehler beim Laden der Phasen-Daten" />
+          ) : (
+            <PhaseSymmetryChart
+              symmetryTrend={phaseData?.symmetryTrend ?? []}
+              perTurbine={phaseData?.perTurbine ?? []}
+              phasePowers={phaseData?.phasePowers ?? []}
+              summary={phaseData?.summary ?? { fleetAvgImbalancePct: 0, worstTurbineDesignation: null, worstTurbineImbalancePct: 0, totalDataPoints: 0 }}
+              isLoading={phaseLoading}
             />
           )}
         </TabsContent>

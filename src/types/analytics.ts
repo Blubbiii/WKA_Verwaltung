@@ -268,6 +268,112 @@ export interface PortalAnalyticsResponse {
   };
 }
 
+// --- Shadow Casting Types ---
+
+export interface ShadowPerTurbine {
+  turbineId: string;
+  designation: string;
+  totalShadowHoursYear: number;
+  avgDailyShadowMinutes: number;
+}
+
+export interface ShadowMonthlyTrend {
+  month: number;
+  label: string;
+  shadowMinutes: number;
+}
+
+export interface ShadowDailyProfile {
+  hour: number;
+  shadowMinutes: number;
+}
+
+export interface ShadowSummary {
+  totalShadowHoursYear: number;
+  budgetUsedPercent: number;
+  worstTurbineDesignation: string | null;
+}
+
+export interface ShadowResponse {
+  perTurbine: ShadowPerTurbine[];
+  monthlyTrend: ShadowMonthlyTrend[];
+  dailyProfile: ShadowDailyProfile[];
+  summary: ShadowSummary;
+  meta: { year: number; parkId: string };
+}
+
+// --- Operating States Types ---
+
+export interface OperatingStateParetoItem {
+  stateCode: string;
+  totalDurationSeconds: number;
+  totalFrequency: number;
+  percentage: number;
+  cumulative: number;
+}
+
+export interface OperatingStatePerTurbine {
+  turbineId: string;
+  designation: string;
+  totalNonA0DurationSeconds: number;
+  distinctStates: number;
+}
+
+export interface OperatingStateTimelineEntry {
+  date: string;
+  dominantState: string;
+  durationSeconds: number;
+}
+
+export interface OperatingStatesResponse {
+  statePareto: OperatingStateParetoItem[];
+  perTurbine: OperatingStatePerTurbine[];
+  timeline: OperatingStateTimelineEntry[];
+  meta: { year: number; parkId: string; turbineId: string };
+}
+
+// --- Phase Symmetry Types ---
+
+export interface PhaseSymmetryTrendPoint {
+  month: number;
+  year: number;
+  label: string;
+  avgImbalanceKw: number;
+  avgImbalancePct: number;
+  avgPhasePowerKw: number;
+}
+
+export interface PhaseSymmetryPerTurbine {
+  turbineId: string;
+  designation: string;
+  avgImbalancePct: number;
+  avgReactivePowerKvar: number;
+  dataPoints: number;
+}
+
+export interface PhasePowersMonthly {
+  month: number;
+  label: string;
+  avgP1: number;
+  avgP2: number;
+  avgP3: number;
+}
+
+export interface PhaseSymmetrySummary {
+  fleetAvgImbalancePct: number;
+  worstTurbineDesignation: string | null;
+  worstTurbineImbalancePct: number;
+  totalDataPoints: number;
+}
+
+export interface PhaseSymmetryResponse {
+  symmetryTrend: PhaseSymmetryTrendPoint[];
+  perTurbine: PhaseSymmetryPerTurbine[];
+  phasePowers: PhasePowersMonthly[];
+  summary: PhaseSymmetrySummary;
+  meta: { year: number; parkId: string };
+}
+
 // --- Analytics Module Types (for report configuration) ---
 
 export const ANALYTICS_MODULES = {
