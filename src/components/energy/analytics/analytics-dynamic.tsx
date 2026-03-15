@@ -90,3 +90,11 @@ export const PhaseSymmetryChart = dynamic(
     ),
   { ssr: false, loading: () => <ChartSkeleton /> }
 );
+
+export const DailyOverview = dynamic(
+  () =>
+    import("@/components/energy/analytics/daily-overview").then(
+      (mod) => mod.DailyOverview
+    ),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);

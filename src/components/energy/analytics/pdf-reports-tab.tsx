@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Loader2,
   Download,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 // =============================================================================
@@ -41,6 +50,31 @@ const MONTH_NAMES = [
 
 const QUARTER_NAMES = ["Q1 (Jan-Mrz)", "Q2 (Apr-Jun)", "Q3 (Jul-Sep)", "Q4 (Okt-Dez)"];
 
+// Section configs per report type
+const ANNUAL_SECTIONS = [
+  { key: "topology", label: "Netz-Topologie" },
+  { key: "kpis", label: "Jahresübersicht / KPIs" },
+  { key: "monthlyTrend", label: "Monatsverlauf" },
+  { key: "turbinePerformance", label: "Anlagen-Performance" },
+  { key: "financial", label: "Finanzen" },
+  { key: "service", label: "Service & Wartung" },
+] as const;
+
+const MONTHLY_SECTIONS = [
+  { key: "summary", label: "Zusammenfassung" },
+  { key: "production", label: "Produktion" },
+  { key: "availability", label: "Verfügbarkeit" },
+  { key: "service", label: "Ereignisse" },
+  { key: "windAnalysis", label: "Windanalyse" },
+  { key: "powerCurve", label: "Leistungskurve" },
+  { key: "dailyProfile", label: "Tagesprofil" },
+] as const;
+
+const QUARTERLY_SECTIONS = [
+  ...MONTHLY_SECTIONS,
+  { key: "monthlyTrend" as const, label: "Monatsverlauf" },
+] as const;
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -55,6 +89,31 @@ export function PdfReportsTab() {
   const [year, setYear] = useState(currentYear.toString());
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString());
   const [quarter, setQuarter] = useState("1");
+
+  // Section selection state (all true by default)
+  const [annualSections, setAnnualSections] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(ANNUAL_SECTIONS.map((s) => [s.key, true]))
+  );
+  const [monthlySections, setMonthlySections] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(MONTHLY_SECTIONS.map((s) => [s.key, true]))
+  );
+  const [quarterlySections, setQuarterlySections] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(QUARTERLY_SECTIONS.map((s) => [s.key, true]))
+  );
+
+  function toggleSection(
+    setter: React.Dispatch<React.SetStateAction<Record<string, boolean>>>,
+    key: string
+  ) {
+    setter((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  // Only include sections that are unchecked (to keep payload small)
+  function buildSectionsParam(sections: Record<string, boolean>) {
+    const hasUnchecked = Object.values(sections).some((v) => !v);
+    if (!hasUnchecked) return undefined;
+    return sections;
+  }
 
   useEffect(() => {
     fetch("/api/parks?limit=100")
@@ -200,12 +259,17 @@ export function PdfReportsTab() {
                     ))}
                   </SelectContent>
                 </Select>
+                <SectionPicker
+                  sections={MONTHLY_SECTIONS}
+                  values={monthlySections}
+                  onToggle={(key) => toggleSection(setMonthlySections, key)}
+                />
                 <Button
                   className="w-full"
                   onClick={() =>
                     downloadPdf(
                       "/api/reports/monthly",
-                      { parkId, year: yearInt, month: parseInt(month) },
+                      { parkId, year: yearInt, month: parseInt(month), sections: buildSectionsParam(monthlySections) },
                       `Monatsbericht_${year}_${month.padStart(2, "0")}.pdf`,
                       "Monatsbericht"
                     )
@@ -243,12 +307,17 @@ export function PdfReportsTab() {
                     ))}
                   </SelectContent>
                 </Select>
+                <SectionPicker
+                  sections={QUARTERLY_SECTIONS}
+                  values={quarterlySections}
+                  onToggle={(key) => toggleSection(setQuarterlySections, key)}
+                />
                 <Button
                   className="w-full"
                   onClick={() =>
                     downloadPdf(
                       "/api/reports/quarterly",
-                      { parkId, year: yearInt, quarter: parseInt(quarter) },
+                      { parkId, year: yearInt, quarter: parseInt(quarter), sections: buildSectionsParam(quarterlySections) },
                       `Quartalsbericht_${year}_Q${quarter}.pdf`,
                       "Quartalsbericht"
                     )
@@ -277,12 +346,17 @@ export function PdfReportsTab() {
                 <div className="h-9 flex items-center text-sm text-muted-foreground">
                   Komplettes Jahr {year}
                 </div>
+                <SectionPicker
+                  sections={ANNUAL_SECTIONS}
+                  values={annualSections}
+                  onToggle={(key) => toggleSection(setAnnualSections, key)}
+                />
                 <Button
                   className="w-full"
                   onClick={() =>
                     downloadPdf(
                       "/api/reports/annual",
-                      { parkId, year: yearInt },
+                      { parkId, year: yearInt, sections: buildSectionsParam(annualSections) },
                       `Jahresbericht_${year}.pdf`,
                       "Jahresbericht"
                     )
@@ -302,5 +376,58 @@ export function PdfReportsTab() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// =============================================================================
+// Section Picker (collapsible checkbox list)
+// =============================================================================
+
+function SectionPicker({
+  sections,
+  values,
+  onToggle,
+}: {
+  sections: ReadonlyArray<{ key: string; label: string }>;
+  values: Record<string, boolean>;
+  onToggle: (key: string) => void;
+}) {
+  const checkedCount = Object.values(values).filter(Boolean).length;
+  const totalCount = sections.length;
+
+  return (
+    <Collapsible>
+      <CollapsibleTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-between px-2 h-8 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <span className="flex items-center gap-1.5">
+            <Settings2 className="h-3.5 w-3.5" />
+            Sektionen ({checkedCount}/{totalCount})
+          </span>
+          <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-2 space-y-1.5">
+        {sections.map((s) => (
+          <div key={s.key} className="flex items-center gap-2">
+            <Checkbox
+              id={`sec-${s.key}`}
+              checked={values[s.key] ?? true}
+              onCheckedChange={() => onToggle(s.key)}
+              className="h-3.5 w-3.5"
+            />
+            <Label
+              htmlFor={`sec-${s.key}`}
+              className="text-xs cursor-pointer leading-none"
+            >
+              {s.label}
+            </Label>
+          </div>
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

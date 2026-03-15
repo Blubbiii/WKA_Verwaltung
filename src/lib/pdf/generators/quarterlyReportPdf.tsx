@@ -19,6 +19,7 @@ import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../util
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { getSignedUrl } from "@/lib/storage";
+import type { MonthlyReportSections } from "./monthlyReportPdf";
 
 const MONTH_NAMES = [
   "Januar", "Februar", "März", "April", "Mai", "Juni",
@@ -402,9 +403,11 @@ export async function generateQuarterlyReportPdf(
   parkId: string,
   year: number,
   quarter: number,
-  tenantId: string
+  tenantId: string,
+  sections?: MonthlyReportSections
 ): Promise<Buffer> {
   const data = await fetchQuarterlyReportData(parkId, year, quarter, tenantId);
+  if (sections) data.sections = sections;
 
   const { template, letterhead } = await resolveTemplateAndLetterhead(
     tenantId,
@@ -422,13 +425,16 @@ export async function generateQuarterlyReportPdf(
 /**
  * Generate a quarterly report PDF as Base64 (for preview)
  */
+export { type MonthlyReportSections as QuarterlyReportSections };
+
 export async function generateQuarterlyReportPdfBase64(
   parkId: string,
   year: number,
   quarter: number,
-  tenantId: string
+  tenantId: string,
+  sections?: MonthlyReportSections
 ): Promise<string> {
-  const buffer = await generateQuarterlyReportPdf(parkId, year, quarter, tenantId);
+  const buffer = await generateQuarterlyReportPdf(parkId, year, quarter, tenantId, sections);
   return buffer.toString("base64");
 }
 

@@ -10,6 +10,17 @@ import {
 import { prisma } from "@/lib/prisma";
 
 // Validation schema
+const sectionsSchema = z.object({
+  summary: z.boolean().optional(),
+  production: z.boolean().optional(),
+  availability: z.boolean().optional(),
+  service: z.boolean().optional(),
+  monthlyTrend: z.boolean().optional(),
+  windAnalysis: z.boolean().optional(),
+  powerCurve: z.boolean().optional(),
+  dailyProfile: z.boolean().optional(),
+}).optional();
+
 const monthlyReportSchema = z.object({
   parkId: z.string().uuid("Ungültige Park-ID"),
   year: z
@@ -22,6 +33,7 @@ const monthlyReportSchema = z.object({
     .int()
     .min(1, "Monat muss zwischen 1 und 12 liegen")
     .max(12, "Monat muss zwischen 1 und 12 liegen"),
+  sections: sectionsSchema,
 });
 
 /**
@@ -52,7 +64,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { parkId, year, month } = parsed.data;
+    const { parkId, year, month, sections } = parsed.data;
 
     // Verify park belongs to tenant
     const park = await prisma.park.findFirst({
@@ -83,7 +95,8 @@ export async function POST(request: NextRequest) {
       parkId,
       year,
       month,
-      check.tenantId!
+      check.tenantId!,
+      sections
     );
 
     const filename = getMonthlyReportFilename(park.name, year, month);

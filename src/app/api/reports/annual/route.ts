@@ -6,10 +6,20 @@ import { z } from "zod";
 import {
   generateAnnualReportPdf,
   getAnnualReportFilename,
+  type ReportSections,
 } from "@/lib/pdf/generators/annualReportPdf";
 import { prisma } from "@/lib/prisma";
 
 // Validation schema
+const sectionsSchema = z.object({
+  topology: z.boolean().optional(),
+  kpis: z.boolean().optional(),
+  monthlyTrend: z.boolean().optional(),
+  turbinePerformance: z.boolean().optional(),
+  financial: z.boolean().optional(),
+  service: z.boolean().optional(),
+}).optional();
+
 const annualReportSchema = z.object({
   parkId: z.string().uuid("Ungültige Park-ID"),
   year: z
@@ -17,6 +27,7 @@ const annualReportSchema = z.object({
     .int()
     .min(2000, "Jahr muss >= 2000 sein")
     .max(2100, "Jahr muss <= 2100 sein"),
+  sections: sectionsSchema,
 });
 
 /**
@@ -47,7 +58,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { parkId, year } = parsed.data;
+    const { parkId, year, sections } = parsed.data;
 
     // Verify park belongs to tenant
     const park = await prisma.park.findFirst({
@@ -77,7 +88,8 @@ export async function POST(request: NextRequest) {
     const pdfBuffer = await generateAnnualReportPdf(
       parkId,
       year,
-      check.tenantId!
+      check.tenantId!,
+      sections
     );
 
     const filename = getAnnualReportFilename(park.name, year);

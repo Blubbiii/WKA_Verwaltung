@@ -16,7 +16,9 @@ import {
 } from "../templates/AnnualReportTemplate";
 import type { TopologyTurbine } from "../templates/components/PdfNetworkTopology";
 import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../utils/templateResolver";
+import { generateStaticMapImage } from "../utils/staticMap";
 import { prisma } from "@/lib/prisma";
+import { getSignedUrl } from "@/lib/storage";
 
 // German month names
 const MONTH_NAMES = [
@@ -63,10 +65,20 @@ function hoursInYear(year: number): number {
 /**
  * Fetch annual report data from the database
  */
+export type ReportSections = {
+  topology?: boolean;
+  kpis?: boolean;
+  monthlyTrend?: boolean;
+  turbinePerformance?: boolean;
+  financial?: boolean;
+  service?: boolean;
+};
+
 async function fetchAnnualReportData(
   parkId: string,
   year: number,
-  tenantId: string
+  tenantId: string,
+  sections?: ReportSections
 ): Promise<AnnualReportData> {
   // 1. Park with turbines
   const park = await prisma.park.findUnique({
@@ -79,6 +91,9 @@ async function fetchAnnualReportData(
           id: true,
           designation: true,
           ratedPowerKw: true,
+          latitude: true,
+          longitude: true,
+          status: true,
         },
       },
       fundParks: {
@@ -94,6 +109,8 @@ async function fetchAnnualReportData(
         select: { name: true, legalForm: true },
       },
     },
+    // Need reportCoverImageKey + latitude/longitude for cover/map
+    // They are auto-included since they are scalar fields on Park
   });
 
   if (!park) throw new Error("Park nicht gefunden");
@@ -518,6 +535,50 @@ async function fetchAnnualReportData(
       durationHours: e.durationHours ? Number(e.durationHours) : null,
     }));
 
+  // Cover image
+  let coverImageUrl: string | null = null;
+  if (park.reportCoverImageKey) {
+    try {
+      coverImageUrl = await getSignedUrl(park.reportCoverImageKey);
+    } catch {
+      // Graceful degradation — report renders without cover image
+    }
+  }
+
+  // Static map image
+  let mapImageUrl: string | null = null;
+  try {
+    const turbinesWithCoords = park.turbines.filter(
+      (t) => t.latitude != null && t.longitude != null
+    );
+    const parkLat = park.latitude ? Number(park.latitude) : null;
+    const parkLng = park.longitude ? Number(park.longitude) : null;
+
+    if (turbinesWithCoords.length > 0) {
+      const centerLat =
+        parkLat ??
+        turbinesWithCoords.reduce((s, t) => s + Number(t.latitude!), 0) /
+          turbinesWithCoords.length;
+      const centerLng =
+        parkLng ??
+        turbinesWithCoords.reduce((s, t) => s + Number(t.longitude!), 0) /
+          turbinesWithCoords.length;
+
+      mapImageUrl = await generateStaticMapImage({
+        centerLat,
+        centerLng,
+        turbines: turbinesWithCoords.map((t) => ({
+          latitude: Number(t.latitude!),
+          longitude: Number(t.longitude!),
+          designation: t.designation,
+          status: t.status,
+        })),
+      });
+    }
+  } catch {
+    // Graceful degradation — report renders without map
+  }
+
   // Park address
   const parkAddress = [
     [park.street, park.houseNumber].filter(Boolean).join(" "),
@@ -549,6 +610,13 @@ async function fetchAnnualReportData(
     totalServiceDurationHours: totalDuration,
     totalServiceCost: hasCost ? totalCost : null,
     generatedAt: new Date().toISOString(),
+    coverImageUrl,
+
+    // Section visibility
+    sections,
+
+    // Map image (static OSM map with turbine markers)
+    mapImageUrl,
 
     // Topology
     topologyTurbines,
@@ -564,10 +632,11 @@ async function fetchAnnualReportData(
 export async function generateAnnualReportPdf(
   parkId: string,
   year: number,
-  tenantId: string
+  tenantId: string,
+  sections?: ReportSections
 ): Promise<Buffer> {
   // Fetch data
-  const data = await fetchAnnualReportData(parkId, year, tenantId);
+  const data = await fetchAnnualReportData(parkId, year, tenantId, sections);
 
   // Resolve template and letterhead
   const { template, letterhead } = await resolveTemplateAndLetterhead(
@@ -590,9 +659,10 @@ export async function generateAnnualReportPdf(
 export async function generateAnnualReportPdfBase64(
   parkId: string,
   year: number,
-  tenantId: string
+  tenantId: string,
+  sections?: ReportSections
 ): Promise<string> {
-  const buffer = await generateAnnualReportPdf(parkId, year, tenantId);
+  const buffer = await generateAnnualReportPdf(parkId, year, tenantId, sections);
   return buffer.toString("base64");
 }
 

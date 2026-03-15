@@ -9,6 +9,17 @@ import {
 } from "@/lib/pdf/generators/quarterlyReportPdf";
 import { prisma } from "@/lib/prisma";
 
+const sectionsSchema = z.object({
+  summary: z.boolean().optional(),
+  production: z.boolean().optional(),
+  availability: z.boolean().optional(),
+  service: z.boolean().optional(),
+  monthlyTrend: z.boolean().optional(),
+  windAnalysis: z.boolean().optional(),
+  powerCurve: z.boolean().optional(),
+  dailyProfile: z.boolean().optional(),
+}).optional();
+
 const quarterlyReportSchema = z.object({
   parkId: z.string().uuid("Ungültige Park-ID"),
   year: z
@@ -21,6 +32,7 @@ const quarterlyReportSchema = z.object({
     .int()
     .min(1, "Quartal muss zwischen 1 und 4 liegen")
     .max(4, "Quartal muss zwischen 1 und 4 liegen"),
+  sections: sectionsSchema,
 });
 
 /**
@@ -49,7 +61,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { parkId, year, quarter } = parsed.data;
+    const { parkId, year, quarter, sections } = parsed.data;
 
     const park = await prisma.park.findFirst({
       where: { id: parkId, tenantId: check.tenantId! },
@@ -72,7 +84,8 @@ export async function POST(request: NextRequest) {
       parkId,
       year,
       quarter,
-      check.tenantId!
+      check.tenantId!,
+      sections
     );
 
     const filename = getQuarterlyReportFilename(park.name, year, quarter);

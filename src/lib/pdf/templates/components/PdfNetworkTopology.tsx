@@ -1,13 +1,13 @@
 /**
- * PDF-native Network Topology component for the Annual Report.
+ * PDF-native Network Topology component with SVG connecting lines.
  *
  * Renders the Gesellschafts-Struktur (NVP → Netzgesellschaft → Betreiber → WEA)
- * using @react-pdf/renderer View/Text layout components. This mirrors the
- * interactive NetworkTopology.tsx component from the park detail page but in a
- * static, print-friendly format.
+ * using @react-pdf/renderer SVG primitives for connecting lines and View/Text
+ * for node labels. This mirrors the interactive NetworkTopology.tsx component
+ * from the park detail page in a static, print-friendly format.
  */
 
-import { View, Text, StyleSheet } from "@react-pdf/renderer";
+import { View, Text, StyleSheet, Svg, Line, Circle, Rect, G, Text as SvgText } from "@react-pdf/renderer";
 
 // ---------------------------------------------------------------------------
 // Types (matching the data shape provided by the annual report generator)
@@ -114,7 +114,6 @@ function groupByNetzAndOperator(turbines: TopologyTurbine[]): NetzWithBetreiber[
       operatorMap.get(k)!.turbines.push(t);
     }
 
-    // Ownership percentages from FundHierarchy (Netz → Betreiber)
     const hierarchyMap = new Map<string, number>();
     if (ng.fund?.childHierarchies) {
       for (const h of ng.fund.childHierarchies) {
@@ -158,6 +157,216 @@ function fundLabel(fund: TopologyFund): string {
 }
 
 // ---------------------------------------------------------------------------
+// Layout computation (simplified version of the interactive component)
+// ---------------------------------------------------------------------------
+
+interface Pt { x: number; y: number }
+interface LnData {
+  x1: number; y1: number; x2: number; y2: number;
+  color: string;
+  label?: string;
+}
+interface NodeData {
+  p: Pt;
+  color: string;
+  label: string;
+  sublabel?: string;
+  type: "nvp" | "netz" | "betreiber" | "turbine";
+  status?: string;
+}
+
+const NODE_R = { nvp: 14, netz: 10, betreiber: 12, turbine: 10 };
+const TURBINE_COLS = 4; // turbines per row
+const TURBINE_SPACING_X = 46;
+const TURBINE_SPACING_Y = 34;
+const BETREIBER_GAP = 20;
+const GROUP_GAP = 24;
+
+const STATUS_COLORS: Record<string, string> = {
+  ACTIVE: "#22c55e",
+  INACTIVE: "#eab308",
+  ARCHIVED: "#9ca3af",
+};
+
+interface LayoutResult {
+  width: number;
+  height: number;
+  nodes: NodeData[];
+  lines: LnData[];
+}
+
+function computeLayout(
+  netzGroups: NetzWithBetreiber[],
+  billingEntityName: string | null,
+  parkName: string,
+): LayoutResult {
+  const nodes: NodeData[] = [];
+  const lines: LnData[] = [];
+
+  if (!netzGroups.length) return { width: 400, height: 100, nodes, lines };
+
+  const hasBetreiber = netzGroups.some((ng) => ng.betreiber.length > 0);
+  const hasNetz = netzGroups.some((ng) => ng.fundId !== null);
+
+  // X columns
+  const nvpX = 40;
+  const netzX = hasNetz ? 140 : nvpX;
+  const betreiberX = hasBetreiber ? (hasNetz ? 260 : 140) : netzX;
+  const turbineBaseX = hasBetreiber
+    ? (hasNetz ? 370 : 250)
+    : hasNetz ? 240 : 130;
+
+  // Compute vertical heights
+  let totalH = 0;
+  const groupMetrics: Array<{
+    betreiberH: number[];
+    unassignedH: number;
+    totalH: number;
+  }> = [];
+
+  for (const ng of netzGroups) {
+    const betreiberH = ng.betreiber.map((b) => {
+      const rows = Math.ceil(b.turbines.length / TURBINE_COLS);
+      return Math.max(30, rows * TURBINE_SPACING_Y + 10);
+    });
+    const unassignedRows = Math.ceil(ng.unassignedTurbines.length / TURBINE_COLS);
+    const unassignedH = ng.unassignedTurbines.length > 0
+      ? Math.max(30, unassignedRows * TURBINE_SPACING_Y + 10)
+      : 0;
+
+    const betreiberTotal = betreiberH.reduce((s, h) => s + h, 0)
+      + Math.max(0, ng.betreiber.length - 1) * BETREIBER_GAP;
+
+    const gH = betreiberTotal
+      + (ng.unassignedTurbines.length > 0 && ng.betreiber.length > 0 ? BETREIBER_GAP : 0)
+      + unassignedH;
+
+    const grpTotal = Math.max(40, gH);
+    groupMetrics.push({ betreiberH, unassignedH, totalH: grpTotal });
+    totalH += grpTotal;
+  }
+
+  totalH += Math.max(0, netzGroups.length - 1) * GROUP_GAP;
+  const canvasH = Math.max(120, totalH + 40);
+  const cy = canvasH / 2;
+
+  // NVP node
+  const nvp: Pt = { x: nvpX, y: cy };
+  nodes.push({
+    p: nvp,
+    color: "#F59E0B",
+    label: billingEntityName || parkName,
+    sublabel: "NVP",
+    type: "nvp",
+  });
+
+  // Position groups vertically
+  let curY = (canvasH - totalH) / 2 + 20;
+  let maxTurbineX = turbineBaseX;
+
+  for (let ni = 0; ni < netzGroups.length; ni++) {
+    const ng = netzGroups[ni];
+    const metrics = groupMetrics[ni];
+    const groupCenterY = curY + metrics.totalH / 2;
+    const netzColor = ng.fund?.fundCategory?.color || DEFAULT_COLOR;
+
+    // Netz node
+    let netzPt: Pt;
+    if (ng.fundId) {
+      netzPt = { x: netzX, y: groupCenterY };
+      nodes.push({
+        p: netzPt,
+        color: netzColor,
+        label: fundLabel(ng.fund!),
+        sublabel: `${ng.totalCapacityKw > 0 ? fmtPower(ng.totalCapacityKw) : ""}`,
+        type: "netz",
+      });
+      lines.push({ x1: nvp.x, y1: nvp.y, x2: netzPt.x, y2: netzPt.y, color: netzColor });
+    } else {
+      netzPt = nvp;
+    }
+
+    // Betreiber + Turbines
+    let betreiberY = curY;
+    for (let bi = 0; bi < ng.betreiber.length; bi++) {
+      const b = ng.betreiber[bi];
+      const bHeight = metrics.betreiberH[bi];
+      const bCenterY = betreiberY + bHeight / 2;
+      const opColor = b.fund.fundCategory?.color || DEFAULT_COLOR;
+
+      const bPt: Pt = { x: betreiberX, y: bCenterY };
+      nodes.push({
+        p: bPt,
+        color: opColor,
+        label: fundLabel(b.fund),
+        sublabel: b.fund.legalForm || undefined,
+        type: "betreiber",
+      });
+
+      const pctLabel = b.avgOwnershipPct != null ? `${b.avgOwnershipPct.toFixed(0)}%` : undefined;
+      lines.push({
+        x1: netzPt.x, y1: netzPt.y,
+        x2: bPt.x, y2: bPt.y,
+        color: opColor,
+        label: pctLabel,
+      });
+
+      // Turbines
+      for (let ti = 0; ti < b.turbines.length; ti++) {
+        const col = ti % TURBINE_COLS;
+        const row = Math.floor(ti / TURBINE_COLS);
+        const tx = turbineBaseX + col * TURBINE_SPACING_X;
+        const ty = betreiberY + 8 + row * TURBINE_SPACING_Y;
+        if (tx > maxTurbineX) maxTurbineX = tx;
+
+        const t = b.turbines[ti];
+        const tPt: Pt = { x: tx, y: ty };
+        nodes.push({
+          p: tPt,
+          color: opColor,
+          label: t.designation,
+          sublabel: t.ratedPowerKw ? fmtPower(Number(t.ratedPowerKw)) : undefined,
+          type: "turbine",
+          status: t.status,
+        });
+        lines.push({ x1: bPt.x, y1: bPt.y, x2: tPt.x, y2: tPt.y, color: opColor });
+      }
+
+      betreiberY += bHeight + BETREIBER_GAP;
+    }
+
+    // Unassigned turbines
+    if (ng.unassignedTurbines.length > 0) {
+      const uStartY = ng.betreiber.length > 0 ? betreiberY : curY;
+      for (let ti = 0; ti < ng.unassignedTurbines.length; ti++) {
+        const col = ti % TURBINE_COLS;
+        const row = Math.floor(ti / TURBINE_COLS);
+        const tx = turbineBaseX + col * TURBINE_SPACING_X;
+        const ty = uStartY + 8 + row * TURBINE_SPACING_Y;
+        if (tx > maxTurbineX) maxTurbineX = tx;
+
+        const t = ng.unassignedTurbines[ti];
+        const tPt: Pt = { x: tx, y: ty };
+        nodes.push({
+          p: tPt,
+          color: DEFAULT_COLOR,
+          label: t.designation,
+          sublabel: t.ratedPowerKw ? fmtPower(Number(t.ratedPowerKw)) : undefined,
+          type: "turbine",
+          status: t.status,
+        });
+        lines.push({ x1: netzPt.x, y1: netzPt.y, x2: tPt.x, y2: tPt.y, color: DEFAULT_COLOR });
+      }
+    }
+
+    curY += metrics.totalH + GROUP_GAP;
+  }
+
+  const width = Math.max(480, maxTurbineX + TURBINE_SPACING_X + 20);
+  return { width, height: canvasH, nodes, lines };
+}
+
+// ---------------------------------------------------------------------------
 // Styles
 // ---------------------------------------------------------------------------
 
@@ -173,128 +382,11 @@ const s = StyleSheet.create({
   container: {
     marginTop: 5,
   },
-
-  // NVP header
-  nvpBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.primary,
-    padding: 8,
-    borderRadius: 3,
-    marginBottom: 10,
-  },
-  nvpDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#F59E0B",
-    marginRight: 8,
-  },
-  nvpText: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: COLORS.white,
-  },
-  nvpSub: {
-    fontSize: 7,
-    color: "#CBD5E1",
-    marginLeft: 8,
-  },
-
-  // Netzgesellschaft group
-  netzGroup: {
-    borderLeftWidth: 3,
-    paddingLeft: 10,
-    marginBottom: 8,
-    marginLeft: 6,
-  },
-  netzHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  netzDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  netzName: {
-    fontSize: 9,
-    fontWeight: "bold",
-    color: COLORS.primary,
-  },
-  netzCapacity: {
-    fontSize: 8,
-    color: COLORS.muted,
-    marginLeft: 8,
-  },
-
-  // Betreiber group
-  betreiberGroup: {
-    borderLeftWidth: 2,
-    paddingLeft: 8,
-    marginBottom: 6,
-    marginLeft: 4,
-  },
-  betreiberHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  betreiberDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 5,
-  },
-  betreiberName: {
-    fontSize: 8,
-    fontWeight: "bold",
-    color: COLORS.primary,
-  },
-  betreiberPct: {
-    fontSize: 7,
-    color: COLORS.muted,
-    marginLeft: 4,
-  },
-
-  // Turbine grid
-  turbineGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-  },
-  turbineBadge: {
-    backgroundColor: COLORS.light,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 2,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  turbineStatusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    marginRight: 3,
-  },
-  turbineName: {
-    fontSize: 7,
-    color: COLORS.primary,
-  },
-  turbinePower: {
-    fontSize: 6,
-    color: COLORS.muted,
-    marginLeft: 3,
-  },
-
-  // Legend
   legend: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
-    marginTop: 10,
+    marginTop: 8,
     paddingTop: 6,
     borderTopWidth: 0.5,
     borderTopColor: COLORS.border,
@@ -313,8 +405,6 @@ const s = StyleSheet.create({
     fontSize: 7,
     color: COLORS.muted,
   },
-
-  // Status legend
   statusLegend: {
     flexDirection: "row",
     gap: 12,
@@ -326,12 +416,6 @@ const s = StyleSheet.create({
 // Component
 // ---------------------------------------------------------------------------
 
-const STATUS_COLORS: Record<string, string> = {
-  ACTIVE: "#22c55e",
-  INACTIVE: "#eab308",
-  ARCHIVED: "#9ca3af",
-};
-
 export function PdfNetworkTopology({
   parkName,
   turbines,
@@ -340,6 +424,8 @@ export function PdfNetworkTopology({
   const netzGroups = groupByNetzAndOperator(turbines);
 
   if (netzGroups.length === 0) return null;
+
+  const layout = computeLayout(netzGroups, billingEntityName ?? null, parkName);
 
   // Collect unique operators for legend
   const operatorLegend: Array<{ name: string; color: string }> = [];
@@ -358,102 +444,206 @@ export function PdfNetworkTopology({
 
   return (
     <View style={s.container}>
-      {/* NVP header */}
-      <View style={s.nvpBox}>
-        <View style={s.nvpDot} />
-        <Text style={s.nvpText}>Netzverknuepfungspunkt: {parkName}</Text>
-        {billingEntityName && (
-          <Text style={s.nvpSub}>Abrechnung: {billingEntityName}</Text>
-        )}
-      </View>
-
-      {/* Netzgesellschaft groups */}
-      {netzGroups.map((ng, ni) => {
-        const netzColor = ng.fund?.fundCategory?.color || DEFAULT_COLOR;
-
-        return (
-          <View key={`netz-${ni}`} style={[s.netzGroup, { borderLeftColor: netzColor }]}>
-            {/* Netz header */}
-            <View style={s.netzHeader}>
-              <View style={[s.netzDot, { backgroundColor: netzColor }]} />
-              <Text style={s.netzName}>
-                {ng.fund ? fundLabel(ng.fund) : "Ohne Netzgesellschaft"}
-              </Text>
-              <Text style={s.netzCapacity}>{fmtPower(ng.totalCapacityKw)}</Text>
-            </View>
-
-            {/* Betreiber sub-groups */}
-            {ng.betreiber.map((b, bi) => {
-              const opColor = b.fund.fundCategory?.color || DEFAULT_COLOR;
-
-              return (
-                <View
-                  key={`betr-${ni}-${bi}`}
-                  style={[s.betreiberGroup, { borderLeftColor: opColor }]}
+      {/* SVG Graph with lines and nodes */}
+      <Svg width={layout.width} height={layout.height}>
+        {/* Connection lines */}
+        {layout.lines.map((l, i) => (
+          <G key={`l-${i}`}>
+            <Line
+              x1={l.x1}
+              y1={l.y1}
+              x2={l.x2}
+              y2={l.y2}
+              stroke={l.color}
+              strokeWidth={1.2}
+              strokeOpacity={0.4}
+            />
+            {l.label && (
+              <>
+                <Rect
+                  x={(l.x1 + l.x2) / 2 - 14}
+                  y={(l.y1 + l.y2) / 2 - 5}
+                  width={28}
+                  height={10}
+                  rx={5}
+                  fill="white"
+                  fillOpacity={0.95}
+                  stroke={l.color}
+                  strokeWidth={0.5}
+                  strokeOpacity={0.5}
+                />
+                <SvgText
+                  x={(l.x1 + l.x2) / 2}
+                  y={(l.y1 + l.y2) / 2 + 3}
+                  textAnchor="middle"
+                  style={{ fontSize: 6, fontWeight: "bold", fill: l.color }}
                 >
-                  <View style={s.betreiberHeader}>
-                    <View style={[s.betreiberDot, { backgroundColor: opColor }]} />
-                    <Text style={s.betreiberName}>{fundLabel(b.fund)}</Text>
-                    {b.avgOwnershipPct != null && (
-                      <Text style={s.betreiberPct}>
-                        ({b.avgOwnershipPct.toFixed(0)}%)
-                      </Text>
-                    )}
-                  </View>
-
-                  <View style={s.turbineGrid}>
-                    {b.turbines.map((t) => (
-                      <View key={t.id} style={s.turbineBadge}>
-                        <View
-                          style={[
-                            s.turbineStatusDot,
-                            { backgroundColor: STATUS_COLORS[t.status] || "#9ca3af" },
-                          ]}
-                        />
-                        <Text style={s.turbineName}>{t.designation}</Text>
-                        {t.ratedPowerKw != null && (
-                          <Text style={s.turbinePower}>
-                            {fmtPower(Number(t.ratedPowerKw))}
-                          </Text>
-                        )}
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              );
-            })}
-
-            {/* Unassigned turbines (no operator) */}
-            {ng.unassignedTurbines.length > 0 && (
-              <View style={[s.betreiberGroup, { borderLeftColor: "#9ca3af" }]}>
-                <View style={s.betreiberHeader}>
-                  <View style={[s.betreiberDot, { backgroundColor: "#9ca3af" }]} />
-                  <Text style={s.betreiberName}>Ohne Betreiberzuordnung</Text>
-                </View>
-
-                <View style={s.turbineGrid}>
-                  {ng.unassignedTurbines.map((t) => (
-                    <View key={t.id} style={s.turbineBadge}>
-                      <View
-                        style={[
-                          s.turbineStatusDot,
-                          { backgroundColor: STATUS_COLORS[t.status] || "#9ca3af" },
-                        ]}
-                      />
-                      <Text style={s.turbineName}>{t.designation}</Text>
-                      {t.ratedPowerKw != null && (
-                        <Text style={s.turbinePower}>
-                          {fmtPower(Number(t.ratedPowerKw))}
-                        </Text>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              </View>
+                  {l.label}
+                </SvgText>
+              </>
             )}
-          </View>
-        );
-      })}
+          </G>
+        ))}
+
+        {/* Nodes */}
+        {layout.nodes.map((node, i) => {
+          const r = NODE_R[node.type];
+
+          if (node.type === "nvp") {
+            // NVP: large circle with inner dot
+            return (
+              <G key={`n-${i}`}>
+                <Circle
+                  cx={node.p.x}
+                  cy={node.p.y}
+                  r={r}
+                  fill={`${node.color}20`}
+                  stroke={node.color}
+                  strokeWidth={1.5}
+                />
+                <Circle
+                  cx={node.p.x}
+                  cy={node.p.y}
+                  r={4}
+                  fill={node.color}
+                />
+                {/* Label below */}
+                <SvgText
+                  x={node.p.x}
+                  y={node.p.y + r + 8}
+                  textAnchor="middle"
+                  style={{ fontSize: 6, fontWeight: "bold", fill: COLORS.primary }}
+                >
+                  {node.label.length > 20 ? node.label.slice(0, 18) + "..." : node.label}
+                </SvgText>
+                <SvgText
+                  x={node.p.x}
+                  y={node.p.y + r + 15}
+                  textAnchor="middle"
+                  style={{ fontSize: 5, fill: COLORS.muted }}
+                >
+                  {node.sublabel}
+                </SvgText>
+              </G>
+            );
+          }
+
+          if (node.type === "netz") {
+            // Netzgesellschaft: circle with colored border
+            return (
+              <G key={`n-${i}`}>
+                <Circle
+                  cx={node.p.x}
+                  cy={node.p.y}
+                  r={r}
+                  fill={`${node.color}20`}
+                  stroke={node.color}
+                  strokeWidth={1.5}
+                />
+                <Circle
+                  cx={node.p.x}
+                  cy={node.p.y}
+                  r={3}
+                  fill={node.color}
+                />
+                <SvgText
+                  x={node.p.x}
+                  y={node.p.y + r + 8}
+                  textAnchor="middle"
+                  style={{ fontSize: 5.5, fontWeight: "bold", fill: COLORS.primary }}
+                >
+                  {node.label.length > 22 ? node.label.slice(0, 20) + "..." : node.label}
+                </SvgText>
+                {node.sublabel && (
+                  <SvgText
+                    x={node.p.x}
+                    y={node.p.y + r + 14}
+                    textAnchor="middle"
+                    style={{ fontSize: 5, fill: COLORS.muted }}
+                  >
+                    {node.sublabel}
+                  </SvgText>
+                )}
+              </G>
+            );
+          }
+
+          if (node.type === "betreiber") {
+            // Betreibergesellschaft: rounded rect
+            const rw = 22;
+            const rh = 22;
+            return (
+              <G key={`n-${i}`}>
+                <Rect
+                  x={node.p.x - rw / 2}
+                  y={node.p.y - rh / 2}
+                  width={rw}
+                  height={rh}
+                  rx={4}
+                  fill={`${node.color}18`}
+                  stroke={node.color}
+                  strokeWidth={1.5}
+                />
+                <Circle
+                  cx={node.p.x}
+                  cy={node.p.y}
+                  r={3}
+                  fill={node.color}
+                />
+                <SvgText
+                  x={node.p.x}
+                  y={node.p.y + rh / 2 + 7}
+                  textAnchor="middle"
+                  style={{ fontSize: 5.5, fontWeight: "bold", fill: COLORS.primary }}
+                >
+                  {node.label.length > 22 ? node.label.slice(0, 20) + "..." : node.label}
+                </SvgText>
+              </G>
+            );
+          }
+
+          // Turbine: filled circle with status ring
+          const statusColor = STATUS_COLORS[node.status || ""] || "#9ca3af";
+          return (
+            <G key={`n-${i}`}>
+              <Circle
+                cx={node.p.x}
+                cy={node.p.y}
+                r={r}
+                fill={node.color}
+              />
+              {/* Status dot */}
+              <Circle
+                cx={node.p.x + r * 0.6}
+                cy={node.p.y + r * 0.6}
+                r={3}
+                fill={statusColor}
+                stroke="white"
+                strokeWidth={0.8}
+              />
+              {/* Designation */}
+              <SvgText
+                x={node.p.x}
+                y={node.p.y + r + 7}
+                textAnchor="middle"
+                style={{ fontSize: 5, fontWeight: "bold", fill: COLORS.primary }}
+              >
+                {node.label}
+              </SvgText>
+              {node.sublabel && (
+                <SvgText
+                  x={node.p.x}
+                  y={node.p.y + r + 13}
+                  textAnchor="middle"
+                  style={{ fontSize: 4.5, fill: COLORS.muted }}
+                >
+                  {node.sublabel}
+                </SvgText>
+              )}
+            </G>
+          );
+        })}
+      </Svg>
 
       {/* Legend: operators */}
       {operatorLegend.length > 0 && (

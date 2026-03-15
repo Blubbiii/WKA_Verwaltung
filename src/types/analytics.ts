@@ -374,6 +374,48 @@ export interface PhaseSymmetryResponse {
   meta: { year: number; parkId: string };
 }
 
+// --- Daily Overview ---
+
+export interface DailyOverviewResponse {
+  kpis: {
+    totalProductionKwh: number;
+    avgAvailabilityPct: number | null;
+    activeFaults: number;
+    avgWindSpeed: number | null;
+    totalRevenueEur: number | null;
+  };
+  dailyChart: Array<{
+    date: string;
+    productionKwh: number;
+    avgWindSpeed: number | null;
+  }>;
+  faults: Array<{
+    id: string;
+    turbineDesignation: string;
+    parkName: string;
+    stateCode: number | null;
+    stateText: string | null;
+    startTime: string;
+    endTime: string | null;
+    durationHours: number | null;
+  }>;
+  turbineStatus: Array<{
+    turbineId: string;
+    designation: string;
+    parkName: string;
+    productionKwh: number;
+    avgWindSpeed: number | null;
+    availabilityPct: number | null;
+    hasActiveFault: boolean;
+  }>;
+  meta: {
+    from: string;
+    to: string;
+    parkId: string;
+    turbineCount: number;
+  };
+}
+
 // --- Analytics Module Types (for report configuration) ---
 
 export const ANALYTICS_MODULES = {

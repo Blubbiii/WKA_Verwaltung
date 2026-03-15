@@ -4,20 +4,15 @@ import { useState, useCallback } from "react";
 import useSWR from "swr";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
-import { BarChart3, Clock, GitCompare, AlertTriangle, Cloud, CreditCard, Search, ArrowLeftRight, Sun, Activity, Zap, FileText, Archive } from "lucide-react";
+import { BarChart3, CreditCard, Activity, Wrench, LayoutDashboard, Clock, AlertTriangle, Cloud, Sun, Zap, GitCompare, Search, ArrowLeftRight, FileText, Archive } from "lucide-react";
 import { AnalyticsFilterBar } from "@/components/energy/analytics/analytics-filter-bar";
 import { CreateReportDialog } from "@/components/energy/analytics/create-report-dialog";
 import { DrillDownBreadcrumb } from "@/components/energy/analytics/drill-down-breadcrumb";
+import { CollapsibleSection } from "@/components/energy/analytics/collapsible-section";
 import {
   DrillDownMonthly,
   DrillDownDaily,
-} from "@/components/energy/analytics/analytics-dynamic";
-import { useDrillDown } from "@/hooks/useDrillDown";
-import { DataExplorerTab } from "@/components/energy/analytics/data-explorer-tab";
-import { DataComparisonTab } from "@/components/energy/analytics/data-comparison-tab";
-import { PdfReportsTab } from "@/components/energy/analytics/pdf-reports-tab";
-import { ReportArchiveTab } from "@/components/energy/analytics/report-archive-tab";
-import {
+  DailyOverview,
   PerformanceOverview,
   AvailabilityChart,
   TurbineComparison,
@@ -27,6 +22,12 @@ import {
   ShadowChart,
   PhaseSymmetryChart,
 } from "@/components/energy/analytics/analytics-dynamic";
+import { useDrillDown } from "@/hooks/useDrillDown";
+import { DataExplorerTab } from "@/components/energy/analytics/data-explorer-tab";
+import { DataComparisonTab } from "@/components/energy/analytics/data-comparison-tab";
+import { PdfReportsTab } from "@/components/energy/analytics/pdf-reports-tab";
+import { ReportArchiveTab } from "@/components/energy/analytics/report-archive-tab";
+import { Button } from "@/components/ui/button";
 import type {
   PerformanceOverviewResponse,
   AvailabilityResponse,
@@ -62,31 +63,27 @@ export default function AnalyticsPage() {
   const [selectedParkId, setSelectedParkId] = useState("all");
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [compareYear, setCompareYear] = useState<number | undefined>(currentYear - 1);
-  const [activeTab, setActiveTab] = useState("performance");
+  const [activeTab, setActiveTab] = useState("daily");
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
-  // Drill-down state for performance tab
+  // Tools sub-tab state
+  const [activeToolTab, setActiveToolTab] = useState("data-explorer");
+
+  // Drill-down state for performance section
   const drillDown = useDrillDown(currentYear);
 
-  // Keep drill-down year in sync with filter year
   const handleYearChange = useCallback((year: number) => {
     setSelectedYear(year);
     drillDown.reset();
   }, [drillDown]);
 
-  // Handle heatmap cell click - drill to monthly view for that turbine
   const handleHeatmapCellClick = useCallback(
     (turbineId: string, turbineDesignation: string, month: number) => {
-      drillDown.drillDown({
-        month,
-        turbineId,
-        turbineDesignation,
-      });
+      drillDown.drillDown({ month, turbineId, turbineDesignation });
     },
     [drillDown],
   );
 
-  // Handle day click from monthly view
   const handleDayClick = useCallback(
     (day: number) => {
       drillDown.drillDown({ day });
@@ -94,7 +91,7 @@ export default function AnalyticsPage() {
     [drillDown],
   );
 
-  // Build query params
+  // Build query params for year-based endpoints
   const buildParams = useCallback(
     (extra?: Record<string, string>) => {
       const params = new URLSearchParams();
@@ -110,61 +107,49 @@ export default function AnalyticsPage() {
 
   const baseParams = buildParams();
 
-  // --- SWR: Performance (only when tab is active) ---
+  // --- Tab 2: Production & Comparison ---
+  const isProductionTab = activeTab === "production";
   const perfParams = buildParams(compareYear ? { compareYear: String(compareYear) } : undefined);
+
   const { data: perfData, error: perfError, isLoading: perfLoading } = useSWR<PerformanceOverviewResponse>(
-    activeTab === "performance" ? `/api/energy/analytics/performance?${perfParams}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
+    isProductionTab ? `/api/energy/analytics/performance?${perfParams}` : null,
+    fetcher, { revalidateOnFocus: false }
   );
-
-  // --- SWR: Availability ---
-  const { data: availData, error: availError, isLoading: availLoading } = useSWR<AvailabilityResponse>(
-    activeTab === "availability" ? `/api/energy/analytics/availability?${baseParams}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
-
-  // --- SWR: Turbine Comparison ---
   const { data: compData, error: compError, isLoading: compLoading } = useSWR<TurbineComparisonResponse>(
-    activeTab === "comparison" ? `/api/energy/analytics/turbine-comparison?${baseParams}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
+    isProductionTab ? `/api/energy/analytics/turbine-comparison?${baseParams}` : null,
+    fetcher, { revalidateOnFocus: false }
   );
 
-  // --- SWR: Faults ---
+  // --- Tab 3: Operations & Environment ---
+  const isOperationsTab = activeTab === "operations";
+
+  const { data: availData, error: availError, isLoading: availLoading } = useSWR<AvailabilityResponse>(
+    isOperationsTab ? `/api/energy/analytics/availability?${baseParams}` : null,
+    fetcher, { revalidateOnFocus: false }
+  );
   const { data: faultData, error: faultError, isLoading: faultLoading } = useSWR<FaultsResponse>(
-    activeTab === "faults" ? `/api/energy/analytics/faults?${baseParams}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
+    isOperationsTab ? `/api/energy/analytics/faults?${baseParams}` : null,
+    fetcher, { revalidateOnFocus: false }
   );
-
-  // --- SWR: Environment ---
   const { data: envData, error: envError, isLoading: envLoading } = useSWR<EnvironmentResponse>(
-    activeTab === "environment" ? `/api/energy/analytics/environment?${baseParams}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
+    isOperationsTab ? `/api/energy/analytics/environment?${baseParams}` : null,
+    fetcher, { revalidateOnFocus: false }
   );
-
-  // --- SWR: Financial ---
-  const { data: finData, error: finError, isLoading: finLoading } = useSWR<FinancialResponse>(
-    activeTab === "financial" ? `/api/energy/analytics/financial?${baseParams}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
-
-  // --- SWR: Shadow Casting ---
   const { data: shadowData, error: shadowError, isLoading: shadowLoading } = useSWR<ShadowResponse>(
-    activeTab === "shadow" ? `/api/energy/analytics/shadow?${baseParams}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
+    isOperationsTab ? `/api/energy/analytics/shadow?${baseParams}` : null,
+    fetcher, { revalidateOnFocus: false }
   );
 
-  // --- SWR: Phase Symmetry ---
+  // --- Tab 4: Finance & Technical ---
+  const isFinanceTab = activeTab === "finance";
+
+  const { data: finData, error: finError, isLoading: finLoading } = useSWR<FinancialResponse>(
+    isFinanceTab ? `/api/energy/analytics/financial?${baseParams}` : null,
+    fetcher, { revalidateOnFocus: false }
+  );
   const { data: phaseData, error: phaseError, isLoading: phaseLoading } = useSWR<PhaseSymmetryResponse>(
-    activeTab === "phase-symmetry" ? `/api/energy/analytics/phase-symmetry?${baseParams}` : null,
-    fetcher,
-    { revalidateOnFocus: false }
+    isFinanceTab ? `/api/energy/analytics/phase-symmetry?${baseParams}` : null,
+    fetcher, { revalidateOnFocus: false }
   );
 
   // Error display helper
@@ -174,252 +159,251 @@ export default function AnalyticsPage() {
     </div>
   );
 
+  // Show filter bar only for year-based tabs (not daily overview, not tools)
+  const showFilterBar = activeTab !== "daily" && activeTab !== "tools";
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Windpark-Analytics"
+        title="Energie-Analysen"
         description="Umfassende Auswertung Ihrer Windenergieanlagen"
       />
 
-      <AnalyticsFilterBar
-        selectedParkId={selectedParkId}
-        onParkChange={setSelectedParkId}
-        selectedYear={selectedYear}
-        onYearChange={handleYearChange}
-        compareYear={compareYear}
-        onCompareYearChange={setCompareYear}
-        showCompareYear={activeTab === "performance" && drillDown.isTopLevel}
-        onCreateReport={() => setReportDialogOpen(true)}
-      />
+      {showFilterBar && (
+        <AnalyticsFilterBar
+          selectedParkId={selectedParkId}
+          onParkChange={setSelectedParkId}
+          selectedYear={selectedYear}
+          onYearChange={handleYearChange}
+          compareYear={compareYear}
+          onCompareYearChange={setCompareYear}
+          showCompareYear={activeTab === "production" && drillDown.isTopLevel}
+          onCreateReport={() => setReportDialogOpen(true)}
+        />
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex flex-wrap h-auto gap-1 w-full">
-          <TabsTrigger value="performance" className="gap-1">
+        <TabsList className="flex h-auto gap-1 w-full">
+          <TabsTrigger value="daily" className="gap-1.5">
+            <LayoutDashboard className="h-4 w-4 hidden sm:block" />
+            <span>Tagesbericht</span>
+          </TabsTrigger>
+          <TabsTrigger value="production" className="gap-1.5">
             <BarChart3 className="h-4 w-4 hidden sm:block" />
-            <span>Performance</span>
+            <span>Produktion & Vergleich</span>
           </TabsTrigger>
-          <TabsTrigger value="availability" className="gap-1">
-            <Clock className="h-4 w-4 hidden sm:block" />
-            <span>Verfügbarkeit</span>
+          <TabsTrigger value="operations" className="gap-1.5">
+            <Activity className="h-4 w-4 hidden sm:block" />
+            <span>Betrieb & Umwelt</span>
           </TabsTrigger>
-          <TabsTrigger value="comparison" className="gap-1">
-            <GitCompare className="h-4 w-4 hidden sm:block" />
-            <span>Vergleich</span>
-          </TabsTrigger>
-          <TabsTrigger value="faults" className="gap-1">
-            <AlertTriangle className="h-4 w-4 hidden sm:block" />
-            <span>Störungen</span>
-          </TabsTrigger>
-          <TabsTrigger value="environment" className="gap-1">
-            <Cloud className="h-4 w-4 hidden sm:block" />
-            <span>Wind & Umwelt</span>
-          </TabsTrigger>
-          <TabsTrigger value="financial" className="gap-1">
+          <TabsTrigger value="finance" className="gap-1.5">
             <CreditCard className="h-4 w-4 hidden sm:block" />
-            <span>Finanzen</span>
+            <span>Finanzen & Technik</span>
           </TabsTrigger>
-          <TabsTrigger value="shadow" className="gap-1">
-            <Sun className="h-4 w-4 hidden sm:block" />
-            <span>Schattenwurf</span>
-          </TabsTrigger>
-          <TabsTrigger value="phase-symmetry" className="gap-1">
-            <Zap className="h-4 w-4 hidden sm:block" />
-            <span>Phasen-Analyse</span>
-          </TabsTrigger>
-          <TabsTrigger value="data-explorer" className="gap-1">
-            <Search className="h-4 w-4 hidden sm:block" />
-            <span>Daten-Explorer</span>
-          </TabsTrigger>
-          <TabsTrigger value="data-comparison" className="gap-1">
-            <ArrowLeftRight className="h-4 w-4 hidden sm:block" />
-            <span>Datenabgleich</span>
-          </TabsTrigger>
-          <TabsTrigger value="pdf-reports" className="gap-1">
-            <FileText className="h-4 w-4 hidden sm:block" />
-            <span>PDF-Berichte</span>
-          </TabsTrigger>
-          <TabsTrigger value="archive" className="gap-1">
-            <Archive className="h-4 w-4 hidden sm:block" />
-            <span>Archiv</span>
+          <TabsTrigger value="tools" className="gap-1.5">
+            <Wrench className="h-4 w-4 hidden sm:block" />
+            <span>Werkzeuge</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* Performance Tab */}
-        <TabsContent value="performance" className="mt-6">
-          {/* Drill-down breadcrumb navigation */}
-          <DrillDownBreadcrumb
-            breadcrumbs={drillDown.breadcrumbs}
-            onBack={drillDown.drillUp}
-            onReset={drillDown.reset}
-            isTopLevel={drillDown.isTopLevel}
-            className="mb-6"
-          />
+        {/* ================================================================= */}
+        {/* Tab 1: Tagesbericht (Daily Overview)                              */}
+        {/* ================================================================= */}
+        <TabsContent value="daily" className="mt-6">
+          <DailyOverview />
+        </TabsContent>
 
-          {/* Year View (default) */}
-          {drillDown.state.level === "year" && (
-            <>
-              {perfError ? (
-                <ErrorState message="Fehler beim Laden der Performance-Daten" />
-              ) : (
-                <PerformanceOverview
-                  turbines={perfData?.turbines ?? []}
-                  fleet={perfData?.fleet ?? { totalProductionKwh: 0, avgCapacityFactor: 0, avgSpecificYield: 0, totalInstalledKw: 0, avgWindSpeed: null }}
-                  heatmap={perfData?.heatmap ?? []}
-                  yearOverYear={perfData?.yearOverYear ?? []}
-                  year={selectedYear}
-                  compareYear={compareYear ?? selectedYear - 1}
-                  isLoading={perfLoading}
-                  onHeatmapCellClick={handleHeatmapCellClick}
-                />
-              )}
-            </>
-          )}
-
-          {/* Month View - daily production bars */}
-          {drillDown.state.level === "month" && drillDown.state.month != null && (
-            <DrillDownMonthly
-              year={selectedYear}
-              month={drillDown.state.month}
-              parkId={selectedParkId !== "all" ? selectedParkId : undefined}
-              turbineId={drillDown.state.turbineId}
-              onDayClick={handleDayClick}
+        {/* ================================================================= */}
+        {/* Tab 2: Produktion & Vergleich                                     */}
+        {/* ================================================================= */}
+        <TabsContent value="production" className="mt-6 space-y-8">
+          {/* Performance Section */}
+          <CollapsibleSection title="Performance" icon={BarChart3} defaultOpen>
+            <DrillDownBreadcrumb
+              breadcrumbs={drillDown.breadcrumbs}
+              onBack={drillDown.drillUp}
+              onReset={drillDown.reset}
+              isTopLevel={drillDown.isTopLevel}
+              className="mb-6"
             />
-          )}
 
-          {/* Day View - 10-min intervals */}
-          {(drillDown.state.level === "day" || drillDown.state.level === "detail") &&
-            drillDown.state.month != null &&
-            drillDown.state.day != null && (
-              <DrillDownDaily
+            {drillDown.state.level === "year" && (
+              <>
+                {perfError ? (
+                  <ErrorState message="Fehler beim Laden der Performance-Daten" />
+                ) : (
+                  <PerformanceOverview
+                    turbines={perfData?.turbines ?? []}
+                    fleet={perfData?.fleet ?? { totalProductionKwh: 0, avgCapacityFactor: 0, avgSpecificYield: 0, totalInstalledKw: 0, avgWindSpeed: null }}
+                    heatmap={perfData?.heatmap ?? []}
+                    yearOverYear={perfData?.yearOverYear ?? []}
+                    year={selectedYear}
+                    compareYear={compareYear ?? selectedYear - 1}
+                    isLoading={perfLoading}
+                    onHeatmapCellClick={handleHeatmapCellClick}
+                  />
+                )}
+              </>
+            )}
+
+            {drillDown.state.level === "month" && drillDown.state.month != null && (
+              <DrillDownMonthly
                 year={selectedYear}
                 month={drillDown.state.month}
-                day={drillDown.state.day}
                 parkId={selectedParkId !== "all" ? selectedParkId : undefined}
                 turbineId={drillDown.state.turbineId}
+                onDayClick={handleDayClick}
               />
             )}
+
+            {(drillDown.state.level === "day" || drillDown.state.level === "detail") &&
+              drillDown.state.month != null &&
+              drillDown.state.day != null && (
+                <DrillDownDaily
+                  year={selectedYear}
+                  month={drillDown.state.month}
+                  day={drillDown.state.day}
+                  parkId={selectedParkId !== "all" ? selectedParkId : undefined}
+                  turbineId={drillDown.state.turbineId}
+                />
+              )}
+          </CollapsibleSection>
+
+          {/* Comparison Section */}
+          <CollapsibleSection title="Turbinen-Vergleich" icon={GitCompare} defaultOpen>
+            {compError ? (
+              <ErrorState message="Fehler beim Laden der Vergleichsdaten" />
+            ) : (
+              <TurbineComparison
+                comparison={compData?.comparison ?? []}
+                powerCurves={compData?.powerCurves ?? []}
+                isLoading={compLoading}
+              />
+            )}
+          </CollapsibleSection>
         </TabsContent>
 
-        {/* Availability Tab */}
-        <TabsContent value="availability" className="mt-6">
-          {availError ? (
-            <ErrorState message="Fehler beim Laden der Verfügbarkeitsdaten" />
-          ) : (
-            <AvailabilityChart
-              breakdown={availData?.breakdown ?? []}
-              trend={availData?.trend ?? []}
-              heatmap={availData?.heatmap ?? []}
-              pareto={availData?.pareto ?? []}
-              fleet={availData?.fleet ?? { avgAvailability: 0, totalProductionHours: 0, totalDowntimeHours: 0, totalMaintenanceHours: 0 }}
-              isLoading={availLoading}
-            />
-          )}
+        {/* ================================================================= */}
+        {/* Tab 3: Betrieb & Umwelt                                           */}
+        {/* ================================================================= */}
+        <TabsContent value="operations" className="mt-6 space-y-8">
+          <CollapsibleSection title="Verfügbarkeit" icon={Clock} defaultOpen>
+            {availError ? (
+              <ErrorState message="Fehler beim Laden der Verfügbarkeitsdaten" />
+            ) : (
+              <AvailabilityChart
+                breakdown={availData?.breakdown ?? []}
+                trend={availData?.trend ?? []}
+                heatmap={availData?.heatmap ?? []}
+                pareto={availData?.pareto ?? []}
+                fleet={availData?.fleet ?? { avgAvailability: 0, totalProductionHours: 0, totalDowntimeHours: 0, totalMaintenanceHours: 0 }}
+                isLoading={availLoading}
+              />
+            )}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Störungen" icon={AlertTriangle} defaultOpen>
+            {faultError ? (
+              <ErrorState message="Fehler beim Laden der Störungsdaten" />
+            ) : (
+              <FaultAnalysis
+                statePareto={faultData?.statePareto ?? []}
+                warningTrend={faultData?.warningTrend ?? []}
+                perTurbine={faultData?.perTurbine ?? []}
+                isLoading={faultLoading}
+              />
+            )}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Wind & Umwelt" icon={Cloud} defaultOpen>
+            {envError ? (
+              <ErrorState message="Fehler beim Laden der Umweltdaten" />
+            ) : (
+              <EnvironmentChart
+                windDistribution={envData?.windDistribution ?? []}
+                seasonalPatterns={envData?.seasonalPatterns ?? []}
+                directionEfficiency={envData?.directionEfficiency ?? []}
+                summary={envData?.summary ?? { avgWindSpeed: 0, avgAirPressure: null, avgHumidity: null, totalRain: null }}
+                isLoading={envLoading}
+              />
+            )}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Schattenwurf" icon={Sun} defaultOpen>
+            {shadowError ? (
+              <ErrorState message="Fehler beim Laden der Schattenwurf-Daten" />
+            ) : (
+              <ShadowChart
+                perTurbine={shadowData?.perTurbine ?? []}
+                monthlyTrend={shadowData?.monthlyTrend ?? []}
+                dailyProfile={shadowData?.dailyProfile ?? []}
+                summary={shadowData?.summary ?? { totalShadowHoursYear: 0, budgetUsedPercent: 0, worstTurbineDesignation: null }}
+                isLoading={shadowLoading}
+              />
+            )}
+          </CollapsibleSection>
         </TabsContent>
 
-        {/* Turbine Comparison Tab */}
-        <TabsContent value="comparison" className="mt-6">
-          {compError ? (
-            <ErrorState message="Fehler beim Laden der Vergleichsdaten" />
-          ) : (
-            <TurbineComparison
-              comparison={compData?.comparison ?? []}
-              powerCurves={compData?.powerCurves ?? []}
-              isLoading={compLoading}
-            />
-          )}
+        {/* ================================================================= */}
+        {/* Tab 4: Finanzen & Technik                                         */}
+        {/* ================================================================= */}
+        <TabsContent value="finance" className="mt-6 space-y-8">
+          <CollapsibleSection title="Finanzen" icon={CreditCard} defaultOpen>
+            {finError ? (
+              <ErrorState message="Fehler beim Laden der Finanzdaten" />
+            ) : (
+              <FinancialAnalysis
+                monthly={finData?.monthly ?? []}
+                lostRevenue={finData?.lostRevenue ?? { totalLostKwh: 0, estimatedLostEur: 0, avgRevenuePerKwh: null }}
+                summary={finData?.summary ?? { totalRevenueEur: 0, totalProductionKwh: 0, avgRevenuePerKwh: null }}
+                isLoading={finLoading}
+              />
+            )}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="Phasen-Analyse" icon={Zap} defaultOpen>
+            {phaseError ? (
+              <ErrorState message="Fehler beim Laden der Phasen-Daten" />
+            ) : (
+              <PhaseSymmetryChart
+                symmetryTrend={phaseData?.symmetryTrend ?? []}
+                perTurbine={phaseData?.perTurbine ?? []}
+                phasePowers={phaseData?.phasePowers ?? []}
+                summary={phaseData?.summary ?? { fleetAvgImbalancePct: 0, worstTurbineDesignation: null, worstTurbineImbalancePct: 0, totalDataPoints: 0 }}
+                isLoading={phaseLoading}
+              />
+            )}
+          </CollapsibleSection>
         </TabsContent>
 
-        {/* Faults Tab */}
-        <TabsContent value="faults" className="mt-6">
-          {faultError ? (
-            <ErrorState message="Fehler beim Laden der Störungsdaten" />
-          ) : (
-            <FaultAnalysis
-              statePareto={faultData?.statePareto ?? []}
-              warningTrend={faultData?.warningTrend ?? []}
-              perTurbine={faultData?.perTurbine ?? []}
-              isLoading={faultLoading}
-            />
-          )}
-        </TabsContent>
+        {/* ================================================================= */}
+        {/* Tab 5: Werkzeuge                                                  */}
+        {/* ================================================================= */}
+        <TabsContent value="tools" className="mt-6">
+          <div className="flex gap-2 mb-6">
+            {[
+              { key: "data-explorer", label: "Daten-Explorer", icon: Search },
+              { key: "data-comparison", label: "Datenabgleich", icon: ArrowLeftRight },
+              { key: "pdf-reports", label: "PDF-Berichte", icon: FileText },
+              { key: "archive", label: "Archiv", icon: Archive },
+            ].map(({ key, label, icon: Icon }) => (
+              <Button
+                key={key}
+                variant={activeToolTab === key ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveToolTab(key)}
+                className="gap-1.5"
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </Button>
+            ))}
+          </div>
 
-        {/* Environment Tab */}
-        <TabsContent value="environment" className="mt-6">
-          {envError ? (
-            <ErrorState message="Fehler beim Laden der Umweltdaten" />
-          ) : (
-            <EnvironmentChart
-              windDistribution={envData?.windDistribution ?? []}
-              seasonalPatterns={envData?.seasonalPatterns ?? []}
-              directionEfficiency={envData?.directionEfficiency ?? []}
-              summary={envData?.summary ?? { avgWindSpeed: 0, avgAirPressure: null, avgHumidity: null, totalRain: null }}
-              isLoading={envLoading}
-            />
-          )}
-        </TabsContent>
-
-        {/* Financial Tab */}
-        <TabsContent value="financial" className="mt-6">
-          {finError ? (
-            <ErrorState message="Fehler beim Laden der Finanzdaten" />
-          ) : (
-            <FinancialAnalysis
-              monthly={finData?.monthly ?? []}
-              lostRevenue={finData?.lostRevenue ?? { totalLostKwh: 0, estimatedLostEur: 0, avgRevenuePerKwh: null }}
-              summary={finData?.summary ?? { totalRevenueEur: 0, totalProductionKwh: 0, avgRevenuePerKwh: null }}
-              isLoading={finLoading}
-            />
-          )}
-        </TabsContent>
-
-        {/* Shadow Casting Tab */}
-        <TabsContent value="shadow" className="mt-6">
-          {shadowError ? (
-            <ErrorState message="Fehler beim Laden der Schattenwurf-Daten" />
-          ) : (
-            <ShadowChart
-              perTurbine={shadowData?.perTurbine ?? []}
-              monthlyTrend={shadowData?.monthlyTrend ?? []}
-              dailyProfile={shadowData?.dailyProfile ?? []}
-              summary={shadowData?.summary ?? { totalShadowHoursYear: 0, budgetUsedPercent: 0, worstTurbineDesignation: null }}
-              isLoading={shadowLoading}
-            />
-          )}
-        </TabsContent>
-
-        {/* Phase Symmetry Tab */}
-        <TabsContent value="phase-symmetry" className="mt-6">
-          {phaseError ? (
-            <ErrorState message="Fehler beim Laden der Phasen-Daten" />
-          ) : (
-            <PhaseSymmetryChart
-              symmetryTrend={phaseData?.symmetryTrend ?? []}
-              perTurbine={phaseData?.perTurbine ?? []}
-              phasePowers={phaseData?.phasePowers ?? []}
-              summary={phaseData?.summary ?? { fleetAvgImbalancePct: 0, worstTurbineDesignation: null, worstTurbineImbalancePct: 0, totalDataPoints: 0 }}
-              isLoading={phaseLoading}
-            />
-          )}
-        </TabsContent>
-
-        {/* Data Explorer Tab */}
-        <TabsContent value="data-explorer" className="mt-6">
-          <DataExplorerTab />
-        </TabsContent>
-
-        {/* Data Comparison Tab */}
-        <TabsContent value="data-comparison" className="mt-6">
-          <DataComparisonTab />
-        </TabsContent>
-
-        {/* PDF Reports Tab */}
-        <TabsContent value="pdf-reports" className="mt-6">
-          <PdfReportsTab />
-        </TabsContent>
-
-        {/* Archive Tab */}
-        <TabsContent value="archive" className="mt-6">
-          <ReportArchiveTab />
+          {activeToolTab === "data-explorer" && <DataExplorerTab />}
+          {activeToolTab === "data-comparison" && <DataComparisonTab />}
+          {activeToolTab === "pdf-reports" && <PdfReportsTab />}
+          {activeToolTab === "archive" && <ReportArchiveTab />}
         </TabsContent>
       </Tabs>
 

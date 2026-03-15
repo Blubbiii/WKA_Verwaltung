@@ -10,7 +10,7 @@
  * - Page 6: Service & maintenance summary
  */
 
-import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import type { ResolvedLetterhead, ResolvedTemplate } from "../utils/templateResolver";
 import { Header } from "./components/Header";
 import { Footer, PageNumber } from "./components/Footer";
@@ -45,41 +45,106 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Cover page
+  // Cover page (with image)
+  coverPage: {
+    position: "relative" as const,
+  },
+  coverImage: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    objectFit: "cover" as const,
+  },
+  coverOverlay: {
+    position: "absolute" as const,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "50%",
+    backgroundColor: COLORS.primary,
+    opacity: 0.85,
+  },
+  coverTextContainer: {
+    position: "absolute" as const,
+    bottom: 80,
+    left: 50,
+    right: 50,
+  },
+  coverTitle: {
+    fontSize: 36,
+    fontWeight: "bold",
+    color: COLORS.white,
+    marginBottom: 6,
+  },
+  coverYear: {
+    fontSize: 52,
+    fontWeight: "bold",
+    color: COLORS.white,
+    opacity: 0.9,
+    marginBottom: 20,
+  },
+  coverDivider: {
+    width: 60,
+    height: 3,
+    backgroundColor: COLORS.white,
+    opacity: 0.6,
+    marginBottom: 16,
+  },
+  coverParkName: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: COLORS.white,
+    marginBottom: 6,
+  },
+  coverInfo: {
+    fontSize: 11,
+    color: COLORS.white,
+    opacity: 0.8,
+    marginBottom: 3,
+  },
+  coverDate: {
+    fontSize: 9,
+    color: COLORS.white,
+    opacity: 0.6,
+    marginTop: 20,
+  },
+  // Cover page (no image — plain)
   coverContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  coverTitle: {
+  coverTitlePlain: {
     fontSize: 32,
     fontWeight: "bold",
     color: COLORS.primary,
     marginBottom: 10,
   },
-  coverYear: {
+  coverYearPlain: {
     fontSize: 48,
     fontWeight: "bold",
     color: COLORS.secondary,
     marginBottom: 30,
   },
-  coverParkName: {
+  coverParkNamePlain: {
     fontSize: 18,
     color: COLORS.primary,
     marginBottom: 8,
   },
-  coverInfo: {
+  coverInfoPlain: {
     fontSize: 12,
     color: COLORS.muted,
     marginBottom: 4,
   },
-  coverDivider: {
+  coverDividerPlain: {
     width: 80,
     height: 3,
     backgroundColor: COLORS.secondary,
     marginVertical: 20,
   },
-  coverDate: {
+  coverDatePlain: {
     fontSize: 10,
     color: COLORS.muted,
     marginTop: 40,
@@ -481,9 +546,25 @@ export interface AnnualReportData {
   // Generated timestamp
   generatedAt: string;
 
+  // Cover image
+  coverImageUrl?: string | null;
+
+  // Map image (static OSM map with turbine markers)
+  mapImageUrl?: string | null;
+
   // Topology (Gesellschafts-Struktur)
   topologyTurbines?: TopologyTurbine[];
   billingEntityName?: string | null;
+
+  // Section visibility (optional — all sections shown by default)
+  sections?: {
+    topology?: boolean;
+    kpis?: boolean;
+    monthlyTrend?: boolean;
+    turbinePerformance?: boolean;
+    financial?: boolean;
+    service?: boolean;
+  };
 }
 
 interface AnnualReportTemplateProps {
@@ -654,38 +735,113 @@ export function AnnualReportTemplate({
   const hasFinancialData = data.hasFinancialData;
   const hasServiceData = data.serviceEventSummary.length > 0 || data.notableEvents.length > 0;
   const hasTopology = data.topologyTurbines && data.topologyTurbines.length > 0;
+  const hasCoverImage = !!data.coverImageUrl;
+
+  // Section visibility (all shown by default)
+  const sec = {
+    topology: data.sections?.topology ?? true,
+    kpis: data.sections?.kpis ?? true,
+    monthlyTrend: data.sections?.monthlyTrend ?? true,
+    turbinePerformance: data.sections?.turbinePerformance ?? true,
+    financial: data.sections?.financial ?? true,
+    service: data.sections?.service ?? true,
+  };
 
   return (
     <Document>
       {/* ========== PAGE 1: DECKBLATT ========== */}
-      <PageWrapper
-        letterhead={letterhead}
-        layout={layout}
-        template={template}
-        companyName={data.operatorName ?? undefined}
-      >
-        <View style={styles.coverContent}>
-          <Text style={styles.coverTitle}>Jahresbericht</Text>
-          <Text style={styles.coverYear}>{data.year}</Text>
-          <View style={styles.coverDivider} />
-          <Text style={styles.coverParkName}>{data.parkName}</Text>
-          {data.operatorName && (
-            <Text style={styles.coverInfo}>Betreiber: {data.operatorName}</Text>
-          )}
-          {data.fundName && (
-            <Text style={styles.coverInfo}>Gesellschaft: {data.fundName}</Text>
-          )}
-          {data.parkAddress && (
-            <Text style={styles.coverInfo}>Standort: {data.parkAddress}</Text>
-          )}
-          <Text style={styles.coverDate}>
-            Erstellt am {formatDate(new Date(data.generatedAt))}
-          </Text>
-        </View>
-      </PageWrapper>
+      {hasCoverImage ? (
+        <Page size="A4" style={styles.coverPage}>
+          <Image src={data.coverImageUrl!} style={styles.coverImage} />
+          <View style={styles.coverOverlay} />
+          <View style={styles.coverTextContainer}>
+            <Text style={styles.coverTitle}>Jahresbericht</Text>
+            <Text style={styles.coverYear}>{data.year}</Text>
+            <View style={styles.coverDivider} />
+            <Text style={styles.coverParkName}>{data.parkName}</Text>
+            {data.operatorName && (
+              <Text style={styles.coverInfo}>Betreiber: {data.operatorName}</Text>
+            )}
+            {data.fundName && (
+              <Text style={styles.coverInfo}>Gesellschaft: {data.fundName}</Text>
+            )}
+            {data.parkAddress && (
+              <Text style={styles.coverInfo}>Standort: {data.parkAddress}</Text>
+            )}
+            <Text style={styles.coverDate}>
+              Erstellt am {formatDate(new Date(data.generatedAt))}
+            </Text>
+          </View>
+        </Page>
+      ) : (
+        <PageWrapper
+          letterhead={letterhead}
+          layout={layout}
+          template={template}
+          companyName={data.operatorName ?? undefined}
+        >
+          <View style={styles.coverContent}>
+            <Text style={styles.coverTitlePlain}>Jahresbericht</Text>
+            <Text style={styles.coverYearPlain}>{data.year}</Text>
+            <View style={styles.coverDividerPlain} />
+            <Text style={styles.coverParkNamePlain}>{data.parkName}</Text>
+            {data.operatorName && (
+              <Text style={styles.coverInfoPlain}>Betreiber: {data.operatorName}</Text>
+            )}
+            {data.fundName && (
+              <Text style={styles.coverInfoPlain}>Gesellschaft: {data.fundName}</Text>
+            )}
+            {data.parkAddress && (
+              <Text style={styles.coverInfoPlain}>Standort: {data.parkAddress}</Text>
+            )}
+            <Text style={styles.coverDatePlain}>
+              Erstellt am {formatDate(new Date(data.generatedAt))}
+            </Text>
+          </View>
+        </PageWrapper>
+      )}
 
-      {/* ========== PAGE 2: NETZ-TOPOLOGIE (optional) ========== */}
-      {hasTopology && (
+      {/* ========== STANDORT-KARTE (optional) ========== */}
+      {data.mapImageUrl && sec.topology && (
+        <PageWrapper
+          letterhead={letterhead}
+          layout={layout}
+          template={template}
+          companyName={data.operatorName ?? undefined}
+        >
+          <Text style={styles.title}>Standort-Übersicht</Text>
+          <Text style={styles.subtitle}>
+            Anlagen-Standorte {data.parkName}
+          </Text>
+
+          <Image
+            src={data.mapImageUrl}
+            style={{
+              width: "100%",
+              borderRadius: 3,
+              border: `1px solid ${COLORS.border}`,
+            }}
+          />
+
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 6 }}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#22c55e", marginRight: 4 }} />
+              <Text style={{ fontSize: 7, color: COLORS.muted }}>Aktiv</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#eab308", marginRight: 4 }} />
+              <Text style={{ fontSize: 7, color: COLORS.muted }}>Inaktiv</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#9ca3af", marginRight: 4 }} />
+              <Text style={{ fontSize: 7, color: COLORS.muted }}>Archiviert</Text>
+            </View>
+          </View>
+        </PageWrapper>
+      )}
+
+      {/* ========== NETZ-TOPOLOGIE (optional) ========== */}
+      {hasTopology && sec.topology && (
         <PageWrapper
           letterhead={letterhead}
           layout={layout}
@@ -706,6 +862,7 @@ export function AnnualReportTemplate({
       )}
 
       {/* ========== JAHRESUEBERSICHT ========== */}
+      {sec.kpis && (
       <PageWrapper
         letterhead={letterhead}
         layout={layout}
@@ -891,8 +1048,10 @@ export function AnnualReportTemplate({
           Erstellt am {formatDate(new Date(data.generatedAt))}
         </Text>
       </PageWrapper>
+      )}
 
       {/* ========== PAGE 3: MONATSVERLAUF ========== */}
+      {sec.monthlyTrend && (
       <PageWrapper
         letterhead={letterhead}
         layout={layout}
@@ -981,8 +1140,10 @@ export function AnnualReportTemplate({
           </Text>
         )}
       </PageWrapper>
+      )}
 
       {/* ========== PAGE 4: ANLAGEN-PERFORMANCE ========== */}
+      {sec.turbinePerformance && (
       <PageWrapper
         letterhead={letterhead}
         layout={layout}
@@ -1091,9 +1252,10 @@ export function AnnualReportTemplate({
           </Text>
         )}
       </PageWrapper>
+      )}
 
       {/* ========== PAGE 5: FINANZEN (optional) ========== */}
-      {hasFinancialData && hasRevenue && (
+      {hasFinancialData && hasRevenue && sec.financial && (
         <PageWrapper
           letterhead={letterhead}
           layout={layout}
@@ -1197,6 +1359,7 @@ export function AnnualReportTemplate({
       )}
 
       {/* ========== PAGE 6: SERVICE & WARTUNG ========== */}
+      {sec.service && (
       <PageWrapper
         letterhead={letterhead}
         layout={layout}
@@ -1343,6 +1506,7 @@ export function AnnualReportTemplate({
           Erstellt am {formatDate(new Date(data.generatedAt))}
         </Text>
       </PageWrapper>
+      )}
     </Document>
   );
 }

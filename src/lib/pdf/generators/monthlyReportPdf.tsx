@@ -45,6 +45,17 @@ function hoursInMonth(year: number, month: number): number {
 /**
  * Fetch monthly report data from the database
  */
+export type MonthlyReportSections = {
+  summary?: boolean;
+  production?: boolean;
+  availability?: boolean;
+  service?: boolean;
+  monthlyTrend?: boolean;
+  windAnalysis?: boolean;
+  powerCurve?: boolean;
+  dailyProfile?: boolean;
+};
+
 async function fetchMonthlyReportData(
   parkId: string,
   year: number,
@@ -593,10 +604,12 @@ export async function generateMonthlyReportPdf(
   parkId: string,
   year: number,
   month: number,
-  tenantId: string
+  tenantId: string,
+  sections?: MonthlyReportSections
 ): Promise<Buffer> {
   // Fetch data
   const data = await fetchMonthlyReportData(parkId, year, month, tenantId);
+  if (sections) data.sections = sections;
 
   // Resolve template and letterhead
   // Use SETTLEMENT_REPORT as the closest document type for reports
@@ -621,9 +634,10 @@ export async function generateMonthlyReportPdfBase64(
   parkId: string,
   year: number,
   month: number,
-  tenantId: string
+  tenantId: string,
+  sections?: MonthlyReportSections
 ): Promise<string> {
-  const buffer = await generateMonthlyReportPdf(parkId, year, month, tenantId);
+  const buffer = await generateMonthlyReportPdf(parkId, year, month, tenantId, sections);
   return buffer.toString("base64");
 }
 

@@ -667,6 +667,18 @@ export interface MonthlyReportData {
   // Cover page image (optional — signed URL to park cover photo)
   coverImageUrl?: string | null;
 
+  // Section visibility (optional — all sections shown by default)
+  sections?: {
+    summary?: boolean;
+    production?: boolean;
+    availability?: boolean;
+    service?: boolean;
+    monthlyTrend?: boolean;
+    windAnalysis?: boolean;
+    powerCurve?: boolean;
+    dailyProfile?: boolean;
+  };
+
   // Chart data (optional — pages only render when data present)
   windRose?: {
     data: Array<{
@@ -1065,6 +1077,18 @@ export function MonthlyReportTemplate({
     data.prevYearProductionMwh != null || data.prevYearAvailabilityPct != null;
   const hasRevenue = data.totalRevenueEur != null;
   const hasAvailData = data.turbineAvailability.length > 0;
+
+  // Section visibility (all shown by default)
+  const sec = {
+    summary: data.sections?.summary ?? true,
+    production: data.sections?.production ?? true,
+    availability: data.sections?.availability ?? true,
+    service: data.sections?.service ?? true,
+    monthlyTrend: data.sections?.monthlyTrend ?? true,
+    windAnalysis: data.sections?.windAnalysis ?? true,
+    powerCurve: data.sections?.powerCurve ?? true,
+    dailyProfile: data.sections?.dailyProfile ?? true,
+  };
   const hasEvents = data.serviceEvents.length > 0;
   const hasTrend = (periodType === "QUARTERLY" || periodType === "ANNUAL") &&
     data.monthlyTrend && data.monthlyTrend.length > 0;
@@ -1097,6 +1121,7 @@ export function MonthlyReportTemplate({
       <CoverPage data={data} reportTitle={reportTitle} periodSubtitle={periodSubtitle} />
 
       {/* ========== PAGE 1: EXECUTIVE SUMMARY ========== */}
+      {sec.summary && (
       <PageWrap
         letterhead={letterhead}
         layout={layout}
@@ -1229,8 +1254,10 @@ export function MonthlyReportTemplate({
           Erstellt am {formatDate(new Date(data.generatedAt))}
         </Text>
       </PageWrap>
+      )}
 
       {/* ========== PAGE 2: PRODUKTION ========== */}
+      {sec.production && (
       <PageWrap
         letterhead={letterhead}
         layout={layout}
@@ -1298,9 +1325,10 @@ export function MonthlyReportTemplate({
           <Text style={s.noData}>Keine Produktionsdaten für diesen Monat vorhanden.</Text>
         )}
       </PageWrap>
+      )}
 
       {/* ========== PAGE 3: VERFÜGBARKEIT ========== */}
-      {hasAvailData && (
+      {hasAvailData && sec.availability && (
         <PageWrap
           letterhead={letterhead}
           layout={layout}
@@ -1407,6 +1435,7 @@ export function MonthlyReportTemplate({
       )}
 
       {/* ========== PAGE 4: EREIGNISSE ========== */}
+      {sec.service && (
       <PageWrap
         letterhead={letterhead}
         layout={layout}
@@ -1500,9 +1529,10 @@ export function MonthlyReportTemplate({
           Erstellt am {formatDate(new Date(data.generatedAt))}
         </Text>
       </PageWrap>
+      )}
 
       {/* ========== EXTRA: MONTHLY TREND (QUARTERLY/ANNUAL) ========== */}
-      {hasTrend && data.monthlyTrend && (
+      {hasTrend && data.monthlyTrend && sec.monthlyTrend && (
         <PageWrap
           letterhead={letterhead}
           layout={layout}
@@ -1604,7 +1634,7 @@ export function MonthlyReportTemplate({
       )}
 
       {/* ========== PAGE: WIND ANALYSIS (Windrose + Distribution) ========== */}
-      {data.windRose && data.windRose.meta.totalMeasurements > 0 && (
+      {data.windRose && data.windRose.meta.totalMeasurements > 0 && sec.windAnalysis && (
         <PageWrap
           letterhead={letterhead}
           layout={layout}
@@ -1653,7 +1683,7 @@ export function MonthlyReportTemplate({
       )}
 
       {/* ========== PAGE: POWER CURVE ========== */}
-      {data.powerCurve && (data.powerCurve.scatter.length > 0 || data.powerCurve.curve.length > 0) && (
+      {data.powerCurve && (data.powerCurve.scatter.length > 0 || data.powerCurve.curve.length > 0) && sec.powerCurve && (
         <PageWrap
           letterhead={letterhead}
           layout={layout}
@@ -1695,7 +1725,7 @@ export function MonthlyReportTemplate({
       )}
 
       {/* ========== PAGE: DAILY PROFILE ========== */}
-      {data.dailyProfile && data.dailyProfile.length > 0 && (
+      {data.dailyProfile && data.dailyProfile.length > 0 && sec.dailyProfile && (
         <PageWrap
           letterhead={letterhead}
           layout={layout}
@@ -1733,7 +1763,7 @@ export function MonthlyReportTemplate({
       )}
 
       {/* ========== EXTRA: TURBINE × MONTH PRODUCTION (QUARTERLY/ANNUAL) ========== */}
-      {hasTurbineTrend && data.turbineMonthlyProduction && data.monthlyTrend && (
+      {hasTurbineTrend && data.turbineMonthlyProduction && data.monthlyTrend && sec.monthlyTrend && (
         <PageWrap
           letterhead={letterhead}
           layout={layout}
