@@ -20,6 +20,10 @@ import { Header } from "./components/Header";
 import { Footer, PageNumber } from "./components/Footer";
 import { formatNumber, formatDate } from "../utils/formatters";
 import { formatCurrency } from "@/lib/format";
+import { PdfWindRose, PdfWindRoseLegend } from "../charts/PdfWindRose";
+import { PdfWindDistribution } from "../charts/PdfWindDistribution";
+import { PdfPowerCurve } from "../charts/PdfPowerCurve";
+import { PdfDailyProfile } from "../charts/PdfDailyProfile";
 
 // ===========================================
 // DESIGN TOKENS
@@ -662,6 +666,33 @@ export interface MonthlyReportData {
 
   // Cover page image (optional — signed URL to park cover photo)
   coverImageUrl?: string | null;
+
+  // Chart data (optional — pages only render when data present)
+  windRose?: {
+    data: Array<{
+      direction: string;
+      directionDeg: number;
+      total: number;
+      speedRanges: Array<{ range: string; count: number }>;
+    }>;
+    meta: { totalMeasurements: number; avgWindSpeed: number | null; dominantDirection: string | null };
+  };
+  windDistribution?: Array<{
+    binStart: number;
+    binEnd: number;
+    count: number;
+    percentage: number;
+  }>;
+  powerCurve?: {
+    scatter: Array<{ windSpeed: number; powerKw: number }>;
+    curve: Array<{ windSpeed: number; avgPowerKw: number; count: number }>;
+    ratedPowerKw?: number | null;
+  };
+  dailyProfile?: Array<{
+    timeSlot: string;
+    avgPowerKw: number;
+    avgWindSpeed: number | null;
+  }>;
 }
 
 interface MonthlyReportTemplateProps {
@@ -1569,6 +1600,135 @@ export function MonthlyReportTemplate({
               });
             })()}
           </View>
+        </PageWrap>
+      )}
+
+      {/* ========== PAGE: WIND ANALYSIS (Windrose + Distribution) ========== */}
+      {data.windRose && data.windRose.meta.totalMeasurements > 0 && (
+        <PageWrap
+          letterhead={letterhead}
+          layout={layout}
+          template={template}
+          companyName={data.operatorName ?? undefined}
+        >
+          <SectionHead
+            title="Windanalyse"
+            subtitle={`${data.parkName} — ${periodSubtitle}`}
+          />
+
+          <View style={{ flexDirection: "row", gap: 20, marginBottom: 16 }}>
+            {/* Wind rose */}
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text style={{ fontSize: 9, fontWeight: "bold", color: C.navy, marginBottom: 8 }}>
+                Windrose
+              </Text>
+              <PdfWindRose
+                data={data.windRose.data}
+                meta={data.windRose.meta}
+                size={240}
+              />
+              <View style={{ marginTop: 6 }}>
+                <PdfWindRoseLegend />
+              </View>
+              {data.windRose.meta.dominantDirection && (
+                <Text style={{ fontSize: 7, color: C.gray500, marginTop: 4 }}>
+                  Hauptwindrichtung: {data.windRose.meta.dominantDirection}
+                  {data.windRose.meta.avgWindSpeed != null &&
+                    ` | \u00D8 ${formatNumber(data.windRose.meta.avgWindSpeed, 1)} m/s`}
+                </Text>
+              )}
+            </View>
+
+            {/* Wind distribution */}
+            {data.windDistribution && data.windDistribution.length > 0 && (
+              <View style={{ flex: 1, alignItems: "center" }}>
+                <Text style={{ fontSize: 9, fontWeight: "bold", color: C.navy, marginBottom: 8 }}>
+                  Windgeschwindigkeitsverteilung
+                </Text>
+                <PdfWindDistribution data={data.windDistribution} width={260} height={200} />
+              </View>
+            )}
+          </View>
+        </PageWrap>
+      )}
+
+      {/* ========== PAGE: POWER CURVE ========== */}
+      {data.powerCurve && (data.powerCurve.scatter.length > 0 || data.powerCurve.curve.length > 0) && (
+        <PageWrap
+          letterhead={letterhead}
+          layout={layout}
+          template={template}
+          companyName={data.operatorName ?? undefined}
+        >
+          <SectionHead
+            title="Leistungskurve"
+            subtitle={`${data.parkName} — ${periodSubtitle}`}
+          />
+
+          <View style={{ alignItems: "center", marginBottom: 12 }}>
+            <PdfPowerCurve
+              scatter={data.powerCurve.scatter}
+              curve={data.powerCurve.curve}
+              ratedPowerKw={data.powerCurve.ratedPowerKw}
+              width={500}
+              height={280}
+            />
+          </View>
+
+          <View style={{ flexDirection: "row", gap: 16, paddingHorizontal: 20 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View style={{ width: 12, height: 3, backgroundColor: "#1d4ed8" }} />
+              <Text style={{ fontSize: 7, color: C.gray500 }}>Mittelwert (0,5 m/s Bins)</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#93c5fd", opacity: 0.6 }} />
+              <Text style={{ fontSize: 7, color: C.gray500 }}>Messpunkte (Stichprobe)</Text>
+            </View>
+            {data.powerCurve.ratedPowerKw && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View style={{ width: 12, height: 0, borderTop: "1pt dashed #ef4444" }} />
+                <Text style={{ fontSize: 7, color: C.gray500 }}>Nennleistung</Text>
+              </View>
+            )}
+          </View>
+        </PageWrap>
+      )}
+
+      {/* ========== PAGE: DAILY PROFILE ========== */}
+      {data.dailyProfile && data.dailyProfile.length > 0 && (
+        <PageWrap
+          letterhead={letterhead}
+          layout={layout}
+          template={template}
+          companyName={data.operatorName ?? undefined}
+        >
+          <SectionHead
+            title="Tagesgang"
+            subtitle={`${data.parkName} — ${periodSubtitle}`}
+          />
+
+          <View style={{ alignItems: "center", marginBottom: 12 }}>
+            <PdfDailyProfile
+              data={data.dailyProfile}
+              width={500}
+              height={250}
+            />
+          </View>
+
+          <View style={{ flexDirection: "row", gap: 16, paddingHorizontal: 20 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View style={{ width: 12, height: 3, backgroundColor: "#3b82f6" }} />
+              <Text style={{ fontSize: 7, color: C.gray500 }}>Durchschnittliche Leistung (kW)</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View style={{ width: 12, height: 3, backgroundColor: "#f59e0b" }} />
+              <Text style={{ fontSize: 7, color: C.gray500 }}>Durchschnittliche Windgeschwindigkeit (m/s)</Text>
+            </View>
+          </View>
+
+          <Text style={{ fontSize: 7, color: C.gray400, marginTop: 8, textAlign: "center" }}>
+            Gemittelt ueber alle Tage des Berichtszeitraums in 10-Minuten-Intervallen
+          </Text>
         </PageWrap>
       )}
 

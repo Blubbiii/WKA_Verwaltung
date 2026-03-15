@@ -538,12 +538,13 @@ async function writeAvailabilityRecords(
       const t5_2 = rec.t5_2 ?? 0;
       const t5_3 = rec.t5_3 ?? 0;
 
-      // Calculate availability percentage: t1 (producing) / total_time * 100
-      // Total time = T1 + T2 + T3 + T4 + T5 + T6 (all categories sum to total period)
+      // Calculate technical availability per IEC 61400-26-2:
+      // Availability = T1 / (T1 + T5) * 100
+      // T1 = Production time, T5 = Failure/downtime (unplanned)
       let availabilityPct: Decimal | null = null;
-      const totalTime = t1 + t2 + t3 + t4 + t5 + t6;
-      if (totalTime > 0) {
-        availabilityPct = new Decimal((t1 / totalTime) * 100).toDecimalPlaces(3);
+      const relevantTime = t1 + t5;
+      if (relevantTime > 0) {
+        availabilityPct = new Decimal((t1 / relevantTime) * 100).toDecimalPlaces(3);
       }
 
       dbRecords.push({

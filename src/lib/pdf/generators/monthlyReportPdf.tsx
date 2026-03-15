@@ -15,6 +15,7 @@ import {
 } from "../templates/MonthlyReportTemplate";
 import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../utils/templateResolver";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getSignedUrl } from "@/lib/storage";
 
 // German month names
@@ -55,7 +56,7 @@ async function fetchMonthlyReportData(
     where: { id: parkId },
     include: {
       turbines: {
-        where: { status: "ACTIVE" },
+        where: { status: "ACTIVE", deviceType: "WEA" },
         orderBy: { designation: "asc" },
         select: {
           id: true,
@@ -97,6 +98,25 @@ async function fetchMonthlyReportData(
   });
 
   const productionMap = new Map(productions.map((p) => [p.turbineId, p]));
+
+  // 2b. SCADA operating hours fallback (delta of cumulative counter)
+  const scadaOpHoursResult = await prisma.$queryRaw<
+    Array<{ turbineId: string; delta_hours: number }>
+  >(Prisma.sql`
+    SELECT "turbineId",
+           MAX("operatingHours") - MIN("operatingHours") AS delta_hours
+    FROM scada_measurements
+    WHERE "turbineId" IN (${Prisma.join(turbineIds)})
+      AND "sourceFile" = 'WSD'
+      AND "operatingHours" IS NOT NULL
+      AND "timestamp" >= ${new Date(year, month - 1, 1)}
+      AND "timestamp" < ${new Date(year, month, 1)}
+    GROUP BY "turbineId"
+    HAVING MAX("operatingHours") > MIN("operatingHours")
+  `);
+  const scadaOpHoursMap = new Map(
+    scadaOpHoursResult.map((r) => [r.turbineId, Number(r.delta_hours)])
+  );
 
   // 3. Availability data (monthly SCADA)
   const monthStart = new Date(year, month - 1, 1);
@@ -218,7 +238,9 @@ async function fetchMonthlyReportData(
       turbineId: turbine.id,
       designation: turbine.designation,
       productionMwh,
-      operatingHours: prod?.operatingHours ? Number(prod.operatingHours) : null,
+      operatingHours: prod?.operatingHours
+        ? Number(prod.operatingHours)
+        : scadaOpHoursMap.get(turbine.id) ?? null,
       availabilityPct: prod?.availabilityPct ? Number(prod.availabilityPct) : null,
       capacityFactor,
       ratedPowerKw,
@@ -338,6 +360,202 @@ async function fetchMonthlyReportData(
     }
   }
 
+  // ---- CHART DATA (graceful — charts render only when data present) ----
+
+  const chartFrom = new Date(year, month - 1, 1);
+  const chartTo = new Date(year, month, 1);
+
+  // Wind rose + wind distribution + power curve + daily profile in parallel
+  const [windRoseRows, windRoseMetaRows, windDistRows, pcScatterRows, pcCurveRows, dailyRows] =
+    await Promise.all([
+      // Wind rose sectors
+      prisma.$queryRaw<Array<{ direction_sector: string; speed_range: string; count: bigint }>>(Prisma.sql`
+        SELECT
+          CASE
+            WHEN "windDirection" >= 348.75 OR "windDirection" < 11.25 THEN 'N'
+            WHEN "windDirection" >= 11.25 AND "windDirection" < 33.75 THEN 'NNE'
+            WHEN "windDirection" >= 33.75 AND "windDirection" < 56.25 THEN 'NE'
+            WHEN "windDirection" >= 56.25 AND "windDirection" < 78.75 THEN 'ENE'
+            WHEN "windDirection" >= 78.75 AND "windDirection" < 101.25 THEN 'E'
+            WHEN "windDirection" >= 101.25 AND "windDirection" < 123.75 THEN 'ESE'
+            WHEN "windDirection" >= 123.75 AND "windDirection" < 146.25 THEN 'SE'
+            WHEN "windDirection" >= 146.25 AND "windDirection" < 168.75 THEN 'SSE'
+            WHEN "windDirection" >= 168.75 AND "windDirection" < 191.25 THEN 'S'
+            WHEN "windDirection" >= 191.25 AND "windDirection" < 213.75 THEN 'SSW'
+            WHEN "windDirection" >= 213.75 AND "windDirection" < 236.25 THEN 'SW'
+            WHEN "windDirection" >= 236.25 AND "windDirection" < 258.75 THEN 'WSW'
+            WHEN "windDirection" >= 258.75 AND "windDirection" < 281.25 THEN 'W'
+            WHEN "windDirection" >= 281.25 AND "windDirection" < 303.75 THEN 'WNW'
+            WHEN "windDirection" >= 303.75 AND "windDirection" < 326.25 THEN 'NW'
+            WHEN "windDirection" >= 326.25 AND "windDirection" < 348.75 THEN 'NNW'
+          END AS direction_sector,
+          CASE
+            WHEN "windSpeedMs" < 3 THEN '0-3'
+            WHEN "windSpeedMs" < 6 THEN '3-6'
+            WHEN "windSpeedMs" < 9 THEN '6-9'
+            WHEN "windSpeedMs" < 12 THEN '9-12'
+            WHEN "windSpeedMs" < 15 THEN '12-15'
+            ELSE '15+'
+          END AS speed_range,
+          COUNT(*) AS count
+        FROM scada_measurements
+        WHERE "tenantId" = ${tenantId}
+          AND "sourceFile" = 'WSD'
+          AND "windDirection" IS NOT NULL AND "windSpeedMs" IS NOT NULL
+          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
+        GROUP BY direction_sector, speed_range
+      `),
+      // Wind rose meta
+      prisma.$queryRaw<Array<{ total_measurements: bigint; avg_wind_speed: number | null }>>(Prisma.sql`
+        SELECT COUNT(*) AS total_measurements, AVG("windSpeedMs")::float AS avg_wind_speed
+        FROM scada_measurements
+        WHERE "tenantId" = ${tenantId}
+          AND "sourceFile" = 'WSD'
+          AND "windDirection" IS NOT NULL AND "windSpeedMs" IS NOT NULL
+          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
+      `),
+      // Wind distribution (1 m/s bins)
+      prisma.$queryRaw<Array<{ bin_start: number; cnt: bigint }>>(Prisma.sql`
+        SELECT FLOOR("windSpeedMs"::numeric)::int AS bin_start, COUNT(*) AS cnt
+        FROM scada_measurements
+        WHERE "tenantId" = ${tenantId}
+          AND "sourceFile" = 'WSD'
+          AND "windSpeedMs" IS NOT NULL AND "windSpeedMs" >= 0
+          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
+        GROUP BY bin_start ORDER BY bin_start
+      `),
+      // Power curve scatter (random 500)
+      prisma.$queryRaw<Array<{ wind_speed: number; power_kw: number }>>(Prisma.sql`
+        SELECT "windSpeedMs"::float AS wind_speed, "powerW"::float / 1000.0 AS power_kw
+        FROM scada_measurements
+        WHERE "tenantId" = ${tenantId}
+          AND "sourceFile" = 'WSD'
+          AND "powerW" IS NOT NULL AND "windSpeedMs" IS NOT NULL AND "powerW" > 0
+          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
+        ORDER BY RANDOM() LIMIT 500
+      `),
+      // Power curve mean (0.5 m/s bins)
+      prisma.$queryRaw<Array<{ wind_speed: number; avg_power_kw: number; cnt: bigint }>>(Prisma.sql`
+        SELECT ROUND("windSpeedMs"::numeric * 2) / 2 AS wind_speed,
+               AVG("powerW")::float / 1000.0 AS avg_power_kw,
+               COUNT(*) AS cnt
+        FROM scada_measurements
+        WHERE "tenantId" = ${tenantId}
+          AND "sourceFile" = 'WSD'
+          AND "powerW" IS NOT NULL AND "windSpeedMs" IS NOT NULL AND "powerW" > 0
+          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
+        GROUP BY ROUND("windSpeedMs"::numeric * 2) / 2
+        ORDER BY wind_speed
+      `),
+      // Daily profile (avg by time-of-day)
+      prisma.$queryRaw<Array<{ time_slot: string; avg_power_kw: number; avg_wind_speed: number | null }>>(Prisma.sql`
+        SELECT TO_CHAR("timestamp", 'HH24:MI') AS time_slot,
+               AVG("powerW")::float / 1000.0 AS avg_power_kw,
+               AVG("windSpeedMs")::float AS avg_wind_speed
+        FROM scada_measurements
+        WHERE "tenantId" = ${tenantId}
+          AND "sourceFile" = 'WSD'
+          AND "powerW" IS NOT NULL
+          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
+        GROUP BY TO_CHAR("timestamp", 'HH24:MI')
+        ORDER BY time_slot
+      `),
+    ]);
+
+  // Build wind rose data
+  const DIRECTION_SECTORS = [
+    { label: "N", deg: 0 }, { label: "NNE", deg: 22.5 }, { label: "NE", deg: 45 },
+    { label: "ENE", deg: 67.5 }, { label: "E", deg: 90 }, { label: "ESE", deg: 112.5 },
+    { label: "SE", deg: 135 }, { label: "SSE", deg: 157.5 }, { label: "S", deg: 180 },
+    { label: "SSW", deg: 202.5 }, { label: "SW", deg: 225 }, { label: "WSW", deg: 247.5 },
+    { label: "W", deg: 270 }, { label: "WNW", deg: 292.5 }, { label: "NW", deg: 315 },
+    { label: "NNW", deg: 337.5 },
+  ];
+  const SPEED_RANGES = ["0-3", "3-6", "6-9", "9-12", "12-15", "15+"];
+
+  const wrCountMap = new Map<string, Map<string, number>>();
+  for (const row of windRoseRows) {
+    if (!row.direction_sector) continue;
+    if (!wrCountMap.has(row.direction_sector)) wrCountMap.set(row.direction_sector, new Map());
+    wrCountMap.get(row.direction_sector)!.set(row.speed_range, Number(row.count));
+  }
+
+  const wrMeta = windRoseMetaRows[0];
+  const totalMeasurements = Number(wrMeta?.total_measurements ?? 0);
+
+  let windRose: MonthlyReportData["windRose"] = undefined;
+  if (totalMeasurements > 0) {
+    const dirTotals: Record<string, number> = {};
+    const wrData = DIRECTION_SECTORS.map((sec) => {
+      const speedMap = wrCountMap.get(sec.label);
+      let total = 0;
+      const speedRanges = SPEED_RANGES.map((range) => {
+        const cnt = speedMap?.get(range) ?? 0;
+        total += cnt;
+        return { range, count: cnt };
+      });
+      dirTotals[sec.label] = total;
+      return { direction: sec.label, directionDeg: sec.deg, total, speedRanges };
+    });
+
+    let dominant = "N"; let maxDir = 0;
+    for (const [dir, t] of Object.entries(dirTotals)) {
+      if (t > maxDir) { maxDir = t; dominant = dir; }
+    }
+
+    windRose = {
+      data: wrData,
+      meta: {
+        totalMeasurements,
+        avgWindSpeed: wrMeta?.avg_wind_speed ? Math.round(wrMeta.avg_wind_speed * 100) / 100 : null,
+        dominantDirection: dominant,
+      },
+    };
+  }
+
+  // Build wind distribution
+  const totalWindObs = windDistRows.reduce((s, r) => s + Number(r.cnt), 0);
+  const windDistribution: MonthlyReportData["windDistribution"] = totalWindObs > 0
+    ? windDistRows.map((r) => ({
+        binStart: Number(r.bin_start),
+        binEnd: Number(r.bin_start) + 1,
+        count: Number(r.cnt),
+        percentage: (Number(r.cnt) / totalWindObs) * 100,
+      }))
+    : undefined;
+
+  // Build power curve
+  const powerCurve: MonthlyReportData["powerCurve"] =
+    pcScatterRows.length > 0 || pcCurveRows.length > 0
+      ? {
+          scatter: pcScatterRows.map((r) => ({
+            windSpeed: Number(r.wind_speed),
+            powerKw: Number(r.power_kw),
+          })),
+          curve: pcCurveRows.map((r) => ({
+            windSpeed: Number(r.wind_speed),
+            avgPowerKw: Number(r.avg_power_kw),
+            count: Number(r.cnt),
+          })),
+          ratedPowerKw: totalRatedPowerKw > 0 ? totalRatedPowerKw : null,
+        }
+      : undefined;
+
+  // Build daily profile
+  const dailyProfile: MonthlyReportData["dailyProfile"] = dailyRows.length > 0
+    ? dailyRows.map((r) => ({
+        timeSlot: r.time_slot,
+        avgPowerKw: Number(r.avg_power_kw),
+        avgWindSpeed: r.avg_wind_speed != null ? Number(r.avg_wind_speed) : null,
+      }))
+    : undefined;
+
   return {
     parkName: park.name,
     parkAddress: parkAddress || null,
@@ -360,6 +578,10 @@ async function fetchMonthlyReportData(
     serviceEvents: serviceEventRows,
     notableDowntimes,
     coverImageUrl,
+    windRose,
+    windDistribution,
+    powerCurve,
+    dailyProfile,
     generatedAt: new Date().toISOString(),
   };
 }

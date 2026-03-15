@@ -73,7 +73,7 @@ async function fetchAnnualReportData(
     where: { id: parkId },
     include: {
       turbines: {
-        where: { status: "ACTIVE" },
+        where: { status: "ACTIVE", deviceType: "WEA" },
         orderBy: { designation: "asc" },
         select: {
           id: true,

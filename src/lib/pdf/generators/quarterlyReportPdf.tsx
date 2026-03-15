@@ -17,6 +17,7 @@ import {
 } from "../templates/MonthlyReportTemplate";
 import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../utils/templateResolver";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getSignedUrl } from "@/lib/storage";
 
 const MONTH_NAMES = [
@@ -61,7 +62,7 @@ async function fetchQuarterlyReportData(
     where: { id: parkId },
     include: {
       turbines: {
-        where: { status: "ACTIVE" },
+        where: { status: "ACTIVE", deviceType: "WEA" },
         orderBy: { designation: "asc" },
         select: { id: true, designation: true, ratedPowerKw: true },
       },
@@ -93,6 +94,25 @@ async function fetchQuarterlyReportData(
       availabilityPct: true,
     },
   });
+
+  // 2b. SCADA operating hours fallback (delta of cumulative counter)
+  const scadaOpHoursResult = await prisma.$queryRaw<
+    Array<{ turbineId: string; delta_hours: number }>
+  >(Prisma.sql`
+    SELECT "turbineId",
+           MAX("operatingHours") - MIN("operatingHours") AS delta_hours
+    FROM scada_measurements
+    WHERE "turbineId" IN (${Prisma.join(turbineIds)})
+      AND "sourceFile" = 'WSD'
+      AND "operatingHours" IS NOT NULL
+      AND "timestamp" >= ${new Date(year, startMonth - 1, 1)}
+      AND "timestamp" < ${new Date(year, endMonth, 1)}
+    GROUP BY "turbineId"
+    HAVING MAX("operatingHours") > MIN("operatingHours")
+  `);
+  const scadaOpHoursMap = new Map(
+    scadaOpHoursResult.map((r) => [r.turbineId, Number(r.delta_hours)])
+  );
 
   // 3. SCADA availability (monthly records for 3 months)
   const monthStart = new Date(year, startMonth - 1, 1);
@@ -236,7 +256,9 @@ async function fetchQuarterlyReportData(
       turbineId: turbine.id,
       designation: turbine.designation,
       productionMwh: totalMwh,
-      operatingHours: tProds.length > 0 ? totalHours : null,
+      operatingHours: totalHours > 0
+        ? totalHours
+        : scadaOpHoursMap.get(turbine.id) ?? null,
       availabilityPct: avgAvail,
       capacityFactor: cf,
       ratedPowerKw,

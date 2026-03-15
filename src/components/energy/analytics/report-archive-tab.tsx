@@ -59,9 +59,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// ===========================================
-// TYPES
-// ===========================================
+// =============================================================================
+// Types
+// =============================================================================
 
 interface ArchivedReport {
   id: string;
@@ -87,21 +87,12 @@ interface ArchiveStats {
   byFormat: Array<{ format: string; count: number }>;
 }
 
-// ===========================================
-// HELPER FUNCTIONS
-// ===========================================
-
 const reportTypeLabels: Record<string, string> = {
   MONTHLY: "Monatsbericht",
+  QUARTERLY: "Quartalsbericht",
   ANNUAL: "Jahresbericht",
   SHAREHOLDERS: "Gesellschafterbericht",
   SETTLEMENT: "Pachtabrechnung",
-  CONTRACTS: "Vertragsübersicht",
-  INVOICES: "Rechnungsübersicht",
-  PARKS_OVERVIEW: "Windpark-Übersicht",
-  TURBINES_OVERVIEW: "Turbinen-Übersicht",
-  FUND_PERFORMANCE: "Gesellschafts-Performance",
-  VOTES_RESULTS: "Abstimmungsergebnisse",
   CUSTOM: "Benutzerdefiniert",
 };
 
@@ -119,9 +110,6 @@ function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
-// formatDate with datetime → use central formatDateTime from @/lib/format
-const formatDate = formatDateTime;
-
 function getUserDisplayName(user: ArchivedReport["generatedBy"]): string {
   if (user.firstName || user.lastName) {
     return `${user.firstName || ""} ${user.lastName || ""}`.trim();
@@ -129,11 +117,11 @@ function getUserDisplayName(user: ArchivedReport["generatedBy"]): string {
   return user.email;
 }
 
-// ===========================================
-// MAIN COMPONENT
-// ===========================================
+// =============================================================================
+// Component
+// =============================================================================
 
-export default function ReportArchivePage() {
+export function ReportArchiveTab() {
   const { data: session } = useSession();
   const [reports, setReports] = useState<ArchivedReport[]>([]);
   const [stats, setStats] = useState<ArchiveStats | null>(null);
@@ -141,31 +129,22 @@ export default function ReportArchivePage() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [reportToDelete, setReportToDelete] = useState<ArchivedReport | null>(
-    null
-  );
+  const [reportToDelete, setReportToDelete] = useState<ArchivedReport | null>(null);
 
-  // Pagination
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [total, setTotal] = useState(0);
 
-  // Filters
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
-  const [reportType, setReportType] = useState<string>("all");
-  const [format, setFormat] = useState<string>("all");
+  const [reportType, setReportType] = useState("all");
+  const [format, setFormat] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Use hierarchy-based check (>= 80 = Admin), with legacy enum as fallback
   const isAdmin =
     (session?.user?.roleHierarchy ?? 0) >= 80 ||
     session?.user?.role === "ADMIN" ||
     session?.user?.role === "SUPERADMIN";
-
-  // ===========================================
-  // DATA FETCHING
-  // ===========================================
 
   const fetchReports = useCallback(async () => {
     try {
@@ -175,7 +154,6 @@ export default function ReportArchivePage() {
         pageSize: pageSize.toString(),
         includeStats: "true",
       });
-
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (reportType !== "all") params.set("reportType", reportType);
       if (format !== "all") params.set("format", format);
@@ -188,6 +166,7 @@ export default function ReportArchivePage() {
       setTotal(data.total);
       if (data.stats) setStats(data.stats);
     } catch {
+      // silently fail
     } finally {
       setLoading(false);
     }
@@ -197,64 +176,37 @@ export default function ReportArchivePage() {
     fetchReports();
   }, [fetchReports]);
 
-  // ===========================================
-  // ACTIONS
-  // ===========================================
-
   async function handleDownload(report: ArchivedReport) {
     try {
       setDownloading(report.id);
-
-      // Report-Details mit Download-URL abrufen
       const response = await fetch(`/api/reports/archive/${report.id}`);
-      if (!response.ok) throw new Error("Fehler beim Abrufen der Download-URL");
-
+      if (!response.ok) throw new Error("Fehler beim Abrufen");
       const data = await response.json();
-      const downloadUrl = data.report.downloadUrl;
-
-      // Download starten
       const link = document.createElement("a");
-      link.href = downloadUrl;
+      link.href = data.report.downloadUrl;
       link.download = `${report.title}.${report.format.toLowerCase()}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Herunterladen des Reports");
     } finally {
       setDownloading(null);
     }
   }
 
-  function handleDeleteClick(report: ArchivedReport) {
-    setReportToDelete(report);
-    setDeleteDialogOpen(true);
-  }
-
   async function handleDeleteConfirm() {
     if (!reportToDelete) return;
-
     try {
       setDeleting(reportToDelete.id);
-
-      const response = await fetch(
-        `/api/reports/archive/${reportToDelete.id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
+      const response = await fetch(`/api/reports/archive/${reportToDelete.id}`, { method: "DELETE" });
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Fehler beim Löschen");
+        throw new Error(data.error || "Fehler beim Loeschen");
       }
-
-      // Liste aktualisieren
       await fetchReports();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Fehler beim Löschen des Reports"
-      );
+      toast.error(error instanceof Error ? error.message : "Fehler beim Loeschen");
     } finally {
       setDeleting(null);
       setDeleteDialogOpen(false);
@@ -262,51 +214,17 @@ export default function ReportArchivePage() {
     }
   }
 
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    setPage(1);
-    fetchReports();
-  }
-
-  function clearFilters() {
-    setSearch("");
-    setReportType("all");
-    setFormat("all");
-    setPage(1);
-  }
-
-  const hasActiveFilters =
-    search !== "" || reportType !== "all" || format !== "all";
-
+  const hasActiveFilters = search !== "" || reportType !== "all" || format !== "all";
   const totalPages = Math.ceil(total / pageSize);
-
-  // ===========================================
-  // RENDER
-  // ===========================================
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Archive className="h-8 w-8" />
-            Berichtsarchiv
-          </h1>
-          <p className="text-muted-foreground">
-            Zugriff auf alle generierten und archivierten Berichte
-          </p>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
+      {/* Stats */}
       {stats && (
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Archivierte Berichte
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Archivierte Berichte</CardTitle>
               <Archive className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -319,9 +237,7 @@ export default function ReportArchivePage() {
               <HardDrive className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {formatFileSize(stats.totalSizeBytes)}
-              </div>
+              <div className="text-2xl font-bold">{formatFileSize(stats.totalSizeBytes)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -351,32 +267,26 @@ export default function ReportArchivePage() {
         </div>
       )}
 
-      {/* Search and Filters */}
+      {/* Search & Filters */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Suche & Filter</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
               <Filter className="h-4 w-4 mr-2" />
               {showFilters ? "Filter ausblenden" : "Filter anzeigen"}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSearch} className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); setPage(1); }} className="space-y-4">
             <div className="flex gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Nach Titel suchen..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full"
-                />
-              </div>
+              <Input
+                placeholder="Nach Titel suchen..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1"
+              />
               <Button type="submit" disabled={loading}>
                 <Search className="h-4 w-4 mr-2" />
                 Suchen
@@ -385,30 +295,23 @@ export default function ReportArchivePage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={clearFilters}
+                  onClick={() => { setSearch(""); setReportType("all"); setFormat("all"); setPage(1); }}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Filter löschen
+                  Zuruecksetzen
                 </Button>
               )}
             </div>
-
             {showFilters && (
               <div className="flex gap-4 pt-4 border-t">
                 <div className="w-64">
-                  <label className="text-sm font-medium mb-2 block">
-                    Berichtsart
-                  </label>
+                  <label className="text-sm font-medium mb-2 block">Berichtsart</label>
                   <Select value={reportType} onValueChange={setReportType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Alle Arten" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Alle Arten" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Alle Arten</SelectItem>
                       {Object.entries(reportTypeLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -416,14 +319,11 @@ export default function ReportArchivePage() {
                 <div className="w-48">
                   <label className="text-sm font-medium mb-2 block">Format</label>
                   <Select value={format} onValueChange={setFormat}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Alle Formate" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Alle Formate" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Alle Formate</SelectItem>
                       <SelectItem value="PDF">PDF</SelectItem>
                       <SelectItem value="XLSX">Excel</SelectItem>
-                      <SelectItem value="CSV">CSV</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -433,13 +333,11 @@ export default function ReportArchivePage() {
         </CardContent>
       </Card>
 
-      {/* Reports Table */}
+      {/* Reports table */}
       <Card>
         <CardHeader>
           <CardTitle>Archivierte Berichte</CardTitle>
-          <CardDescription>
-            {total} {total === 1 ? "Bericht" : "Berichte"} gefunden
-          </CardDescription>
+          <CardDescription>{total} {total === 1 ? "Bericht" : "Berichte"} gefunden</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -468,25 +366,19 @@ export default function ReportArchivePage() {
                     <TableHead>Format</TableHead>
                     <TableHead>Erstellt von</TableHead>
                     <TableHead>Datum</TableHead>
-                    <TableHead>Größe</TableHead>
+                    <TableHead>Groesse</TableHead>
                     <TableHead className="text-right">Aktionen</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {reports.map((report) => {
                     const FormatIcon = formatIcons[report.format] || File;
-                    const isDownloading = downloading === report.id;
-                    const isDeleting = deleting === report.id;
-
                     return (
                       <TableRow key={report.id}>
-                        <TableCell className="font-medium">
-                          {report.title}
-                        </TableCell>
+                        <TableCell className="font-medium">{report.title}</TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {reportTypeLabels[report.reportType] ||
-                              report.reportType}
+                            {reportTypeLabels[report.reportType] || report.reportType}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -504,7 +396,7 @@ export default function ReportArchivePage() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {formatDate(report.generatedAt)}
+                            {formatDateTime(report.generatedAt)}
                           </div>
                         </TableCell>
                         <TableCell>{formatFileSize(report.fileSize)}</TableCell>
@@ -514,9 +406,9 @@ export default function ReportArchivePage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleDownload(report)}
-                              disabled={isDownloading || isDeleting}
+                              disabled={downloading === report.id}
                             >
-                              {isDownloading ? (
+                              {downloading === report.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <Download className="h-4 w-4" />
@@ -527,10 +419,10 @@ export default function ReportArchivePage() {
                                 size="sm"
                                 variant="outline"
                                 className="text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteClick(report)}
-                                disabled={isDownloading || isDeleting}
+                                onClick={() => { setReportToDelete(report); setDeleteDialogOpen(true); }}
+                                disabled={deleting === report.id}
                               >
-                                {isDeleting ? (
+                                {deleting === report.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <Trash2 className="h-4 w-4" />
@@ -545,12 +437,9 @@ export default function ReportArchivePage() {
                 </TableBody>
               </Table>
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    Seite {page} von {totalPages}
-                  </p>
+                  <p className="text-sm text-muted-foreground">Seite {page} von {totalPages}</p>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -559,7 +448,7 @@ export default function ReportArchivePage() {
                       disabled={page === 1 || loading}
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      Zurück
+                      Zurueck
                     </Button>
                     <Button
                       variant="outline"
@@ -578,15 +467,14 @@ export default function ReportArchivePage() {
         </CardContent>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Bericht löschen?</AlertDialogTitle>
+            <AlertDialogTitle>Bericht loeschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie den Bericht &quot;{reportToDelete?.title}
-              &quot; löschen möchten? Diese Aktion kann nicht rueckgaengig gemacht
-              werden.
+              Sind Sie sicher, dass Sie den Bericht &quot;{reportToDelete?.title}&quot; loeschen moechten?
+              Diese Aktion kann nicht rueckgaengig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -595,7 +483,7 @@ export default function ReportArchivePage() {
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Löschen
+              Loeschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

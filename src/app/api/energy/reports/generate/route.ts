@@ -268,6 +268,11 @@ async function fetchPowerCurveData(
   };
 }
 
+interface WindRoseMetaRow {
+  total_measurements: bigint;
+  avg_wind_speed: number | null;
+}
+
 async function fetchWindRoseData(
   tenantId: string,
   turbineIds: string[],
@@ -284,40 +289,49 @@ async function fetchWindRoseData(
     AND "timestamp" < ${toDate}
   `;
 
-  const rows = await prisma.$queryRaw<WindRoseRow[]>`
-    SELECT
-      CASE
-        WHEN "windDirection" >= 348.75 OR "windDirection" < 11.25 THEN 'N'
-        WHEN "windDirection" >= 11.25 AND "windDirection" < 33.75 THEN 'NNE'
-        WHEN "windDirection" >= 33.75 AND "windDirection" < 56.25 THEN 'NE'
-        WHEN "windDirection" >= 56.25 AND "windDirection" < 78.75 THEN 'ENE'
-        WHEN "windDirection" >= 78.75 AND "windDirection" < 101.25 THEN 'E'
-        WHEN "windDirection" >= 101.25 AND "windDirection" < 123.75 THEN 'ESE'
-        WHEN "windDirection" >= 123.75 AND "windDirection" < 146.25 THEN 'SE'
-        WHEN "windDirection" >= 146.25 AND "windDirection" < 168.75 THEN 'SSE'
-        WHEN "windDirection" >= 168.75 AND "windDirection" < 191.25 THEN 'S'
-        WHEN "windDirection" >= 191.25 AND "windDirection" < 213.75 THEN 'SSW'
-        WHEN "windDirection" >= 213.75 AND "windDirection" < 236.25 THEN 'SW'
-        WHEN "windDirection" >= 236.25 AND "windDirection" < 258.75 THEN 'WSW'
-        WHEN "windDirection" >= 258.75 AND "windDirection" < 281.25 THEN 'W'
-        WHEN "windDirection" >= 281.25 AND "windDirection" < 303.75 THEN 'WNW'
-        WHEN "windDirection" >= 303.75 AND "windDirection" < 326.25 THEN 'NW'
-        WHEN "windDirection" >= 326.25 AND "windDirection" < 348.75 THEN 'NNW'
-      END AS direction_sector,
-      CASE
-        WHEN "windSpeedMs" < 3 THEN '0-3'
-        WHEN "windSpeedMs" < 6 THEN '3-6'
-        WHEN "windSpeedMs" < 9 THEN '6-9'
-        WHEN "windSpeedMs" < 12 THEN '9-12'
-        WHEN "windSpeedMs" < 15 THEN '12-15'
-        ELSE '15+'
-      END AS speed_range,
-      COUNT(*) AS count
-    FROM scada_measurements
-    WHERE ${whereClause}
-    GROUP BY direction_sector, speed_range
-    ORDER BY direction_sector, speed_range
-  `;
+  const [rows, metaRows] = await Promise.all([
+    prisma.$queryRaw<WindRoseRow[]>`
+      SELECT
+        CASE
+          WHEN "windDirection" >= 348.75 OR "windDirection" < 11.25 THEN 'N'
+          WHEN "windDirection" >= 11.25 AND "windDirection" < 33.75 THEN 'NNE'
+          WHEN "windDirection" >= 33.75 AND "windDirection" < 56.25 THEN 'NE'
+          WHEN "windDirection" >= 56.25 AND "windDirection" < 78.75 THEN 'ENE'
+          WHEN "windDirection" >= 78.75 AND "windDirection" < 101.25 THEN 'E'
+          WHEN "windDirection" >= 101.25 AND "windDirection" < 123.75 THEN 'ESE'
+          WHEN "windDirection" >= 123.75 AND "windDirection" < 146.25 THEN 'SE'
+          WHEN "windDirection" >= 146.25 AND "windDirection" < 168.75 THEN 'SSE'
+          WHEN "windDirection" >= 168.75 AND "windDirection" < 191.25 THEN 'S'
+          WHEN "windDirection" >= 191.25 AND "windDirection" < 213.75 THEN 'SSW'
+          WHEN "windDirection" >= 213.75 AND "windDirection" < 236.25 THEN 'SW'
+          WHEN "windDirection" >= 236.25 AND "windDirection" < 258.75 THEN 'WSW'
+          WHEN "windDirection" >= 258.75 AND "windDirection" < 281.25 THEN 'W'
+          WHEN "windDirection" >= 281.25 AND "windDirection" < 303.75 THEN 'WNW'
+          WHEN "windDirection" >= 303.75 AND "windDirection" < 326.25 THEN 'NW'
+          WHEN "windDirection" >= 326.25 AND "windDirection" < 348.75 THEN 'NNW'
+        END AS direction_sector,
+        CASE
+          WHEN "windSpeedMs" < 3 THEN '0-3'
+          WHEN "windSpeedMs" < 6 THEN '3-6'
+          WHEN "windSpeedMs" < 9 THEN '6-9'
+          WHEN "windSpeedMs" < 12 THEN '9-12'
+          WHEN "windSpeedMs" < 15 THEN '12-15'
+          ELSE '15+'
+        END AS speed_range,
+        COUNT(*) AS count
+      FROM scada_measurements
+      WHERE ${whereClause}
+      GROUP BY direction_sector, speed_range
+      ORDER BY direction_sector, speed_range
+    `,
+    prisma.$queryRaw<WindRoseMetaRow[]>`
+      SELECT
+        COUNT(*) AS total_measurements,
+        AVG("windSpeedMs")::float AS avg_wind_speed
+      FROM scada_measurements
+      WHERE ${whereClause}
+    `,
+  ]);
 
   // Build lookup map
   const countMap = new Map<string, Map<string, number>>();
@@ -365,7 +379,20 @@ async function fetchWindRoseData(
     };
   });
 
-  return { data, dominantDirection };
+  const metaRow = metaRows[0];
+  const totalMeasurements = Number(metaRow?.total_measurements ?? 0);
+  const avgWindSpeed = metaRow?.avg_wind_speed
+    ? Math.round(metaRow.avg_wind_speed * 100) / 100
+    : 0;
+
+  return {
+    data,
+    meta: {
+      totalMeasurements,
+      avgWindSpeed,
+      dominantDirection,
+    },
+  };
 }
 
 async function fetchKpiSummary(
@@ -444,17 +471,22 @@ async function fetchDailyProfile(
     ORDER BY time_slot
   `;
 
+  // DailyChart expects ScadaProduction[] with periodStart — synthesize a
+  // date from the time slot so the chart can extract HH:MM via new Date().
   return rows.map((row) => ({
-    timeSlot: row.time_slot,
+    turbineId: "",
+    turbineDesignation: "",
+    parkName: "",
+    periodStart: `2000-01-01T${row.time_slot}:00`,
+    productionKwh: row.avg_production_kwh
+      ? Math.round(Number(row.avg_production_kwh) * 1000) / 1000
+      : 0,
     avgPowerKw: row.avg_power_kw
       ? Math.round(Number(row.avg_power_kw) * 1000) / 1000
       : 0,
     avgWindSpeed: row.avg_wind_speed
       ? Math.round(Number(row.avg_wind_speed) * 100) / 100
-      : 0,
-    avgProductionKwh: row.avg_production_kwh
-      ? Math.round(Number(row.avg_production_kwh) * 1000) / 1000
-      : 0,
+      : null,
     dataPoints: Number(row.data_points),
   }));
 }

@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import useSWR from "swr";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
-import { BarChart3, Clock, GitCompare, AlertTriangle, Cloud, CreditCard, Search, ArrowLeftRight, Sun, Activity, Zap } from "lucide-react";
+import { BarChart3, Clock, GitCompare, AlertTriangle, Cloud, CreditCard, Search, ArrowLeftRight, Sun, Activity, Zap, FileText, Archive } from "lucide-react";
 import { AnalyticsFilterBar } from "@/components/energy/analytics/analytics-filter-bar";
 import { CreateReportDialog } from "@/components/energy/analytics/create-report-dialog";
 import { DrillDownBreadcrumb } from "@/components/energy/analytics/drill-down-breadcrumb";
@@ -15,6 +15,8 @@ import {
 import { useDrillDown } from "@/hooks/useDrillDown";
 import { DataExplorerTab } from "@/components/energy/analytics/data-explorer-tab";
 import { DataComparisonTab } from "@/components/energy/analytics/data-comparison-tab";
+import { PdfReportsTab } from "@/components/energy/analytics/pdf-reports-tab";
+import { ReportArchiveTab } from "@/components/energy/analytics/report-archive-tab";
 import {
   PerformanceOverview,
   AvailabilityChart,
@@ -232,6 +234,14 @@ export default function AnalyticsPage() {
             <ArrowLeftRight className="h-4 w-4 hidden sm:block" />
             <span>Datenabgleich</span>
           </TabsTrigger>
+          <TabsTrigger value="pdf-reports" className="gap-1">
+            <FileText className="h-4 w-4 hidden sm:block" />
+            <span>PDF-Berichte</span>
+          </TabsTrigger>
+          <TabsTrigger value="archive" className="gap-1">
+            <Archive className="h-4 w-4 hidden sm:block" />
+            <span>Archiv</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Performance Tab */}
@@ -400,6 +410,16 @@ export default function AnalyticsPage() {
         {/* Data Comparison Tab */}
         <TabsContent value="data-comparison" className="mt-6">
           <DataComparisonTab />
+        </TabsContent>
+
+        {/* PDF Reports Tab */}
+        <TabsContent value="pdf-reports" className="mt-6">
+          <PdfReportsTab />
+        </TabsContent>
+
+        {/* Archive Tab */}
+        <TabsContent value="archive" className="mt-6">
+          <ReportArchiveTab />
         </TabsContent>
       </Tabs>
 
