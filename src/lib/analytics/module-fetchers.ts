@@ -892,7 +892,9 @@ export async function fetchMonthlyRevenue(
   year: number,
   parkId?: string | null
 ): Promise<MonthlyRevenuePoint[]> {
-  const settlements = await prisma.energySettlement.findMany({
+  // Use DB-level aggregation instead of loading all rows into memory
+  const grouped = await prisma.energySettlement.groupBy({
+    by: ["month"],
     where: {
       tenantId,
       year,
@@ -900,42 +902,30 @@ export async function fetchMonthlyRevenue(
       month: { not: null },
       status: { in: ["CALCULATED", "INVOICED", "CLOSED"] },
     },
-    select: {
-      month: true,
+    _sum: {
       netOperatorRevenueEur: true,
       totalProductionKwh: true,
     },
     orderBy: { month: "asc" },
   });
 
-  // Group by month (multiple parks may contribute to the same month)
-  const monthMap = new Map<number, { revenueEur: number; productionKwh: number }>();
-  for (const s of settlements) {
-    const m = s.month!;
-    const existing = monthMap.get(m) || { revenueEur: 0, productionKwh: 0 };
-    existing.revenueEur += safeNumber(s.netOperatorRevenueEur);
-    existing.productionKwh += safeNumber(s.totalProductionKwh);
-    monthMap.set(m, existing);
-  }
+  return grouped.map((g) => {
+    const m = g.month!;
+    const revenueEur = round(safeNumber(g._sum.netOperatorRevenueEur), 2);
+    const productionKwh = round(safeNumber(g._sum.totalProductionKwh), 3);
 
-  const result: MonthlyRevenuePoint[] = [];
-  for (const [m, data] of monthMap) {
-    result.push({
+    return {
       month: m,
       year,
       label: monthLabel(m),
-      revenueEur: round(data.revenueEur, 2),
-      productionKwh: round(data.productionKwh, 3),
+      revenueEur,
+      productionKwh,
       revenuePerKwh:
-        data.productionKwh > 0
-          ? round(data.revenueEur / data.productionKwh, 4)
+        productionKwh > 0
+          ? round(revenueEur / productionKwh, 4)
           : null,
-    });
-  }
-
-  // Sort by month ascending
-  result.sort((a, b) => a.month - b.month);
-  return result;
+    };
+  });
 }
 
 // --- Lost Revenue Estimation ---
@@ -1232,15 +1222,14 @@ export async function fetchDirectionEfficiency(
 
 interface ShadowCumRow {
   turbineId: string;
-  min_cum: Prisma.Decimal | null;
-  max_cum: Prisma.Decimal | null;
+  total_shadow_h: Prisma.Decimal | null;
   avg_daily_shadow: Prisma.Decimal | null;
 }
 
 /**
  * Fetch shadow casting hours per turbine for a given year.
- * Uses cumulative shadow hours (setCumShadowH) to compute yearly total,
- * and averages meanShadow for daily shadow minutes.
+ * Uses daily cumulative counter differences (max-min per day) to handle
+ * counter resets gracefully, and averages meanShadow for daily shadow minutes.
  */
 export async function fetchShadowPerTurbine(
   tenantId: string,
@@ -1254,18 +1243,26 @@ export async function fetchShadowPerTurbine(
   const turbineIds = turbines.map((t) => t.id);
   const { from, to } = buildDateRange(year);
 
+  // Calculate daily deltas first, then sum — handles counter resets
   const rows = await prisma.$queryRaw<ShadowCumRow[]>`
     SELECT
       "turbineId",
-      MIN("setCumShadowH") AS min_cum,
-      MAX("setCumShadowH") AS max_cum,
-      AVG("meanShadow") AS avg_daily_shadow
-    FROM scada_shadow_casting
-    WHERE "tenantId" = ${tenantId}
-      AND ${buildTurbineIdFilter(turbineIds)}
-      AND "timestamp" >= ${from}
-      AND "timestamp" < ${to}
-      AND "setCumShadowH" IS NOT NULL
+      SUM(daily_delta) AS total_shadow_h,
+      AVG(avg_daily_shadow) AS avg_daily_shadow
+    FROM (
+      SELECT
+        "turbineId",
+        date_trunc('day', "timestamp") AS day,
+        GREATEST(MAX("setCumShadowH") - MIN("setCumShadowH"), 0) AS daily_delta,
+        AVG("meanShadow") AS avg_daily_shadow
+      FROM scada_shadow_casting
+      WHERE "tenantId" = ${tenantId}
+        AND ${buildTurbineIdFilter(turbineIds)}
+        AND "timestamp" >= ${from}
+        AND "timestamp" < ${to}
+        AND "setCumShadowH" IS NOT NULL
+      GROUP BY "turbineId", date_trunc('day', "timestamp")
+    ) daily
     GROUP BY "turbineId"
   `;
 
@@ -1273,9 +1270,7 @@ export async function fetchShadowPerTurbine(
 
   return turbines.map((t) => {
     const row = rowMap.get(t.id);
-    const minCum = safeNumber(row?.min_cum);
-    const maxCum = safeNumber(row?.max_cum);
-    const totalShadowHoursYear = round(maxCum - minCum, 2);
+    const totalShadowHoursYear = round(safeNumber(row?.total_shadow_h), 2);
     const avgDailyShadowMinutes = round(safeNumber(row?.avg_daily_shadow), 2);
 
     return {
@@ -1412,6 +1407,8 @@ export async function fetchOperatingStatePareto(
       AND ${buildTurbineIdFilter(turbineIds)}
       AND "timestamp" >= ${from}
       AND "timestamp" < ${to}
+      AND states IS NOT NULL
+      AND jsonb_typeof(states::jsonb) = 'object'
     GROUP BY kv.key
     ORDER BY total_duration DESC
     LIMIT 20
@@ -1471,6 +1468,8 @@ export async function fetchOperatingStatePerTurbine(
       AND ${Prisma.sql`os."turbineId" IN (${Prisma.join(turbineIds)})`}
       AND os."timestamp" >= ${from}
       AND os."timestamp" < ${to}
+      AND os.states IS NOT NULL
+      AND jsonb_typeof(os.states::jsonb) = 'object'
     GROUP BY os."turbineId"
   `;
 
@@ -1536,6 +1535,8 @@ export async function fetchOperatingStateTimeline(
         AND ${Prisma.sql`os."turbineId" IN (${Prisma.join(turbineIds)})`}
         AND os."timestamp" >= ${from}
         AND os."timestamp" < ${to}
+        AND os.states IS NOT NULL
+        AND jsonb_typeof(os.states::jsonb) = 'object'
       GROUP BY date_trunc('day', os."timestamp"), kv.key
     ) ranked
     WHERE rn = 1
@@ -1584,8 +1585,8 @@ export async function fetchPhaseSymmetryTrend(
   const rows = await prisma.$queryRaw<PhaseSymTrendRow[]>`
     SELECT
       date_trunc('month', "timestamp") AS month,
-      AVG(GREATEST("meanP1","meanP2","meanP3") - LEAST("meanP1","meanP2","meanP3")) AS avg_imbalance_kw,
-      AVG(("meanP1"+"meanP2"+"meanP3")/3.0) AS avg_phase_power_kw,
+      AVG(GREATEST(COALESCE("meanP1",0),COALESCE("meanP2",0),COALESCE("meanP3",0)) - LEAST(COALESCE("meanP1",0),COALESCE("meanP2",0),COALESCE("meanP3",0))) AS avg_imbalance_kw,
+      AVG((COALESCE("meanP1",0)+COALESCE("meanP2",0)+COALESCE("meanP3",0))/3.0) AS avg_phase_power_kw,
       COUNT(*) AS data_points
     FROM scada_electrical_phases
     WHERE "tenantId" = ${tenantId}
@@ -1593,16 +1594,14 @@ export async function fetchPhaseSymmetryTrend(
       AND "timestamp" >= ${from}
       AND "timestamp" < ${to}
       AND "periodType" = 'INTERVAL'
-      AND "meanP1" IS NOT NULL
-      AND "meanP2" IS NOT NULL
-      AND "meanP3" IS NOT NULL
+      AND ("meanP1" IS NOT NULL OR "meanP2" IS NOT NULL OR "meanP3" IS NOT NULL)
     GROUP BY date_trunc('month', "timestamp")
     ORDER BY month
   `;
 
   return rows.map((r) => {
     const d = new Date(r.month);
-    const avgImbalanceKw = round(safeNumber(r.avg_imbalance_kw), 2);
+    const avgImbalanceKw = round(Math.max(safeNumber(r.avg_imbalance_kw), 0), 2);
     const avgPhasePowerKw = round(safeNumber(r.avg_phase_power_kw), 2);
     const avgImbalancePct =
       avgPhasePowerKw > 0
@@ -1648,8 +1647,8 @@ export async function fetchPhaseSymmetryPerTurbine(
   const rows = await prisma.$queryRaw<PhaseSymPerTurbineRow[]>`
     SELECT
       "turbineId",
-      AVG(GREATEST("meanP1","meanP2","meanP3") - LEAST("meanP1","meanP2","meanP3")) AS avg_imbalance_kw,
-      AVG(("meanP1"+"meanP2"+"meanP3")/3.0) AS avg_phase_power_kw,
+      AVG(GREATEST(COALESCE("meanP1",0),COALESCE("meanP2",0),COALESCE("meanP3",0)) - LEAST(COALESCE("meanP1",0),COALESCE("meanP2",0),COALESCE("meanP3",0))) AS avg_imbalance_kw,
+      AVG((COALESCE("meanP1",0)+COALESCE("meanP2",0)+COALESCE("meanP3",0))/3.0) AS avg_phase_power_kw,
       AVG(COALESCE("meanQ1",0) + COALESCE("meanQ2",0) + COALESCE("meanQ3",0)) AS avg_reactive_power,
       COUNT(*) AS data_points
     FROM scada_electrical_phases
@@ -1658,9 +1657,7 @@ export async function fetchPhaseSymmetryPerTurbine(
       AND "timestamp" >= ${from}
       AND "timestamp" < ${to}
       AND "periodType" = 'INTERVAL'
-      AND "meanP1" IS NOT NULL
-      AND "meanP2" IS NOT NULL
-      AND "meanP3" IS NOT NULL
+      AND ("meanP1" IS NOT NULL OR "meanP2" IS NOT NULL OR "meanP3" IS NOT NULL)
     GROUP BY "turbineId"
   `;
 
@@ -1720,9 +1717,7 @@ export async function fetchPhasePowersMonthly(
       AND "timestamp" >= ${from}
       AND "timestamp" < ${to}
       AND "periodType" = 'INTERVAL'
-      AND "meanP1" IS NOT NULL
-      AND "meanP2" IS NOT NULL
-      AND "meanP3" IS NOT NULL
+      AND ("meanP1" IS NOT NULL OR "meanP2" IS NOT NULL OR "meanP3" IS NOT NULL)
     GROUP BY date_trunc('month', "timestamp")
     ORDER BY month
   `;

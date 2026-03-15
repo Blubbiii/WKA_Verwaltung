@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { locationCode, fileTypes: requestedTypes } = body;
 
-    if (!locationCode || typeof locationCode !== "string" || !locationCode.startsWith("Loc_")) {
+    if (!locationCode || typeof locationCode !== "string" || !/^Loc_\d+$/.test(locationCode)) {
       return NextResponse.json(
-        { error: "locationCode ist erforderlich und muss mit 'Loc_' beginnen" },
+        { error: "locationCode ist erforderlich und muss dem Format 'Loc_XXXX' entsprechen (nur Ziffern)" },
         { status: 400 },
       );
     }
@@ -137,9 +137,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim n8n SCADA-Trigger");
-    const errMsg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Fehler beim Starten der SCADA-Importe", details: errMsg },
+      { error: "Fehler beim Starten der SCADA-Importe" },
       { status: 500 },
     );
   }

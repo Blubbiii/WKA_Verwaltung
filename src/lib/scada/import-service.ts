@@ -25,6 +25,9 @@ import * as fs from 'fs/promises';
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import type { Prisma } from '@prisma/client';
+import { logger } from '@/lib/logger';
+
+const scadaLogger = logger.child({ module: 'scada-import' });
 import {
   readWsdFile,
   readUidFile,
@@ -369,8 +372,8 @@ async function writeWsdMeasurements(
       imported += result.count;
       // Die Differenz sind Duplikate die übersprungen wurden
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
-      // Batch-Fehler: alle Records dieses Batches als fehlgeschlagen zaehlen
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -461,7 +464,8 @@ async function writeUidMeasurements(
 
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -572,7 +576,8 @@ async function writeAvailabilityRecords(
 
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -649,7 +654,8 @@ async function writeStateSummaryRecords(
 
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -726,7 +732,8 @@ async function writeWarningSummaryRecords(
 
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -803,7 +810,8 @@ async function writeStateEventRecords(
 
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -876,7 +884,8 @@ async function writeWarningEventRecords(
 
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -1011,7 +1020,8 @@ async function writeWindSummaryRecords(
 
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -1079,7 +1089,8 @@ async function writeTextEventRecords(
 
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -1138,7 +1149,8 @@ async function writeShadowCastingRecords(
       });
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -1196,7 +1208,8 @@ async function writeOperatingStateRecords(
       });
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -1259,7 +1272,8 @@ async function writeElectricalPhaseRecords(
       });
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -1354,7 +1368,8 @@ async function writeElectricalSummaryRecords(
       });
       imported += result.count;
       skipped += dbRecords.length - result.count;
-    } catch (_err) {
+    } catch (err) {
+      scadaLogger.error({ err, batchSize: dbRecords.length }, "Batch write failed");
       failed += dbRecords.length;
     }
   }
@@ -1566,6 +1581,9 @@ async function directoryExists(dirPath: string): Promise<boolean> {
  *
  * @returns Sorted array of absolute file paths
  */
+/** Maximum number of files to discover per type to prevent memory exhaustion */
+const MAX_DISCOVER_FILES = 50_000;
+
 async function discoverFiles(
   locationPath: string,
   fileType: ScadaFileType,
@@ -1676,7 +1694,17 @@ async function discoverFiles(
   }
 
   // Deduplicate (in case a file is found in multiple scan passes)
-  return [...new Set(files)].sort();
+  const deduped = [...new Set(files)].sort();
+
+  if (deduped.length > MAX_DISCOVER_FILES) {
+    scadaLogger.warn(
+      { fileType, count: deduped.length, limit: MAX_DISCOVER_FILES },
+      `File discovery exceeded limit, truncating to ${MAX_DISCOVER_FILES} files`,
+    );
+    return deduped.slice(0, MAX_DISCOVER_FILES);
+  }
+
+  return deduped;
 }
 
 // ---------------------------------------------------------------
@@ -1893,9 +1921,9 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
     const turbineMappings = await loadTurbineMappings(tenantId, locationCode);
 
     if (turbineMappings.size === 0) {
-      console.warn(
-        `[SCADA] Keine aktiven Turbine-Mappings für ${locationCode} — Import läuft weiter, ` +
-        'nicht zugeordnete Anlagen werden als Warnung geloggt.',
+      scadaLogger.warn(
+        { locationCode },
+        `Keine aktiven Turbine-Mappings für ${locationCode} — Import läuft weiter, nicht zugeordnete Anlagen werden übersprungen`,
       );
       errors.push(
         `Keine Turbine-Mappings für ${locationCode} vorhanden. ` +

@@ -43,9 +43,9 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const locationCode = formData.get("locationCode") as string | null;
 
-    if (!locationCode || !locationCode.startsWith("Loc_")) {
+    if (!locationCode || !/^Loc_\d+$/.test(locationCode)) {
       return NextResponse.json(
-        { error: "locationCode ist erforderlich und muss mit 'Loc_' beginnen" },
+        { error: "locationCode ist erforderlich und muss dem Format 'Loc_XXXX' entsprechen (nur Ziffern)" },
         { status: 400 },
       );
     }
@@ -122,9 +122,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim n8n SCADA-Upload");
-    const errMsg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Fehler beim Speichern der SCADA-Dateien", details: errMsg },
+      { error: "Fehler beim Speichern der SCADA-Dateien" },
       { status: 500 },
     );
   }

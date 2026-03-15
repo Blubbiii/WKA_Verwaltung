@@ -1336,6 +1336,41 @@ export async function readUqdFile(filePath: string): Promise<ElectricalPhaseReco
     const dbf = await DBFFile.open(filePath);
     const rawRecords = await dbf.readRecords();
 
+    // Build dynamic field name map from DBF header
+    // Standard Enercon: mruqSmpP1, pruqSmpP1, lruqSmpP1, etc.
+    // Fallback: detect mr*P1, pr*P1, lr*P1 patterns dynamically
+    const fieldNames = new Set(dbf.fields.map((f) => f.name.toLowerCase()));
+    const hasStandardNames = fieldNames.has('mruqsmpp1');
+
+    // Resolve field name: try standard first, then scan for pattern
+    function resolveField(prefix: string, phase: string): string | null {
+      const standard = `${prefix}uqSmp${phase}`;
+      if (fieldNames.has(standard.toLowerCase())) return standard;
+      // Fallback: search for any field ending with phase identifier
+      for (const f of dbf.fields) {
+        if (f.name.toLowerCase().startsWith(prefix.toLowerCase()) && f.name.endsWith(phase)) {
+          return f.name;
+        }
+      }
+      return null;
+    }
+
+    const fieldMap = hasStandardNames ? null : {
+      meanP1: resolveField('mr', 'P1'), peakP1: resolveField('pr', 'P1'), lowP1: resolveField('lr', 'P1'),
+      meanP2: resolveField('mr', 'P2'), peakP2: resolveField('pr', 'P2'), lowP2: resolveField('lr', 'P2'),
+      meanP3: resolveField('mr', 'P3'), peakP3: resolveField('pr', 'P3'), lowP3: resolveField('lr', 'P3'),
+      meanQ1: resolveField('mr', 'Q1'), peakQ1: resolveField('pr', 'Q1'), lowQ1: resolveField('lr', 'Q1'),
+      meanQ2: resolveField('mr', 'Q2'), peakQ2: resolveField('pr', 'Q2'), lowQ2: resolveField('lr', 'Q2'),
+      meanQ3: resolveField('mr', 'Q3'), peakQ3: resolveField('pr', 'Q3'), lowQ3: resolveField('lr', 'Q3'),
+    };
+
+    if (!hasStandardNames) {
+      scadaLogger.warn(
+        { filePath, resolvedFields: fieldMap },
+        "UQD file uses non-standard field names, using dynamic detection"
+      );
+    }
+
     const records: ElectricalPhaseRecord[] = [];
 
     for (const raw of rawRecords) {
@@ -1347,17 +1382,29 @@ export async function readUqdFile(filePath: string): Promise<ElectricalPhaseReco
       const plantNo = getPlantNo(rec);
       if (!plantNo) continue;
 
-      records.push({
-        timestamp,
-        plantNo,
-        error: getInt(rec, 'Error'),
-        meanP1: getNum(rec, 'mruqSmpP1'), peakP1: getNum(rec, 'pruqSmpP1'), lowP1: getNum(rec, 'lruqSmpP1'),
-        meanP2: getNum(rec, 'mruqSmpP2'), peakP2: getNum(rec, 'pruqSmpP2'), lowP2: getNum(rec, 'lruqSmpP2'),
-        meanP3: getNum(rec, 'mruqSmpP3'), peakP3: getNum(rec, 'pruqSmpP3'), lowP3: getNum(rec, 'lruqSmpP3'),
-        meanQ1: getNum(rec, 'mruqSmpQ1'), peakQ1: getNum(rec, 'pruqSmpQ1'), lowQ1: getNum(rec, 'lruqSmpQ1'),
-        meanQ2: getNum(rec, 'mruqSmpQ2'), peakQ2: getNum(rec, 'pruqSmpQ2'), lowQ2: getNum(rec, 'lruqSmpQ2'),
-        meanQ3: getNum(rec, 'mruqSmpQ3'), peakQ3: getNum(rec, 'pruqSmpQ3'), lowQ3: getNum(rec, 'lruqSmpQ3'),
-      });
+      const gf = (key: string | null) => key ? getNum(rec, key) : null;
+
+      if (hasStandardNames) {
+        records.push({
+          timestamp, plantNo, error: getInt(rec, 'Error'),
+          meanP1: getNum(rec, 'mruqSmpP1'), peakP1: getNum(rec, 'pruqSmpP1'), lowP1: getNum(rec, 'lruqSmpP1'),
+          meanP2: getNum(rec, 'mruqSmpP2'), peakP2: getNum(rec, 'pruqSmpP2'), lowP2: getNum(rec, 'lruqSmpP2'),
+          meanP3: getNum(rec, 'mruqSmpP3'), peakP3: getNum(rec, 'pruqSmpP3'), lowP3: getNum(rec, 'lruqSmpP3'),
+          meanQ1: getNum(rec, 'mruqSmpQ1'), peakQ1: getNum(rec, 'pruqSmpQ1'), lowQ1: getNum(rec, 'lruqSmpQ1'),
+          meanQ2: getNum(rec, 'mruqSmpQ2'), peakQ2: getNum(rec, 'pruqSmpQ2'), lowQ2: getNum(rec, 'lruqSmpQ2'),
+          meanQ3: getNum(rec, 'mruqSmpQ3'), peakQ3: getNum(rec, 'pruqSmpQ3'), lowQ3: getNum(rec, 'lruqSmpQ3'),
+        });
+      } else {
+        records.push({
+          timestamp, plantNo, error: getInt(rec, 'Error'),
+          meanP1: gf(fieldMap!.meanP1), peakP1: gf(fieldMap!.peakP1), lowP1: gf(fieldMap!.lowP1),
+          meanP2: gf(fieldMap!.meanP2), peakP2: gf(fieldMap!.peakP2), lowP2: gf(fieldMap!.lowP2),
+          meanP3: gf(fieldMap!.meanP3), peakP3: gf(fieldMap!.peakP3), lowP3: gf(fieldMap!.lowP3),
+          meanQ1: gf(fieldMap!.meanQ1), peakQ1: gf(fieldMap!.peakQ1), lowQ1: gf(fieldMap!.lowQ1),
+          meanQ2: gf(fieldMap!.meanQ2), peakQ2: gf(fieldMap!.peakQ2), lowQ2: gf(fieldMap!.lowQ2),
+          meanQ3: gf(fieldMap!.meanQ3), peakQ3: gf(fieldMap!.peakQ3), lowQ3: gf(fieldMap!.lowQ3),
+        });
+      }
     }
 
     return records;

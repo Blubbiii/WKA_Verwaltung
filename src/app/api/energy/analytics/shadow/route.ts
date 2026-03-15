@@ -41,28 +41,30 @@ export async function GET(request: NextRequest) {
 
     // Build summary from per-turbine data
     const BIMSCHG_LIMIT_HOURS = 30; // BImSchG limit per turbine per year
-    const worstTurbine = perTurbine.reduce(
-      (worst, t) =>
-        t.totalShadowHoursYear > (worst?.totalShadowHoursYear ?? 0) ? t : worst,
-      perTurbine[0] ?? null
-    );
 
     const totalShadowHoursYear = perTurbine.reduce(
       (sum, t) => sum + t.totalShadowHoursYear,
       0
     );
 
+    let worstTurbineDesignation: string | null = null;
+    let budgetUsedPercent = 0;
+
+    if (perTurbine.length > 0) {
+      const worstTurbine = perTurbine.reduce((worst, t) =>
+        t.totalShadowHoursYear > worst.totalShadowHoursYear ? t : worst
+      );
+      worstTurbineDesignation = worstTurbine.designation;
+      budgetUsedPercent =
+        Math.round(
+          (worstTurbine.totalShadowHoursYear / BIMSCHG_LIMIT_HOURS) * 100 * 100
+        ) / 100;
+    }
+
     const summary = {
       totalShadowHoursYear: Math.round(totalShadowHoursYear * 100) / 100,
-      budgetUsedPercent:
-        worstTurbine
-          ? Math.round(
-              (worstTurbine.totalShadowHoursYear / BIMSCHG_LIMIT_HOURS) *
-                100 *
-                100
-            ) / 100
-          : 0,
-      worstTurbineDesignation: worstTurbine?.designation ?? null,
+      budgetUsedPercent,
+      worstTurbineDesignation,
     };
 
     return NextResponse.json({

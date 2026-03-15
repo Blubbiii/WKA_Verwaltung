@@ -24,6 +24,14 @@ export async function GET(request: NextRequest) {
     const yearParam = searchParams.get("year");
     const turbineIdParam = searchParams.get("turbineId");
 
+    // Validate turbineId format (UUID)
+    if (turbineIdParam && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(turbineIdParam)) {
+      return NextResponse.json(
+        { error: "Ungültiges turbineId-Format (UUID erwartet)" },
+        { status: 400 }
+      );
+    }
+
     // Validate year
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
     if (isNaN(year) || year < 2000 || year > 2100) {
