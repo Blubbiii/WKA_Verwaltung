@@ -311,6 +311,8 @@ export default function AnalyticsPage() {
                 warningTrend={faultData?.warningTrend ?? []}
                 perTurbine={faultData?.perTurbine ?? []}
                 isLoading={faultLoading}
+                parkId={selectedParkId}
+                year={selectedYear}
               />
             )}
           </CollapsibleSection>

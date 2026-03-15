@@ -317,6 +317,7 @@ model Turbine {
   latitude                       Decimal?                  @db.Decimal(10, 8)
   longitude                      Decimal?                  @db.Decimal(11, 8)
   mastrNumber                    String?
+  controllerType                 String?                   // z.B. "CS82" — verknüpft mit ScadaStatusCode
   status                         EntityStatus              @default(ACTIVE)
   technicalData                  Json                      @default("{}")
   createdAt                      DateTime                  @default(now())
@@ -2318,6 +2319,24 @@ model ScadaWarningSummary {
   @@index([tenantId])
   @@index([turbineId, date])
   @@map("scada_warning_summaries")
+}
+
+model ScadaStatusCode {
+  id              String   @id @default(uuid())
+  controllerType  String
+  codeType        String   // "STATUS" or "WARNING"
+  mainCode        Int
+  subCode         Int
+  description     String
+  parentLabel     String?
+  timeKey         String?  // T1-T6
+  messageType     String   // "S", "W", "I"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([controllerType, codeType, mainCode, subCode])
+  @@index([controllerType, codeType])
+  @@map("scada_status_codes")
 }
 
 model ScadaWindSummary {

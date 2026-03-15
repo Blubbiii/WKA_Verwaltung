@@ -158,6 +158,26 @@ export async function writeToTurbineProduction(
   month: number,
   kwhValue: number,
 ) {
+  // Fetch SCADA availability for this turbine+month to enrich production record
+  const monthStart = new Date(Date.UTC(year, month - 1, 1));
+  const monthEnd = new Date(Date.UTC(year, month, 0)); // last day of month
+  const scadaAvail = await prisma.scadaAvailability.findFirst({
+    where: {
+      turbineId,
+      periodType: 'MONTHLY',
+      date: { gte: monthStart, lte: monthEnd },
+    },
+    select: { availabilityPct: true, t1: true },
+  });
+
+  const availabilityPct = scadaAvail?.availabilityPct
+    ? new Decimal(scadaAvail.availabilityPct.toString())
+    : undefined;
+  // t1 is production time in seconds → convert to hours
+  const operatingHours = scadaAvail?.t1 && scadaAvail.t1 > 0
+    ? new Decimal((scadaAvail.t1 / 3600).toFixed(2))
+    : undefined;
+
   const result = await prisma.turbineProduction.upsert({
     where: {
       turbineId_year_month_tenantId: {
@@ -173,12 +193,16 @@ export async function writeToTurbineProduction(
       year,
       month,
       productionKwh: new Decimal(kwhValue),
+      ...(availabilityPct && { availabilityPct }),
+      ...(operatingHours && { operatingHours }),
       source: 'SCADA',
       status: 'DRAFT',
       notes: `Automatisch aggregiert aus SCADA-Daten (${year}-${String(month).padStart(2, '0')})`,
     },
     update: {
       productionKwh: new Decimal(kwhValue),
+      ...(availabilityPct && { availabilityPct }),
+      ...(operatingHours && { operatingHours }),
       source: 'SCADA',
       status: 'DRAFT',
       notes: `Automatisch aggregiert aus SCADA-Daten (${year}-${String(month).padStart(2, '0')}) - Aktualisiert`,

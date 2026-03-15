@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -17,7 +17,29 @@ import {
   Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Clock, Bell, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertTriangle,
+  Clock,
+  Bell,
+  Zap,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  List,
+  Wind,
+} from "lucide-react";
 import { AnalyticsKpiRow } from "./kpi-row";
 import type { FaultParetoItem, WarningTrendPoint } from "@/types/analytics";
 
@@ -36,6 +58,24 @@ interface FaultAnalysisProps {
     productionLossEstimateKwh: number;
   }>;
   isLoading?: boolean;
+  parkId?: string;
+  year?: number;
+}
+
+// --- Event types ---
+
+interface StateEvent {
+  id: string;
+  timestamp: string;
+  state: number;
+  subState: number;
+  isFault: boolean;
+  isService: boolean;
+  windSpeed: number | null;
+  turbineDesignation: string;
+  description: string | null;
+  parentLabel: string | null;
+  label: string;
 }
 
 // =============================================================================
@@ -118,7 +158,53 @@ export function FaultAnalysis({
   warningTrend,
   perTurbine,
   isLoading,
+  parkId,
+  year,
 }: FaultAnalysisProps) {
+  // --- Event table state ---
+  const [events, setEvents] = useState<StateEvent[]>([]);
+  const [eventsTotal, setEventsTotal] = useState(0);
+  const [eventsTotalPages, setEventsTotalPages] = useState(0);
+  const [eventsPage, setEventsPage] = useState(1);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsSearch, setEventsSearch] = useState("");
+  const [eventsSearchApplied, setEventsSearchApplied] = useState("");
+  const [eventsFaultOnly, setEventsFaultOnly] = useState(false);
+
+  const loadEvents = useCallback(async () => {
+    setEventsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (year) params.set("year", String(year));
+      if (parkId && parkId !== "all") params.set("parkId", parkId);
+      params.set("page", String(eventsPage));
+      params.set("pageSize", "50");
+      if (eventsFaultOnly) params.set("faultOnly", "true");
+      if (eventsSearchApplied) params.set("search", eventsSearchApplied);
+
+      const res = await fetch(`/api/energy/analytics/faults/events?${params}`);
+      if (!res.ok) throw new Error("Fehler");
+      const json = await res.json();
+      setEvents(json.events || []);
+      setEventsTotal(json.total || 0);
+      setEventsTotalPages(json.totalPages || 0);
+    } catch {
+      setEvents([]);
+      setEventsTotal(0);
+    } finally {
+      setEventsLoading(false);
+    }
+  }, [year, parkId, eventsPage, eventsFaultOnly, eventsSearchApplied]);
+
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setEventsPage(1);
+  }, [eventsSearchApplied, eventsFaultOnly, parkId, year]);
+
   // Compute KPI values
   const kpiData = useMemo(() => {
     const uniqueStates = statePareto.length;
@@ -415,6 +501,189 @@ export function FaultAnalysis({
           </CardContent>
         </Card>
       </div>
+
+      {/* Event Table */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <List className="h-4 w-4" />
+              Störungsereignisse
+              {eventsTotal > 0 && (
+                <span className="text-muted-foreground font-normal">
+                  ({numFmt.format(eventsTotal)})
+                </span>
+              )}
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Filter bar */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 flex-1 max-w-sm">
+              <Input
+                placeholder="Code oder Beschreibung suchen..."
+                value={eventsSearch}
+                onChange={(e) => setEventsSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") setEventsSearchApplied(eventsSearch);
+                }}
+                className="h-8 text-sm"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-2"
+                onClick={() => setEventsSearchApplied(eventsSearch)}
+              >
+                <Search className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <Button
+              variant={eventsFaultOnly ? "default" : "outline"}
+              size="sm"
+              className="h-8"
+              onClick={() => setEventsFaultOnly(!eventsFaultOnly)}
+            >
+              <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+              Nur Störungen
+            </Button>
+            {(eventsSearchApplied || eventsFaultOnly) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8"
+                onClick={() => {
+                  setEventsSearch("");
+                  setEventsSearchApplied("");
+                  setEventsFaultOnly(false);
+                }}
+              >
+                Filter zurücksetzen
+              </Button>
+            )}
+          </div>
+
+          {/* Table */}
+          {eventsLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : events.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Keine Ereignisse gefunden
+            </p>
+          ) : (
+            <>
+              <div className="rounded-md border overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[160px]">Zeitpunkt</TableHead>
+                      <TableHead className="w-[100px]">Anlage</TableHead>
+                      <TableHead className="w-[80px]">Code</TableHead>
+                      <TableHead>Beschreibung</TableHead>
+                      <TableHead className="w-[70px] text-center">Typ</TableHead>
+                      <TableHead className="w-[80px] text-right">
+                        <span className="inline-flex items-center gap-1">
+                          <Wind className="h-3 w-3" /> m/s
+                        </span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {events.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell className="font-mono text-xs">
+                          {new Date(event.timestamp).toLocaleString("de-DE", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                          })}
+                        </TableCell>
+                        <TableCell className="text-sm font-medium">
+                          {event.turbineDesignation}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {event.state}.{event.subState}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {event.description ? (
+                            <span>
+                              {event.parentLabel && (
+                                <span className="text-muted-foreground">
+                                  {event.parentLabel} —{" "}
+                                </span>
+                              )}
+                              {event.description}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {event.isFault ? (
+                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                              Störung
+                            </Badge>
+                          ) : event.isService ? (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                              Service
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              Status
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs">
+                          {event.windSpeed != null
+                            ? dec1Fmt.format(event.windSpeed)
+                            : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination */}
+              {eventsTotalPages > 1 && (
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-xs text-muted-foreground">
+                    Seite {eventsPage} von {eventsTotalPages}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2"
+                      disabled={eventsPage <= 1}
+                      onClick={() => setEventsPage((p) => p - 1)}
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2"
+                      disabled={eventsPage >= eventsTotalPages}
+                      onClick={() => setEventsPage((p) => p + 1)}
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

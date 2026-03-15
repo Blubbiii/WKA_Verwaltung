@@ -676,6 +676,71 @@ export async function fetchTurbineComparison(
 // Faults & Warnings Module Fetchers
 // =============================================================================
 
+// --- Status Code Lookup ---
+
+/**
+ * Build a lookup map for SCADA status codes based on the controller types
+ * of the given turbines. Returns a Map: "mainCode:subCode" → {description, parentLabel}.
+ */
+async function buildStatusCodeLookup(
+  turbineIds: string[]
+): Promise<Map<string, { description: string; parentLabel: string | null }>> {
+  // Get distinct controllerTypes for these turbines
+  const turbinesWithType = await prisma.turbine.findMany({
+    where: { id: { in: turbineIds }, controllerType: { not: null } },
+    select: { controllerType: true },
+    distinct: ["controllerType"],
+  });
+
+  const controllerTypes = turbinesWithType
+    .map((t) => t.controllerType!)
+    .filter(Boolean);
+
+  if (controllerTypes.length === 0) return new Map();
+
+  const codes = await prisma.scadaStatusCode.findMany({
+    where: {
+      controllerType: { in: controllerTypes },
+      codeType: "STATUS",
+    },
+    select: { mainCode: true, subCode: true, description: true, parentLabel: true },
+  });
+
+  const lookup = new Map<string, { description: string; parentLabel: string | null }>();
+  for (const c of codes) {
+    const key = `${c.mainCode}:${c.subCode}`;
+    // First match wins (if multiple controller types have same code)
+    if (!lookup.has(key)) {
+      lookup.set(key, { description: c.description, parentLabel: c.parentLabel });
+    }
+  }
+  return lookup;
+}
+
+/**
+ * Format a state code label: "(mainCode.subCode) ParentLabel — Description"
+ * Falls back to "Zustand mainCode.subCode" if no code list is available.
+ */
+function formatStateLabel(
+  state: number,
+  subState: number,
+  isFault: boolean,
+  lookup: Map<string, { description: string; parentLabel: string | null }>
+): string {
+  const entry = lookup.get(`${state}:${subState}`);
+  const suffix = isFault ? " (Störung)" : "";
+
+  if (!entry) {
+    return `(${state}.${subState}) Zustand ${state}.${subState}${suffix}`;
+  }
+
+  const prefix = `(${state}.${subState})`;
+  if (entry.parentLabel) {
+    return `${prefix} ${entry.parentLabel} — ${entry.description}${suffix}`;
+  }
+  return `${prefix} ${entry.description}${suffix}`;
+}
+
 // --- Fault Pareto (state/subState breakdown) ---
 
 interface FaultParetoRow {
@@ -721,6 +786,9 @@ export async function fetchFaultPareto(
 
   if (rows.length === 0) return [];
 
+  // Resolve numeric codes to human-readable labels
+  const codeLookup = await buildStatusCodeLookup(turbineIds);
+
   const totalDuration = rows.reduce((s, r) => s + Number(r.total_duration), 0);
   let cumulative = 0;
 
@@ -728,7 +796,7 @@ export async function fetchFaultPareto(
     const duration = Number(r.total_duration);
     const pct = totalDuration > 0 ? round((duration / totalDuration) * 100, 1) : 0;
     cumulative += pct;
-    const label = `Zustand ${r.state}.${r.subState}${r.isFault ? " (Störung)" : ""}`;
+    const label = formatStateLabel(r.state, r.subState, r.isFault, codeLookup);
 
     return {
       state: r.state,

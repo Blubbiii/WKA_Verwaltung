@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: "row",
     backgroundColor: COLORS.primary,
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 5,
   },
   tableHeaderText: {
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 5,
+    paddingVertical: 4,
     paddingHorizontal: 5,
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
@@ -361,8 +361,8 @@ const styles = StyleSheet.create({
 
   // Bar chart
   chartContainer: {
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: 8,
+    marginBottom: 6,
   },
   chartTitle: {
     fontSize: 10,
@@ -511,6 +511,8 @@ export interface AnnualReportData {
   avgAvailabilityPct: number | null;
   avgWindSpeedMs: number | null;
   totalOperatingHours: number | null;
+  avgOperatingHoursPerTurbine: number | null;
+  turbineCount: number;
   specificYieldKwhPerKw: number | null;
   totalRevenueEur: number | null;
   avgRevenuePerKwh: number | null;
@@ -694,7 +696,7 @@ function MonthlyProductionChart({ data }: { data: MonthlyTrendRow[] }) {
   const maxProd = Math.max(...data.map((m) => m.productionMwh), 1);
 
   return (
-    <View style={styles.chartContainer}>
+    <View style={styles.chartContainer} wrap={false}>
       <Text style={styles.chartTitle}>Monatliche Produktion (MWh)</Text>
       {data.map((m) => {
         const barWidth = Math.max((m.productionMwh / maxProd) * 100, 1);
@@ -919,13 +921,13 @@ export function AnnualReportTemplate({
             </View>
           )}
           <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>Betriebsstunden</Text>
+            <Text style={styles.kpiLabel}>Ø Betriebsstunden/Anlage</Text>
             <Text style={styles.kpiValue}>
-              {data.totalOperatingHours != null
-                ? formatNumber(data.totalOperatingHours, 0)
+              {data.avgOperatingHoursPerTurbine != null
+                ? formatNumber(data.avgOperatingHoursPerTurbine, 0)
                 : "k.A."}
             </Text>
-            <Text style={styles.kpiUnit}>h</Text>
+            <Text style={styles.kpiUnit}>h ({data.turbineCount} WEA)</Text>
           </View>
         </View>
 
@@ -1068,7 +1070,7 @@ export function AnnualReportTemplate({
                 <Text style={[styles.tableHeaderText, styles.colMProd]}>Produktion</Text>
                 <Text style={[styles.tableHeaderText, styles.colMWind]}>Wind (m/s)</Text>
                 <Text style={[styles.tableHeaderText, styles.colMAvail]}>Verfueg. %</Text>
-                <Text style={[styles.tableHeaderText, styles.colMHours]}>Betriebsstd.</Text>
+                <Text style={[styles.tableHeaderText, styles.colMHours]}>Ø Betr.Std.</Text>
                 {hasRevenue && (
                   <Text style={[styles.tableHeaderText, styles.colMRevenue]}>Erlöse</Text>
                 )}
@@ -1117,8 +1119,8 @@ export function AnnualReportTemplate({
                   {formatPercent1(data.avgAvailabilityPct)}
                 </Text>
                 <Text style={[styles.summaryTextRight, styles.colMHours]}>
-                  {data.totalOperatingHours != null
-                    ? `${formatNumber(data.totalOperatingHours, 0)} h`
+                  {data.avgOperatingHoursPerTurbine != null
+                    ? `${formatNumber(data.avgOperatingHoursPerTurbine, 0)} h`
                     : "k.A."}
                 </Text>
                 {hasRevenue && (

@@ -68,6 +68,7 @@ import {
   Tag,
   Droplets,
   Globe,
+  Code2,
 } from "lucide-react";
 import {
   DndContext,
@@ -508,6 +509,13 @@ const navGroups: NavGroup[] = [
         icon: FolderSync,
         permission: "admin:manage",
         featureFlag: "document-routing",
+      },
+      {
+        title: "SCADA Statuscodes",
+        titleKey: "scadaCodes",
+        href: "/admin/scada-codes",
+        icon: Code2,
+        permission: "admin:manage",
       },
     ],
   },

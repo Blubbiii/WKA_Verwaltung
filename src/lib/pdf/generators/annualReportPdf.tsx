@@ -203,10 +203,37 @@ async function fetchAnnualReportData(
     },
   });
 
-  // 3. Wind data for the year
+  // 2b. SCADA Availability data (monthly) — source of truth for availability & operating hours
   const yearStart = new Date(year, 0, 1);
   const yearEnd = new Date(year, 11, 31);
 
+  const scadaAvailability = await prisma.scadaAvailability.findMany({
+    where: {
+      turbineId: { in: turbineIds },
+      periodType: "MONTHLY",
+      date: { gte: yearStart, lte: yearEnd },
+    },
+    select: {
+      turbineId: true,
+      date: true,
+      t1: true,
+      availabilityPct: true,
+    },
+  });
+
+  // Build lookup: turbineId+month → { availabilityPct, operatingHours }
+  const scadaAvailByTurbineMonth = new Map<string, { availPct: number; opHours: number }>();
+  for (const sa of scadaAvailability) {
+    const m = new Date(sa.date).getMonth() + 1;
+    const key = `${sa.turbineId}-${m}`;
+    const availPct = sa.availabilityPct ? Number(sa.availabilityPct) : null;
+    const opHours = sa.t1 > 0 ? sa.t1 / 3600 : 0; // t1 is in seconds
+    if (availPct != null) {
+      scadaAvailByTurbineMonth.set(key, { availPct, opHours });
+    }
+  }
+
+  // 3. Wind data for the year
   const windData = await prisma.scadaWindSummary.findMany({
     where: {
       turbineId: { in: turbineIds },
@@ -267,6 +294,22 @@ async function fetchAnnualReportData(
     },
   });
 
+  // Previous year SCADA availability
+  const prevScadaAvailability = await prisma.scadaAvailability.findMany({
+    where: {
+      turbineId: { in: turbineIds },
+      periodType: "MONTHLY",
+      date: {
+        gte: new Date(year - 1, 0, 1),
+        lte: new Date(year - 1, 11, 31),
+      },
+    },
+    select: {
+      turbineId: true,
+      availabilityPct: true,
+    },
+  });
+
   const prevWindData = await prisma.scadaWindSummary.findMany({
     where: {
       turbineId: { in: turbineIds },
@@ -301,13 +344,22 @@ async function fetchAnnualReportData(
       (s, p) => s + Number(p.productionKwh),
       0
     );
-    const monthOperatingHours = monthProductions.reduce(
-      (s, p) => s + (p.operatingHours ? Number(p.operatingHours) : 0),
-      0
-    );
-    const monthAvailValues = monthProductions
-      .map((p) => (p.availabilityPct ? Number(p.availabilityPct) : null))
-      .filter((v): v is number => v != null);
+    // Operating hours & availability: prefer SCADA data, fall back to TurbineProduction
+    let monthOperatingHours = 0;
+    const monthAvailValues: number[] = [];
+    for (const turbine of park.turbines) {
+      const scadaKey = `${turbine.id}-${m}`;
+      const scadaData = scadaAvailByTurbineMonth.get(scadaKey);
+      if (scadaData) {
+        monthOperatingHours += scadaData.opHours;
+        monthAvailValues.push(scadaData.availPct);
+      } else {
+        // Fall back to TurbineProduction values
+        const tp = monthProductions.find((p) => p.turbineId === turbine.id);
+        if (tp?.operatingHours) monthOperatingHours += Number(tp.operatingHours);
+        if (tp?.availabilityPct) monthAvailValues.push(Number(tp.availabilityPct));
+      }
+    }
     const monthAvgAvailability =
       monthAvailValues.length > 0
         ? monthAvailValues.reduce((s, v) => s + v, 0) / monthAvailValues.length
@@ -326,13 +378,22 @@ async function fetchAnnualReportData(
         ? monthWindValues.reduce((s, v) => s + v, 0) / monthWindValues.length
         : null;
 
+    // Average operating hours per turbine for the month
+    const turbinesWithData = park.turbines.filter((t) => {
+      const scadaKey = `${t.id}-${m}`;
+      return scadaAvailByTurbineMonth.has(scadaKey) || monthProductions.some((p) => p.turbineId === t.id);
+    });
+    const avgMonthOpHours = turbinesWithData.length > 0
+      ? monthOperatingHours / turbinesWithData.length
+      : null;
+
     monthlyTrend.push({
       month: m,
       monthName: MONTH_NAMES[m - 1],
       productionMwh: monthProductionKwh / 1000,
       avgWindSpeedMs: monthAvgWind,
       avgAvailabilityPct: monthAvgAvailability,
-      operatingHours: monthProductions.length > 0 ? monthOperatingHours : null,
+      operatingHours: avgMonthOpHours,
       revenueEur: settlementByMonth.get(m) ?? null,
     });
   }
@@ -343,13 +404,22 @@ async function fetchAnnualReportData(
     const turbineProds = productions.filter((p) => p.turbineId === turbine.id);
     const totalKwh = turbineProds.reduce((s, p) => s + Number(p.productionKwh), 0);
     const totalMwh = totalKwh / 1000;
-    const totalHours = turbineProds.reduce(
-      (s, p) => s + (p.operatingHours ? Number(p.operatingHours) : 0),
-      0
-    );
-    const availValues = turbineProds
-      .map((p) => (p.availabilityPct ? Number(p.availabilityPct) : null))
-      .filter((v): v is number => v != null);
+
+    // Operating hours & availability: prefer SCADA data
+    let totalHours = 0;
+    const availValues: number[] = [];
+    for (let m = 1; m <= 12; m++) {
+      const scadaKey = `${turbine.id}-${m}`;
+      const scadaData = scadaAvailByTurbineMonth.get(scadaKey);
+      if (scadaData) {
+        totalHours += scadaData.opHours;
+        availValues.push(scadaData.availPct);
+      } else {
+        const tp = turbineProds.find((p) => p.month === m);
+        if (tp?.operatingHours) totalHours += Number(tp.operatingHours);
+        if (tp?.availabilityPct) availValues.push(Number(tp.availabilityPct));
+      }
+    }
     const avgAvail =
       availValues.length > 0
         ? availValues.reduce((s, v) => s + v, 0) / availValues.length
@@ -420,6 +490,9 @@ async function fetchAnnualReportData(
     (s, t) => s + (t.totalOperatingHours ?? 0),
     0
   );
+  const turbineCount = park.turbines.length;
+  const avgOperatingHoursPerTurbine =
+    turbineCount > 0 ? totalOperatingHours / turbineCount : null;
 
   const totalRatedPowerKw = park.turbines.reduce(
     (s, t) => s + (t.ratedPowerKw ? Number(t.ratedPowerKw) : 0),
@@ -445,9 +518,15 @@ async function fetchAnnualReportData(
   );
   const prevTotalMwh = prevProductions.length > 0 ? prevTotalKwh / 1000 : null;
 
-  const prevAvailValues = prevProductions
-    .map((p) => (p.availabilityPct ? Number(p.availabilityPct) : null))
+  // Previous year availability: prefer SCADA, fall back to TurbineProduction
+  const prevScadaAvailValues = prevScadaAvailability
+    .map((sa) => (sa.availabilityPct ? Number(sa.availabilityPct) : null))
     .filter((v): v is number => v != null);
+  const prevAvailValues = prevScadaAvailValues.length > 0
+    ? prevScadaAvailValues
+    : prevProductions
+        .map((p) => (p.availabilityPct ? Number(p.availabilityPct) : null))
+        .filter((v): v is number => v != null);
   const prevAvgAvail =
     prevAvailValues.length > 0
       ? prevAvailValues.reduce((s, v) => s + v, 0) / prevAvailValues.length
@@ -595,6 +674,8 @@ async function fetchAnnualReportData(
     avgAvailabilityPct,
     avgWindSpeedMs,
     totalOperatingHours: productions.length > 0 ? totalOperatingHours : null,
+    avgOperatingHoursPerTurbine,
+    turbineCount,
     specificYieldKwhPerKw,
     totalRevenueEur,
     avgRevenuePerKwh,
