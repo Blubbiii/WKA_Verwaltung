@@ -26,6 +26,9 @@ const turbineUpdateSchema = z.object({
   kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
   operatorFundId: z.string().uuid().optional().nullable(),
 
+  // Notes
+  notes: z.string().optional().nullable(),
+
   // Per-turbine lease overrides
   minimumRent: z.number().optional().nullable(),
   weaSharePercentage: z.number().min(0).max(100).optional().nullable(),

@@ -49,6 +49,7 @@ const parkFormSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
   shortName: z.string().optional(),
   description: z.string().optional(),
+  notes: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
 });
 
@@ -60,6 +61,7 @@ interface ParkFormProps {
     name: string;
     shortName?: string | null;
     description?: string | null;
+    notes?: string | null;
     status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
     settlementArticles?: SettlementArticle[] | null;
     defaultPaymentDay?: number | null;
@@ -90,6 +92,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
       name: initialData?.name || "",
       shortName: initialData?.shortName || "",
       description: initialData?.description || "",
+      notes: initialData?.notes || "",
       status: initialData?.status || "ACTIVE",
     },
   });
@@ -162,6 +165,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
         name: data.name,
         shortName: data.shortName || null,
         description: data.description || null,
+        notes: data.notes || null,
         status: data.status,
         settlementArticles: articles.filter((a) => a.type && a.label),
         defaultPaymentDay: paymentDay ? parseInt(paymentDay, 10) : null,
@@ -242,6 +246,24 @@ export function ParkForm({ initialData }: ParkFormProps) {
                   <FormControl>
                     <Textarea
                       placeholder="Beschreibung des Windparks..."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notizen</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Freitext für interne Notizen, Besonderheiten, Ansprechpartner..."
+                      className="min-h-[100px]"
                       {...field}
                     />
                   </FormControl>

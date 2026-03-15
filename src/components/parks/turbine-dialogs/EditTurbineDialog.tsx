@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -75,6 +76,7 @@ export function EditTurbineDialog({
     technischeBetriebsfuehrung: "",
     kaufmaennischeBetriebsfuehrung: "",
     netzgesellschaftFundId: "",
+    notes: "",
     minimumRent: "",
     weaSharePercentage: "",
     poolSharePercentage: "",
@@ -140,6 +142,7 @@ export function EditTurbineDialog({
         technischeBetriebsfuehrung: turbine.technischeBetriebsfuehrung || "",
         kaufmaennischeBetriebsfuehrung: turbine.kaufmaennischeBetriebsfuehrung || "",
         netzgesellschaftFundId: turbine.netzgesellschaftFundId || "",
+        notes: turbine.notes || "",
         minimumRent: turbine.minimumRent?.toString() || "",
         weaSharePercentage: turbine.weaSharePercentage?.toString() || "",
         poolSharePercentage: turbine.poolSharePercentage?.toString() || "",
@@ -202,6 +205,7 @@ export function EditTurbineDialog({
           technischeBetriebsfuehrung: formData.technischeBetriebsfuehrung || null,
           kaufmaennischeBetriebsfuehrung: formData.kaufmaennischeBetriebsfuehrung || null,
           netzgesellschaftFundId: formData.netzgesellschaftFundId || null,
+          notes: formData.notes || null,
           minimumRent: formData.minimumRent ? parseFloat(formData.minimumRent) : null,
           weaSharePercentage: formData.weaSharePercentage ? parseFloat(formData.weaSharePercentage) : null,
           poolSharePercentage: formData.poolSharePercentage ? parseFloat(formData.poolSharePercentage) : null,
@@ -404,6 +408,19 @@ export function EditTurbineDialog({
               <div className="space-y-2"><Label htmlFor="edit-latitude">Breitengrad</Label><Input id="edit-latitude" type="number" step="any" placeholder="54.1234" value={formData.latitude} onChange={(e) => setFormData({ ...formData, latitude: e.target.value })} /></div>
               <div className="space-y-2"><Label htmlFor="edit-longitude">Laengengrad</Label><Input id="edit-longitude" type="number" step="any" placeholder="8.5678" value={formData.longitude} onChange={(e) => setFormData({ ...formData, longitude: e.target.value })} /></div>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Notizen */}
+          <div className="space-y-4">
+            <h4 className="font-medium">Notizen</h4>
+            <Textarea
+              placeholder="Freitext für interne Notizen, Besonderheiten..."
+              className="min-h-[100px]"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            />
           </div>
         </div>
         <DialogFooter>

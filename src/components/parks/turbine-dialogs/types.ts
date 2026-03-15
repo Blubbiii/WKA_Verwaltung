@@ -21,6 +21,7 @@ export interface Turbine {
   netzgesellschaftFundId: string | null;
   netzgesellschaftFund: { id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null } | null;
   operatorHistory?: { id: string; operatorFundId: string; operatorFund: { id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null } }[];
+  notes: string | null;
   // Per-turbine lease overrides
   minimumRent: number | null;
   weaSharePercentage: number | null;

@@ -335,6 +335,19 @@ export function TurbineDetailDialog({
                 </div>
               )}
 
+              {/* Notizen */}
+              {turbine.notes && (
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Notizen
+                  </h4>
+                  <div className="rounded-lg border p-4">
+                    <p className="whitespace-pre-wrap text-sm">{turbine.notes}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Statistiken */}
               {turbineDetail?._count && (
                 <div className="space-y-3">

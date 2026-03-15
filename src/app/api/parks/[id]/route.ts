@@ -50,6 +50,9 @@ const parkUpdateSchema = z.object({
 
   // Report cover image
   reportCoverImageKey: z.string().optional().nullable(),
+
+  // Notes
+  notes: z.string().optional().nullable(),
 });
 
 // GET /api/parks/[id] - Einzelnen Park laden

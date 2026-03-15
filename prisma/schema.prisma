@@ -262,6 +262,7 @@ model Park {
   tenantId                               String
   houseNumber                            String?
   street                                 String?
+  notes                                  String?                     @db.Text
   reportCoverImageKey                    String?
   contracts                              Contract[]
   documentTemplates                      DocumentTemplate[]
@@ -320,6 +321,8 @@ model Turbine {
   technischeBetriebsfuehrung     String?
   kaufmaennischeBetriebsfuehrung String?
   netzgesellschaftFundId         String?
+
+  notes                          String?                   @db.Text
 
   // Per-turbine lease overrides (override park defaults if set)
   minimumRent                    Decimal?                  @db.Decimal(15, 2)

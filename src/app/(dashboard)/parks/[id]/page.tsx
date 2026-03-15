@@ -109,6 +109,7 @@ interface Turbine {
     ownershipPercentage: number | null;
     operatorFund: { id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null };
   }[];
+  notes: string | null;
   // Per-turbine lease overrides
   minimumRent: number | null;
   weaSharePercentage: number | null;
@@ -199,6 +200,7 @@ interface Park {
   name: string;
   shortName: string | null;
   description: string | null;
+  notes: string | null;
   address: string | null;
   city: string | null;
   postalCode: string | null;
@@ -1073,6 +1075,21 @@ export default function ParkDetailsPage({
                 </div>
               </CardContent>
             </Card>
+
+            {/* Notizen */}
+            {park.notes && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Notizen
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="whitespace-pre-wrap text-sm">{park.notes}</p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Assigned Funds */}
             <Card>
