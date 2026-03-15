@@ -83,6 +83,10 @@ model Tenant {
   scadaWarningEvents        ScadaWarningEvent[]
   scadaWarningSummaries     ScadaWarningSummary[]
   scadaWindSummaries        ScadaWindSummary[]
+  scadaShadowCasting        ScadaShadowCasting[]
+  scadaOperatingStates      ScadaOperatingState[]
+  scadaElectricalPhases     ScadaElectricalPhase[]
+  scadaElectricalSummaries  ScadaElectricalSummary[]
   scheduledReports          ScheduledReport[]
   systemConfigs             SystemConfig[]
   taxRateConfigs            TaxRateConfig[]
@@ -347,6 +351,10 @@ model Turbine {
   scadaWarningEvents             ScadaWarningEvent[]
   scadaWarningSummaries          ScadaWarningSummary[]
   scadaWindSummaries             ScadaWindSummary[]
+  scadaShadowCasting             ScadaShadowCasting[]
+  scadaOperatingStates           ScadaOperatingState[]
+  scadaElectricalPhases          ScadaElectricalPhase[]
+  scadaElectricalSummaries       ScadaElectricalSummary[]
   serviceEvents                  ServiceEvent[]
   technicianSessions             TechnicianSession[]
   operatorHistory                TurbineOperator[]
@@ -2362,6 +2370,142 @@ model ScadaWindSummary {
   @@index([tenantId])
   @@index([turbineId, date])
   @@map("scada_wind_summaries")
+}
+
+model ScadaShadowCasting {
+  id            String   @id @default(uuid())
+  timestamp     DateTime
+  plantNo       Int
+  error         Int      @default(0)
+  setCumShadowH Decimal? @db.Decimal(10, 2)
+  meanShadow    Decimal? @db.Decimal(8, 2)
+  peakShadow    Decimal? @db.Decimal(8, 2)
+  lowShadow     Decimal? @db.Decimal(8, 2)
+  sourceFile    String
+  createdAt     DateTime @default(now())
+  turbineId     String
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine       Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, timestamp])
+  @@index([tenantId])
+  @@index([turbineId, timestamp])
+  @@map("scada_shadow_casting")
+}
+
+model ScadaOperatingState {
+  id         String   @id @default(uuid())
+  timestamp  DateTime
+  plantNo    Int
+  error      Int      @default(0)
+  fileType   String
+  states     Json
+  sourceFile String
+  createdAt  DateTime @default(now())
+  turbineId  String
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine    Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, timestamp, fileType])
+  @@index([tenantId])
+  @@index([turbineId, timestamp])
+  @@map("scada_operating_states")
+}
+
+model ScadaElectricalPhase {
+  id         String   @id @default(uuid())
+  timestamp  DateTime
+  periodType String
+  plantNo    Int
+  error      Int      @default(0)
+  meanP1     Decimal? @db.Decimal(10, 2)
+  peakP1     Decimal? @db.Decimal(10, 2)
+  lowP1      Decimal? @db.Decimal(10, 2)
+  meanP2     Decimal? @db.Decimal(10, 2)
+  peakP2     Decimal? @db.Decimal(10, 2)
+  lowP2      Decimal? @db.Decimal(10, 2)
+  meanP3     Decimal? @db.Decimal(10, 2)
+  peakP3     Decimal? @db.Decimal(10, 2)
+  lowP3      Decimal? @db.Decimal(10, 2)
+  meanQ1     Decimal? @db.Decimal(10, 2)
+  peakQ1     Decimal? @db.Decimal(10, 2)
+  lowQ1      Decimal? @db.Decimal(10, 2)
+  meanQ2     Decimal? @db.Decimal(10, 2)
+  peakQ2     Decimal? @db.Decimal(10, 2)
+  lowQ2      Decimal? @db.Decimal(10, 2)
+  meanQ3     Decimal? @db.Decimal(10, 2)
+  peakQ3     Decimal? @db.Decimal(10, 2)
+  lowQ3      Decimal? @db.Decimal(10, 2)
+  sourceFile String
+  createdAt  DateTime @default(now())
+  turbineId  String
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine    Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, timestamp, periodType])
+  @@index([tenantId])
+  @@index([turbineId, timestamp])
+  @@map("scada_electrical_phases")
+}
+
+model ScadaElectricalSummary {
+  id                      String   @id @default(uuid())
+  date                    DateTime
+  periodType              String
+  plantNo                 Int
+  error                   Int      @default(0)
+  meanPowerW              Decimal? @db.Decimal(12, 2)
+  peakPowerW              Decimal? @db.Decimal(12, 2)
+  lowPowerW               Decimal? @db.Decimal(12, 2)
+  meanReactivePowerVar    Decimal? @db.Decimal(12, 2)
+  peakReactivePowerVar    Decimal? @db.Decimal(12, 2)
+  lowReactivePowerVar     Decimal? @db.Decimal(12, 2)
+  meanApparentPowerVa     Decimal? @db.Decimal(12, 2)
+  peakApparentPowerVa     Decimal? @db.Decimal(12, 2)
+  lowApparentPowerVa      Decimal? @db.Decimal(12, 2)
+  meanCosPhi              Decimal? @db.Decimal(4, 3)
+  peakCosPhi              Decimal? @db.Decimal(4, 3)
+  lowCosPhi               Decimal? @db.Decimal(4, 3)
+  meanFrequencyHz         Decimal? @db.Decimal(5, 2)
+  peakFrequencyHz         Decimal? @db.Decimal(5, 2)
+  lowFrequencyHz          Decimal? @db.Decimal(5, 2)
+  meanVoltageU1           Decimal? @db.Decimal(8, 2)
+  meanVoltageU2           Decimal? @db.Decimal(8, 2)
+  meanVoltageU3           Decimal? @db.Decimal(8, 2)
+  peakVoltageU1           Decimal? @db.Decimal(8, 2)
+  peakVoltageU2           Decimal? @db.Decimal(8, 2)
+  peakVoltageU3           Decimal? @db.Decimal(8, 2)
+  lowVoltageU1            Decimal? @db.Decimal(8, 2)
+  lowVoltageU2            Decimal? @db.Decimal(8, 2)
+  lowVoltageU3            Decimal? @db.Decimal(8, 2)
+  meanCurrentI1           Decimal? @db.Decimal(8, 2)
+  meanCurrentI2           Decimal? @db.Decimal(8, 2)
+  meanCurrentI3           Decimal? @db.Decimal(8, 2)
+  peakCurrentI1           Decimal? @db.Decimal(8, 2)
+  peakCurrentI2           Decimal? @db.Decimal(8, 2)
+  peakCurrentI3           Decimal? @db.Decimal(8, 2)
+  lowCurrentI1            Decimal? @db.Decimal(8, 2)
+  lowCurrentI2            Decimal? @db.Decimal(8, 2)
+  lowCurrentI3            Decimal? @db.Decimal(8, 2)
+  cumActiveEnergyProduced Decimal? @db.Decimal(15, 3)
+  cumEnergyConsumed       Decimal? @db.Decimal(15, 3)
+  cumInductiveReactive    Decimal? @db.Decimal(15, 3)
+  cumCapacitiveReactive   Decimal? @db.Decimal(15, 3)
+  cumWorkingHours         Decimal? @db.Decimal(10, 2)
+  sourceFile              String
+  createdAt               DateTime @default(now())
+  turbineId               String
+  tenantId                String
+  tenant                  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine                 Turbine  @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  @@unique([turbineId, date, periodType])
+  @@index([tenantId])
+  @@index([turbineId, date])
+  @@map("scada_electrical_summaries")
 }
 
 model ScheduledReport {

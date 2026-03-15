@@ -347,6 +347,43 @@ export interface TextEventRecord {
   info: string;
 }
 
+/** Shadow casting record from WDD files (1-minute intervals) */
+export interface ShadowCastingRecord {
+  timestamp: Date;
+  plantNo: number;
+  error: number | null;
+  /** Cumulative shadow hours (arwSetShad) */
+  setCumShadowH: number | null;
+  /** Mean shadow sensor value (mrwShad) */
+  meanShadow: number | null;
+  /** Peak shadow sensor value (prwShad) */
+  peakShadow: number | null;
+  /** Low shadow sensor value (lrwShad) */
+  lowShadow: number | null;
+}
+
+/** Operating state record from 84D/85D files */
+export interface OperatingStateRecord {
+  timestamp: Date;
+  plantNo: number;
+  error: number | null;
+  /** Non-zero state durations as { "A0": 600, "A5": 300, ... } */
+  states: Record<string, number>;
+}
+
+/** Per-phase electrical record from UQD files */
+export interface ElectricalPhaseRecord {
+  timestamp: Date;
+  plantNo: number;
+  error: number | null;
+  meanP1: number | null; peakP1: number | null; lowP1: number | null;
+  meanP2: number | null; peakP2: number | null; lowP2: number | null;
+  meanP3: number | null; peakP3: number | null; lowP3: number | null;
+  meanQ1: number | null; peakQ1: number | null; lowQ1: number | null;
+  meanQ2: number | null; peakQ2: number | null; lowQ2: number | null;
+  meanQ3: number | null; peakQ3: number | null; lowQ3: number | null;
+}
+
 /** Ergebnis eines Multi-Location-Scans */
 export interface AllLocationsResult {
   /** Standort-Code (z.B. "Loc_5842") */
@@ -389,6 +426,16 @@ const FILE_TYPE_EXTENSIONS: Record<string, string> = {
   WSW: 'wsw',  // Wind Summary Weekly
   WSM: 'wsm',  // Wind Summary Monthly
   WSY: 'wsy',  // Wind Summary Yearly
+  WDD: 'wdd',  // Shadow Casting Daily (1-min intervals)
+  '84D': '84d', // Operating State Codes A0-A39
+  '85D': '85d', // Operating State Codes A48-A138
+  UQD: 'uqd',  // Per-Phase Electrical Data Daily
+  UIR: 'uir',  // Electrical Summary Daily (Report)
+  UIW: 'uiw',  // Electrical Summary Weekly
+  UIY: 'uiy',  // Electrical Summary Yearly
+  UQR: 'uqr',  // Per-Phase Electrical Summary Daily (Report)
+  UQW: 'uqw',  // Per-Phase Electrical Summary Weekly
+  UQY: 'uqy',  // Per-Phase Electrical Summary Yearly
 };
 
 /** Bekannte Dateitypen */
@@ -1138,6 +1185,184 @@ export async function readPetFile(filePath: string): Promise<TextEventRecord[]> 
     return records;
   } catch (err) {
     scadaLogger.error({ err, filePath }, "Error reading PET file");
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------
+// Shadow Casting Reader (WDD)
+// ---------------------------------------------------------------
+
+/**
+ * Reads a WDD file (Shadow Casting Daily) with 1-minute interval data.
+ * 1440 records per day per plant.
+ *
+ * Fields: arwSetShad (cumulative shadow hours), mrwShad/prwShad/lrwShad (shadow sensor)
+ */
+export async function readWddFile(filePath: string): Promise<ShadowCastingRecord[]> {
+  try {
+    const dbf = await DBFFile.open(filePath);
+    const rawRecords = await dbf.readRecords();
+
+    const records: ShadowCastingRecord[] = [];
+
+    for (const raw of rawRecords) {
+      const rec = raw as Record<string, unknown>;
+
+      const timestamp = buildTimestamp(rec);
+      if (!timestamp) continue;
+
+      const plantNo = getPlantNo(rec);
+      if (!plantNo) continue;
+
+      records.push({
+        timestamp,
+        plantNo,
+        error: getInt(rec, 'Error'),
+        setCumShadowH: getNum(rec, 'arwSetShad'),
+        meanShadow: getNum(rec, 'mrwShad'),
+        peakShadow: getNum(rec, 'prwShad'),
+        lowShadow: getNum(rec, 'lrwShad'),
+      });
+    }
+
+    return records;
+  } catch (err) {
+    scadaLogger.error({ err, filePath }, "Error reading WDD file");
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------
+// Operating State Readers (84D / 85D)
+// ---------------------------------------------------------------
+
+/**
+ * Reads a 84D file (Operating State Codes A0-A39).
+ * Each record has fields mr82A0 through mr82A39 with duration in seconds.
+ * Only non-zero values are included in the output JSON map.
+ */
+export async function read84dFile(filePath: string): Promise<OperatingStateRecord[]> {
+  return readOperatingStateFile(filePath, 0, 39, '84D');
+}
+
+/**
+ * Reads a 85D file (Operating State Codes A48-A138).
+ * Dynamically discovers mr82A* fields from the DBF header.
+ */
+export async function read85dFile(filePath: string): Promise<OperatingStateRecord[]> {
+  return readOperatingStateFile(filePath, 48, 138, '85D');
+}
+
+/**
+ * Generic reader for operating state files (84D/85D).
+ * Discovers fields matching /^mr82A\d+$/i in the given range and
+ * outputs only non-zero durations as a JSON map.
+ */
+async function readOperatingStateFile(
+  filePath: string,
+  minCode: number,
+  maxCode: number,
+  fileLabel: string,
+): Promise<OperatingStateRecord[]> {
+  try {
+    const dbf = await DBFFile.open(filePath);
+    const rawRecords = await dbf.readRecords();
+
+    // Dynamically discover state fields from DBF field names
+    const stateFieldMap = new Map<string, string>(); // lowercase key -> "A{n}" label
+    for (const field of dbf.fields) {
+      const match = field.name.match(/^mr82A(\d+)$/i);
+      if (match) {
+        const code = parseInt(match[1], 10);
+        if (code >= minCode && code <= maxCode) {
+          stateFieldMap.set(field.name, `A${code}`);
+        }
+      }
+    }
+
+    const records: OperatingStateRecord[] = [];
+
+    for (const raw of rawRecords) {
+      const rec = raw as Record<string, unknown>;
+
+      const timestamp = buildTimestamp(rec);
+      if (!timestamp) continue;
+
+      const plantNo = getPlantNo(rec);
+      if (!plantNo) continue;
+
+      // Collect non-zero state durations
+      const states: Record<string, number> = {};
+      for (const [fieldName, label] of stateFieldMap) {
+        const val = getNum(rec, fieldName);
+        if (val != null && val > 0) {
+          states[label] = val;
+        }
+      }
+
+      records.push({
+        timestamp,
+        plantNo,
+        error: getInt(rec, 'Error'),
+        states,
+      });
+    }
+
+    return records;
+  } catch (err) {
+    scadaLogger.error({ err, filePath }, `Error reading ${fileLabel} file`);
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------
+// Per-Phase Electrical Reader (UQD / UQR / UQW / UQY)
+// ---------------------------------------------------------------
+
+/**
+ * Reads a UQD file (per-phase electrical data) with 10-minute intervals.
+ * Also used for UQR/UQW/UQY summary files (same field structure).
+ *
+ * Enercon field naming convention:
+ *   mruqSmpP1/pruqSmpP1/lruqSmpP1 (active power phase 1, kW)
+ *   mruqSmpQ1/pruqSmpQ1/lruqSmpQ1 (reactive power phase 1, kVAr)
+ *   etc. for P2/P3, Q2/Q3
+ *
+ * Falls back to dynamic field discovery if standard names not found.
+ */
+export async function readUqdFile(filePath: string): Promise<ElectricalPhaseRecord[]> {
+  try {
+    const dbf = await DBFFile.open(filePath);
+    const rawRecords = await dbf.readRecords();
+
+    const records: ElectricalPhaseRecord[] = [];
+
+    for (const raw of rawRecords) {
+      const rec = raw as Record<string, unknown>;
+
+      const timestamp = buildTimestamp(rec);
+      if (!timestamp) continue;
+
+      const plantNo = getPlantNo(rec);
+      if (!plantNo) continue;
+
+      records.push({
+        timestamp,
+        plantNo,
+        error: getInt(rec, 'Error'),
+        meanP1: getNum(rec, 'mruqSmpP1'), peakP1: getNum(rec, 'pruqSmpP1'), lowP1: getNum(rec, 'lruqSmpP1'),
+        meanP2: getNum(rec, 'mruqSmpP2'), peakP2: getNum(rec, 'pruqSmpP2'), lowP2: getNum(rec, 'lruqSmpP2'),
+        meanP3: getNum(rec, 'mruqSmpP3'), peakP3: getNum(rec, 'pruqSmpP3'), lowP3: getNum(rec, 'lruqSmpP3'),
+        meanQ1: getNum(rec, 'mruqSmpQ1'), peakQ1: getNum(rec, 'pruqSmpQ1'), lowQ1: getNum(rec, 'lruqSmpQ1'),
+        meanQ2: getNum(rec, 'mruqSmpQ2'), peakQ2: getNum(rec, 'pruqSmpQ2'), lowQ2: getNum(rec, 'lruqSmpQ2'),
+        meanQ3: getNum(rec, 'mruqSmpQ3'), peakQ3: getNum(rec, 'pruqSmpQ3'), lowQ3: getNum(rec, 'lruqSmpQ3'),
+      });
+    }
+
+    return records;
+  } catch (err) {
+    scadaLogger.error({ err, filePath }, "Error reading UQD file");
     return [];
   }
 }

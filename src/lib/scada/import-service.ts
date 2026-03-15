@@ -35,6 +35,10 @@ import {
   readPewFile,
   readWsrFile,
   readPetFile,
+  readWddFile,
+  read84dFile,
+  read85dFile,
+  readUqdFile,
   scanLocation,
 } from './dbf-reader';
 import { aggregateMonthlyProduction, writeToTurbineProduction } from './aggregation';
@@ -48,6 +52,9 @@ import type {
   WarningEventRecord,
   WindSummaryRecord,
   TextEventRecord,
+  ShadowCastingRecord,
+  OperatingStateRecord,
+  ElectricalPhaseRecord,
 } from './dbf-reader';
 
 // ---------------------------------------------------------------
@@ -60,7 +67,11 @@ export type ScadaFileType =
   | 'AVR' | 'AVW' | 'AVM' | 'AVY'
   | 'SSM' | 'SWM'
   | 'PES' | 'PEW' | 'PET'
-  | 'WSR' | 'WSW' | 'WSM' | 'WSY';
+  | 'WSR' | 'WSW' | 'WSM' | 'WSY'
+  | 'WDD'
+  | '84D' | '85D'
+  | 'UQD' | 'UQR' | 'UQW' | 'UQY'
+  | 'UIR' | 'UIW' | 'UIY';
 
 /** Period type for summary/availability files */
 export type ScadaPeriodType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
@@ -187,6 +198,24 @@ const FILE_TYPE_CONFIG: Record<ScadaFileType, FileTypeConfig> = {
   WSW: { extension: 'wsw', fileLocation: 'monthly', periodType: 'WEEKLY', modelName: 'ScadaWindSummary', readerKey: 'wsr' },
   WSM: { extension: 'wsm', fileLocation: 'monthly', periodType: 'MONTHLY', modelName: 'ScadaWindSummary', readerKey: 'wsr' },
   WSY: { extension: 'wsy', fileLocation: 'yearly', periodType: 'YEARLY', modelName: 'ScadaWindSummary', readerKey: 'wsr' },
+
+  // Shadow casting (1-minute intervals)
+  WDD: { extension: 'wdd', fileLocation: 'daily', periodType: null, modelName: 'ScadaShadowCasting', readerKey: 'wdd' },
+
+  // Operating state codes
+  '84D': { extension: '84d', fileLocation: 'daily', periodType: null, modelName: 'ScadaOperatingState', readerKey: '84d' },
+  '85D': { extension: '85d', fileLocation: 'daily', periodType: null, modelName: 'ScadaOperatingState', readerKey: '85d' },
+
+  // Per-phase electrical data
+  UQD: { extension: 'uqd', fileLocation: 'daily', periodType: null, modelName: 'ScadaElectricalPhase', readerKey: 'uqd' },
+  UQR: { extension: 'uqr', fileLocation: 'monthly', periodType: 'DAILY', modelName: 'ScadaElectricalPhase', readerKey: 'uqd' },
+  UQW: { extension: 'uqw', fileLocation: 'monthly', periodType: 'WEEKLY', modelName: 'ScadaElectricalPhase', readerKey: 'uqd' },
+  UQY: { extension: 'uqy', fileLocation: 'yearly', periodType: 'YEARLY', modelName: 'ScadaElectricalPhase', readerKey: 'uqd' },
+
+  // Electrical summaries (full UID field set)
+  UIR: { extension: 'uir', fileLocation: 'monthly', periodType: 'DAILY', modelName: 'ScadaElectricalSummary', readerKey: 'uid' },
+  UIW: { extension: 'uiw', fileLocation: 'monthly', periodType: 'WEEKLY', modelName: 'ScadaElectricalSummary', readerKey: 'uid' },
+  UIY: { extension: 'uiy', fileLocation: 'yearly', periodType: 'YEARLY', modelName: 'ScadaElectricalSummary', readerKey: 'uid' },
 };
 
 // ---------------------------------------------------------------
@@ -1059,6 +1088,281 @@ async function writeTextEventRecords(
 }
 
 // ---------------------------------------------------------------
+// Shadow Casting Write Logic (WDD)
+// ---------------------------------------------------------------
+
+async function writeShadowCastingRecords(
+  records: ShadowCastingRecord[],
+  turbineMappings: Map<number, string>,
+  tenantId: string,
+  sourceFileType: string,
+): Promise<BatchWriteResult> {
+  let imported = 0;
+  let skipped = 0;
+  let failed = 0;
+  const unmappedPlants = new Set<number>();
+
+  for (let i = 0; i < records.length; i += BATCH_SIZE) {
+    const batch = records.slice(i, i + BATCH_SIZE);
+
+    const dbRecords: Parameters<typeof prisma.scadaShadowCasting.createMany>[0]['data'] = [];
+
+    for (const rec of batch) {
+      const turbineId = turbineMappings.get(rec.plantNo);
+      if (!turbineId) {
+        unmappedPlants.add(rec.plantNo);
+        skipped++;
+        continue;
+      }
+
+      dbRecords.push({
+        turbineId,
+        tenantId,
+        timestamp: rec.timestamp,
+        plantNo: rec.plantNo,
+        error: rec.error ?? 0,
+        setCumShadowH: toDecimalOrNull(rec.setCumShadowH),
+        meanShadow: toDecimalOrNull(rec.meanShadow),
+        peakShadow: toDecimalOrNull(rec.peakShadow),
+        lowShadow: toDecimalOrNull(rec.lowShadow),
+        sourceFile: sourceFileType,
+      });
+    }
+
+    if (dbRecords.length === 0) continue;
+
+    try {
+      const result = await prisma.scadaShadowCasting.createMany({
+        data: dbRecords,
+        skipDuplicates: true,
+      });
+      imported += result.count;
+      skipped += dbRecords.length - result.count;
+    } catch (_err) {
+      failed += dbRecords.length;
+    }
+  }
+
+  return { imported, skipped, failed, unmappedPlants };
+}
+
+// ---------------------------------------------------------------
+// Operating State Write Logic (84D / 85D)
+// ---------------------------------------------------------------
+
+async function writeOperatingStateRecords(
+  records: OperatingStateRecord[],
+  turbineMappings: Map<number, string>,
+  tenantId: string,
+  fileTypeLabel: string,
+  sourceFileType: string,
+): Promise<BatchWriteResult> {
+  let imported = 0;
+  let skipped = 0;
+  let failed = 0;
+  const unmappedPlants = new Set<number>();
+
+  for (let i = 0; i < records.length; i += BATCH_SIZE) {
+    const batch = records.slice(i, i + BATCH_SIZE);
+
+    const dbRecords: Parameters<typeof prisma.scadaOperatingState.createMany>[0]['data'] = [];
+
+    for (const rec of batch) {
+      const turbineId = turbineMappings.get(rec.plantNo);
+      if (!turbineId) {
+        unmappedPlants.add(rec.plantNo);
+        skipped++;
+        continue;
+      }
+
+      dbRecords.push({
+        turbineId,
+        tenantId,
+        timestamp: rec.timestamp,
+        plantNo: rec.plantNo,
+        error: rec.error ?? 0,
+        fileType: fileTypeLabel,
+        states: rec.states,
+        sourceFile: sourceFileType,
+      });
+    }
+
+    if (dbRecords.length === 0) continue;
+
+    try {
+      const result = await prisma.scadaOperatingState.createMany({
+        data: dbRecords,
+        skipDuplicates: true,
+      });
+      imported += result.count;
+      skipped += dbRecords.length - result.count;
+    } catch (_err) {
+      failed += dbRecords.length;
+    }
+  }
+
+  return { imported, skipped, failed, unmappedPlants };
+}
+
+// ---------------------------------------------------------------
+// Per-Phase Electrical Write Logic (UQD / UQR / UQW / UQY)
+// ---------------------------------------------------------------
+
+async function writeElectricalPhaseRecords(
+  records: ElectricalPhaseRecord[],
+  turbineMappings: Map<number, string>,
+  tenantId: string,
+  periodType: string,
+  sourceFileType: string,
+): Promise<BatchWriteResult> {
+  let imported = 0;
+  let skipped = 0;
+  let failed = 0;
+  const unmappedPlants = new Set<number>();
+
+  for (let i = 0; i < records.length; i += BATCH_SIZE) {
+    const batch = records.slice(i, i + BATCH_SIZE);
+
+    const dbRecords: Parameters<typeof prisma.scadaElectricalPhase.createMany>[0]['data'] = [];
+
+    for (const rec of batch) {
+      const turbineId = turbineMappings.get(rec.plantNo);
+      if (!turbineId) {
+        unmappedPlants.add(rec.plantNo);
+        skipped++;
+        continue;
+      }
+
+      dbRecords.push({
+        turbineId,
+        tenantId,
+        timestamp: rec.timestamp,
+        periodType,
+        plantNo: rec.plantNo,
+        error: rec.error ?? 0,
+        meanP1: toDecimalOrNull(rec.meanP1), peakP1: toDecimalOrNull(rec.peakP1), lowP1: toDecimalOrNull(rec.lowP1),
+        meanP2: toDecimalOrNull(rec.meanP2), peakP2: toDecimalOrNull(rec.peakP2), lowP2: toDecimalOrNull(rec.lowP2),
+        meanP3: toDecimalOrNull(rec.meanP3), peakP3: toDecimalOrNull(rec.peakP3), lowP3: toDecimalOrNull(rec.lowP3),
+        meanQ1: toDecimalOrNull(rec.meanQ1), peakQ1: toDecimalOrNull(rec.peakQ1), lowQ1: toDecimalOrNull(rec.lowQ1),
+        meanQ2: toDecimalOrNull(rec.meanQ2), peakQ2: toDecimalOrNull(rec.peakQ2), lowQ2: toDecimalOrNull(rec.lowQ2),
+        meanQ3: toDecimalOrNull(rec.meanQ3), peakQ3: toDecimalOrNull(rec.peakQ3), lowQ3: toDecimalOrNull(rec.lowQ3),
+        sourceFile: sourceFileType,
+      });
+    }
+
+    if (dbRecords.length === 0) continue;
+
+    try {
+      const result = await prisma.scadaElectricalPhase.createMany({
+        data: dbRecords,
+        skipDuplicates: true,
+      });
+      imported += result.count;
+      skipped += dbRecords.length - result.count;
+    } catch (_err) {
+      failed += dbRecords.length;
+    }
+  }
+
+  return { imported, skipped, failed, unmappedPlants };
+}
+
+// ---------------------------------------------------------------
+// Electrical Summary Write Logic (UIR / UIW / UIY)
+// ---------------------------------------------------------------
+
+async function writeElectricalSummaryRecords(
+  records: UidRecord[],
+  turbineMappings: Map<number, string>,
+  tenantId: string,
+  periodType: string,
+  sourceFileType: string,
+): Promise<BatchWriteResult> {
+  let imported = 0;
+  let skipped = 0;
+  let failed = 0;
+  const unmappedPlants = new Set<number>();
+
+  for (let i = 0; i < records.length; i += BATCH_SIZE) {
+    const batch = records.slice(i, i + BATCH_SIZE);
+
+    const dbRecords: Parameters<typeof prisma.scadaElectricalSummary.createMany>[0]['data'] = [];
+
+    for (const rec of batch) {
+      const turbineId = turbineMappings.get(rec.plantNo);
+      if (!turbineId) {
+        unmappedPlants.add(rec.plantNo);
+        skipped++;
+        continue;
+      }
+
+      dbRecords.push({
+        turbineId,
+        tenantId,
+        date: rec.timestamp,
+        periodType,
+        plantNo: rec.plantNo,
+        error: rec.error ?? 0,
+        meanPowerW: toDecimalOrNull(rec.meanPowerW),
+        peakPowerW: toDecimalOrNull(rec.peakPowerW),
+        lowPowerW: toDecimalOrNull(rec.lowPowerW),
+        meanReactivePowerVar: toDecimalOrNull(rec.meanReactivePowerVar),
+        peakReactivePowerVar: toDecimalOrNull(rec.peakReactivePowerVar),
+        lowReactivePowerVar: toDecimalOrNull(rec.lowReactivePowerVar),
+        meanApparentPowerVa: toDecimalOrNull(rec.meanApparentPowerVa),
+        peakApparentPowerVa: toDecimalOrNull(rec.peakApparentPowerVa),
+        lowApparentPowerVa: toDecimalOrNull(rec.lowApparentPowerVa),
+        meanCosPhi: toDecimalOrNull(rec.meanCosPhi),
+        peakCosPhi: toDecimalOrNull(rec.peakCosPhi),
+        lowCosPhi: toDecimalOrNull(rec.lowCosPhi),
+        meanFrequencyHz: toDecimalOrNull(rec.meanFrequencyHz),
+        peakFrequencyHz: toDecimalOrNull(rec.peakFrequencyHz),
+        lowFrequencyHz: toDecimalOrNull(rec.lowFrequencyHz),
+        meanVoltageU1: toDecimalOrNull(rec.meanVoltagesV[0]),
+        meanVoltageU2: toDecimalOrNull(rec.meanVoltagesV[1]),
+        meanVoltageU3: toDecimalOrNull(rec.meanVoltagesV[2]),
+        peakVoltageU1: toDecimalOrNull(rec.peakVoltagesV[0]),
+        peakVoltageU2: toDecimalOrNull(rec.peakVoltagesV[1]),
+        peakVoltageU3: toDecimalOrNull(rec.peakVoltagesV[2]),
+        lowVoltageU1: toDecimalOrNull(rec.lowVoltagesV[0]),
+        lowVoltageU2: toDecimalOrNull(rec.lowVoltagesV[1]),
+        lowVoltageU3: toDecimalOrNull(rec.lowVoltagesV[2]),
+        meanCurrentI1: toDecimalOrNull(rec.meanCurrentsA[0]),
+        meanCurrentI2: toDecimalOrNull(rec.meanCurrentsA[1]),
+        meanCurrentI3: toDecimalOrNull(rec.meanCurrentsA[2]),
+        peakCurrentI1: toDecimalOrNull(rec.peakCurrentsA[0]),
+        peakCurrentI2: toDecimalOrNull(rec.peakCurrentsA[1]),
+        peakCurrentI3: toDecimalOrNull(rec.peakCurrentsA[2]),
+        lowCurrentI1: toDecimalOrNull(rec.lowCurrentsA[0]),
+        lowCurrentI2: toDecimalOrNull(rec.lowCurrentsA[1]),
+        lowCurrentI3: toDecimalOrNull(rec.lowCurrentsA[2]),
+        cumActiveEnergyProduced: toDecimalOrNull(rec.cumulativeActiveEnergyProduced),
+        cumEnergyConsumed: toDecimalOrNull(rec.cumulativeEnergyConsumed),
+        cumInductiveReactive: toDecimalOrNull(rec.cumulativeInductiveReactiveEnergy),
+        cumCapacitiveReactive: toDecimalOrNull(rec.cumulativeCapacitiveReactiveEnergy),
+        cumWorkingHours: toDecimalOrNull(rec.cumulativeWorkingHours),
+        sourceFile: sourceFileType,
+      });
+    }
+
+    if (dbRecords.length === 0) continue;
+
+    try {
+      const result = await prisma.scadaElectricalSummary.createMany({
+        data: dbRecords,
+        skipDuplicates: true,
+      });
+      imported += result.count;
+      skipped += dbRecords.length - result.count;
+    } catch (_err) {
+      failed += dbRecords.length;
+    }
+  }
+
+  return { imported, skipped, failed, unmappedPlants };
+}
+
+// ---------------------------------------------------------------
 // Generic File Type Dispatcher
 // ---------------------------------------------------------------
 
@@ -1084,6 +1388,13 @@ async function readAndWriteFile(
 
     case 'uid': {
       const records = await readUidFile(filePath);
+      // Route UIR/UIW/UIY to electrical summary writer (full field set)
+      if (config.modelName === 'ScadaElectricalSummary') {
+        return writeElectricalSummaryRecords(
+          records, turbineMappings, tenantId,
+          config.periodType!, fileType,
+        );
+      }
       return writeUidMeasurements(records, turbineMappings, tenantId);
     }
 
@@ -1126,6 +1437,29 @@ async function readAndWriteFile(
     case 'pet': {
       const records = await readPetFile(filePath);
       return writeTextEventRecords(records, turbineMappings, tenantId, fileType);
+    }
+
+    case 'wdd': {
+      const records = await readWddFile(filePath);
+      return writeShadowCastingRecords(records, turbineMappings, tenantId, fileType);
+    }
+
+    case '84d': {
+      const records = await read84dFile(filePath);
+      return writeOperatingStateRecords(records, turbineMappings, tenantId, '84D', fileType);
+    }
+
+    case '85d': {
+      const records = await read85dFile(filePath);
+      return writeOperatingStateRecords(records, turbineMappings, tenantId, '85D', fileType);
+    }
+
+    case 'uqd': {
+      const records = await readUqdFile(filePath);
+      return writeElectricalPhaseRecords(
+        records, turbineMappings, tenantId,
+        config.periodType ?? 'INTERVAL', fileType,
+      );
     }
 
     default:

@@ -23,7 +23,7 @@ param(
     [string]$LogFile = ""
 )
 
-$ScadaExtensions = @("*.wsd", "*.uid", "*.avr", "*.avw", "*.avm", "*.avy", "*.ssm", "*.swm", "*.pes", "*.pew", "*.pet", "*.wsr", "*.wsw", "*.wsm", "*.wsy")
+$ScadaExtensions = @("*.wsd", "*.uid", "*.avr", "*.avw", "*.avm", "*.avy", "*.ssm", "*.swm", "*.pes", "*.pew", "*.pet", "*.wsr", "*.wsw", "*.wsm", "*.wsy", "*.wdd", "*.84d", "*.85d", "*.uqd", "*.uir", "*.uiw", "*.uiy", "*.uqr", "*.uqw", "*.uqy")
 
 # Track already uploaded files
 $UploadedFiles = @{}
