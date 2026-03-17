@@ -35,8 +35,10 @@ interface AvailabilityRow {
 interface FaultRow {
   id: string;
   turbineId: string;
-  stateCode: number | null;
-  stateText: string | null;
+  state: number;
+  subState: number;
+  isFault: boolean;
+  isService: boolean;
   startTime: Date;
   endTime: Date | null;
 }
@@ -146,36 +148,34 @@ export async function GET(request: NextRequest) {
         GROUP BY "turbineId"
       `,
 
-      // 4. Active / recent faults (last 10, sorted by startTime desc)
+      // 4. Recent fault events (last 20, sorted by timestamp desc)
       prisma.$queryRaw<FaultRow[]>`
         SELECT
-          sm.id,
-          sm."turbineId",
-          sm."stateCode",
-          sm."stateText",
-          sm."timestamp" AS "startTime",
-          sm2."timestamp" AS "endTime"
-        FROM scada_measurements sm
+          se.id,
+          se."turbineId",
+          se.state,
+          se."subState",
+          se."isFault",
+          se."isService",
+          se."timestamp" AS "startTime",
+          next_evt."timestamp" AS "endTime"
+        FROM scada_state_events se
         LEFT JOIN LATERAL (
           SELECT "timestamp"
-          FROM scada_measurements sm2
-          WHERE sm2."turbineId" = sm."turbineId"
-            AND sm2."tenantId" = ${tenantId}
-            AND sm2."sourceFile" = 'UID'
-            AND sm2."timestamp" > sm."timestamp"
-            AND sm2."stateCode" IS DISTINCT FROM sm."stateCode"
-          ORDER BY sm2."timestamp" ASC
+          FROM scada_state_events se2
+          WHERE se2."turbineId" = se."turbineId"
+            AND se2."tenantId" = ${tenantId}
+            AND se2."timestamp" > se."timestamp"
+          ORDER BY se2."timestamp" ASC
           LIMIT 1
-        ) sm2 ON TRUE
-        WHERE sm."tenantId" = ${tenantId}
-          AND sm."sourceFile" = 'UID'
-          AND ${Prisma.sql`sm."turbineId" IN (${Prisma.join(turbineIds)})`}
-          AND sm."stateCode" IS NOT NULL
-          AND sm."stateCode" NOT IN (0, 1, 2, 3, 4, 5, 6)
-          AND sm."timestamp" >= ${from}
-          AND sm."timestamp" < ${to}
-        ORDER BY sm."timestamp" DESC
-        LIMIT 10
+        ) next_evt ON TRUE
+        WHERE se."tenantId" = ${tenantId}
+          AND ${Prisma.sql`se."turbineId" IN (${Prisma.join(turbineIds)})`}
+          AND se."isFault" = TRUE
+          AND se."timestamp" >= ${from}
+          AND se."timestamp" < ${to}
+        ORDER BY se."timestamp" DESC
+        LIMIT 20
       `,
 
       // 5. Revenue in period
@@ -247,23 +247,57 @@ export async function GET(request: NextRequest) {
       avgWindSpeed: d.avg_wind_speed != null ? round(safeNumber(d.avg_wind_speed), 2) : null,
     }));
 
-    // Build fault list
+    // Build fault list with status code lookup
     const turbineMap = new Map(turbines.map((t) => [t.id, t]));
-    const faults = activeFaults.map((f) => ({
-      id: f.id,
-      turbineDesignation: turbineMap.get(f.turbineId)?.designation ?? f.turbineId,
-      parkName: turbineMap.get(f.turbineId)?.parkName ?? "",
-      stateCode: f.stateCode,
-      stateText: f.stateText,
-      startTime: f.startTime instanceof Date ? f.startTime.toISOString() : String(f.startTime),
-      endTime: f.endTime instanceof Date ? f.endTime.toISOString() : f.endTime ? String(f.endTime) : null,
-      durationHours: f.endTime
-        ? round(
-            (new Date(f.endTime).getTime() - new Date(f.startTime).getTime()) / (1000 * 60 * 60),
-            1
-          )
-        : null,
-    }));
+
+    // Load controller types for status code resolution
+    const turbinesWithType = await prisma.turbine.findMany({
+      where: { id: { in: turbineIds }, controllerType: { not: null } },
+      select: { controllerType: true },
+      distinct: ["controllerType"],
+    });
+    const controllerTypes = turbinesWithType
+      .map((t) => t.controllerType!)
+      .filter(Boolean);
+
+    let codeLookup = new Map<string, { description: string; parentLabel: string | null }>();
+    if (controllerTypes.length > 0) {
+      const codes = await prisma.scadaStatusCode.findMany({
+        where: { controllerType: { in: controllerTypes }, codeType: "STATUS" },
+        select: { mainCode: true, subCode: true, description: true, parentLabel: true },
+      });
+      codeLookup = new Map(
+        codes.map((c) => [
+          `${c.mainCode}:${c.subCode}`,
+          { description: c.description, parentLabel: c.parentLabel },
+        ])
+      );
+    }
+
+    const faults = activeFaults.map((f) => {
+      const codeInfo = codeLookup.get(`${f.state}:${f.subState}`);
+      const stateText = codeInfo
+        ? `(${f.state}.${f.subState}) ${codeInfo.parentLabel ? codeInfo.parentLabel + " — " : ""}${codeInfo.description}`
+        : null;
+
+      return {
+        id: f.id,
+        turbineDesignation: turbineMap.get(f.turbineId)?.designation ?? f.turbineId,
+        parkName: turbineMap.get(f.turbineId)?.parkName ?? "",
+        stateCode: f.state,
+        subStateCode: f.subState,
+        stateText,
+        isFault: f.isFault,
+        startTime: f.startTime instanceof Date ? f.startTime.toISOString() : String(f.startTime),
+        endTime: f.endTime instanceof Date ? f.endTime.toISOString() : f.endTime ? String(f.endTime) : null,
+        durationHours: f.endTime
+          ? round(
+              (new Date(f.endTime).getTime() - new Date(f.startTime).getTime()) / (1000 * 60 * 60),
+              1
+            )
+          : null,
+      };
+    });
 
     return NextResponse.json({
       kpis: {

@@ -54,11 +54,27 @@ export function parseStatusCodeXlsx(buffer: Buffer): ParseResult {
     blankrows: true,
   });
 
-  // Try to extract controller type from row 3 (index 2), col 12 (index 11)
+  // Try to extract controller type — search first 10 rows for a CS-pattern
   let controllerType: string | null = null;
+  // Primary: row 3 (index 2), col 12 (index 11) — standard Enercon format
   if (rows.length >= 3) {
     const val = rows[2]?.[11];
     if (val) controllerType = String(val).trim();
+  }
+  // Fallback: scan first 10 rows for "CS" pattern (e.g. "CS82", "CS66", "CS101")
+  if (!controllerType) {
+    const csPattern = /\bCS\d{2,3}\b/;
+    for (let r = 0; r < Math.min(10, rows.length); r++) {
+      for (let c = 0; c < (rows[r]?.length ?? 0); c++) {
+        const cell = String(rows[r]?.[c] ?? "").trim();
+        const match = csPattern.exec(cell);
+        if (match) {
+          controllerType = match[0];
+          break;
+        }
+      }
+      if (controllerType) break;
+    }
   }
 
   const codes: ParsedStatusCode[] = [];

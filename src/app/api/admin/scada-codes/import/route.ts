@@ -41,7 +41,9 @@ export async function POST(request: NextRequest) {
 
     if (result.codes.length === 0) {
       return NextResponse.json(
-        { error: "Keine Codes in der Datei gefunden" },
+        {
+          error: `Keine Codes in der Datei gefunden. Erkannter Steuerungstyp: ${result.controllerType || "keiner"}. Bitte prüfen Sie ob es sich um eine ServiceOrderDocuments.XLSX handelt.`,
+        },
         { status: 400 }
       );
     }
