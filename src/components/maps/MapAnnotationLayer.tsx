@@ -25,6 +25,8 @@ export interface MapAnnotationData {
 interface MapAnnotationLayerProps {
   annotations: MapAnnotationData[];
   visible?: boolean;
+  onEdit?: (annotation: MapAnnotationData) => void;
+  onDelete?: (annotationId: string) => void;
 }
 
 // Default styles per annotation type
@@ -73,6 +75,8 @@ const TYPE_LABELS: Record<AnnotationType, string> = {
 export function MapAnnotationLayer({
   annotations,
   visible = true,
+  onEdit,
+  onDelete,
 }: MapAnnotationLayerProps) {
   if (!visible || annotations.length === 0) return null;
 
@@ -106,18 +110,43 @@ export function MapAnnotationLayer({
       }}
       onEachFeature={(feature, layer) => {
         const props = feature.properties;
+        const annotationId = props?.id as string;
         const typeLabel = TYPE_LABELS[props?.type as AnnotationType] ?? props?.type;
+        const hasActions = onEdit || onDelete;
 
         const popupContent = `
-          <div style="min-width: 160px;">
+          <div style="min-width: 170px;">
             <div style="font-weight: 600;">${props?.name || "Annotation"}</div>
             <div style="font-size: 12px; color: #6b7280;">${typeLabel}</div>
             ${props?.description ? `<div style="font-size: 12px; margin-top: 4px;">${props.description}</div>` : ""}
             ${props?.createdByName ? `<div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">von ${props.createdByName}</div>` : ""}
+            ${hasActions ? `
+            <div style="display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+              ${onEdit ? `<button id="anno-edit-${annotationId}" style="flex:1;padding:3px 8px;font-size:12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:4px;cursor:pointer;">Bearbeiten</button>` : ""}
+              ${onDelete ? `<button id="anno-delete-${annotationId}" style="flex:1;padding:3px 8px;font-size:12px;background:#fee2e2;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;color:#dc2626;">Löschen</button>` : ""}
+            </div>` : ""}
           </div>
         `;
 
         layer.bindPopup(popupContent);
+
+        if (hasActions) {
+          layer.on("popupopen", () => {
+            const annotation = annotations.find((a) => a.id === annotationId);
+            document
+              .getElementById(`anno-edit-${annotationId}`)
+              ?.addEventListener("click", () => {
+                if (annotation) onEdit?.(annotation);
+                layer.closePopup();
+              });
+            document
+              .getElementById(`anno-delete-${annotationId}`)
+              ?.addEventListener("click", () => {
+                onDelete?.(annotationId);
+                layer.closePopup();
+              });
+          });
+        }
       }}
     />
   );

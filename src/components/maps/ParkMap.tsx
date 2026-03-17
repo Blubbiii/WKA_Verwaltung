@@ -15,7 +15,18 @@ import { MapAnnotationLayer } from "./MapAnnotationLayer";
 import type { MapAnnotationData } from "./MapAnnotationLayer";
 import { DrawControl } from "./DrawControl";
 import { AnnotationSaveDialog } from "./AnnotationSaveDialog";
+import { AnnotationEditDialog } from "./AnnotationEditDialog";
 import { PlotDrawDialog } from "./PlotDrawDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Maximize2, Minimize2, ExternalLink } from "lucide-react";
 
 // Types
@@ -249,6 +260,11 @@ export function ParkMap({
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [plotDialogOpen, setPlotDialogOpen] = useState(false);
 
+  // Annotation edit/delete state
+  const [editingAnnotation, setEditingAnnotation] = useState<MapAnnotationData | null>(null);
+  const [deletingAnnotationId, setDeletingAnnotationId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // ESC key closes fullscreen
   useEffect(() => {
     if (!isFullscreen) return;
@@ -270,6 +286,27 @@ export function ParkMap({
     },
     [drawMode]
   );
+
+  const handleAnnotationDelete = useCallback(async () => {
+    if (!deletingAnnotationId || !parkId) return;
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(
+        `/api/parks/${parkId}/annotations/${deletingAnnotationId}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error("Fehler beim Löschen");
+      const { toast } = await import("sonner");
+      toast.success("Zeichnung gelöscht");
+      setDeletingAnnotationId(null);
+      onAnnotationSaved?.();
+    } catch {
+      const { toast } = await import("sonner");
+      toast.error("Fehler beim Löschen der Zeichnung");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [deletingAnnotationId, parkId, onAnnotationSaved]);
 
   // Create icons once
   const parkIcon = useMemo(() => createParkIcon(), []);
@@ -446,7 +483,12 @@ export function ParkMap({
 
           {/* Annotations layer */}
           {annotations && annotations.length > 0 && (
-            <MapAnnotationLayer annotations={annotations} visible={showAnnotations} />
+            <MapAnnotationLayer
+              annotations={annotations}
+              visible={showAnnotations}
+              onEdit={parkId ? (a) => setEditingAnnotation(a) : undefined}
+              onDelete={parkId ? (id) => setDeletingAnnotationId(id) : undefined}
+            />
           )}
 
           {/* Plot polygons (rendered before markers so polygons appear behind) */}
@@ -582,6 +624,45 @@ export function ParkMap({
           }}
         />
       )}
+
+      {/* Annotation edit dialog */}
+      {parkId && (
+        <AnnotationEditDialog
+          open={editingAnnotation !== null}
+          onOpenChange={(open) => { if (!open) setEditingAnnotation(null); }}
+          annotation={editingAnnotation}
+          parkId={parkId}
+          onSaved={() => {
+            setEditingAnnotation(null);
+            onAnnotationSaved?.();
+          }}
+        />
+      )}
+
+      {/* Annotation delete confirmation */}
+      <AlertDialog
+        open={deletingAnnotationId !== null}
+        onOpenChange={(open) => { if (!open) setDeletingAnnotationId(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Zeichnung löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Diese Zeichnung wird unwiderruflich gelöscht.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleAnnotationDelete}
+              disabled={deleteLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
