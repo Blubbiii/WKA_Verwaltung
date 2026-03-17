@@ -21,6 +21,7 @@ const plotCreateSchema = z.object({
   mapDocumentUrl: z.string().url().optional(),
   notes: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
+  geometry: z.any().optional(),
 });
 
 // GET /api/plots

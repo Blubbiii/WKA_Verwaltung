@@ -1035,6 +1035,7 @@ export default function ParkDetailsPage({
                   plots={plotFeatures}
                   annotations={annotations}
                   onAnnotationSaved={() => fetchPark()}
+                  onPlotSaved={() => fetchPark()}
                   height="400px"
                   mapPageUrl={`/parks/${id}/map`}
                 />

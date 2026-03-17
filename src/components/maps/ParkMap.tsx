@@ -15,6 +15,7 @@ import { MapAnnotationLayer } from "./MapAnnotationLayer";
 import type { MapAnnotationData } from "./MapAnnotationLayer";
 import { DrawControl } from "./DrawControl";
 import { AnnotationSaveDialog } from "./AnnotationSaveDialog";
+import { PlotDrawDialog } from "./PlotDrawDialog";
 import { Maximize2, Minimize2, ExternalLink } from "lucide-react";
 
 // Types
@@ -44,6 +45,7 @@ interface ParkMapProps {
   plots?: PlotFeature[];
   annotations?: MapAnnotationData[];
   onAnnotationSaved?: () => void;
+  onPlotSaved?: () => void;
   className?: string;
   height?: string;
   mapPageUrl?: string;
@@ -224,6 +226,7 @@ export function ParkMap({
   plots,
   annotations,
   onAnnotationSaved,
+  onPlotSaved,
   className,
   height = "400px",
   mapPageUrl,
@@ -240,10 +243,11 @@ export function ParkMap({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Draw mode state
-  const [drawMode, setDrawMode] = useState(false);
+  // Draw mode state: "off" | "annotation" | "plot"
+  const [drawMode, setDrawMode] = useState<"off" | "annotation" | "plot">("off");
   const [pendingGeometry, setPendingGeometry] = useState<GeoJSON.Geometry | null>(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [plotDialogOpen, setPlotDialogOpen] = useState(false);
 
   // ESC key closes fullscreen
   useEffect(() => {
@@ -255,10 +259,17 @@ export function ParkMap({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isFullscreen]);
 
-  const handleDrawCreated = useCallback((geometry: GeoJSON.Geometry) => {
-    setPendingGeometry(geometry);
-    setSaveDialogOpen(true);
-  }, []);
+  const handleDrawCreated = useCallback(
+    (geometry: GeoJSON.Geometry) => {
+      setPendingGeometry(geometry);
+      if (drawMode === "plot") {
+        setPlotDialogOpen(true);
+      } else {
+        setSaveDialogOpen(true);
+      }
+    },
+    [drawMode]
+  );
 
   // Create icons once
   const parkIcon = useMemo(() => createParkIcon(), []);
@@ -488,24 +499,37 @@ export function ParkMap({
             ))}
 
           {/* Draw control (only when parkId is provided and draw mode active) */}
-          {parkId && drawMode && (
+          {parkId && drawMode !== "off" && (
             <DrawControl onCreated={handleDrawCreated} />
           )}
         </MapContainer>
 
-        {/* Draw mode toggle button */}
+        {/* Draw mode buttons */}
         {parkId && (
-          <button
-            className={`absolute bottom-3 left-3 z-[1000] px-3 py-1.5 rounded-md text-xs font-medium shadow-md border transition-colors ${
-              drawMode
-                ? "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700"
-                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-            }`}
-            onClick={() => setDrawMode(!drawMode)}
-            title={drawMode ? "Zeichenmodus beenden" : "Zeichenmodus starten"}
-          >
-            {drawMode ? "Zeichnen beenden" : "Zeichnen"}
-          </button>
+          <div className="absolute bottom-3 left-3 z-[1000] flex gap-1">
+            <button
+              className={`px-3 py-1.5 rounded-md text-xs font-medium shadow-md border transition-colors ${
+                drawMode === "annotation"
+                  ? "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700"
+                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+              }`}
+              onClick={() => setDrawMode(drawMode === "annotation" ? "off" : "annotation")}
+              title={drawMode === "annotation" ? "Zeichenmodus beenden" : "Zeichnung hinzufügen"}
+            >
+              {drawMode === "annotation" ? "Beenden" : "Zeichnen"}
+            </button>
+            <button
+              className={`px-3 py-1.5 rounded-md text-xs font-medium shadow-md border transition-colors ${
+                drawMode === "plot"
+                  ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700"
+                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+              }`}
+              onClick={() => setDrawMode(drawMode === "plot" ? "off" : "plot")}
+              title={drawMode === "plot" ? "Flurstück-Modus beenden" : "Flurstück einzeichnen"}
+            >
+              {drawMode === "plot" ? "Beenden" : "Flurstück"}
+            </button>
+          </div>
         )}
 
         {/* Layer control overlay */}
@@ -538,6 +562,23 @@ export function ParkMap({
           onSaved={() => {
             setPendingGeometry(null);
             onAnnotationSaved?.();
+          }}
+        />
+      )}
+
+      {/* Plot draw dialog */}
+      {parkId && (
+        <PlotDrawDialog
+          open={plotDialogOpen}
+          onOpenChange={(open) => {
+            setPlotDialogOpen(open);
+            if (!open) setPendingGeometry(null);
+          }}
+          geometry={pendingGeometry}
+          parkId={parkId}
+          onSaved={() => {
+            setPendingGeometry(null);
+            onPlotSaved?.();
           }}
         />
       )}
