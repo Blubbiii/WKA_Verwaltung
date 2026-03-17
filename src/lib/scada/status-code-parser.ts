@@ -86,15 +86,24 @@ export function parseStatusCodeXlsx(buffer: Buffer): ParseResult {
     const cols = rows[i];
     if (!cols || cols.length === 0) continue;
 
-    const colA = String(cols[0] ?? "").trim();
-    const colB = String(cols[1] ?? "").trim();
+    const rawA = cols[0];
+    const rawB = cols[1];
     const colC = String(cols[2] ?? "").trim();
     const colD = String(cols[3] ?? "").trim();
     const colG = String(cols[6] ?? "").trim();
 
-    // Main code group header: col B has $N (col A is empty)
-    if (!colA && colB.startsWith("$")) {
-      const parsed = parseInt(colB.substring(1), 10);
+    // Main code group header: col A is empty, col B is a number (plain integer format)
+    // Also support legacy $N format: col A empty, col B starts with "$"
+    if (rawA === "" || rawA === null || rawA === undefined) {
+      const colB = String(rawB ?? "").trim();
+      let parsed: number;
+      if (typeof rawB === "number") {
+        parsed = rawB;
+      } else if (colB.startsWith("$")) {
+        parsed = parseInt(colB.substring(1), 10);
+      } else {
+        parsed = parseInt(colB, 10);
+      }
       if (!isNaN(parsed)) {
         currentMainCode = parsed;
         currentParentLabel = colC || null;
@@ -102,10 +111,19 @@ export function parseStatusCodeXlsx(buffer: Buffer): ParseResult {
       continue;
     }
 
-    // Sub code entry: col A has $N
-    if (colA.startsWith("$")) {
-      const subCode = parseInt(colA.substring(1), 10);
-      if (isNaN(subCode)) continue;
+    // Sub code entry: col A is a number (plain integer) or starts with "$"
+    let subCode: number;
+    if (typeof rawA === "number") {
+      subCode = rawA;
+    } else {
+      const colA = String(rawA).trim();
+      if (colA.startsWith("$")) {
+        subCode = parseInt(colA.substring(1), 10);
+      } else {
+        subCode = parseInt(colA, 10);
+      }
+    }
+    if (!isNaN(subCode)) {
 
       const description = colD;
       const typeIndicator = colG.toUpperCase();
