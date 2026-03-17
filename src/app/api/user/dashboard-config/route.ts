@@ -8,8 +8,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
-import { UserRole } from "@prisma/client";
-import type { DashboardConfig, DashboardWidget, UserSettings } from "@/types/dashboard";
+import { getUserHighestHierarchy } from "@/lib/auth/permissions";
+import type { DashboardConfig, DashboardWidget, UserRole, UserSettings } from "@/types/dashboard";
 import {
   getDefaultLayoutForRole,
   sanitizeDashboardConfig,
@@ -52,7 +52,6 @@ export async function GET() {
       where: { id: userId },
       select: {
         id: true,
-        role: true,
         settings: true,
       },
     });
@@ -64,7 +63,12 @@ export async function GET() {
       );
     }
 
-    const userRole = user.role as UserRole;
+    const hierarchy = await getUserHighestHierarchy(userId!);
+    const userRole: UserRole =
+      hierarchy >= 100 ? "SUPERADMIN" :
+      hierarchy >= 80  ? "ADMIN" :
+      hierarchy >= 60  ? "MANAGER" :
+      "VIEWER";
     const settings = (user.settings as UserSettings) || {};
     const savedConfig = settings.dashboard as DashboardConfig | undefined;
 
@@ -121,12 +125,11 @@ export async function PUT(request: NextRequest) {
 
     const { widgets, showQuickStats, gridCols, rowHeight } = validationResult.data;
 
-    // Fetch user to get role
+    // Fetch user to get settings
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
-        role: true,
         settings: true,
       },
     });
@@ -138,7 +141,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const userRole = user.role as UserRole;
+    const hierarchy = await getUserHighestHierarchy(userId!);
+    const userRole: UserRole =
+      hierarchy >= 100 ? "SUPERADMIN" :
+      hierarchy >= 80  ? "ADMIN" :
+      hierarchy >= 60  ? "MANAGER" :
+      "VIEWER";
 
     // Validate widget IDs exist in registry
     const widgetIds = widgets.map((w) => w.id);

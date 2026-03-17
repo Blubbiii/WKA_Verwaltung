@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -254,10 +253,7 @@ export async function DELETE(
 
     // Additional check: Only Admin or higher (hierarchy >= 80) can hard-delete
     const hierarchy = await getUserHighestHierarchy(check.userId!);
-    const session = await auth();
-    const isAdmin = hierarchy >= ROLE_HIERARCHY.ADMIN ||
-      (session?.user?.role && ["ADMIN", "SUPERADMIN"].includes(session.user.role));
-    if (!isAdmin) {
+    if (hierarchy < ROLE_HIERARCHY.ADMIN) {
       return NextResponse.json(
         { error: "Keine Berechtigung. Nur Administratoren können Dokumente löschen." },
         { status: 403 }

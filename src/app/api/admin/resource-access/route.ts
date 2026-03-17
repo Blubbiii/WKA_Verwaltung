@@ -84,7 +84,6 @@ const check = await requireAdmin();
             email: true,
             firstName: true,
             lastName: true,
-            role: true,
           },
         },
       },

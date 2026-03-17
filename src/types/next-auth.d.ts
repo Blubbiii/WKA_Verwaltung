@@ -5,8 +5,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      role: string; // Legacy UserRole enum value (kept for backward compatibility)
-      roleHierarchy: number; // Highest hierarchy level from assigned roles (new system)
+      roleHierarchy: number; // Highest hierarchy level from assigned roles (0=none, 40=viewer, 60=manager, 80=admin, 100=superadmin)
       tenantId: string;
       tenantName: string;
       tenantSlug: string;
@@ -15,8 +14,7 @@ declare module "next-auth" {
   }
 
   interface User extends DefaultUser {
-    role: string; // Legacy UserRole enum value
-    roleHierarchy: number; // Highest hierarchy level from assigned roles
+    roleHierarchy: number;
     tenantId: string;
     tenantName: string;
     tenantSlug: string;
@@ -27,8 +25,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     id: string;
-    role: string; // Legacy UserRole enum value
-    roleHierarchy: number; // Highest hierarchy level from assigned roles
+    roleHierarchy: number;
     tenantId: string;
     tenantName: string;
     tenantSlug: string;

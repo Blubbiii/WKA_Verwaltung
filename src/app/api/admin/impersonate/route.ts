@@ -52,7 +52,6 @@ const check = await requireSuperadmin();
           email: true,
           firstName: true,
           lastName: true,
-          role: true,
           tenantId: true,
           tenant: {
             select: { id: true, name: true, slug: true },
@@ -82,11 +81,10 @@ const check = await requireSuperadmin();
         );
       }
 
-      // Find an admin user for this tenant
+      // Find an active user for this tenant
       targetUser = await prisma.user.findFirst({
         where: {
           tenantId,
-          role: { in: ["ADMIN", "MANAGER"] },
           status: "ACTIVE",
         },
         select: {
@@ -94,10 +92,8 @@ const check = await requireSuperadmin();
           email: true,
           firstName: true,
           lastName: true,
-          role: true,
           tenantId: true,
         },
-        orderBy: { role: "asc" }, // ADMIN comes before MANAGER
       });
 
       if (!targetUser) {
@@ -121,7 +117,6 @@ const check = await requireSuperadmin();
       targetUserId: targetUser!.id,
       targetEmail: targetUser!.email,
       targetName: `${targetUser!.firstName || ""} ${targetUser!.lastName || ""}`.trim(),
-      targetRole: targetUser!.role,
       targetTenantId: targetTenant!.id,
       targetTenantName: targetTenant!.name,
       startedAt: new Date().toISOString(),
@@ -159,7 +154,6 @@ const check = await requireSuperadmin();
           id: targetUser!.id,
           email: targetUser!.email,
           name: `${targetUser!.firstName || ""} ${targetUser!.lastName || ""}`.trim(),
-          role: targetUser!.role,
         },
         tenant: targetTenant,
       },

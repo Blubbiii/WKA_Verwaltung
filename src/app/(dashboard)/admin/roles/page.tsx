@@ -186,8 +186,7 @@ export default function RolesPage() {
         const session = await sessionRes.json();
         // Use hierarchy-based check (>= 100), with legacy enum as fallback
         setIsSuperAdmin(
-          (session?.user?.roleHierarchy ?? 0) >= 100 ||
-          session?.user?.role === "SUPERADMIN"
+          (session?.user?.roleHierarchy ?? 0) >= 100
         );
       }
     } catch (error) {

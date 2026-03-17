@@ -82,11 +82,14 @@ interface User {
   email: string;
   firstName: string | null;
   lastName: string | null;
-  role: string;
   status: string;
   lastLoginAt: string | null;
+  createdAt: string;
   tenantId: string;
-  tenant: { name: string } | null;
+  tenant: { id: string; name: string } | null;
+  userRoleAssignments: Array<{
+    role: { id: string; name: string; color: string | null; hierarchy: number };
+  }>;
 }
 
 interface Role {
@@ -155,7 +158,6 @@ const userFormSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse"),
   firstName: z.string().min(1, "Vorname ist erforderlich"),
   lastName: z.string().min(1, "Nachname ist erforderlich"),
-  role: z.enum(["SUPERADMIN", "ADMIN", "MANAGER", "VIEWER"]).default("VIEWER"),
   tenantId: z.string().min(1, "Mandant ist erforderlich"),
   password: z.string().min(8, "Mindestens 8 Zeichen").or(z.literal("")).optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
@@ -164,13 +166,6 @@ const userFormSchema = z.object({
 type UserFormValues = z.infer<typeof userFormSchema>;
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-
-const roleLabels: Record<string, string> = {
-  SUPERADMIN: "Super-Admin",
-  ADMIN: "Administrator",
-  MANAGER: "Manager",
-  VIEWER: "Betrachter",
-};
 
 const moduleLabels: Record<string, string> = {
   parks: "Windparks",
@@ -244,7 +239,6 @@ export function UserManagement() {
       email: "",
       firstName: "",
       lastName: "",
-      role: "VIEWER",
       tenantId: "",
       password: "",
       status: "ACTIVE",
@@ -471,7 +465,6 @@ export function UserManagement() {
       email: "",
       firstName: "",
       lastName: "",
-      role: "VIEWER",
       tenantId: tenants.length > 0 ? tenants[0].id : "",
       password: "",
       status: "ACTIVE",
@@ -490,7 +483,6 @@ export function UserManagement() {
       email: user.email,
       firstName: user.firstName || "",
       lastName: user.lastName || "",
-      role: user.role as "SUPERADMIN" | "ADMIN" | "MANAGER" | "VIEWER",
       tenantId: user.tenantId,
       password: "",
       status: user.status as "ACTIVE" | "INACTIVE",
@@ -755,9 +747,21 @@ export function UserManagement() {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.tenant?.name || "-"}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">
-                      {roleLabels[user.role] || user.role}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1">
+                      {user.userRoleAssignments.length === 0 ? (
+                        <span className="text-muted-foreground text-xs">Keine Rolle</span>
+                      ) : (
+                        user.userRoleAssignments.map((assignment) => (
+                          <Badge
+                            key={assignment.role.id}
+                            variant="outline"
+                            style={assignment.role.color ? { borderColor: assignment.role.color, color: assignment.role.color } : undefined}
+                          >
+                            {assignment.role.name}
+                          </Badge>
+                        ))
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {user.lastLoginAt
@@ -925,30 +929,6 @@ export function UserManagement() {
                             {tenant.name}
                           </SelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={userForm.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Systemrolle *</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="SUPERADMIN">Super-Admin</SelectItem>
-                        <SelectItem value="ADMIN">Administrator</SelectItem>
-                        <SelectItem value="MANAGER">Manager</SelectItem>
-                        <SelectItem value="VIEWER">Betrachter</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

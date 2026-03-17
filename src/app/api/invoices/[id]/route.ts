@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices/skonto";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -346,12 +347,8 @@ export async function DELETE(
     if (!check.authorized) return check.error;
 
     // Zusätzliche Prüfung: Nur ADMIN oder SUPERADMIN dürfen löschen
-    const session = await prisma.user.findUnique({
-      where: { id: check.userId! },
-      select: { role: true },
-    });
-
-    if (!session || !["ADMIN", "SUPERADMIN"].includes(session.role)) {
+    const hierarchy = await getUserHighestHierarchy(check.userId!);
+    if (hierarchy < 80) {
       return NextResponse.json(
         { error: "Nur Administratoren dürfen Rechnungen löschen" },
         { status: 403 }

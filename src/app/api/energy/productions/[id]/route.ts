@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
 import { ProductionDataSource, ProductionStatus } from "@prisma/client";
@@ -191,12 +192,8 @@ export async function DELETE(
     if (!check.authorized) return check.error;
 
     // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
-    const user = await prisma.user.findUnique({
-      where: { id: check.userId! },
-      select: { role: true },
-    });
-
-    if (!user || !["MANAGER", "ADMIN", "SUPERADMIN"].includes(user.role)) {
+    const hierarchy = await getUserHighestHierarchy(check.userId!);
+    if (hierarchy < 60) {
       return NextResponse.json(
         { error: "Keine Berechtigung zum Löschen von Produktionsdaten" },
         { status: 403 }

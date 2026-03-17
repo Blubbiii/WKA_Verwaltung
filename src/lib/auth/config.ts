@@ -37,7 +37,6 @@ export const authConfig: NextAuthConfig = {
       );
       const isPortalRoute = nextUrl.pathname.startsWith("/portal");
       const roleHierarchy = auth?.user?.roleHierarchy ?? 0;
-      const legacyRole = auth?.user?.role ?? "";
       const isPortalUser = roleHierarchy <= 20 && roleHierarchy > 0;
 
       if (isProtected) {
@@ -50,8 +49,8 @@ export const authConfig: NextAuthConfig = {
 
         // Admin route protection — server-side, not just sidebar hiding
         if (nextUrl.pathname.startsWith("/admin")) {
-          const isAdmin = roleHierarchy >= 80 || ["ADMIN", "SUPERADMIN"].includes(legacyRole);
-          const isSuperadmin = roleHierarchy >= 100 || legacyRole === "SUPERADMIN";
+          const isAdmin = roleHierarchy >= 80;
+          const isSuperadmin = roleHierarchy >= 100;
 
           // System routes require Superadmin level (hierarchy >= 100)
           const systemRoutes = [
@@ -97,8 +96,7 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id ?? "";
-        token.role = user.role ?? "VIEWER"; // Legacy enum value
-        token.roleHierarchy = user.roleHierarchy ?? 0; // New hierarchy level
+        token.roleHierarchy = user.roleHierarchy ?? 0;
         token.tenantId = user.tenantId ?? "";
         token.tenantName = user.tenantName ?? "";
         token.tenantSlug = user.tenantSlug ?? "";
@@ -109,8 +107,7 @@ export const authConfig: NextAuthConfig = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string; // Legacy enum value
-        session.user.roleHierarchy = (token.roleHierarchy as number) ?? 0; // New hierarchy level
+        session.user.roleHierarchy = (token.roleHierarchy as number) ?? 0;
         session.user.tenantId = token.tenantId as string;
         session.user.tenantName = token.tenantName as string;
         session.user.tenantSlug = token.tenantSlug as string;

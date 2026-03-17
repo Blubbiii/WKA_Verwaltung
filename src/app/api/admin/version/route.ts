@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
+import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -51,12 +52,9 @@ export async function PATCH(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     // Only SUPERADMIN can change version
-    const user = await prisma.user.findUnique({
-      where: { id: check.userId },
-      select: { role: true },
-    });
+    const hierarchy = await getUserHighestHierarchy(check.userId!);
 
-    if (user?.role !== "SUPERADMIN") {
+    if (hierarchy < 100) {
       return NextResponse.json(
         { error: "Nur Superadmins können die Version ändern" },
         { status: 403 }

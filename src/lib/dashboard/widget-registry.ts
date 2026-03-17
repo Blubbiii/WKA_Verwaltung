@@ -2,8 +2,7 @@
 // Dashboard Widget Registry
 // ===========================================
 
-import type { WidgetDefinition, WidgetCategory, MinimumRole } from "@/types/dashboard";
-import { UserRole } from "@prisma/client";
+import type { WidgetDefinition, WidgetCategory, MinimumRole, UserRole } from "@/types/dashboard";
 import { hasMinimumRole } from "@/types/dashboard";
 
 /**

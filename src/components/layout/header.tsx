@@ -221,7 +221,7 @@ export function Header() {
                     {impersonation ? impersonation.targetEmail : session?.user?.email}
                   </span>
                   <span className="text-xs font-normal text-muted-foreground mt-1">
-                    {t("common.role")}: {impersonation ? impersonation.targetRole : (session?.user?.role || t("common.unknown"))}
+                    {t("common.role")}: {impersonation ? impersonation.targetRole : (session?.user?.roleHierarchy != null ? (session.user.roleHierarchy >= 100 ? "Super-Admin" : session.user.roleHierarchy >= 80 ? "Administrator" : session.user.roleHierarchy >= 60 ? "Manager" : session.user.roleHierarchy >= 40 ? "Betrachter" : t("common.unknown")) : t("common.unknown"))}
                   </span>
                 </div>
               </DropdownMenuLabel>

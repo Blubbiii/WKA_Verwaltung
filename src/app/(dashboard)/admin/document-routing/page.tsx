@@ -133,7 +133,7 @@ export default function DocumentRoutingPage() {
     fetchFunds();
   }, [fetchRules, fetchFunds]);
 
-  if (session?.user?.role !== "SUPERADMIN" && session?.user?.role !== "ADMIN") {
+  if ((session?.user?.roleHierarchy ?? 0) < 80) {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground gap-2">
         <AlertTriangle className="h-8 w-8" />

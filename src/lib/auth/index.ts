@@ -77,8 +77,7 @@ export const {
             id: user.id,
             email: user.email,
             name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
-            role: user.role, // Legacy enum value (kept for backward compat)
-            roleHierarchy, // New hierarchy level from assigned roles
+            roleHierarchy,
             tenantId: user.tenantId,
             tenantName: user.tenant.name,
             tenantSlug: user.tenant.slug,

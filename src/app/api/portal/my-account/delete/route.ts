@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
 
@@ -33,14 +34,15 @@ export async function POST(request: NextRequest) {
     // Prevent admin from deleting themselves
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true, email: true },
+      select: { email: true },
     });
 
     if (!user) {
       return NextResponse.json({ error: "Benutzer nicht gefunden" }, { status: 404 });
     }
 
-    if (user.role === "ADMIN") {
+    const userHierarchy = await getUserHighestHierarchy(userId);
+    if (userHierarchy >= 80) {
       return NextResponse.json(
         { error: "Administratoren koennen ihr Konto nicht selbst loeschen. Bitte kontaktieren Sie einen anderen Administrator." },
         { status: 403 }

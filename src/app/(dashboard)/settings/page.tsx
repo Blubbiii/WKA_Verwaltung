@@ -1018,10 +1018,10 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const { hasPermission, role } = usePermissions();
+  const { hasPermission, roleHierarchy } = usePermissions();
   const { flags } = useFeatureFlags();
-  const canManageFeatures = role === "SUPERADMIN" || hasPermission("settings:update");
-  const canManagePaperless = (role === "SUPERADMIN" || hasPermission("admin:manage")) && flags.paperless;
+  const canManageFeatures = roleHierarchy >= 100 || hasPermission("settings:update");
+  const canManagePaperless = (roleHierarchy >= 100 || hasPermission("admin:manage")) && flags.paperless;
 
   // Paperless config state
   const [paperlessConfigs, setPaperlessConfigs] = useState<PaperlessConfigValue[]>([]);

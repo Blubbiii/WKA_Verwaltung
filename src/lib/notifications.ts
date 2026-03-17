@@ -64,12 +64,16 @@ export async function notifyAdmins(params: {
   link?: string;
 }): Promise<void> {
   try {
-    // Find all users with ADMIN or SUPERADMIN role in the tenant
+    // Find all users in the tenant who have a role assignment with hierarchy >= 80 (ADMIN+)
     const admins = await prisma.user.findMany({
       where: {
         tenantId: params.tenantId,
         status: "ACTIVE",
-        role: { in: ["ADMIN", "SUPERADMIN"] },
+        userRoleAssignments: {
+          some: {
+            role: { hierarchy: { gte: 80 } },
+          },
+        },
       },
       select: { id: true },
     });

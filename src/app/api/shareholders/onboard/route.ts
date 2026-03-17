@@ -207,7 +207,6 @@ export async function POST(request: NextRequest) {
             firstName: personalData.firstName,
             lastName: personalData.lastName,
             passwordHash,
-            role: "VIEWER",
             tenantId: check.tenantId!,
             status: "ACTIVE",
           },

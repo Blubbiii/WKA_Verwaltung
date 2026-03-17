@@ -26,8 +26,7 @@ export async function GET() {
 
     return NextResponse.json({
       permissions: userPerms.permissions,
-      role: session.user.role, // Legacy enum value (kept for backward compat)
-      roleHierarchy, // New hierarchy level for client-side checks
+      roleHierarchy, // Hierarchy level for client-side checks
     });
   } catch (error) {
     authLogger.error({ err: error }, "Error fetching user permissions");

@@ -26,10 +26,7 @@ export function PortalHeader() {
     .toUpperCase()
     .slice(0, 2) || "??";
 
-  // Use hierarchy-based check (>= 60 = Manager), with legacy enum as fallback
-  const canAccessAdmin =
-    (session?.user?.roleHierarchy ?? 0) >= 60 ||
-    (session?.user?.role && ["SUPERADMIN", "ADMIN", "MANAGER"].includes(session.user.role));
+  const canAccessAdmin = (session?.user?.roleHierarchy ?? 0) >= 60;
 
   // Fetch user avatar on mount
   useEffect(() => {

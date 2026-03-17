@@ -59,7 +59,6 @@ export async function GET() {
         lastName: true,
         email: true,
         phone: true,
-        role: true,
         avatarUrl: true,
         settings: true,
         emailPreferences: true,
@@ -110,7 +109,6 @@ export async function GET() {
       lastName: user.lastName,
       email: user.email,
       phone: user.phone,
-      role: user.role,
       avatarUrl: avatarSignedUrl,
       preferences,
       lastLoginAt: user.lastLoginAt,
@@ -211,7 +209,6 @@ export async function PUT(request: Request) {
         lastName: true,
         email: true,
         phone: true,
-        role: true,
         settings: true,
       },
     });
@@ -243,7 +240,6 @@ export async function PUT(request: Request) {
       lastName: updatedUser.lastName,
       email: updatedUser.email,
       phone: updatedUser.phone,
-      role: updatedUser.role,
       preferences: responsePreferences,
     });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
 import { DistributionMode, Prisma } from "@prisma/client";
@@ -288,12 +289,8 @@ export async function DELETE(
     if (!check.authorized) return check.error;
 
     // Zusätzliche Prüfung: Nur ADMIN oder SUPERADMIN duerfen löschen
-    const session = await prisma.user.findUnique({
-      where: { id: check.userId! },
-      select: { role: true },
-    });
-
-    if (!session || !["ADMIN", "SUPERADMIN"].includes(session.role)) {
+    const hierarchy = await getUserHighestHierarchy(check.userId!);
+    if (hierarchy < 80) {
       return NextResponse.json(
         { error: "Nur Administratoren duerfen Stromabrechnungen löschen" },
         { status: 403 }

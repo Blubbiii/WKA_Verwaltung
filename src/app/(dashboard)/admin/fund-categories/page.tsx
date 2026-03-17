@@ -9,7 +9,7 @@ import { AlertTriangle } from "lucide-react";
 export default function AdminFundCategoriesPage() {
   const { data: session } = useSession();
 
-  if (session?.user?.role !== "SUPERADMIN") {
+  if ((session?.user?.roleHierarchy ?? 0) < 100) {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground gap-2">
         <AlertTriangle className="h-8 w-8" />

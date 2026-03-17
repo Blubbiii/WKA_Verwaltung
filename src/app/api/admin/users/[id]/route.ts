@@ -11,7 +11,6 @@ const userUpdateSchema = z.object({
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
   password: z.string().min(8).optional(),
-  role: z.enum(["SUPERADMIN", "ADMIN", "MANAGER", "VIEWER"]).optional(),
   tenantId: z.string().uuid().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
@@ -41,7 +40,6 @@ export async function GET(
         firstName: true,
         lastName: true,
         phone: true,
-        role: true,
         status: true,
         lastLoginAt: true,
         createdAt: true,
@@ -163,7 +161,6 @@ export async function PATCH(
         ...(validatedData.firstName && { firstName: validatedData.firstName }),
         ...(validatedData.lastName && { lastName: validatedData.lastName }),
         ...(passwordHash && { passwordHash }),
-        ...(validatedData.role && { role: validatedData.role }),
         ...(validatedData.tenantId && { tenantId: validatedData.tenantId }),
         ...(validatedData.status && { status: validatedData.status }),
       },
@@ -172,11 +169,13 @@ export async function PATCH(
         email: true,
         firstName: true,
         lastName: true,
-        role: true,
         status: true,
         tenantId: true,
-        tenant: {
-          select: { id: true, name: true },
+        tenant: { select: { id: true, name: true } },
+        userRoleAssignments: {
+          select: {
+            role: { select: { id: true, name: true, color: true, hierarchy: true } },
+          },
         },
       },
     });

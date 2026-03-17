@@ -5,14 +5,14 @@ import useSWR from "swr";
 
 interface PermissionsData {
   permissions: string[];
-  role: string | null;
+  roleHierarchy: number;
 }
 
 interface UsePermissionsResult {
   /** Flat array of all permission names the user has */
   permissions: string[];
-  /** The user's legacy role (e.g. "VIEWER", "ADMIN", "SUPERADMIN") */
-  role: string | null;
+  /** Highest role hierarchy level (0=none, 40=viewer, 60=manager, 80=admin, 100=superadmin) */
+  roleHierarchy: number;
   /** Whether the permissions have been loaded from the server */
   loaded: boolean;
   /** Whether the permissions are currently loading */
@@ -52,13 +52,13 @@ export function usePermissions(): UsePermissionsResult {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      dedupingInterval: 60_000, // Deduplicate requests within 60s
-      refreshInterval: 0, // No automatic refresh
+      dedupingInterval: 60_000,
+      refreshInterval: 0,
     }
   );
 
   const permissions = data?.permissions ?? [];
-  const role = data?.role ?? null;
+  const roleHierarchy = data?.roleHierarchy ?? 0;
   const loaded = !isLoading;
 
   const permissionsSet = useMemo(() => new Set(permissions), [permissions]);
@@ -80,7 +80,7 @@ export function usePermissions(): UsePermissionsResult {
 
   return {
     permissions,
-    role,
+    roleHierarchy,
     loaded,
     loading: isLoading,
     error: error?.message ?? null,

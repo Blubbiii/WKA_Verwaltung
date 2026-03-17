@@ -4,9 +4,9 @@
 // ===========================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
-import { UserRole } from "@prisma/client";
+import { getUserHighestHierarchy } from "@/lib/auth/permissions";
+import type { UserRole } from "@/types/dashboard";
 import {
   getWidgetsForRole,
   getWidgetsByCategory,
@@ -27,23 +27,13 @@ export async function GET(request: NextRequest) {
 
     const { userId } = check;
 
-    // Fetch user to get role
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        role: true,
-      },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
-    }
-
-    const userRole = user.role as UserRole;
+    // Derive role label from hierarchy for widget filtering
+    const hierarchy = await getUserHighestHierarchy(userId!);
+    const userRole: UserRole =
+      hierarchy >= 100 ? "SUPERADMIN" :
+      hierarchy >= 80  ? "ADMIN" :
+      hierarchy >= 60  ? "MANAGER" :
+      "VIEWER";
 
     // Get query params
     const { searchParams } = new URL(request.url);

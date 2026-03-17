@@ -665,7 +665,7 @@ function sortGroupsByOrder(groups: NavGroup[], order: string[]): NavGroup[] {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { hasPermission, role, loaded: permissionsLoaded } = usePermissions();
+  const { hasPermission, roleHierarchy, loaded: permissionsLoaded } = usePermissions();
   const { data: session } = useSession();
   const t = useTranslations();
   const { isFeatureEnabled } = useFeatureFlags();
@@ -789,13 +789,13 @@ export function Sidebar() {
     if (!item.permission) return true; // No permission required
     if (!permissionsLoaded) return true; // Show while loading to prevent layout shift
     // Only SUPERADMIN bypasses permission checks
-    if (role === "SUPERADMIN") return true;
+    if (roleHierarchy >= 100) return true;
     return hasPermission(item.permission);
   };
 
   /** Check if a nav group should be visible (at least 1 item must be visible) */
   const isGroupVisible = (group: NavGroup): boolean => {
-    if (role === "SUPERADMIN") return true;
+    if (roleHierarchy >= 100) return true;
     // Group is visible when at least one of its items is visible
     return group.items.some(isItemVisible);
   };
@@ -989,7 +989,7 @@ export function Sidebar() {
         .filter((g) => isGroupVisible(g) && getVisibleItems(g).length > 0)
         .map((g) => g.labelKey!),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sortedMiddle, role, permissionsLoaded]
+    [sortedMiddle, roleHierarchy, permissionsLoaded]
   );
 
   // -----------------------------------------------------------------------

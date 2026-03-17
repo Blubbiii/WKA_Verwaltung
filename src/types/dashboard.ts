@@ -2,8 +2,12 @@
 // Dashboard Configuration Types
 // ===========================================
 
-import { UserRole } from "@prisma/client";
 import type { OnboardingState } from "@/lib/onboarding/tour-config";
+
+/**
+ * User role string literal — replaces the removed UserRole enum from Prisma.
+ */
+export type UserRole = "VIEWER" | "MANAGER" | "ADMIN" | "SUPERADMIN";
 
 /**
  * Widget position and size in the dashboard grid

@@ -866,7 +866,7 @@ async function sendAnomalyNotifications(
         where: {
           tenantId,
           status: "ACTIVE",
-          role: { in: ["ADMIN", "SUPERADMIN"] },
+          userRoleAssignments: { some: { role: { hierarchy: { gte: 80 } } } },
         },
         select: { id: true, email: true },
       });

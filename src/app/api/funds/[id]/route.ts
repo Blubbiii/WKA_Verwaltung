@@ -273,10 +273,7 @@ export async function DELETE(
 
     // Additional role check: Only Admin or higher (hierarchy >= 80)
     const hierarchy = await getUserHighestHierarchy(check.userId!);
-    const session = await import("@/lib/auth").then((m) => m.auth());
-    const isAdmin = hierarchy >= ROLE_HIERARCHY.ADMIN ||
-      (session?.user?.role && ["ADMIN", "SUPERADMIN"].includes(session.user.role));
-    if (!isAdmin) {
+    if (hierarchy < ROLE_HIERARCHY.ADMIN) {
       return NextResponse.json(
         { error: "Nur Administratoren dürfen Gesellschaften löschen" },
         { status: 403 }

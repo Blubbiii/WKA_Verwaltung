@@ -6,8 +6,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
-import { UserRole } from "@prisma/client";
-import type { UserSettings } from "@/types/dashboard";
+import { getUserHighestHierarchy } from "@/lib/auth/permissions";
+import type { UserRole, UserSettings } from "@/types/dashboard";
 import { getDefaultLayoutForRole } from "@/lib/dashboard/default-layouts";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -22,12 +22,11 @@ export async function POST() {
 
     const { userId } = check;
 
-    // Fetch user to get role and current settings
+    // Fetch user current settings
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
-        role: true,
         settings: true,
       },
     });
@@ -39,7 +38,13 @@ export async function POST() {
       );
     }
 
-    const userRole = user.role as UserRole;
+    // Derive role from hierarchy for default layout selection
+    const hierarchy = await getUserHighestHierarchy(userId!);
+    const userRole: UserRole =
+      hierarchy >= 100 ? "SUPERADMIN" :
+      hierarchy >= 80  ? "ADMIN" :
+      hierarchy >= 60  ? "MANAGER" :
+      "VIEWER";
 
     // Get the default layout for the user's role
     const defaultConfig = getDefaultLayoutForRole(userRole);

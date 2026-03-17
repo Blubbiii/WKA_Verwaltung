@@ -132,7 +132,7 @@ model User {
   lastName                                                                String?
   phone                                                                   String?
   avatarUrl                                                               String?
-  role                                                                    UserRole                    @default(VIEWER)
+
   emailVerified                                                           DateTime?
   lastLoginAt                                                             DateTime?
   status                                                                  EntityStatus                @default(ACTIVE)
@@ -2645,12 +2645,6 @@ model UserRoleAssignment {
   @@map("user_role_assignments")
 }
 
-enum UserRole {
-  SUPERADMIN
-  ADMIN
-  MANAGER
-  VIEWER
-}
 
 enum EntityStatus {
   ACTIVE

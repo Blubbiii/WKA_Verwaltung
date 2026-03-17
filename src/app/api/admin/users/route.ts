@@ -10,7 +10,10 @@ import { auth } from "@/lib/auth";
 /** Quick helper to check if current user is SUPERADMIN (without throwing) */
 async function requireSuperadminCheck(): Promise<boolean> {
   const session = await auth();
-  return session?.user?.role === "SUPERADMIN";
+  if (!session?.user?.id) return false;
+  const { getUserHighestHierarchy } = await import("@/lib/auth/permissions");
+  const hierarchy = await getUserHighestHierarchy(session.user.id);
+  return hierarchy >= 100;
 }
 
 const userCreateSchema = z.object({
@@ -18,7 +21,6 @@ const userCreateSchema = z.object({
   firstName: z.string().min(1, "Vorname ist erforderlich"),
   lastName: z.string().min(1, "Nachname ist erforderlich"),
   password: z.string().min(8, "Mindestens 8 Zeichen"),
-  role: z.enum(["SUPERADMIN", "ADMIN", "MANAGER", "VIEWER"]),
   tenantId: z.string().uuid("Ungültige Mandanten-ID"),
   status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
 });
@@ -32,7 +34,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const tenantId = searchParams.get("tenantId");
-    const role = searchParams.get("role");
     const status = searchParams.get("status");
 
     // Tenant isolation: non-SUPERADMIN users can only see their own tenant's users
@@ -49,7 +50,6 @@ export async function GET(request: NextRequest) {
           { lastName: { contains: search, mode: "insensitive" as const } },
         ],
       }),
-      ...(role && { role: role as "SUPERADMIN" | "ADMIN" | "MANAGER" | "VIEWER" }),
       ...(status && { status: status as "ACTIVE" | "INACTIVE" }),
     };
 
@@ -60,16 +60,20 @@ export async function GET(request: NextRequest) {
         email: true,
         firstName: true,
         lastName: true,
-        role: true,
         status: true,
         lastLoginAt: true,
         createdAt: true,
         tenantId: true,
         tenant: {
+          select: { id: true, name: true },
+        },
+        userRoleAssignments: {
           select: {
-            id: true,
-            name: true,
+            role: {
+              select: { id: true, name: true, color: true, hierarchy: true },
+            },
           },
+          orderBy: { role: { hierarchy: "desc" } },
         },
       },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
@@ -127,7 +131,6 @@ export async function POST(request: NextRequest) {
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
         passwordHash,
-        role: validatedData.role,
         status: validatedData.status,
         tenantId: validatedData.tenantId,
       },
@@ -136,11 +139,13 @@ export async function POST(request: NextRequest) {
         email: true,
         firstName: true,
         lastName: true,
-        role: true,
         status: true,
         tenantId: true,
-        tenant: {
-          select: { id: true, name: true },
+        tenant: { select: { id: true, name: true } },
+        userRoleAssignments: {
+          select: {
+            role: { select: { id: true, name: true, color: true, hierarchy: true } },
+          },
         },
       },
     });

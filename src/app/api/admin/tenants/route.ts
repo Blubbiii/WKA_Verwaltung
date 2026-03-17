@@ -5,7 +5,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
-import { Prisma, UserRole } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
 
 const adminUserSchema = z
@@ -228,7 +228,6 @@ export async function POST(request: NextRequest) {
             firstName,
             lastName,
             passwordHash,
-            role: UserRole.ADMIN,
             status: "ACTIVE",
             tenantId: tenant.id,
           },

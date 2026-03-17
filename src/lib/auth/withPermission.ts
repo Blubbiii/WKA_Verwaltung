@@ -59,17 +59,12 @@ export async function requirePermission(
   const userId = session.user.id;
   const tenantId = session.user.tenantId;
 
-  // Only SUPERADMIN bypasses permission checks (global access across all tenants).
-  // All other roles (including ADMIN) must have explicit permissions assigned.
-  if (session.user.role === "SUPERADMIN") {
-    return {
-      authorized: true,
-      userId,
-      tenantId,
-    };
+  // Superadmin (hierarchy >= 100) bypasses all permission checks.
+  if ((session.user.roleHierarchy ?? 0) >= 100) {
+    return { authorized: true, userId, tenantId };
   }
 
-  // Check permission(s) for non-admin roles
+  // Check permission(s) for non-superadmin users
   let hasRequiredPermission: boolean;
 
   if (Array.isArray(permission)) {
@@ -135,14 +130,8 @@ export async function requirePermissionWithResources(
   const tenantId = session.user.tenantId;
 
   // Superadmin bypasses all checks
-  if (session.user.role === "SUPERADMIN") {
-    return {
-      authorized: true,
-      userId,
-      tenantId,
-      resourceRestricted: false,
-      allowedResourceIds: [],
-    };
+  if ((session.user.roleHierarchy ?? 0) >= 100) {
+    return { authorized: true, userId, tenantId, resourceRestricted: false, allowedResourceIds: [] };
   }
 
   const result = await checkPermission(userId, permission, resourceType);
@@ -207,35 +196,14 @@ export async function requireSuperadmin(): Promise<PermissionCheckResult> {
     };
   }
 
-  // Primary check: hierarchy-based (new system)
   const hierarchy = await getUserHighestHierarchy(session.user.id);
   if (hierarchy >= ROLE_HIERARCHY.SUPERADMIN) {
-    return {
-      authorized: true,
-      userId: session.user.id,
-      tenantId: session.user.tenantId,
-    };
+    return { authorized: true, userId: session.user.id, tenantId: session.user.tenantId };
   }
-
-  // Fallback: legacy enum check for backward compatibility
-  if (session.user.role === "SUPERADMIN") {
-    return {
-      authorized: true,
-      userId: session.user.id,
-      tenantId: session.user.tenantId,
-    };
-  }
-
-  // Note: Removed overly permissive fallback that granted superadmin access
-  // based on individual admin:tenants or admin:system permissions.
-  // Only hierarchy-based check and legacy enum are trusted for superadmin access.
 
   return {
     authorized: false,
-    error: NextResponse.json(
-      { error: "Nur für Superadmins zugänglich" },
-      { status: 403 }
-    ),
+    error: NextResponse.json({ error: "Nur für Superadmins zugänglich" }, { status: 403 }),
   };
 }
 
@@ -257,35 +225,14 @@ export async function requireAdmin(): Promise<PermissionCheckResult> {
     };
   }
 
-  // Primary check: hierarchy-based (new system)
   const hierarchy = await getUserHighestHierarchy(session.user.id);
   if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
-    return {
-      authorized: true,
-      userId: session.user.id,
-      tenantId: session.user.tenantId,
-    };
+    return { authorized: true, userId: session.user.id, tenantId: session.user.tenantId };
   }
-
-  // Fallback: legacy enum check for backward compatibility
-  if (["ADMIN", "SUPERADMIN"].includes(session.user.role || "")) {
-    return {
-      authorized: true,
-      userId: session.user.id,
-      tenantId: session.user.tenantId,
-    };
-  }
-
-  // Note: Removed overly permissive fallback that granted admin access
-  // based on individual users:read or roles:read permissions.
-  // Only hierarchy-based check and legacy enum are trusted for admin access.
 
   return {
     authorized: false,
-    error: NextResponse.json(
-      { error: "Nur für Administratoren zugänglich" },
-      { status: 403 }
-    ),
+    error: NextResponse.json({ error: "Nur für Administratoren zugänglich" }, { status: 403 }),
   };
 }
 
@@ -317,7 +264,7 @@ export async function requirePagePermission(
   }
 
   // Superadmin bypasses all checks
-  if (session.user.role === "SUPERADMIN") {
+  if ((session.user.roleHierarchy ?? 0) >= 100) {
     return { userId: session.user.id, tenantId: session.user.tenantId || "" };
   }
 
@@ -363,18 +310,7 @@ export async function requirePageAdmin(
     redirect("/login");
   }
 
-  // Superadmin always passes
-  if (session.user.role === "SUPERADMIN") {
-    return { userId: session.user.id, tenantId: session.user.tenantId || "" };
-  }
-
-  // Legacy enum fallback (checked before DB query for speed)
-  if (["ADMIN", "SUPERADMIN"].includes(session.user.role || "")) {
-    return { userId: session.user.id, tenantId: session.user.tenantId || "" };
-  }
-
   try {
-    // Hierarchy check (requires DB query)
     const hierarchy = await getUserHighestHierarchy(session.user.id);
     if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
       return { userId: session.user.id, tenantId: session.user.tenantId || "" };

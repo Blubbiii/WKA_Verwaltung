@@ -141,10 +141,7 @@ export function ReportArchiveTab() {
   const [format, setFormat] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
 
-  const isAdmin =
-    (session?.user?.roleHierarchy ?? 0) >= 80 ||
-    session?.user?.role === "ADMIN" ||
-    session?.user?.role === "SUPERADMIN";
+  const isAdmin = (session?.user?.roleHierarchy ?? 0) >= 80;
 
   const fetchReports = useCallback(async () => {
     try {

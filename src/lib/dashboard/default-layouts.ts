@@ -2,8 +2,7 @@
 // Default Dashboard Layouts per Role
 // ===========================================
 
-import type { DashboardConfig, DashboardWidget } from "@/types/dashboard";
-import { UserRole } from "@prisma/client";
+import type { DashboardConfig, DashboardWidget, UserRole } from "@/types/dashboard";
 import { getWidgetById, getWidgetsForRole } from "./widget-registry";
 
 // ===========================================
