@@ -1,5 +1,7 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { auth } from "./index";
 import {
   hasPermission,
@@ -9,6 +11,41 @@ import {
   getUserHighestHierarchy,
   ROLE_HIERARCHY,
 } from "./permissions";
+
+const ACTIVE_TENANT_COOKIE = "wpm-active-tenant";
+
+/**
+ * Read the signed wpm-active-tenant cookie and return the overridden tenantId.
+ * Returns null if no cookie is set, the signature is invalid, or the userId doesn't match.
+ */
+async function getActiveTenantOverride(sessionUserId: string): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const signed = cookieStore.get(ACTIVE_TENANT_COOKIE)?.value;
+    if (!signed) return null;
+
+    const lastDot = signed.lastIndexOf(".");
+    if (lastDot === -1) return null;
+
+    const payload = signed.substring(0, lastDot);
+    const signature = signed.substring(lastDot + 1);
+    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
+    const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+
+    if (signature.length !== expected.length) return null;
+    let mismatch = 0;
+    for (let i = 0; i < signature.length; i++) {
+      mismatch |= signature.charCodeAt(i) ^ expected.charCodeAt(i);
+    }
+    if (mismatch !== 0) return null;
+
+    const data = JSON.parse(payload) as { activeTenantId?: string; userId?: string };
+    if (data.userId !== sessionUserId) return null;
+    return data.activeTenantId ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // ============================================================================
 // PERMISSION MIDDLEWARE FOR API ROUTES
@@ -57,7 +94,7 @@ export async function requirePermission(
   }
 
   const userId = session.user.id;
-  const tenantId = session.user.tenantId;
+  const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
 
   // Superadmin (hierarchy >= 100) bypasses all permission checks.
   if ((session.user.roleHierarchy ?? 0) >= 100) {
@@ -127,7 +164,7 @@ export async function requirePermissionWithResources(
   }
 
   const userId = session.user.id;
-  const tenantId = session.user.tenantId;
+  const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
 
   // Superadmin bypasses all checks
   if ((session.user.roleHierarchy ?? 0) >= 100) {
@@ -171,11 +208,9 @@ export async function requireAuth(): Promise<PermissionCheckResult> {
     };
   }
 
-  return {
-    authorized: true,
-    userId: session.user.id,
-    tenantId: session.user.tenantId,
-  };
+  const userId = session.user.id;
+  const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
+  return { authorized: true, userId, tenantId };
 }
 
 /**
@@ -196,9 +231,11 @@ export async function requireSuperadmin(): Promise<PermissionCheckResult> {
     };
   }
 
-  const hierarchy = await getUserHighestHierarchy(session.user.id);
+  const userId = session.user.id;
+  const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
+  const hierarchy = await getUserHighestHierarchy(userId);
   if (hierarchy >= ROLE_HIERARCHY.SUPERADMIN) {
-    return { authorized: true, userId: session.user.id, tenantId: session.user.tenantId };
+    return { authorized: true, userId, tenantId };
   }
 
   return {
@@ -225,9 +262,11 @@ export async function requireAdmin(): Promise<PermissionCheckResult> {
     };
   }
 
-  const hierarchy = await getUserHighestHierarchy(session.user.id);
+  const userId = session.user.id;
+  const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
+  const hierarchy = await getUserHighestHierarchy(userId);
   if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
-    return { authorized: true, userId: session.user.id, tenantId: session.user.tenantId };
+    return { authorized: true, userId, tenantId };
   }
 
   return {
@@ -263,9 +302,12 @@ export async function requirePagePermission(
     redirect("/login");
   }
 
+  const userId = session.user.id;
+  const tenantId = ((await getActiveTenantOverride(userId)) ?? session.user.tenantId) || "";
+
   // Superadmin bypasses all checks
   if ((session.user.roleHierarchy ?? 0) >= 100) {
-    return { userId: session.user.id, tenantId: session.user.tenantId || "" };
+    return { userId, tenantId };
   }
 
   try {
@@ -273,12 +315,12 @@ export async function requirePagePermission(
 
     if (Array.isArray(permission)) {
       if (options?.requireAll) {
-        hasRequiredPermission = await hasAllPermissions(session.user.id, permission);
+        hasRequiredPermission = await hasAllPermissions(userId, permission);
       } else {
-        hasRequiredPermission = await hasAnyPermission(session.user.id, permission);
+        hasRequiredPermission = await hasAnyPermission(userId, permission);
       }
     } else {
-      hasRequiredPermission = await hasPermission(session.user.id, permission);
+      hasRequiredPermission = await hasPermission(userId, permission);
     }
 
     if (!hasRequiredPermission) {
@@ -293,7 +335,7 @@ export async function requirePagePermission(
     console.error("[requirePagePermission] Permission check failed, allowing access:", error);
   }
 
-  return { userId: session.user.id, tenantId: session.user.tenantId || "" };
+  return { userId, tenantId };
 }
 
 /**
@@ -310,15 +352,18 @@ export async function requirePageAdmin(
     redirect("/login");
   }
 
+  const userId = session.user.id;
+  const tenantId = ((await getActiveTenantOverride(userId)) ?? session.user.tenantId) || "";
+
   try {
-    const hierarchy = await getUserHighestHierarchy(session.user.id);
+    const hierarchy = await getUserHighestHierarchy(userId);
     if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
-      return { userId: session.user.id, tenantId: session.user.tenantId || "" };
+      return { userId, tenantId };
     }
   } catch (error) {
     // For DB errors: fail-open (API routes enforce permissions anyway)
     console.error("[requirePageAdmin] Hierarchy check failed, allowing access:", error);
-    return { userId: session.user.id, tenantId: session.user.tenantId || "" };
+    return { userId, tenantId };
   }
 
   redirect(redirectTo);
