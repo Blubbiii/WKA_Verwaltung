@@ -25,21 +25,28 @@ interface TenantOption {
 export function TenantSwitcher() {
   const { data: session } = useSession();
   const [tenants, setTenants] = useState<TenantOption[]>([]);
+  const [activeTenantId, setActiveTenantId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
+    if (!session?.user?.id) return;
+    // Load all memberships
     fetch("/api/user/tenants")
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.tenants) setTenants(data.tenants);
-      })
+      .then((data) => { if (data?.tenants) setTenants(data.tenants); })
+      .catch(() => {});
+    // Read active tenant from signed cookie (server-side) — bypasses middleware matcher issue
+    fetch("/api/user/switch-tenant")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { setActiveTenantId(data?.activeTenantId ?? null); })
       .catch(() => {});
   }, [session?.user?.id]);
 
   // Only show switcher if user has more than one tenant
   if (tenants.length <= 1) return null;
 
-  const currentTenantId = session?.user?.tenantId;
+  // Prefer cookie-backed active tenant; fall back to JWT session tenant
+  const currentTenantId = activeTenantId ?? session?.user?.tenantId;
   const currentTenant = tenants.find((t) => t.id === currentTenantId) ?? tenants[0];
 
   const switchTenant = (tenantId: string) => {

@@ -15,6 +15,53 @@ function signCookieValue(data: object): string {
   return `${payload}.${signature}`;
 }
 
+function verifyCookieValue(signed: string): Record<string, unknown> | null {
+  const lastDot = signed.lastIndexOf(".");
+  if (lastDot === -1) return null;
+  const payload = signed.substring(0, lastDot);
+  const signature = signed.substring(lastDot + 1);
+  try {
+    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
+    const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+    if (signature.length !== expected.length) return null;
+    let mismatch = 0;
+    for (let i = 0; i < signature.length; i++) {
+      mismatch |= signature.charCodeAt(i) ^ expected.charCodeAt(i);
+    }
+    if (mismatch !== 0) return null;
+    return JSON.parse(payload) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+// GET /api/user/switch-tenant — return active tenant from signed cookie
+export async function GET() {
+  const check = await requireAuth();
+  if (!check.authorized) return check.error!;
+
+  const cookieStore = await cookies();
+  const signed = cookieStore.get(COOKIE_NAME)?.value;
+
+  if (!signed) {
+    return NextResponse.json({ activeTenantId: null });
+  }
+
+  const data = verifyCookieValue(signed);
+  // Extra safety: cookie must belong to the current user
+  if (!data || data.userId !== check.userId) {
+    return NextResponse.json({ activeTenantId: null });
+  }
+
+  return NextResponse.json({
+    activeTenantId: data.activeTenantId,
+    tenantName: data.tenantName,
+    tenantSlug: data.tenantSlug,
+    tenantLogoUrl: data.tenantLogoUrl,
+    roleHierarchy: data.roleHierarchy,
+  });
+}
+
 // POST /api/user/switch-tenant — switch active tenant context
 export async function POST(request: NextRequest) {
   const check = await requireAuth();
