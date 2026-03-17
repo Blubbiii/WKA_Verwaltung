@@ -75,6 +75,14 @@ export async function GET(request: NextRequest) {
           },
           orderBy: { role: { hierarchy: "desc" } },
         },
+        userTenantMemberships: {
+          select: {
+            tenantId: true,
+            isPrimary: true,
+            status: true,
+            tenant: { select: { id: true, name: true } },
+          },
+        },
       },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     });
@@ -133,6 +141,9 @@ export async function POST(request: NextRequest) {
         passwordHash,
         status: validatedData.status,
         tenantId: validatedData.tenantId,
+        userTenantMemberships: {
+          create: { tenantId: validatedData.tenantId, isPrimary: true },
+        },
       },
       select: {
         id: true,
@@ -145,6 +156,14 @@ export async function POST(request: NextRequest) {
         userRoleAssignments: {
           select: {
             role: { select: { id: true, name: true, color: true, hierarchy: true } },
+          },
+        },
+        userTenantMemberships: {
+          select: {
+            tenantId: true,
+            isPrimary: true,
+            status: true,
+            tenant: { select: { id: true, name: true } },
           },
         },
       },

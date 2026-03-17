@@ -6,6 +6,7 @@ import { authConfig } from "./config";
 import { prisma } from "@/lib/prisma";
 import { authLogger } from "@/lib/logger";
 import { rateLimit, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
+import { getRoleHierarchyForTenant } from "./role-hierarchy";
 
 const loginSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse"),
@@ -45,7 +46,14 @@ export const {
         try {
           const user = await prisma.user.findUnique({
             where: { email },
-            include: { tenant: true },
+            include: {
+              tenant: true,
+              userTenantMemberships: {
+                where: { isPrimary: true, status: "ACTIVE" },
+                include: { tenant: true },
+                take: 1,
+              },
+            },
           });
 
           if (!user || user.status !== "ACTIVE") {
@@ -58,14 +66,12 @@ export const {
             return null;
           }
 
-          // Fetch highest role hierarchy from UserRoleAssignment
-          const roleAssignments = await prisma.userRoleAssignment.findMany({
-            where: { userId: user.id },
-            include: { role: { select: { hierarchy: true } } },
-          });
-          const roleHierarchy = roleAssignments.length > 0
-            ? Math.max(0, ...roleAssignments.map(a => a.role.hierarchy))
-            : 0;
+          // Resolve active tenant: prefer primary membership, fall back to user.tenantId
+          const primaryMembership = user.userTenantMemberships[0];
+          const activeTenant = primaryMembership?.tenant ?? user.tenant;
+
+          // Fetch role hierarchy scoped to the active tenant
+          const roleHierarchy = await getRoleHierarchyForTenant(user.id, activeTenant.id);
 
           // Update last login
           await prisma.user.update({
@@ -78,10 +84,10 @@ export const {
             email: user.email,
             name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
             roleHierarchy,
-            tenantId: user.tenantId,
-            tenantName: user.tenant.name,
-            tenantSlug: user.tenant.slug,
-            tenantLogoUrl: user.tenant.logoUrl,
+            tenantId: activeTenant.id,
+            tenantName: activeTenant.name,
+            tenantSlug: activeTenant.slug,
+            tenantLogoUrl: activeTenant.logoUrl,
           };
         } catch (error) {
           authLogger.error({ err: error }, "Authentication failed");

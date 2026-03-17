@@ -13,6 +13,14 @@ const userUpdateSchema = z.object({
   password: z.string().min(8).optional(),
   tenantId: z.string().uuid().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+  memberships: z
+    .array(
+      z.object({
+        tenantId: z.string().uuid(),
+        isPrimary: z.boolean().default(false),
+      })
+    )
+    .optional(),
 });
 
 /** Check if current user is SUPERADMIN using the authoritative hierarchy check */
@@ -58,6 +66,15 @@ export async function GET(
               select: { id: true, name: true },
             },
           },
+        },
+        userTenantMemberships: {
+          select: {
+            tenantId: true,
+            isPrimary: true,
+            status: true,
+            tenant: { select: { id: true, name: true } },
+          },
+          orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
         },
       },
     });
@@ -177,8 +194,39 @@ export async function PATCH(
             role: { select: { id: true, name: true, color: true, hierarchy: true } },
           },
         },
+        userTenantMemberships: {
+          select: {
+            tenantId: true,
+            isPrimary: true,
+            status: true,
+            tenant: { select: { id: true, name: true } },
+          },
+        },
       },
     });
+
+    // Sync tenant memberships if provided
+    if (validatedData.memberships !== undefined) {
+      const incomingTenantIds = new Set(validatedData.memberships.map((m) => m.tenantId));
+
+      // Upsert all incoming memberships
+      for (const m of validatedData.memberships) {
+        await prisma.userTenantMembership.upsert({
+          where: { userId_tenantId: { userId: id, tenantId: m.tenantId } },
+          create: { userId: id, tenantId: m.tenantId, isPrimary: m.isPrimary },
+          update: { isPrimary: m.isPrimary, status: "ACTIVE" },
+        });
+      }
+
+      // Remove memberships no longer in the list (but never remove the primary/home tenant)
+      await prisma.userTenantMembership.deleteMany({
+        where: {
+          userId: id,
+          tenantId: { notIn: Array.from(incomingTenantIds) },
+          isPrimary: false,
+        },
+      });
+    }
 
     return NextResponse.json(user);
   } catch (error) {

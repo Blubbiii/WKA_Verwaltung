@@ -104,7 +104,9 @@ export const authConfig: NextAuthConfig = {
       }
       return token;
     },
-    async session({ session, token }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async session(params: any) {
+      const { session, token } = params as { session: typeof params.session; token: typeof params.token };
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.roleHierarchy = (token.roleHierarchy as number) ?? 0;
@@ -112,6 +114,24 @@ export const authConfig: NextAuthConfig = {
         session.user.tenantName = token.tenantName as string;
         session.user.tenantSlug = token.tenantSlug as string;
         session.user.tenantLogoUrl = (token.tenantLogoUrl as string | null) ?? null;
+
+        // Override with active tenant context if the user switched tenants
+        const req = params.request as Request | undefined;
+        const activeTenantId = req?.headers?.get("x-active-tenant-id");
+        const activeTenantName = req?.headers?.get("x-active-tenant-name");
+        const activeTenantSlug = req?.headers?.get("x-active-tenant-slug");
+        const activeTenantLogoUrl = req?.headers?.get("x-active-tenant-logo-url");
+        const activeRoleHierarchy = req?.headers?.get("x-active-role-hierarchy");
+
+        if (activeTenantId) {
+          session.user.tenantId = activeTenantId;
+          if (activeTenantName) session.user.tenantName = activeTenantName;
+          if (activeTenantSlug) session.user.tenantSlug = activeTenantSlug;
+          session.user.tenantLogoUrl = activeTenantLogoUrl ?? null;
+          if (activeRoleHierarchy) {
+            session.user.roleHierarchy = parseInt(activeRoleHierarchy, 10);
+          }
+        }
       }
       return session;
     },

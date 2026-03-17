@@ -20,6 +20,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useKeyboardContext } from "@/components/providers/keyboard-provider";
 import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { TenantSwitcher } from "@/components/layout/tenant-switcher";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { TourTriggerMenuItem } from "@/components/onboarding/tour-trigger-button";
 
@@ -163,11 +164,13 @@ export function Header() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
-          {/* Tenant Badge */}
-          {session?.user?.tenantName && (
+          {/* Tenant Switcher / Badge */}
+          {impersonation ? (
             <div className="hidden lg:flex items-center px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
-              {impersonation ? impersonation.targetTenantName : session.user.tenantName}
+              {impersonation.targetTenantName}
             </div>
+          ) : (
+            <TenantSwitcher />
           )}
 
           {/* Theme Toggle - only render icon after mount to prevent hydration mismatch */}

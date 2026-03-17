@@ -120,6 +120,7 @@ model Tenant {
   quotes                    Quote[]
   quoteNumberSequences      QuoteNumberSequence[]
   bankAccounts              BankAccount[]
+  userTenantMemberships     UserTenantMembership[]
 
   @@map("tenants")
 }
@@ -187,6 +188,7 @@ model User {
   defectsCreated                                                          Defect[]                    @relation("DefectCreator")
   insuranceClaimsCreated                                                  InsuranceClaim[]            @relation("InsuranceClaimCreator")
   createdQuotes                                                           Quote[]                    @relation("QuoteCreatedBy")
+  userTenantMemberships                                                   UserTenantMembership[]
 
   @@index([tenantId])
   @@index([email])
@@ -2636,13 +2638,32 @@ model UserRoleAssignment {
   roleId       String
   resourceType String   @default("__global__")
   resourceIds  String[]
+  tenantId     String?
   role         Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, roleId, resourceType])
   @@index([roleId])
   @@index([userId])
+  @@index([userId, tenantId])
   @@map("user_role_assignments")
+}
+
+model UserTenantMembership {
+  id        String       @id @default(uuid())
+  userId    String
+  tenantId  String
+  isPrimary Boolean      @default(false)
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+  @@map("user_tenant_memberships")
 }
 
 

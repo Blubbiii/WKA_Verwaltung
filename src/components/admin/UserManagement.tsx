@@ -90,6 +90,12 @@ interface User {
   userRoleAssignments: Array<{
     role: { id: string; name: string; color: string | null; hierarchy: number };
   }>;
+  userTenantMemberships?: Array<{
+    tenantId: string;
+    isPrimary: boolean;
+    status: string;
+    tenant: { id: string; name: string };
+  }>;
 }
 
 interface Role {
@@ -225,6 +231,10 @@ export function UserManagement() {
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [originalUserRoles, setOriginalUserRoles] = useState<string[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
+
+  // Tenant memberships (for multi-tenant assignment)
+  const [userMemberships, setUserMemberships] = useState<string[]>([]);
+  const [originalUserMemberships, setOriginalUserMemberships] = useState<string[]>([]);
 
   // Resource scoping per role (roleId -> scope)
   const [roleScopes, setRoleScopes] = useState<Record<string, RoleResourceScope>>({});
@@ -461,6 +471,8 @@ export function UserManagement() {
 
   const openCreateDialog = async () => {
     setSelectedUser(null);
+    setUserMemberships([]);
+    setOriginalUserMemberships([]);
     userForm.reset({
       email: "",
       firstName: "",
@@ -491,6 +503,10 @@ export function UserManagement() {
     setOriginalUserRoles([]);
     setRoleScopes({});
     setOriginalRoleScopes({});
+    // Load tenant memberships from user data
+    const membershipIds = (user.userTenantMemberships ?? []).map((m) => m.tenantId);
+    setUserMemberships(membershipIds);
+    setOriginalUserMemberships(membershipIds);
     setDialogOpen(true);
     await Promise.all([loadAvailableRoles(), loadUserRoles(user.id), loadResourceOptions()]);
   };
@@ -530,6 +546,29 @@ export function UserManagement() {
           toast.error(
             "Benutzer gespeichert, aber Rollen konnten nicht aktualisiert werden"
           );
+        }
+      }
+
+      // Save tenant memberships if changed (edit only, when superadmin has multiple tenants)
+      if (selectedUser && userId && userMemberships.length > 0) {
+        const membershipsChanged =
+          JSON.stringify([...userMemberships].sort()) !==
+          JSON.stringify([...originalUserMemberships].sort());
+        if (membershipsChanged) {
+          const primaryTenantId = data.tenantId;
+          const membershipsPayload = userMemberships.map((tenantId) => ({
+            tenantId,
+            isPrimary: tenantId === primaryTenantId,
+          }));
+          // Ensure primary tenant is always included
+          if (!membershipsPayload.find((m) => m.tenantId === primaryTenantId)) {
+            membershipsPayload.push({ tenantId: primaryTenantId, isPrimary: true });
+          }
+          await fetch(`/api/admin/users/${userId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ memberships: membershipsPayload }),
+          });
         }
       }
 
@@ -957,6 +996,55 @@ export function UserManagement() {
                   </FormItem>
                 )}
               />
+
+              {/* Weitere Mandanten-Zugehörigkeiten (nur bei Bearbeitung + mehrere Mandanten) */}
+              {selectedUser && tenants.length > 1 && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                      Weitere Mandanten
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Dieser Benutzer kann sich in ausgewählten Mandanten anmelden.
+                    </p>
+                    <div className="space-y-2 border rounded-md p-3">
+                      {tenants.map((tenant) => {
+                        const isPrimary = tenant.id === userForm.watch("tenantId");
+                        const isChecked = userMemberships.includes(tenant.id);
+                        return (
+                          <div key={tenant.id} className="flex items-center gap-3 py-1">
+                            <Checkbox
+                              id={`tenant-${tenant.id}`}
+                              checked={isChecked || isPrimary}
+                              disabled={isPrimary}
+                              onCheckedChange={(checked) => {
+                                if (isPrimary) return;
+                                setUserMemberships((prev) =>
+                                  checked
+                                    ? [...prev, tenant.id]
+                                    : prev.filter((id) => id !== tenant.id)
+                                );
+                              }}
+                            />
+                            <label
+                              htmlFor={`tenant-${tenant.id}`}
+                              className="text-sm cursor-pointer flex-1"
+                            >
+                              {tenant.name}
+                            </label>
+                            {isPrimary && (
+                              <Badge variant="secondary" className="text-xs">
+                                Heimat
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Rollen-Zuweisung */}
               <Separator />
