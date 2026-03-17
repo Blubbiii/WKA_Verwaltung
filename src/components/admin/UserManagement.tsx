@@ -934,6 +934,30 @@ export function UserManagement() {
 
               <FormField
                 control={userForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Systemrolle *</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="SUPERADMIN">Super-Admin</SelectItem>
+                        <SelectItem value="ADMIN">Administrator</SelectItem>
+                        <SelectItem value="MANAGER">Manager</SelectItem>
+                        <SelectItem value="VIEWER">Betrachter</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={userForm.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
