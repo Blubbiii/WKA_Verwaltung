@@ -15,15 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Loader2, Save, Activity, FileText, BarChart2 } from "lucide-react";
-
-interface ThresholdSettings {
-  availabilityWarning: number;
-  availabilityCritical: number;
-  contractWarningDays: number;
-  contractUrgentDays: number;
-  contractLookaheadDays: number;
-  parkHealthLookbackDays: number;
-}
+import type { ThresholdSettings } from "@/app/api/admin/settings/thresholds/route";
 
 const DEFAULTS: ThresholdSettings = {
   availabilityWarning: 85,

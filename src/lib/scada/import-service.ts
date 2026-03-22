@@ -479,7 +479,7 @@ async function writeUidMeasurements(
 
 /**
  * Writes availability time budget records to ScadaAvailability.
- * Calculates availabilityPct = (t1 / t2 * 100) before writing.
+ * Calculates availabilityPct = T1 / (T1 + T5) * 100 (IEC 61400-26-2 Technical Availability).
  *
  * AvailabilityRecord fields (t1-t6, t5_1-t5_3) are nullable from the reader,
  * but the Prisma model expects non-nullable ints. We default to 0 for null values.

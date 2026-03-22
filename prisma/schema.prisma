@@ -2137,6 +2137,7 @@ model ScadaAvailability {
   @@unique([turbineId, date, periodType])
   @@index([tenantId])
   @@index([turbineId, date])
+  @@index([tenantId, periodType, turbineId, date])
   @@map("scada_availability")
 }
 
