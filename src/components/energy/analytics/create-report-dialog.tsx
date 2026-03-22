@@ -32,6 +32,7 @@ interface CreateReportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultParkId?: string;
+  onSuccess?: () => void;
 }
 
 interface Park {
@@ -69,6 +70,7 @@ export function CreateReportDialog({
   open,
   onOpenChange,
   defaultParkId,
+  onSuccess,
 }: CreateReportDialogProps) {
   // Form state
   const [name, setName] = useState("");
@@ -166,7 +168,8 @@ export function CreateReportDialog({
         throw new Error(err.error || "Fehler beim Erstellen");
       }
 
-      toast.success("Bericht erstellt");
+      toast.success("Vorlage gespeichert");
+      onSuccess?.();
       onOpenChange(false);
     } catch (error) {
       toast.error(
@@ -181,9 +184,9 @@ export function CreateReportDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Bericht erstellen</DialogTitle>
+          <DialogTitle>Berichts-Vorlage erstellen</DialogTitle>
           <DialogDescription>
-            Konfigurieren Sie einen neuen Energiebericht mit den gewuenschten Modulen.
+            Speichern Sie eine Berichts-Konfiguration als Vorlage für spätere Verwendung. Die Vorlage erscheint anschließend im Tab &quot;Vorlagen&quot;.
           </DialogDescription>
         </DialogHeader>
 
@@ -352,7 +355,7 @@ export function CreateReportDialog({
           </Button>
           <Button onClick={handleSubmit} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Bericht erstellen
+            Vorlage speichern
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
-import { BarChart3, CreditCard, Activity, Wrench, LayoutDashboard, Clock, AlertTriangle, Cloud, Sun, Zap, GitCompare, Search, ArrowLeftRight, FileText, Archive } from "lucide-react";
+import { BarChart3, CreditCard, Activity, Wrench, LayoutDashboard, Clock, AlertTriangle, Cloud, Sun, Zap, GitCompare, Search, ArrowLeftRight, FileText, Archive, BookMarked } from "lucide-react";
 import { AnalyticsFilterBar } from "@/components/energy/analytics/analytics-filter-bar";
 import { CreateReportDialog } from "@/components/energy/analytics/create-report-dialog";
 import { DrillDownBreadcrumb } from "@/components/energy/analytics/drill-down-breadcrumb";
@@ -27,6 +27,7 @@ import { DataExplorerTab } from "@/components/energy/analytics/data-explorer-tab
 import { DataComparisonTab } from "@/components/energy/analytics/data-comparison-tab";
 import { PdfReportsTab } from "@/components/energy/analytics/pdf-reports-tab";
 import { ReportArchiveTab } from "@/components/energy/analytics/report-archive-tab";
+import { ReportConfigsTab } from "@/components/energy/analytics/report-configs-tab";
 import { Button } from "@/components/ui/button";
 import type {
   PerformanceOverviewResponse,
@@ -414,6 +415,7 @@ export default function AnalyticsPage() {
               { key: "data-explorer", label: "Daten-Explorer", icon: Search },
               { key: "data-comparison", label: "Datenabgleich", icon: ArrowLeftRight },
               { key: "pdf-reports", label: "PDF-Berichte", icon: FileText },
+              { key: "vorlagen", label: "Vorlagen", icon: BookMarked },
               { key: "archive", label: "Archiv", icon: Archive },
             ].map(({ key, label, icon: Icon }) => (
               <Button
@@ -432,6 +434,7 @@ export default function AnalyticsPage() {
           {activeToolTab === "data-explorer" && <DataExplorerTab />}
           {activeToolTab === "data-comparison" && <DataComparisonTab />}
           {activeToolTab === "pdf-reports" && <PdfReportsTab />}
+          {activeToolTab === "vorlagen" && <ReportConfigsTab onCreateReport={() => setReportDialogOpen(true)} />}
           {activeToolTab === "archive" && <ReportArchiveTab />}
         </TabsContent>
       </Tabs>
@@ -440,6 +443,7 @@ export default function AnalyticsPage() {
         open={reportDialogOpen}
         onOpenChange={setReportDialogOpen}
         defaultParkId={selectedParkId !== "all" ? selectedParkId : undefined}
+        onSuccess={() => { setActiveTab("tools"); setActiveToolTab("vorlagen"); }}
       />
     </div>
   );
