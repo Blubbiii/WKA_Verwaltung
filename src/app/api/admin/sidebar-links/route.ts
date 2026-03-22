@@ -7,7 +7,7 @@ const createSchema = z.object({
   label: z.string().min(1).max(100),
   url: z.string().url({ message: "Bitte eine gültige URL eingeben (z.B. https://example.com)" }),
   icon: z.string().default("Globe"),
-  description: z.string().max(255).optional(),
+  description: z.string().max(255).nullish(),
   openInNewTab: z.boolean().default(true),
   minHierarchy: z.number().int().min(0).max(100).default(0),
   sortOrder: z.number().int().default(0),

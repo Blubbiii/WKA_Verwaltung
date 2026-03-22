@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -109,12 +110,7 @@ export default function SidebarLinksPage() {
   const load = async () => {
     try {
       const res = await fetch("/api/admin/sidebar-links");
-      if (res.ok) {
-        setLinks(await res.json());
-      } else {
-        const body = await res.text();
-        console.error("[sidebar-links] GET", res.status, body);
-      }
+      if (res.ok) setLinks(await res.json());
     } finally {
       setLoading(false);
     }
@@ -308,6 +304,9 @@ export default function SidebarLinksPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingLink ? "Link bearbeiten" : "Link hinzufügen"}</DialogTitle>
+            <DialogDescription>
+              {editingLink ? "Eigenschaften des Links anpassen." : "Externen Link zur Sidebar hinzufügen."}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
