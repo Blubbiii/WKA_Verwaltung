@@ -42,12 +42,12 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Calculate fleet summary from breakdown
+    // Use IEC 61400-26-2 formula: T1 / (T1 + T5) weighted across all turbines
     const totalT1 = breakdown.reduce((s, b) => s + b.t1, 0);
     const totalT4 = breakdown.reduce((s, b) => s + b.t4, 0);
     const totalT5 = breakdown.reduce((s, b) => s + b.t5, 0);
-    const avgAvail = breakdown.length > 0
-      ? breakdown.reduce((s, b) => s + b.availabilityPct, 0) / breakdown.length
-      : 0;
+    const fleetRelevant = totalT1 + totalT5;
+    const avgAvail = fleetRelevant > 0 ? (totalT1 / fleetRelevant) * 100 : 0;
 
     return NextResponse.json({
       breakdown,

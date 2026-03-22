@@ -333,6 +333,10 @@ export async function fetchAvailabilityBreakdown(
     const t5 = Number(r?.t5_total ?? 0);
     const t6 = Number(r?.t6_total ?? 0);
     const total = t1 + t2 + t3 + t4 + t5 + t6;
+    // IEC 61400-26-2 Technical Availability: T1 / (T1 + T5)
+    // T1 = production time, T5 = unplanned downtime/failures
+    // T2 (no wind standstill) must NOT be counted as unavailability
+    const relevantTime = t1 + t5;
 
     return {
       turbineId: t.id,
@@ -341,7 +345,7 @@ export async function fetchAvailabilityBreakdown(
       t5_1: Number(r?.t5_1_total ?? 0),
       t5_2: Number(r?.t5_2_total ?? 0),
       t5_3: Number(r?.t5_3_total ?? 0),
-      availabilityPct: total > 0 ? round((t1 / total) * 100, 2) : 0,
+      availabilityPct: relevantTime > 0 ? round((t1 / relevantTime) * 100, 2) : 0,
       totalSeconds: total,
     };
   });
