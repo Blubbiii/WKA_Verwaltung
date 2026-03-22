@@ -9,6 +9,7 @@ import { Worker, Job } from "bullmq";
 import type { SupportedTemplateName } from "@/lib/email/renderer";
 import { getRedisConnection } from "../connection";
 import { emailLogger } from "@/lib/logger";
+import { EMAIL_REGEX } from "@/lib/validation/patterns";
 
 // =============================================================================
 // Types
@@ -216,8 +217,7 @@ async function processEmailJob(job: Job<EmailJobData, EmailJobResult>): Promise<
     }
 
     // E-Mail validieren (einfache Prüfung)
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.to)) {
+    if (!EMAIL_REGEX.test(data.to)) {
       throw new Error(`Invalid email address: ${data.to}`);
     }
 

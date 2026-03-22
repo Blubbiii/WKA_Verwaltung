@@ -8,6 +8,7 @@ import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import { apiLogger as logger } from "@/lib/logger";
+import { CACHE_TTL } from "@/lib/cache/types";
 
 const S3_ENDPOINT = process.env.S3_ENDPOINT || "http://localhost:9000";
 
@@ -129,7 +130,7 @@ export async function GET(
       headers.set("Content-Type", document.mimeType || "application/octet-stream");
       headers.set("Content-Length", buffer.length.toString());
       headers.set("Content-Disposition", `inline; filename="${encodeURIComponent(document.fileName)}"`);
-      headers.set("Cache-Control", "private, max-age=3600");
+      headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
       headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "");
       headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
       headers.set("Access-Control-Allow-Headers", "Content-Type");
@@ -175,7 +176,7 @@ export async function GET(
             headers.set("Content-Type", document.mimeType || "application/octet-stream");
             headers.set("Content-Length", fileBuffer.length.toString());
             headers.set("Content-Disposition", `inline; filename="${encodeURIComponent(document.fileName)}"`);
-            headers.set("Cache-Control", "private, max-age=3600");
+            headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
             headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "");
 
             return new NextResponse(fileBuffer, { status: 200, headers });

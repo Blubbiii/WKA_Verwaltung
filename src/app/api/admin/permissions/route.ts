@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(cached, {
           headers: {
             "X-Cache": "HIT",
-            "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+            "Cache-Control": `private, max-age=${CACHE_TTL.SHORT}, stale-while-revalidate=${CACHE_TTL.MEDIUM}`,
           },
         });
       }
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(responseData, {
       headers: {
         "X-Cache": "MISS",
-        "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+        "Cache-Control": `private, max-age=${CACHE_TTL.SHORT}, stale-while-revalidate=${CACHE_TTL.MEDIUM}`,
       },
     });
   } catch (error) {

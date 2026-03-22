@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
 // ============================================================================
 // Validation
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type");
     const status = searchParams.get("status");
     const year = searchParams.get("year");
-    const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 200);
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? String(PAGE_SIZE_LARGE)), 200);
 
     const where: Prisma.CrmActivityWhereInput = {
       tenantId: check.tenantId,

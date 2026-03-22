@@ -9,6 +9,7 @@ import { z } from "zod";
 import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { getConfig, getEmailConfig, getWeatherConfig, getPaperlessConfig } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
+import { EMAIL_REGEX } from "@/lib/validation/patterns";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -95,8 +96,7 @@ async function testEmailConnection(
 
     if (recipient) {
       // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(recipient)) {
+      if (!EMAIL_REGEX.test(recipient)) {
         return NextResponse.json({
           success: false,
           error: "Ungültige E-Mail-Adresse",

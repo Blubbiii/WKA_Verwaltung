@@ -55,6 +55,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BACKUP_RETENTION_DAYS } from "@/lib/config/business-thresholds";
 
 // Types
 interface Backup {
@@ -133,7 +134,7 @@ export default function BackupStoragePage() {
   const [settings, setSettings] = useState<BackupSettings>({
     autoBackupEnabled: true,
     backupInterval: "daily",
-    retentionDays: 30,
+    retentionDays: BACKUP_RETENTION_DAYS,
     backupTime: "02:00",
   });
   const [savingSettings, setSavingSettings] = useState(false);

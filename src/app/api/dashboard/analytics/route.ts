@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, requireAdmin } from "@/lib/auth/withPermission";
+import { CACHE_TTL } from "@/lib/cache/types";
 import { getFullAnalytics, clearAnalyticsCache } from "@/lib/analytics";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
@@ -27,7 +28,7 @@ async function getHandler(_request: NextRequest) {
       headers: {
         "X-Cache": cacheHit ? "HIT" : "MISS",
         // Browser-Cache für 30 Sekunden, dann revalidieren
-        "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        "Cache-Control": `private, max-age=${CACHE_TTL.SHORT}, stale-while-revalidate=${CACHE_TTL.SHORT * 2}`,
       },
     });
   } catch (error) {

@@ -18,6 +18,7 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getPendingActionsSummary } from "@/lib/reminders";
+import { CACHE_TTL } from "@/lib/cache/types";
 import { apiLogger as logger } from "@/lib/logger";
 
 export async function GET() {
@@ -40,7 +41,7 @@ export async function GET() {
     // Cache for 5 minutes client-side (this data changes slowly)
     response.headers.set(
       "Cache-Control",
-      "private, max-age=300, stale-while-revalidate=600"
+      `private, max-age=${CACHE_TTL.MEDIUM}, stale-while-revalidate=${CACHE_TTL.TENANT_SETTINGS}`
     );
 
     return response;

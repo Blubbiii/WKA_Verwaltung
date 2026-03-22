@@ -56,6 +56,7 @@ import {
   DeleteConfirmDialog,
 } from "@/components/ui/delete-confirm-dialog";
 import { toast } from "sonner";
+import { EMAIL_REGEX } from "@/lib/validation/patterns";
 
 // ===========================================
 // TYPES
@@ -215,8 +216,7 @@ export function ScheduledReportsManager() {
     }
 
     // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const invalidEmails = recipientList.filter((e) => !emailRegex.test(e));
+    const invalidEmails = recipientList.filter((e) => !EMAIL_REGEX.test(e));
     if (invalidEmails.length > 0) {
       toast.error(`Ungültige E-Mail-Adresse(n): ${invalidEmails.join(", ")}`);
       return;

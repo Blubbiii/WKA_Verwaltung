@@ -11,6 +11,7 @@ import {
   clearProviderCache,
   type EmailProviderType,
 } from "@/lib/email";
+import { EMAIL_REGEX } from "@/lib/validation/patterns";
 
 // =============================================================================
 // EMAIL CONFIGURATION API
@@ -500,8 +501,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(recipient)) {
+    if (!EMAIL_REGEX.test(recipient)) {
       return NextResponse.json(
         { error: "Ungültige E-Mail-Adresse" },
         { status: 400 }

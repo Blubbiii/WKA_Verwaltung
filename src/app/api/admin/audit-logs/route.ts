@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
 
 const querySchema = z.object({
   action: z.string().optional(),
@@ -13,7 +14,7 @@ const querySchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(25),
+  limit: z.coerce.number().min(1).max(100).default(PAGE_SIZE_ADMIN),
 });
 
 // GET /api/admin/audit-logs - Audit-Logs laden
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
       startDate: searchParams.get("startDate") || undefined,
       endDate: searchParams.get("endDate") || undefined,
       page: searchParams.get("page") || 1,
-      limit: searchParams.get("limit") || 25,
+      limit: searchParams.get("limit") || PAGE_SIZE_ADMIN,
     });
 
     // Build where clause

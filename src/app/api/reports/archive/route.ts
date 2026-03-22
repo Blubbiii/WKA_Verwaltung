@@ -20,6 +20,7 @@ import {
 } from "@/lib/reports/archive";
 import { ReportType, ReportFormat } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 
 // ===========================================
 // VALIDATION SCHEMAS
@@ -27,7 +28,7 @@ import { apiLogger as logger } from "@/lib/logger";
 
 const getReportsSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().positive().max(100).default(20),
+  pageSize: z.coerce.number().int().positive().max(100).default(PAGE_SIZE_DEFAULT),
   reportType: z.nativeEnum(ReportType).optional(),
   format: z.nativeEnum(ReportFormat).optional(),
   startDate: z.coerce.date().optional(),

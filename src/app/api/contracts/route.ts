@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
+import { CONTRACT_REMINDER_DAYS_DEFAULT, CONTRACT_WARNING_DAYS } from "@/lib/config/business-thresholds";
 
 const contractCreateSchema = z.object({
   contractType: z.enum([
@@ -146,9 +147,9 @@ async function getHandler(request: NextRequest) {
       _count: true,
     });
 
-    // Count contracts expiring in 30 days
+    // Count contracts expiring in the warning window
     const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + CONTRACT_WARNING_DAYS);
 
     const expiringCount = await prisma.contract.count({
       where: {
@@ -248,7 +249,7 @@ async function postHandler(request: NextRequest) {
         paymentTerms: validatedData.paymentTerms,
         status: validatedData.status,
         documentUrl: validatedData.documentUrl,
-        reminderDays: validatedData.reminderDays || [90, 30],
+        reminderDays: validatedData.reminderDays || [...CONTRACT_REMINDER_DAYS_DEFAULT],
         notes: validatedData.notes,
         parkId: validatedData.parkId || null,
         turbineId: validatedData.turbineId || null,

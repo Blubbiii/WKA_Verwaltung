@@ -14,6 +14,7 @@ import {
 } from "@/lib/invoices/recurring-invoice-service";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
+import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
 // ============================================================================
 // Validation Schemas
@@ -60,7 +61,7 @@ async function getHandler(request: NextRequest) {
     const enabled = searchParams.get("enabled");
     const frequency = searchParams.get("frequency");
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
+    const limit = Math.min(parseInt(searchParams.get("limit") || String(PAGE_SIZE_LARGE), 10), 100);
 
     const where = {
       tenantId: check.tenantId!,

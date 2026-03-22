@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/withPermission';
 import { apiLogger as logger } from "@/lib/logger";
+import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
 import {
   getAllQueues,
   getJobs,
@@ -32,7 +33,7 @@ const querySchema = z.object({
   queue: z.string().optional(),
   status: z.enum(['waiting', 'active', 'completed', 'failed', 'delayed']).optional(),
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(25),
+  limit: z.coerce.number().min(1).max(100).default(PAGE_SIZE_ADMIN),
 });
 
 /**
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
       queue: searchParams.get('queue') || undefined,
       status: searchParams.get('status') || undefined,
       page: searchParams.get('page') || 1,
-      limit: searchParams.get('limit') || 25,
+      limit: searchParams.get('limit') || PAGE_SIZE_ADMIN,
     });
 
     // Get available queues

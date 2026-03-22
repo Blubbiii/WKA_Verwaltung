@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     // Paginierung
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_LARGE), 10);
 
     // Where-Clause aufbauen
     // Multi-Tenancy: Filter über Turbine -> Park -> Tenant

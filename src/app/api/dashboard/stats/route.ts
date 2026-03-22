@@ -6,6 +6,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { cache } from "@/lib/cache";
 import { dashboardCache } from "@/lib/cache/dashboard";
 import type { TenantDashboardStats } from "@/lib/cache/types";
+import { CACHE_TTL } from "@/lib/cache/types";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -237,7 +238,7 @@ const check = await requireAuth();
     // Set cache-control headers for client-side caching
     response.headers.set(
       "Cache-Control",
-      "private, max-age=30, stale-while-revalidate=60"
+      `private, max-age=${CACHE_TTL.SHORT}, stale-while-revalidate=${CACHE_TTL.SHORT * 2}`
     );
 
     // Custom headers to indicate cache status

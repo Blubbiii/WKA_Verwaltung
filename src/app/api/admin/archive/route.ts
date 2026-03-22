@@ -15,6 +15,7 @@ import {
 import { autoArchiveInvoice, autoArchiveContract } from "@/lib/archive/auto-archive";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
+import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
 
 // ---------------------------------------------------------------------------
 // GET - Search / list archived documents
@@ -26,7 +27,7 @@ const searchQuerySchema = z.object({
   dateTo: z.string().optional(),
   search: z.string().optional(),
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(25),
+  limit: z.coerce.number().min(1).max(100).default(PAGE_SIZE_ADMIN),
   stats: z.enum(["true", "false"]).default("false"),
 });
 
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
       dateTo: searchParams.get("dateTo") || undefined,
       search: searchParams.get("search") || undefined,
       page: searchParams.get("page") || 1,
-      limit: searchParams.get("limit") || 25,
+      limit: searchParams.get("limit") || PAGE_SIZE_ADMIN,
       stats: searchParams.get("stats") || "false",
     });
 

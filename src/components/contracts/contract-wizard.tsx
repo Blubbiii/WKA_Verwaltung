@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format, addYears } from "date-fns";
 import { de } from "date-fns/locale";
+import { CONTRACT_REMINDER_DAYS_DEFAULT } from "@/lib/config/business-thresholds";
 import {
   ArrowLeft,
   ArrowRight,
@@ -213,7 +214,7 @@ export function ContractWizard() {
     parkId: "",
     fundId: "",
     partnerId: "",
-    reminderDays: [90, 30],
+    reminderDays: [...CONTRACT_REMINDER_DAYS_DEFAULT],
   });
 
   // Load dropdown data on mount

@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { SEARCH_LIMIT } from "@/lib/config/pagination";
 
 // GET /api/vendors/search?q=...
 // Returns combined results: existing vendors + persons (for new vendor creation from person)
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     const q = new URL(request.url).searchParams.get("q") ?? "";
-    const limit = 10;
+    const limit = SEARCH_LIMIT;
 
     const [vendors, persons] = await Promise.all([
       prisma.vendor.findMany({

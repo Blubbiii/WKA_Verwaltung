@@ -32,6 +32,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CONTRACT_STATUS } from "@/lib/status-config";
+import { CONTRACT_REMINDER_DAYS_DEFAULT } from "@/lib/config/business-thresholds";
 
 const contractFormSchema = z.object({
   contractType: z.enum([
@@ -87,7 +88,7 @@ export default function EditContractPage() {
   const [parks, setParks] = useState<SelectOption[]>([]);
   const [funds, setFunds] = useState<SelectOption[]>([]);
   const [partners, setPartners] = useState<SelectOption[]>([]);
-  const [reminderDays, setReminderDays] = useState<number[]>([90, 30]);
+  const [reminderDays, setReminderDays] = useState<number[]>([...CONTRACT_REMINDER_DAYS_DEFAULT]);
   const [newReminder, setNewReminder] = useState("");
 
   const form = useForm<ContractFormValues>({
@@ -142,7 +143,7 @@ export default function EditContractPage() {
             fundId: contract.fund?.id || "",
             partnerId: contract.partner?.id || "",
           });
-          setReminderDays(contract.reminderDays || [90, 30]);
+          setReminderDays(contract.reminderDays || [...CONTRACT_REMINDER_DAYS_DEFAULT]);
         }
 
         if (parksRes.ok) {

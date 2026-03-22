@@ -22,6 +22,7 @@ import {
   getUserHighestHierarchy,
   ROLE_HIERARCHY,
 } from "@/lib/auth/permissions";
+import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 
 // Schema für JSON-basierte Dokument-Erstellung (ohne Datei-Upload)
 const documentCreateSchema = z.object({
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
     const approvalStatus = searchParams.get("approvalStatus");
     const includeArchived = searchParams.get("includeArchived") === "true";
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_DEFAULT), 10);
 
     const where = {
       tenantId: check.tenantId,

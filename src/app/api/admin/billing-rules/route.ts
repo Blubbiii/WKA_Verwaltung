@@ -11,6 +11,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { validateRuleParameters, calculateNextRun, BillingRuleType, BillingRuleFrequency } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
+import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
 // Validation Schema für neue Regel
 const createRuleSchema = z.object({
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     const frequency = searchParams.get("frequency");
     const isActive = searchParams.get("isActive");
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_LARGE), 10);
 
     const where = {
       tenantId: check.tenantId!,

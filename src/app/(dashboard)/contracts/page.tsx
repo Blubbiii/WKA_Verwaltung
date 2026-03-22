@@ -62,6 +62,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
 import { SearchFilter } from "@/components/ui/search-filter";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
+import { CONTRACT_WARNING_DAYS, CONTRACT_CALENDAR_LOOKAHEAD_DAYS } from "@/lib/config/business-thresholds";
 
 interface ContractItem {
   id: string;
@@ -193,7 +194,7 @@ export default function ContractsPage() {
         );
       }
 
-      if (daysUntilNotice <= 30) {
+      if (daysUntilNotice <= CONTRACT_WARNING_DAYS) {
         return (
           <Badge variant="outline" className="text-orange-600 border-orange-600">
             {daysUntilNotice} Tage bis Kündigung
@@ -202,7 +203,7 @@ export default function ContractsPage() {
       }
     }
 
-    if (daysUntilEnd <= 30) {
+    if (daysUntilEnd <= CONTRACT_WARNING_DAYS) {
       return (
         <Badge variant="outline" className="text-red-600 border-red-600">
           {daysUntilEnd} Tage bis Ende
@@ -210,7 +211,7 @@ export default function ContractsPage() {
       );
     }
 
-    if (daysUntilEnd <= 90) {
+    if (daysUntilEnd <= CONTRACT_CALENDAR_LOOKAHEAD_DAYS) {
       return (
         <Badge variant="outline" className="text-yellow-600 border-yellow-600">
           {daysUntilEnd} Tage bis Ende

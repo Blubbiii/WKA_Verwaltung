@@ -16,6 +16,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { getHistoricalWeather, getWeatherStatistics, WeatherApiError } from "@/lib/weather";
 import { apiLogger as logger } from "@/lib/logger";
+import { CACHE_TTL } from "@/lib/cache/types";
 
 export async function GET(
   request: NextRequest,
@@ -101,7 +102,7 @@ export async function GET(
     const response = NextResponse.json(historicalData);
     response.headers.set(
       "Cache-Control",
-      "public, max-age=300, stale-while-revalidate=600" // 5 minutes
+      `public, max-age=${CACHE_TTL.MEDIUM}, stale-while-revalidate=${CACHE_TTL.TENANT_SETTINGS}` // 5 minutes / 10 minutes
     );
 
     return response;

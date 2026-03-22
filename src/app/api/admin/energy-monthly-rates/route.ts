@@ -13,6 +13,7 @@ import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
     const monthParam = searchParams.get("month");
     const revenueTypeId = searchParams.get("revenueTypeId");
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_LARGE), 10);
 
     // Validiere Paginierung
     const validPage = Math.max(1, page);

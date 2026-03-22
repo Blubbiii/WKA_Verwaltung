@@ -10,6 +10,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getConfigBoolean } from "@/lib/config";
 import { getPaperlessClient } from "@/lib/paperless";
+import { CACHE_TTL } from "@/lib/cache/types";
 
 export async function GET(
   _request: NextRequest,
@@ -35,7 +36,7 @@ export async function GET(
     return new NextResponse(stream, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": `public, max-age=${CACHE_TTL.LONG}`,
       },
     });
   } catch (error) {

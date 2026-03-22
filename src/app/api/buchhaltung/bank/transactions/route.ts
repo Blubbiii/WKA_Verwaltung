@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { PAGE_SIZE_MAX } from "@/lib/config/pagination";
 
 // GET /api/buchhaltung/bank/transactions — List bank transactions
 export async function GET(request: NextRequest) {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const batchId = searchParams.get("batchId");
-    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "100") || 100, 1), 500);
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || String(PAGE_SIZE_MAX)) || PAGE_SIZE_MAX, 1), 500);
     const offset = Math.max(parseInt(searchParams.get("offset") || "0") || 0, 0);
 
     const where: Prisma.BankTransactionWhereInput = { tenantId: check.tenantId! };

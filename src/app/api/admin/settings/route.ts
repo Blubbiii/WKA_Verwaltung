@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { EMAIL_REGEX } from "@/lib/validation/patterns";
 
 // Default settings
 const DEFAULT_SETTINGS = {
@@ -132,8 +133,7 @@ export async function PUT(request: NextRequest) {
 
     // Validate email if notifications are enabled
     if (body.emailNotificationsEnabled && body.adminEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(body.adminEmail)) {
+      if (!EMAIL_REGEX.test(body.adminEmail)) {
         return NextResponse.json(
           { error: "Ungültige E-Mail-Adresse" },
           { status: 400 }
