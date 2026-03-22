@@ -178,13 +178,13 @@ export async function GET(request: NextRequest) {
         LIMIT 20
       `,
 
-      // 5. Revenue in period
+      // 5. Revenue in period (year-based filter since EnergySettlement uses year/month Int fields)
       prisma.$queryRaw<RevenueRow[]>`
-        SELECT SUM("revenueEur") AS total_revenue
+        SELECT SUM("netOperatorRevenueEur") AS total_revenue
         FROM energy_settlements
         WHERE "tenantId" = ${tenantId}
-          AND "periodStart" >= ${from}
-          AND "periodStart" < ${to}
+          AND "year" >= ${from.getUTCFullYear()}
+          AND "year" <= ${to.getUTCFullYear()}
           ${parkId && parkId !== "all" ? Prisma.sql`AND "parkId" = ${parkId}` : Prisma.empty}
       `,
     ]);
