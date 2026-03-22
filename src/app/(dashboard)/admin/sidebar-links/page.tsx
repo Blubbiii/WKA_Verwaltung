@@ -109,7 +109,12 @@ export default function SidebarLinksPage() {
   const load = async () => {
     try {
       const res = await fetch("/api/admin/sidebar-links");
-      if (res.ok) setLinks(await res.json());
+      if (res.ok) {
+        setLinks(await res.json());
+      } else {
+        const body = await res.text();
+        console.error("[sidebar-links] GET", res.status, body);
+      }
     } finally {
       setLoading(false);
     }
