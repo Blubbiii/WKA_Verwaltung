@@ -8,6 +8,7 @@ import {
   Loader2,
   Download,
   Settings2,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { ANALYTICS_MODULES } from "@/types/analytics";
 
 // =============================================================================
 // Types
@@ -75,6 +77,15 @@ const QUARTERLY_SECTIONS = [
   { key: "monthlyTrend" as const, label: "Monatsverlauf" },
 ] as const;
 
+// Classic modules for custom report
+const CLASSIC_MODULES_CUSTOM: Record<string, string> = {
+  kpiSummary: "KPI-Zusammenfassung",
+  production: "Produktion",
+  powerCurve: "Leistungskurve",
+  windRose: "Windrose",
+  dailyProfile: "Tagesverlauf",
+};
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -100,6 +111,10 @@ export function PdfReportsTab() {
   const [quarterlySections, setQuarterlySections] = useState<Record<string, boolean>>(
     () => Object.fromEntries(QUARTERLY_SECTIONS.map((s) => [s.key, true]))
   );
+
+  // Custom report state
+  const [customModules, setCustomModules] = useState<Set<string>>(new Set(["performanceKpis", "faultPareto"]));
+  const [customMonth, setCustomMonth] = useState<string>(""); // empty = full year
 
   function toggleSection(
     setter: React.Dispatch<React.SetStateAction<Record<string, boolean>>>,
@@ -237,7 +252,7 @@ export function PdfReportsTab() {
           </div>
 
           {/* Report types */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             {/* Monthly */}
             <Card className="border-2">
               <CardHeader className="pb-3">
@@ -372,6 +387,65 @@ export function PdfReportsTab() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Custom / Modular */}
+            <Card className="border-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Layers className="h-4 w-4" />
+                  Benutzerdefinierter Bericht
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Optional month */}
+                <Select value={customMonth} onValueChange={setCustomMonth}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Gesamtes Jahr" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Gesamtes Jahr</SelectItem>
+                    {MONTH_NAMES.map((name, i) => (
+                      <SelectItem key={i} value={(i + 1).toString()}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Module picker */}
+                <ModulePicker
+                  selectedModules={customModules}
+                  onToggle={(mod) => setCustomModules(prev => {
+                    const next = new Set(prev);
+                    if (next.has(mod)) next.delete(mod); else next.add(mod);
+                    return next;
+                  })}
+                />
+
+                <Button
+                  className="w-full"
+                  onClick={() =>
+                    downloadPdf(
+                      "/api/reports/custom",
+                      {
+                        parkId,
+                        year: yearInt,
+                        ...(customMonth ? { month: parseInt(customMonth) } : {}),
+                        modules: Array.from(customModules),
+                      },
+                      `Bericht_${year}${customMonth ? '_' + customMonth.padStart(2, '0') : ''}.pdf`,
+                      "Benutzerdefinierter Bericht"
+                    )
+                  }
+                  disabled={!!generating || !parkId || customModules.size === 0}
+                >
+                  {generating === "Benutzerdefinierter Bericht" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  Generieren
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </CardContent>
       </Card>
@@ -427,6 +501,80 @@ function SectionPicker({
             </Label>
           </div>
         ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+// =============================================================================
+// Module Picker (collapsible, grouped by analytics module group)
+// =============================================================================
+
+// Group analytics modules for display
+const moduleGroups = (() => {
+  const groups = new Map<string, Array<{ key: string; label: string }>>();
+  for (const [key, meta] of Object.entries(ANALYTICS_MODULES)) {
+    const arr = groups.get(meta.group) || [];
+    arr.push({ key, label: meta.label });
+    groups.set(meta.group, arr);
+  }
+  return groups;
+})();
+
+function ModulePicker({
+  selectedModules,
+  onToggle,
+}: {
+  selectedModules: Set<string>;
+  onToggle: (mod: string) => void;
+}) {
+  return (
+    <Collapsible>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost" size="sm" className="w-full justify-between px-2 h-8 text-xs text-muted-foreground hover:text-foreground">
+          <span className="flex items-center gap-1.5">
+            <Settings2 className="h-3.5 w-3.5" />
+            Module ({selectedModules.size} ausgewählt)
+          </span>
+          <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-2 space-y-3 max-h-64 overflow-y-auto">
+        {Array.from(moduleGroups.entries()).map(([groupName, items]) => (
+          <div key={groupName} className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground px-0.5">{groupName}</p>
+            {items.map((m) => (
+              <div key={m.key} className="flex items-center gap-2">
+                <Checkbox
+                  id={`mod-${m.key}`}
+                  checked={selectedModules.has(m.key)}
+                  onCheckedChange={() => onToggle(m.key)}
+                  className="h-3.5 w-3.5"
+                />
+                <Label htmlFor={`mod-${m.key}`} className="text-xs cursor-pointer leading-none">
+                  {m.label}
+                </Label>
+              </div>
+            ))}
+          </div>
+        ))}
+        {/* Classic modules */}
+        <div className="space-y-1 border-t pt-2">
+          <p className="text-xs font-medium text-muted-foreground px-0.5">Klassische Module</p>
+          {Object.entries(CLASSIC_MODULES_CUSTOM).map(([key, label]) => (
+            <div key={key} className="flex items-center gap-2">
+              <Checkbox
+                id={`mod-${key}`}
+                checked={selectedModules.has(key)}
+                onCheckedChange={() => onToggle(key)}
+                className="h-3.5 w-3.5"
+              />
+              <Label htmlFor={`mod-${key}`} className="text-xs cursor-pointer leading-none">
+                {label}
+              </Label>
+            </div>
+          ))}
+        </div>
       </CollapsibleContent>
     </Collapsible>
   );

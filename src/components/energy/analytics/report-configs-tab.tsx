@@ -35,6 +35,7 @@ import {
   Plus,
   Calendar,
   User,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateTime } from "@/lib/format";
@@ -98,6 +99,9 @@ export function ReportConfigsTab({ onCreateReport }: ReportConfigsTabProps) {
   const [deleteTarget, setDeleteTarget] = useState<ReportConfig | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // PDF generation state
+  const [generating, setGenerating] = useState<string | null>(null); // config.id being generated
+
   const fetchConfigs = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -138,6 +142,43 @@ export function ReportConfigsTab({ onCreateReport }: ReportConfigsTabProps) {
       toast.error(e instanceof Error ? e.message : "Fehler beim Löschen der Vorlage");
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const generatePdf = async (config: ReportConfig) => {
+    setGenerating(config.id);
+    try {
+      const year = new Date().getFullYear();
+      const res = await fetch("/api/reports/custom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          parkId: config.park?.id || "all",
+          year,
+          modules: config.modules,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Fehler" }));
+        throw new Error(err.error || "Fehler beim Generieren");
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get("Content-Disposition");
+      const match = cd?.match(/filename="(.+)"/);
+      const filename = match?.[1] || `Bericht_${year}.pdf`;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(`PDF "${config.name}" wurde erstellt`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Fehler beim Generieren");
+    } finally {
+      setGenerating(null);
     }
   };
 
@@ -219,7 +260,7 @@ export function ReportConfigsTab({ onCreateReport }: ReportConfigsTabProps) {
                     Erstellt am
                   </span>
                 </TableHead>
-                <TableHead className="w-10" />
+                <TableHead className="w-20" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -256,15 +297,31 @@ export function ReportConfigsTab({ onCreateReport }: ReportConfigsTabProps) {
                     {formatDateTime(config.createdAt)}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => setDeleteTarget(config)}
-                      aria-label={`Vorlage "${config.name}" löschen`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        onClick={() => generatePdf(config)}
+                        disabled={!!generating}
+                        aria-label={`PDF für "${config.name}" generieren`}
+                      >
+                        {generating === config.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => setDeleteTarget(config)}
+                        aria-label={`Vorlage "${config.name}" löschen`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -280,7 +337,7 @@ export function ReportConfigsTab({ onCreateReport }: ReportConfigsTabProps) {
             <AlertDialogTitle>Vorlage löschen?</AlertDialogTitle>
             <AlertDialogDescription>
               Soll die Vorlage{" "}
-              <span className="font-semibold">"{deleteTarget?.name}"</span> unwiderruflich
+              <span className="font-semibold">&quot;{deleteTarget?.name}&quot;</span> unwiderruflich
               gelöscht werden?
             </AlertDialogDescription>
           </AlertDialogHeader>
