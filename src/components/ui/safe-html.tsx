@@ -24,12 +24,13 @@ export function SafeHtml({ html, className }: SafeHtmlProps) {
       "h1", "h2", "h3", "h4", "h5", "h6",
       "ul", "ol", "li",
       "blockquote", "pre", "code",
-      "a", "img",
+      "a",
       "hr", "span", "div",
     ],
+    // img removed: allows <img src="http://internal/"> which can leak internal
+    // network info to an attacker via browser-side SSRF / privacy leak.
     ALLOWED_ATTR: [
-      "href", "target", "rel", "src", "alt", "title", "class",
-      "width", "height",
+      "href", "target", "rel", "alt", "title", "class",
     ],
     // Force all links to open in new tab with security attributes
     ADD_ATTR: ["target", "rel"],
@@ -56,7 +57,6 @@ export function SafeHtml({ html, className }: SafeHtmlProps) {
         "prose-blockquote:border-l-4 prose-blockquote:border-muted-foreground prose-blockquote:pl-4 prose-blockquote:italic",
         "prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none",
         "prose-pre:bg-muted prose-pre:p-4 prose-pre:rounded-md",
-        "prose-img:rounded-md prose-img:max-w-full",
         className
       )}
       dangerouslySetInnerHTML={{ __html: secureHtml }}

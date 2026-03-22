@@ -353,14 +353,30 @@ export async function rateLimit(
 
 /**
  * Extract the client IP address from common proxy headers.
- * Falls back to `"unknown"` when no header is present.
+ *
+ * Only trusts X-Forwarded-For / X-Real-IP when TRUSTED_PROXY_IPS is set
+ * (comma-separated list of trusted reverse-proxy IPs, e.g. "192.168.1.1").
+ * Without that env var the headers are ignored to prevent IP spoofing that
+ * would allow bypassing rate limits.
+ *
+ * Falls back to `"unknown"` when no trusted header is present.
  */
 export function getClientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
+  const trustedProxies = process.env.TRUSTED_PROXY_IPS
+    ? process.env.TRUSTED_PROXY_IPS.split(",").map((s) => s.trim())
+    : [];
+
+  // Only trust forwarded headers when running behind a known reverse proxy
+  if (trustedProxies.length > 0) {
+    const forwarded = request.headers.get("x-forwarded-for");
+    if (forwarded) {
+      return forwarded.split(",")[0].trim();
+    }
+    const realIp = request.headers.get("x-real-ip");
+    if (realIp) return realIp.trim();
   }
-  return request.headers.get("x-real-ip") || "unknown";
+
+  return "unknown";
 }
 
 // ---------------------------------------------------------------------------

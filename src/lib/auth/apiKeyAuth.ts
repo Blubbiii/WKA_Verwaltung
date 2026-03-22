@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
@@ -6,8 +7,11 @@ import { apiLogger as logger } from "@/lib/logger";
  * Validates API key from Authorization header (Bearer token) or X-API-Key header.
  * Used for machine-to-machine endpoints (n8n, scripts).
  *
- * The API key is checked against the SCADA_API_KEY env var.
- * Returns the first tenant's ID (for single-tenant setups) or a specified tenantId.
+ * The API key is checked against the SCADA_API_KEY env var using a timing-safe
+ * comparison to prevent timing side-channel attacks.
+ *
+ * When X-Tenant-Id is provided it is validated against the database to prevent
+ * tenant spoofing by an authorized-but-malicious caller.
  */
 export async function requireApiKey(
   request: NextRequest,
@@ -39,7 +43,16 @@ export async function requireApiKey(
     providedKey = request.headers.get("x-api-key");
   }
 
-  if (!providedKey || providedKey !== expectedKey) {
+  // Timing-safe comparison to prevent timing side-channel attacks
+  const isValid =
+    providedKey !== null &&
+    providedKey.length === expectedKey.length &&
+    crypto.timingSafeEqual(
+      Buffer.from(providedKey, "utf8"),
+      Buffer.from(expectedKey, "utf8"),
+    );
+
+  if (!isValid) {
     return {
       authorized: false,
       error: NextResponse.json(
@@ -49,10 +62,24 @@ export async function requireApiKey(
     };
   }
 
-  // Resolve tenant: use X-Tenant-Id header or fall back to first tenant
+  // Resolve tenant: validate X-Tenant-Id against DB to prevent spoofing
   const tenantIdHeader = request.headers.get("x-tenant-id");
   if (tenantIdHeader) {
-    return { authorized: true, tenantId: tenantIdHeader };
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantIdHeader },
+      select: { id: true },
+    });
+    if (!tenant) {
+      logger.warn({ tenantId: tenantIdHeader }, "requireApiKey: X-Tenant-Id refers to unknown tenant");
+      return {
+        authorized: false,
+        error: NextResponse.json(
+          { error: "Unauthorized: Unknown tenant" },
+          { status: 401 },
+        ),
+      };
+    }
+    return { authorized: true, tenantId: tenant.id };
   }
 
   // Fallback: use the first (and usually only) tenant

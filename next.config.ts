@@ -11,8 +11,11 @@ const nextConfig: NextConfig = {
   // Prevent Turbopack from bundling packages that use worker threads or native bindings
   serverExternalPackages: ["bullmq", "ioredis", "pino", "pino-pretty", "exceljs", "prom-client"],
   async headers() {
-    // Allow iFrame embedding for Metabase on admin pages (if used externally)
-    const frameSrc = "frame-src 'self' http: https:";
+    // Restrict iFrame embedding to known internal hosts only
+    const metabaseHost = process.env.METABASE_URL || "";
+    const frameSrc = metabaseHost
+      ? `frame-src 'self' ${metabaseHost}`
+      : "frame-src 'self'";
 
     return [
       {
@@ -43,7 +46,10 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              // unsafe-eval required by Next.js dev mode; removed in production
+              process.env.NODE_ENV === "development"
+                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+                : "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://*.tile.openstreetmap.de https://*.tile.openstreetmap.org",
               "font-src 'self' data:",

@@ -597,7 +597,7 @@ export function ParkMap({
           open={saveDialogOpen}
           onOpenChange={(open) => {
             setSaveDialogOpen(open);
-            if (!open) setPendingGeometry(null);
+            if (!open) { setPendingGeometry(null); setDrawMode("off"); }
           }}
           geometry={pendingGeometry}
           parkId={parkId}
@@ -614,7 +614,7 @@ export function ParkMap({
           open={plotDialogOpen}
           onOpenChange={(open) => {
             setPlotDialogOpen(open);
-            if (!open) setPendingGeometry(null);
+            if (!open) { setPendingGeometry(null); setDrawMode("off"); }
           }}
           geometry={pendingGeometry}
           parkId={parkId}

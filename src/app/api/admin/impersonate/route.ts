@@ -126,7 +126,7 @@ const check = await requireSuperadmin();
     const cookieStore = await cookies();
     cookieStore.set("impersonation", signCookieValue(impersonationData), {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NEXTAUTH_URL?.startsWith("https://") ?? false,
       sameSite: "lax",
       maxAge: AUTH_CONFIG.impersonationMaxAge,
       path: "/",

@@ -15,7 +15,7 @@ const createSchema = z.object({
 
 export async function GET() {
   const check = await requireAdmin();
-  if (!check.authorized) return check.error;
+  if (!check.authorized) return check.error!;
 
   const links = await prisma.sidebarLink.findMany({
     where: { tenantId: check.tenantId },
@@ -27,7 +27,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const check = await requireAdmin();
-  if (!check.authorized) return check.error;
+  if (!check.authorized) return check.error!;
 
   const body = await request.json();
   const parsed = createSchema.safeParse(body);

@@ -19,7 +19,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const check = await requireAdmin();
-  if (!check.authorized) return check.error;
+  if (!check.authorized) return check.error!;
 
   const { id } = await params;
   const existing = await prisma.sidebarLink.findFirst({
@@ -48,7 +48,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const check = await requireAdmin();
-  if (!check.authorized) return check.error;
+  if (!check.authorized) return check.error!;
 
   const { id } = await params;
   const existing = await prisma.sidebarLink.findFirst({

@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { auth } from "./index";
+import { apiLogger } from "@/lib/logger";
+import { rateLimit, API_RATE_LIMIT, getRateLimitResponse } from "@/lib/rate-limit";
 import {
   hasPermission,
   hasAllPermissions,
@@ -193,7 +195,8 @@ export async function requirePermissionWithResources(
 }
 
 /**
- * Check if user is authenticated (no specific permission required)
+ * Check if user is authenticated (no specific permission required).
+ * Also enforces a global per-user API rate limit (100 req/min).
  */
 export async function requireAuth(): Promise<PermissionCheckResult> {
   const session = await auth();
@@ -209,6 +212,16 @@ export async function requireAuth(): Promise<PermissionCheckResult> {
   }
 
   const userId = session.user.id;
+
+  // Global per-user rate limit for all API routes
+  const rl = await rateLimit(`api:user:${userId}`, API_RATE_LIMIT);
+  if (!rl.success) {
+    return {
+      authorized: false,
+      error: getRateLimitResponse(rl, API_RATE_LIMIT),
+    };
+  }
+
   const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
   return { authorized: true, userId, tenantId };
 }
@@ -331,8 +344,9 @@ export async function requirePagePermission(
     if (error && typeof error === "object" && "digest" in error) {
       throw error;
     }
-    // For DB/network errors: fail-open (API routes enforce permissions anyway)
-    console.error("[requirePagePermission] Permission check failed, allowing access:", error);
+    // Fail-secure: DB/network errors deny access instead of allowing it
+    apiLogger.error({ err: error, userId, permission }, "[requirePagePermission] Permission check failed — denying access (fail-secure)");
+    redirect(redirectTo);
   }
 
   return { userId, tenantId };
@@ -361,9 +375,9 @@ export async function requirePageAdmin(
       return { userId, tenantId };
     }
   } catch (error) {
-    // For DB errors: fail-open (API routes enforce permissions anyway)
-    console.error("[requirePageAdmin] Hierarchy check failed, allowing access:", error);
-    return { userId, tenantId };
+    // Fail-secure: DB/network errors deny access instead of allowing it
+    apiLogger.error({ err: error, userId }, "[requirePageAdmin] Hierarchy check failed — denying access (fail-secure)");
+    redirect(redirectTo);
   }
 
   redirect(redirectTo);
