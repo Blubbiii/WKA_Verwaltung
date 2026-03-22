@@ -121,6 +121,7 @@ model Tenant {
   quoteNumberSequences      QuoteNumberSequence[]
   bankAccounts              BankAccount[]
   userTenantMemberships     UserTenantMembership[]
+  sidebarLinks              SidebarLink[]
 
   @@map("tenants")
 }
@@ -2666,6 +2667,25 @@ model UserTenantMembership {
   @@map("user_tenant_memberships")
 }
 
+
+model SidebarLink {
+  id           String       @id @default(uuid())
+  tenantId     String
+  label        String
+  url          String
+  icon         String       @default("Globe")
+  description  String?
+  openInNewTab Boolean      @default(true)
+  minHierarchy Int          @default(0)
+  sortOrder    Int          @default(0)
+  status       EntityStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("sidebar_links")
+}
 
 enum EntityStatus {
   ACTIVE

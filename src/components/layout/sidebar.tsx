@@ -69,6 +69,13 @@ import {
   Droplets,
   Globe,
   Code2,
+  ExternalLink,
+  Monitor,
+  Calendar,
+  Database,
+  Server,
+  Cloud,
+  Link2,
 } from "lucide-react";
 import {
   DndContext,
@@ -91,6 +98,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useCallback, useMemo, useId } from "react";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useSidebarOrder } from "@/hooks/useSidebarOrder";
+import { useSidebarLinks } from "@/hooks/useSidebarLinks";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -136,6 +144,32 @@ interface NavGroup {
   items: NavItem[];
   /** Whether to show a separator line above this group */
   showSeparator?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Dynamic sidebar-link icon resolver
+// ---------------------------------------------------------------------------
+
+const SIDEBAR_LINK_ICONS: Record<string, React.ElementType> = {
+  Globe,
+  Monitor,
+  BarChart3,
+  Zap,
+  FileText,
+  Calculator,
+  Briefcase,
+  Mail,
+  Calendar,
+  Database,
+  Server,
+  Cloud,
+  Code2,
+  Settings,
+  Link2,
+};
+
+function getSidebarLinkIcon(name: string): React.ElementType {
+  return SIDEBAR_LINK_ICONS[name] ?? Globe;
 }
 
 // ---------------------------------------------------------------------------
@@ -624,6 +658,13 @@ const navGroups: NavGroup[] = [
         icon: Tag,
         permission: "system:config",
       },
+      {
+        title: "Sidebar-Links",
+        titleKey: "sidebarLinks",
+        href: "/admin/sidebar-links",
+        icon: Link2,
+        permission: "admin:manage",
+      },
     ],
   },
 ];
@@ -670,6 +711,7 @@ export function Sidebar() {
   const t = useTranslations();
   const { isFeatureEnabled } = useFeatureFlags();
   const { groupOrder, updateOrder, resetOrder, isDefault } = useSidebarOrder();
+  const customLinks = useSidebarLinks();
 
   const tenantLogoUrl = session?.user?.tenantLogoUrl;
   const tenantName = session?.user?.tenantName;
@@ -1103,6 +1145,44 @@ export function Sidebar() {
         {/* Pinned bottom: Admin, System */}
         {pinnedBottom.map((group, idx) =>
           renderGroupContent(group, pinnedTop.length + sortedMiddle.length + idx)
+        )}
+
+        {/* Dynamic custom links ("Programme") */}
+        {customLinks.length > 0 && (
+          <div className="mb-4 pt-2">
+            <div className="mx-3 mb-3 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
+            {!collapsed && (
+              <div className="px-4 mb-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Programme
+                </span>
+              </div>
+            )}
+            <ul className="space-y-1 px-2">
+              {customLinks.map((link) => {
+                const IconComp = getSidebarLinkIcon(link.icon);
+                return (
+                  <li key={link.id}>
+                    <a
+                      href={link.url}
+                      target={link.openInNewTab ? "_blank" : "_self"}
+                      rel="noopener noreferrer"
+                      title={collapsed ? link.label : link.description ?? undefined}
+                      className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
+                    >
+                      <IconComp className="h-5 w-5 shrink-0 text-sidebar-foreground/50" />
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1">{link.label}</span>
+                          <ExternalLink className="h-3.5 w-3.5 text-sidebar-foreground/30 shrink-0" />
+                        </>
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
       </nav>
     </aside>
