@@ -131,7 +131,7 @@ export async function GET(
       headers.set("Content-Length", buffer.length.toString());
       headers.set("Content-Disposition", `inline; filename="${encodeURIComponent(document.fileName)}"`);
       headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
-      headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "");
+      headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
       headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
       headers.set("Access-Control-Allow-Headers", "Content-Type");
 
@@ -177,7 +177,7 @@ export async function GET(
             headers.set("Content-Length", fileBuffer.length.toString());
             headers.set("Content-Disposition", `inline; filename="${encodeURIComponent(document.fileName)}"`);
             headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
-            headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "");
+            headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
 
             return new NextResponse(fileBuffer, { status: 200, headers });
           } catch (localError) {
@@ -220,7 +220,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
-      "Access-Control-Allow-Origin": process.env.NEXT_PUBLIC_APP_URL || "",
+      "Access-Control-Allow-Origin": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },

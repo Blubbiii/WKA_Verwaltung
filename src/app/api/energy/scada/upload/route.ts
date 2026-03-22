@@ -18,6 +18,8 @@ const SCADA_EXTENSIONS = new Set([
 
 // Max upload: 500 MB total (SCADA archives can be large)
 const MAX_TOTAL_SIZE = 500 * 1024 * 1024;
+// Max size per individual file (prevents single oversized uploads)
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB per file
 
 // =============================================================================
 // POST /api/energy/scada/upload
@@ -68,6 +70,10 @@ export async function POST(request: NextRequest) {
     const invalidFiles: string[] = [];
 
     for (const file of files) {
+      if (file.size > MAX_FILE_SIZE) {
+        invalidFiles.push(`${file.name} (${Math.round(file.size / 1024 / 1024)} MB, max 100 MB)`);
+        continue;
+      }
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
       if (!SCADA_EXTENSIONS.has(ext)) {
         invalidFiles.push(file.name);
@@ -176,7 +182,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    const errStack = error instanceof Error ? error.stack : undefined;
+    const errStack = process.env.NODE_ENV !== "production" && error instanceof Error ? error.stack : undefined;
     logger.error({ err: error, errMsg, errStack }, "Fehler beim SCADA-Upload");
     return NextResponse.json(
       { error: "Fehler beim Hochladen der SCADA-Dateien", details: errMsg },
