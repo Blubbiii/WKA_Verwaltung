@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  PARK_HEALTH_LOOKBACK_DAYS,
+  AVAILABILITY_WARNING_THRESHOLD,
+} from "@/lib/config/business-thresholds";
 
 interface ParkStatus {
   id: string;
@@ -15,6 +19,33 @@ export function ParkHealthPulse() {
   const [parks, setParks] = useState<ParkStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredPark, setHoveredPark] = useState<string | null>(null);
+  const [availabilityWarning, setAvailabilityWarning] = useState(
+    AVAILABILITY_WARNING_THRESHOLD
+  );
+  const [lookbackDays, setLookbackDays] = useState(PARK_HEALTH_LOOKBACK_DAYS);
+
+  // Load tenant thresholds, fall back to compile-time constants on failure
+  useEffect(() => {
+    fetch("/api/admin/settings/thresholds")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
+          setAvailabilityWarning(
+            typeof data.availabilityWarning === "number"
+              ? data.availabilityWarning
+              : AVAILABILITY_WARNING_THRESHOLD
+          );
+          setLookbackDays(
+            typeof data.parkHealthLookbackDays === "number"
+              ? data.parkHealthLookbackDays
+              : PARK_HEALTH_LOOKBACK_DAYS
+          );
+        }
+      })
+      .catch(() => {
+        // keep defaults
+      });
+  }, []);
 
   useEffect(() => {
     // Load parks first, then get status for each
@@ -27,7 +58,7 @@ export function ParkHealthPulse() {
           parkList.slice(0, 10).map(async (park) => {
             try {
               const res = await fetch(
-                `/api/energy/analytics/daily-overview?parkId=${park.id}&from=${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}&to=${new Date().toISOString()}`
+                `/api/energy/analytics/daily-overview?parkId=${park.id}&from=${new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString()}&to=${new Date().toISOString()}`
               );
               if (!res.ok) return null;
               const d = await res.json();
@@ -47,7 +78,7 @@ export function ParkHealthPulse() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [lookbackDays]);
 
   if (loading) {
     return (
@@ -78,7 +109,7 @@ export function ParkHealthPulse() {
       };
     if (
       park.avgAvailabilityPct !== null &&
-      park.avgAvailabilityPct < 85
+      park.avgAvailabilityPct < availabilityWarning
     )
       return {
         bar: "#f59e0b",

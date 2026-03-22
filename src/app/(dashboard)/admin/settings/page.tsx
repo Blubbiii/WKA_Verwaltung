@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
 import { TenantPortalSettings } from "@/components/settings/TenantPortalSettings";
 import { TenantEmailSettings } from "@/components/settings/TenantEmailSettings";
-import { Settings, Globe, Mail } from "lucide-react";
+import { BusinessThresholds } from "@/components/settings/BusinessThresholds";
+import { Settings, Globe, Mail, Sliders } from "lucide-react";
 
 // =============================================================================
 // Component
@@ -34,6 +35,10 @@ export default function AdminSettingsPage() {
             <Mail className="h-4 w-4" />
             E-Mail
           </TabsTrigger>
+          <TabsTrigger value="thresholds" className="flex items-center gap-2">
+            <Sliders className="h-4 w-4" />
+            Schwellenwerte
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
@@ -46,6 +51,10 @@ export default function AdminSettingsPage() {
 
         <TabsContent value="email" className="space-y-4">
           <TenantEmailSettings />
+        </TabsContent>
+
+        <TabsContent value="thresholds" className="space-y-4">
+          <BusinessThresholds />
         </TabsContent>
       </Tabs>
     </div>
