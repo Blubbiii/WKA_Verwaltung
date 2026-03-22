@@ -102,6 +102,12 @@ export const authConfig: NextAuthConfig = {
         token.tenantSlug = user.tenantSlug ?? "";
         token.tenantLogoUrl = user.tenantLogoUrl ?? null;
       }
+      // Normalize on every refresh: fix stale JWTs that contain null string fields
+      // (causes NextAuth v5 internal Zod validation to fail with "Expected string, received null")
+      if (token.tenantId == null) token.tenantId = "";
+      if (token.tenantName == null) token.tenantName = "";
+      if (token.tenantSlug == null) token.tenantSlug = "";
+      if (!token.id) token.id = "";
       return token;
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -110,10 +116,10 @@ export const authConfig: NextAuthConfig = {
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.roleHierarchy = (token.roleHierarchy as number) ?? 0;
-        session.user.tenantId = token.tenantId as string;
-        session.user.tenantName = token.tenantName as string;
-        session.user.tenantSlug = token.tenantSlug as string;
-        session.user.tenantLogoUrl = (token.tenantLogoUrl as string | null) ?? null;
+        session.user.tenantId = (token.tenantId as string | null | undefined) ?? "";
+        session.user.tenantName = (token.tenantName as string | null | undefined) ?? "";
+        session.user.tenantSlug = (token.tenantSlug as string | null | undefined) ?? "";
+        session.user.tenantLogoUrl = (token.tenantLogoUrl as string | null | undefined) ?? null;
 
         // Override with active tenant context if the user switched tenants
         const req = params.request as Request | undefined;
