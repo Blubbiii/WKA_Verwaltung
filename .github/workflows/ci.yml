@@ -27,7 +27,7 @@ concurrency:
 
 # Gemeinsame Environment Variables fuer alle Jobs
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "24"
 
 jobs:
   # ===========================================================================
