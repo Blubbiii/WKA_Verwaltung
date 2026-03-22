@@ -14,15 +14,9 @@ export function useSidebarLinks() {
 
   useEffect(() => {
     fetch("/api/sidebar-links")
-      .then((r) => {
-        console.log("[sidebar-links] status:", r.status);
-        return r.ok ? r.json() : [];
-      })
-      .then((data) => {
-        console.log("[sidebar-links] data:", data);
-        setLinks(data);
-      })
-      .catch((e) => console.error("[sidebar-links] error:", e));
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setLinks)
+      .catch(() => {});
   }, []);
 
   return links;

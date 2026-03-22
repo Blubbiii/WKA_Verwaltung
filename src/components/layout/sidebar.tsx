@@ -558,19 +558,14 @@ export function Sidebar() {
           )
         )}
 
-        {/* Pinned bottom: Admin, System */}
-        {pinnedBottom.map((group, idx) =>
-          renderGroupContent(group, pinnedTop.length + sortedMiddle.length + idx)
-        )}
-
-        {/* Dynamic custom links ("Programme") */}
+        {/* Dynamic custom links — shown before pinned Admin/System groups */}
         {customLinks.length > 0 && (
           <div className="mb-4 pt-2">
             <div className="mx-3 mb-3 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
             {!collapsed && (
               <div className="px-4 mb-1.5">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Programme
+                  Links
                 </span>
               </div>
             )}
@@ -599,6 +594,11 @@ export function Sidebar() {
               })}
             </ul>
           </div>
+        )}
+
+        {/* Pinned bottom: Admin, System */}
+        {pinnedBottom.map((group, idx) =>
+          renderGroupContent(group, pinnedTop.length + sortedMiddle.length + idx)
         )}
       </nav>
     </aside>
