@@ -361,6 +361,9 @@ interface AvailTrendRow {
 
 /**
  * Fetch monthly average availability trend.
+ * Uses IEC 61400-26-2 formula: SUM(T1) / (SUM(T1) + SUM(T5)) * 100
+ * Recalculated from raw T1/T5 values instead of stored availabilityPct
+ * to avoid issues with historically incorrect stored values.
  */
 export async function fetchAvailabilityTrend(
   tenantId: string,
@@ -376,7 +379,10 @@ export async function fetchAvailabilityTrend(
   const rows = await prisma.$queryRaw<AvailTrendRow[]>`
     SELECT
       date_trunc('month', date) AS month_start,
-      AVG("availabilityPct") AS avg_availability,
+      CASE WHEN (SUM(t1) + SUM(t5)) > 0
+        THEN CAST(SUM(t1) AS DECIMAL) / (SUM(t1) + SUM(t5)) * 100
+        ELSE NULL
+      END AS avg_availability,
       COUNT(DISTINCT "turbineId") AS turbine_count
     FROM scada_availability
     WHERE "tenantId" = ${tenantId}
@@ -426,7 +432,10 @@ export async function fetchAvailabilityHeatmap(
     SELECT
       "turbineId",
       date_trunc('month', date) AS month_start,
-      AVG("availabilityPct") AS avg_avail
+      CASE WHEN (SUM(t1) + SUM(t5)) > 0
+        THEN CAST(SUM(t1) AS DECIMAL) / (SUM(t1) + SUM(t5)) * 100
+        ELSE NULL
+      END AS avg_avail
     FROM scada_availability
     WHERE "tenantId" = ${tenantId}
       AND "periodType" = 'MONTHLY'
