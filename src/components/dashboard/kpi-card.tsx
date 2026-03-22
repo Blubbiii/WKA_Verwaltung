@@ -26,6 +26,21 @@ export const KPI_ACCENT_COLORS: Record<string, string> = {
   "kpi-lease-revenue": "text-rose-600 dark:text-rose-400",
 };
 
+const KPI_ACCENT_HEX: Record<string, string> = {
+  "kpi-parks": "#0891b2",
+  "kpi-turbines": "#475569",
+  "kpi-shareholders": "#7c3aed",
+  "kpi-fund-capital": "#059669",
+  "kpi-open-invoices": "#d97706",
+  "kpi-contracts": "#ea580c",
+  "kpi-documents": "#db2777",
+  "kpi-votes": "#4f46e5",
+  "kpi-energy-yield": "#65a30d",
+  "kpi-availability": "#16a34a",
+  "kpi-wind-speed": "#0284c7",
+  "kpi-lease-revenue": "#e11d48",
+};
+
 export const KPI_ICON_COLORS: Record<string, string> = {
   "kpi-parks": "text-cyan-500/40 dark:text-cyan-400/30",
   "kpi-turbines": "text-slate-500/40 dark:text-slate-400/30",
@@ -59,6 +74,7 @@ export interface KPICardProps {
   iconColor?: string; // Tailwind color class for the icon
   href?: string; // Link target — makes the card clickable
   className?: string;
+  widgetId?: string; // Used for L-accent border color lookup
 }
 
 // =============================================================================
@@ -78,6 +94,7 @@ export function KPICard({
   iconColor,
   href,
   className,
+  widgetId,
 }: KPICardProps) {
   // Trend formatting
   const getTrendColor = () => {
@@ -116,13 +133,23 @@ export function KPICard({
     );
   }
 
+  const accentHex = isAlert
+    ? "#dc2626"
+    : (widgetId ? KPI_ACCENT_HEX[widgetId] ?? "#335E99" : "#335E99");
+
   const card = (
-    <Card className={cn(
-      "h-full overflow-hidden transition-all hover:shadow-md",
-      "border border-border/60 dark:border-border/40",
-      href && "cursor-pointer hover:border-primary/30",
-      className
-    )}>
+    <Card
+      className={cn(
+        "h-full overflow-hidden transition-all hover:shadow-md",
+        "border border-border/60 dark:border-border/40",
+        href && "cursor-pointer hover:border-primary/30",
+        className
+      )}
+      style={{
+        borderTop: `4px solid ${accentHex}`,
+        borderLeft: `2px solid ${accentHex}`,
+      }}
+    >
       <CardHeader className="flex flex-row items-center justify-between p-4 pb-1">
         <CardTitle className="uppercase tracking-wider text-[11px] font-semibold text-muted-foreground">
           {title}

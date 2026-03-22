@@ -57,9 +57,9 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 28% 9%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222 25% 11%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
@@ -98,7 +98,7 @@
     --m-accent: 38 92% 60%;
     --m-border: 220 13% 18%;
 
-    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-background: 220 30% 7%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 215 55% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -235,6 +235,14 @@
   .topo-pattern {
     background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 50 Q25 30 50 50 T100 50' fill='none' stroke='%23335E99' stroke-width='0.5' opacity='0.08'/%3E%3Cpath d='M0 30 Q25 10 50 30 T100 30' fill='none' stroke='%23335E99' stroke-width='0.5' opacity='0.06'/%3E%3Cpath d='M0 70 Q25 50 50 70 T100 70' fill='none' stroke='%23335E99' stroke-width='0.5' opacity='0.06'/%3E%3Cpath d='M0 90 Q25 70 50 90 T100 90' fill='none' stroke='%23335E99' stroke-width='0.5' opacity='0.04'/%3E%3Cpath d='M0 10 Q25 -10 50 10 T100 10' fill='none' stroke='%23335E99' stroke-width='0.5' opacity='0.04'/%3E%3C/svg%3E");
     background-size: 200px 200px;
+  }
+
+  /* Chart background subtle grid */
+  .chart-grid-bg {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.4) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 
   /* Gradient border wrapper trick */

@@ -266,7 +266,20 @@ export function DailyOverview() {
                   : "–"
               }
               icon={Activity}
-              color="text-green-500"
+              color={
+                kpis?.avgAvailabilityPct != null && kpis.avgAvailabilityPct < 80
+                  ? "text-red-500"
+                  : kpis?.avgAvailabilityPct != null && kpis.avgAvailabilityPct < 90
+                  ? "text-amber-500"
+                  : "text-green-500"
+              }
+              valueColor={
+                kpis?.avgAvailabilityPct != null && kpis.avgAvailabilityPct < 80
+                  ? "text-red-600 dark:text-red-400"
+                  : kpis?.avgAvailabilityPct != null && kpis.avgAvailabilityPct < 90
+                  ? "text-amber-600 dark:text-amber-400"
+                  : undefined
+              }
             />
             <KpiCard
               title="Störungen"
@@ -509,11 +522,13 @@ function KpiCard({
   value,
   icon: Icon,
   color,
+  valueColor,
 }: {
   title: string;
   value: string;
   icon: React.ElementType;
   color?: string;
+  valueColor?: string;
 }) {
   return (
     <Card>
@@ -522,7 +537,7 @@ function KpiCard({
         <Icon className={`h-4 w-4 ${color || "text-muted-foreground"}`} />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className={`text-2xl font-bold ${valueColor || ""}`}>{value}</div>
       </CardContent>
     </Card>
   );

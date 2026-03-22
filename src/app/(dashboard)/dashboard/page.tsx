@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { DashboardEditor, DashboardView, OnboardingBanner } from "@/components/dashboard";
+import { ParkHealthPulse } from "@/components/dashboard/ParkHealthPulse";
 import { useDashboardConfig } from "@/hooks/useDashboardConfig";
 
 // =============================================================================
@@ -88,7 +89,10 @@ export default function DashboardPage() {
       {isEditing ? (
         <DashboardEditor onSave={handleSaveComplete} onCancel={handleStopEditing} />
       ) : (
-        <DashboardView onEdit={handleStartEditing} />
+        <>
+          <ParkHealthPulse />
+          <DashboardView onEdit={handleStartEditing} />
+        </>
       )}
     </div>
   );
