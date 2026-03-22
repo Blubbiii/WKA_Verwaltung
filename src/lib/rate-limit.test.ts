@@ -204,6 +204,13 @@ describe("rateLimit - remaining", () => {
 // =============================================================================
 
 describe("getClientIp", () => {
+  beforeEach(() => {
+    process.env.TRUSTED_PROXY_IPS = "127.0.0.1";
+  });
+  afterEach(() => {
+    delete process.env.TRUSTED_PROXY_IPS;
+  });
+
   it("extrahiert IP aus x-forwarded-for Header", () => {
     const request = new Request("http://localhost", {
       headers: { "x-forwarded-for": "192.168.1.1" },
