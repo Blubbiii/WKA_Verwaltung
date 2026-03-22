@@ -113,7 +113,7 @@ export function ReportBuilderTab() {
   // New report state
   const [parkId, setParkId] = useState("all");
   const [year, setYear] = useState(currentYear.toString());
-  const [month, setMonth] = useState("");
+  const [month, setMonth] = useState("all");
   const [selectedModules, setSelectedModules] = useState<Set<string>>(
     new Set(["performanceKpis", "availabilityBreakdown", "faultPareto"])
   );
@@ -245,7 +245,7 @@ export function ReportBuilderTab() {
       {
         parkId: parkId === "all" ? undefined : parkId,
         year: parseInt(year),
-        ...(month ? { month: parseInt(month) } : {}),
+        ...(month && month !== "all" ? { month: parseInt(month) } : {}),
         modules: Array.from(selectedModules),
       },
       `Bericht_${year}.pdf`,
@@ -272,7 +272,7 @@ export function ReportBuilderTab() {
           name: templateName.trim(),
           modules: Array.from(selectedModules),
           parkId: parkId !== "all" ? parkId : null,
-          interval: month ? "month" : "year",
+          interval: month && month !== "all" ? "month" : "year",
           portalVisible: false,
         }),
       });
@@ -526,7 +526,7 @@ export function ReportBuilderTab() {
                     <SelectValue placeholder="Gesamt" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Gesamtes Jahr</SelectItem>
+                    <SelectItem value="all">Gesamtes Jahr</SelectItem>
                     {MONTH_NAMES.map((n, i) => (
                       <SelectItem key={i} value={(i + 1).toString()}>
                         {n}

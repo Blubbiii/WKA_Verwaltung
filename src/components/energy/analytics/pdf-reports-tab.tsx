@@ -114,7 +114,7 @@ export function PdfReportsTab() {
 
   // Custom report state
   const [customModules, setCustomModules] = useState<Set<string>>(new Set(["performanceKpis", "faultPareto"]));
-  const [customMonth, setCustomMonth] = useState<string>(""); // empty = full year
+  const [customMonth, setCustomMonth] = useState<string>("all"); // "all" = full year
 
   function toggleSection(
     setter: React.Dispatch<React.SetStateAction<Record<string, boolean>>>,
@@ -403,7 +403,7 @@ export function PdfReportsTab() {
                     <SelectValue placeholder="Gesamtes Jahr" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Gesamtes Jahr</SelectItem>
+                    <SelectItem value="all">Gesamtes Jahr</SelectItem>
                     {MONTH_NAMES.map((name, i) => (
                       <SelectItem key={i} value={(i + 1).toString()}>{name}</SelectItem>
                     ))}
@@ -428,10 +428,10 @@ export function PdfReportsTab() {
                       {
                         parkId,
                         year: yearInt,
-                        ...(customMonth ? { month: parseInt(customMonth) } : {}),
+                        ...(customMonth && customMonth !== "all" ? { month: parseInt(customMonth) } : {}),
                         modules: Array.from(customModules),
                       },
-                      `Bericht_${year}${customMonth ? '_' + customMonth.padStart(2, '0') : ''}.pdf`,
+                      `Bericht_${year}${customMonth && customMonth !== "all" ? '_' + customMonth.padStart(2, '0') : ''}.pdf`,
                       "Benutzerdefinierter Bericht"
                     )
                   }
