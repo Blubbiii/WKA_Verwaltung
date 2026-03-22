@@ -7,7 +7,7 @@
 # Stage 1: Dependencies
 # Installiert alle Dependencies (inklusive devDependencies fuer Build)
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 
 # Build-Tools fuer native npm-Module (jsdom, Sentry, etc.)
 # libc6-compat: Kompatibilitaet fuer glibc-basierte Module
@@ -30,7 +30,7 @@ RUN npm install || (sleep 5 && npm install) || (sleep 15 && npm install)
 # Stage 2: Builder
 # Baut die Next.js Anwendung
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -67,7 +67,7 @@ RUN npm run build
 # scheitert, da npm/Docker die bereits vorhandenen Pakete nicht nachinstalliert.
 # Loesung: Komplett separates Verzeichnis /prisma-cli mit eigenem node_modules.
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS prisma-cli
+FROM node:24-alpine AS prisma-cli
 WORKDIR /prisma-cli
 RUN npm init -y > /dev/null 2>&1 && npm install prisma@6 tsx typescript bcryptjs @prisma/client@6
 # Verifiziere dass effect installiert wurde
@@ -78,7 +78,7 @@ RUN node -e "require('@prisma/config'); console.log('@prisma/config OK')"
 # Stage 3: Runner (Production)
 # Minimales Production Image
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 
