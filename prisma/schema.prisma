@@ -2192,6 +2192,7 @@ model ScadaMeasurement {
   @@index([tenantId, turbineId, timestamp(sort: Desc)])
   @@index([turbineId, timestamp])
   @@index([tenantId, timestamp(sort: Desc)])
+  @@index([tenantId, sourceFile, turbineId, timestamp(sort: Desc)])
   @@map("scada_measurements")
 }
 
@@ -3691,6 +3692,8 @@ model BankTransaction {
   @@index([tenantId, matchStatus])
   @@index([importBatchId])
   @@index([bankAccountId])
+  @@index([fundId])
+  @@index([matchedInvoiceId])
   @@map("bank_transactions")
 }
 

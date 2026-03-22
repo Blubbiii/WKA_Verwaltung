@@ -99,6 +99,7 @@ async function fetchEnergyKpis(tenantId: string) {
       }),
 
       // Settlement data for production forecast
+      // Note: park relation removed — only scalar fields are consumed downstream
       prisma.energySettlement.findMany({
         where: {
           tenantId,
@@ -109,9 +110,6 @@ async function fetchEnergyKpis(tenantId: string) {
           netOperatorRevenueEur: true,
           totalProductionKwh: true,
           month: true,
-          park: {
-            select: { name: true },
-          },
         },
       }),
 
