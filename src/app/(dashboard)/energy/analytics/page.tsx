@@ -28,6 +28,7 @@ import { DataComparisonTab } from "@/components/energy/analytics/data-comparison
 import { PdfReportsTab } from "@/components/energy/analytics/pdf-reports-tab";
 import { ReportArchiveTab } from "@/components/energy/analytics/report-archive-tab";
 import { ReportConfigsTab } from "@/components/energy/analytics/report-configs-tab";
+import { ReportBuilderTab } from "@/components/energy/analytics/report-builder-tab";
 import { Button } from "@/components/ui/button";
 import type {
   PerformanceOverviewResponse,
@@ -187,8 +188,8 @@ export default function AnalyticsPage() {
     </div>
   );
 
-  // Show filter bar only for year-based tabs (not daily overview, not tools)
-  const showFilterBar = activeTab !== "daily" && activeTab !== "tools";
+  // Show filter bar only for year-based tabs (not daily overview, tools, or bericht)
+  const showFilterBar = activeTab !== "daily" && activeTab !== "tools" && activeTab !== "bericht";
 
   return (
     <div className="space-y-6">
@@ -231,6 +232,10 @@ export default function AnalyticsPage() {
           <TabsTrigger value="tools" className="gap-1.5">
             <Wrench className="h-4 w-4 hidden sm:block" />
             <span>Werkzeuge</span>
+          </TabsTrigger>
+          <TabsTrigger value="bericht" className="gap-1.5">
+            <FileText className="h-4 w-4 hidden sm:block" />
+            <span>Bericht</span>
           </TabsTrigger>
         </TabsList>
 
@@ -436,6 +441,13 @@ export default function AnalyticsPage() {
           {activeToolTab === "pdf-reports" && <PdfReportsTab />}
           {activeToolTab === "vorlagen" && <ReportConfigsTab onCreateReport={() => setReportDialogOpen(true)} />}
           {activeToolTab === "archive" && <ReportArchiveTab />}
+        </TabsContent>
+
+        {/* ================================================================= */}
+        {/* Tab 6: Bericht                                                     */}
+        {/* ================================================================= */}
+        <TabsContent value="bericht" className="mt-6">
+          <ReportBuilderTab />
         </TabsContent>
       </Tabs>
 
