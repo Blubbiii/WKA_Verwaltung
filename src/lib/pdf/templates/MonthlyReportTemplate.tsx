@@ -14,7 +14,7 @@
  * - Monthly availability trend table
  */
 
-import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet, Svg, Circle as SvgCircle, Line as SvgLine, Rect as SvgRect, Path as SvgPath } from "@react-pdf/renderer";
 import type { ResolvedLetterhead, ResolvedTemplate } from "../utils/templateResolver";
 import { Header } from "./components/Header";
 import { Footer, PageNumber } from "./components/Footer";
@@ -145,11 +145,13 @@ const s = StyleSheet.create({
   kpiCard: {
     width: "31%",
     backgroundColor: C.white,
-    borderWidth: 1,
+    borderTopWidth: 6,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderLeftWidth: 2,
     borderColor: C.gray200,
     borderRadius: 4,
-    padding: 10,
-    borderTopWidth: 3,
+    padding: 12,
   },
   kpiLabel: {
     fontSize: 7,
@@ -164,7 +166,7 @@ const s = StyleSheet.create({
     gap: 3,
   },
   kpiValue: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "bold",
     color: C.navy,
   },
@@ -551,10 +553,9 @@ const s = StyleSheet.create({
     marginBottom: 24,
   },
   coverDivider: {
-    width: 60,
-    height: 3,
-    backgroundColor: C.white,
-    opacity: 0.6,
+    width: 80,
+    height: 4,
+    backgroundColor: "#C09B4A",
     marginBottom: 20,
   },
   coverMetaRow: {
@@ -819,10 +820,13 @@ function PageWrap({
 
 function SectionHead({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <View style={s.sectionHeader}>
-      <View style={s.sectionAccent} />
-      <Text style={s.sectionTitle}>{title}</Text>
-      {subtitle && <Text style={s.sectionSubtitle}>{subtitle}</Text>}
+    <View style={{ marginBottom: 12, marginTop: 4 }}>
+      <View style={s.sectionHeader}>
+        <View style={s.sectionAccent} />
+        <Text style={s.sectionTitle}>{title}</Text>
+        {subtitle && <Text style={s.sectionSubtitle}>{subtitle}</Text>}
+        <View style={{ flex: 1, height: 0.5, backgroundColor: C.gray200, marginLeft: 8, alignSelf: "center" }} />
+      </View>
     </View>
   );
 }
@@ -841,7 +845,7 @@ function KpiCard({
   trend?: { text: string; positive: boolean | null };
 }) {
   return (
-    <View style={[s.kpiCard, { borderTopColor: color }]}>
+    <View style={[s.kpiCard, { borderTopColor: color, borderLeftColor: color }]}>
       <Text style={s.kpiLabel}>{label}</Text>
       <View style={s.kpiValueRow}>
         <Text style={s.kpiValue}>{value}</Text>
@@ -1017,6 +1021,28 @@ function CoverPage({
         />
       )}
 
+      {/* SVG geometric decoration — only shown without photo */}
+      {!data.coverImageUrl && (
+        <Svg
+          width={595}
+          height={841}
+          style={{ position: "absolute", top: 0, left: 0 }}
+        >
+          {/* Large amber circle — top right, partially off-page */}
+          <SvgCircle cx={530} cy={-30} r={210} fill="#C09B4A" fillOpacity={0.13} />
+          {/* Medium ghost circle */}
+          <SvgCircle cx={490} cy={210} r={110} fill="#FFFFFF" fillOpacity={0.04} />
+          {/* Small accent circle bottom left */}
+          <SvgCircle cx={-20} cy={780} r={120} fill="#FFFFFF" fillOpacity={0.04} />
+          {/* Diagonal accent lines */}
+          <SvgLine x1={0} y1={620} x2={180} y2={841} stroke="#FFFFFF" strokeWidth={0.5} strokeOpacity={0.18} />
+          <SvgLine x1={80} y1={620} x2={260} y2={841} stroke="#FFFFFF" strokeWidth={0.5} strokeOpacity={0.12} />
+          <SvgLine x1={160} y1={620} x2={340} y2={841} stroke="#FFFFFF" strokeWidth={0.5} strokeOpacity={0.08} />
+          {/* Horizontal separator rule */}
+          <SvgLine x1={50} y1={690} x2={545} y2={690} stroke="#FFFFFF" strokeWidth={0.4} strokeOpacity={0.2} />
+        </Svg>
+      )}
+
       {/* Content overlay */}
       <View style={s.coverContent}>
         <Text style={s.coverTitle}>{reportTitle}</Text>
@@ -1130,6 +1156,13 @@ export function MonthlyReportTemplate({
       >
         {/* Title Banner */}
         <View style={s.titleBanner}>
+          {/* Decorative circles in banner */}
+          <Svg width={595} height={80} style={{ position: "absolute", top: 0, right: 0 }}>
+            <SvgCircle cx={560} cy={40} r={55} fill="#FFFFFF" fillOpacity={0.05} />
+            <SvgCircle cx={510} cy={20} r={30} fill="#FFFFFF" fillOpacity={0.04} />
+          </Svg>
+          {/* Gold accent bar above title */}
+          <View style={{ width: 40, height: 3, backgroundColor: "#C09B4A", marginBottom: 6 }} />
           <Text style={s.titleText}>{reportTitle}</Text>
           <Text style={s.titleSubText}>{data.parkName}</Text>
           <View style={s.titleMeta}>

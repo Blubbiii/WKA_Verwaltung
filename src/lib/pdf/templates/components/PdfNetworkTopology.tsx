@@ -7,7 +7,7 @@
  * from the park detail page in a static, print-friendly format.
  */
 
-import { View, Text, StyleSheet, Svg, Line, Circle, Rect, G, Text as SvgText } from "@react-pdf/renderer";
+import { View, Text, StyleSheet, Svg, Line, Circle, Rect, G, Text as SvgText, Path } from "@react-pdf/renderer";
 
 // ---------------------------------------------------------------------------
 // Types (matching the data shape provided by the annual report generator)
@@ -175,12 +175,18 @@ interface NodeData {
   status?: string;
 }
 
-const NODE_R = { nvp: 14, netz: 10, betreiber: 12, turbine: 10 };
-const TURBINE_COLS = 4; // turbines per row
-const TURBINE_SPACING_X = 46;
-const TURBINE_SPACING_Y = 34;
-const BETREIBER_GAP = 20;
-const GROUP_GAP = 24;
+// Node dimensions for rectangular cards
+const NVP_W = 72; const NVP_H = 24;
+const NETZ_W = 76; const NETZ_H = 28;
+const BET_W = 78; const BET_H = 28;
+const TURB_W = 40; const TURB_H = 16;
+const TURBINE_COLS = 4;
+const TURBINE_SPACING_X = 50;
+const TURBINE_SPACING_Y = 28;
+const BETREIBER_GAP = 22;
+const GROUP_GAP = 26;
+// Keep NODE_R for layout position calculations (use half-widths)
+const NODE_R = { nvp: NVP_W / 2, netz: NETZ_W / 2, betreiber: BET_W / 2, turbine: TURB_W / 2 };
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "#22c55e",
@@ -446,120 +452,97 @@ export function PdfNetworkTopology({
     <View style={s.container}>
       {/* SVG Graph with lines and nodes */}
       <Svg width={layout.width} height={layout.height}>
+        {/* Background */}
+        <Rect x={0} y={0} width={layout.width} height={layout.height} fill="#F8FAFD" rx={6} />
+
         {/* Connection lines */}
-        {layout.lines.map((l, i) => (
-          <G key={`l-${i}`}>
-            <Line
-              x1={l.x1}
-              y1={l.y1}
-              x2={l.x2}
-              y2={l.y2}
-              stroke={l.color}
-              strokeWidth={1.2}
-              strokeOpacity={0.4}
-            />
-            {l.label && (
-              <>
-                <Rect
-                  x={(l.x1 + l.x2) / 2 - 14}
-                  y={(l.y1 + l.y2) / 2 - 5}
-                  width={28}
-                  height={10}
-                  rx={5}
-                  fill="white"
-                  fillOpacity={0.95}
-                  stroke={l.color}
-                  strokeWidth={0.5}
-                  strokeOpacity={0.5}
-                />
-                <SvgText
-                  x={(l.x1 + l.x2) / 2}
-                  y={(l.y1 + l.y2) / 2 + 3}
-                  textAnchor="middle"
-                  style={{ fontSize: 6, fontWeight: "bold", fill: l.color }}
-                >
-                  {l.label}
-                </SvgText>
-              </>
-            )}
-          </G>
-        ))}
+        {layout.lines.map((l, i) => {
+          const midX = (l.x1 + l.x2) / 2;
+          return (
+            <G key={`l-${i}`}>
+              <Path
+                d={`M ${l.x1},${l.y1} C ${midX},${l.y1} ${midX},${l.y2} ${l.x2},${l.y2}`}
+                stroke={l.color}
+                strokeWidth={1.4}
+                strokeOpacity={0.55}
+                fill="none"
+              />
+              {/* ownership label badge unchanged */}
+              {l.label && (
+                <>
+                  <Rect
+                    x={(l.x1 + l.x2) / 2 - 14}
+                    y={(l.y1 + l.y2) / 2 - 5}
+                    width={28}
+                    height={10}
+                    rx={5}
+                    fill="white"
+                    fillOpacity={0.95}
+                    stroke={l.color}
+                    strokeWidth={0.5}
+                    strokeOpacity={0.6}
+                  />
+                  <SvgText
+                    x={(l.x1 + l.x2) / 2}
+                    y={(l.y1 + l.y2) / 2 + 3.5}
+                    textAnchor="middle"
+                    style={{ fontSize: 6, fontWeight: "bold", fill: l.color }}
+                  >
+                    {l.label}
+                  </SvgText>
+                </>
+              )}
+            </G>
+          );
+        })}
 
         {/* Nodes */}
         {layout.nodes.map((node, i) => {
-          const r = NODE_R[node.type];
-
           if (node.type === "nvp") {
-            // NVP: large circle with inner dot
             return (
               <G key={`n-${i}`}>
-                <Circle
-                  cx={node.p.x}
-                  cy={node.p.y}
-                  r={r}
-                  fill={`${node.color}20`}
-                  stroke={node.color}
-                  strokeWidth={1.5}
-                />
-                <Circle
-                  cx={node.p.x}
-                  cy={node.p.y}
-                  r={4}
-                  fill={node.color}
-                />
-                {/* Label below */}
+                {/* Amber pill */}
+                <Rect x={node.p.x - NVP_W/2} y={node.p.y - NVP_H/2} width={NVP_W} height={NVP_H} rx={NVP_H/2} fill="#F59E0B" />
                 <SvgText
                   x={node.p.x}
-                  y={node.p.y + r + 8}
+                  y={node.p.y - 3}
                   textAnchor="middle"
-                  style={{ fontSize: 6, fontWeight: "bold", fill: COLORS.primary }}
+                  style={{ fontSize: 6, fontWeight: "bold", fill: "#FFFFFF" }}
                 >
-                  {node.label.length > 20 ? node.label.slice(0, 18) + "..." : node.label}
+                  {node.label.length > 18 ? node.label.slice(0, 16) + "…" : node.label}
                 </SvgText>
                 <SvgText
                   x={node.p.x}
-                  y={node.p.y + r + 15}
+                  y={node.p.y + 5.5}
                   textAnchor="middle"
-                  style={{ fontSize: 5, fill: COLORS.muted }}
+                  style={{ fontSize: 5, fill: "#FFFFFFCC" }}
                 >
-                  {node.sublabel}
+                  NVP
                 </SvgText>
               </G>
             );
           }
 
           if (node.type === "netz") {
-            // Netzgesellschaft: circle with colored border
             return (
               <G key={`n-${i}`}>
-                <Circle
-                  cx={node.p.x}
-                  cy={node.p.y}
-                  r={r}
-                  fill={`${node.color}20`}
-                  stroke={node.color}
-                  strokeWidth={1.5}
-                />
-                <Circle
-                  cx={node.p.x}
-                  cy={node.p.y}
-                  r={3}
-                  fill={node.color}
-                />
+                {/* Bordered rounded rect — transparent fill */}
+                <Rect x={node.p.x - NETZ_W/2} y={node.p.y - NETZ_H/2} width={NETZ_W} height={NETZ_H} rx={5}
+                  fill={`${node.color}22`} stroke={node.color} strokeWidth={1.5} />
                 <SvgText
                   x={node.p.x}
-                  y={node.p.y + r + 8}
+                  y={node.p.y - 4}
                   textAnchor="middle"
-                  style={{ fontSize: 5.5, fontWeight: "bold", fill: COLORS.primary }}
+                  style={{ fontSize: 5.5, fontWeight: "bold", fill: "#1E3A5F" }}
                 >
-                  {node.label.length > 22 ? node.label.slice(0, 20) + "..." : node.label}
+                  {node.label.length > 20 ? node.label.slice(0, 18) + "…" : node.label}
                 </SvgText>
                 {node.sublabel && (
                   <SvgText
                     x={node.p.x}
-                    y={node.p.y + r + 14}
+                    y={node.p.y + 5}
                     textAnchor="middle"
-                    style={{ fontSize: 5, fill: COLORS.muted }}
+                    style={{ fontSize: 4.5, fill: "#6B7280" }}
                   >
                     {node.sublabel}
                   </SvgText>
@@ -569,77 +552,48 @@ export function PdfNetworkTopology({
           }
 
           if (node.type === "betreiber") {
-            // Betreibergesellschaft: rounded rect
-            const rw = 22;
-            const rh = 22;
             return (
               <G key={`n-${i}`}>
-                <Rect
-                  x={node.p.x - rw / 2}
-                  y={node.p.y - rh / 2}
-                  width={rw}
-                  height={rh}
-                  rx={4}
-                  fill={`${node.color}18`}
-                  stroke={node.color}
-                  strokeWidth={1.5}
-                />
-                <Circle
-                  cx={node.p.x}
-                  cy={node.p.y}
-                  r={3}
-                  fill={node.color}
-                />
+                {/* Filled rounded rect with fund color */}
+                <Rect x={node.p.x - BET_W/2} y={node.p.y - BET_H/2} width={BET_W} height={BET_H} rx={5}
+                  fill={node.color} />
                 <SvgText
                   x={node.p.x}
-                  y={node.p.y + rh / 2 + 7}
+                  y={node.p.y + 2.5}
                   textAnchor="middle"
-                  style={{ fontSize: 5.5, fontWeight: "bold", fill: COLORS.primary }}
+                  style={{ fontSize: 5.5, fontWeight: "bold", fill: "#FFFFFF" }}
                 >
-                  {node.label.length > 22 ? node.label.slice(0, 20) + "..." : node.label}
+                  {node.label.length > 22 ? node.label.slice(0, 20) + "…" : node.label}
                 </SvgText>
               </G>
             );
           }
 
-          // Turbine: filled circle with status ring
+          // Turbine: pill chip with status dot inside
           const statusColor = STATUS_COLORS[node.status || ""] || "#9ca3af";
           return (
             <G key={`n-${i}`}>
+              {/* Pill background — operator color */}
+              <Rect x={node.p.x - TURB_W/2} y={node.p.y - TURB_H/2} width={TURB_W} height={TURB_H} rx={TURB_H/2}
+                fill={node.color} fillOpacity={0.85} />
+              {/* Designation text */}
+              <SvgText
+                x={node.p.x - 3}
+                y={node.p.y + 2.5}
+                textAnchor="middle"
+                style={{ fontSize: 5, fontWeight: "bold", fill: "#FFFFFF" }}
+              >
+                {node.label}
+              </SvgText>
+              {/* Status dot — right edge inside pill */}
               <Circle
-                cx={node.p.x}
+                cx={node.p.x + TURB_W/2 - 5}
                 cy={node.p.y}
-                r={r}
-                fill={node.color}
-              />
-              {/* Status dot */}
-              <Circle
-                cx={node.p.x + r * 0.6}
-                cy={node.p.y + r * 0.6}
                 r={3}
                 fill={statusColor}
                 stroke="white"
                 strokeWidth={0.8}
               />
-              {/* Designation */}
-              <SvgText
-                x={node.p.x}
-                y={node.p.y + r + 7}
-                textAnchor="middle"
-                style={{ fontSize: 5, fontWeight: "bold", fill: COLORS.primary }}
-              >
-                {node.label}
-              </SvgText>
-              {node.sublabel && (
-                <SvgText
-                  x={node.p.x}
-                  y={node.p.y + r + 13}
-                  textAnchor="middle"
-                  style={{ fontSize: 4.5, fill: COLORS.muted }}
-                >
-                  {node.sublabel}
-                </SvgText>
-              )}
             </G>
           );
         })}
