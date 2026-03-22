@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -79,10 +79,13 @@ interface NewCostCenterForm {
 
 export default function CostCentersPage() {
   const router = useRouter();
-  const { data, isLoading, mutate } = useSWR<CostCenter[]>(
-    "/api/cost-centers?activeOnly=false",
-    fetcher
-  );
+  const queryClient = useQueryClient();
+  const costCentersUrl = "/api/cost-centers?activeOnly=false";
+  const { data, isLoading } = useQuery<CostCenter[]>({
+    queryKey: [costCentersUrl],
+    queryFn: () => fetcher(costCentersUrl),
+  });
+  const mutate = () => queryClient.invalidateQueries({ queryKey: [costCentersUrl] });
   const [search, setSearch] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [showNew, setShowNew] = useState(false);

@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 // =============================================================================
 // TYPES
@@ -87,14 +87,13 @@ const fetcher = async (url: string): Promise<TenantSettings> => {
 // =============================================================================
 
 export function useTenantSettings() {
-  const { data, error, isLoading, mutate } = useSWR<TenantSettings>(
-    "/api/admin/tenant-settings",
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 30000,
-    }
-  );
+  const queryClient = useQueryClient();
+  const { data, error, isLoading } = useQuery<TenantSettings, Error>({
+    queryKey: ["/api/admin/tenant-settings"],
+    queryFn: () => fetcher("/api/admin/tenant-settings"),
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
+  });
 
   async function updateSettings(
     settings: Partial<TenantSettings>
@@ -113,8 +112,12 @@ export function useTenantSettings() {
     }
 
     const updated = await response.json();
-    mutate(updated, false);
+    queryClient.setQueryData(["/api/admin/tenant-settings"], updated);
     return updated;
+  }
+
+  function mutate() {
+    return queryClient.invalidateQueries({ queryKey: ["/api/admin/tenant-settings"] });
   }
 
   return {

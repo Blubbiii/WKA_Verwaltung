@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -161,7 +161,7 @@ function TimelineTooltip({
 }
 
 // =============================================================================
-// SWR fetcher
+// Fetcher
 // =============================================================================
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -186,10 +186,11 @@ export function OperatingStateTimeline({
 }: OperatingStateTimelineProps) {
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
 
-  const { data, isLoading } = useSWR<OperatingStatesResponse>(
-    `/api/energy/analytics/operating-states?turbineId=${turbineId}&year=${selectedYear}`,
-    fetcher
-  );
+  const url = `/api/energy/analytics/operating-states?turbineId=${turbineId}&year=${selectedYear}`;
+  const { data, isLoading } = useQuery<OperatingStatesResponse>({
+    queryKey: [url],
+    queryFn: () => fetcher(url),
+  });
 
   const statePareto = data?.statePareto ?? [];
   const timeline = data?.timeline ?? [];

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Plus,
@@ -110,6 +110,7 @@ function getStatusColor(status: string): string {
 
 export default function UsageFeesPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // ---------------------------------------------------------------------------
   // Filter State
@@ -161,8 +162,12 @@ export default function UsageFeesPage() {
     data: apiResponse,
     isLoading: settlementsLoading,
     error: settlementsError,
-    mutate,
-  } = useSWR(apiUrl, fetcher, { revalidateOnFocus: false });
+  } = useQuery({
+    queryKey: [apiUrl],
+    queryFn: () => fetcher(apiUrl),
+    refetchOnWindowFocus: false,
+  });
+  const mutate = () => queryClient.invalidateQueries({ queryKey: [apiUrl] });
 
   const settlements: (LeaseRevenueSettlementResponse & { _count?: { items: number } })[] =
     apiResponse?.data || [];

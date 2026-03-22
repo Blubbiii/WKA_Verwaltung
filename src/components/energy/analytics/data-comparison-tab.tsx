@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
   FileSpreadsheet,
@@ -175,15 +175,17 @@ export function DataComparisonTab() {
     return params.toString();
   }, [selectedYear, selectedParkId]);
 
+  const comparisonUrl = `/api/energy/scada/comparison?${queryParams}`;
+
   const {
     data: comparisonData,
     error: comparisonError,
     isLoading: comparisonLoading,
-  } = useSWR<ComparisonResponse>(
-    `/api/energy/scada/comparison?${queryParams}`,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  } = useQuery<ComparisonResponse>({
+    queryKey: [comparisonUrl],
+    queryFn: () => fetcher(comparisonUrl),
+    refetchOnWindowFocus: false,
+  });
 
   const rows = useMemo(() => comparisonData?.data ?? [], [comparisonData]);
   const summary = comparisonData?.summary ?? null;

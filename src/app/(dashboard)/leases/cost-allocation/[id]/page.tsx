@@ -3,7 +3,7 @@
 import { useState, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -79,21 +79,23 @@ export default function CostAllocationDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [actionLoading, setActionLoading] = useState(false);
   const [closeLoading, setCloseLoading] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Data Fetching
   // ---------------------------------------------------------------------------
+  const allocationUrl = `/api/leases/cost-allocation/${id}`;
   const {
     data: allocation,
     isLoading,
     error: isError,
-    mutate,
-  } = useSWR<ParkCostAllocationResponse>(
-    `/api/leases/cost-allocation/${id}`,
-    fetcher
-  );
+  } = useQuery<ParkCostAllocationResponse>({
+    queryKey: [allocationUrl],
+    queryFn: () => fetcher(allocationUrl),
+  });
+  const mutate = () => queryClient.invalidateQueries({ queryKey: [allocationUrl] });
 
   // ---------------------------------------------------------------------------
   // Actions

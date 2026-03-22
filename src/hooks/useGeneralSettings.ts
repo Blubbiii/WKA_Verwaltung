@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface GeneralSettings {
   // Application Settings
@@ -59,21 +59,20 @@ const fetcher = async (url: string) => {
 };
 
 export function useGeneralSettings() {
-  const { data, error, isLoading, mutate } = useSWR<GeneralSettings>(
-    "/api/admin/settings",
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 30000, // 30 seconds
-    }
-  );
+  const queryClient = useQueryClient();
+  const { data, error, isLoading } = useQuery<GeneralSettings, Error>({
+    queryKey: ["/api/admin/settings"],
+    queryFn: () => fetcher("/api/admin/settings"),
+    refetchOnWindowFocus: false,
+    staleTime: 30000, // 30 seconds
+  });
 
   return {
     settings: data,
     isLoading,
     isError: !!error,
     error,
-    mutate,
+    mutate: () => queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] }),
   };
 }
 

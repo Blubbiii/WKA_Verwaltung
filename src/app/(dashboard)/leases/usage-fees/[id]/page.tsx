@@ -3,7 +3,7 @@
 import { useState, use, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -151,20 +151,22 @@ export default function UsageFeeDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // ---------------------------------------------------------------------------
   // Data Fetching
   // ---------------------------------------------------------------------------
+  const settlementUrl = `/api/leases/usage-fees/${id}`;
   const {
     data: settlement,
     isLoading,
     error,
-    mutate,
-  } = useSWR<LeaseRevenueSettlementResponse>(
-    `/api/leases/usage-fees/${id}`,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  } = useQuery<LeaseRevenueSettlementResponse>({
+    queryKey: [settlementUrl],
+    queryFn: () => fetcher(settlementUrl),
+    refetchOnWindowFocus: false,
+  });
+  const mutate = () => queryClient.invalidateQueries({ queryKey: [settlementUrl] });
 
   const isError = !!error;
 

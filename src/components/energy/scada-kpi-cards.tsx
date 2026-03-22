@@ -1,6 +1,6 @@
 "use client";
 
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { Zap, Sun, Wind, CheckCircle } from "lucide-react";
 import {
   KPICard,
@@ -67,14 +67,13 @@ export function ScadaKpiCards({ parkId }: ScadaKpiCardsProps) {
   const params = new URLSearchParams();
   if (parkId && parkId !== "all") params.set("parkId", parkId);
 
-  const { data, error, isLoading } = useSWR<ScadaSummaryResponse>(
-    `/api/energy/scada/summary?${params.toString()}`,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      refreshInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
-    },
-  );
+  const summaryUrl = `/api/energy/scada/summary?${params.toString()}`;
+  const { data, error, isLoading } = useQuery<ScadaSummaryResponse>({
+    queryKey: [summaryUrl],
+    queryFn: () => fetcher(summaryUrl),
+    refetchOnWindowFocus: false,
+    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
+  });
 
   // Loading state
   if (isLoading) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import { BarChart3, CreditCard, Activity, Wrench, LayoutDashboard, Clock, AlertTriangle, Cloud, Sun, Zap, GitCompare, Search, ArrowLeftRight, FileText, Archive } from "lucide-react";
@@ -111,46 +111,73 @@ export default function AnalyticsPage() {
   const isProductionTab = activeTab === "production";
   const perfParams = buildParams(compareYear ? { compareYear: String(compareYear) } : undefined);
 
-  const { data: perfData, error: perfError, isLoading: perfLoading } = useSWR<PerformanceOverviewResponse>(
-    isProductionTab ? `/api/energy/analytics/performance?${perfParams}` : null,
-    fetcher, { revalidateOnFocus: false }
-  );
-  const { data: compData, error: compError, isLoading: compLoading } = useSWR<TurbineComparisonResponse>(
-    isProductionTab ? `/api/energy/analytics/turbine-comparison?${baseParams}` : null,
-    fetcher, { revalidateOnFocus: false }
-  );
+  const perfUrl = isProductionTab ? `/api/energy/analytics/performance?${perfParams}` : null;
+  const compUrl = isProductionTab ? `/api/energy/analytics/turbine-comparison?${baseParams}` : null;
+
+  const { data: perfData, error: perfError, isLoading: perfLoading } = useQuery<PerformanceOverviewResponse>({
+    queryKey: [perfUrl],
+    queryFn: () => fetcher(perfUrl!),
+    enabled: !!perfUrl,
+    refetchOnWindowFocus: false,
+  });
+  const { data: compData, error: compError, isLoading: compLoading } = useQuery<TurbineComparisonResponse>({
+    queryKey: [compUrl],
+    queryFn: () => fetcher(compUrl!),
+    enabled: !!compUrl,
+    refetchOnWindowFocus: false,
+  });
 
   // --- Tab 3: Operations & Environment ---
   const isOperationsTab = activeTab === "operations";
 
-  const { data: availData, error: availError, isLoading: availLoading } = useSWR<AvailabilityResponse>(
-    isOperationsTab ? `/api/energy/analytics/availability?${baseParams}` : null,
-    fetcher, { revalidateOnFocus: false }
-  );
-  const { data: faultData, error: faultError, isLoading: faultLoading } = useSWR<FaultsResponse>(
-    isOperationsTab ? `/api/energy/analytics/faults?${baseParams}` : null,
-    fetcher, { revalidateOnFocus: false }
-  );
-  const { data: envData, error: envError, isLoading: envLoading } = useSWR<EnvironmentResponse>(
-    isOperationsTab ? `/api/energy/analytics/environment?${baseParams}` : null,
-    fetcher, { revalidateOnFocus: false }
-  );
-  const { data: shadowData, error: shadowError, isLoading: shadowLoading } = useSWR<ShadowResponse>(
-    isOperationsTab ? `/api/energy/analytics/shadow?${baseParams}` : null,
-    fetcher, { revalidateOnFocus: false }
-  );
+  const availUrl = isOperationsTab ? `/api/energy/analytics/availability?${baseParams}` : null;
+  const faultUrl = isOperationsTab ? `/api/energy/analytics/faults?${baseParams}` : null;
+  const envUrl = isOperationsTab ? `/api/energy/analytics/environment?${baseParams}` : null;
+  const shadowUrl = isOperationsTab ? `/api/energy/analytics/shadow?${baseParams}` : null;
+
+  const { data: availData, error: availError, isLoading: availLoading } = useQuery<AvailabilityResponse>({
+    queryKey: [availUrl],
+    queryFn: () => fetcher(availUrl!),
+    enabled: !!availUrl,
+    refetchOnWindowFocus: false,
+  });
+  const { data: faultData, error: faultError, isLoading: faultLoading } = useQuery<FaultsResponse>({
+    queryKey: [faultUrl],
+    queryFn: () => fetcher(faultUrl!),
+    enabled: !!faultUrl,
+    refetchOnWindowFocus: false,
+  });
+  const { data: envData, error: envError, isLoading: envLoading } = useQuery<EnvironmentResponse>({
+    queryKey: [envUrl],
+    queryFn: () => fetcher(envUrl!),
+    enabled: !!envUrl,
+    refetchOnWindowFocus: false,
+  });
+  const { data: shadowData, error: shadowError, isLoading: shadowLoading } = useQuery<ShadowResponse>({
+    queryKey: [shadowUrl],
+    queryFn: () => fetcher(shadowUrl!),
+    enabled: !!shadowUrl,
+    refetchOnWindowFocus: false,
+  });
 
   // --- Tab 4: Finance & Technical ---
   const isFinanceTab = activeTab === "finance";
 
-  const { data: finData, error: finError, isLoading: finLoading } = useSWR<FinancialResponse>(
-    isFinanceTab ? `/api/energy/analytics/financial?${baseParams}` : null,
-    fetcher, { revalidateOnFocus: false }
-  );
-  const { data: phaseData, error: phaseError, isLoading: phaseLoading } = useSWR<PhaseSymmetryResponse>(
-    isFinanceTab ? `/api/energy/analytics/phase-symmetry?${baseParams}` : null,
-    fetcher, { revalidateOnFocus: false }
-  );
+  const finUrl = isFinanceTab ? `/api/energy/analytics/financial?${baseParams}` : null;
+  const phaseUrl = isFinanceTab ? `/api/energy/analytics/phase-symmetry?${baseParams}` : null;
+
+  const { data: finData, error: finError, isLoading: finLoading } = useQuery<FinancialResponse>({
+    queryKey: [finUrl],
+    queryFn: () => fetcher(finUrl!),
+    enabled: !!finUrl,
+    refetchOnWindowFocus: false,
+  });
+  const { data: phaseData, error: phaseError, isLoading: phaseLoading } = useQuery<PhaseSymmetryResponse>({
+    queryKey: [phaseUrl],
+    queryFn: () => fetcher(phaseUrl!),
+    enabled: !!phaseUrl,
+    refetchOnWindowFocus: false,
+  });
 
   // Error display helper
   const ErrorState = ({ message }: { message: string }) => (

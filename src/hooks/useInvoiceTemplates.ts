@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { TemplateLayout, InvoiceTemplate } from "@/lib/invoice-templates/template-types";
 
 const fetcher = async (url: string) => {
@@ -12,31 +12,36 @@ const fetcher = async (url: string) => {
 
 // Hook: Fetch all invoice templates
 export function useInvoiceTemplates() {
-  const { data, error, isLoading, mutate } = useSWR<InvoiceTemplate[]>(
-    "/api/admin/invoice-templates",
-    fetcher
-  );
+  const queryClient = useQueryClient();
+  const { data, error, isLoading } = useQuery<InvoiceTemplate[], Error>({
+    queryKey: ["/api/admin/invoice-templates"],
+    queryFn: () => fetcher("/api/admin/invoice-templates"),
+  });
 
   return {
     templates: data,
     isLoading,
     isError: error,
-    mutate,
+    mutate: () => queryClient.invalidateQueries({ queryKey: ["/api/admin/invoice-templates"] }),
   };
 }
 
 // Hook: Fetch a single invoice template by ID
 export function useInvoiceTemplate(id: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<InvoiceTemplate>(
-    id ? `/api/admin/invoice-templates/${id}` : null,
-    fetcher
-  );
+  const queryClient = useQueryClient();
+  const url = id ? `/api/admin/invoice-templates/${id}` : null;
+
+  const { data, error, isLoading } = useQuery<InvoiceTemplate, Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url!),
+    enabled: !!id,
+  });
 
   return {
     template: data,
     isLoading,
     isError: error,
-    mutate,
+    mutate: () => url && queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 

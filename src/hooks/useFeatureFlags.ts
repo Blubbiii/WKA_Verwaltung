@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 
 interface FeatureFlags {
   "management-billing": boolean;
@@ -60,10 +60,12 @@ const DEFAULT_FLAGS: FeatureFlags = {
 const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : DEFAULT_FLAGS);
 
 export function useFeatureFlags() {
-  const { data, isLoading } = useSWR<FeatureFlags>("/api/features", fetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 60000, // Cache for 1 minute
-    fallbackData: DEFAULT_FLAGS,
+  const { data, isLoading } = useQuery<FeatureFlags>({
+    queryKey: ["/api/features"],
+    queryFn: () => fetcher("/api/features"),
+    refetchOnWindowFocus: false,
+    staleTime: 60000, // Cache for 1 minute
+    placeholderData: DEFAULT_FLAGS,
   });
 
   return {

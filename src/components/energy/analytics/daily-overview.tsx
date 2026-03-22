@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Zap,
@@ -159,18 +159,18 @@ export function DailyOverview() {
     setTo(range.to);
   }
 
-  // Build SWR key
-  const swrKey = useMemo(() => {
+  // Build query key
+  const queryUrl = useMemo(() => {
     const params = new URLSearchParams({ from, to });
     if (parkId !== "all") params.set("parkId", parkId);
     return `/api/energy/analytics/daily-overview?${params}`;
   }, [from, to, parkId]);
 
-  const { data, error, isLoading } = useSWR<DailyOverviewResponse>(
-    swrKey,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  const { data, error, isLoading } = useQuery<DailyOverviewResponse, Error>({
+    queryKey: [queryUrl],
+    queryFn: () => fetcher(queryUrl),
+    refetchOnWindowFocus: false,
+  });
 
   const kpis = data?.kpis;
 

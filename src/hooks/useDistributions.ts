@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DISTRIBUTION_STATUS, getStatusBadge } from "@/lib/status-config";
 
 const fetcher = async (url: string) => {
@@ -61,18 +61,22 @@ export interface Distribution {
  * Hook für alle Ausschuettungen einer Gesellschaft
  */
 export function useDistributions(fundId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<Distribution[]>(
-    fundId ? `/api/funds/${fundId}/distributions` : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  const queryClient = useQueryClient();
+  const url = fundId ? `/api/funds/${fundId}/distributions` : null;
+
+  const { data, error, isLoading } = useQuery<Distribution[], Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url!),
+    enabled: !!fundId,
+    refetchOnWindowFocus: false,
+  });
 
   return {
     distributions: data,
     isLoading,
     isError: !!error,
     error,
-    mutate,
+    mutate: () => url && queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 
@@ -80,20 +84,24 @@ export function useDistributions(fundId: string | null) {
  * Hook für eine einzelne Ausschuettung
  */
 export function useDistribution(fundId: string | null, distributionId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<Distribution>(
-    fundId && distributionId
-      ? `/api/funds/${fundId}/distributions/${distributionId}`
-      : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  const queryClient = useQueryClient();
+  const url = fundId && distributionId
+    ? `/api/funds/${fundId}/distributions/${distributionId}`
+    : null;
+
+  const { data, error, isLoading } = useQuery<Distribution, Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url!),
+    enabled: !!(fundId && distributionId),
+    refetchOnWindowFocus: false,
+  });
 
   return {
     distribution: data,
     isLoading,
     isError: !!error,
     error,
-    mutate,
+    mutate: () => url && queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 

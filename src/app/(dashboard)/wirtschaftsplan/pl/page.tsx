@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { Download, ChevronDown, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -255,7 +255,10 @@ export default function WirtschaftsplanPLPage() {
   const [parkId, setParkId] = useState<string>("all");
 
   const url = `/api/wirtschaftsplan/pl?year=${year}${parkId !== "all" ? `&parkId=${parkId}` : ""}`;
-  const { data, isLoading } = useSWR<PLData>(url, fetcher);
+  const { data, isLoading } = useQuery<PLData>({
+    queryKey: [url],
+    queryFn: () => fetcher(url),
+  });
 
   const handleExport = useCallback(async () => {
     if (!data) return;

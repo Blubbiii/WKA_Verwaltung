@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import {
   Bar,
   BarChart,
@@ -125,11 +125,12 @@ export function DrillDownMonthly({
   if (parkId && parkId !== "all") params.set("parkId", parkId);
   if (turbineId) params.set("turbineId", turbineId);
 
-  const { data: response, isLoading } = useSWR<ProductionsResponse>(
-    `/api/energy/scada/productions?${params.toString()}`,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  const productionUrl = `/api/energy/scada/productions?${params.toString()}`;
+  const { data: response, isLoading } = useQuery<ProductionsResponse>({
+    queryKey: [productionUrl],
+    queryFn: () => fetcher(productionUrl),
+    refetchOnWindowFocus: false,
+  });
 
   // Aggregate by day (may have multiple turbines)
   const chartData = useMemo<ChartDay[]>(() => {

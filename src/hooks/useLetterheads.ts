@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { LetterheadCompanyInfo } from "@/types/pdf";
 
 const fetcher = async (url: string) => {
@@ -55,6 +55,7 @@ interface UseLetterheadsOptions {
 }
 
 export function useLetterheads(options: UseLetterheadsOptions = {}) {
+  const queryClient = useQueryClient();
   const params = new URLSearchParams();
   if (options.parkId) params.set("parkId", options.parkId);
   if (options.fundId) params.set("fundId", options.fundId);
@@ -62,27 +63,34 @@ export function useLetterheads(options: UseLetterheadsOptions = {}) {
   const queryString = params.toString();
   const url = `/api/admin/letterheads${queryString ? `?${queryString}` : ""}`;
 
-  const { data, error, isLoading, mutate } = useSWR<Letterhead[]>(url, fetcher);
+  const { data, error, isLoading } = useQuery<Letterhead[], Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url),
+  });
 
   return {
     letterheads: data,
     isLoading,
     isError: error,
-    mutate,
+    mutate: () => queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 
 export function useLetterhead(id: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<Letterhead>(
-    id ? `/api/admin/letterheads/${id}` : null,
-    fetcher
-  );
+  const queryClient = useQueryClient();
+  const url = id ? `/api/admin/letterheads/${id}` : null;
+
+  const { data, error, isLoading } = useQuery<Letterhead, Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url!),
+    enabled: !!id,
+  });
 
   return {
     letterhead: data,
     isLoading,
     isError: error,
-    mutate,
+    mutate: () => url && queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 

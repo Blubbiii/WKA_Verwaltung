@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,10 @@ interface ExistingBudget {
 
 export default function NewBudgetPage() {
   const router = useRouter();
-  const { data: existingBudgets } = useSWR<ExistingBudget[]>("/api/wirtschaftsplan/budgets", fetcher);
+  const { data: existingBudgets } = useQuery<ExistingBudget[]>({
+    queryKey: ["/api/wirtschaftsplan/budgets"],
+    queryFn: () => fetcher("/api/wirtschaftsplan/budgets"),
+  });
 
   const [year, setYear] = useState(CURRENT_YEAR + 1);
   const [name, setName] = useState(`Wirtschaftsplan ${CURRENT_YEAR + 1}`);

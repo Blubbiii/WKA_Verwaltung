@@ -1,6 +1,6 @@
 "use client";
 
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import {
   TrendingUp,
@@ -79,10 +79,10 @@ function KpiCard({
 
 export default function WirtschaftsplanOverviewPage() {
   const t = useTranslations();
-  const { data, isLoading, error } = useSWR<OverviewData>(
-    "/api/wirtschaftsplan/overview",
-    fetcher
-  );
+  const { data, isLoading, error } = useQuery<OverviewData>({
+    queryKey: ["/api/wirtschaftsplan/overview"],
+    queryFn: () => fetcher("/api/wirtschaftsplan/overview"),
+  });
 
   const MONTH_NAMES = [
     "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",

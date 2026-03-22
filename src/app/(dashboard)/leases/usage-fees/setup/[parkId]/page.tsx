@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, use, useMemo } from "react";
+import { useState, use, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -125,28 +125,29 @@ export default function UsageFeeSetupPage({
   // ---------------------------------------------------------------------------
   // Data Fetching
   // ---------------------------------------------------------------------------
+  const setupUrl = `/api/leases/usage-fees/setup/${parkId}`;
   const {
     data: setupData,
     isLoading,
     error: isError,
-  } = useSWR<ParkSetupData>(
-    `/api/leases/usage-fees/setup/${parkId}`,
-    fetcher,
-    {
-      onSuccess: (data) => {
-        // Initialize state from server data
-        if (data.leaseSettlementMode) {
-          setSettlementMode(data.leaseSettlementMode);
-        }
-        // Initialize direct billing assignments from existing data
-        const assignments: Record<string, string | null> = {};
-        data.leases.forEach((lease) => {
-          assignments[lease.leaseId] = lease.directBillingFundId;
-        });
-        setDirectBillingAssignments(assignments);
-      },
+  } = useQuery<ParkSetupData>({
+    queryKey: [setupUrl],
+    queryFn: () => fetcher(setupUrl),
+  });
+
+  // Initialize state from server data once loaded (replaces SWR onSuccess)
+  useEffect(() => {
+    if (!setupData) return;
+    if (setupData.leaseSettlementMode) {
+      setSettlementMode(setupData.leaseSettlementMode);
     }
-  );
+    const assignments: Record<string, string | null> = {};
+    setupData.leases.forEach((lease) => {
+      assignments[lease.leaseId] = lease.directBillingFundId;
+    });
+    setDirectBillingAssignments(assignments);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setupData]);
 
   // ---------------------------------------------------------------------------
   // Derived Data

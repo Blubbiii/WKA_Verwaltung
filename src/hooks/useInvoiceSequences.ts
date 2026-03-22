@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -22,30 +22,34 @@ export interface InvoiceSequence {
 }
 
 export function useInvoiceSequences() {
-  const { data, error, isLoading, mutate } = useSWR<InvoiceSequence[]>(
-    "/api/admin/invoice-sequences",
-    fetcher
-  );
+  const queryClient = useQueryClient();
+  const { data, error, isLoading } = useQuery<InvoiceSequence[], Error>({
+    queryKey: ["/api/admin/invoice-sequences"],
+    queryFn: () => fetcher("/api/admin/invoice-sequences"),
+  });
 
   return {
     sequences: data,
     isLoading,
     isError: error,
-    mutate,
+    mutate: () => queryClient.invalidateQueries({ queryKey: ["/api/admin/invoice-sequences"] }),
   };
 }
 
 export function useInvoiceSequence(type: "INVOICE" | "CREDIT_NOTE") {
-  const { data, error, isLoading, mutate } = useSWR<InvoiceSequence>(
-    `/api/admin/invoice-sequences/${type}`,
-    fetcher
-  );
+  const queryClient = useQueryClient();
+  const url = `/api/admin/invoice-sequences/${type}`;
+
+  const { data, error, isLoading } = useQuery<InvoiceSequence, Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url),
+  });
 
   return {
     sequence: data,
     isLoading,
     isError: error,
-    mutate,
+    mutate: () => queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 

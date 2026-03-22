@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -68,6 +68,7 @@ interface UseSettlementPeriodsOptions {
 }
 
 export function useSettlementPeriods(options: UseSettlementPeriodsOptions = {}) {
+  const queryClient = useQueryClient();
   const params = new URLSearchParams();
   if (options.parkId) params.set("parkId", options.parkId);
   if (options.year) params.set("year", options.year.toString());
@@ -77,30 +78,34 @@ export function useSettlementPeriods(options: UseSettlementPeriodsOptions = {}) 
   const queryString = params.toString();
   const url = `/api/admin/settlement-periods${queryString ? `?${queryString}` : ""}`;
 
-  const { data, error, isLoading, mutate } = useSWR<SettlementPeriod[]>(
-    url,
-    fetcher
-  );
+  const { data, error, isLoading } = useQuery<SettlementPeriod[], Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url),
+  });
 
   return {
     periods: data,
     isLoading,
     isError: error,
-    mutate,
+    mutate: () => queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 
 export function useSettlementPeriod(id: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<SettlementPeriodWithDetails>(
-    id ? `/api/admin/settlement-periods/${id}` : null,
-    fetcher
-  );
+  const queryClient = useQueryClient();
+  const url = id ? `/api/admin/settlement-periods/${id}` : null;
+
+  const { data, error, isLoading } = useQuery<SettlementPeriodWithDetails, Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url!),
+    enabled: !!id,
+  });
 
   return {
     period: data,
     isLoading,
     isError: error,
-    mutate,
+    mutate: () => url && queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 

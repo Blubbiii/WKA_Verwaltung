@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { Radio, BarChart3, TrendingUp, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -238,17 +238,20 @@ export function DataExplorerTab() {
     return params.toString();
   }, [prodInterval, selectedParkId, selectedTurbineId, fromDate, toDate]);
 
+  const productionUrl = activeSubTab === "production"
+    ? `/api/energy/scada/productions?${productionParams}`
+    : null;
+
   const {
     data: productionData,
     error: productionError,
     isLoading: productionLoading,
-  } = useSWR<ProductionsResponse>(
-    activeSubTab === "production"
-      ? `/api/energy/scada/productions?${productionParams}`
-      : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  } = useQuery<ProductionsResponse>({
+    queryKey: [productionUrl],
+    queryFn: () => fetcher(productionUrl!),
+    enabled: !!productionUrl,
+    refetchOnWindowFocus: false,
+  });
 
   // -- Power Curve --
   const powerCurveParams = useMemo(() => {
@@ -261,17 +264,20 @@ export function DataExplorerTab() {
     return params.toString();
   }, [selectedParkId, selectedTurbineId, fromDate, toDate]);
 
+  const powerCurveUrl = activeSubTab === "power-curve"
+    ? `/api/energy/scada/power-curve?${powerCurveParams}`
+    : null;
+
   const {
     data: powerCurveData,
     error: powerCurveError,
     isLoading: powerCurveLoading,
-  } = useSWR<PowerCurveResponse>(
-    activeSubTab === "power-curve"
-      ? `/api/energy/scada/power-curve?${powerCurveParams}`
-      : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  } = useQuery<PowerCurveResponse>({
+    queryKey: [powerCurveUrl],
+    queryFn: () => fetcher(powerCurveUrl!),
+    enabled: !!powerCurveUrl,
+    refetchOnWindowFocus: false,
+  });
 
   // -- Wind Rose --
   const windRoseParams = useMemo(() => {
@@ -283,17 +289,20 @@ export function DataExplorerTab() {
     return params.toString();
   }, [selectedParkId, selectedTurbineId, fromDate, toDate]);
 
+  const windRoseUrl = activeSubTab === "wind-rose"
+    ? `/api/energy/scada/wind-rose?${windRoseParams}`
+    : null;
+
   const {
     data: windRoseData,
     error: windRoseError,
     isLoading: windRoseLoading,
-  } = useSWR<WindRoseResponse>(
-    activeSubTab === "wind-rose"
-      ? `/api/energy/scada/wind-rose?${windRoseParams}`
-      : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  } = useQuery<WindRoseResponse>({
+    queryKey: [windRoseUrl],
+    queryFn: () => fetcher(windRoseUrl!),
+    enabled: !!windRoseUrl,
+    refetchOnWindowFocus: false,
+  });
 
   // -- Daily (10min interval) --
   const dailyNextDay = useMemo(() => {
@@ -316,17 +325,20 @@ export function DataExplorerTab() {
     return params.toString();
   }, [selectedParkId, selectedTurbineId, dailyDate, dailyNextDay]);
 
+  const dailyUrl = activeSubTab === "daily"
+    ? `/api/energy/scada/productions?${dailyParams}`
+    : null;
+
   const {
     data: dailyData,
     error: dailyError,
     isLoading: dailyLoading,
-  } = useSWR<ProductionsResponse>(
-    activeSubTab === "daily"
-      ? `/api/energy/scada/productions?${dailyParams}`
-      : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  } = useQuery<ProductionsResponse>({
+    queryKey: [dailyUrl],
+    queryFn: () => fetcher(dailyUrl!),
+    enabled: !!dailyUrl,
+    refetchOnWindowFocus: false,
+  });
 
   // ---------------------------------------------------------------------------
   // Handlers

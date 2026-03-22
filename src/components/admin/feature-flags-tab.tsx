@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { mutate } from "swr";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -151,6 +151,7 @@ const DEFAULT_ACCOUNTING_SUB: AccountingSubFlags = {
 // =============================================================================
 
 export function FeatureFlagsTab() {
+  const queryClient = useQueryClient();
   const [tenants, setTenants] = useState<TenantWithFlags[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -268,7 +269,7 @@ export function FeatureFlagsTab() {
       toast.success(
         `${MODULE_LABELS[moduleKey]} für "${tenant.name}" ${newValue ? "aktiviert" : "deaktiviert"}`
       );
-      mutate("/api/features");
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
     } catch {
       // Revert optimistic update
       setTenants((prev) =>
@@ -324,7 +325,7 @@ export function FeatureFlagsTab() {
       toast.success(
         `${ACCOUNTING_SUB_LABELS[subKey]} für "${tenant.name}" ${newValue ? "aktiviert" : "deaktiviert"}`
       );
-      mutate("/api/features");
+      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
     } catch {
       // Revert optimistic update
       setTenants((prev) =>

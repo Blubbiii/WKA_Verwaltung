@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import {
   FileText,
   Eye,
@@ -78,7 +78,10 @@ export default function CostAllocationPage() {
     data: response,
     isLoading,
     error: isError,
-  } = useSWR<{ data: CostAllocationListItem[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>("/api/leases/cost-allocation", fetcher);
+  } = useQuery<{ data: CostAllocationListItem[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
+    queryKey: ["/api/leases/cost-allocation"],
+    queryFn: () => fetcher("/api/leases/cost-allocation"),
+  });
 
   const allocations = response?.data;
 

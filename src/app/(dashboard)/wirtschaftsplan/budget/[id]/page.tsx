@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, use } from "react";
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -187,11 +187,17 @@ function LineRow({ line, isLocked, costCenters, updateLine, removeLine }: LineRo
 export default function BudgetDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { data: budget, mutate } = useSWR<BudgetDetail>(
-    `/api/wirtschaftsplan/budgets/${id}`,
-    fetcher
-  );
-  const { data: costCenters } = useSWR<CostCenter[]>("/api/cost-centers", fetcher);
+  const queryClient = useQueryClient();
+  const budgetUrl = `/api/wirtschaftsplan/budgets/${id}`;
+  const { data: budget } = useQuery<BudgetDetail>({
+    queryKey: [budgetUrl],
+    queryFn: () => fetcher(budgetUrl),
+  });
+  const mutate = () => queryClient.invalidateQueries({ queryKey: [budgetUrl] });
+  const { data: costCenters } = useQuery<CostCenter[]>({
+    queryKey: ["/api/cost-centers"],
+    queryFn: () => fetcher("/api/cost-centers"),
+  });
 
   const [lines, setLines] = useState<BudgetLine[]>([]);
   const [initialized, setInitialized] = useState(false);

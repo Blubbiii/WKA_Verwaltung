@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -108,6 +108,7 @@ export interface UseEnergySettlementsOptions {
  * Hook für alle Stromabrechnungen mit Filtern und Paginierung
  */
 export function useEnergySettlements(options: UseEnergySettlementsOptions = {}) {
+  const queryClient = useQueryClient();
   const params = new URLSearchParams();
 
   if (options.parkId) params.set("parkId", options.parkId);
@@ -120,13 +121,11 @@ export function useEnergySettlements(options: UseEnergySettlementsOptions = {}) 
   const queryString = params.toString();
   const url = `/api/energy/settlements${queryString ? `?${queryString}` : ""}`;
 
-  const { data, error, isLoading, mutate } = useSWR<EnergySettlementsResponse>(
-    url,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    }
-  );
+  const { data, error, isLoading } = useQuery<EnergySettlementsResponse, Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url),
+    refetchOnWindowFocus: false,
+  });
 
   return {
     settlements: data?.data ?? [],
@@ -135,7 +134,7 @@ export function useEnergySettlements(options: UseEnergySettlementsOptions = {}) 
     isLoading,
     isError: !!error,
     error,
-    mutate,
+    mutate: () => queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 
@@ -143,20 +142,22 @@ export function useEnergySettlements(options: UseEnergySettlementsOptions = {}) 
  * Hook für eine einzelne Stromabrechnung
  */
 export function useEnergySettlement(id: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<EnergySettlement>(
-    id ? `/api/energy/settlements/${id}` : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    }
-  );
+  const queryClient = useQueryClient();
+  const url = id ? `/api/energy/settlements/${id}` : null;
+
+  const { data, error, isLoading } = useQuery<EnergySettlement, Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url!),
+    enabled: !!id,
+    refetchOnWindowFocus: false,
+  });
 
   return {
     settlement: data,
     isLoading,
     isError: !!error,
     error,
-    mutate,
+    mutate: () => url && queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 

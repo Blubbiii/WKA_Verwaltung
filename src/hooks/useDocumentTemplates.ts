@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DocumentTemplateLayout } from "@/types/pdf";
 
 const fetcher = async (url: string) => {
@@ -36,6 +36,7 @@ interface UseDocumentTemplatesOptions {
 }
 
 export function useDocumentTemplates(options: UseDocumentTemplatesOptions = {}) {
+  const queryClient = useQueryClient();
   const params = new URLSearchParams();
   if (options.documentType) params.set("documentType", options.documentType);
   if (options.parkId) params.set("parkId", options.parkId);
@@ -43,30 +44,34 @@ export function useDocumentTemplates(options: UseDocumentTemplatesOptions = {}) 
   const queryString = params.toString();
   const url = `/api/admin/document-templates${queryString ? `?${queryString}` : ""}`;
 
-  const { data, error, isLoading, mutate } = useSWR<DocumentTemplate[]>(
-    url,
-    fetcher
-  );
+  const { data, error, isLoading } = useQuery<DocumentTemplate[], Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url),
+  });
 
   return {
     templates: data,
     isLoading,
     isError: error,
-    mutate,
+    mutate: () => queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 
 export function useDocumentTemplate(id: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<DocumentTemplate>(
-    id ? `/api/admin/document-templates/${id}` : null,
-    fetcher
-  );
+  const queryClient = useQueryClient();
+  const url = id ? `/api/admin/document-templates/${id}` : null;
+
+  const { data, error, isLoading } = useQuery<DocumentTemplate, Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url!),
+    enabled: !!id,
+  });
 
   return {
     template: data,
     isLoading,
     isError: error,
-    mutate,
+    mutate: () => url && queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }
 

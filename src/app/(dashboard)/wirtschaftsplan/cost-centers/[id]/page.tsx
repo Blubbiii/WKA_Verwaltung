@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Building2, Wind, Briefcase, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,10 +41,11 @@ interface CostCenterDetail {
 export default function CostCenterDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { data: costCenter, isLoading } = useSWR<CostCenterDetail>(
-    `/api/cost-centers/${id}`,
-    fetcher
-  );
+  const costCenterUrl = `/api/cost-centers/${id}`;
+  const { data: costCenter, isLoading } = useQuery<CostCenterDetail>({
+    queryKey: [costCenterUrl],
+    queryFn: () => fetcher(costCenterUrl),
+  });
 
   if (isLoading) {
     return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   Card,
@@ -96,11 +96,12 @@ export function PortalEnergyAnalytics() {
     (_, i) => currentYear - i
   );
 
-  const { data: response, error, isLoading } = useSWR<{ data: PortalAnalyticsResponse }>(
-    `/api/portal/energy-analytics?year=${selectedYear}`,
-    fetcher,
-    { revalidateOnFocus: false }
-  );
+  const analyticsUrl = `/api/portal/energy-analytics?year=${selectedYear}`;
+  const { data: response, error, isLoading } = useQuery<{ data: PortalAnalyticsResponse }>({
+    queryKey: [analyticsUrl],
+    queryFn: () => fetcher(analyticsUrl),
+    refetchOnWindowFocus: false,
+  });
 
   const analytics = response?.data;
 

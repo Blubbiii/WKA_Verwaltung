@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface PermissionsData {
   permissions: string[];
@@ -38,7 +38,7 @@ const fetcher = (url: string) =>
 /**
  * Client-side hook to fetch and check user permissions.
  *
- * Uses SWR for deduplication, caching, and stale-while-revalidate.
+ * Uses React Query for deduplication, caching, and stale-while-revalidate.
  * Multiple components calling usePermissions() share the same cached data.
  *
  * @example
@@ -46,16 +46,15 @@ const fetcher = (url: string) =>
  * if (loaded && hasPermission("parks:read")) { ... }
  */
 export function usePermissions(): UsePermissionsResult {
-  const { data, error, isLoading, mutate } = useSWR<PermissionsData>(
-    "/api/auth/my-permissions",
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 60_000,
-      refreshInterval: 0,
-    }
-  );
+  const queryClient = useQueryClient();
+  const { data, error, isLoading } = useQuery<PermissionsData, Error>({
+    queryKey: ["/api/auth/my-permissions"],
+    queryFn: () => fetcher("/api/auth/my-permissions"),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 60_000,
+    refetchInterval: false,
+  });
 
   const permissions = data?.permissions ?? [];
   const roleHierarchy = data?.roleHierarchy ?? 0;
@@ -87,6 +86,6 @@ export function usePermissions(): UsePermissionsResult {
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
-    refresh: () => mutate(),
+    refresh: () => queryClient.invalidateQueries({ queryKey: ["/api/auth/my-permissions"] }),
   };
 }

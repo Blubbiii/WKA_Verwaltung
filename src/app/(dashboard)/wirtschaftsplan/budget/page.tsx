@@ -1,6 +1,6 @@
 "use client";
 
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Plus, FileText, Lock, CheckCircle, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,10 @@ interface Budget {
 
 export default function BudgetListPage() {
   const router = useRouter();
-  const { data, isLoading } = useSWR<Budget[]>("/api/wirtschaftsplan/budgets", fetcher);
+  const { data, isLoading } = useQuery<Budget[]>({
+    queryKey: ["/api/wirtschaftsplan/budgets"],
+    queryFn: () => fetcher("/api/wirtschaftsplan/budgets"),
+  });
 
   const byYear = (data ?? []).reduce<Record<number, Budget[]>>((acc, b) => {
     acc[b.year] = acc[b.year] ?? [];

@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -27,20 +27,19 @@ export interface Park {
  * Hook für alle Parks des aktuellen Mandanten
  */
 export function useParks() {
-  const { data, error, isLoading, mutate } = useSWR<Park[]>(
-    "/api/parks",
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    }
-  );
+  const queryClient = useQueryClient();
+  const { data, error, isLoading } = useQuery<Park[], Error>({
+    queryKey: ["/api/parks"],
+    queryFn: () => fetcher("/api/parks"),
+    refetchOnWindowFocus: false,
+  });
 
   return {
     parks: data,
     isLoading,
     isError: !!error,
     error,
-    mutate,
+    mutate: () => queryClient.invalidateQueries({ queryKey: ["/api/parks"] }),
   };
 }
 
@@ -48,19 +47,21 @@ export function useParks() {
  * Hook für einen einzelnen Park
  */
 export function usePark(id: string | null) {
-  const { data, error, isLoading, mutate } = useSWR<Park>(
-    id ? `/api/parks/${id}` : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-    }
-  );
+  const queryClient = useQueryClient();
+  const url = id ? `/api/parks/${id}` : null;
+
+  const { data, error, isLoading } = useQuery<Park, Error>({
+    queryKey: [url],
+    queryFn: () => fetcher(url!),
+    enabled: !!id,
+    refetchOnWindowFocus: false,
+  });
 
   return {
     park: data,
     isLoading,
     isError: !!error,
     error,
-    mutate,
+    mutate: () => url && queryClient.invalidateQueries({ queryKey: [url] }),
   };
 }

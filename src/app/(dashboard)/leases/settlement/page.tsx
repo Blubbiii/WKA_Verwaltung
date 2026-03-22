@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useQuery } from "@tanstack/react-query";
 import {
   Plus,
   FileText,
@@ -175,7 +175,11 @@ export default function LeaseSettlementOverviewPage() {
     data: apiResponse,
     isLoading: settlementsLoading,
     error: settlementsError,
-  } = useSWR<ApiResponse>(apiUrl, fetcher, { revalidateOnFocus: false });
+  } = useQuery<ApiResponse>({
+    queryKey: [apiUrl],
+    queryFn: () => fetcher(apiUrl),
+    refetchOnWindowFocus: false,
+  });
 
   const settlements: SettlementListItem[] = apiResponse?.data || [];
   const pagination = apiResponse?.pagination;
