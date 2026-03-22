@@ -32,7 +32,12 @@ export async function PATCH(
   const body = await request.json();
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    const firstError =
+      Object.values(fieldErrors).flat()[0] ??
+      parsed.error.flatten().formErrors[0] ??
+      "Ungültige Eingabe";
+    return NextResponse.json({ error: firstError }, { status: 400 });
   }
 
   const link = await prisma.sidebarLink.update({

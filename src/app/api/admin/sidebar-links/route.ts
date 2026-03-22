@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 
 const createSchema = z.object({
   label: z.string().min(1).max(100),
-  url: z.string().url(),
+  url: z.string().url({ message: "Bitte eine gültige URL eingeben (z.B. https://example.com)" }),
   icon: z.string().default("Globe"),
   description: z.string().max(255).optional(),
   openInNewTab: z.boolean().default(true),
@@ -17,12 +17,15 @@ export async function GET() {
   const check = await requireAdmin();
   if (!check.authorized) return check.error!;
 
-  const links = await prisma.sidebarLink.findMany({
-    where: { tenantId: check.tenantId },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-  });
-
-  return NextResponse.json(links);
+  try {
+    const links = await prisma.sidebarLink.findMany({
+      where: { tenantId: check.tenantId },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    });
+    return NextResponse.json(links);
+  } catch {
+    return NextResponse.json({ error: "Datenbankfehler beim Laden der Links" }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -32,15 +35,24 @@ export async function POST(request: Request) {
   const body = await request.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    // Return the first field error as a plain string so the client can display it
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    const firstError =
+      Object.values(fieldErrors).flat()[0] ??
+      parsed.error.flatten().formErrors[0] ??
+      "Ungültige Eingabe";
+    return NextResponse.json({ error: firstError }, { status: 400 });
   }
 
-  const link = await prisma.sidebarLink.create({
-    data: {
-      ...parsed.data,
-      tenantId: check.tenantId!,
-    },
-  });
-
-  return NextResponse.json(link, { status: 201 });
+  try {
+    const link = await prisma.sidebarLink.create({
+      data: {
+        ...parsed.data,
+        tenantId: check.tenantId!,
+      },
+    });
+    return NextResponse.json(link, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Datenbankfehler beim Erstellen" }, { status: 500 });
+  }
 }

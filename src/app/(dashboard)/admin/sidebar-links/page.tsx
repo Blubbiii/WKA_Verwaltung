@@ -141,28 +141,36 @@ export default function SidebarLinksPage() {
     if (!form.label.trim()) { toast.error("Bezeichnung ist erforderlich"); return; }
     if (!form.url.trim()) { toast.error("URL ist erforderlich"); return; }
 
+    // Normalize URL: auto-prepend https:// if no protocol given
+    const normalizedUrl = /^https?:\/\//i.test(form.url.trim())
+      ? form.url.trim()
+      : "https://" + form.url.trim();
+
     setSaving(true);
     try {
-      const url = editingLink
+      const endpoint = editingLink
         ? `/api/admin/sidebar-links/${editingLink.id}`
         : "/api/admin/sidebar-links";
       const method = editingLink ? "PATCH" : "POST";
 
-      const res = await fetch(url, {
+      const res = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          url: normalizedUrl,
           description: form.description.trim() || null,
         }),
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Speichern");
+        // err.error is always a string now (API returns first field error as string)
+        throw new Error(typeof err.error === "string" ? err.error : "Fehler beim Speichern");
       }
 
       toast.success(editingLink ? "Link aktualisiert" : "Link erstellt");
+      setForm((f) => ({ ...f, url: normalizedUrl }));
       setDialogOpen(false);
       load();
     } catch (err) {
