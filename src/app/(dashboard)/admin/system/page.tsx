@@ -124,6 +124,9 @@ interface SystemInfo {
     external: number;
   };
   serverTime: string;
+  ssoEnabled: boolean;
+  ssoProviderName: string;
+  ssoIssuer: string | null;
 }
 
 interface SystemStats {
@@ -712,6 +715,32 @@ export default function SystemHealthPage() {
                     <TableCell className="text-muted-foreground">External Speicher</TableCell>
                     <TableCell className="text-right font-mono">
                       {formatBytes(stats.systemInfo.memoryUsage.external)}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="text-muted-foreground flex items-center gap-1.5">
+                      <Shield className="h-3.5 w-3.5" />
+                      SSO (Authentik)
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {stats.systemInfo.ssoEnabled ? (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          <span className="font-mono text-sm">
+                            {stats.systemInfo.ssoProviderName}
+                            {stats.systemInfo.ssoIssuer && (
+                              <span className="text-muted-foreground ml-1">
+                                ({stats.systemInfo.ssoIssuer})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <XCircle className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">Deaktiviert</span>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 </TableBody>

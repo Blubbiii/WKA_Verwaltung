@@ -93,6 +93,12 @@ async function fetchSystemStats(): Promise<DashboardStats> {
     uptime: Math.floor(process.uptime()),
     memoryUsage: process.memoryUsage(),
     serverTime: new Date().toISOString(),
+    // SSO configuration status (no secrets exposed — just boolean + display name)
+    ssoEnabled: !!process.env.AUTHENTIK_ISSUER,
+    ssoProviderName: process.env.AUTHENTIK_DISPLAY_NAME || "Authentik",
+    ssoIssuer: process.env.AUTHENTIK_ISSUER
+      ? new URL(process.env.AUTHENTIK_ISSUER).hostname
+      : null,
   };
 
   // Database record counts

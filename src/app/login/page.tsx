@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Card,
   CardContent,
@@ -16,7 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Wind, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Wind, Loader2, AlertCircle, CheckCircle2, Shield } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -29,7 +30,23 @@ function LoginForm() {
   const error = searchParams.get("error");
 
   const [isLoading, setIsLoading] = useState(false);
+  const [ssoEnabled, setSsoEnabled] = useState(false);
+  const [ssoProviderName, setSsoProviderName] = useState("SSO Login");
+  const [isSsoLoading, setIsSsoLoading] = useState(false);
   const resetSuccess = searchParams.get("reset") === "success";
+
+  // Fetch SSO configuration from the server (non-sensitive, public endpoint)
+  useEffect(() => {
+    fetch("/api/auth/sso-config")
+      .then((res) => res.json())
+      .then((data: { ssoEnabled: boolean; providerName: string }) => {
+        setSsoEnabled(data.ssoEnabled);
+        setSsoProviderName(data.providerName);
+      })
+      .catch(() => {
+        // SSO config fetch failed — silently disable the button
+      });
+  }, []);
 
   // Security: Strip credentials from URL if they leaked as query params
   useEffect(() => {
@@ -134,6 +151,34 @@ function LoginForm() {
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Anmelden
           </Button>
+
+          {ssoEnabled && (
+            <>
+              <div className="relative flex w-full items-center gap-3">
+                <Separator className="flex-1" />
+                <span className="text-xs text-muted-foreground">oder</span>
+                <Separator className="flex-1" />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={isSsoLoading}
+                onClick={() => {
+                  setIsSsoLoading(true);
+                  signIn("authentik", { callbackUrl: "/dashboard" });
+                }}
+              >
+                {isSsoLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Shield className="mr-2 h-4 w-4" />
+                )}
+                {ssoProviderName}
+              </Button>
+            </>
+          )}
+
           <Link
             href="/forgot-password"
             className="text-sm text-muted-foreground hover:text-primary transition-colors"
