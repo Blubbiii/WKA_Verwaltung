@@ -61,3 +61,4 @@ temp/
 # Misc
 .vercel
 .turbo
+.claude/worktrees/
