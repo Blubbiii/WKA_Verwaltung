@@ -304,7 +304,10 @@ export function AvailabilityChart({
                   ]}
                 />
                 <Tooltip
-                  formatter={(value: number) => [`${dec2Fmt.format(value)} %`, "Verfügbarkeit"]}
+                  formatter={(value) => {
+                    const num = typeof value === "number" ? value : 0;
+                    return [`${dec2Fmt.format(num)} %`, "Verfügbarkeit"];
+                  }}
                   contentStyle={{ borderRadius: 8 }}
                 />
                 <Line

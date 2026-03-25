@@ -266,10 +266,13 @@ export function PortalEnergyAnalytics() {
                   label={{ value: "MWh", angle: -90, position: "insideLeft" }}
                 />
                 <Tooltip
-                  formatter={(value: number, name: string) => [
-                    `${fmtInt(Math.round(value / 1000))} MWh`,
-                    name === "currentYear" ? String(selectedYear) : String(selectedYear - 1),
-                  ]}
+                  formatter={(value, name) => {
+                    const num = typeof value === "number" ? value : 0;
+                    return [
+                      `${fmtInt(Math.round(num / 1000))} MWh`,
+                      String(name ?? "") === "currentYear" ? String(selectedYear) : String(selectedYear - 1),
+                    ];
+                  }}
                 />
                 <Legend
                   formatter={(value: string) =>
@@ -304,7 +307,10 @@ export function PortalEnergyAnalytics() {
                 <XAxis dataKey="label" />
                 <YAxis domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
                 <Tooltip
-                  formatter={(value: number) => [`${fmtNum(value, 2)} %`, "Verfügbarkeit"]}
+                  formatter={(value) => {
+                    const num = typeof value === "number" ? value : 0;
+                    return [`${fmtNum(num, 2)} %`, "Verfügbarkeit"];
+                  }}
                 />
                 <Line
                   type="monotone"

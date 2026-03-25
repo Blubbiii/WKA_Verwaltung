@@ -357,12 +357,14 @@ export function DailyOverview() {
                       }}
                     />
                     <Tooltip
-                      formatter={(value: number, name: string) => [
-                        name === "productionKwh"
-                          ? formatKwh(value)
-                          : `${value.toFixed(1)} m/s`,
-                        name === "productionKwh" ? "Produktion" : "Wind",
-                      ]}
+                      formatter={(value, name) => {
+                        const num = typeof value === "number" ? value : 0;
+                        const key = String(name ?? "");
+                        return [
+                          key === "productionKwh" ? formatKwh(num) : `${num.toFixed(1)} m/s`,
+                          key === "productionKwh" ? "Produktion" : "Wind",
+                        ];
+                      }}
                       labelFormatter={(v) => {
                         const d = new Date(v);
                         return d.toLocaleDateString("de-DE");

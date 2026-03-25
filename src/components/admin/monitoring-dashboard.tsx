@@ -257,7 +257,10 @@ export function MonitoringDashboard() {
                       fontSize: 12,
                     }}
                     labelStyle={{ color: "hsl(var(--foreground))" }}
-                    formatter={(value: number) => [`${value.toFixed(2)} req/s`, "Rate"]}
+                    formatter={(value) => {
+                      const num = typeof value === "number" ? value : 0;
+                      return [`${num.toFixed(2)} req/s`, "Rate"];
+                    }}
                   />
                   <Area
                     type="monotone"
@@ -308,7 +311,10 @@ export function MonitoringDashboard() {
                       fontSize: 12,
                     }}
                     labelStyle={{ color: "hsl(var(--foreground))" }}
-                    formatter={(value: number) => [`${value} ms`, "P95"]}
+                    formatter={(value) => {
+                      const num = typeof value === "number" ? value : 0;
+                      return [`${num} ms`, "P95"];
+                    }}
                   />
                   <Line
                     type="monotone"

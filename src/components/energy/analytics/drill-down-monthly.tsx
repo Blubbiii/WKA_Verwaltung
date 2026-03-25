@@ -294,8 +294,9 @@ export function DrillDownMonthly({
                 name="Produktion"
                 radius={[3, 3, 0, 0]}
                 onClick={(data) => {
-                  if (onDayClick && data?.dataPoints > 0) {
-                    onDayClick(data.day);
+                  const payload = data?.payload as ChartDay | undefined;
+                  if (onDayClick && payload && payload.dataPoints > 0) {
+                    onDayClick(payload.day);
                   }
                 }}
                 style={{ cursor: onDayClick ? "pointer" : "default" }}

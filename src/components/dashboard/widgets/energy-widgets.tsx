@@ -256,9 +256,10 @@ export function TurbineStatusChart({ className }: { className?: string }) {
               dataKey="value"
               strokeWidth={2}
               stroke="hsl(var(--card))"
-              label={({ name, percent }) =>
-                percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ""
-              }
+              label={(props) => {
+                const { name, percent = 0 } = props;
+                return percent > 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : "";
+              }}
               labelLine={false}
             >
               {chartData.map((entry, i) => (
@@ -266,7 +267,7 @@ export function TurbineStatusChart({ className }: { className?: string }) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => `${value} Turbinen`}
+              formatter={(value) => `${typeof value === "number" ? value : 0} Turbinen`}
               contentStyle={{
                 backgroundColor: colors.tooltipBg,
                 border: `1px solid ${colors.tooltipBorder}`,
@@ -330,7 +331,7 @@ export function ProductionForecastChart({ className }: { className?: string }) {
             <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: colors.text }} />
             <YAxis tick={{ fontSize: 11, fill: colors.text }} width={45} />
-            <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => `${value} MWh`} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(value) => `${typeof value === "number" ? value : 0} MWh`} />
             <Legend wrapperStyle={{ fontSize: "11px" }} />
             <Line
               type="monotone"
@@ -413,7 +414,7 @@ export function RevenueByParkChart({ className }: { className?: string }) {
             />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(value: number) => formatCurrency(value)}
+              formatter={(value) => formatCurrency(typeof value === "number" ? value : 0)}
             />
             <Bar dataKey="revenue" name="Erlös" fill={colors.primary} radius={[0, 4, 4, 0]} />
           </BarChart>

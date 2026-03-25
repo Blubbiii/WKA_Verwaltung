@@ -217,20 +217,20 @@ interface InvoiceStatusChartProps {
 
 // Custom label for the donut chart
 function renderCustomLabel({
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-  percent,
+  cx = 0,
+  cy = 0,
+  midAngle = 0,
+  innerRadius = 0,
+  outerRadius = 0,
+  percent = 0,
 }: {
-  cx: number;
-  cy: number;
-  midAngle: number;
-  innerRadius: number;
-  outerRadius: number;
-  percent: number;
-  name: string;
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  percent?: number;
+  name?: string;
 }) {
   if (percent < 0.05) return null; // Hide labels for very small slices
 
@@ -314,9 +314,9 @@ export function InvoiceStatusChart({
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number, name: string) => [
-                `${value} Rechnungen`,
-                name,
+              formatter={(value, name) => [
+                `${typeof value === "number" ? value : 0} Rechnungen`,
+                String(name ?? ""),
               ]}
             />
             <Legend

@@ -138,7 +138,7 @@ export function MonthlyInvoicesChart({
               width={40}
             />
             <Tooltip
-              formatter={(value: number) => formatCurrency(value)}
+              formatter={(value) => formatCurrency(typeof value === "number" ? value : 0)}
               labelStyle={{ fontWeight: 600, color: "hsl(var(--foreground))" }}
               contentStyle={tooltipStyle}
             />
@@ -230,7 +230,7 @@ export function CapitalDevelopmentChart({
               width={45}
             />
             <Tooltip
-              formatter={(value: number) => formatCurrency(value)}
+              formatter={(value) => formatCurrency(typeof value === "number" ? value : 0)}
               labelStyle={{ fontWeight: 600, color: "hsl(var(--foreground))" }}
               contentStyle={tooltipStyle}
             />
@@ -312,9 +312,10 @@ export function DocumentsByTypeChart({
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) =>
-                percent > 0.05 ? `${name}\n${(percent * 100).toFixed(0)}%` : ""
-              }
+              label={(props) => {
+                const { name, percent = 0 } = props;
+                return percent > 0.05 ? `${name}\n${(percent * 100).toFixed(0)}%` : "";
+              }}
               innerRadius="45%"
               outerRadius="70%"
               fill="hsl(var(--chart-1))"
@@ -330,7 +331,7 @@ export function DocumentsByTypeChart({
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => `${value} Dokumente`}
+              formatter={(value) => `${typeof value === "number" ? value : 0} Dokumente`}
               contentStyle={tooltipStyle}
             />
           </PieChart>

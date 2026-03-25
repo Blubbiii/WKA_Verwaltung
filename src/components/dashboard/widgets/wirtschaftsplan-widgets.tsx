@@ -195,7 +195,10 @@ export function WirtschaftsplanPLChart({ className }: { className?: string }) {
                 borderRadius: "6px",
                 fontSize: 12,
               }}
-              formatter={(value: number, name: string) => [`${value.toFixed(1)}k€`, name]}
+              formatter={(value, name) => {
+                const num = typeof value === "number" ? value : 0;
+                return [`${num.toFixed(1)}k€`, String(name ?? "")];
+              }}
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="Ist" fill="hsl(var(--chart-1))" radius={[2, 2, 0, 0]} />

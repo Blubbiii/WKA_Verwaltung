@@ -249,7 +249,10 @@ export default function LiquiditaetContent() {
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} />
                   <Tooltip
-                    formatter={(value: number, name: string) => [fmt(Math.abs(value)) + " €", name]}
+                    formatter={(value, name) => {
+                      const num = typeof value === "number" ? value : 0;
+                      return [fmt(Math.abs(num)) + " €", String(name ?? "")];
+                    }}
                     labelStyle={{ fontWeight: "bold" }}
                   />
                   <Legend />
