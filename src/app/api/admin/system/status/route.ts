@@ -64,16 +64,10 @@ export async function GET() {
       ? "degraded"
       : "healthy";
 
+  // Use NEXT_PUBLIC_APP_VERSION injected at build time via next.config.ts env
+  // (avoids dynamic require() which Turbopack traces as full-project NFT entry)
   const version =
-    process.env.npm_package_version ??
-    (() => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        return (require("../../../../../package.json") as { version: string }).version;
-      } catch {
-        return "0.0.0";
-      }
-    })();
+    process.env.NEXT_PUBLIC_APP_VERSION ?? process.env.npm_package_version ?? "0.0.0";
 
   return NextResponse.json({
     status,

@@ -1,12 +1,14 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import createNextIntlPlugin from "next-intl/plugin";
 import type { NextConfig } from "next";
+// Static import avoids Turbopack tracing the entire project via dynamic require()
+import { version as appVersion } from "./package.json";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
   env: {
-    NEXT_PUBLIC_APP_VERSION: require("./package.json").version,
+    NEXT_PUBLIC_APP_VERSION: appVersion,
   },
   // Prevent Turbopack from bundling packages that use worker threads or native bindings
   serverExternalPackages: ["bullmq", "ioredis", "pino", "pino-pretty", "exceljs", "prom-client"],
