@@ -12,7 +12,6 @@ import { formatCurrency, formatDateTime } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -37,10 +36,8 @@ import {
   Calendar,
   Clock,
   Receipt,
-  Euro,
   CheckCircle,
   XCircle,
-  AlertTriangle,
   Settings,
   History,
   Loader2,
@@ -96,7 +93,7 @@ const FREQUENCY_LABELS: Record<string, string> = {
 // formatDate with datetime → use central formatDateTime from @/lib/format
 const formatDate = formatDateTime;
 
-function ParameterDisplay({ parameters, ruleType }: { parameters: Record<string, unknown>; ruleType: string }) {
+function ParameterDisplay({ parameters }: { parameters: Record<string, unknown>; ruleType?: string }) {
   const renderValue = (key: string, value: unknown): string => {
     if (value === null || value === undefined) return "-";
     if (typeof value === "boolean") return value ? "Ja" : "Nein";
@@ -186,7 +183,7 @@ export default function BillingRuleDetailPage({
       const data = await response.json();
       setRule(data);
       setExecutions(data.recentExecutions || []);
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Laden der Regel");
     } finally {
       setIsLoading(false);

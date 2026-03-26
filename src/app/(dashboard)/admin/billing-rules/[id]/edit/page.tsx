@@ -79,7 +79,7 @@ export default function EditBillingRulePage({
           const parksData = await parksRes.json();
           setParks(parksData.data || []);
         }
-      } catch (error) {
+      } catch {
         toast.error("Fehler beim Laden der Daten");
       } finally {
         setIsLoading(false);

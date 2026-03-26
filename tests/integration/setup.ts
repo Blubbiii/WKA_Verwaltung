@@ -99,6 +99,15 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
+// Mock next/server's after() — requires request context not available in tests
+vi.mock("next/server", async (importOriginal) => {
+  const mod = await importOriginal<typeof import("next/server")>();
+  return {
+    ...mod,
+    after: vi.fn(),
+  };
+});
+
 // Mock next/headers
 vi.mock("next/headers", () => ({
   headers: vi.fn().mockResolvedValue(

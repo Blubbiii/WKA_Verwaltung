@@ -12,9 +12,7 @@ import {
   Loader2,
   Download,
   ShieldCheck,
-  FileText,
   HardDrive,
-  Calendar,
   Clock,
   CheckCircle2,
   XCircle,
@@ -162,13 +160,6 @@ function formatBytes(bytes: number): string {
   const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
-
-function formatUserName(user: ArchivedDoc["archivedBy"]): string {
-  if (user.firstName || user.lastName) {
-    return `${user.firstName || ""} ${user.lastName || ""}`.trim();
-  }
-  return user.email;
 }
 
 // ---------------------------------------------------------------------------
