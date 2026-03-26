@@ -85,7 +85,7 @@ async function postHandler(request: NextRequest) {
     return NextResponse.json(budget, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
     }
     if ((error as { code?: string }).code === "P2002") {
       return NextResponse.json({ error: "Ein Budget mit diesem Namen und Jahr existiert bereits" }, { status: 409 });

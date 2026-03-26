@@ -117,7 +117,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Validierungsfehler",
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );
@@ -208,7 +208,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: error.errors },
+        { error: "Validierungsfehler", details: error.issues },
         { status: 400 }
       );
     }

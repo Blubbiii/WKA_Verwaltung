@@ -68,7 +68,7 @@ const wizardRequestSchema = z.object({
     operatingHours: z.string().nullable(),
     availabilityPct: z.string().nullable(),
   }),
-  data: z.array(z.record(z.any())).min(1).max(5000),
+  data: z.array(z.record(z.string(), z.any())).min(1).max(5000),
 });
 
 // Direct API request (programmatic)
@@ -473,7 +473,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: "Validierungsfehler im Import-Format", details: error.errors },
+        { success: false, error: "Validierungsfehler im Import-Format", details: error.issues },
         { status: 400 }
       );
     }

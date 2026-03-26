@@ -113,7 +113,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: error.errors },
+        { error: "Validierungsfehler", details: error.issues },
         { status: 400 }
       );
     }

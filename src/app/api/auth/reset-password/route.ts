@@ -37,7 +37,7 @@ export async function POST(request: Request) {
         {
           success: false,
           error: "Validierungsfehler",
-          details: parsed.error.errors.map((e) => ({
+          details: parsed.error.issues.map((e) => ({
             field: e.path.join("."),
             message: e.message,
           })),

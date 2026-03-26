@@ -19,12 +19,12 @@ const resourceAccessCreateSchema = z.object({
   userId: z.string().uuid("Ungültige User-ID"),
   resourceType: z.enum(
     Object.values(RESOURCE_TYPES) as [string, ...string[]],
-    { errorMap: () => ({ message: "Ungültiger Ressourcen-Typ" }) }
+    { error: "Ungültiger Ressourcen-Typ" }
   ),
   resourceId: z.string().uuid("Ungültige Ressourcen-ID"),
   accessLevel: z.enum(
     Object.values(ACCESS_LEVELS) as [string, ...string[]],
-    { errorMap: () => ({ message: "Ungültiges Zugriffslevel" }) }
+    { error: "Ungültiges Zugriffslevel" }
   ),
   expiresAt: z.string().datetime().optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
@@ -185,7 +185,7 @@ const check = await requireAdmin();
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: error.errors },
+        { error: "Validierungsfehler", details: error.issues },
         { status: 400 }
       );
     }
@@ -229,7 +229,7 @@ const check = await requireAdmin();
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: error.errors },
+        { error: "Validierungsfehler", details: error.issues },
         { status: 400 }
       );
     }

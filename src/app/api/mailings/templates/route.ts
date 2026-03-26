@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ template }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Ungültige Eingabe", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Ungültige Eingabe", details: error.issues }, { status: 400 });
     }
     logger.error({ err: error }, "[MailingTemplates] POST failed");
     return NextResponse.json({ error: "Fehler beim Erstellen der Vorlage" }, { status: 500 });

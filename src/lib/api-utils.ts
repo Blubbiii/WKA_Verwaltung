@@ -53,7 +53,7 @@ export function serverError(message = "Interner Serverfehler") {
 export function handleApiError(error: unknown, fallbackMessage: string) {
   if (error instanceof z.ZodError) {
     return NextResponse.json(
-      { error: "Validierungsfehler", details: error.errors },
+      { error: "Validierungsfehler", details: error.issues },
       { status: 400 },
     );
   }

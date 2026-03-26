@@ -415,7 +415,7 @@ function validateConfigForProvider(
     if (error instanceof z.ZodError) {
       return {
         valid: false,
-        error: error.errors.map((e) => e.message).join(", "),
+        error: error.issues.map((e) => e.message).join(", "),
       };
     }
     return { valid: false, error: "Ungültige Konfiguration" };

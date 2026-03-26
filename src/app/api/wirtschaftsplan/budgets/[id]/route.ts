@@ -78,7 +78,7 @@ async function putHandler(
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
     }
     logger.error({ err: error }, "Error updating budget");
     return NextResponse.json({ error: "Fehler beim Aktualisieren" }, { status: 500 });

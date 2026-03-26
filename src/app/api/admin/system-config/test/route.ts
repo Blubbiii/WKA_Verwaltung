@@ -17,7 +17,7 @@ import { EMAIL_REGEX } from "@/lib/validation/patterns";
 
 const testConfigSchema = z.object({
   type: z.enum(["email", "weather", "storage", "paperless"]),
-  testParams: z.record(z.string()).optional(), // Additional test parameters
+  testParams: z.record(z.string(), z.string()).optional(), // Additional test parameters
 });
 
 // =============================================================================

@@ -74,7 +74,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     return NextResponse.json({ template });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Ungültige Eingabe", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Ungültige Eingabe", details: error.issues }, { status: 400 });
     }
     logger.error({ err: error }, "[MailingTemplate] PUT failed");
     return NextResponse.json({ error: "Fehler beim Aktualisieren" }, { status: 500 });

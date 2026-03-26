@@ -21,7 +21,7 @@ const createRuleSchema = z.object({
   frequency: z.enum(["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "CUSTOM_CRON"]),
   cronPattern: z.string().max(100).optional(),
   dayOfMonth: z.number().int().min(1).max(28).optional(),
-  parameters: z.record(z.unknown()),
+  parameters: z.record(z.string(), z.unknown()),
   isActive: z.boolean().optional().default(true),
 });
 
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: error.errors },
+        { error: "Validierungsfehler", details: error.issues },
         { status: 400 }
       );
     }

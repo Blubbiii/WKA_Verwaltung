@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Ungültige Parameter", details: error.errors },
+        { error: "Ungültige Parameter", details: error.issues },
         { status: 400 }
       );
     }
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungültige Eingabedaten", details: parsed.error.errors },
+        { error: "Ungültige Eingabedaten", details: parsed.error.issues },
         { status: 400 }
       );
     }

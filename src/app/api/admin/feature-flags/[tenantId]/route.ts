@@ -43,7 +43,7 @@ export async function PUT(
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungültige Feature-Flag-Daten", details: parsed.error.errors },
+        { error: "Ungültige Feature-Flag-Daten", details: parsed.error.issues },
         { status: 400 }
       );
     }

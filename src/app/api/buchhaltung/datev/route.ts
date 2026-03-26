@@ -42,7 +42,7 @@ async function getHandler(request: NextRequest) {
   });
 
   if (!parseResult.success) {
-    return NextResponse.json({ error: "Ungueltige Parameter", details: parseResult.error.errors }, { status: 400 });
+    return NextResponse.json({ error: "Ungueltige Parameter", details: parseResult.error.issues }, { status: 400 });
   }
 
   const params = parseResult.data;

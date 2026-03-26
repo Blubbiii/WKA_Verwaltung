@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: batch });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
     }
     logger.error({ err: error }, "Error creating SEPA batch");
     return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });

@@ -127,7 +127,7 @@ export async function PATCH(
     // Handle null values for JSON fields
     const updateData: Prisma.LetterheadUpdateInput = {
       ...data,
-      companyInfo: data.companyInfo === null ? Prisma.JsonNull : data.companyInfo,
+      companyInfo: data.companyInfo === null ? Prisma.JsonNull : (data.companyInfo as Prisma.InputJsonValue | undefined),
     };
 
     const updated = await prisma.letterhead.update({
@@ -147,7 +147,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: error.errors },
+        { error: "Validierungsfehler", details: error.issues },
         { status: 400 }
       );
     }

@@ -106,7 +106,7 @@ export async function PATCH(
 
     const updateData: Prisma.DocumentTemplateUpdateInput = {};
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.layout !== undefined) updateData.layout = data.layout;
+    if (data.layout !== undefined) updateData.layout = data.layout as Prisma.InputJsonValue;
     if (data.customCss !== undefined) updateData.customCss = data.customCss;
     if (data.footerText !== undefined) updateData.footerText = data.footerText;
     if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
@@ -126,7 +126,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: error.errors },
+        { error: "Validierungsfehler", details: error.issues },
         { status: 400 }
       );
     }

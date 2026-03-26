@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungültige Eingabedaten", details: parsed.error.errors },
+        { error: "Ungültige Eingabedaten", details: parsed.error.issues },
         { status: 400 }
       );
     }

@@ -41,7 +41,7 @@ const postReportSchema = z.object({
   reportType: z.string().min(1, "Report-Typ ist erforderlich"),
   format: z.string().min(1, "Format ist erforderlich"),
   fileBase64: z.string().min(1, "Datei ist erforderlich"),
-  parameters: z.record(z.unknown()).optional(),
+  parameters: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ===========================================

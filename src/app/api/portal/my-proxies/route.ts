@@ -8,7 +8,7 @@ import { apiLogger as logger } from "@/lib/logger";
 const createProxySchema = z.object({
   granteeId: z.string().uuid("Ungültige Vollmachtnehmer-ID"),
   type: z.enum(["GENERAL", "SINGLE"], {
-    errorMap: () => ({ message: "Typ muss GENERAL oder SINGLE sein" }),
+    error: "Typ muss GENERAL oder SINGLE sein",
   }),
   voteId: z.string().uuid("Ungültige Abstimmungs-ID").optional(),
 }).refine(
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
     const parsed = createProxySchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.errors[0].message },
+        { error: parsed.error.issues[0].message },
         { status: 400 }
       );
     }

@@ -57,7 +57,7 @@ export async function PUT(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungültige Daten", details: parsed.error.errors },
+        { error: "Ungültige Daten", details: parsed.error.issues },
         { status: 400 }
       );
     }

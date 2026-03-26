@@ -39,7 +39,7 @@ export async function PUT(
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungültige Limit-Daten", details: parsed.error.errors },
+        { error: "Ungültige Limit-Daten", details: parsed.error.issues },
         { status: 400 }
       );
     }

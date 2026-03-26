@@ -9,8 +9,8 @@ const updateTemplateSchema = z.object({
   layout: z.object({}).passthrough().optional(),
   headerHtml: z.string().optional().nullable(),
   footerHtml: z.string().optional().nullable(),
-  styles: z.record(z.unknown()).optional().nullable(),
-  variables: z.record(z.unknown()).optional().nullable(),
+  styles: z.record(z.string(), z.unknown()).optional().nullable(),
+  variables: z.record(z.string(), z.unknown()).optional().nullable(),
   isDefault: z.boolean().optional(),
 });
 
@@ -106,7 +106,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: error.errors },
+        { error: "Validierungsfehler", details: error.issues },
         { status: 400 }
       );
     }

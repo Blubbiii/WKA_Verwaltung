@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const parsed = importHistoricalSettlementSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.errors },
+        { error: "Validierungsfehler", details: parsed.error.issues },
         { status: 400 }
       );
     }

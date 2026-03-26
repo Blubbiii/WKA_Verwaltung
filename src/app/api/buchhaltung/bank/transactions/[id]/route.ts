@@ -77,7 +77,7 @@ export async function PATCH(
     return NextResponse.json({ data: updated });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.errors }, { status: 400 });
+      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
     }
     logger.error({ err: error }, "Error updating bank transaction");
     return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });

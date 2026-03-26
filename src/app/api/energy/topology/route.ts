@@ -21,7 +21,7 @@ const nodeSchema = z.object({
   posX: z.number().min(0).max(100),
   posY: z.number().min(0).max(100),
   turbineId: z.string().nullable().optional(),
-  metadata: z.record(z.unknown()).nullable().optional(),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 const connectionSchema = z.object({
@@ -30,7 +30,7 @@ const connectionSchema = z.object({
   toNodeId: z.string(),
   cableType: z.string().nullable().optional(),
   lengthM: z.number().nonnegative().nullable().optional(),
-  metadata: z.record(z.unknown()).nullable().optional(),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 const saveTopologySchema = z.object({
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: error.errors },
+        { error: "Validierungsfehler", details: error.issues },
         { status: 400 }
       );
     }

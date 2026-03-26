@@ -29,7 +29,7 @@ import { apiLogger as logger } from "@/lib/logger";
 const featureSchema = z.object({
   index: z.number(),
   geometry: z.unknown(),
-  properties: z.record(z.unknown()),
+  properties: z.record(z.string(), z.unknown()),
   centroid: z
     .object({
       lat: z.number(),
@@ -50,10 +50,10 @@ const ownerOverrideSchema = z.object({
 
 const importConfirmSchema = z.object({
   parkId: z.string().uuid("Ungültige Park-ID").optional().or(z.literal("")),
-  plotMapping: z.record(z.string().nullable()),
-  ownerMapping: z.record(z.string().nullable()),
+  plotMapping: z.record(z.string(), z.string().nullable()),
+  ownerMapping: z.record(z.string(), z.string().nullable()),
   features: z.array(featureSchema).min(1, "Keine Features zum Importieren"),
-  ownerOverrides: z.record(ownerOverrideSchema).optional(),
+  ownerOverrides: z.record(z.string(), ownerOverrideSchema).optional(),
   leaseDefaults: z.object({
     startDate: z.string().min(1, "Startdatum ist erforderlich"),
     status: z.enum(["DRAFT", "ACTIVE"]),
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     const parsed = importConfirmSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.errors },
+        { error: "Validierungsfehler", details: parsed.error.issues },
         { status: 400 },
       );
     }
@@ -489,7 +489,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Validierungsfehler", details: error.errors },
+        { error: "Validierungsfehler", details: error.issues },
         { status: 400 },
       );
     }
