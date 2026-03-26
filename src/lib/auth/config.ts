@@ -135,7 +135,8 @@ export const authConfig: NextAuthConfig = {
           if (activeTenantSlug) session.user.tenantSlug = activeTenantSlug;
           session.user.tenantLogoUrl = activeTenantLogoUrl ?? null;
           if (activeRoleHierarchy) {
-            session.user.roleHierarchy = parseInt(activeRoleHierarchy, 10);
+            const parsed = parseInt(activeRoleHierarchy, 10);
+            session.user.roleHierarchy = Number.isFinite(parsed) ? parsed : 0;
           }
         }
       }

@@ -98,8 +98,22 @@ export async function requirePermission(
   const userId = session.user.id;
   const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
 
+  // Validate roleHierarchy is a finite integer within the expected range.
+  // Reject sessions carrying invalid values (e.g. NaN, Infinity, negative numbers, or
+  // absurdly large values that could result from a tampered header).
+  const rawHierarchy = session.user.roleHierarchy ?? 0;
+  if (!Number.isFinite(rawHierarchy) || rawHierarchy < 0 || rawHierarchy > 200) {
+    return {
+      authorized: false,
+      error: NextResponse.json(
+        { error: "Ungültige Sitzungsdaten" },
+        { status: 403 }
+      ),
+    };
+  }
+
   // Superadmin (hierarchy >= 100) bypasses all permission checks.
-  if ((session.user.roleHierarchy ?? 0) >= 100) {
+  if (rawHierarchy >= 100) {
     return { authorized: true, userId, tenantId };
   }
 
@@ -168,8 +182,20 @@ export async function requirePermissionWithResources(
   const userId = session.user.id;
   const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
 
+  // Validate roleHierarchy (same bounds check as requirePermission)
+  const rawHierarchy = session.user.roleHierarchy ?? 0;
+  if (!Number.isFinite(rawHierarchy) || rawHierarchy < 0 || rawHierarchy > 200) {
+    return {
+      authorized: false,
+      error: NextResponse.json(
+        { error: "Ungültige Sitzungsdaten" },
+        { status: 403 }
+      ),
+    };
+  }
+
   // Superadmin bypasses all checks
-  if ((session.user.roleHierarchy ?? 0) >= 100) {
+  if (rawHierarchy >= 100) {
     return { authorized: true, userId, tenantId, resourceRestricted: false, allowedResourceIds: [] };
   }
 
@@ -318,8 +344,14 @@ export async function requirePagePermission(
   const userId = session.user.id;
   const tenantId = ((await getActiveTenantOverride(userId)) ?? session.user.tenantId) || "";
 
+  // Validate roleHierarchy (same bounds check as API helpers)
+  const rawHierarchy = session.user.roleHierarchy ?? 0;
+  if (!Number.isFinite(rawHierarchy) || rawHierarchy < 0 || rawHierarchy > 200) {
+    redirect(redirectTo);
+  }
+
   // Superadmin bypasses all checks
-  if ((session.user.roleHierarchy ?? 0) >= 100) {
+  if (rawHierarchy >= 100) {
     return { userId, tenantId };
   }
 

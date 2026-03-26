@@ -35,6 +35,14 @@ export async function POST(
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
 
+    // Fail-safe: tenantId must be present to prevent cross-tenant data access
+    if (!check.tenantId) {
+      return NextResponse.json(
+        { error: "Tenant-Kontext fehlt" },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
 
     const body: DeliverBody = await request.json();
@@ -50,7 +58,7 @@ export async function POST(
 
     // Load settlement with all items that have invoices
     const settlement = await prisma.leaseRevenueSettlement.findFirst({
-      where: { id, ...(check.tenantId ? { tenantId: check.tenantId } : {}) },
+      where: { id, tenantId: check.tenantId },
       include: {
         items: {
           include: {

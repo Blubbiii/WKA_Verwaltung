@@ -82,10 +82,7 @@ export async function GET(
   } catch (error) {
     logger.error({ err: error }, "Error generating PDF");
     return NextResponse.json(
-      {
-        error: "Fehler bei der PDF-Generierung",
-        details: error instanceof Error ? error.message : "Unbekannter Fehler",
-      },
+      { error: "Fehler bei der PDF-Generierung" },
       { status: 500 }
     );
   }

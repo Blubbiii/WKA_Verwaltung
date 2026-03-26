@@ -69,13 +69,29 @@ export async function POST(request: NextRequest) {
     const skipped: string[] = [];
 
     for (const file of files) {
+      // Reject filenames containing path separators, null bytes, or dots (beyond the extension dot)
+      // path.basename() strips directory components, but we want to reject them outright.
+      if (/[/\\\x00]/.test(file.name)) {
+        return NextResponse.json(
+          { error: `Ungültiger Dateiname: ${file.name}` },
+          { status: 400 }
+        );
+      }
+
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
       if (!SCADA_EXTENSIONS.has(ext)) {
         skipped.push(file.name);
         continue;
       }
 
+      // Validate that the filename stem contains only safe characters (alphanumeric + underscores/dashes)
       const baseName = path.basename(file.name, `.${ext}`);
+      if (!/^[\w\-]+$/.test(baseName)) {
+        return NextResponse.json(
+          { error: `Ungültiger Dateiname: ${file.name}` },
+          { status: 400 }
+        );
+      }
 
       // Try to extract date from filename (YYYYMMDD format)
       let targetDir: string;
