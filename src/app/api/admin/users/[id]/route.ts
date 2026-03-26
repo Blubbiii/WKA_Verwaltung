@@ -40,54 +40,49 @@ export async function GET(
 
     const { id } = await params;
 
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        status: true,
-        lastLoginAt: true,
-        createdAt: true,
-        tenantId: true,
-        tenant: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        shareholder: {
-          select: {
-            id: true,
-            fund: {
-              select: { id: true, name: true },
-            },
-          },
-        },
-        userTenantMemberships: {
-          select: {
-            tenantId: true,
-            isPrimary: true,
-            status: true,
-            tenant: { select: { id: true, name: true } },
-          },
-          orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+    const superadmin = await isSuperadmin();
+    const userSelect = {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      status: true,
+      lastLoginAt: true,
+      createdAt: true,
+      tenantId: true,
+      tenant: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
         },
       },
-    });
+      shareholder: {
+        select: {
+          id: true,
+          fund: {
+            select: { id: true, name: true },
+          },
+        },
+      },
+      userTenantMemberships: {
+        select: {
+          tenantId: true,
+          isPrimary: true,
+          status: true,
+          tenant: { select: { id: true, name: true } },
+        },
+        orderBy: [{ isPrimary: "desc" as const }, { createdAt: "asc" as const }],
+      },
+    };
+
+    // Superadmins can view any user; regular admins are restricted to their own tenant
+    const user = superadmin
+      ? await prisma.user.findUnique({ where: { id }, select: userSelect })
+      : await prisma.user.findFirst({ where: { id, tenantId: check.tenantId! }, select: userSelect });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
-    }
-
-    // Tenant isolation: non-SUPERADMIN can only view users from their own tenant
-    if (!(await isSuperadmin()) && user.tenantId !== check.tenantId) {
       return NextResponse.json(
         { error: "Benutzer nicht gefunden" },
         { status: 404 }
@@ -115,20 +110,13 @@ export async function PATCH(
 
     const { id } = await params;
 
-    const existingUser = await prisma.user.findUnique({
-      where: { id },
-      omit: { passwordHash: true },
-    });
+    const superadmin = await isSuperadmin();
+    // Superadmins can modify any user; regular admins are restricted to their own tenant
+    const existingUser = superadmin
+      ? await prisma.user.findUnique({ where: { id }, omit: { passwordHash: true } })
+      : await prisma.user.findFirst({ where: { id, tenantId: check.tenantId! }, omit: { passwordHash: true } });
 
     if (!existingUser) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
-    }
-
-    // Tenant isolation: non-SUPERADMIN can only modify users from their own tenant
-    if (!(await isSuperadmin()) && existingUser.tenantId !== check.tenantId) {
       return NextResponse.json(
         { error: "Benutzer nicht gefunden" },
         { status: 404 }
@@ -265,20 +253,13 @@ export async function DELETE(
       );
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { id },
-      select: { id: true, tenantId: true },
-    });
+    const superadmin = await isSuperadmin();
+    // Superadmins can deactivate any user; regular admins are restricted to their own tenant
+    const existingUser = superadmin
+      ? await prisma.user.findUnique({ where: { id }, select: { id: true, tenantId: true } })
+      : await prisma.user.findFirst({ where: { id, tenantId: check.tenantId! }, select: { id: true, tenantId: true } });
 
     if (!existingUser) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
-    }
-
-    // Tenant isolation: non-SUPERADMIN can only deactivate users from their own tenant
-    if (!(await isSuperadmin()) && existingUser.tenantId !== check.tenantId) {
       return NextResponse.json(
         { error: "Benutzer nicht gefunden" },
         { status: 404 }

@@ -71,7 +71,7 @@ async function putHandler(
       return NextResponse.json({ error: "Kostenstelle nicht gefunden" }, { status: 404 });
     }
 
-    const updated = await prisma.costCenter.findUnique({ where: { id } });
+    const updated = await prisma.costCenter.findFirst({ where: { id, tenantId: check.tenantId! } });
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -44,8 +44,8 @@ export async function GET(
 
     const { id } = await params;
 
-    const settlement = await prisma.energySettlement.findUnique({
-      where: { id },
+    const settlement = await prisma.energySettlement.findFirst({
+      where: { id, tenantId: check.tenantId! },
       include: {
         park: {
           select: {
@@ -93,14 +93,6 @@ export async function GET(
       return NextResponse.json(
         { error: "Stromabrechnung nicht gefunden" },
         { status: 404 }
-      );
-    }
-
-    // Tenant-Check
-    if (settlement.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
       );
     }
 

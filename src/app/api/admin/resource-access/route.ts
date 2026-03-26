@@ -139,10 +139,11 @@ const check = await requireAdmin();
       );
     }
 
-    // Prüfen ob Ressource existiert
+    // Prüfen ob Ressource existiert (mit Tenant-Filter, um Cross-Tenant-Zugriff zu verhindern)
     const resourceExists = await checkResourceExists(
       validatedData.resourceType,
-      validatedData.resourceId
+      validatedData.resourceId,
+      check.tenantId!
     );
 
     if (!resourceExists) {
@@ -247,44 +248,47 @@ const check = await requireAdmin();
 // ============================================================================
 
 /**
- * Prueft ob eine Ressource existiert
+ * Prueft ob eine Ressource existiert und zum angegebenen Tenant gehoert
  */
 async function checkResourceExists(
   resourceType: string,
-  resourceId: string
+  resourceId: string,
+  tenantId: string
 ): Promise<boolean> {
   try {
     switch (resourceType) {
       case RESOURCE_TYPES.PARK: {
-        const park = await prisma.park.findUnique({ where: { id: resourceId } });
+        const park = await prisma.park.findFirst({ where: { id: resourceId, tenantId } });
         return !!park;
       }
       case RESOURCE_TYPES.FUND: {
-        const fund = await prisma.fund.findUnique({ where: { id: resourceId } });
+        const fund = await prisma.fund.findFirst({ where: { id: resourceId, tenantId } });
         return !!fund;
       }
       case RESOURCE_TYPES.TURBINE: {
-        const turbine = await prisma.turbine.findUnique({ where: { id: resourceId } });
+        // Turbine has no direct tenantId - scope via parent park
+        const turbine = await prisma.turbine.findFirst({ where: { id: resourceId, park: { tenantId } } });
         return !!turbine;
       }
       case RESOURCE_TYPES.DOCUMENT: {
-        const doc = await prisma.document.findUnique({ where: { id: resourceId } });
+        const doc = await prisma.document.findFirst({ where: { id: resourceId, tenantId } });
         return !!doc;
       }
       case RESOURCE_TYPES.CONTRACT: {
-        const contract = await prisma.contract.findUnique({ where: { id: resourceId } });
+        const contract = await prisma.contract.findFirst({ where: { id: resourceId, tenantId } });
         return !!contract;
       }
       case RESOURCE_TYPES.LEASE: {
-        const lease = await prisma.lease.findUnique({ where: { id: resourceId } });
+        const lease = await prisma.lease.findFirst({ where: { id: resourceId, tenantId } });
         return !!lease;
       }
       case RESOURCE_TYPES.INVOICE: {
-        const invoice = await prisma.invoice.findUnique({ where: { id: resourceId } });
+        const invoice = await prisma.invoice.findFirst({ where: { id: resourceId, tenantId } });
         return !!invoice;
       }
       case RESOURCE_TYPES.SHAREHOLDER: {
-        const shareholder = await prisma.shareholder.findUnique({ where: { id: resourceId } });
+        // Shareholder has no direct tenantId - scope via parent fund
+        const shareholder = await prisma.shareholder.findFirst({ where: { id: resourceId, fund: { tenantId } } });
         return !!shareholder;
       }
       default:

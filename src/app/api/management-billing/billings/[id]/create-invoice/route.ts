@@ -53,7 +53,7 @@ export async function POST(
     }
 
     if (
-      check.tenantId &&
+      !check.tenantId ||
       billing.stakeholder.stakeholderTenantId !== check.tenantId
     ) {
       return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 });
