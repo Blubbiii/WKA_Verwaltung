@@ -54,6 +54,7 @@ import {
   Droplets,
   Code2,
   Link2,
+  Map,
 } from "lucide-react";
 
 // Re-export icons so sidebar.tsx can import them from here for SIDEBAR_LINK_ICONS
@@ -113,6 +114,7 @@ export {
   Droplets,
   Code2,
   Link2,
+  Map,
 };
 
 // ---------------------------------------------------------------------------
@@ -317,6 +319,13 @@ export const navGroups: NavGroup[] = [
           { title: "Zahlungen", titleKey: "payments", href: "/leases/payments", icon: CreditCard },
           { title: "SHP-Import", titleKey: "shpImport", href: "/leases/import-shp", icon: Upload },
         ],
+      },
+      {
+        title: "GIS-Karte",
+        titleKey: "gis",
+        href: "/gis",
+        icon: Map,
+        permission: "plots:read",
       },
     ],
   },

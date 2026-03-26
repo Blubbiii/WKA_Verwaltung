@@ -22,6 +22,10 @@ const plotCreateSchema = z.object({
   notes: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
   geometry: z.any().optional(),
+  plotAreas: z.array(z.object({
+    areaType: z.enum(["WEA_STANDORT", "POOL", "WEG", "AUSGLEICH", "KABEL"]),
+    areaSqm: z.number().positive(),
+  })).optional(),
 });
 
 // GET /api/plots
@@ -265,17 +269,32 @@ const check = await requirePermission(PERMISSIONS.PLOTS_CREATE);
       );
     }
 
-    const plot = await prisma.plot.create({
-      data: {
-        ...validatedData,
-        tenantId: check.tenantId!,
-        fieldNumber: validatedData.fieldNumber || "0",
-      },
-      include: {
-        park: {
-          select: { id: true, name: true, shortName: true },
+    // Extract plotAreas before spreading into Prisma data (not a direct field)
+    const { plotAreas: plotAreasInput, ...plotData } = validatedData;
+
+    const plot = await prisma.$transaction(async (tx) => {
+      const newPlot = await tx.plot.create({
+        data: {
+          ...plotData,
+          tenantId: check.tenantId!,
+          fieldNumber: plotData.fieldNumber || "0",
         },
-      },
+        include: {
+          park: {
+            select: { id: true, name: true, shortName: true },
+          },
+        },
+      });
+      if (plotAreasInput && plotAreasInput.length > 0) {
+        await tx.plotArea.createMany({
+          data: plotAreasInput.map((a) => ({
+            plotId: newPlot.id,
+            areaType: a.areaType,
+            areaSqm: a.areaSqm,
+          })),
+        });
+      }
+      return newPlot;
     });
 
     return NextResponse.json(plot, { status: 201 });
