@@ -112,7 +112,7 @@ run_migrations() {
     # Prisma db push: Synchronisiert das Schema direkt mit der Datenbank.
     # Besser als 'migrate deploy' weil keine lueckenlose Migrations-Historie noetig.
     # Prisma CLI liegt in /prisma-cli/ (separates Verzeichnis mit allen Deps)
-    node /prisma-cli/node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss 2>&1
+    node /prisma-cli/node_modules/prisma/build/index.js db push --accept-data-loss 2>&1
 
     if [ $? -eq 0 ]; then
         echo "   Database schema is up to date!"
