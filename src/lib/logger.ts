@@ -7,7 +7,11 @@ export const logger = pino({
   level: logLevel,
   ...(isProduction
     ? {
-        // Production: JSON format for log aggregation
+        // Production: compact JSON for Docker/Portainer log aggregation.
+        // base: null removes pid + hostname (redundant with Docker container metadata).
+        // Shorter lines prevent Portainer's log viewer from wrapping JSON fields
+        // across multiple visual rows (which causes repeated timestamps in the UI).
+        base: null,
         formatters: {
           level: (label: string) => ({ level: label }),
         },
