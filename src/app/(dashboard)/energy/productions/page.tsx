@@ -137,10 +137,6 @@ const numberFormatter = new Intl.NumberFormat("de-DE", {
   maximumFractionDigits: 2,
 });
 
-function formatKwh(value: number): string {
-  return numberFormatter.format(value);
-}
-
 function formatMWh(kwh: number): string {
   const mwh = kwh / 1000;
   return numberFormatter.format(mwh);

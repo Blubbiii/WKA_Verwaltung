@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -663,8 +662,6 @@ interface ImportStepProps {
 }
 
 function ImportStep({ isImporting, importProgress, importResult, onRetry }: ImportStepProps) {
-  const router = useRouter();
-
   if (isImporting) {
     return (
       <Card>
@@ -772,7 +769,6 @@ function ImportStep({ isImporting, importProgress, importResult, onRetry }: Impo
 // ============================================================================
 
 export default function ProductionDataImportPage() {
-  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
 
   // Step 1: File Upload
@@ -899,7 +895,7 @@ export default function ProductionDataImportPage() {
 
       const results = await response.json();
       setValidationResults(results.validationResults);
-    } catch (error) {
+    } catch {
       toast.error("Fehler bei der Validierung");
       // Fallback: client-side validation
       const results: ValidationResult[] = parsedData.rows.map((row, index) => {

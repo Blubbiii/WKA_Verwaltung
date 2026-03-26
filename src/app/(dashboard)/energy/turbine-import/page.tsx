@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -121,14 +120,6 @@ const ACCEPTED_EXTENSIONS = [".csv", ".xlsx", ".xls"];
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-function formatNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "-";
-  return new Intl.NumberFormat("de-DE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
 function parseCSV(text: string): { headers: string[]; rows: ParsedRow[] } {
   const lines = text.trim().split(/\r?\n/);
@@ -828,8 +819,6 @@ function ImportStep({
   importResult,
   onRetry,
 }: ImportStepProps) {
-  const router = useRouter();
-
   if (isImporting) {
     return (
       <Card>
@@ -949,7 +938,6 @@ function ImportStep({
 // ============================================================================
 
 export default function TurbineDataImportPage() {
-  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
 
   // Step 1: File Upload
@@ -1023,7 +1011,7 @@ export default function TurbineDataImportPage() {
     }
 
     loadRevenueTypes();
-  }, []);
+  }, [defaultRevenueType]);
 
   // Handle file selection
   const handleFileSelect = useCallback(async (selectedFile: File) => {

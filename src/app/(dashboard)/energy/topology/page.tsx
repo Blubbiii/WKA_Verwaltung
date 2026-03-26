@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Select,
@@ -108,15 +108,8 @@ export default function TopologyPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Zoom controls via ref to the canvas component
-  const zoomRef = useRef<{
-    zoomIn: () => void;
-    zoomOut: () => void;
-    zoomReset: () => void;
-  } | null>(null);
-
   // Track zoom with simple state updates
-  const [zoomAction, setZoomAction] = useState<"in" | "out" | "reset" | null>(null);
+  const [, setZoomAction] = useState<"in" | "out" | "reset" | null>(null);
 
   // --------------------------------------------------------------------------
   // FETCH PARKS
