@@ -23,7 +23,7 @@
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { prisma } from '@/lib/prisma';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client-runtime-utils';
 import type { Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 

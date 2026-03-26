@@ -16,7 +16,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { InvoiceType, TaxType, ContractStatus } from "@prisma/client";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client-runtime-utils";
 import {
   getNextInvoiceNumber,
   getNextInvoiceNumbers,

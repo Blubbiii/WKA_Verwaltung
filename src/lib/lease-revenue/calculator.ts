@@ -16,7 +16,7 @@
  */
 
 import { Prisma } from "@prisma/client";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client-runtime-utils";
 import { prisma } from "@/lib/prisma";
 import type {
   SettlementCalculationInput,

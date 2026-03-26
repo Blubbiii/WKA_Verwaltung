@@ -1,6 +1,6 @@
 // Analytics Service for WindparkManager Dashboard
 import { prisma } from "@/lib/prisma";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client-runtime-utils";
 import {
   DashboardKPIs,
   DashboardKPIsResponse,

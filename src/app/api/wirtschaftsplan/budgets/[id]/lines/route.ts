@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client-runtime-utils";
 
 const monthSchema = z.number().or(z.string()).transform((v) => new Decimal(Number(v) || 0));
 

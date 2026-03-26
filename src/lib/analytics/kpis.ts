@@ -1,5 +1,5 @@
 // KPI Type Definitions for WindparkManager Analytics Dashboard
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client-runtime-utils";
 
 // =============================================================================
 // KPI INTERFACES

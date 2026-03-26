@@ -11,7 +11,7 @@
  * 3. generateAllocationInvoices - Invoices from Netzgesellschaft to operator companies (1 per operator, mixed tax types)
  */
 
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client-runtime-utils";
 import { Prisma, TaxType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {

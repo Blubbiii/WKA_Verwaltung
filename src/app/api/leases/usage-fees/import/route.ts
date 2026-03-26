@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import { importHistoricalSettlementSchema } from "@/types/billing";
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client-runtime-utils";
 
 // =============================================================================
 // POST /api/leases/usage-fees/import - Import historical settlement (CLOSED)

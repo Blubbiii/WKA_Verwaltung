@@ -1,4 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import { withEncryption } from "@/lib/encryption-middleware";
 import { logger } from "@/lib/logger";
 
@@ -14,10 +16,21 @@ import { logger } from "@/lib/logger";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: ReturnType<typeof withEncryption> | undefined;
+  pgPool: Pool | undefined;
 };
 
 function createPrismaClient() {
+  // Pool as singleton — reused across hot-reloads in development
+  const pool = globalForPrisma.pgPool ?? new Pool({
+    connectionString: process.env.DATABASE_URL!,
+  });
+  globalForPrisma.pgPool = pool;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adapter = new PrismaPg(pool as any);
+
   const baseClient = new PrismaClient({
+    adapter,
     log:
       process.env.NODE_ENV === "development"
         ? [

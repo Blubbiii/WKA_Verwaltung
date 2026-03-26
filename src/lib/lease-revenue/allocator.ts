@@ -19,7 +19,7 @@
  *    - netPayableEur = taxableAmountEur + exemptAmountEur - directSettlementEur
  */
 
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from "@prisma/client-runtime-utils";
 import { prisma } from "@/lib/prisma";
 import { getTaxRate } from "@/lib/tax/tax-rates";
 
