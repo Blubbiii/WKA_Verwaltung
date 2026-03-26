@@ -25,7 +25,7 @@ const querySchema = z.object({
   /** Optional: Only invoices with specific status */
   status: z.enum(["DRAFT", "SENT", "PAID", "CANCELLED"]).optional(),
   /** Optional: Filter by fund */
-  fundId: z.string().uuid().optional(),
+  fundId: z.uuid().optional(),
   /** DATEV configuration overrides */
   consultantNumber: z.string().max(20).optional(),
   clientNumber: z.string().max(20).optional(),

@@ -34,7 +34,7 @@ const setConfigSchema = z.object({
   category: z.enum(VALID_CATEGORIES),
   encrypted: z.boolean().optional(),
   label: z.string().optional(),
-  tenantId: z.string().uuid().nullable().optional(),
+  tenantId: z.uuid().nullable().optional(),
 });
 
 const bulkSetConfigSchema = z.object({
@@ -47,7 +47,7 @@ const bulkSetConfigSchema = z.object({
       label: z.string().optional(),
     })
   ),
-  tenantId: z.string().uuid().nullable().optional(),
+  tenantId: z.uuid().nullable().optional(),
 });
 
 // =============================================================================

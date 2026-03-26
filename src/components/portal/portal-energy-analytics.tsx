@@ -38,7 +38,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
 } from "recharts";
 import {
   TrendingUp,
@@ -257,8 +256,7 @@ export function PortalEnergyAnalytics() {
               Keine Produktionsdaten verfügbar
             </p>
           ) : (
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={productionChart}>
+              <BarChart width="100%" height={320} data={productionChart}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" />
                 <YAxis
@@ -282,7 +280,6 @@ export function PortalEnergyAnalytics() {
                 <Bar dataKey="currentYear" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="previousYear" fill="#d1d5db" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
@@ -301,8 +298,7 @@ export function PortalEnergyAnalytics() {
               Keine Verfügbarkeitsdaten vorhanden
             </p>
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={availabilityTrend}>
+              <LineChart width="100%" height={250} data={availabilityTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" />
                 <YAxis domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} />
@@ -321,7 +317,6 @@ export function PortalEnergyAnalytics() {
                   name="Verfügbarkeit"
                 />
               </LineChart>
-            </ResponsiveContainer>
           )}
         </CardContent>
       </Card>

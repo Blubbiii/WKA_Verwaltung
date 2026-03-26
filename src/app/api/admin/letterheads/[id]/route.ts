@@ -7,7 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 
 const updateLetterheadSchema = z.object({
   name: z.string().min(1).optional(),
-  headerImageUrl: z.string().url().optional().nullable(),
+  headerImageUrl: z.url().optional().nullable(),
   headerHeight: z.number().min(0).max(200).optional(),
   logoPosition: z.enum(["top-left", "top-center", "top-right"]).optional(),
   logoWidth: z.number().min(10).max(100).optional(),
@@ -15,7 +15,7 @@ const updateLetterheadSchema = z.object({
   logoMarginLeft: z.number().min(0).max(50).optional(),
   senderAddress: z.string().optional().nullable(),
   companyInfo: z.object({}).passthrough().optional().nullable(),
-  footerImageUrl: z.string().url().optional().nullable(),
+  footerImageUrl: z.url().optional().nullable(),
   footerHeight: z.number().min(0).max(100).optional(),
   footerText: z.string().optional().nullable(),
   marginTop: z.number().min(10).max(100).optional(),
@@ -24,7 +24,7 @@ const updateLetterheadSchema = z.object({
   marginRight: z.number().min(10).max(50).optional(),
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
   secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
-  fundId: z.string().uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
   isDefault: z.boolean().optional(),
   isActive: z.boolean().optional(),
   backgroundPdfKey: z.string().optional().nullable(),

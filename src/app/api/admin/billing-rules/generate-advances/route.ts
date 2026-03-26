@@ -29,7 +29,7 @@ import { z } from "zod";
 const generateAdvancesSchema = z.object({
   month: z.number().int().min(1).max(12),
   year: z.number().int().min(2000).max(2100),
-  parkId: z.string().uuid().optional(),
+  parkId: z.uuid().optional(),
   dryRun: z.boolean().optional().default(false),
   taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]).optional(),
   dueDays: z.number().int().min(1).max(365).optional(),

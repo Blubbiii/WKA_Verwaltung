@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import {
-  ResponsiveContainer,
   LineChart,
   Line,
   BarChart,
@@ -276,8 +275,9 @@ export function TurbineComparison({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
               <LineChart
+                width="100%"
+                height={400}
                 data={powerCurveData}
                 margin={{ left: 10, right: 30, top: 10, bottom: 10 }}
               >
@@ -320,7 +320,6 @@ export function TurbineComparison({
                   />
                 ))}
               </LineChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       )}
@@ -334,11 +333,9 @@ export function TurbineComparison({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer
-              width="100%"
-              height={Math.max(200, deviationData.length * 40 + 40)}
-            >
               <BarChart
+                width="100%"
+                height={Math.max(200, deviationData.length * 40 + 40)}
                 data={deviationData}
                 layout="vertical"
                 margin={{ left: 10, right: 30 }}
@@ -374,7 +371,6 @@ export function TurbineComparison({
                   ))}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       )}

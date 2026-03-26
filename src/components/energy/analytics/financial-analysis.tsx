@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   ComposedChart,
@@ -265,8 +264,7 @@ export function FinancialAnalysis({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={revenueBarData}>
+              <BarChart width="100%" height={350} data={revenueBarData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
@@ -292,7 +290,6 @@ export function FinancialAnalysis({
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -304,8 +301,7 @@ export function FinancialAnalysis({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <ComposedChart data={prodRevenueData}>
+              <ComposedChart width="100%" height={350} data={prodRevenueData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
@@ -352,7 +348,6 @@ export function FinancialAnalysis({
                   connectNulls
                 />
               </ComposedChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
@@ -366,8 +361,7 @@ export function FinancialAnalysis({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={ctTrendData}>
+              <LineChart width="100%" height={300} data={ctTrendData}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
@@ -396,7 +390,6 @@ export function FinancialAnalysis({
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       )}

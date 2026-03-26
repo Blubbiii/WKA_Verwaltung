@@ -31,7 +31,7 @@ const updateConfigSchema = z.object({
   category: z.enum(["email", "weather", "storage", "general"]).optional(),
   encrypted: z.boolean().optional(),
   label: z.string().optional(),
-  tenantId: z.string().uuid().nullable().optional(),
+  tenantId: z.uuid().nullable().optional(),
 });
 
 // =============================================================================

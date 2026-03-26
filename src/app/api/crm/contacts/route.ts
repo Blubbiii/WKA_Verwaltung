@@ -13,7 +13,7 @@ const createSchema = z.object({
   firstName: z.string().optional().nullable(),
   lastName: z.string().optional().nullable(),
   companyName: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
+  email: z.email().optional().nullable(),
   phone: z.string().optional().nullable(),
   mobile: z.string().optional().nullable(),
   contactType: z.string().max(50).optional().nullable(),

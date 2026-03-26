@@ -32,8 +32,8 @@ const updateScheduledReportSchema = z.object({
     .optional(),
   config: z
     .object({
-      parkId: z.string().uuid().optional(),
-      fundId: z.string().uuid().optional(),
+      parkId: z.uuid().optional(),
+      fundId: z.uuid().optional(),
       modules: z.array(z.string()).optional(),
       format: z.string().optional(),
     })

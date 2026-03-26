@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useEffect, useCallback } from "react";
 import {
-  ResponsiveContainer,
   ComposedChart,
   BarChart,
   Bar,
@@ -302,8 +301,7 @@ export function FaultAnalysis({
           </CardHeader>
           <CardContent>
             {statePareto.length > 0 ? (
-              <ResponsiveContainer width="100%" height={350}>
-                <ComposedChart data={statePareto} margin={{ left: 0, right: 20, bottom: 40 }}>
+                <ComposedChart width="100%" height={350} data={statePareto} margin={{ left: 0, right: 20, bottom: 40 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
                   <XAxis
                     dataKey="label"
@@ -351,7 +349,6 @@ export function FaultAnalysis({
                     dot={{ r: 3, fill: "hsl(var(--chart-1))" }}
                   />
                 </ComposedChart>
-              </ResponsiveContainer>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">Keine Störungen erfasst</p>
             )}
@@ -365,8 +362,7 @@ export function FaultAnalysis({
           </CardHeader>
           <CardContent>
             {warningTrendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={350}>
-                <ComposedChart data={warningTrendData} margin={{ left: 0, right: 20 }}>
+                <ComposedChart width="100%" height={350} data={warningTrendData} margin={{ left: 0, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
                   <XAxis
                     dataKey="label"
@@ -408,7 +404,6 @@ export function FaultAnalysis({
                     dot={{ r: 3, fill: "#8b5cf6" }}
                   />
                 </ComposedChart>
-              </ResponsiveContainer>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">Keine Warnungsdaten vorhanden</p>
             )}
@@ -425,8 +420,7 @@ export function FaultAnalysis({
           </CardHeader>
           <CardContent>
             {turbineFaultData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={Math.max(250, turbineFaultData.length * 35 + 60)}>
-                <BarChart data={turbineFaultData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                <BarChart width="100%" height={Math.max(250, turbineFaultData.length * 35 + 60)} data={turbineFaultData} layout="vertical" margin={{ left: 10, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-muted" />
                   <XAxis
                     type="number"
@@ -451,7 +445,6 @@ export function FaultAnalysis({
                     radius={[0, 4, 4, 0]}
                   />
                 </BarChart>
-              </ResponsiveContainer>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">Keine Störungsdaten pro Anlage</p>
             )}
@@ -465,8 +458,7 @@ export function FaultAnalysis({
           </CardHeader>
           <CardContent>
             {scatterData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={350}>
-                <ScatterChart margin={{ left: 10, right: 20, bottom: 10 }}>
+                <ScatterChart width="100%" height={350} margin={{ left: 10, right: 20, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis
                     type="number"
@@ -494,7 +486,6 @@ export function FaultAnalysis({
                     ))}
                   </Scatter>
                 </ScatterChart>
-              </ResponsiveContainer>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">Keine Daten für Scatter-Chart</p>
             )}

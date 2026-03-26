@@ -24,8 +24,8 @@ const VALID_INTERVALS = ["10min", "hour", "day", "month", "year"] as const;
 
 const GenerateReportSchema = z.object({
   modules: z.array(z.enum(VALID_MODULES)).min(1),
-  parkId: z.string().uuid().optional().nullable(),
-  turbineId: z.string().uuid().optional().nullable(),
+  parkId: z.uuid().optional().nullable(),
+  turbineId: z.uuid().optional().nullable(),
   from: z.string().min(1, "'from' Datum ist erforderlich"),
   to: z.string().min(1, "'to' Datum ist erforderlich"),
   interval: z.enum(VALID_INTERVALS).optional().default("month"),

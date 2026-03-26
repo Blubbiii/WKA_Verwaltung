@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -226,8 +225,7 @@ export function WeatherChart({
   const ChartComponent = showArea ? AreaChart : LineChart;
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <ChartComponent data={chartData}>
+      <ChartComponent width="100%" height={height} data={chartData}>
         <defs>
           <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={color} stopOpacity={0.3} />
@@ -318,7 +316,6 @@ export function WeatherChart({
           </>
         )}
       </ChartComponent>
-    </ResponsiveContainer>
   );
 }
 
@@ -397,8 +394,7 @@ export function MultiWeatherChart({
   };
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={chartData}>
+      <LineChart width="100%" height={height} data={chartData}>
         <CartesianGrid
           strokeDasharray="3 3"
           vertical={false}
@@ -432,6 +428,5 @@ export function MultiWeatherChart({
           />
         ))}
       </LineChart>
-    </ResponsiveContainer>
   );
 }

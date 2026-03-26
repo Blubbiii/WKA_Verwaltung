@@ -12,7 +12,7 @@ const createTemplateSchema = z.object({
   layout: z.object({}).passthrough().optional(), // Flexible JSON
   customCss: z.string().optional(),
   footerText: z.string().optional(),
-  parkId: z.string().uuid().optional().nullable(),
+  parkId: z.uuid().optional().nullable(),
   isDefault: z.boolean().default(false),
 });
 

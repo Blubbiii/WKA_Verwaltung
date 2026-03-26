@@ -28,8 +28,8 @@ const createScheduledReportSchema = z.object({
     .array(z.string().email("Ungültige E-Mail-Adresse"))
     .min(1, "Mindestens ein Empfänger ist erforderlich"),
   config: z.object({
-    parkId: z.string().uuid().optional(),
-    fundId: z.string().uuid().optional(),
+    parkId: z.uuid().optional(),
+    fundId: z.uuid().optional(),
     modules: z.array(z.string()).optional(),
     format: z.string().optional(),
   }),

@@ -7,7 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 const tenantUpdateSchema = z.object({
   name: z.string().min(1, "Firmenname ist erforderlich").optional(),
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/).optional(),
-  contactEmail: z.string().email().optional().or(z.literal("")),
+  contactEmail: z.email().optional().or(z.literal("")),
   contactPhone: z.string().optional(),
   street: z.string().optional(),
   houseNumber: z.string().optional(),

@@ -23,9 +23,9 @@ const quoteUpdateSchema = z.object({
   serviceEndDate: z.string().optional().nullable(),
   internalReference: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
-  fundId: z.string().uuid().optional().nullable(),
-  parkId: z.string().uuid().optional().nullable(),
-  letterheadId: z.string().uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
+  parkId: z.uuid().optional().nullable(),
+  letterheadId: z.uuid().optional().nullable(),
   items: z.array(quoteItemSchema).min(1).optional(),
 });
 

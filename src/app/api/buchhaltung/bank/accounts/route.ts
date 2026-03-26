@@ -10,7 +10,7 @@ const bankAccountSchema = z.object({
   bic: z.string().max(11).optional().nullable(),
   bankName: z.string().max(200).optional().nullable(),
   currency: z.string().length(3).default("EUR"),
-  fundId: z.string().uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
   currentBalance: z.number().optional().nullable(),
 });
 

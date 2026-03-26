@@ -9,7 +9,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -260,8 +259,9 @@ export function DrillDownMonthly({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={350}>
             <BarChart
+              width="100%"
+              height={350}
               data={chartData}
               margin={{ left: 10, right: 10, top: 5, bottom: 5 }}
             >
@@ -310,7 +310,6 @@ export function DrillDownMonthly({
                 ))}
               </Bar>
             </BarChart>
-          </ResponsiveContainer>
           {onDayClick && (
             <p className="text-xs text-muted-foreground text-center mt-2">
               Klicken Sie auf einen Tag für die Tagesdetails

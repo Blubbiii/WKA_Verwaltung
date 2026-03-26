@@ -13,7 +13,7 @@ const itemUpdateSchema = z.object({
   unitPrice: z.number().optional(),
   taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]).optional(),
   plotAreaType: z.enum(["WEA_STANDORT", "POOL", "WEG", "AUSGLEICH", "KABEL"]).optional().nullable(),
-  plotId: z.string().uuid().optional().nullable(),
+  plotId: z.uuid().optional().nullable(),
   referenceType: z.string().optional().nullable(),
   referenceId: z.string().optional().nullable(),
   datevKonto: z.string().optional().nullable(),

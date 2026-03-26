@@ -7,7 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { generateSepaXml, type SepaPayment } from "@/lib/export/sepa-export";
 
 const bodySchema = z.object({
-  invoiceIds: z.array(z.string().uuid()).min(1),
+  invoiceIds: z.array(z.uuid()).min(1),
   executionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 

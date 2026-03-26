@@ -12,7 +12,7 @@ const updatePeriodSchema = z.object({
   totalRevenue: z.number().optional().nullable(),
   totalMinimumRent: z.number().optional().nullable(),
   totalActualRent: z.number().optional().nullable(),
-  linkedEnergySettlementId: z.string().uuid().optional().nullable(),
+  linkedEnergySettlementId: z.uuid().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 

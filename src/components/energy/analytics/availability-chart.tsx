@@ -12,7 +12,6 @@ import {
   ComposedChart,
   BarChart,
   LineChart,
-  ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, CheckCircle, AlertTriangle, Wrench } from "lucide-react";
@@ -184,8 +183,7 @@ export function AvailabilityChart({
             <CardTitle className="text-sm font-medium">Zeitbudget pro Anlage (IEC 61400-26)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={Math.max(250, stackedData.length * 40 + 60)}>
-              <BarChart data={stackedData} layout="vertical" stackOffset="expand" margin={{ left: 10, right: 20 }}>
+              <BarChart width="100%" height={Math.max(250, stackedData.length * 40 + 60)} data={stackedData} layout="vertical" stackOffset="expand" margin={{ left: 10, right: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-muted" />
                 <XAxis
                   type="number"
@@ -214,7 +212,6 @@ export function AvailabilityChart({
                   />
                 ))}
               </BarChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -225,8 +222,7 @@ export function AvailabilityChart({
           </CardHeader>
           <CardContent>
             {pareto.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <ComposedChart data={pareto} margin={{ left: 0, right: 20 }}>
+                <ComposedChart width="100%" height={300} data={pareto} margin={{ left: 0, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
                   <XAxis
                     dataKey="label"
@@ -269,7 +265,6 @@ export function AvailabilityChart({
                     dot={{ r: 3, fill: "hsl(var(--chart-1))" }}
                   />
                 </ComposedChart>
-              </ResponsiveContainer>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">Keine Ausfallzeiten erfasst</p>
             )}
@@ -284,8 +279,7 @@ export function AvailabilityChart({
             <CardTitle className="text-sm font-medium">Verfügbarkeits-Trend (monatlich)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={trendData}>
+              <LineChart width="100%" height={300} data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
                 <XAxis
                   dataKey="label"
@@ -320,7 +314,6 @@ export function AvailabilityChart({
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       )}

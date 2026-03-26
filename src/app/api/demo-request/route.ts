@@ -6,7 +6,7 @@ import { rateLimit, getClientIp, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 const DemoRequestSchema = z.object({
   name: z.string().min(1).max(100),
   company: z.string().min(1).max(100),
-  email: z.string().email().max(200),
+  email: z.email().max(200),
   phone: z.string().max(50).optional(),
   message: z.string().max(1000).optional(),
 });

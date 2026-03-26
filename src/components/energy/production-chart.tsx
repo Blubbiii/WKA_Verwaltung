@@ -11,7 +11,6 @@ import {
   Legend,
   Line,
   ComposedChart,
-  ResponsiveContainer,
 } from "recharts";
 
 // =============================================================================
@@ -366,8 +365,7 @@ export function ProductionChart({
   };
 
   return (
-    <ResponsiveContainer width="100%" height={400}>
-      <ComposedChart data={chartData}>
+      <ComposedChart width="100%" height={400} data={chartData}>
         <CartesianGrid
           strokeDasharray="3 3"
           vertical={false}
@@ -426,6 +424,5 @@ export function ProductionChart({
           activeDot={{ r: 4, strokeWidth: 0 }}
         />
       </ComposedChart>
-    </ResponsiveContainer>
   );
 }

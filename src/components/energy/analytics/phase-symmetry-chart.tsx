@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import {
-  ResponsiveContainer,
   LineChart,
   BarChart,
   Bar,
@@ -259,8 +258,7 @@ export function PhaseSymmetryChart({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={trendData}>
+                <LineChart width="100%" height={300} data={trendData}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
@@ -301,7 +299,6 @@ export function PhaseSymmetryChart({
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>
-              </ResponsiveContainer>
             </CardContent>
           </Card>
         )}
@@ -315,8 +312,7 @@ export function PhaseSymmetryChart({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={phaseData}>
+                <LineChart width="100%" height={300} data={phaseData}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
@@ -361,7 +357,6 @@ export function PhaseSymmetryChart({
                     dot={{ r: 3, fill: "#f59e0b" }}
                   />
                 </LineChart>
-              </ResponsiveContainer>
             </CardContent>
           </Card>
         )}
@@ -376,11 +371,9 @@ export function PhaseSymmetryChart({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer
-              width="100%"
-              height={Math.max(250, turbineData.length * 40 + 60)}
-            >
               <BarChart
+                width="100%"
+                height={Math.max(250, turbineData.length * 40 + 60)}
                 data={turbineData}
                 layout="vertical"
                 margin={{ left: 10, right: 20 }}
@@ -424,7 +417,6 @@ export function PhaseSymmetryChart({
                   radius={[0, 4, 4, 0]}
                 />
               </BarChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       )}

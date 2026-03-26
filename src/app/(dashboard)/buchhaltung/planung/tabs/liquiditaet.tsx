@@ -24,7 +24,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { RefreshCw, Download } from "lucide-react";
 import {
-  ResponsiveContainer,
   ComposedChart,
   Bar,
   Line,
@@ -243,8 +242,7 @@ export default function LiquiditaetContent() {
 
             {/* Chart */}
             <div className="h-[300px] mb-6">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartData}>
+                <ComposedChart width="100%" height={300} data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} />
@@ -260,7 +258,6 @@ export default function LiquiditaetContent() {
                   <Bar dataKey="Ausgaben" fill="hsl(0, 84%, 60%)" radius={[2, 2, 0, 0]} />
                   <Line type="monotone" dataKey="Kumuliert" stroke="hsl(215, 50%, 40%)" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
-              </ResponsiveContainer>
             </div>
 
             {/* Data Table */}

@@ -11,7 +11,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
 const createRuleSchema = z.object({
-  fundId: z.string().uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
   invoiceType: z.enum(["INVOICE", "CREDIT_NOTE"]),
   targetPath: z.string().min(1, "Pfad erforderlich").max(500),
   targetType: z.string().default("onedrive"),

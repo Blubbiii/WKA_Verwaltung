@@ -8,7 +8,7 @@ import { apiLogger as logger } from "@/lib/logger";
 const proxyUpdateSchema = z.object({
   isActive: z.boolean().optional(),
   validUntil: z.string().datetime().optional().nullable(),
-  documentUrl: z.string().url().optional().nullable(),
+  documentUrl: z.url().optional().nullable(),
 });
 
 // GET /api/proxies/[id] - Einzelne Vollmacht

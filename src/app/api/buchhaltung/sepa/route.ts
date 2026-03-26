@@ -10,7 +10,7 @@ const createBatchSchema = z.object({
   debtorName: z.string(),
   debtorIban: z.string(),
   debtorBic: z.string().optional(),
-  invoiceIds: z.array(z.string().uuid()),
+  invoiceIds: z.array(z.uuid()),
 });
 
 // GET /api/buchhaltung/sepa — List SEPA batches

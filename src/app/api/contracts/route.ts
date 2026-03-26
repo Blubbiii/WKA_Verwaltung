@@ -35,13 +35,13 @@ const contractCreateSchema = z.object({
   annualValue: z.number().positive().optional(),
   paymentTerms: z.string().optional(),
   status: z.enum(["DRAFT", "ACTIVE", "EXPIRING", "EXPIRED", "TERMINATED"]).default("ACTIVE"),
-  documentUrl: z.string().url().optional(),
+  documentUrl: z.url().optional(),
   reminderDays: z.array(z.number().int().positive()).optional(),
   notes: z.string().optional(),
-  parkId: z.string().uuid().optional().nullable(),
-  turbineId: z.string().uuid().optional().nullable(),
-  fundId: z.string().uuid().optional().nullable(),
-  partnerId: z.string().uuid().optional().nullable(),
+  parkId: z.uuid().optional().nullable(),
+  turbineId: z.uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
+  partnerId: z.uuid().optional().nullable(),
 });
 
 // GET /api/contracts - List contracts with filtering

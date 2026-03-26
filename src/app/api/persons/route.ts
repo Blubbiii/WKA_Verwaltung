@@ -11,7 +11,7 @@ const personCreateSchema = z.object({
   firstName: z.string().optional().nullable(),
   lastName: z.string().optional().nullable(),
   companyName: z.string().optional().nullable(),
-  email: z.union([z.string().email(), z.literal(""), z.null()]).optional().nullable(),
+  email: z.union([z.email(), z.literal(""), z.null()]).optional().nullable(),
   phone: z.string().optional().nullable(),
   mobile: z.string().optional().nullable(),
   street: z.string().optional().nullable(),

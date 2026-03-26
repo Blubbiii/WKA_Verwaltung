@@ -5,7 +5,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
 const bulkCreateSchema = z.object({
-  parkId: z.string().uuid(),
+  parkId: z.uuid(),
   year: z.number().int().min(2000).max(2100),
   frequency: z.enum(["MONTHLY", "QUARTERLY"]),
   createFinalPeriod: z.boolean().default(true), // Erstelle auch FINAL Periode für das Jahr

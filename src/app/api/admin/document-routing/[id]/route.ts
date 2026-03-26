@@ -11,7 +11,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
 const updateRuleSchema = z.object({
-  fundId: z.string().uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
   invoiceType: z.enum(["INVOICE", "CREDIT_NOTE"]).optional(),
   targetPath: z.string().min(1).max(500).optional(),
   targetType: z.string().optional(),

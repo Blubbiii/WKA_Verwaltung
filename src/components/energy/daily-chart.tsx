@@ -11,7 +11,6 @@ import {
   Legend,
   Line,
   ComposedChart,
-  ResponsiveContainer,
 } from "recharts";
 
 // =============================================================================
@@ -148,8 +147,7 @@ export function DailyChart({ data, chartType = "area" }: DailyChartProps) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={400}>
-      <ComposedChart data={chartData}>
+      <ComposedChart width="100%" height={400} data={chartData}>
         <defs>
           <linearGradient id="powerGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
@@ -237,6 +235,5 @@ export function DailyChart({ data, chartType = "area" }: DailyChartProps) {
           activeDot={{ r: 4, strokeWidth: 0 }}
         />
       </ComposedChart>
-    </ResponsiveContainer>
   );
 }

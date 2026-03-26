@@ -8,7 +8,7 @@ import { serializePrisma } from "@/lib/serialize";
 
 const updateSchema = z.object({
   invoiceType: z.enum(["INVOICE", "CREDIT_NOTE"]).optional(),
-  vendorId: z.string().uuid().optional().nullable(),
+  vendorId: z.uuid().optional().nullable(),
   vendorNameFallback: z.string().max(200).optional().nullable(),
   invoiceNumber: z.string().max(100).optional().nullable(),
   invoiceDate: z.string().datetime().optional().nullable(),
@@ -21,7 +21,7 @@ const updateSchema = z.object({
   iban: z.string().max(34).optional().nullable(),
   bic: z.string().max(11).optional().nullable(),
   paymentReference: z.string().max(140).optional().nullable(),
-  recipientFundId: z.string().uuid().optional().nullable(),
+  recipientFundId: z.uuid().optional().nullable(),
   datevAccount: z.string().max(20).optional().nullable(),
   notes: z.string().optional().nullable(),
 });

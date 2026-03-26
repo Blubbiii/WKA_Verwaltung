@@ -8,7 +8,7 @@ const updateSchema = z.object({
   name: z.string().min(1).optional(),
   bic: z.string().max(11).optional().nullable(),
   bankName: z.string().max(200).optional().nullable(),
-  fundId: z.string().uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
   currentBalance: z.number().optional().nullable(),
   isActive: z.boolean().optional(),
 });

@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
@@ -224,8 +223,9 @@ export function ShadowChart({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
                 <BarChart
+                  width="100%"
+                  height={300}
                   data={monthlyTrend}
                   margin={{ left: 10, right: 10, bottom: 5 }}
                 >
@@ -254,7 +254,6 @@ export function ShadowChart({
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
-              </ResponsiveContainer>
             </CardContent>
           </Card>
         )}
@@ -268,8 +267,9 @@ export function ShadowChart({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
                 <BarChart
+                  width="100%"
+                  height={300}
                   data={dailyData}
                   margin={{ left: 10, right: 10, bottom: 5 }}
                 >
@@ -298,7 +298,6 @@ export function ShadowChart({
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
-              </ResponsiveContainer>
             </CardContent>
           </Card>
         )}
@@ -313,11 +312,9 @@ export function ShadowChart({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer
-              width="100%"
-              height={Math.max(250, turbineData.length * 40 + 60)}
-            >
               <BarChart
+                width="100%"
+                height={Math.max(250, turbineData.length * 40 + 60)}
                 data={turbineData}
                 layout="vertical"
                 margin={{ left: 10, right: 30 }}
@@ -363,7 +360,6 @@ export function ShadowChart({
                   radius={[0, 4, 4, 0]}
                 />
               </BarChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       )}

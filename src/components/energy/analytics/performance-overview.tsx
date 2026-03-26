@@ -11,7 +11,6 @@ import {
   Line,
   ComposedChart,
   BarChart,
-  ResponsiveContainer,
   Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -205,8 +204,7 @@ export function PerformanceOverview({
             <CardTitle className="text-sm font-medium">Capacity Factor pro Anlage</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={Math.max(200, cfData.length * 40 + 40)}>
-              <BarChart data={cfData} layout="vertical" margin={{ left: 10, right: 30 }}>
+              <BarChart width="100%" height={Math.max(200, cfData.length * 40 + 40)} data={cfData} layout="vertical" margin={{ left: 10, right: 30 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-muted" />
                 <XAxis
                   type="number"
@@ -231,7 +229,6 @@ export function PerformanceOverview({
                   ))}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -297,8 +294,7 @@ export function PerformanceOverview({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <ComposedChart data={yoyData}>
+              <ComposedChart width="100%" height={350} data={yoyData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
                 <XAxis
                   dataKey="label"
@@ -327,7 +323,6 @@ export function PerformanceOverview({
                   radius={[4, 4, 0, 0]}
                 />
               </ComposedChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       )}

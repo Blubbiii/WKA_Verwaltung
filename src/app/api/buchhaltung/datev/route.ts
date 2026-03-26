@@ -21,7 +21,7 @@ const querySchema = z.object({
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   mode: z.enum(["invoices", "journal", "both"]).default("journal"),
   status: z.enum(["DRAFT", "SENT", "PAID", "CANCELLED"]).optional(),
-  fundId: z.string().uuid().optional(),
+  fundId: z.uuid().optional(),
   consultantNumber: z.string().max(20).optional(),
   clientNumber: z.string().max(20).optional(),
 });

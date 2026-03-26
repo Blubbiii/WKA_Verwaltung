@@ -31,7 +31,7 @@ const parkCreateSchema = z.object({
   longitude: z.number().optional().nullable(),
   commissioningDate: z.string().optional().nullable(),
   totalCapacityKw: z.number().optional().nullable(),
-  operatorFundId: z.string().uuid().optional().nullable(),
+  operatorFundId: z.uuid().optional().nullable(),
   technischeBetriebsfuehrung: z.string().optional().nullable(),
   kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
@@ -47,7 +47,7 @@ const parkCreateSchema = z.object({
   // Energy settlement configuration (Stromabrechnung-Konfiguration)
   defaultDistributionMode: z.enum(["PROPORTIONAL", "SMOOTHED", "TOLERATED"]).optional(),
   defaultTolerancePercent: z.number().min(0).max(100).optional().nullable(),
-  billingEntityFundId: z.string().uuid().optional().nullable(),
+  billingEntityFundId: z.uuid().optional().nullable(),
 
   // Lease settlement mode (Nutzungsentgelt-Abrechnungsmodus)
   leaseSettlementMode: z.enum(["NETWORK_COMPANY", "OPERATOR_DIRECT"]).optional(),

@@ -23,11 +23,11 @@ const leaseCreateSchema = z.object({
   waitingMoneySchedule: z.enum(["monthly", "yearly", "once"]).optional(),
   // Abrechnungsintervall
   billingInterval: z.enum(["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "CUSTOM_CRON"]).default("ANNUAL"),
-  linkedTurbineId: z.string().uuid().optional().nullable(),
+  linkedTurbineId: z.uuid().optional().nullable(),
   // Vertragspartner (Paechter-Gesellschaft)
-  contractPartnerFundId: z.string().uuid().nullable().optional(),
+  contractPartnerFundId: z.uuid().nullable().optional(),
   // Anhänge & Notizen
-  contractDocumentUrl: z.string().url().optional(),
+  contractDocumentUrl: z.url().optional(),
   notes: z.string().optional(),
 });
 

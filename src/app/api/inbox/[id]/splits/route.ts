@@ -7,7 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
 const splitItemSchema = z.object({
-  fundId: z.string().uuid(),
+  fundId: z.uuid(),
   splitPercent: z.number().min(0).max(100).optional().nullable(),
   splitAmount: z.number().min(0).optional().nullable(),
   description: z.string().max(200).optional().nullable(),

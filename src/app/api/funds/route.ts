@@ -10,7 +10,7 @@ import { invalidate } from "@/lib/cache/invalidation";
 const fundCreateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
   legalForm: z.string().optional().nullable(),
-  fundCategoryId: z.string().uuid().optional().nullable(),
+  fundCategoryId: z.uuid().optional().nullable(),
   registrationNumber: z.string().optional().nullable(),
   registrationCourt: z.string().optional().nullable(),
   foundingDate: z.string().optional().nullable(),

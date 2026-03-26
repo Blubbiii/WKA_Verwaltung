@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ResponsiveContainer,
   ComposedChart,
   BarChart,
   Bar,
@@ -352,8 +351,9 @@ export function OperatingStateTimeline({
           </CardHeader>
           <CardContent>
             {paretoChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={350}>
                 <ComposedChart
+                  width="100%"
+                  height={350}
                   data={paretoChartData}
                   margin={{ left: 0, right: 20, bottom: 40 }}
                 >
@@ -413,7 +413,6 @@ export function OperatingStateTimeline({
                     dot={{ r: 3, fill: "hsl(var(--chart-1))" }}
                   />
                 </ComposedChart>
-              </ResponsiveContainer>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Keine Zustandsdaten
@@ -498,8 +497,9 @@ export function OperatingStateTimeline({
                   </div>
                 ))}
               </div>
-              <ResponsiveContainer width="100%" height={300}>
                 <BarChart
+                  width="100%"
+                  height={300}
                   data={timelineChartData}
                   margin={{ left: 0, right: 10, bottom: 40 }}
                 >
@@ -531,7 +531,6 @@ export function OperatingStateTimeline({
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
             </>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">

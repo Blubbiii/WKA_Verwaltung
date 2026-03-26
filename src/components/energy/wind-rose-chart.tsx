@@ -9,7 +9,6 @@ import {
   PolarGrid,
   Legend,
   Tooltip,
-  ResponsiveContainer,
 } from "recharts";
 
 // =============================================================================
@@ -146,8 +145,7 @@ export function WindRoseChart({ data, meta }: WindRoseChartProps) {
 
   return (
     <div>
-      <ResponsiveContainer width="100%" height={400}>
-        <RadarChart data={chartData} outerRadius="75%">
+        <RadarChart width="100%" height={400} data={chartData} outerRadius="75%">
           <PolarGrid className="stroke-muted" />
           <PolarAngleAxis
             dataKey="direction"
@@ -172,7 +170,6 @@ export function WindRoseChart({ data, meta }: WindRoseChartProps) {
           ))}
           <Legend />
         </RadarChart>
-      </ResponsiveContainer>
 
       {meta && (
         <div className="flex items-center justify-center gap-6 mt-4 text-sm text-muted-foreground">

@@ -13,7 +13,7 @@ const newsCreateSchema = z.object({
   title: z.string().min(1, "Titel ist erforderlich"),
   content: z.string().min(1, "Inhalt ist erforderlich"),
   category: NewsCategoryEnum.default("GENERAL"),
-  fundId: z.string().uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
   isPublished: z.boolean().default(false),
   publishedAt: z.string().optional().nullable(),
   expiresAt: z.string().optional().nullable(),

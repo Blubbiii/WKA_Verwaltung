@@ -38,7 +38,7 @@ const tenantCreateSchema = z.object({
       /^[a-z0-9-]+$/,
       "Nur Kleinbuchstaben, Zahlen und Bindestriche"
     ),
-  contactEmail: z.string().email().optional().or(z.literal("")),
+  contactEmail: z.email().optional().or(z.literal("")),
   contactPhone: z.string().optional(),
   street: z.string().optional(),
   houseNumber: z.string().optional(),

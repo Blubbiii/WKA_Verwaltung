@@ -134,12 +134,12 @@ export const SETTLEMENT_MODE_LABELS: Record<LeaseSettlementMode, string> = {
 
 // Create a new lease revenue settlement (consolidated: supports ADVANCE + FINAL)
 export const createLeaseRevenueSettlementSchema = z.object({
-  parkId: z.string().uuid(),
+  parkId: z.uuid(),
   year: z.number().int().min(2000).max(2100),
   periodType: z.enum(["ADVANCE", "FINAL"]).default("FINAL"),
   advanceInterval: z.enum(["MONTHLY", "QUARTERLY", "YEARLY"]).optional().nullable(),
   month: z.number().int().min(1).max(12).optional().nullable(),
-  linkedEnergySettlementId: z.string().uuid().optional().nullable(),
+  linkedEnergySettlementId: z.uuid().optional().nullable(),
   advanceDueDate: z.string().datetime().optional().nullable(),
   settlementDueDate: z.string().datetime().optional().nullable(),
   notes: z.string().optional().nullable(),
@@ -149,7 +149,7 @@ export const createLeaseRevenueSettlementSchema = z.object({
 export const updateLeaseRevenueSettlementSchema = z.object({
   advanceDueDate: z.string().datetime().optional().nullable(),
   settlementDueDate: z.string().datetime().optional().nullable(),
-  linkedEnergySettlementId: z.string().uuid().optional().nullable(),
+  linkedEnergySettlementId: z.uuid().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 
@@ -160,8 +160,8 @@ export const parkLeaseSettlementSetupSchema = z.object({
   directBillingAssignments: z
     .array(
       z.object({
-        leaseId: z.string().uuid(),
-        directBillingFundId: z.string().uuid().nullable(),
+        leaseId: z.uuid(),
+        directBillingFundId: z.uuid().nullable(),
       })
     )
     .optional(),
@@ -169,22 +169,22 @@ export const parkLeaseSettlementSetupSchema = z.object({
 
 // Create cost allocation
 export const createCostAllocationSchema = z.object({
-  leaseRevenueSettlementId: z.string().uuid(),
+  leaseRevenueSettlementId: z.uuid(),
   periodLabel: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 
 // Historical import
 export const importHistoricalSettlementSchema = z.object({
-  parkId: z.string().uuid(),
+  parkId: z.uuid(),
   year: z.number().int().min(2000).max(2100),
   totalParkRevenueEur: z.number().min(0),
   actualFeeEur: z.number().min(0),
   usedMinimum: z.boolean(),
   items: z.array(
     z.object({
-      leaseId: z.string().uuid(),
-      lessorPersonId: z.string().uuid(),
+      leaseId: z.uuid(),
+      lessorPersonId: z.uuid(),
       subtotalEur: z.number().min(0),
       taxableAmountEur: z.number().min(0),
       exemptAmountEur: z.number().min(0),

@@ -19,7 +19,7 @@ const invoiceItemSchema = z.object({
   unitPrice: z.number(),
   taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]).default("STANDARD"),
   plotAreaType: z.enum(["WEA_STANDORT", "POOL", "WEG", "AUSGLEICH", "KABEL"]).optional(),
-  plotId: z.string().uuid().optional(),
+  plotId: z.uuid().optional(),
   referenceType: z.string().optional(),
   referenceId: z.string().optional(),
 });
@@ -36,10 +36,10 @@ const invoiceCreateSchema = z.object({
   paymentReference: z.string().optional().nullable(),
   internalReference: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
-  fundId: z.string().uuid().optional().nullable(),
-  shareholderId: z.string().uuid().optional().nullable(),
-  leaseId: z.string().uuid().optional().nullable(),
-  parkId: z.string().uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
+  shareholderId: z.uuid().optional().nullable(),
+  leaseId: z.uuid().optional().nullable(),
+  parkId: z.uuid().optional().nullable(),
   // Skonto (early payment discount) - both optional
   skontoPercent: z.number().min(0.01).max(99.99).optional().nullable(),
   skontoDays: z.number().int().min(1).max(365).optional().nullable(),

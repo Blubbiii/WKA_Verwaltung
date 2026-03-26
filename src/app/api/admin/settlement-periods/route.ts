@@ -9,10 +9,10 @@ import { dispatchWebhook } from "@/lib/webhooks";
 const createPeriodSchema = z.object({
   year: z.number().int().min(2000).max(2100),
   month: z.number().int().min(1).max(12).optional().nullable(),
-  parkId: z.string().uuid(),
+  parkId: z.uuid(),
   periodType: z.enum(["ADVANCE", "FINAL"]).default("FINAL"),
   advanceInterval: z.enum(["YEARLY", "QUARTERLY", "MONTHLY"]).optional().nullable(),
-  linkedEnergySettlementId: z.string().uuid().optional().nullable(),
+  linkedEnergySettlementId: z.uuid().optional().nullable(),
   notes: z.string().optional(),
 });
 

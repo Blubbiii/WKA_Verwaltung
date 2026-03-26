@@ -6,7 +6,7 @@ import { findDunningCandidates, executeDunningRun } from "@/lib/accounting/dunni
 import { z } from "zod";
 
 const dunningRunSchema = z.object({
-  invoiceIds: z.array(z.string().uuid()).min(1, "Keine Rechnungen ausgewählt"),
+  invoiceIds: z.array(z.uuid()).min(1, "Keine Rechnungen ausgewählt"),
 });
 
 // GET /api/buchhaltung/dunning — List dunning runs OR get candidates

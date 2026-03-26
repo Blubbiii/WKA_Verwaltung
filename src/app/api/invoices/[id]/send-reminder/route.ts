@@ -16,7 +16,7 @@ import { formatDate } from "@/lib/format";
 
 const bodySchema = z.object({
   reminderLevel: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-  overrideEmail: z.string().email().optional(),
+  overrideEmail: z.email().optional(),
   lateFee: z.number().min(0).optional(),
 });
 

@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 
 const updateSchema = z.object({
   label: z.string().min(1).max(100).optional(),
-  url: z.string().url().optional(),
+  url: z.url().optional(),
   icon: z.string().optional(),
   description: z.string().max(255).nullish(),
   openInNewTab: z.boolean().optional(),

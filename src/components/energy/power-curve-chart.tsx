@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
   Line,
   ComposedChart,
   ZAxis,
@@ -105,8 +104,7 @@ export function PowerCurveChart({ scatter, curve }: PowerCurveChartProps) {
   const sortedCurve = [...(curve || [])].sort((a, b) => a.windSpeed - b.windSpeed);
 
   return (
-    <ResponsiveContainer width="100%" height={400}>
-      <ComposedChart>
+    <ComposedChart width="100%" height={400}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
         <XAxis
           dataKey="windSpeed"
@@ -160,6 +158,5 @@ export function PowerCurveChart({ scatter, curve }: PowerCurveChartProps) {
           legendType="line"
         />
       </ComposedChart>
-    </ResponsiveContainer>
   );
 }

@@ -14,7 +14,7 @@ const updateSchema = z.object({
   duration: z.number().int().positive().optional().nullable(),
   startTime: z.string().datetime().optional().nullable(),
   dueDate: z.string().datetime().optional().nullable(),
-  assignedToId: z.string().uuid().optional().nullable(),
+  assignedToId: z.uuid().optional().nullable(),
 });
 
 // GET /api/crm/activities/[id]

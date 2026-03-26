@@ -47,8 +47,8 @@ const CreateConfigSchema = z.object({
   modules: z
     .array(z.enum(VALID_MODULES))
     .min(1, "Mindestens ein Modul muss ausgewaehlt werden"),
-  parkId: z.string().uuid().optional().nullable(),
-  turbineId: z.string().uuid().optional().nullable(),
+  parkId: z.uuid().optional().nullable(),
+  turbineId: z.uuid().optional().nullable(),
   interval: z.enum(VALID_INTERVALS).optional().default("month"),
   portalVisible: z.boolean().optional().default(false),
   portalLabel: z.string().max(200).optional().nullable(),

@@ -24,7 +24,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
 } from "recharts";
 
 // =============================================================================
@@ -225,8 +224,7 @@ export function MonitoringDashboard() {
           </CardHeader>
           <CardContent>
             <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
+                <AreaChart width="100%" height={250} data={chartData}>
                   <defs>
                     <linearGradient id="reqGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
@@ -270,7 +268,6 @@ export function MonitoringDashboard() {
                     strokeWidth={2}
                   />
                 </AreaChart>
-              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
@@ -284,8 +281,7 @@ export function MonitoringDashboard() {
           </CardHeader>
           <CardContent>
             <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
+                <LineChart width="100%" height={250} data={chartData}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke="hsl(var(--border))"
@@ -324,7 +320,6 @@ export function MonitoringDashboard() {
                     dot={false}
                   />
                 </LineChart>
-              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>

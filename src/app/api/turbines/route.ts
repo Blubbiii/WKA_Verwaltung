@@ -10,7 +10,7 @@ const turbineCreateSchema = z.object({
   designation: z.string().min(1, "Bezeichnung ist erforderlich"),
   serialNumber: z.string().optional().nullable(),
   mastrNumber: z.string().optional().nullable(),
-  netzgesellschaftFundId: z.string().uuid().optional().nullable(),
+  netzgesellschaftFundId: z.uuid().optional().nullable(),
   manufacturer: z.string().optional().nullable(),
   model: z.string().optional().nullable(),
   ratedPowerKw: z.number().optional().nullable(),
@@ -24,7 +24,7 @@ const turbineCreateSchema = z.object({
   technicalData: z.record(z.string(), z.any()).optional(),
   technischeBetriebsfuehrung: z.string().optional().nullable(),
   kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
-  operatorFundId: z.string().uuid().optional().nullable(),
+  operatorFundId: z.uuid().optional().nullable(),
 
   // Notes
   notes: z.string().optional().nullable(),

@@ -42,8 +42,8 @@ const updateRecurringInvoiceSchema = z.object({
   endDate: z.string().optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
   enabled: z.boolean().optional(),
-  fundId: z.string().uuid().optional().nullable(),
-  parkId: z.string().uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
+  parkId: z.uuid().optional().nullable(),
 });
 
 // ============================================================================

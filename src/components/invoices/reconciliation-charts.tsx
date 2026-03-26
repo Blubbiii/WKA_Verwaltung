@@ -7,7 +7,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
@@ -157,8 +156,7 @@ export function MonthlyComparisonChart({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <ComposedChart data={chartData}>
+          <ComposedChart width="100%" height={350} data={chartData}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
             <XAxis
               dataKey="monthLabel"
@@ -200,7 +198,6 @@ export function MonthlyComparisonChart({
               dot={{ r: 3 }}
             />
           </ComposedChart>
-        </ResponsiveContainer>
       </CardContent>
     </Card>
   );
@@ -293,8 +290,7 @@ export function InvoiceStatusChart({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
+          <PieChart width="100%" height={300}>
             <Pie
               data={chartData}
               cx="50%"
@@ -323,7 +319,6 @@ export function InvoiceStatusChart({
               wrapperStyle={{ fontSize: 12 }}
             />
           </PieChart>
-        </ResponsiveContainer>
       </CardContent>
     </Card>
   );

@@ -12,13 +12,13 @@ const createSchema = z.object({
   vatId: z.string().max(50).optional().nullable(),
   iban: z.string().max(34).optional().nullable(),
   bic: z.string().max(11).optional().nullable(),
-  email: z.string().email().optional().nullable(),
+  email: z.email().optional().nullable(),
   street: z.string().optional().nullable(),
   postalCode: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
   country: z.string().default("DE"),
   notes: z.string().optional().nullable(),
-  personId: z.string().uuid().optional().nullable(),
+  personId: z.uuid().optional().nullable(),
 });
 
 async function checkInbox(tenantId: string) {

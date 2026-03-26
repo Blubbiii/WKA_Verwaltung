@@ -6,7 +6,7 @@ import { z } from "zod";
 
 const matchSchema = z.object({
   action: z.enum(["match", "ignore", "unmatch"]),
-  invoiceId: z.string().uuid().optional(),
+  invoiceId: z.uuid().optional(),
 });
 
 // PATCH /api/buchhaltung/bank/transactions/[id] — Match/Ignore/Unmatch

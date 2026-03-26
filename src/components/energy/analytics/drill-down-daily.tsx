@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
   ComposedChart,
   Area,
 } from "recharts";
@@ -300,8 +299,9 @@ export function DrillDownDaily({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
             <ComposedChart
+              width="100%"
+              height={400}
               data={chartData}
               margin={{ left: 10, right: 10, top: 5, bottom: 5 }}
             >
@@ -355,7 +355,6 @@ export function DrillDownDaily({
                 dot={false}
               />
             </ComposedChart>
-          </ResponsiveContainer>
         </CardContent>
       </Card>
 

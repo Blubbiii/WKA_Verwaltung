@@ -21,11 +21,11 @@ const activitySchema = z.object({
   duration: z.number().int().positive().optional().nullable(),
   startTime: z.string().datetime().optional().nullable(),
   dueDate: z.string().datetime().optional().nullable(),
-  personId: z.string().uuid().optional().nullable(),
-  fundId: z.string().uuid().optional().nullable(),
-  leaseId: z.string().uuid().optional().nullable(),
-  parkId: z.string().uuid().optional().nullable(),
-  assignedToId: z.string().uuid().optional().nullable(),
+  personId: z.uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
+  leaseId: z.uuid().optional().nullable(),
+  parkId: z.uuid().optional().nullable(),
+  assignedToId: z.uuid().optional().nullable(),
 }).refine(
   (d) => d.personId || d.fundId || d.leaseId || d.parkId,
   { message: "Mindestens eine Entität muss verknüpft sein" }

@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   ComposedChart,
@@ -253,8 +252,9 @@ export function EnvironmentChart({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
               <BarChart
+                width="100%"
+                height={350}
                 data={histogramData}
                 margin={{ left: 10, right: 10, bottom: 5 }}
               >
@@ -291,7 +291,6 @@ export function EnvironmentChart({
                 {/* Hidden bar for tooltip count display */}
                 <Bar dataKey="count" name="Anzahl" fill="transparent" hide />
               </BarChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       )}
@@ -307,8 +306,7 @@ export function EnvironmentChart({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
-                <ComposedChart data={seasonalData}>
+                <ComposedChart width="100%" height={350} data={seasonalData}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
@@ -354,7 +352,6 @@ export function EnvironmentChart({
                     dot={{ fill: "#22c55e", r: 3 }}
                   />
                 </ComposedChart>
-              </ResponsiveContainer>
             </CardContent>
           </Card>
         )}
@@ -368,8 +365,7 @@ export function EnvironmentChart({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
-                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                <RadarChart width="100%" height={350} data={radarData} cx="50%" cy="50%" outerRadius="75%">
                   <PolarGrid className="stroke-muted" />
                   <PolarAngleAxis
                     dataKey="direction"
@@ -389,7 +385,6 @@ export function EnvironmentChart({
                     fillOpacity={0.3}
                   />
                 </RadarChart>
-              </ResponsiveContainer>
             </CardContent>
           </Card>
         )}
