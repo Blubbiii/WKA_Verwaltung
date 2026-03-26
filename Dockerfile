@@ -69,10 +69,12 @@ RUN npm run build
 # -----------------------------------------------------------------------------
 FROM node:24-alpine AS prisma-cli
 WORKDIR /prisma-cli
-RUN npm init -y > /dev/null 2>&1 && npm install prisma@6 tsx typescript bcryptjs @prisma/client@6
-# Verifiziere dass effect installiert wurde
+RUN npm init -y > /dev/null 2>&1 && npm install prisma@7 tsx typescript bcryptjs @prisma/client@7 pg @prisma/adapter-pg
+# Verifiziere kritische Dependencies
 RUN node -e "require('effect'); console.log('effect OK')"
 RUN node -e "require('@prisma/config'); console.log('@prisma/config OK')"
+RUN node -e "require('pg'); console.log('pg OK')"
+RUN node -e "require('@prisma/adapter-pg'); console.log('@prisma/adapter-pg OK')"
 
 # -----------------------------------------------------------------------------
 # Stage 3: Runner (Production)
