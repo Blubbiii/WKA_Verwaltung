@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -61,8 +61,8 @@ const formSchema = z.object({
   frequency: z.enum(["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "CUSTOM_CRON"]),
   cronPattern: z.string().optional(),
   dayOfMonth: z.number().int().min(1).max(28).optional(),
-  isActive: z.boolean(),
-  parameters: z.record(z.unknown()),
+  isActive: z.boolean().default(true),
+  parameters: z.record(z.string(), z.unknown()),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -120,7 +120,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
     setValue,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as Resolver<FormData>,
     defaultValues: {
       name: initialData?.name || "",
       description: initialData?.description || "",

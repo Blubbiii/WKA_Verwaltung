@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -89,7 +89,7 @@ export default function EditFundPage({
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<FundFormValues>({
-    resolver: zodResolver(fundFormSchema),
+    resolver: zodResolver(fundFormSchema) as Resolver<FundFormValues>,
     defaultValues: {
       name: "",
       legalForm: "",

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -37,8 +37,8 @@ const voteEditSchema = z.object({
   title: z.string().min(1, "Titel ist erforderlich"),
   description: z.string().optional(),
   options: z.array(z.string()).min(2, "Mindestens 2 Optionen erforderlich"),
-  startDate: z.date({ required_error: "Startdatum ist erforderlich" }),
-  endDate: z.date({ required_error: "Enddatum ist erforderlich" }),
+  startDate: z.date({ error: "Startdatum ist erforderlich" }),
+  endDate: z.date({ error: "Enddatum ist erforderlich" }),
   quorumPercentage: z.coerce.number().min(0).max(100).optional().or(z.literal("")),
   requiresCapitalMajority: z.boolean().default(false),
 });
@@ -54,7 +54,7 @@ export default function EditVotePage() {
   const [newOption, setNewOption] = useState("");
 
   const form = useForm<VoteEditValues>({
-    resolver: zodResolver(voteEditSchema),
+    resolver: zodResolver(voteEditSchema) as Resolver<VoteEditValues>,
     defaultValues: {
       title: "",
       description: "",

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ImageIcon, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
@@ -87,7 +87,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
   const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   const form = useForm<ParkFormValues>({
-    resolver: zodResolver(parkFormSchema),
+    resolver: zodResolver(parkFormSchema) as Resolver<ParkFormValues>,
     defaultValues: {
       name: initialData?.name || "",
       shortName: initialData?.shortName || "",

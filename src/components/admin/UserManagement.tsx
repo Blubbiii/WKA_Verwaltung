@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -244,7 +244,7 @@ export function UserManagement() {
 
   // Form
   const userForm = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
+    resolver: zodResolver(userFormSchema) as Resolver<UserFormValues>,
     defaultValues: {
       email: "",
       firstName: "",

@@ -44,7 +44,7 @@ const proxyFormSchema = z.object({
   granteeId: z.string().min(1, "Vollmachtnehmer ist erforderlich"),
   proxyType: z.enum(["general", "specific"]),
   voteId: z.string().optional(),
-  validFrom: z.date({ required_error: "Gültig ab ist erforderlich" }),
+  validFrom: z.date({ error: "Gültig ab ist erforderlich" }),
   validUntil: z.date().optional().nullable(),
 });
 

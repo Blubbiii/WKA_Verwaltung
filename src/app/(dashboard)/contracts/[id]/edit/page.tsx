@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, Loader2, Plus, X } from "lucide-react";
@@ -92,7 +92,7 @@ export default function EditContractPage() {
   const [newReminder, setNewReminder] = useState("");
 
   const form = useForm<ContractFormValues>({
-    resolver: zodResolver(contractFormSchema),
+    resolver: zodResolver(contractFormSchema) as Resolver<ContractFormValues>,
     defaultValues: {
       contractType: "SERVICE",
       title: "",

@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { formatDate } from "@/lib/format";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, Loader2, Upload, File, X, Info, Plus } from "lucide-react";
@@ -120,7 +120,7 @@ function DocumentUploadForm() {
   });
 
   const form = useForm<DocumentFormValues>({
-    resolver: zodResolver(documentFormSchema),
+    resolver: zodResolver(documentFormSchema) as Resolver<DocumentFormValues>,
     defaultValues: {
       title: "",
       description: "",

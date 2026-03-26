@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -147,7 +147,7 @@ export function RoleManagement() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const form = useForm<RoleFormValues>({
-    resolver: zodResolver(roleFormSchema),
+    resolver: zodResolver(roleFormSchema) as Resolver<RoleFormValues>,
     defaultValues: {
       name: "",
       description: "",

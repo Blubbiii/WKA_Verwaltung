@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -45,8 +45,8 @@ const voteFormSchema = z.object({
   description: z.string().optional(),
   voteType: z.enum(["simple", "multiple"]).default("simple"),
   options: z.array(z.string()).min(2, "Mindestens 2 Optionen erforderlich"),
-  startDate: z.date({ required_error: "Startdatum ist erforderlich" }),
-  endDate: z.date({ required_error: "Enddatum ist erforderlich" }),
+  startDate: z.date({ error: "Startdatum ist erforderlich" }),
+  endDate: z.date({ error: "Enddatum ist erforderlich" }),
   quorumPercentage: z.coerce.number().min(0).max(100).optional().or(z.literal("")),
   requiresCapitalMajority: z.boolean().default(false),
 });
@@ -82,7 +82,7 @@ export default function NewVotePage() {
   }, []);
 
   const form = useForm<VoteFormValues>({
-    resolver: zodResolver(voteFormSchema),
+    resolver: zodResolver(voteFormSchema) as Resolver<VoteFormValues>,
     defaultValues: {
       fundId: "",
       title: "",

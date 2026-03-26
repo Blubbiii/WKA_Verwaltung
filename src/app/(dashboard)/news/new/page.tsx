@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
@@ -65,7 +65,7 @@ export default function NewNewsPage() {
   const [funds, setFunds] = useState<Fund[]>([]);
 
   const form = useForm<NewsFormValues>({
-    resolver: zodResolver(newsFormSchema),
+    resolver: zodResolver(newsFormSchema) as Resolver<NewsFormValues>,
     defaultValues: {
       title: "",
       content: "",
