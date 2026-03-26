@@ -5,6 +5,7 @@ interface FeatureFlags {
   "paperless": boolean;
   "communication": boolean;
   "crm": boolean;
+  "gis": boolean;
   "inbox": boolean;
   "wirtschaftsplan": boolean;
   "meilisearch": boolean;
@@ -34,6 +35,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   "paperless": false,
   "communication": false,
   "crm": false,
+  "gis": false,
   "inbox": false,
   "wirtschaftsplan": false,
   "meilisearch": false,

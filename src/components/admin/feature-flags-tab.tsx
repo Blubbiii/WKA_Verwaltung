@@ -49,6 +49,7 @@ interface ModuleFlags {
   "paperless": boolean;
   "communication": boolean;
   "crm": boolean;
+  "gis": boolean;
   "inbox": boolean;
   "wirtschaftsplan": boolean;
   "accounting": boolean;
@@ -103,6 +104,7 @@ const MODULE_LABELS: Record<keyof ModuleFlags, string> = {
   "paperless": "Paperless",
   "communication": "Kommunikation",
   "crm": "CRM",
+  "gis": "GIS-Karte",
   "inbox": "Inbox",
   "wirtschaftsplan": "Wirtschaftsplan",
   "accounting": "Buchhaltung",

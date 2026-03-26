@@ -128,7 +128,7 @@ export interface NavChild {
   href: string;
   icon?: React.ElementType;
   /** Feature flag that must be enabled for this child to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing"
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "gis" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing"
     | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
     | "accounting.assets" | "accounting.cashbook" | "accounting.datev" | "accounting.yearend"
     | "accounting.costcenter" | "accounting.budget" | "accounting.quotes" | "accounting.liquidity"
@@ -146,7 +146,7 @@ export interface NavItem {
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
   /** Feature flag that must be enabled for this item to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing"
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "gis" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing"
     | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
     | "accounting.assets" | "accounting.cashbook" | "accounting.datev" | "accounting.yearend"
     | "accounting.costcenter" | "accounting.budget" | "accounting.quotes" | "accounting.liquidity"
@@ -326,6 +326,7 @@ export const navGroups: NavGroup[] = [
         href: "/gis",
         icon: Map,
         permission: "plots:read",
+        featureFlag: "gis" as const,
       },
     ],
   },

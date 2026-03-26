@@ -30,6 +30,7 @@ const MODULE_FLAG_KEYS = [
   "paperless.enabled",
   "communication.enabled",
   "crm.enabled",
+  "gis.enabled",
   "inbox.enabled",
   "wirtschaftsplan.enabled",
   "accounting.enabled",
@@ -81,6 +82,7 @@ export interface ModuleFlags {
   "paperless": boolean;
   "communication": boolean;
   "crm": boolean;
+  "gis": boolean;
   "inbox": boolean;
   "wirtschaftsplan": boolean;
   "accounting": boolean;
@@ -92,6 +94,7 @@ const DEFAULT_MODULE_FLAGS: ModuleFlags = {
   "paperless": false,
   "communication": false,
   "crm": false,
+  "gis": false,
   "inbox": false,
   "wirtschaftsplan": false,
   "accounting": false,

@@ -220,6 +220,13 @@ export const CONFIG_KEYS = {
     envFallback: "CRM_ENABLED",
     defaultValue: "false",
   },
+  "gis.enabled": {
+    category: "features" as ConfigCategory,
+    label: "GIS-Karte (Geographische Karte aller Parks)",
+    encrypted: false,
+    envFallback: "GIS_ENABLED",
+    defaultValue: "false",
+  },
   "inbox.enabled": {
     category: "features" as ConfigCategory,
     label: "Eingangsrechnungen & Gutschriften (Inbox)",
