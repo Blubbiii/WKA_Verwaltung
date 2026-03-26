@@ -22,7 +22,7 @@ const revenueSourceSchema = z.object({
 });
 
 const createInvoicesSchema = z.object({
-  invoiceDate: z.string().datetime().optional(),
+  invoiceDate: z.iso.datetime().optional(),
   revenueSources: z.array(revenueSourceSchema).optional(),
 });
 

@@ -26,7 +26,7 @@ const resourceAccessCreateSchema = z.object({
     Object.values(ACCESS_LEVELS) as [string, ...string[]],
     { error: "Ungültiges Zugriffslevel" }
   ),
-  expiresAt: z.string().datetime().optional().nullable(),
+  expiresAt: z.iso.datetime().optional().nullable(),
   notes: z.string().max(500).optional().nullable(),
 });
 

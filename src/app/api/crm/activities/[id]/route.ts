@@ -12,8 +12,8 @@ const updateSchema = z.object({
   status: z.enum(["DONE", "PENDING", "CANCELLED"]).optional(),
   direction: z.enum(["INBOUND", "OUTBOUND"]).optional().nullable(),
   duration: z.number().int().positive().optional().nullable(),
-  startTime: z.string().datetime().optional().nullable(),
-  dueDate: z.string().datetime().optional().nullable(),
+  startTime: z.iso.datetime().optional().nullable(),
+  dueDate: z.iso.datetime().optional().nullable(),
   assignedToId: z.uuid().optional().nullable(),
 });
 

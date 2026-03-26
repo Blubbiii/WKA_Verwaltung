@@ -7,7 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
 const paySchema = z.object({
-  paidAt: z.string().datetime().optional(),
+  paidAt: z.iso.datetime().optional(),
   paidAmount: z.number().positive().optional(),
 });
 

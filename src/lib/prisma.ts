@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { withEncryption } from "@/lib/encryption-middleware";
@@ -26,35 +26,41 @@ function createPrismaClient() {
   });
   globalForPrisma.pgPool = pool;
 
+  // Prisma 7 + pg driver adapter: queries bypass the Prisma query engine,
+  // so $on("query") events do not fire. Use $extends with a query extension
+  // for instrumentation instead.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adapter = new PrismaPg(pool as any);
 
   const baseClient = new PrismaClient({
     adapter,
-    log:
-      process.env.NODE_ENV === "development"
-        ? [
-            { emit: "event", level: "query" },
-            { emit: "stdout", level: "error" },
-            { emit: "stdout", level: "warn" },
-          ]
-        : ["error"],
+    log: ["error"],
   });
 
-  // Log slow database queries in development
-  if (process.env.NODE_ENV === "development") {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (baseClient as unknown as { $on: (event: string, callback: (e: Prisma.QueryEvent) => void) => void }).$on("query", (e: Prisma.QueryEvent) => {
-      if (e.duration > 100) {
-        logger.warn(
-          `[SLOW QUERY] ${e.duration}ms: ${e.query?.substring(0, 200)}`
-        );
-      }
-    });
-  }
+  // Slow query logging via Prisma 7 Extension API (works with driver adapters)
+  const clientWithLogging =
+    process.env.NODE_ENV === "development"
+      ? baseClient.$extends({
+          query: {
+            $allModels: {
+              async $allOperations({ model, operation, args, query }) {
+                const start = Date.now();
+                const result = await query(args);
+                const duration = Date.now() - start;
+                if (duration > 100) {
+                  logger.warn(
+                    `[SLOW QUERY] ${duration}ms: ${model}.${operation}`
+                  );
+                }
+                return result;
+              },
+            },
+          },
+        })
+      : baseClient;
 
   // Apply automatic bank data encryption/decryption extension
-  return withEncryption(baseClient);
+  return withEncryption(clientWithLogging as unknown as PrismaClient);
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();

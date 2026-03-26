@@ -7,8 +7,8 @@ import { apiLogger as logger } from "@/lib/logger";
 const updatePeriodSchema = z.object({
   status: z.enum(["OPEN", "IN_PROGRESS", "PENDING_REVIEW", "APPROVED", "CLOSED", "CANCELLED"]).optional(),
   periodType: z.enum(["ADVANCE", "FINAL"]).optional(),
-  advanceInvoiceDate: z.string().datetime().optional().nullable(),
-  settlementDate: z.string().datetime().optional().nullable(),
+  advanceInvoiceDate: z.iso.datetime().optional().nullable(),
+  settlementDate: z.iso.datetime().optional().nullable(),
   totalRevenue: z.number().optional().nullable(),
   totalMinimumRent: z.number().optional().nullable(),
   totalActualRent: z.number().optional().nullable(),

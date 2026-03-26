@@ -7,7 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 
 const proxyUpdateSchema = z.object({
   isActive: z.boolean().optional(),
-  validUntil: z.string().datetime().optional().nullable(),
+  validUntil: z.iso.datetime().optional().nullable(),
   documentUrl: z.url().optional().nullable(),
 });
 

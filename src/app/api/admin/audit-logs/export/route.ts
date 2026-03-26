@@ -13,8 +13,8 @@ import { apiLogger as logger } from "@/lib/logger";
 
 const querySchema = z.object({
   format: z.enum(["csv", "xlsx", "pdf"]),
-  from: z.string().datetime().optional(),
-  to: z.string().datetime().optional(),
+  from: z.iso.datetime().optional(),
+  to: z.iso.datetime().optional(),
   entityType: z.string().optional(),
   action: z.string().optional(),
   userId: z.uuid().optional(),

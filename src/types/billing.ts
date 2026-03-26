@@ -140,15 +140,15 @@ export const createLeaseRevenueSettlementSchema = z.object({
   advanceInterval: z.enum(["MONTHLY", "QUARTERLY", "YEARLY"]).optional().nullable(),
   month: z.number().int().min(1).max(12).optional().nullable(),
   linkedEnergySettlementId: z.uuid().optional().nullable(),
-  advanceDueDate: z.string().datetime().optional().nullable(),
-  settlementDueDate: z.string().datetime().optional().nullable(),
+  advanceDueDate: z.iso.datetime().optional().nullable(),
+  settlementDueDate: z.iso.datetime().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 
 // Update a lease revenue settlement
 export const updateLeaseRevenueSettlementSchema = z.object({
-  advanceDueDate: z.string().datetime().optional().nullable(),
-  settlementDueDate: z.string().datetime().optional().nullable(),
+  advanceDueDate: z.iso.datetime().optional().nullable(),
+  settlementDueDate: z.iso.datetime().optional().nullable(),
   linkedEnergySettlementId: z.uuid().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
