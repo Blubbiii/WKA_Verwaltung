@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { Prisma } from "@prisma/client";
 
 // GET /api/gis/features?parkId=xxx (optional filter)
 export async function GET(request: NextRequest) {
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
         where: {
           ...tenantFilter,
           ...parkFilter,
-          geometry: { not: null },
+          geometry: { not: Prisma.AnyNull },
         },
         include: {
           plotAreas: true,
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
         where: {
           ...tenantFilter,
           ...parkFilter,
-          geometry: { not: null },
+          geometry: { not: Prisma.AnyNull },
         },
         select: {
           id: true,
