@@ -241,7 +241,7 @@ export default function BillingRuleDetailPage({
       } else {
         toast.error(result.errorMessage || "Ausführung fehlgeschlagen");
       }
-    } catch (error) {
+    } catch {
       toast.error("Fehler bei der Ausführung");
     } finally {
       setIsExecuting(false);
@@ -261,7 +261,7 @@ export default function BillingRuleDetailPage({
       } else {
         throw new Error();
       }
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Deaktivieren");
     }
   };

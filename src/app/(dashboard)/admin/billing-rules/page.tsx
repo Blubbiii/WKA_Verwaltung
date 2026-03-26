@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -51,7 +51,6 @@ import { toast } from "sonner";
 import {
   Plus,
   Search,
-  Filter,
   MoreHorizontal,
   Play,
   Eye,
@@ -63,7 +62,6 @@ import {
   AlertTriangle,
   Clock,
   Receipt,
-  Euro,
   RefreshCw,
 } from "lucide-react";
 
@@ -171,7 +169,7 @@ export default function BillingRulesPage() {
         total: data.pagination.total,
         totalPages: data.pagination.totalPages,
       }));
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Laden der Abrechnungsregeln");
     } finally {
       setIsLoading(false);
@@ -204,7 +202,7 @@ export default function BillingRulesPage() {
       } else {
         toast.error(result.errorMessage || "Ausführung fehlgeschlagen");
       }
-    } catch (error) {
+    } catch {
       toast.error("Fehler bei der Ausführung");
     }
   };
@@ -229,7 +227,7 @@ export default function BillingRulesPage() {
       } else {
         throw new Error();
       }
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Deaktivieren");
     } finally {
       setDeactivateDialogOpen(false);
