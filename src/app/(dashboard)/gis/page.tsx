@@ -1,13 +1,7 @@
-import { notFound } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { getConfigBoolean } from "@/lib/config";
 import { GISPageClient } from "./GISPageClient";
 
-export default async function GISPage() {
-  const session = await auth();
-  const tenantId = session?.user?.tenantId ?? null;
-  const gisEnabled = await getConfigBoolean("gis.enabled", tenantId, false);
-  if (!gisEnabled) notFound();
-
+// Feature-flag visibility is handled by the sidebar (nav-config.ts featureFlag: "gis").
+// The API route enforces plots:read permission for data access.
+export default function GISPage() {
   return <GISPageClient />;
 }
