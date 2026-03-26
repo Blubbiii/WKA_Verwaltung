@@ -118,7 +118,7 @@ export function GISClient() {
     fetch(url)
       .then((r) => r.json())
       .then((d: GISData) => {
-        if (!cancelled) setData(d);
+        if (!cancelled && Array.isArray(d.parks)) setData(d);
       })
       .catch(console.error)
       .finally(() => {
@@ -171,7 +171,7 @@ export function GISClient() {
           : `/api/gis/features?parkId=${parkFilter}`;
       fetch(url)
         .then((r) => r.json())
-        .then((d: GISData) => setData(d))
+        .then((d: GISData) => { if (Array.isArray(d.parks)) setData(d); })
         .catch(console.error);
       void plotId;
     },

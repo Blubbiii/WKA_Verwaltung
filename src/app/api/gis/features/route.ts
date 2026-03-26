@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         where: {
           ...tenantFilter,
           ...parkFilter,
-          geometry: { not: { equals: null } },
+          geometry: { not: null },
         },
         include: {
           plotAreas: true,
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
         where: {
           ...tenantFilter,
           ...parkFilter,
-          geometry: { not: { equals: null } },
+          geometry: { not: null },
         },
         select: {
           id: true,
