@@ -12,11 +12,14 @@ import { hasMinimumRole } from "@/types/dashboard";
 // STANDARD WIDGET SIZES (in grid units, 12-column grid)
 // 1 unit width  = containerWidth / 12 (~100px at 1200px)
 // 1 unit height = rowHeight (60px)
+//
+// Kachel-Raster: 1 Kachel = 3 cols × 2 rows (≈180px × 136px)
 // ===========================================
-// small:  3x2  (4 per row, 120px) - KPI cards
-// medium: 4x5  (3 per row, 300px) - lists, small charts
-// large:  6x6  (2 per row, 360px) - large charts, admin logs
-// utility: 3x3 (4 per row, 180px) - weather, quick actions
+// small/kpi: 3×2   (4 per row, 120px) - KPI cards         = 1×1 Kacheln
+// medium:    6×4   (2 per row, 240px) - lists, charts      = 2×2 Kacheln
+// large:     6×6   (2 per row, 360px) - big charts         = 2×3 Kacheln
+// utility:   3×2   (4 per row, 120px) - weather, actions   = 1×1 Kacheln
+// full:      12×4  (1 per row, 240px) - overview charts    = 4×2 Kacheln
 // ===========================================
 
 export const WIDGET_REGISTRY: WidgetDefinition[] = [
@@ -145,7 +148,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
   },
 
   // ===========================================
-  // CHART WIDGETS - Standard: 6x6 (large, 360px) / 4x5 (medium, 300px)
+  // CHART WIDGETS - Standard: 6x6 (large, 360px) / 6x4 (medium, 240px)
   // ===========================================
   {
     id: "chart-monthly-invoices",
@@ -155,10 +158,10 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     minRole: "MANAGER",
     defaultWidth: 6,
     defaultHeight: 6,
-    minWidth: 4,
+    minWidth: 3,
     minHeight: 4,
     maxWidth: 12,
-    maxHeight: 10,
+    maxHeight: 12,
     icon: "BarChart3",
     resizable: true,
   },
@@ -170,10 +173,10 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     minRole: "MANAGER",
     defaultWidth: 6,
     defaultHeight: 6,
-    minWidth: 4,
+    minWidth: 3,
     minHeight: 4,
     maxWidth: 12,
-    maxHeight: 10,
+    maxHeight: 12,
     icon: "TrendingUp",
     resizable: true,
   },
@@ -183,18 +186,18 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     description: "Verteilung der Dokumente nach Kategorie",
     category: "chart",
     minRole: "VIEWER",
-    defaultWidth: 4,
-    defaultHeight: 5,
+    defaultWidth: 6,
+    defaultHeight: 4,
     minWidth: 3,
     minHeight: 4,
-    maxWidth: 8,
+    maxWidth: 12,
     maxHeight: 8,
     icon: "PieChart",
     resizable: true,
   },
 
   // ===========================================
-  // LIST WIDGETS - Standard: 4x5 (300px height)
+  // LIST WIDGETS - Standard: 6x4 (240px height) = 2x2 Kacheln
   // ===========================================
   {
     id: "list-deadlines",
@@ -202,11 +205,11 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     description: "Kommende Vertragsfristen und Deadlines",
     category: "list",
     minRole: "VIEWER",
-    defaultWidth: 4,
-    defaultHeight: 5,
+    defaultWidth: 6,
+    defaultHeight: 4,
     minWidth: 3,
-    minHeight: 3,
-    maxWidth: 8,
+    minHeight: 2,
+    maxWidth: 12,
     maxHeight: 10,
     icon: "Calendar",
     resizable: true,
@@ -217,11 +220,11 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     description: "Neueste Aktivitäten im System",
     category: "list",
     minRole: "VIEWER",
-    defaultWidth: 4,
-    defaultHeight: 5,
+    defaultWidth: 6,
+    defaultHeight: 4,
     minWidth: 3,
-    minHeight: 3,
-    maxWidth: 8,
+    minHeight: 2,
+    maxWidth: 12,
     maxHeight: 10,
     icon: "Activity",
     resizable: true,
@@ -232,11 +235,11 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     description: "Verträge die bald auslaufen",
     category: "list",
     minRole: "VIEWER",
-    defaultWidth: 4,
-    defaultHeight: 5,
+    defaultWidth: 6,
+    defaultHeight: 4,
     minWidth: 3,
-    minHeight: 3,
-    maxWidth: 8,
+    minHeight: 2,
+    maxWidth: 12,
     maxHeight: 10,
     icon: "AlertTriangle",
     resizable: true,
@@ -248,18 +251,18 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     description: "Überfällige Rechnungen, auslaufende Verträge und offene Abrechnungen",
     category: "list",
     minRole: "MANAGER",
-    defaultWidth: 4,
-    defaultHeight: 5,
+    defaultWidth: 6,
+    defaultHeight: 4,
     minWidth: 3,
-    minHeight: 3,
-    maxWidth: 8,
+    minHeight: 2,
+    maxWidth: 12,
     maxHeight: 10,
     icon: "AlertTriangle",
     resizable: true,
   },
 
   // ===========================================
-  // UTILITY WIDGETS - Standard: 3x3 (180px height)
+  // UTILITY WIDGETS - Standard: 3x2 (120px height) = 1x1 Kachel
   // ===========================================
   {
     id: "weather-widget",
@@ -268,8 +271,8 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     category: "utility",
     minRole: "VIEWER",
     defaultWidth: 3,
-    defaultHeight: 3,
-    minWidth: 2,
+    defaultHeight: 2,
+    minWidth: 3,
     minHeight: 2,
     maxWidth: 6,
     maxHeight: 6,
@@ -283,8 +286,8 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     category: "utility",
     minRole: "VIEWER",
     defaultWidth: 3,
-    defaultHeight: 3,
-    minWidth: 2,
+    defaultHeight: 2,
+    minWidth: 3,
     minHeight: 2,
     maxWidth: 6,
     maxHeight: 6,
@@ -293,7 +296,7 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
   },
 
   // ===========================================
-  // ADMIN WIDGETS - Standard: 4x5 (medium) / 6x6 (large)
+  // ADMIN WIDGETS - Standard: 6x4 (medium) / 6x6 (large)
   // ===========================================
   {
     id: "admin-system-status",
@@ -301,11 +304,11 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     description: "Systemstatus und Health-Checks",
     category: "admin",
     minRole: "ADMIN",
-    defaultWidth: 4,
-    defaultHeight: 5,
+    defaultWidth: 6,
+    defaultHeight: 4,
     minWidth: 3,
-    minHeight: 3,
-    maxWidth: 8,
+    minHeight: 2,
+    maxWidth: 12,
     maxHeight: 8,
     icon: "Server",
     resizable: true,
@@ -318,10 +321,10 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     minRole: "ADMIN",
     defaultWidth: 6,
     defaultHeight: 6,
-    minWidth: 4,
+    minWidth: 3,
     minHeight: 4,
     maxWidth: 12,
-    maxHeight: 10,
+    maxHeight: 12,
     icon: "ScrollText",
     resizable: true,
   },
@@ -333,10 +336,10 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     minRole: "SUPERADMIN",
     defaultWidth: 6,
     defaultHeight: 6,
-    minWidth: 4,
+    minWidth: 3,
     minHeight: 4,
     maxWidth: 12,
-    maxHeight: 10,
+    maxHeight: 12,
     icon: "Clock",
     resizable: true,
   },
@@ -346,11 +349,11 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     description: "Letzte Webhook-Zustellungen und Erfolgsrate",
     category: "admin",
     minRole: "ADMIN",
-    defaultWidth: 4,
-    defaultHeight: 5,
+    defaultWidth: 6,
+    defaultHeight: 4,
     minWidth: 3,
-    minHeight: 3,
-    maxWidth: 8,
+    minHeight: 2,
+    maxWidth: 12,
     maxHeight: 8,
     icon: "Webhook",
     resizable: true,

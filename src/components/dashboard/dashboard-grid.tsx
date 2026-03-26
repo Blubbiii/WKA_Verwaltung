@@ -259,8 +259,8 @@ export function DashboardGrid({
         onLayoutChange={handleLayoutChange}
         draggableHandle={isEditing ? undefined : ".no-drag"}
         useCSSTransforms={true}
-        compactType="vertical"
-        preventCollision={false}
+        compactType={null}
+        preventCollision={true}
       >
         {widgets.map((widget) => (
           <div

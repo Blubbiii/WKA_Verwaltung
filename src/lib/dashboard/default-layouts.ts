@@ -7,134 +7,128 @@ import { getWidgetById, getWidgetsForRole } from "./widget-registry";
 
 // ===========================================
 // Standard Grid Sizes (12-column grid, rowHeight=60px):
-//   small:  3x2  (4 per row, 120px) - KPI cards
-//   medium: 4x5  (3 per row, 300px) - lists, small charts
-//   large:  6x6  (2 per row, 360px) - big charts, admin logs
-//   utility: 3x3 (4 per row, 180px) - weather, quick actions
+//   KPI:     3×2  — 1 Kachel  (4 per row, ~120px tall)
+//   utility: 3×2  — 1 Kachel  (weather, quick-actions)
+//   medium:  6×4  — 2×2 Kacheln (2 per row, ~240px tall)
+//   large:   6×6  — 2×3 Kacheln (2 per row, ~360px tall)
+//
+// Layout rules:
+//   - x values are multiples of 3  (aligns to Kachel columns)
+//   - y values are multiples of 2  (aligns to Kachel rows)
+//   - 2-row gap (120px) between widget groups for visual breathing room
+//   - compactType=null → tiles stay exactly where placed; gaps are intentional
 // ===========================================
 
 /**
  * Default dashboard layout for VIEWER role
- * 8 basic widgets focused on overview information
  */
 export const VIEWER_DEFAULT_LAYOUT: DashboardWidget[] = [
-  // Row 0-1: 4 KPIs (3x2 each = 12 cols, 120px)
+  // Group 1 — KPIs (y=0, h=2 → ends at y=2)
   { id: "kpi-parks",     x: 0, y: 0, w: 3, h: 2 },
   { id: "kpi-turbines",  x: 3, y: 0, w: 3, h: 2 },
   { id: "kpi-contracts", x: 6, y: 0, w: 3, h: 2 },
   { id: "kpi-documents", x: 9, y: 0, w: 3, h: 2 },
 
-  // Row 2-6: 1 chart + 2 lists (4x5 each = 12 cols, 300px)
-  { id: "chart-documents-by-type", x: 0, y: 2, w: 4, h: 5 },
-  { id: "list-activities",         x: 4, y: 2, w: 4, h: 5 },
-  { id: "list-deadlines",          x: 8, y: 2, w: 4, h: 5 },
+  // Group 2 — Charts & Lists  (gap at y=2-3, starts at y=4, h=4 → ends at y=8)
+  { id: "chart-documents-by-type", x: 0, y: 4, w: 6, h: 4 },
+  { id: "list-activities",         x: 6, y: 4, w: 6, h: 4 },
 
-  // Row 7-9: utility (3x3, 180px)
-  { id: "quick-actions", x: 0, y: 7, w: 3, h: 3 },
+  // Group 3 — More content  (gap at y=8-9, starts at y=10)
+  { id: "list-deadlines", x: 0, y: 10, w: 6, h: 4 },
+  { id: "quick-actions",  x: 6, y: 10, w: 3, h: 2 },
 ];
 
 /**
  * Default dashboard layout for MANAGER role
- * 12 widgets including financial KPIs and charts
  */
 export const MANAGER_DEFAULT_LAYOUT: DashboardWidget[] = [
-  // Row 0-1: 4 KPIs (3x2 each = 12 cols, 120px)
+  // Group 1 — KPIs  (y=0-3, ends at y=4)
   { id: "kpi-parks",          x: 0, y: 0, w: 3, h: 2 },
   { id: "kpi-turbines",       x: 3, y: 0, w: 3, h: 2 },
   { id: "kpi-shareholders",   x: 6, y: 0, w: 3, h: 2 },
   { id: "kpi-fund-capital",   x: 9, y: 0, w: 3, h: 2 },
+  { id: "kpi-open-invoices",  x: 0, y: 2, w: 3, h: 2 },
+  { id: "kpi-contracts",      x: 3, y: 2, w: 3, h: 2 },
+  { id: "kpi-budget-variance",x: 6, y: 2, w: 3, h: 2 },
+  { id: "quick-actions",      x: 9, y: 2, w: 3, h: 2 },
 
-  // Row 2-3: 2 more KPIs (3x2 each, 120px) + quick-actions (3x3, 180px)
-  { id: "kpi-open-invoices", x: 0, y: 2, w: 3, h: 2 },
-  { id: "kpi-contracts",     x: 3, y: 2, w: 3, h: 2 },
-  { id: "quick-actions",     x: 6, y: 2, w: 3, h: 3 },
+  // Group 2 — Large Charts  (gap at y=4-5, starts at y=6, h=6 → ends at y=12)
+  { id: "chart-monthly-invoices",    x: 0, y: 6, w: 6, h: 6 },
+  { id: "chart-capital-development", x: 6, y: 6, w: 6, h: 6 },
 
-  // Row 4-9: 2 large charts (6x6 each = 12 cols, 360px)
-  { id: "chart-monthly-invoices",    x: 0, y: 5, w: 6, h: 6 },
-  { id: "chart-capital-development", x: 6, y: 5, w: 6, h: 6 },
-
-  // Row 11-15: 3 lists (4x5 each = 12 cols, 300px)
-  { id: "list-deadlines",          x: 0, y: 11, w: 4, h: 5 },
-  { id: "list-expiring-contracts", x: 4, y: 11, w: 4, h: 5 },
-  { id: "list-activities",         x: 8, y: 11, w: 4, h: 5 },
-
-  // Row 16-17: Wirtschaftsplan KPI (3x2) + P&L chart (6x4)
-  { id: "kpi-budget-variance",       x: 0, y: 16, w: 3, h: 2 },
-  { id: "chart-wirtschaftsplan-pl",  x: 3, y: 16, w: 6, h: 4 },
+  // Group 3 — Lists & P&L  (gap at y=12-13, starts at y=14)
+  { id: "list-deadlines",          x: 0, y: 14, w: 6, h: 4 },
+  { id: "list-expiring-contracts", x: 6, y: 14, w: 6, h: 4 },
+  { id: "list-activities",         x: 0, y: 18, w: 6, h: 4 },
+  { id: "chart-wirtschaftsplan-pl",x: 6, y: 18, w: 6, h: 4 },
 ];
 
 /**
  * Default dashboard layout for ADMIN role
- * All manager widgets + admin widgets
+ * All manager widgets + admin system widgets
  */
 export const ADMIN_DEFAULT_LAYOUT: DashboardWidget[] = [
-  // Row 0-1: 4 KPIs (3x2 each, 120px)
-  { id: "kpi-parks",        x: 0, y: 0, w: 3, h: 2 },
-  { id: "kpi-turbines",     x: 3, y: 0, w: 3, h: 2 },
-  { id: "kpi-shareholders", x: 6, y: 0, w: 3, h: 2 },
-  { id: "kpi-fund-capital", x: 9, y: 0, w: 3, h: 2 },
+  // Group 1 — KPIs  (y=0-3, ends at y=4)
+  { id: "kpi-parks",          x: 0, y: 0, w: 3, h: 2 },
+  { id: "kpi-turbines",       x: 3, y: 0, w: 3, h: 2 },
+  { id: "kpi-shareholders",   x: 6, y: 0, w: 3, h: 2 },
+  { id: "kpi-fund-capital",   x: 9, y: 0, w: 3, h: 2 },
+  { id: "kpi-open-invoices",  x: 0, y: 2, w: 3, h: 2 },
+  { id: "kpi-contracts",      x: 3, y: 2, w: 3, h: 2 },
+  { id: "kpi-budget-variance",x: 6, y: 2, w: 3, h: 2 },
+  { id: "quick-actions",      x: 9, y: 2, w: 3, h: 2 },
 
-  // Row 2-3: 2 KPIs (3x2, 120px) + quick-actions (3x3, 180px)
-  { id: "kpi-open-invoices", x: 0, y: 2, w: 3, h: 2 },
-  { id: "kpi-contracts",     x: 3, y: 2, w: 3, h: 2 },
-  { id: "quick-actions",     x: 6, y: 2, w: 3, h: 3 },
+  // Group 2 — Large Charts  (gap at y=4-5, starts at y=6, h=6 → ends at y=12)
+  { id: "chart-monthly-invoices",    x: 0, y: 6, w: 6, h: 6 },
+  { id: "chart-capital-development", x: 6, y: 6, w: 6, h: 6 },
 
-  // Row 5-10: 2 large charts (6x6 each, 360px)
-  { id: "chart-monthly-invoices",    x: 0, y: 5, w: 6, h: 6 },
-  { id: "chart-capital-development", x: 6, y: 5, w: 6, h: 6 },
+  // Group 3 — Lists & P&L  (gap at y=12-13, starts at y=14)
+  { id: "list-deadlines",          x: 0, y: 14, w: 6, h: 4 },
+  { id: "list-expiring-contracts", x: 6, y: 14, w: 6, h: 4 },
+  { id: "list-activities",         x: 0, y: 18, w: 6, h: 4 },
+  { id: "chart-wirtschaftsplan-pl",x: 6, y: 18, w: 6, h: 4 },
 
-  // Row 11-15: 3 lists (4x5 each, 300px)
-  { id: "list-deadlines",          x: 0, y: 11, w: 4, h: 5 },
-  { id: "list-expiring-contracts", x: 4, y: 11, w: 4, h: 5 },
-  { id: "list-activities",         x: 8, y: 11, w: 4, h: 5 },
-
-  // Row 16-17: Wirtschaftsplan KPI (3x2) + P&L chart (6x4)
-  { id: "kpi-budget-variance",       x: 0, y: 16, w: 3, h: 2 },
-  { id: "chart-wirtschaftsplan-pl",  x: 3, y: 16, w: 6, h: 4 },
-
-  // Row 20-25: admin widgets (4x5 + 6x6)
-  { id: "admin-system-status", x: 0, y: 20, w: 4, h: 5 },
-  { id: "admin-audit-log",     x: 4, y: 20, w: 8, h: 6 },
+  // Group 4 — Admin  (gap at y=22-23, starts at y=24)
+  { id: "admin-system-status", x: 0, y: 24, w: 6, h: 4 },
+  { id: "admin-audit-log",     x: 6, y: 24, w: 6, h: 6 },
 ];
 
 /**
  * Default dashboard layout for SUPERADMIN role
- * All widgets including billing jobs
+ * All widgets including billing jobs and webhook status
  */
 export const SUPERADMIN_DEFAULT_LAYOUT: DashboardWidget[] = [
-  // Row 0-1: 4 KPIs (3x2 each, 120px)
-  { id: "kpi-parks",        x: 0, y: 0, w: 3, h: 2 },
-  { id: "kpi-turbines",     x: 3, y: 0, w: 3, h: 2 },
-  { id: "kpi-shareholders", x: 6, y: 0, w: 3, h: 2 },
-  { id: "kpi-fund-capital", x: 9, y: 0, w: 3, h: 2 },
+  // Group 1 — KPIs + Utility  (y=0-3, ends at y=4)
+  { id: "kpi-parks",          x: 0, y: 0, w: 3, h: 2 },
+  { id: "kpi-turbines",       x: 3, y: 0, w: 3, h: 2 },
+  { id: "kpi-shareholders",   x: 6, y: 0, w: 3, h: 2 },
+  { id: "kpi-fund-capital",   x: 9, y: 0, w: 3, h: 2 },
+  { id: "kpi-open-invoices",  x: 0, y: 2, w: 3, h: 2 },
+  { id: "kpi-contracts",      x: 3, y: 2, w: 3, h: 2 },
+  { id: "weather-widget",     x: 6, y: 2, w: 3, h: 2 },
+  { id: "quick-actions",      x: 9, y: 2, w: 3, h: 2 },
 
-  // Row 2-4: 2 KPIs (3x2, 120px) + weather + quick-actions (3x3, 180px)
-  { id: "kpi-open-invoices", x: 0, y: 2, w: 3, h: 2 },
-  { id: "kpi-contracts",     x: 3, y: 2, w: 3, h: 2 },
-  { id: "weather-widget",    x: 6, y: 2, w: 3, h: 3 },
-  { id: "quick-actions",     x: 9, y: 2, w: 3, h: 3 },
+  // Group 2 — Large Charts  (gap at y=4-5, starts at y=6, h=6 → ends at y=12)
+  { id: "chart-monthly-invoices",    x: 0, y: 6, w: 6, h: 6 },
+  { id: "chart-capital-development", x: 6, y: 6, w: 6, h: 6 },
 
-  // Row 5-10: 2 large charts (6x6 each, 360px)
-  { id: "chart-monthly-invoices",    x: 0, y: 5, w: 6, h: 6 },
-  { id: "chart-capital-development", x: 6, y: 5, w: 6, h: 6 },
+  // Group 3 — Lists & P&L  (gap at y=12-13, starts at y=14)
+  { id: "list-deadlines",          x: 0, y: 14, w: 6, h: 4 },
+  { id: "list-expiring-contracts", x: 6, y: 14, w: 6, h: 4 },
+  { id: "list-activities",         x: 0, y: 18, w: 6, h: 4 },
+  { id: "chart-wirtschaftsplan-pl",x: 6, y: 18, w: 6, h: 4 },
 
-  // Row 11-15: 3 lists (4x5 each, 300px)
-  { id: "list-deadlines",          x: 0, y: 11, w: 4, h: 5 },
-  { id: "list-expiring-contracts", x: 4, y: 11, w: 4, h: 5 },
-  { id: "list-activities",         x: 8, y: 11, w: 4, h: 5 },
+  // Group 4 — Secondary KPI & Analytics  (gap at y=22-23, starts at y=24)
+  { id: "kpi-budget-variance",     x: 0, y: 24, w: 3, h: 2 },
+  { id: "admin-system-status",     x: 3, y: 24, w: 6, h: 4 },
+  { id: "chart-documents-by-type", x: 0, y: 28, w: 6, h: 4 },
 
-  // Row 16-17: Wirtschaftsplan KPI (3x2) + P&L chart (6x4)
-  { id: "kpi-budget-variance",       x: 0, y: 16, w: 3, h: 2 },
-  { id: "chart-wirtschaftsplan-pl",  x: 3, y: 16, w: 6, h: 4 },
+  // Group 5 — Admin Logs & Jobs  (gap at y=32-33, starts at y=34)
+  { id: "admin-audit-log",    x: 0, y: 34, w: 6, h: 6 },
+  { id: "admin-billing-jobs", x: 6, y: 34, w: 6, h: 6 },
 
-  // Row 20-25: admin widgets + chart
-  { id: "admin-system-status",     x: 0, y: 20, w: 4, h: 5 },
-  { id: "chart-documents-by-type", x: 4, y: 20, w: 4, h: 5 },
-  { id: "admin-audit-log",         x: 0, y: 25, w: 6, h: 6 },
-  { id: "admin-billing-jobs",      x: 6, y: 25, w: 6, h: 6 },
-
-  // Row 31-35: webhook status (4x5)
-  { id: "admin-webhook-status",    x: 0, y: 31, w: 4, h: 5 },
+  // Group 6 — Integrations  (gap at y=40-41, starts at y=42)
+  { id: "admin-webhook-status", x: 0, y: 42, w: 6, h: 4 },
 ];
 
 /**
