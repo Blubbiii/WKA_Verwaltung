@@ -112,6 +112,7 @@ export async function POST(request: NextRequest) {
     if (portalAccess.createPortalAccess) {
       const existingUser = await prisma.user.findUnique({
         where: { email: personalData.email },
+        select: { id: true },
       });
 
       if (existingUser) {

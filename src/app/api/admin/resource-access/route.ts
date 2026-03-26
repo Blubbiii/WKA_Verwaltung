@@ -129,6 +129,7 @@ const check = await requireAdmin();
     // Prüfen ob User existiert
     const user = await prisma.user.findUnique({
       where: { id: validatedData.userId },
+      select: { id: true },
     });
 
     if (!user) {

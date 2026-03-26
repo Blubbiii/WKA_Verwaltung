@@ -161,6 +161,7 @@ export async function POST(
     // Check if a user with this email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: shareholder.person.email },
+      select: { id: true },
     });
 
     if (existingUser) {

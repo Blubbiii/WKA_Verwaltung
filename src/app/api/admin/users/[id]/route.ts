@@ -11,12 +11,12 @@ const userUpdateSchema = z.object({
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
   password: z.string().min(8).optional(),
-  tenantId: z.string().uuid().optional(),
+  tenantId: z.uuid().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
   memberships: z
     .array(
       z.object({
-        tenantId: z.string().uuid(),
+        tenantId: z.uuid(),
         isPrimary: z.boolean().default(false),
       })
     )
@@ -117,6 +117,7 @@ export async function PATCH(
 
     const existingUser = await prisma.user.findUnique({
       where: { id },
+      omit: { passwordHash: true },
     });
 
     if (!existingUser) {
@@ -141,6 +142,7 @@ export async function PATCH(
     if (validatedData.email && validatedData.email !== existingUser.email) {
       const emailExists = await prisma.user.findUnique({
         where: { email: validatedData.email },
+        select: { id: true },
       });
 
       if (emailExists) {
@@ -265,6 +267,7 @@ export async function DELETE(
 
     const existingUser = await prisma.user.findUnique({
       where: { id },
+      select: { id: true, tenantId: true },
     });
 
     if (!existingUser) {

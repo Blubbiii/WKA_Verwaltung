@@ -42,6 +42,7 @@ export async function GET() {
     // Note: emailPreferences is a new field, will be available after prisma generate
     const user = await prisma.user.findUnique({
       where: { id: check.userId! },
+      omit: { passwordHash: true },
     }) as { emailPreferences?: unknown } | null;
 
     if (!user) {
