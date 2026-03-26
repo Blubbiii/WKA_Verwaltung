@@ -9,7 +9,7 @@
  * Permission: admin:manage
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getArchiveExportData } from "@/lib/archive/gobd-archive";
@@ -47,17 +47,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Audit log the export
-    await createAuditLog({
-      action: "EXPORT",
-      entityType: "ArchivedDocument",
-      entityId: `archive-export-${year}`,
-      newValues: {
-        year,
-        documentCount: exportData.documents.length,
-        totalSizeBytes: exportData.totalSize,
-      },
-      description: `GoBD-Archiv Export für Betriebsprüfung: Jahr ${year}, ${exportData.documents.length} Dokumente`,
+    // Audit log the export (deferred: runs after response is sent)
+    const documentCount = exportData.documents.length;
+    const totalSizeBytes = exportData.totalSize;
+    after(async () => {
+      await createAuditLog({
+        action: "EXPORT",
+        entityType: "ArchivedDocument",
+        entityId: `archive-export-${year}`,
+        newValues: {
+          year,
+          documentCount,
+          totalSizeBytes,
+        },
+        description: `GoBD-Archiv Export für Betriebsprüfung: Jahr ${year}, ${documentCount} Dokumente`,
+      });
     });
 
     // Return the index CSV and document list as JSON

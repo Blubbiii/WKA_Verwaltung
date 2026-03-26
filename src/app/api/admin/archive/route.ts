@@ -5,7 +5,7 @@
  * Permission: admin:manage
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import {
@@ -152,13 +152,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Audit log
-    await createAuditLog({
-      action: "CREATE",
-      entityType: "ArchivedDocument",
-      entityId: archiveId,
-      newValues: { documentType, referenceId, archiveId },
-      description: `GoBD-Archivierung: ${documentType} ${referenceId}`,
+    // Audit log (deferred: runs after response is sent)
+    after(async () => {
+      await createAuditLog({
+        action: "CREATE",
+        entityType: "ArchivedDocument",
+        entityId: archiveId,
+        newValues: { documentType, referenceId, archiveId },
+        description: `GoBD-Archivierung: ${documentType} ${referenceId}`,
+      });
     });
 
     return NextResponse.json(

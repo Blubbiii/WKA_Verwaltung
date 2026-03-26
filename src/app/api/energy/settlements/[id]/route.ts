@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
@@ -345,12 +345,15 @@ export async function DELETE(
     // Hard-delete: Abrechnung und zugehoerige Items löschen (CASCADE)
     await prisma.energySettlement.delete({ where: { id } });
 
-    // Log deletion for audit trail
-    await logDeletion("EnergySettlement", id, {
+    // Log deletion for audit trail (deferred: runs after response is sent)
+    const settlementDeletionData = {
       year: existing.year,
       month: existing.month,
       park: existing.park.name,
       status: existing.status,
+    };
+    after(async () => {
+      await logDeletion("EnergySettlement", id, settlementDeletionData);
     });
 
     // Invalidate dashboard caches after settlement deletion

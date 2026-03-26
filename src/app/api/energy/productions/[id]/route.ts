@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
@@ -239,11 +239,14 @@ export async function DELETE(
     // Löschen
     await prisma.turbineProduction.delete({ where: { id, tenantId: check.tenantId! } });
 
-    // Audit Log
-    await logDeletion("TurbineProduction", id, {
+    // Audit Log (deferred: runs after response is sent)
+    const productionDeletionData = {
       turbine: existing.turbine.designation,
       period: `${existing.month}/${existing.year}`,
       productionKwh: existing.productionKwh.toString(),
+    };
+    after(async () => {
+      await logDeletion("TurbineProduction", id, productionDeletionData);
     });
 
     return NextResponse.json({

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
@@ -157,14 +157,19 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    // Audit log
-    await createAuditLog({
-      action: "UPDATE",
-      entityType: "Tenant",
-      entityId: check.tenantId,
-      oldValues: oldMarketing ? { marketing: oldMarketing } : null,
-      newValues: { marketing: parsed.data },
-      description: "Marketing-Konfiguration aktualisiert",
+    // Audit log (deferred: runs after response is sent)
+    const tenantId = check.tenantId;
+    const oldMarketingSnapshot = oldMarketing;
+    const newMarketing = parsed.data;
+    after(async () => {
+      await createAuditLog({
+        action: "UPDATE",
+        entityType: "Tenant",
+        entityId: tenantId,
+        oldValues: oldMarketingSnapshot ? { marketing: oldMarketingSnapshot } : null,
+        newValues: { marketing: newMarketing },
+        description: "Marketing-Konfiguration aktualisiert",
+      });
     });
 
     return NextResponse.json(parsed.data);

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
@@ -121,24 +121,30 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    // Audit log
+    // Audit log (deferred: runs after response is sent)
     // Note: We log that legal pages were updated but avoid storing full content
     // in audit (could be very large). Only log that the update happened.
-    await createAuditLog({
-      action: "UPDATE",
-      entityType: "Tenant",
-      entityId: check.tenantId,
-      oldValues: oldLegalPages
-        ? {
-            impressumLength: (oldLegalPages as Record<string, string>).impressum?.length || 0,
-            datenschutzLength: (oldLegalPages as Record<string, string>).datenschutz?.length || 0,
-          }
-        : null,
-      newValues: {
-        impressumLength: parsed.data.impressum.length,
-        datenschutzLength: parsed.data.datenschutz.length,
-      },
-      description: "Rechtliche Seiten aktualisiert",
+    const tenantId = check.tenantId;
+    const oldLegalPagesSnapshot = oldLegalPages;
+    const newImpressumLength = parsed.data.impressum.length;
+    const newDatenschutzLength = parsed.data.datenschutz.length;
+    after(async () => {
+      await createAuditLog({
+        action: "UPDATE",
+        entityType: "Tenant",
+        entityId: tenantId,
+        oldValues: oldLegalPagesSnapshot
+          ? {
+              impressumLength: (oldLegalPagesSnapshot as Record<string, string>).impressum?.length || 0,
+              datenschutzLength: (oldLegalPagesSnapshot as Record<string, string>).datenschutz?.length || 0,
+            }
+          : null,
+        newValues: {
+          impressumLength: newImpressumLength,
+          datenschutzLength: newDatenschutzLength,
+        },
+        description: "Rechtliche Seiten aktualisiert",
+      });
     });
 
     return NextResponse.json(parsed.data);

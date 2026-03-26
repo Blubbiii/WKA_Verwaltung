@@ -5,7 +5,7 @@
  * Permission: admin:manage
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import {
@@ -71,19 +71,22 @@ export async function POST(request: NextRequest) {
       result
     );
 
-    // Audit log
-    await createAuditLog({
-      action: "VIEW",
-      entityType: "ArchiveVerification",
-      entityId: verificationLog.id,
-      newValues: {
-        scope: scopeLabel,
-        passed: result.passed,
-        totalDocuments: result.totalDocuments,
-        validDocuments: result.validDocuments,
-        invalidDocuments: result.invalidDocuments,
-      },
-      description: `GoBD-Integritaetsprüfung: ${scopeLabel} - ${result.passed ? "BESTANDEN" : "FEHLGESCHLAGEN"}`,
+    // Audit log (deferred: runs after response is sent)
+    const verificationLogId = verificationLog.id;
+    after(async () => {
+      await createAuditLog({
+        action: "VIEW",
+        entityType: "ArchiveVerification",
+        entityId: verificationLogId,
+        newValues: {
+          scope: scopeLabel,
+          passed: result.passed,
+          totalDocuments: result.totalDocuments,
+          validDocuments: result.validDocuments,
+          invalidDocuments: result.invalidDocuments,
+        },
+        description: `GoBD-Integritaetsprüfung: ${scopeLabel} - ${result.passed ? "BESTANDEN" : "FEHLGESCHLAGEN"}`,
+      });
     });
 
     return NextResponse.json({

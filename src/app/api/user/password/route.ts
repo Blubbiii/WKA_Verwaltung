@@ -6,7 +6,7 @@
  * Authentication: Any authenticated user (for their own password)
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
@@ -114,18 +114,16 @@ export async function POST(request: Request) {
       }),
     ]);
 
-    // Create audit log for password change
-    try {
+    // Create audit log for password change (deferred: runs after response is sent)
+    const auditUserId = userId!;
+    after(async () => {
       await createAuditLog({
         action: "UPDATE",
         entityType: "User",
-        entityId: userId!,
+        entityId: auditUserId,
         newValues: { action: "password_changed" },
       });
-    } catch (auditError) {
-      // Audit log failure should not prevent password change
-      logger.error({ err: auditError }, "[Password Change] Audit log error");
-    }
+    });
 
     return NextResponse.json({
       success: true,

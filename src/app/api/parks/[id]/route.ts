@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -21,7 +21,7 @@ const parkUpdateSchema = z.object({
   longitude: z.number().optional().nullable(),
   commissioningDate: z.string().optional().nullable(),
   totalCapacityKw: z.number().optional().nullable(),
-  operatorFundId: z.string().uuid().optional().nullable(),
+  operatorFundId: z.uuid().optional().nullable(),
   technischeBetriebsfuehrung: z.string().optional().nullable(),
   kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).optional(),
@@ -37,7 +37,7 @@ const parkUpdateSchema = z.object({
   // Stromabrechnung-Konfiguration (DULDUNG)
   defaultDistributionMode: z.enum(["PROPORTIONAL", "SMOOTHED", "TOLERATED"]).optional(),
   defaultTolerancePercent: z.number().min(0).max(100).optional().nullable(),
-  billingEntityFundId: z.string().uuid().optional().nullable(),
+  billingEntityFundId: z.uuid().optional().nullable(),
 
   // Pachtabrechnungs-Konfiguration
   settlementArticles: z.array(z.object({
@@ -370,8 +370,11 @@ export async function DELETE(
       where: { id },
     });
 
-    // Log the deletion for audit trail
-    await logDeletion("Park", id, existingPark as Record<string, unknown>);
+    // Log the deletion for audit trail (deferred: runs after response is sent)
+    const parkSnapshot = existingPark as Record<string, unknown>;
+    after(async () => {
+      await logDeletion("Park", id, parkSnapshot);
+    });
 
     // Invalidate dashboard caches after park deletion
     invalidate.onParkChange(check.tenantId!, id, 'delete').catch((err) => {

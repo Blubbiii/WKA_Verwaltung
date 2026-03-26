@@ -5,7 +5,7 @@
  * Permission: admin:manage
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getArchivedDocument } from "@/lib/archive/gobd-archive";
 import { createAuditLog } from "@/lib/audit";
@@ -38,16 +38,20 @@ export async function GET(
     }
 
     // Log access in audit trail (GoBD requirement: every access must be logged)
-    await createAuditLog({
-      action: "DOCUMENT_DOWNLOAD",
-      entityType: "ArchivedDocument",
-      entityId: id,
-      newValues: {
-        documentType: result.document.documentType,
-        referenceNumber: result.document.referenceNumber,
-        contentHash: result.document.contentHash,
-      },
-      description: `GoBD-Archiv Download: ${result.document.referenceNumber}`,
+    // Deferred: runs after the file response is sent
+    const { documentType, referenceNumber, contentHash } = result.document;
+    after(async () => {
+      await createAuditLog({
+        action: "DOCUMENT_DOWNLOAD",
+        entityType: "ArchivedDocument",
+        entityId: id,
+        newValues: {
+          documentType,
+          referenceNumber,
+          contentHash,
+        },
+        description: `GoBD-Archiv Download: ${referenceNumber}`,
+      });
     });
 
     // Return file as download

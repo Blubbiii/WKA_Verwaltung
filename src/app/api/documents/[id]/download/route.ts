@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -83,23 +83,22 @@ export async function GET(
       );
     }
 
-    // Log download to audit trail (non-blocking)
-    createAuditLog({
-      action: "DOCUMENT_DOWNLOAD",
-      entityType: "Document",
-      entityId: document.id,
-      newValues: {
-        documentId: document.id,
-        documentTitle: document.title,
-        fileName: document.fileName,
-        category: document.category,
-        downloadedAt: new Date().toISOString(),
-        redirect: shouldRedirect,
-      },
-      description: `Dokument "${document.title}" (${document.fileName}) heruntergeladen`,
-    }).catch((error) => {
-      // Don't fail the download if audit logging fails
-      logger.error({ err: error }, "Failed to log document download");
+    // Log download to audit trail (deferred: runs after response is sent)
+    after(async () => {
+      await createAuditLog({
+        action: "DOCUMENT_DOWNLOAD",
+        entityType: "Document",
+        entityId: document.id,
+        newValues: {
+          documentId: document.id,
+          documentTitle: document.title,
+          fileName: document.fileName,
+          category: document.category,
+          downloadedAt: new Date().toISOString(),
+          redirect: shouldRedirect,
+        },
+        description: `Dokument "${document.title}" (${document.fileName}) heruntergeladen`,
+      });
     });
 
     // Wenn redirect=true, leite direkt zur signierten URL weiter

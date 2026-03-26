@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -188,8 +188,11 @@ const check = await requirePermission(PERMISSIONS.PARKS_DELETE);
       where: { id },
     });
 
-    // Log deletion for audit trail
-    await logDeletion("ServiceEvent", id, event);
+    // Log deletion for audit trail (deferred: runs after response is sent)
+    const eventSnapshot = event;
+    after(async () => {
+      await logDeletion("ServiceEvent", id, eventSnapshot);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

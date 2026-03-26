@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -7,7 +7,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
 const plotUpdateSchema = z.object({
-  parkId: z.string().uuid().optional().nullable(),
+  parkId: z.uuid().optional().nullable(),
   county: z.string().optional().nullable(),
   municipality: z.string().optional().nullable(),
   cadastralDistrict: z.string().min(1).optional(),
@@ -17,8 +17,8 @@ const plotUpdateSchema = z.object({
   usageType: z.string().optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
-  mapImageUrl: z.string().url().optional().nullable(),
-  mapDocumentUrl: z.string().url().optional().nullable(),
+  mapImageUrl: z.url().optional().nullable(),
+  mapDocumentUrl: z.url().optional().nullable(),
   notes: z.string().optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).optional(),
 });
@@ -244,8 +244,11 @@ const check = await requirePermission(PERMISSIONS.PLOTS_DELETE);
       where: { id },
     });
 
-    // Log the deletion
-    await logDeletion("Plot", id, plotToDelete as Record<string, unknown>);
+    // Log the deletion (deferred: runs after response is sent)
+    const plotSnapshot = plotToDelete as Record<string, unknown>;
+    after(async () => {
+      await logDeletion("Plot", id, plotSnapshot);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

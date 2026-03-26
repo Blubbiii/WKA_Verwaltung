@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
@@ -297,18 +297,22 @@ export async function PATCH(
       },
     });
 
-    // Audit-Log
-    await createAuditLog({
-      action: "UPDATE",
-      entityType: "FundHierarchy",
-      entityId: id,
-      oldValues,
-      newValues: {
-        ownershipPercentage: Number(hierarchy.ownershipPercentage),
-        validFrom: hierarchy.validFrom.toISOString(),
-        validTo: hierarchy.validTo?.toISOString() || null,
-        notes: hierarchy.notes,
-      },
+    // Audit-Log (deferred: runs after response is sent)
+    const oldValuesSnapshot = oldValues;
+    const newValuesSnapshot = {
+      ownershipPercentage: Number(hierarchy.ownershipPercentage),
+      validFrom: hierarchy.validFrom.toISOString(),
+      validTo: hierarchy.validTo?.toISOString() || null,
+      notes: hierarchy.notes,
+    };
+    after(async () => {
+      await createAuditLog({
+        action: "UPDATE",
+        entityType: "FundHierarchy",
+        entityId: id,
+        oldValues: oldValuesSnapshot,
+        newValues: newValuesSnapshot,
+      });
     });
 
     return NextResponse.json(hierarchy);
@@ -385,13 +389,16 @@ export async function DELETE(
     // Löschen
     await prisma.fundHierarchy.delete({ where: { id } });
 
-    // Audit Log
-    await logDeletion("FundHierarchy", id, {
+    // Audit Log (deferred: runs after response is sent)
+    const deletionData = {
       parentFund: existing.parentFund.name,
       childFund: existing.childFund.name,
       ownershipPercentage: Number(existing.ownershipPercentage),
       validFrom: existing.validFrom.toISOString(),
       validTo: existing.validTo?.toISOString() || null,
+    };
+    after(async () => {
+      await logDeletion("FundHierarchy", id, deletionData);
     });
 
     return NextResponse.json({

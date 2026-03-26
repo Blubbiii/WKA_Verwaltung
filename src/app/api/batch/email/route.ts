@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -7,7 +7,7 @@ import { createAuditLog } from "@/lib/audit";
 const batchEmailSchema = z.object({
   subject: z.string().min(1).max(200),
   body: z.string().min(1).max(10000),
-  recipientIds: z.array(z.string().uuid()).min(1).max(500),
+  recipientIds: z.array(z.uuid()).min(1).max(500),
 });
 
 export async function POST(request: NextRequest) {
@@ -71,16 +71,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await createAuditLog({
-      action: "CREATE",
-      entityType: "MassCommunication",
-      entityId: "batch",
-      newValues: {
-        subject,
-        recipientCount: users.length,
-        queued: emailResults.queued,
-      },
-      description: `Batch-E-Mail an ${users.length} Empfänger`,
+    // Audit log (deferred: runs after response is sent)
+    const recipientCount = users.length;
+    const queuedCount = emailResults.queued;
+    after(async () => {
+      await createAuditLog({
+        action: "CREATE",
+        entityType: "MassCommunication",
+        entityId: "batch",
+        newValues: {
+          subject,
+          recipientCount,
+          queued: queuedCount,
+        },
+        description: `Batch-E-Mail an ${recipientCount} Empfänger`,
+      });
     });
 
     return NextResponse.json({

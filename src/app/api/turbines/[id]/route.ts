@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -10,7 +10,7 @@ const turbineUpdateSchema = z.object({
   designation: z.string().min(1, "Bezeichnung ist erforderlich").optional(),
   serialNumber: z.string().optional().nullable(),
   mastrNumber: z.string().optional().nullable(),
-  netzgesellschaftFundId: z.string().uuid().optional().nullable(),
+  netzgesellschaftFundId: z.uuid().optional().nullable(),
   manufacturer: z.string().optional().nullable(),
   model: z.string().optional().nullable(),
   ratedPowerKw: z.number().optional().nullable(),
@@ -24,7 +24,7 @@ const turbineUpdateSchema = z.object({
   technicalData: z.record(z.string(), z.any()).optional(),
   technischeBetriebsfuehrung: z.string().optional().nullable(),
   kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
-  operatorFundId: z.string().uuid().optional().nullable(),
+  operatorFundId: z.uuid().optional().nullable(),
 
   // Notes
   notes: z.string().optional().nullable(),
@@ -309,8 +309,11 @@ export async function DELETE(
       where: { id },
     });
 
-    // Log the deletion for audit trail
-    await logDeletion("Turbine", id, existingTurbine as Record<string, unknown>);
+    // Log the deletion for audit trail (deferred: runs after response is sent)
+    const turbineSnapshot = existingTurbine as Record<string, unknown>;
+    after(async () => {
+      await logDeletion("Turbine", id, turbineSnapshot);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

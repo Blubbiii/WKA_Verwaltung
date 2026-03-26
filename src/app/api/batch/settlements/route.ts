@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -7,7 +7,7 @@ import { createAuditLog } from "@/lib/audit";
 
 const batchSettlementSchema = z.object({
   action: z.enum(["approve", "reject"]),
-  settlementIds: z.array(z.string().uuid()).min(1).max(100),
+  settlementIds: z.array(z.uuid()).min(1).max(100),
   reason: z.string().optional(),
 });
 
@@ -89,12 +89,14 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      await createAuditLog({
-        action: "UPDATE",
-        entityType: "EnergySettlement",
-        entityId: id,
-        newValues: { batchAction: action, reason },
-        description: `Batch ${action}: Energieabrechnung`,
+      after(async () => {
+        await createAuditLog({
+          action: "UPDATE",
+          entityType: "EnergySettlement",
+          entityId: id,
+          newValues: { batchAction: action, reason },
+          description: `Batch ${action}: Energieabrechnung`,
+        });
       });
     });
 

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
@@ -272,19 +272,23 @@ export async function PATCH(
       },
     });
 
-    // Audit-Log
-    await createAuditLog({
-      action: "UPDATE",
-      entityType: "TurbineOperator",
-      entityId: id,
-      oldValues,
-      newValues: {
-        ownershipPercentage: Number(operator.ownershipPercentage),
-        validFrom: operator.validFrom.toISOString(),
-        validTo: operator.validTo?.toISOString() || null,
-        status: operator.status,
-        notes: operator.notes,
-      },
+    // Audit-Log (deferred: runs after response is sent)
+    const oldValuesSnapshot = oldValues;
+    const newValuesSnapshot = {
+      ownershipPercentage: Number(operator.ownershipPercentage),
+      validFrom: operator.validFrom.toISOString(),
+      validTo: operator.validTo?.toISOString() || null,
+      status: operator.status,
+      notes: operator.notes,
+    };
+    after(async () => {
+      await createAuditLog({
+        action: "UPDATE",
+        entityType: "TurbineOperator",
+        entityId: id,
+        oldValues: oldValuesSnapshot,
+        newValues: newValuesSnapshot,
+      });
     });
 
     return NextResponse.json(operator);
@@ -377,14 +381,17 @@ export async function DELETE(
     // Löschen
     await prisma.turbineOperator.delete({ where: { id } });
 
-    // Audit Log
-    await logDeletion("TurbineOperator", id, {
+    // Audit Log (deferred: runs after response is sent)
+    const deletionData = {
       turbine: existing.turbine.designation,
       park: existing.turbine.park.name,
       operatorFund: existing.operatorFund.name,
       validFrom: existing.validFrom.toISOString(),
       validTo: existing.validTo?.toISOString() || null,
       ownershipPercentage: Number(existing.ownershipPercentage),
+    };
+    after(async () => {
+      await logDeletion("TurbineOperator", id, deletionData);
     });
 
     return NextResponse.json({

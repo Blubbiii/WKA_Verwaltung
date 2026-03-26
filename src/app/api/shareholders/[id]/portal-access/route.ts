@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -257,18 +257,25 @@ export async function POST(
       return newUser;
     });
 
-    // Audit log (outside transaction - should not break main operation)
-    await createAuditLog({
-      action: "CREATE",
-      entityType: "User",
-      entityId: result.id,
-      newValues: {
-        email: result.email,
-        firstName: result.firstName,
-        lastName: result.lastName,
-        shareholderId: shareholder.id,
-        portalAccess: true,
-      },
+    // Audit log (deferred: runs after response is sent)
+    const newUserId = result.id;
+    const newUserEmail = result.email;
+    const newUserFirstName = result.firstName;
+    const newUserLastName = result.lastName;
+    const shareholderId = shareholder.id;
+    after(async () => {
+      await createAuditLog({
+        action: "CREATE",
+        entityType: "User",
+        entityId: newUserId,
+        newValues: {
+          email: newUserEmail,
+          firstName: newUserFirstName,
+          lastName: newUserLastName,
+          shareholderId,
+          portalAccess: true,
+        },
+      });
     });
 
     logger.info(
@@ -406,20 +413,25 @@ export async function DELETE(
       }
     });
 
-    // Audit log
-    await createAuditLog({
-      action: "UPDATE",
-      entityType: "Shareholder",
-      entityId: shareholder.id,
-      oldValues: {
-        userId,
-        userEmail: shareholder.user.email,
-        portalAccess: true,
-      },
-      newValues: {
-        userId: null,
-        portalAccess: false,
-      },
+    // Audit log (deferred: runs after response is sent)
+    const revokedShareholderId = shareholder.id;
+    const revokedUserId = userId;
+    const revokedUserEmail = shareholder.user.email;
+    after(async () => {
+      await createAuditLog({
+        action: "UPDATE",
+        entityType: "Shareholder",
+        entityId: revokedShareholderId,
+        oldValues: {
+          userId: revokedUserId,
+          userEmail: revokedUserEmail,
+          portalAccess: true,
+        },
+        newValues: {
+          userId: null,
+          portalAccess: false,
+        },
+      });
     });
 
     logger.info(

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -7,8 +7,8 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
 const leaseUpdateSchema = z.object({
-  plotIds: z.array(z.string().uuid()).optional(),
-  lessorId: z.string().uuid().optional(),
+  plotIds: z.array(z.uuid()).optional(),
+  lessorId: z.uuid().optional(),
   signedDate: z.string().nullable().optional(), // Vertragsabschluss (Unterschrift)
   startDate: z.string().optional(), // Vertragsbeginn (Baubeginn)
   endDate: z.string().nullable().optional(),
@@ -23,13 +23,13 @@ const leaseUpdateSchema = z.object({
   waitingMoneySchedule: z.enum(["monthly", "yearly", "once"]).nullable().optional(),
   // Abrechnungsintervall
   billingInterval: z.enum(["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "CUSTOM_CRON"]).optional(),
-  linkedTurbineId: z.string().uuid().nullable().optional(),
+  linkedTurbineId: z.uuid().nullable().optional(),
   // Vertragspartner (Paechter-Gesellschaft)
-  contractPartnerFundId: z.string().uuid().nullable().optional(),
+  contractPartnerFundId: z.uuid().nullable().optional(),
   // Stichtag für Gutschriften (Tag im Monat, überschreibt Park-Default)
   paymentDay: z.number().int().min(1).max(28).nullable().optional(),
   // Anhänge & Notizen
-  contractDocumentUrl: z.string().url().nullable().optional(),
+  contractDocumentUrl: z.url().nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 
@@ -271,8 +271,11 @@ export async function DELETE(
       where: { id },
     });
 
-    // Log the deletion
-    await logDeletion("Lease", id, leaseToDelete as Record<string, unknown>);
+    // Log the deletion (deferred: runs after response is sent)
+    const leaseSnapshot = leaseToDelete as Record<string, unknown>;
+    after(async () => {
+      await logDeletion("Lease", id, leaseSnapshot);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

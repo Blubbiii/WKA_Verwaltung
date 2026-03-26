@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requireAuth, requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -12,7 +12,7 @@ const newsUpdateSchema = z.object({
   title: z.string().min(1, "Titel ist erforderlich").optional(),
   content: z.string().min(1, "Inhalt ist erforderlich").optional(),
   category: NewsCategoryEnum.optional(),
-  fundId: z.string().uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
   isPublished: z.boolean().optional(),
   publishedAt: z.string().optional().nullable(),
   expiresAt: z.string().optional().nullable(),
@@ -198,8 +198,11 @@ const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
     // Hard-delete: Meldung unwiderruflich löschen
     await prisma.news.delete({ where: { id, tenantId: check.tenantId! } });
 
-    // Log deletion for audit trail
-    await logDeletion("News", id, existingNews);
+    // Log deletion for audit trail (deferred: runs after response is sent)
+    const newsSnapshot = existingNews;
+    after(async () => {
+      await logDeletion("News", id, newsSnapshot);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

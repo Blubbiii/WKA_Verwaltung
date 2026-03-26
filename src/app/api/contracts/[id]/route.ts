@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -43,13 +43,13 @@ const contractUpdateSchema = z.object({
   status: z
     .enum(["DRAFT", "ACTIVE", "EXPIRING", "EXPIRED", "TERMINATED"])
     .optional(),
-  documentUrl: z.string().url().optional().nullable(),
+  documentUrl: z.url().optional().nullable(),
   reminderDays: z.array(z.number().int().positive()).optional(),
   notes: z.string().optional().nullable(),
-  parkId: z.string().uuid().optional().nullable(),
-  turbineId: z.string().uuid().optional().nullable(),
-  fundId: z.string().uuid().optional().nullable(),
-  partnerId: z.string().uuid().optional().nullable(),
+  parkId: z.uuid().optional().nullable(),
+  turbineId: z.uuid().optional().nullable(),
+  fundId: z.uuid().optional().nullable(),
+  partnerId: z.uuid().optional().nullable(),
 });
 
 // GET /api/contracts/[id] - Get contract details
@@ -360,8 +360,11 @@ export async function DELETE(
       where: { id },
     });
 
-    // Log the deletion
-    await logDeletion("Contract", id, contractToDelete as Record<string, unknown>);
+    // Log the deletion (deferred: runs after response is sent)
+    const contractSnapshot = contractToDelete as Record<string, unknown>;
+    after(async () => {
+      await logDeletion("Contract", id, contractSnapshot);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

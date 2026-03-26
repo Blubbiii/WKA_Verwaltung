@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -12,7 +12,7 @@ const personUpdateSchema = z.object({
   firstName: z.string().optional().nullable(),
   lastName: z.string().optional().nullable(),
   companyName: z.string().optional().nullable(),
-  email: z.string().email().optional().or(z.literal("")).nullable(),
+  email: z.email().optional().or(z.literal("")).nullable(),
   phone: z.string().optional().nullable(),
   mobile: z.string().optional().nullable(),
   street: z.string().optional().nullable(),
@@ -217,8 +217,11 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     // Hard-delete: Person unwiderruflich löschen
     await prisma.person.delete({ where: { id, tenantId: check.tenantId! } });
 
-    // Log deletion for audit trail
-    await logDeletion("Person", id, existingPerson);
+    // Log deletion for audit trail (deferred: runs after response is sent)
+    const personSnapshot = existingPerson;
+    after(async () => {
+      await logDeletion("Person", id, personSnapshot);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

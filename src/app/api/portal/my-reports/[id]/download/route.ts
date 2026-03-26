@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSignedUrl } from "@/lib/storage";
@@ -127,18 +127,24 @@ export async function GET(
       );
     }
 
-    // Create audit log for the download
-    await createAuditLog({
-      action: "VIEW",
-      entityType: "Document",
-      entityId: document.id,
-      newValues: {
-        action: "DOWNLOAD",
-        portal: "shareholder",
-        fileName: document.fileName,
-        title: document.title,
-        fundName: document.fund?.name,
-      },
+    // Create audit log for the download (deferred: runs after response is sent)
+    const docId = document.id;
+    const docFileName = document.fileName;
+    const docTitle = document.title;
+    const docFundName = document.fund?.name;
+    after(async () => {
+      await createAuditLog({
+        action: "VIEW",
+        entityType: "Document",
+        entityId: docId,
+        newValues: {
+          action: "DOWNLOAD",
+          portal: "shareholder",
+          fileName: docFileName,
+          title: docTitle,
+          fundName: docFundName,
+        },
+      });
     });
 
     // If redirect=true, redirect directly to the signed URL

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
@@ -356,18 +356,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Audit-Log
-    await createAuditLog({
-      action: "CREATE",
-      entityType: "FundHierarchy",
-      entityId: hierarchy.id,
-      newValues: {
-        parentFundName: parentFund.name,
-        childFundName: childFund.name,
-        ownershipPercentage: validatedData.ownershipPercentage,
-        validFrom: validatedData.validFrom,
-      },
-      description: `Fund-Hierarchie erstellt: "${childFund.name}" ist Gesellschafter von "${parentFund.name}" (${validatedData.ownershipPercentage}%)`,
+    // Audit-Log (deferred: runs after response is sent)
+    const hierarchyId = hierarchy.id;
+    const parentFundName = parentFund.name;
+    const childFundName = childFund.name;
+    after(async () => {
+      await createAuditLog({
+        action: "CREATE",
+        entityType: "FundHierarchy",
+        entityId: hierarchyId,
+        newValues: {
+          parentFundName,
+          childFundName,
+          ownershipPercentage: validatedData.ownershipPercentage,
+          validFrom: validatedData.validFrom,
+        },
+        description: `Fund-Hierarchie erstellt: "${childFundName}" ist Gesellschafter von "${parentFundName}" (${validatedData.ownershipPercentage}%)`,
+      });
     });
 
     return NextResponse.json(hierarchy, { status: 201 });

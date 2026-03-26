@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -253,11 +253,14 @@ export async function DELETE(
     // Delete settlement (items cascade via onDelete: Cascade in schema)
     await prisma.leaseRevenueSettlement.delete({ where: { id, tenantId: check.tenantId! } });
 
-    // Log deletion for audit trail
-    await logDeletion("LeaseRevenueSettlement", id, {
+    // Log deletion for audit trail (deferred: runs after response is sent)
+    const usageFeeDeletionData = {
       year: existing.year,
       park: existing.park.name,
       status: existing.status,
+    };
+    after(async () => {
+      await logDeletion("LeaseRevenueSettlement", id, usageFeeDeletionData);
     });
 
     return NextResponse.json({ success: true });

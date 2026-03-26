@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -295,22 +295,30 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Audit-Log für Betreiberwechsel
+    // Audit-Log für Betreiberwechsel (deferred: runs after response is sent)
     if (result.previousOperator) {
-      await createAuditLog({
-        action: "UPDATE",
-        entityType: "TurbineOperator",
-        entityId: result.newOperator.id,
-        oldValues: {
-          operatorFundName: result.previousOperator.fundName,
-          operatorId: result.previousOperator.id,
-        },
-        newValues: {
-          operatorFundName: result.newOperator.operatorFund.name,
-          turbineDesignation: result.newOperator.turbine.designation,
-          validFrom: result.newOperator.validFrom.toISOString(),
-        },
-        description: `Betreiberwechsel: ${turbine.designation} von "${result.previousOperator.fundName}" zu "${result.newOperator.operatorFund.name}"`,
+      const newOperatorId = result.newOperator.id;
+      const prevFundName = result.previousOperator.fundName;
+      const prevOperatorId = result.previousOperator.id;
+      const newFundName = result.newOperator.operatorFund.name;
+      const turbineDesignation = result.newOperator.turbine.designation;
+      const validFrom = result.newOperator.validFrom.toISOString();
+      after(async () => {
+        await createAuditLog({
+          action: "UPDATE",
+          entityType: "TurbineOperator",
+          entityId: newOperatorId,
+          oldValues: {
+            operatorFundName: prevFundName,
+            operatorId: prevOperatorId,
+          },
+          newValues: {
+            operatorFundName: newFundName,
+            turbineDesignation,
+            validFrom,
+          },
+          description: `Betreiberwechsel: ${turbine.designation} von "${prevFundName}" zu "${newFundName}"`,
+        });
       });
     }
 

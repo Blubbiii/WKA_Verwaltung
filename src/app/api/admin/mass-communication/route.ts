@@ -8,7 +8,7 @@
  * Until then, we use type assertions for Prisma calls.
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { prisma, getPrismaModel } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
@@ -263,19 +263,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Audit log
-    await createAuditLog({
-      action: "CREATE",
-      entityType: "MassCommunication",
-      entityId: communication.id,
-      newValues: {
-        subject,
-        recipientFilter,
-        recipientCount: recipients.length,
-        sentCount,
-        errorCount,
-      },
-      description: `Massen-Kommunikation "${subject}" an ${recipients.length} Empfänger gesendet`,
+    // Audit log (deferred: runs after response is sent)
+    const communicationId = communication.id;
+    const recipientCount = recipients.length;
+    after(async () => {
+      await createAuditLog({
+        action: "CREATE",
+        entityType: "MassCommunication",
+        entityId: communicationId,
+        newValues: {
+          subject,
+          recipientFilter,
+          recipientCount,
+          sentCount,
+          errorCount,
+        },
+        description: `Massen-Kommunikation "${subject}" an ${recipientCount} Empfänger gesendet`,
+      });
     });
 
     return NextResponse.json({

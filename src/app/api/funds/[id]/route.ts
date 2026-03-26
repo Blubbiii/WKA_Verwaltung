@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -10,7 +10,7 @@ import { invalidate } from "@/lib/cache/invalidation";
 const fundUpdateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").optional(),
   legalForm: z.string().optional().nullable(),
-  fundCategoryId: z.string().uuid().optional().nullable(),
+  fundCategoryId: z.uuid().optional().nullable(),
   registrationNumber: z.string().optional().nullable(),
   registrationCourt: z.string().optional().nullable(),
   foundingDate: z.string().optional().nullable(),
@@ -301,8 +301,11 @@ export async function DELETE(
       where: { id },
     });
 
-    // Log the deletion for audit trail
-    await logDeletion("Fund", id, existingFund as Record<string, unknown>);
+    // Log the deletion for audit trail (deferred: runs after response is sent)
+    const fundSnapshot = existingFund as Record<string, unknown>;
+    after(async () => {
+      await logDeletion("Fund", id, fundSnapshot);
+    });
 
     // Invalidate dashboard caches after fund deletion
     invalidate.onFundChange(check.tenantId!, id, 'delete').catch((err) => {

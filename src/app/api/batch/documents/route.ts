@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -21,7 +21,7 @@ const targetStatus: Record<string, string> = {
 
 const batchDocumentSchema = z.object({
   action: z.enum(["approve", "publish", "archive", "delete"]),
-  documentIds: z.array(z.string().uuid()).min(1).max(100),
+  documentIds: z.array(z.uuid()).min(1).max(100),
 });
 
 export async function POST(request: NextRequest) {
@@ -95,12 +95,14 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      await createAuditLog({
-        action: action === "delete" ? "DELETE" : "UPDATE",
-        entityType: "Document",
-        entityId: id,
-        newValues: { batchAction: action },
-        description: `Batch ${action}: Dokument`,
+      after(async () => {
+        await createAuditLog({
+          action: action === "delete" ? "DELETE" : "UPDATE",
+          entityType: "Document",
+          entityId: id,
+          newValues: { batchAction: action },
+          description: `Batch ${action}: Dokument`,
+        });
       });
     });
 
