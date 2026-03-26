@@ -61,7 +61,6 @@ interface ConfigResponse {
 
 export default function SystemConfigPage() {
   const [loading, setLoading] = useState(true);
-  const [configs, setConfigs] = useState<ConfigValue[]>([]);
   const [grouped, setGrouped] = useState<Record<string, ConfigValue[]>>({});
   const [availableKeys, setAvailableKeys] = useState<ConfigResponse["availableKeys"]>([]);
 
@@ -77,7 +76,6 @@ export default function SystemConfigPage() {
       }
 
       const data: ConfigResponse = await response.json();
-      setConfigs(data.configs);
       setGrouped(data.grouped);
       setAvailableKeys(data.availableKeys);
     } catch (error) {

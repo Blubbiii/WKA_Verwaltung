@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -151,11 +151,7 @@ export default function DocumentDetailPage() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectNotes, setRejectNotes] = useState("");
 
-  useEffect(() => {
-    fetchDocument();
-  }, [params.id]);
-
-  async function fetchDocument() {
+  const fetchDocument = useCallback(async () => {
     try {
       const response = await fetch(`/api/documents/${params.id}`);
       if (!response.ok) throw new Error("Fehler beim Laden");
@@ -165,7 +161,11 @@ export default function DocumentDetailPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchDocument();
+  }, [fetchDocument]);
 
   async function handleConfirmArchive() {
     try {

@@ -188,7 +188,7 @@ export default function RolesPage() {
           (session?.user?.roleHierarchy ?? 0) >= 100
         );
       }
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Laden der Daten");
     } finally {
       setLoading(false);
@@ -224,7 +224,7 @@ export default function RolesPage() {
           permissions: permNames,
         });
       }
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Laden der Rolle");
       return;
     }

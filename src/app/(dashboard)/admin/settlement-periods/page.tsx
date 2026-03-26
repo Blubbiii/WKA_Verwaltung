@@ -145,7 +145,7 @@ export default function SettlementPeriodsPage() {
   const [isBulkCreating, setIsBulkCreating] = useState(false);
 
   const parkList = Array.isArray(parks) ? parks : [];
-  const periodList = Array.isArray(periods) ? periods : [];
+  const periodList = useMemo(() => Array.isArray(periods) ? periods : [], [periods]);
 
   // KPI Berechnungen
   const kpis = useMemo(() => {

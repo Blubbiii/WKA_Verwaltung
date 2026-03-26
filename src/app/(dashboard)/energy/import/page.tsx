@@ -112,24 +112,11 @@ const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
 const REMUNERATION_CODES = ["EEG", "DIRECT", "PPA", "SPOT", "OTHER"];
 
 const MAX_FILE_SIZE = UPLOAD_LIMITS.energyImport;
-const ACCEPTED_TYPES = [
-  "text/csv",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.ms-excel",
-];
 const ACCEPTED_EXTENSIONS = [".csv", ".xlsx", ".xls"];
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-function formatNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "-";
-  return new Intl.NumberFormat("de-DE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
 function parseCSV(text: string): { headers: string[]; rows: ParsedRow[] } {
   const lines = text.trim().split(/\r?\n/);

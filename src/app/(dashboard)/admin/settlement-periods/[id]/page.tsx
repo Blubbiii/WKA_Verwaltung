@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use, useEffect } from "react";
+import { useState, use, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -179,14 +179,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
       .split("T")[0],
   });
 
-  // Load calculation when period is loaded and has been calculated
-  useEffect(() => {
-    if (period && period.status !== "OPEN") {
-      loadCalculation();
-    }
-  }, [period?.id, period?.status]);
-
-  async function loadCalculation() {
+  const loadCalculation = useCallback(async () => {
     try {
       setIsLoadingCalculation(true);
       const response = await fetch(`/api/admin/settlement-periods/${id}/calculate`);
@@ -198,7 +191,14 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
     } finally {
       setIsLoadingCalculation(false);
     }
-  }
+  }, [id]);
+
+  // Load calculation when period is loaded and has been calculated
+  useEffect(() => {
+    if (period && period.status !== "OPEN") {
+      loadCalculation();
+    }
+  }, [period, loadCalculation]);
 
   // formatDate → uses central formatDate from @/lib/format
 
@@ -368,7 +368,6 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
   }
 
   // Workflow permission flags
-  const canEdit = period.status === "OPEN";
   const canCalculate = period.status === "OPEN" || period.status === "IN_PROGRESS";
   const canSubmitForReview = period.status === "IN_PROGRESS";
   const canApproveOrReject = period.status === "PENDING_REVIEW";

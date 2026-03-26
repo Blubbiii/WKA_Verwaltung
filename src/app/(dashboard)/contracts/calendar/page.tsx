@@ -376,7 +376,6 @@ export default function ContractsCalendarPage() {
                 </p>
               ) : (
                 upcomingEvents.slice(0, 10).map((event) => {
-                  const typeConf = typeConfig[event.contractType];
                   return (
                     <div
                       key={`${event.id}-${event.eventType}`}
