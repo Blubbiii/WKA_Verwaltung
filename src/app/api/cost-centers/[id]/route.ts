@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 
 const updateSchema = z.object({
   code: z.string().min(1).max(50).optional(),
@@ -102,6 +103,13 @@ async function deleteHandler(
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    // FK constraint violation: cost center still has dependent records
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return NextResponse.json(
+        { error: "Kostenstelle kann nicht gelöscht werden, da noch abhängige Einträge existieren (z.B. Budgetpositionen)" },
+        { status: 409 }
+      );
+    }
     logger.error({ err: error }, "Error deleting cost center");
     return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
   }

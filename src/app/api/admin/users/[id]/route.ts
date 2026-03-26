@@ -23,12 +23,6 @@ const userUpdateSchema = z.object({
     .optional(),
 });
 
-/** Check if current user is SUPERADMIN using the authoritative hierarchy check */
-async function isSuperadmin(): Promise<boolean> {
-  const result = await requireSuperadmin();
-  return result.authorized;
-}
-
 // GET /api/admin/users/[id]
 export async function GET(
   request: NextRequest,
@@ -40,7 +34,7 @@ export async function GET(
 
     const { id } = await params;
 
-    const superadmin = await isSuperadmin();
+    const isSA = (await requireSuperadmin()).authorized;
     const userSelect = {
       id: true,
       email: true,
@@ -78,7 +72,7 @@ export async function GET(
     };
 
     // Superadmins can view any user; regular admins are restricted to their own tenant
-    const user = superadmin
+    const user = isSA
       ? await prisma.user.findUnique({ where: { id }, select: userSelect })
       : await prisma.user.findFirst({ where: { id, tenantId: check.tenantId! }, select: userSelect });
 
@@ -110,9 +104,9 @@ export async function PATCH(
 
     const { id } = await params;
 
-    const superadmin = await isSuperadmin();
+    const isSA = (await requireSuperadmin()).authorized;
     // Superadmins can modify any user; regular admins are restricted to their own tenant
-    const existingUser = superadmin
+    const existingUser = isSA
       ? await prisma.user.findUnique({ where: { id }, omit: { passwordHash: true } })
       : await prisma.user.findFirst({ where: { id, tenantId: check.tenantId! }, omit: { passwordHash: true } });
 
@@ -253,9 +247,9 @@ export async function DELETE(
       );
     }
 
-    const superadmin = await isSuperadmin();
+    const isSA = (await requireSuperadmin()).authorized;
     // Superadmins can deactivate any user; regular admins are restricted to their own tenant
-    const existingUser = superadmin
+    const existingUser = isSA
       ? await prisma.user.findUnique({ where: { id }, select: { id: true, tenantId: true } })
       : await prisma.user.findFirst({ where: { id, tenantId: check.tenantId! }, select: { id: true, tenantId: true } });
 
