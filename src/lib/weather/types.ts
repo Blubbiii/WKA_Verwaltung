@@ -42,7 +42,7 @@ export const WMO_CODES: Record<number, string> = {
 };
 
 // Backward-compatibility alias
-export const WEATHER_CONDITIONS = WMO_CODES as unknown as Record<string, string>;
+export const WEATHER_CONDITIONS = WMO_CODES as Record<number | string, string>;
 
 // =============================================================================
 // Internal Weather Data Types

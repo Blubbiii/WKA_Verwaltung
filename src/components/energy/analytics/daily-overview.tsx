@@ -40,7 +40,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { CollapsibleSection } from "@/components/energy/analytics/collapsible-section";
 import {
-  ResponsiveContainer,
   ComposedChart,
   Bar,
   Line,
@@ -147,7 +146,7 @@ export function DailyOverview() {
   const parks = useParks();
 
   // Filter state
-  const [activePreset, setActivePreset] = useState<Preset>("30d");
+  const [activePreset, setActivePreset] = useState<Preset | undefined>("30d");
   const [from, setFrom] = useState(() => getPresetRange("30d").from);
   const [to, setTo] = useState(() => getPresetRange("30d").to);
   const [parkId, setParkId] = useState("all");
@@ -203,7 +202,7 @@ export function DailyOverview() {
               value={from}
               onChange={(e) => {
                 setFrom(e.target.value);
-                setActivePreset(undefined as unknown as Preset);
+                setActivePreset(undefined);
               }}
               className="w-[140px] h-8"
             />
@@ -213,7 +212,7 @@ export function DailyOverview() {
               value={to}
               onChange={(e) => {
                 setTo(e.target.value);
-                setActivePreset(undefined as unknown as Preset);
+                setActivePreset(undefined);
               }}
               className="w-[140px] h-8"
             />
@@ -321,8 +320,7 @@ export function DailyOverview() {
           >
             {data && data.dailyChart.length > 0 ? (
               <div className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={data.dailyChart}>
+                  <ComposedChart width="100%" height={350} data={data.dailyChart}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis
                       dataKey="date"
@@ -390,7 +388,6 @@ export function DailyOverview() {
                       dot={false}
                     />
                   </ComposedChart>
-                </ResponsiveContainer>
               </div>
             ) : (
               <p className="text-muted-foreground text-center py-8">

@@ -17,7 +17,7 @@ const querySchema = z.object({
   to: z.string().datetime().optional(),
   entityType: z.string().optional(),
   action: z.string().optional(),
-  userId: z.string().uuid().optional(),
+  userId: z.uuid().optional(),
 });
 
 // ============================================================================
@@ -361,7 +361,7 @@ export async function GET(request: NextRequest) {
     switch (params.format) {
       case "csv": {
         buffer = generateCsvBuffer(
-          auditLogs as unknown as Record<string, unknown>[],
+          auditLogs as Record<string, unknown>[],
           auditLogColumns
         );
         contentType = "text/csv; charset=utf-8";
@@ -371,7 +371,7 @@ export async function GET(request: NextRequest) {
 
       case "xlsx": {
         buffer = await generateExcel(
-          auditLogs as unknown as Record<string, unknown>[],
+          auditLogs as Record<string, unknown>[],
           auditLogColumns,
           "Audit-Log",
           {
