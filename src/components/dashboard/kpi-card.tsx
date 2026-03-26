@@ -78,6 +78,23 @@ export interface KPICardProps {
 }
 
 // =============================================================================
+// KPI TREND ICON (extracted to avoid "component created during render" warning)
+// =============================================================================
+
+function KPITrendIcon({
+  trend,
+  className,
+}: {
+  trend: number | undefined;
+  className?: string;
+}) {
+  if (trend === undefined) return null;
+  if (trend > 0) return <TrendingUp className={className} />;
+  if (trend < 0) return <TrendingDown className={className} />;
+  return <Minus className={className} />;
+}
+
+// =============================================================================
 // KPI CARD COMPONENT
 // =============================================================================
 
@@ -103,19 +120,10 @@ export function KPICard({
     return trend > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
   };
 
-  const getTrendIcon = () => {
-    if (trend === undefined) return null;
-    if (trend > 0) return TrendingUp;
-    if (trend < 0) return TrendingDown;
-    return Minus;
-  };
-
   const formatTrend = (value: number): string => {
     const sign = value > 0 ? "+" : "";
     return `~ ${sign}${value.toFixed(1)} %`;
   };
-
-  const TrendIcon = getTrendIcon();
 
   if (isLoading) {
     return (
@@ -176,7 +184,7 @@ export function KPICard({
         )}
         {(trend !== undefined || trendLabel) && (
           <div className={cn("mt-1.5 flex items-center text-xs @md:text-sm", getTrendColor())}>
-            {TrendIcon && <TrendIcon className="mr-1 h-3 w-3 @md:h-4 @md:w-4 shrink-0" />}
+            <KPITrendIcon trend={trend} className="mr-1 h-3 w-3 @md:h-4 @md:w-4 shrink-0" />
             <span className="truncate">
               {trend !== undefined ? formatTrend(trend) : trendLabel}
             </span>

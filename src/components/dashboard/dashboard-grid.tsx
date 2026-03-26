@@ -92,7 +92,7 @@ export function DashboardGrid({
   const [containerWidth, setContainerWidth] = useState(0);
 
   useEffect(() => {
-    setIsMounted(true);
+    setTimeout(() => setIsMounted(true), 0);
   }, []);
 
   // Observe container width changes with debouncing

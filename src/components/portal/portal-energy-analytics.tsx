@@ -83,6 +83,16 @@ function fmtInt(value: number): string {
 }
 
 // =============================================================================
+// Helper Components
+// =============================================================================
+
+function TrendIcon({ indicator }: { indicator: "green" | "yellow" | "red" }) {
+  if (indicator === "green") return <TrendingUp className="h-4 w-4 text-green-600" />;
+  if (indicator === "red") return <TrendingDown className="h-4 w-4 text-red-600" />;
+  return <Minus className="h-4 w-4 text-yellow-600" />;
+}
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -142,13 +152,6 @@ export function PortalEnergyAnalytics() {
   }
 
   const { kpis, productionChart, availabilityTrend, turbineOverview, windSummary } = analytics;
-
-  // Trend icon helper
-  const TrendIcon = ({ indicator }: { indicator: "green" | "yellow" | "red" }) => {
-    if (indicator === "green") return <TrendingUp className="h-4 w-4 text-green-600" />;
-    if (indicator === "red") return <TrendingDown className="h-4 w-4 text-red-600" />;
-    return <Minus className="h-4 w-4 text-yellow-600" />;
-  };
 
   const trendColor = {
     green: "text-green-600",

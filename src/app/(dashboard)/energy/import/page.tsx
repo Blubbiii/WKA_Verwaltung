@@ -236,21 +236,7 @@ function FileUploadStep({
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(false);
-
-      const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile) {
-        validateAndSelectFile(droppedFile);
-      }
-    },
-    [onFileSelect]
-  );
-
-  const validateAndSelectFile = (selectedFile: File) => {
+  const validateAndSelectFile = useCallback((selectedFile: File) => {
     // Check file size
     if (selectedFile.size > MAX_FILE_SIZE) {
       toast.error("Datei zu gross. Maximale Größe: 10MB");
@@ -265,7 +251,21 @@ function FileUploadStep({
     }
 
     onFileSelect(selectedFile);
-  };
+  }, [onFileSelect]);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile) {
+        validateAndSelectFile(droppedFile);
+      }
+    },
+    [validateAndSelectFile]
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];

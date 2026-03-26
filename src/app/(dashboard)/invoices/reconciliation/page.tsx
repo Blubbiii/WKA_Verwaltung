@@ -529,7 +529,7 @@ export default function ReconciliationPage() {
       value: f.fundId,
       label: f.fundName,
     }));
-  }, [data?.byFund]);
+  }, [data]);
 
   // Error state
   if (error) {

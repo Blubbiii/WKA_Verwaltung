@@ -55,6 +55,18 @@ const fetcher = async (url: string) => {
 };
 
 // =============================================================================
+// Helper Components
+// =============================================================================
+
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="flex items-center justify-center h-[400px] text-destructive">
+      {message}
+    </div>
+  );
+}
+
+// =============================================================================
 // Page
 // =============================================================================
 
@@ -180,13 +192,6 @@ export default function AnalyticsPage() {
     enabled: !!phaseUrl,
     refetchOnWindowFocus: false,
   });
-
-  // Error display helper
-  const ErrorState = ({ message }: { message: string }) => (
-    <div className="flex items-center justify-center h-[400px] text-destructive">
-      {message}
-    </div>
-  );
 
   // Show filter bar only for year-based tabs (not daily overview, tools, or bericht)
   const showFilterBar = activeTab !== "daily" && activeTab !== "tools" && activeTab !== "bericht";

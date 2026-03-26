@@ -19,7 +19,7 @@ export function LanguageSwitcher() {
   const t = useTranslations("header");
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
   }, []);
 
   const switchLocale = (locale: Locale) => {

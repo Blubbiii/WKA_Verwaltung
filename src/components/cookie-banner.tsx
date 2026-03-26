@@ -14,7 +14,7 @@ export function CookieBanner() {
     // Only show if user hasn't already acknowledged
     const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!consent) {
-      setVisible(true);
+      setTimeout(() => setVisible(true), 0);
     }
   }, []);
 

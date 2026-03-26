@@ -155,6 +155,27 @@ type SortField =
   | "performedBy";
 type SortOrder = "asc" | "desc";
 
+// -- Helper Components --
+
+function SortIcon({
+  field,
+  sortBy,
+  sortOrder,
+}: {
+  field: SortField;
+  sortBy: SortField;
+  sortOrder: SortOrder;
+}) {
+  if (sortBy !== field) {
+    return <ArrowUpDown className="ml-1 h-3 w-3 inline opacity-50" />;
+  }
+  return sortOrder === "asc" ? (
+    <ArrowUp className="ml-1 h-3 w-3 inline" />
+  ) : (
+    <ArrowDown className="ml-1 h-3 w-3 inline" />
+  );
+}
+
 // -- Component --
 
 export default function ServiceEventsPage() {
@@ -265,18 +286,6 @@ export default function ServiceEventsPage() {
     },
     [sortBy]
   );
-
-  // Sort icon helper
-  function SortIcon({ field }: { field: SortField }) {
-    if (sortBy !== field) {
-      return <ArrowUpDown className="ml-1 h-3 w-3 inline opacity-50" />;
-    }
-    return sortOrder === "asc" ? (
-      <ArrowUp className="ml-1 h-3 w-3 inline" />
-    ) : (
-      <ArrowDown className="ml-1 h-3 w-3 inline" />
-    );
-  }
 
   // Truncate helper
   function truncate(text: string | null, maxLength: number): string {
@@ -394,7 +403,7 @@ export default function ServiceEventsPage() {
                       aria-label="Nach Datum sortieren"
                     >
                       Datum
-                      <SortIcon field="eventDate" />
+                      <SortIcon field="eventDate" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
                   <TableHead>
@@ -405,7 +414,7 @@ export default function ServiceEventsPage() {
                       aria-label="Nach Typ sortieren"
                     >
                       Typ
-                      <SortIcon field="eventType" />
+                      <SortIcon field="eventType" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
                   <TableHead>Anlage / Park</TableHead>
@@ -418,7 +427,7 @@ export default function ServiceEventsPage() {
                       aria-label="Nach Firma sortieren"
                     >
                       Firma
-                      <SortIcon field="performedBy" />
+                      <SortIcon field="performedBy" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
                   <TableHead className="text-right">
@@ -429,7 +438,7 @@ export default function ServiceEventsPage() {
                       aria-label="Nach Kosten sortieren"
                     >
                       Kosten
-                      <SortIcon field="cost" />
+                      <SortIcon field="cost" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
                   <TableHead className="text-right">
@@ -440,7 +449,7 @@ export default function ServiceEventsPage() {
                       aria-label="Nach Dauer sortieren"
                     >
                       Dauer
-                      <SortIcon field="durationHours" />
+                      <SortIcon field="durationHours" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
                   <TableHead className="w-[120px]"></TableHead>

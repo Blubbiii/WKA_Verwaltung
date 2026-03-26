@@ -81,12 +81,12 @@ export function useAnalytics(): UseAnalyticsResult {
  * Formatiert einen Decimal-String als Euro-Betrag
  */
 export function useFormatCurrency() {
-  return useCallback(formatCurrency, []);
+  return useCallback((value: Parameters<typeof formatCurrency>[0]) => formatCurrency(value), []);
 }
 
 /**
  * Formatiert einen Decimal-String kompakt (z.B. 2.4M EUR)
  */
 export function useFormatCurrencyCompact() {
-  return useCallback(formatCurrencyCompact, []);
+  return useCallback((value: Parameters<typeof formatCurrencyCompact>[0]) => formatCurrencyCompact(value), []);
 }

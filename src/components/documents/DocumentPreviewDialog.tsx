@@ -67,25 +67,29 @@ export function DocumentPreviewDialog({
   // Use proxy route to avoid CORS issues with S3/MinIO
   useEffect(() => {
     if (document && open) {
-      setPageNumber(1);
-      setScale(1.0);
-      setRotation(0);
-      setLoading(true);
-      setError(null);
-      setPresignedUrl(null);
-      setUrlLoading(true);
+      const docId = document.id;
+      const fileUrl = document.fileUrl;
+      setTimeout(() => {
+        setPageNumber(1);
+        setScale(1.0);
+        setRotation(0);
+        setLoading(true);
+        setError(null);
+        setPresignedUrl(null);
+        setUrlLoading(true);
 
-      // Check if fileUrl is already a full URL (legacy) or an S3 key
-      if (document.fileUrl.startsWith("http://") || document.fileUrl.startsWith("https://")) {
-        // Legacy URL - use directly
-        setPresignedUrl(document.fileUrl);
-        setUrlLoading(false);
-      } else {
-        // S3 key - use proxy route (avoids CORS issues)
-        // The proxy route streams the file through our server with proper headers
-        setPresignedUrl(`/api/documents/${document.id}/content`);
-        setUrlLoading(false);
-      }
+        // Check if fileUrl is already a full URL (legacy) or an S3 key
+        if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
+          // Legacy URL - use directly
+          setPresignedUrl(fileUrl);
+          setUrlLoading(false);
+        } else {
+          // S3 key - use proxy route (avoids CORS issues)
+          // The proxy route streams the file through our server with proper headers
+          setPresignedUrl(`/api/documents/${docId}/content`);
+          setUrlLoading(false);
+        }
+      }, 0);
     }
   }, [document?.id, open]);
 

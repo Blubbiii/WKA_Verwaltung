@@ -59,15 +59,18 @@ export function InvoicePreviewDialog({
   // Fetch PDF preview when invoice changes
   useEffect(() => {
     if (invoiceId && open) {
-      setPageNumber(1);
-      setScale(1.0);
-      setRotation(0);
-      setLoading(true);
-      setError(null);
-      setPdfDataUrl(null);
+      const id = invoiceId;
+      setTimeout(() => {
+        setPageNumber(1);
+        setScale(1.0);
+        setRotation(0);
+        setLoading(true);
+        setError(null);
+        setPdfDataUrl(null);
+      }, 0);
 
       // Fetch PDF as base64 from preview endpoint
-      fetch(`/api/invoices/${invoiceId}/preview`)
+      fetch(`/api/invoices/${id}/preview`)
         .then((res) => {
           if (!res.ok) {
             throw new Error(`HTTP ${res.status}`);

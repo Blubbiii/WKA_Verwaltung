@@ -58,7 +58,7 @@ export function DocumentPreviewDialogPDF({
   useEffect(() => {
     // Use local worker for reliability (no CDN dependency)
     pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-    setWorkerReady(true);
+    setTimeout(() => setWorkerReady(true), 0);
   }, []);
 
   if (!workerReady) {

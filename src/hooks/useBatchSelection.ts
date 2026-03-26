@@ -40,19 +40,21 @@ export function useBatchSelection<T extends Record<string, any>>({
 
   // When the visible items change, prune stale selections
   useEffect(() => {
-    setSelectedIds((prev) => {
-      const next = new Set<string>();
-      for (const id of prev) {
-        if (visibleIds.has(id)) {
-          next.add(id);
+    setTimeout(() => {
+      setSelectedIds((prev) => {
+        const next = new Set<string>();
+        for (const id of prev) {
+          if (visibleIds.has(id)) {
+            next.add(id);
+          }
         }
-      }
-      // Only update state if something actually changed
-      if (next.size !== prev.size) {
-        return next;
-      }
-      return prev;
-    });
+        // Only update state if something actually changed
+        if (next.size !== prev.size) {
+          return next;
+        }
+        return prev;
+      });
+    }, 0);
   }, [visibleIds]);
 
   const toggleItem = useCallback((id: string) => {

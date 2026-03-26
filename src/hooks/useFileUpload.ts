@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export interface FileUploadState {
   /** Whether an upload is currently in progress */
@@ -56,7 +56,11 @@ export function useFileUpload(options: FileUploadOptions = {}): FileUploadResult
   const [error, setError] = useState<string | null>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+
+  // Keep optionsRef in sync with the latest options without triggering re-renders
+  useEffect(() => {
+    optionsRef.current = options;
+  });
 
   const upload = useCallback(
     (url: string, formData: FormData): Promise<unknown> => {

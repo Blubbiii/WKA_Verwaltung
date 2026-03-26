@@ -208,8 +208,9 @@ export function DataExplorerTab() {
 
   useEffect(() => {
     if (selectedParkId && selectedParkId !== "all") {
-      setTurbinesLoading(true);
-      fetch(`/api/parks/${selectedParkId}`)
+      const parkId = selectedParkId;
+      setTimeout(() => setTurbinesLoading(true), 0);
+      fetch(`/api/parks/${parkId}`)
         .then((res) => res.json())
         .then((data) => {
           setTurbines(data.turbines || []);
@@ -217,8 +218,10 @@ export function DataExplorerTab() {
         .catch(() => setTurbines([]))
         .finally(() => setTurbinesLoading(false));
     } else {
-      setTurbines([]);
-      setSelectedTurbineId("all");
+      setTimeout(() => {
+        setTurbines([]);
+        setSelectedTurbineId("all");
+      }, 0);
     }
   }, [selectedParkId]);
 

@@ -59,7 +59,7 @@ export function Header() {
 
   // Mark as mounted after first render to avoid hydration mismatch
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
   }, []);
 
   // Check for impersonation status on mount

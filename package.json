@@ -11,7 +11,7 @@
     "build": "next build",
     "build:clean": "rimraf .next && next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint src/",
     "clean": "rimraf .next node_modules/.cache",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
