@@ -10,7 +10,6 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import {
   calculateInitialNextRun,
-  calculateNextRunDate,
 } from "@/lib/invoices/recurring-invoice-service";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";

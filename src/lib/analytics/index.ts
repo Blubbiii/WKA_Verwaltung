@@ -379,7 +379,7 @@ async function calculateCapitalDevelopment(tenantId: string): Promise<CapitalDev
     _sum: { totalCapital: true },
   });
 
-  let capital = Number(currentCapital._sum.totalCapital || 0);
+  const capital = Number(currentCapital._sum.totalCapital || 0);
 
   // Für echte Kapitalentwicklung muessten wir historische Daten haben
   // Hier simulieren wir einen leichten Trend basierend auf neuen Gesellschaftern

@@ -7,7 +7,6 @@ import {
   FileText,
   Download,
   Eye,
-  Trash2,
   Plus,
   Upload,
   Search,

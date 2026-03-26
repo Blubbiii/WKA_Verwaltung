@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -173,9 +174,9 @@ export async function PATCH(
     }
 
     // Build update payload - only include fields that were provided
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
 
-    const updateData: any = {};
+    const updateData: Prisma.EnergyReportConfigUncheckedUpdateInput = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.modules !== undefined) updateData.modules = data.modules;

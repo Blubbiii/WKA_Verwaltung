@@ -18,6 +18,14 @@ const eslintConfig = [
       "prefer-const": "warn",
     },
   },
+  {
+    // PDF templates use @react-pdf/renderer's <Image> component, not HTML <img>
+    // Accessibility rules don't apply to PDF rendering
+    files: ["src/lib/pdf/**/*.tsx"],
+    rules: {
+      "jsx-a11y/alt-text": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

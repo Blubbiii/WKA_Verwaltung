@@ -96,7 +96,7 @@ const directImportSchema = z.object({
 // =============================================================================
 
 async function resolveRows(
-  rawRows: Record<string, any>[],
+  rawRows: Record<string, unknown>[],
   mapping: ColumnMapping,
   tenantId: string
 ): Promise<{
@@ -159,7 +159,7 @@ async function resolveRows(
     rowIndex: number;
     status: "success" | "warning" | "error";
     messages: string[];
-    data: Record<string, any>;
+    data: Record<string, unknown>;
   }> = [];
 
   for (let i = 0; i < rawRows.length; i++) {

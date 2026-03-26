@@ -12,7 +12,7 @@ import { Registry, Counter, Histogram, Gauge, collectDefaultMetrics } from "prom
 // =============================================================================
 
 declare global {
-  // eslint-disable-next-line no-var
+   
   var __promRegistry: Registry | undefined;
 }
 

@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/format";
 import {
   ALLOCATION_STATUS_LABELS,

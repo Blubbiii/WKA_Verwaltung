@@ -5,7 +5,7 @@
  * Supports encryption for sensitive values and fallback to environment variables.
  */
 
-import { prisma, hasPrismaModel, getPrismaModel } from "@/lib/prisma";
+import { hasPrismaModel, getPrismaModel } from "@/lib/prisma";
 import { encrypt, decrypt, maskSensitive } from "@/lib/email/encryption";
 import { logger } from "@/lib/logger";
 

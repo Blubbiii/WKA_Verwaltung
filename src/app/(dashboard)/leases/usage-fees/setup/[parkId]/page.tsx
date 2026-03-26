@@ -146,7 +146,7 @@ export default function UsageFeeSetupPage({
       assignments[lease.leaseId] = lease.directBillingFundId;
     });
     setDirectBillingAssignments(assignments);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [setupData]);
 
   // ---------------------------------------------------------------------------

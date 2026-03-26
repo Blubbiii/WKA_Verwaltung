@@ -8,7 +8,6 @@
 import { dashboardCache } from './dashboard';
 import { tenantCache } from './tenant';
 import { cache } from './index';
-import { CACHE_PREFIXES } from './types';
 import { cacheLogger as logger } from "@/lib/logger";
 
 /**

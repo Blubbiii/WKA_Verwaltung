@@ -17,7 +17,6 @@ import {
   WMO_CODES,
   getWindDirectionLabel,
   WeatherApiError,
-  WeatherErrorCode,
 } from "./types";
 
 // =============================================================================

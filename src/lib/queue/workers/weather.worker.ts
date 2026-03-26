@@ -12,15 +12,12 @@ import { getRedisConnection } from "../connection";
 import { prisma } from "../../prisma";
 import { jobLogger } from "@/lib/logger";
 import {
-  getWeatherForPark,
   saveWeatherToDatabase,
-  syncWeatherForAllParks,
   isWeatherApiConfigured,
   getCurrentWeather,
   getWeatherWithForecast,
   setCachedWeather,
   setLastSyncTime,
-  WeatherApiError,
 } from "../../weather";
 import { WeatherJobData, WeatherJobResult } from "../queues/weather.queue";
 

@@ -15,7 +15,6 @@ import {
   fetchTurbineComparison as fetchAnalyticsTurbineComparison,
   fetchFaultPareto,
   fetchWarningTrend,
-  fetchFaultPerTurbine,
   fetchMonthlyRevenue,
   fetchLostRevenue,
   fetchFinancialSummary,

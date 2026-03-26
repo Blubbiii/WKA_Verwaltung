@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     const currentYear = new Date().getFullYear();
 
-    let sequence = await prisma.invoiceNumberSequence.findUnique({
+    const sequence = await prisma.invoiceNumberSequence.findUnique({
       where: {
         tenantId_type: {
           tenantId: check.tenantId!,

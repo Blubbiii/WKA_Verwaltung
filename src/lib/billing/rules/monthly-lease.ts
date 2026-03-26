@@ -10,7 +10,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { InvoiceType, TaxType, ContractStatus } from "@prisma/client";
-import { getNextInvoiceNumber, calculateTaxAmounts, getTaxRateByType } from "@/lib/invoices/numberGenerator";
+import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { BillingRuleType } from "../types";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import {
@@ -20,7 +20,6 @@ import {
   ExecuteRuleOptions,
   ExecutionResult,
   InvoiceCreationResult,
-  ExecutionDetails,
 } from "../types";
 
 /**

@@ -158,7 +158,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transformedPlots = plots.map((plot: any) => {
       // Destructure: separate geometry and leasePlots from the rest
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+       
       const { geometry, leasePlots, ...basePlot } = plot;
 
       // Build the output object

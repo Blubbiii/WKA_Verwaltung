@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
           return fullName.trim().replace(/\s+/g, " ").toLowerCase();
         }
 
-        let validFeatures: ProcessedFeature[] = [];
+        const validFeatures: ProcessedFeature[] = [];
 
         for (const feature of features) {
           const plotData = applyPlotMapping(

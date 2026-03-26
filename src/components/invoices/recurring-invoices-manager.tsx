@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
-import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
+import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -45,7 +45,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,

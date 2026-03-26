@@ -265,8 +265,8 @@ function highlightMatch(
     const contextBefore = 30;
     const contextAfter = maxLength - query.length - contextBefore;
 
-    let start = Math.max(0, matchIndex - contextBefore);
-    let end = Math.min(text.length, matchIndex + query.length + contextAfter);
+    const start = Math.max(0, matchIndex - contextBefore);
+    const end = Math.min(text.length, matchIndex + query.length + contextAfter);
 
     let snippet = text.substring(start, end);
 

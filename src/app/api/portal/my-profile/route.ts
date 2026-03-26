@@ -140,8 +140,9 @@ export async function PATCH(request: NextRequest) {
     const { email, phone, address, bankName, iban, bic } = parsed.data;
 
     // Build update object for Person model
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
 
     if (email !== undefined) {

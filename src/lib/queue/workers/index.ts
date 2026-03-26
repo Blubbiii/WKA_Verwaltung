@@ -47,7 +47,6 @@ import {
   isWeatherWorkerRunning,
   getWeatherWorker,
 } from "./weather.worker";
-import type { WeatherJobData, WeatherJobResult } from "../queues/weather.queue";
 
 import {
   startReportWorker,

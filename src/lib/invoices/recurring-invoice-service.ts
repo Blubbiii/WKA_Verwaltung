@@ -11,7 +11,6 @@ import { InvoiceType, TaxType } from "@prisma/client";
 import {
   getNextInvoiceNumber,
   calculateTaxAmounts,
-  getTaxRateByType,
 } from "@/lib/invoices/numberGenerator";
 import { invalidate } from "@/lib/cache/invalidation";
 import { getTenantSettings } from "@/lib/tenant-settings";

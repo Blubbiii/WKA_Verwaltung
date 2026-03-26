@@ -11,9 +11,7 @@ import {
   Mail,
   Play,
   Pause,
-  AlertCircle,
   CheckCircle2,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

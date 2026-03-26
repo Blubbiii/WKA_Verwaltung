@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { formatDate } from "@/lib/format";
-import { FolderOpen, Loader2, Trash2 } from "lucide-react";
+import { FolderOpen, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

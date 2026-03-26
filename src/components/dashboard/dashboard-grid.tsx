@@ -55,6 +55,7 @@ const GRID_CONFIG = {
 // =============================================================================
 
 // Dynamic import for react-grid-layout
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ResponsiveGridLayout = dynamic<any>(
   () =>
     import("react-grid-layout").then((mod) => mod.ResponsiveGridLayout),

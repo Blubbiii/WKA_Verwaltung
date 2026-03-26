@@ -14,7 +14,7 @@
  * - Monthly availability trend table
  */
 
-import { Document, Page, View, Text, Image, StyleSheet, Svg, Circle as SvgCircle, Line as SvgLine, Rect as SvgRect, Path as SvgPath } from "@react-pdf/renderer";
+import { Document, Page, View, Text, Image, StyleSheet, Svg, Circle as SvgCircle, Line as SvgLine } from "@react-pdf/renderer";
 import type { ResolvedLetterhead, ResolvedTemplate } from "../utils/templateResolver";
 import { Header } from "./components/Header";
 import { Footer, PageNumber } from "./components/Footer";

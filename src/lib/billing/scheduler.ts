@@ -5,7 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { BillingRuleFrequency } from "./types";
-import { FREQUENCY_CRON_PATTERNS, NextRunInfo } from "./types";
+import { NextRunInfo } from "./types";
 
 // Note: In Produktion wuerde man hier BullMQ oder einen aehnlichen Job-Scheduler integrieren
 // Für das MVP verwenden wir eine einfache Cron-Berechnung

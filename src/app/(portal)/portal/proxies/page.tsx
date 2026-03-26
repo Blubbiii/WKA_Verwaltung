@@ -11,7 +11,6 @@ import {
   UserCheck,
   AlertCircle,
   Loader2,
-  FileText,
 } from "lucide-react";
 import { ProxyDocumentUpload } from "@/components/votes/proxy-document-upload";
 import {

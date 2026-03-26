@@ -9,7 +9,6 @@ import { de } from "date-fns/locale";
 import {
   ArrowLeft,
   Download,
-  Pencil,
   Upload,
   Archive,
   FileText,

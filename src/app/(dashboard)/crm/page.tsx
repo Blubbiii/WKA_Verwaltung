@@ -126,7 +126,7 @@ export default function CrmDashboardPage() {
     }
   };
 
-  useEffect(() => { if (flags.crm) load(); }, [flags.crm]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (flags.crm) load(); }, [flags.crm]);  
 
   if (!flags.crm) {
     return (

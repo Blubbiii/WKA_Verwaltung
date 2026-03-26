@@ -49,7 +49,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { PersonEditDialog, type PersonData } from "@/components/leases/PersonEditDialog";
+import { PersonEditDialog } from "@/components/leases/PersonEditDialog";
 
 // Types
 interface PlotArea {

@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   FileArchive,
   Loader2,
   CheckCircle2,
-  AlertCircle,
   RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

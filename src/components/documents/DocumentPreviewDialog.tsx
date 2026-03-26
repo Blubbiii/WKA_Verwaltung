@@ -16,7 +16,6 @@ import {
   FileText,
   FileSpreadsheet,
   FileImage,
-  ExternalLink,
   Maximize2,
   Minimize2,
 } from "lucide-react";

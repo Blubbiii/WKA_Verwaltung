@@ -188,7 +188,7 @@ export default function EmailConfigPage() {
 
   useEffect(() => {
     if (flags.communication) loadNotificationConfig();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [flags.communication]);
 
   const loadTemplates = useCallback(async () => {

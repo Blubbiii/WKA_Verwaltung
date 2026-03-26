@@ -14,7 +14,7 @@ import type { ResolvedLetterhead, ResolvedTemplate } from "../utils/templateReso
 import type { SettlementCalculationResult, LeaseCalculationResult } from "@/lib/settlement";
 import { Header } from "./components/Header";
 import { Footer, PageNumber } from "./components/Footer";
-import { formatCurrency, formatDate, formatNumber, formatPercent } from "../utils/formatters";
+import { formatCurrency, formatDate, formatPercent } from "../utils/formatters";
 
 // ===========================================
 // STYLES

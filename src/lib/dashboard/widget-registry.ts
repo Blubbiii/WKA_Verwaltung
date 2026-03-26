@@ -2,7 +2,7 @@
 // Dashboard Widget Registry
 // ===========================================
 
-import type { WidgetDefinition, WidgetCategory, MinimumRole, UserRole } from "@/types/dashboard";
+import type { WidgetDefinition, WidgetCategory, UserRole } from "@/types/dashboard";
 import { hasMinimumRole } from "@/types/dashboard";
 
 /**

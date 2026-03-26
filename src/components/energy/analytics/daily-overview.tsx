@@ -9,13 +9,11 @@ import {
   AlertTriangle,
   TrendingUp,
   Euro,
-  Loader2,
   Activity,
 } from "lucide-react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";

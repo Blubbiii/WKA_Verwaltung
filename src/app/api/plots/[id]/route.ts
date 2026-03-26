@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -167,9 +168,9 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     }
 
     // Build update data, excluding undefined values
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(validatedData)) {
       if (value !== undefined) {
         updateData[key] = value;
@@ -178,7 +179,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
 
     const plot = await prisma.plot.update({
       where: { id },
-      data: updateData,
+      data: updateData as Prisma.PlotUpdateInput,
       include: {
         park: {
           select: { id: true, name: true, shortName: true },

@@ -61,8 +61,6 @@ import {
   Loader2,
   Calendar,
   Euro,
-  Building,
-  Users,
   ExternalLink,
   Zap,
   CheckCircle2,
@@ -80,7 +78,6 @@ import {
 } from "lucide-react";
 import {
   useSettlementPeriod,
-  calculateSettlement,
   createSettlementInvoices,
   updateSettlementPeriod,
   deleteSettlementPeriod,

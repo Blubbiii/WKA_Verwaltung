@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Upload,
-  FileUp,
   Check,
   AlertTriangle,
   ArrowLeft,
@@ -439,7 +438,7 @@ export default function ImportShpPage() {
     } finally {
       setUploading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   /** Add files and auto-start upload */

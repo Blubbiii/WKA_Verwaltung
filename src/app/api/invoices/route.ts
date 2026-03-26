@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { getNextInvoiceNumber, calculateTaxAmounts, getTaxRateByType } from "@/lib/invoices/numberGenerator";
+import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices/skonto";
 import { parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";

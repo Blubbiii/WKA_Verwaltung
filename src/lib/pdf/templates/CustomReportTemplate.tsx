@@ -13,14 +13,11 @@ import {
   StyleSheet,
   Svg,
   Rect as SvgRect,
-  Line as SvgLine,
-  G as SvgG,
 } from "@react-pdf/renderer";
 import { formatNumber, formatDate } from "../utils/formatters";
 import { formatCurrency } from "@/lib/format";
 import { PdfPowerCurve } from "../charts/PdfPowerCurve";
 import { PdfWindDistribution } from "../charts/PdfWindDistribution";
-import { PdfDailyProfile } from "../charts/PdfDailyProfile";
 import { PageNumber } from "./components/Footer";
 import type {
   TurbinePerformanceKpi,

@@ -294,7 +294,7 @@ export function FundHierarchyChart({
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [storageKey]);
 
   // Navigate on click (not on drag). Uses programmatic navigation instead of <Link>

@@ -25,7 +25,6 @@ import {
   AlertTriangle,
   Clock,
   Download,
-  FileText,
   List,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

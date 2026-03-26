@@ -9,7 +9,6 @@ import { prisma } from "../prisma";
 import { logger } from "@/lib/logger";
 import {
   getCurrentWeather,
-  getForecast,
   getWeatherWithForecast,
   isWeatherApiConfigured,
   getHistoricalRange,
@@ -29,7 +28,6 @@ import {
   WeatherStatistics,
   WeatherApiError,
   WeatherErrorCode,
-  getWindDirectionLabel,
 } from "./types";
 
 // =============================================================================

@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { validateFileContent } from "./file-validation";
-import type { FileValidationResult } from "./file-validation";
 
 // =============================================================================
 // Helper: create a Buffer from byte array

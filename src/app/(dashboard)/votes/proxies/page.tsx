@@ -16,11 +16,6 @@ import {
   XCircle,
   Filter,
   CheckCircle,
-  Clock,
-  AlertCircle,
-  Download,
-  Upload,
-  Loader2,
 } from "lucide-react";
 import { ProxyDocumentUpload } from "@/components/votes/proxy-document-upload";
 import { Button } from "@/components/ui/button";

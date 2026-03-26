@@ -16,7 +16,6 @@ import {
   Maximize2,
   Minimize2,
   Printer,
-  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

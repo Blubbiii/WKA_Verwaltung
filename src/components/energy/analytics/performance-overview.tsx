@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  Line,
   ComposedChart,
   BarChart,
   Cell,

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ScatterChart,
   Scatter,
   XAxis,
   YAxis,

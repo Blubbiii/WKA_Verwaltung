@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -82,9 +83,9 @@ export async function PATCH(
     const { locationCode, plantNo, parkId, turbineId, description, status } = body;
 
     // Update-Daten zusammenstellen (nur übergebene Felder)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
 
-    const updateData: any = {};
+    const updateData: Prisma.ScadaTurbineMappingUncheckedUpdateInput = {};
 
     if (locationCode !== undefined) {
       if (typeof locationCode !== "string" || !locationCode.startsWith("Loc_")) {

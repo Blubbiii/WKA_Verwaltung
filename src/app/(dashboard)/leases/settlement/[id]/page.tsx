@@ -44,7 +44,6 @@ import {
   Send,
   CheckCircle,
   XCircle,
-  Layers,
   Loader2,
   Euro,
   Percent,

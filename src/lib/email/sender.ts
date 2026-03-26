@@ -8,7 +8,7 @@
 import { prisma } from '@/lib/prisma';
 import { emailLogger } from '@/lib/logger';
 import { enqueueEmail, EmailJobData, EmailTemplate as QueueEmailTemplate } from '@/lib/queue';
-import { getCachedProvider, clearProviderCache, SmtpProvider, getDefaultSenderInfo } from './provider';
+import { getCachedProvider, clearProviderCache, SmtpProvider } from './provider';
 import { renderEmail, type SupportedTemplateName } from './renderer';
 import { getEmailConfig } from '@/lib/config';
 import type {

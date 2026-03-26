@@ -9,7 +9,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
-import type { DashboardConfig, DashboardWidget, UserRole, UserSettings } from "@/types/dashboard";
+import type { DashboardConfig, UserRole, UserSettings } from "@/types/dashboard";
 import {
   getDefaultLayoutForRole,
   sanitizeDashboardConfig,

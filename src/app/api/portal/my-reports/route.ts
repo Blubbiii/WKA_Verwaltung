@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { Prisma, DocumentCategory } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 /**
@@ -55,12 +56,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Report-relevant document categories
-    const reportCategories = ["REPORT"];
+    const reportCategories: DocumentCategory[] = ["REPORT"];
 
     // Build where clause
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
 
-    const whereClause: any = {
+    const whereClause: Prisma.DocumentWhereInput = {
       OR: [
         // Fund-level reports
         {

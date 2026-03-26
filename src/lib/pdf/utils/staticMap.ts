@@ -257,7 +257,7 @@ export async function generateStaticMapImage(
   }
 
   // Create canvas and composite tiles
-  let composite = sharp({
+  const composite = sharp({
     create: {
       width: totalTilesW,
       height: totalTilesH,

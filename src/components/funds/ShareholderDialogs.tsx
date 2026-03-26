@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { formatCurrency } from "@/lib/format";
@@ -17,7 +17,6 @@ import {
   Wallet,
   Percent,
   FileText,
-  Vote,
   Upload,
   Download,
   Eye,

@@ -7,17 +7,14 @@ import { de } from "date-fns/locale";
 import {
   Inbox,
   Upload,
-  Search,
   RefreshCw,
   CheckCircle2,
-  Clock,
   Eye,
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";

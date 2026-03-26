@@ -7,7 +7,7 @@
  * from the park detail page in a static, print-friendly format.
  */
 
-import { View, Text, StyleSheet, Svg, Line, Circle, Rect, G, Text as SvgText, Path } from "@react-pdf/renderer";
+import { View, Text, StyleSheet, Svg, Circle, Rect, G, Text as SvgText, Path } from "@react-pdf/renderer";
 
 // ---------------------------------------------------------------------------
 // Types (matching the data shape provided by the annual report generator)

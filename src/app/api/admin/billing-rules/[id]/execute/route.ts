@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
-import { executeRule, previewRule } from "@/lib/billing";
+import { executeRule } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
 
 // POST /api/admin/billing-rules/[id]/execute

@@ -5,7 +5,7 @@
  * for monitoring, job management, and statistics.
  */
 
-import { Queue, Job, JobState, JobType } from 'bullmq';
+import { Queue, Job, JobType } from 'bullmq';
 import { getEmailQueue, EMAIL_QUEUE_NAME } from './queues/email.queue';
 import { getPdfQueue, PDF_QUEUE_NAME } from './queues/pdf.queue';
 import { getBillingQueue, BILLING_QUEUE_NAME } from './queues/billing.queue';

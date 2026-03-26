@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { format, parseISO, startOfDay, eachDayOfInterval, subDays } from "date-fns";
+import { format, parseISO, startOfDay } from "date-fns";
 import { de } from "date-fns/locale";
 import {
   Area,

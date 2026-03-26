@@ -29,7 +29,6 @@ import { logger } from "@/lib/logger";
 import type {
   DistributionMode,
   EnergySettlementCalculation,
-  EnergyDistributionDetail,
 } from "@/types/energy";
 
 // ===========================================

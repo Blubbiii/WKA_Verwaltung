@@ -59,7 +59,6 @@ import {
   CalendarPlus,
   MoreHorizontal,
   Clock,
-  CheckCircle2,
   Euro,
   TrendingUp,
 } from "lucide-react";

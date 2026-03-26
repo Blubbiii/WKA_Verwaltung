@@ -1,8 +1,7 @@
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import type { ResolvedLetterhead, ResolvedTemplate } from "../utils/templateResolver";
-import type { DocumentTemplateLayout } from "@/types/pdf";
 import { BaseDocument } from "./BaseDocument";
-import { formatDate, formatPercent } from "../utils/formatters";
+import { formatDate } from "../utils/formatters";
 
 const styles = StyleSheet.create({
   // Meta-Section

@@ -631,7 +631,7 @@ export async function POST(request: NextRequest) {
     const turbineNames = turbines.map((t) => t.designation);
 
     // Build response - only query modules that are requested
-    const result: Record<string, any> = {
+    const result: Record<string, unknown> = {
       meta: {
         generatedAt: new Date().toISOString(),
         parkName: parkNames.length === 1 ? parkNames[0] : parkNames.join(", "),

@@ -6,7 +6,6 @@ import { z } from "zod";
 import {
   generateAnnualReportPdf,
   getAnnualReportFilename,
-  type ReportSections,
 } from "@/lib/pdf/generators/annualReportPdf";
 import { prisma } from "@/lib/prisma";
 

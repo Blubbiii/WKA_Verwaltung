@@ -45,12 +45,25 @@ const voteEditSchema = z.object({
 
 type VoteEditValues = z.infer<typeof voteEditSchema>;
 
+interface VoteData {
+  id: string;
+  title: string;
+  description?: string | null;
+  options: string[];
+  startDate: string;
+  endDate: string;
+  quorumPercentage?: string | null;
+  requiresCapitalMajority: boolean;
+  status?: string;
+  fund?: { name: string };
+}
+
 export default function EditVotePage() {
   const params = useParams();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingVote, setLoadingVote] = useState(true);
-  const [vote, setVote] = useState<any>(null);
+  const [vote, setVote] = useState<VoteData | null>(null);
   const [newOption, setNewOption] = useState("");
 
   const form = useForm<VoteEditValues>({
@@ -196,7 +209,7 @@ export default function EditVotePage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Abstimmung bearbeiten</h1>
-          <p className="text-muted-foreground">{vote.fund.name}</p>
+          <p className="text-muted-foreground">{vote.fund?.name}</p>
         </div>
       </div>
 

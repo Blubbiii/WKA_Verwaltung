@@ -59,7 +59,7 @@ function formatValue(
       if (typeof value === 'number') {
         return value;
       }
-      // eslint-disable-next-line no-case-declarations
+       
       const num = parseFloat(String(value));
       return isNaN(num) ? String(value) : num;
 
@@ -71,7 +71,7 @@ function formatValue(
       if (typeof value === 'object' && value !== null && 'toNumber' in value) {
         return (value as { toNumber: () => number }).toNumber();
       }
-      // eslint-disable-next-line no-case-declarations
+       
       const currencyNum = parseFloat(String(value));
       return isNaN(currencyNum) ? String(value) : currencyNum;
 
@@ -83,7 +83,7 @@ function formatValue(
       if (typeof value === 'object' && value !== null && 'toNumber' in value) {
         return (value as { toNumber: () => number }).toNumber() / 100;
       }
-      // eslint-disable-next-line no-case-declarations
+       
       const pctNum = parseFloat(String(value));
       return isNaN(pctNum) ? String(value) : pctNum / 100;
 

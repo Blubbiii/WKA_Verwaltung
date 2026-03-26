@@ -7,7 +7,6 @@ import { prisma } from "@/lib/prisma";
 import { InvoiceType, TaxType, EntityStatus } from "@prisma/client";
 import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { BillingRuleType } from "../types";
-import { billingLogger as logger } from "@/lib/logger";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import {
   RuleHandler,

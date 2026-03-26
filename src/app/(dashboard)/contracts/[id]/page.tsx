@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   Pencil,
   Trash2,
-  FileText,
   Calendar,
   Building2,
   User,
@@ -27,7 +26,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";

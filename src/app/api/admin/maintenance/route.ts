@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperadmin } from "@/lib/auth/withPermission";
-import { auth } from "@/lib/auth";
 import {
   getConfig,
   setConfig,

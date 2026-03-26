@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useCallback } from "react";
 import Link from "next/link";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
   ArrowLeft,
@@ -12,7 +12,6 @@ import {
   CloudSun,
   Compass,
   Droplets,
-  Gauge,
   RefreshCw,
   Sun,
   Thermometer,

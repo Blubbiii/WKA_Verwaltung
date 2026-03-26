@@ -5,7 +5,7 @@
  * Formular für Erstellung/Bearbeitung von Billing Rules
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,10 +28,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
   Calendar,
-  DollarSign,
   Percent,
-  Building,
-  Users,
   FileText,
   Save,
   Loader2,

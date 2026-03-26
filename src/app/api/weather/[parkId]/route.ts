@@ -15,7 +15,6 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import {
   getWeatherForPark,
-  isWeatherApiConfigured,
   WeatherApiError,
 } from "@/lib/weather";
 

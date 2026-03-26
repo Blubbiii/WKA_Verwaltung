@@ -11,7 +11,6 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
   Plus,
-  Search,
   Receipt,
   FileText,
   FileCode2,
@@ -32,7 +31,6 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BatchActionBar } from "@/components/ui/batch-action-bar";
 import {
@@ -57,13 +55,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";

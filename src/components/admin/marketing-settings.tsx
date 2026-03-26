@@ -81,7 +81,7 @@ import type {
   ModuleConfig,
   SectionId,
 } from "@/lib/marketing/types";
-import { SECTION_LABELS, SECTION_IDS } from "@/lib/marketing/types";
+import { SECTION_LABELS } from "@/lib/marketing/types";
 import { DEFAULT_MARKETING_CONFIG, DEFAULT_SECTION_ORDER } from "@/lib/marketing/defaults";
 
 // ---------------------------------------------------------------------------

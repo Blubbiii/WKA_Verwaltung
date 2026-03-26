@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { DISTRIBUTION_STATUS, getStatusBadge } from "@/lib/status-config";
+import { DISTRIBUTION_STATUS } from "@/lib/status-config";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);

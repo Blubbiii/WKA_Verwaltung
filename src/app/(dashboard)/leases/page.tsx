@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -9,8 +8,6 @@ import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQ
 import { format, differenceInDays } from "date-fns";
 import { de } from "date-fns/locale";
 import {
-  Plus,
-  Search,
   MapPin,
   Calendar,
   AlertTriangle,
@@ -21,7 +18,6 @@ import {
   Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -44,13 +40,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";

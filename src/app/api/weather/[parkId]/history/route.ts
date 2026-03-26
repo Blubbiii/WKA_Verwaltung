@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
-import { getHistoricalWeather, getWeatherStatistics, WeatherApiError } from "@/lib/weather";
+import { getHistoricalWeather, WeatherApiError } from "@/lib/weather";
 import { apiLogger as logger } from "@/lib/logger";
 import { CACHE_TTL } from "@/lib/cache/types";
 
