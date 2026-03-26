@@ -138,9 +138,10 @@ export function KPICard({
     : (widgetId ? KPI_ACCENT_HEX[widgetId] ?? "#335E99" : "#335E99");
 
   const card = (
+    // @container enables child elements to respond to this card's own width
     <Card
       className={cn(
-        "h-full overflow-hidden transition-all hover:shadow-md",
+        "@container h-full overflow-hidden transition-all hover:shadow-md",
         "border border-border/60 dark:border-border/40",
         href && "cursor-pointer hover:border-primary/30",
         className
@@ -154,26 +155,28 @@ export function KPICard({
         <CardTitle className="uppercase tracking-wider text-[11px] font-semibold text-muted-foreground">
           {title}
         </CardTitle>
+        {/* Icon scales up on wider widgets (@md = container ≥ 28rem / ~448px) */}
         <Icon className={cn(
-          "h-5 w-5 shrink-0",
+          "h-5 w-5 @md:h-7 @md:w-7 shrink-0",
           isAlert
             ? "text-destructive/60"
             : iconColor || "text-muted-foreground/30"
         )} />
       </CardHeader>
       <CardContent className="p-4 pt-1">
+        {/* Value text scales up on wider widgets */}
         <div className={cn(
-          "text-2xl font-bold font-mono truncate leading-tight",
+          "text-2xl @md:text-3xl font-bold font-mono truncate leading-tight",
           isAlert ? "text-destructive" : accentColor || "text-foreground"
         )}>
           {value}
         </div>
         {description && (
-          <p className="text-xs text-muted-foreground mt-1.5 truncate">{description}</p>
+          <p className="text-xs @md:text-sm text-muted-foreground mt-1.5 truncate">{description}</p>
         )}
         {(trend !== undefined || trendLabel) && (
-          <div className={cn("mt-1.5 flex items-center text-xs", getTrendColor())}>
-            {TrendIcon && <TrendIcon className="mr-1 h-3 w-3 shrink-0" />}
+          <div className={cn("mt-1.5 flex items-center text-xs @md:text-sm", getTrendColor())}>
+            {TrendIcon && <TrendIcon className="mr-1 h-3 w-3 @md:h-4 @md:w-4 shrink-0" />}
             <span className="truncate">
               {trend !== undefined ? formatTrend(trend) : trendLabel}
             </span>

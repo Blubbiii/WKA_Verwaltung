@@ -249,27 +249,28 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center justify-between px-2 py-2.5 rounded-md transition-colors",
+              "flex items-center justify-between px-2 @md:px-3 py-2.5 @md:py-3 rounded-md transition-colors",
               "hover:bg-accent/50 group"
             )}
           >
-            <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="flex items-center gap-3 @md:gap-4 min-w-0 flex-1">
+              {/* Icon box scales on wider containers */}
               <div
                 className={cn(
-                  "h-8 w-8 rounded-md flex items-center justify-center flex-shrink-0",
+                  "h-8 w-8 @md:h-9 @md:w-9 rounded-md flex items-center justify-center flex-shrink-0",
                   hasCritical
                     ? "bg-destructive/10 text-destructive"
                     : "bg-yellow-500/10 text-yellow-600"
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4 @md:h-5 @md:w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">
+                <p className="text-sm @md:text-base font-medium truncate">
                   {item.count} {item.label}
                 </p>
                 {item.amount !== undefined && item.amount > 0 && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs @md:text-sm text-muted-foreground">
                     Gesamt: {formatCurrency(item.amount)}
                   </p>
                 )}
@@ -277,7 +278,7 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               {hasCritical && (
-                <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">
+                <span className="text-xs @md:text-sm font-medium px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">
                   {item.criticalCount} dringend
                 </span>
               )}

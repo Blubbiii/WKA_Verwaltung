@@ -148,18 +148,19 @@ export function ExpiringContractsWidget({ className }: ExpiringContractsWidgetPr
       {contracts.map((contract) => (
         <div
           key={contract.id}
-          className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+          className="flex items-center justify-between gap-3 border-b pb-4 last:border-0 last:pb-0"
         >
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm truncate">{contract.title}</p>
-            <p className="text-xs text-muted-foreground">
+            {/* On wider widgets show full title, on narrow truncate */}
+            <p className="font-medium text-sm @md:text-base truncate @md:whitespace-normal">{contract.title}</p>
+            <p className="text-xs @md:text-sm text-muted-foreground">
               {contract.type} - Läuft ab am {contract.expiryDate}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span
               className={cn(
-                "text-xs font-medium px-2 py-1 rounded whitespace-nowrap",
+                "text-xs @md:text-sm font-medium px-2 py-1 rounded whitespace-nowrap",
                 contract.status === "critical"
                   ? "bg-destructive/10 text-destructive"
                   : contract.status === "warning"

@@ -94,15 +94,16 @@ export function EnergyYieldKPI({ className }: { className?: string }) {
   const { totalMwh, yoyChange } = data.energyYield;
 
   return (
-    <div className={cn("flex items-start gap-3", className)}>
-      <Zap className="h-8 w-8 text-lime-500/40 dark:text-lime-400/30 shrink-0 mt-1" />
+    // Use container query to scale icon + value on wider placements
+    <div className={cn("flex items-start gap-3 @md:gap-4", className)}>
+      <Zap className="h-8 w-8 @md:h-10 @md:w-10 text-lime-500/40 dark:text-lime-400/30 shrink-0 mt-1" />
       <div className="min-w-0">
-        <p className="text-2xl font-bold text-lime-600 dark:text-lime-400 truncate">
+        <p className="text-2xl @md:text-3xl font-bold text-lime-600 dark:text-lime-400 truncate">
           {totalMwh > 1000 ? `${(totalMwh / 1000).toFixed(1)} GWh` : `${totalMwh.toFixed(0)} MWh`}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">Produktion {new Date().getFullYear()}</p>
+        <p className="text-xs @md:text-sm text-muted-foreground mt-0.5">Produktion {new Date().getFullYear()}</p>
         {yoyChange !== 0 && (
-          <p className={cn("text-xs mt-1", yoyChange > 0 ? "text-green-600" : "text-red-600")}>
+          <p className={cn("text-xs @md:text-sm mt-1", yoyChange > 0 ? "text-green-600" : "text-red-600")}>
             {yoyChange > 0 ? "+" : ""}{yoyChange.toFixed(1)}% vs. Vorjahr
           </p>
         )}
@@ -125,15 +126,15 @@ export function AvailabilityKPI({ className }: { className?: string }) {
   const isGood = pct >= 95;
 
   return (
-    <div className={cn("flex items-start gap-3", className)}>
-      <Activity className="h-8 w-8 text-blue-500/40 dark:text-blue-400/30 shrink-0 mt-1" />
+    <div className={cn("flex items-start gap-3 @md:gap-4", className)}>
+      <Activity className="h-8 w-8 @md:h-10 @md:w-10 text-blue-500/40 dark:text-blue-400/30 shrink-0 mt-1" />
       <div className="min-w-0">
-        <p className={cn("text-2xl font-bold truncate", isGood ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")}>
+        <p className={cn("text-2xl @md:text-3xl font-bold truncate", isGood ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-amber-400")}>
           {pct > 0 ? `${pct.toFixed(1)} %` : "–"}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">Durchschnittliche Verfügbarkeit</p>
+        <p className="text-xs @md:text-sm text-muted-foreground mt-0.5">Durchschnittliche Verfügbarkeit</p>
         {pct > 0 && (
-          <p className={cn("text-xs mt-1", isGood ? "text-green-600" : "text-amber-600")}>
+          <p className={cn("text-xs @md:text-sm mt-1", isGood ? "text-green-600" : "text-amber-600")}>
             {isGood ? "Im Zielbereich" : "Unter Zielwert (95%)"}
           </p>
         )}
@@ -155,15 +156,15 @@ export function WindSpeedKPI({ className }: { className?: string }) {
   const avgMs = data.windSpeed.avgMs;
 
   return (
-    <div className={cn("flex items-start gap-3", className)}>
-      <Wind className="h-8 w-8 text-sky-500/40 dark:text-sky-400/30 shrink-0 mt-1" />
+    <div className={cn("flex items-start gap-3 @md:gap-4", className)}>
+      <Wind className="h-8 w-8 @md:h-10 @md:w-10 text-sky-500/40 dark:text-sky-400/30 shrink-0 mt-1" />
       <div className="min-w-0">
-        <p className="text-2xl font-bold text-sky-600 dark:text-sky-400 truncate">
+        <p className="text-2xl @md:text-3xl font-bold text-sky-600 dark:text-sky-400 truncate">
           {avgMs > 0 ? `${avgMs.toFixed(1)} m/s` : "–"}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">Mittlere Windgeschwindigkeit</p>
+        <p className="text-xs @md:text-sm text-muted-foreground mt-0.5">Mittlere Windgeschwindigkeit</p>
         {avgMs > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs @md:text-sm text-muted-foreground mt-1">
             {avgMs < 4 ? "Schwacher Wind" : avgMs < 8 ? "Moderater Wind" : "Starker Wind"}
           </p>
         )}
@@ -185,15 +186,15 @@ export function LeaseRevenueKPI({ className }: { className?: string }) {
   const { totalEur, leaseCount } = data.leaseRevenue;
 
   return (
-    <div className={cn("flex items-start gap-3", className)}>
-      <Landmark className="h-8 w-8 text-rose-500/40 dark:text-rose-400/30 shrink-0 mt-1" />
+    <div className={cn("flex items-start gap-3 @md:gap-4", className)}>
+      <Landmark className="h-8 w-8 @md:h-10 @md:w-10 text-rose-500/40 dark:text-rose-400/30 shrink-0 mt-1" />
       <div className="min-w-0">
-        <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 truncate">
+        <p className="text-2xl @md:text-3xl font-bold text-rose-600 dark:text-rose-400 truncate">
           {totalEur > 0 ? formatCurrency(totalEur) : "–"}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">Erlöse {new Date().getFullYear()}</p>
+        <p className="text-xs @md:text-sm text-muted-foreground mt-0.5">Erlöse {new Date().getFullYear()}</p>
         {leaseCount > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs @md:text-sm text-muted-foreground mt-1">
             {leaseCount} aktive Pachtverträge
           </p>
         )}
@@ -461,7 +462,8 @@ export function LeaseOverviewWidget({ className }: { className?: string }) {
     <div className={cn("flex flex-col h-full", className)}>
       <div className="flex-1 space-y-1.5 overflow-auto">
         {data.leaseOverview.map((lease, i) => (
-          <div key={i} className="flex items-center gap-2 py-1.5 px-1 text-xs">
+          // On wider containers (@md ≥ 28rem) show lessor + park side-by-side with amount
+          <div key={i} className="flex items-center gap-2 @md:gap-4 py-1.5 px-1 text-xs @md:text-sm">
             <div className="min-w-0 flex-1">
               <p className="font-medium truncate">{lease.lessor}</p>
               <p className="text-muted-foreground truncate">{lease.park}</p>
@@ -471,7 +473,7 @@ export function LeaseOverviewWidget({ className }: { className?: string }) {
               <Badge
                 variant="secondary"
                 className={cn(
-                  "text-[10px] px-1.5 py-0",
+                  "text-[10px] @md:text-xs px-1.5 py-0",
                   lease.status === "active" && "bg-green-500/10 text-green-700 dark:text-green-400",
                   lease.status === "pending" && "bg-amber-500/10 text-amber-700 dark:text-amber-400",
                   lease.status === "overdue" && "bg-red-500/10 text-red-700 dark:text-red-400"

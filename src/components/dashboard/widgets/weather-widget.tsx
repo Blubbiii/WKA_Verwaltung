@@ -162,20 +162,23 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
       {weatherData.map((park) => (
         <div
           key={park.parkId}
-          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+          className="flex items-center justify-between p-3 @md:p-4 bg-muted/50 rounded-lg"
         >
-          <div className="flex items-center gap-3">
-            {getWeatherIcon(park.condition)}
+          <div className="flex items-center gap-3 @md:gap-4">
+            {/* Weather icon scales on wider widgets */}
+            <span className="[&>svg]:h-6 [&>svg]:w-6 @md:[&>svg]:h-8 @md:[&>svg]:w-8">
+              {getWeatherIcon(park.condition)}
+            </span>
             <div>
-              <p className="font-medium text-sm">{park.parkName}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-medium text-sm @md:text-base">{park.parkName}</p>
+              <p className="text-xs @md:text-sm text-muted-foreground">
                 {getConditionLabel(park.condition)}
               </p>
             </div>
           </div>
           <div className="text-right">
-            <p className="font-semibold">{park.temperature}°C</p>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="font-semibold @md:text-lg">{park.temperature}°C</p>
+            <p className="text-xs @md:text-sm text-muted-foreground flex items-center justify-end gap-1">
               <Wind className="h-3 w-3" />
               {park.windSpeed} km/h
             </p>

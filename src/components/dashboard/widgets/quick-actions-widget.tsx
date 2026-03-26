@@ -89,12 +89,13 @@ const DEFAULT_QUICK_ACTIONS: QuickAction[] = [
 
 export function QuickActionsWidget({ className }: QuickActionsWidgetProps) {
   return (
-    <div className={cn("flex flex-wrap gap-1.5 content-start", className)}>
+    // On wider widgets buttons grow slightly and get more padding
+    <div className={cn("flex flex-wrap gap-1.5 @md:gap-2 content-start", className)}>
       {DEFAULT_QUICK_ACTIONS.map((action) => (
         <Link key={action.id} href={action.href}>
           <button
             type="button"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs font-medium hover:bg-accent transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 @md:px-3 @md:py-2 rounded-md border text-xs @md:text-sm font-medium hover:bg-accent transition-colors"
           >
             <span className={action.color}>{action.icon}</span>
             {action.label}

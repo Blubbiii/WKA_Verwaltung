@@ -139,17 +139,18 @@ export function DeadlinesWidget({ className }: DeadlinesWidgetProps) {
       {deadlines.map((deadline) => (
         <div
           key={deadline.id}
-          className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+          className="flex items-center justify-between gap-3 border-b pb-4 last:border-0 last:pb-0"
         >
-          <div>
-            <p className="font-medium text-sm">{deadline.title}</p>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0 flex-1">
+            {/* Title is always visible; on wider containers don't truncate */}
+            <p className="font-medium text-sm @md:text-base truncate @md:whitespace-normal">{deadline.title}</p>
+            <p className="text-xs @md:text-sm text-muted-foreground">
               {deadline.type} am {deadline.date}
             </p>
           </div>
           <div
             className={cn(
-              "text-xs font-medium px-2 py-1 rounded whitespace-nowrap",
+              "text-xs @md:text-sm font-medium px-2 py-1 rounded whitespace-nowrap shrink-0",
               deadline.daysLeft <= 30
                 ? "bg-destructive/10 text-destructive"
                 : deadline.daysLeft <= 60

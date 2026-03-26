@@ -151,8 +151,9 @@ export function ActivitiesWidget({ className }: ActivitiesWidgetProps) {
         >
           <div className="h-2 w-2 mt-2 rounded-full bg-primary flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm">{activity.action}</p>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="font-medium text-sm @md:text-base">{activity.action}</p>
+            {/* Show full detail text on wider widgets, truncate on narrow ones */}
+            <p className="text-xs @md:text-sm text-muted-foreground truncate @md:whitespace-normal @md:line-clamp-2">
               {activity.detail}
             </p>
           </div>

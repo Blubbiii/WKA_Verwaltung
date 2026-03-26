@@ -47,7 +47,7 @@ export function WidgetWrapper({
   // Loading State
   if (isLoading) {
     return (
-      <Card className={cn("h-full overflow-hidden flex flex-col", className)}>
+      <Card className={cn("@container h-full overflow-hidden flex flex-col", className)}>
         {showHeader && title && (
           <CardHeader className={cn("p-4 pb-2", headerClassName)}>
             <Skeleton className="h-5 w-32" />
@@ -68,7 +68,7 @@ export function WidgetWrapper({
   // Error State
   if (error) {
     return (
-      <Card className={cn("h-full overflow-hidden flex flex-col border-destructive/50", className)}>
+      <Card className={cn("@container h-full overflow-hidden flex flex-col border-destructive/50", className)}>
         {showHeader && title && (
           <CardHeader className={cn("p-4 pb-2", headerClassName)}>
             <div className="flex items-center justify-between">
@@ -104,9 +104,10 @@ export function WidgetWrapper({
 
   // Normal State
   return (
+    // @container so child widget components can respond to their own rendered width
     <Card
       className={cn(
-        "h-full overflow-hidden flex flex-col transition-all",
+        "@container h-full overflow-hidden flex flex-col transition-all",
         isEditing && "ring-2 ring-primary/20 hover:ring-primary/40",
         className
       )}

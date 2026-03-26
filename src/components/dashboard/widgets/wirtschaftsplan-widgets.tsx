@@ -100,16 +100,16 @@ export function BudgetVarianceKPI({ className }: { className?: string }) {
     : "Im Plan";
 
   return (
-    <div className={cn("flex items-start gap-3", className)}>
-      <Icon className={cn("h-8 w-8 shrink-0 mt-1", iconColor)} />
+    <div className={cn("flex items-start gap-3 @md:gap-4", className)}>
+      <Icon className={cn("h-8 w-8 @md:h-10 @md:w-10 shrink-0 mt-1", iconColor)} />
       <div className="min-w-0">
-        <p className={cn("text-2xl font-bold truncate", color)}>
+        <p className={cn("text-2xl @md:text-3xl font-bold truncate", color)}>
           {hasBudget ? `${utilization!.toFixed(1)} %` : "–"}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">Kostenauslastung {data.year}</p>
-        {hasBudget && <p className={cn("text-xs mt-1", color)}>{label}</p>}
+        <p className="text-xs @md:text-sm text-muted-foreground mt-0.5">Kostenauslastung {data.year}</p>
+        {hasBudget && <p className={cn("text-xs @md:text-sm mt-1", color)}>{label}</p>}
         {!hasBudget && (
-          <p className="text-xs text-muted-foreground mt-1">Kein Budget hinterlegt</p>
+          <p className="text-xs @md:text-sm text-muted-foreground mt-1">Kein Budget hinterlegt</p>
         )}
       </div>
     </div>

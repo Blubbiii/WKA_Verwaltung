@@ -158,26 +158,26 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
   return (
     <div className={cn("space-y-4", className)}>
       {/* Overall Status */}
-      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+      <div className="flex items-center gap-3 p-3 @md:p-4 bg-muted/50 rounded-lg">
         {getStatusIcon(status.status)}
         <div className="flex-1">
-          <p className="font-medium text-sm">{getStatusLabel(status.status)}</p>
-          <p className="text-xs text-muted-foreground">Version {status.version}</p>
+          <p className="font-medium text-sm @md:text-base">{getStatusLabel(status.status)}</p>
+          <p className="text-xs @md:text-sm text-muted-foreground">Version {status.version}</p>
         </div>
       </div>
 
       {/* Services */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="flex items-center gap-2 p-2 bg-muted/30 rounded">
+        <div className="flex items-center gap-2 p-2 @md:p-3 bg-muted/30 rounded">
           <Database className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm">Datenbank</span>
+          <span className="text-sm @md:text-base">Datenbank</span>
           <span className="ml-auto">
             {getConnectionIcon(status.database === "connected")}
           </span>
         </div>
-        <div className="flex items-center gap-2 p-2 bg-muted/30 rounded">
+        <div className="flex items-center gap-2 p-2 @md:p-3 bg-muted/30 rounded">
           <Server className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm">Storage</span>
+          <span className="text-sm @md:text-base">Storage</span>
           <span className="ml-auto">
             {getConnectionIcon(status.storage === "available")}
           </span>
@@ -185,7 +185,7 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
       </div>
 
       {/* Uptime */}
-      <div className="text-xs text-muted-foreground">
+      <div className="text-xs @md:text-sm text-muted-foreground">
         <span>Uptime: {status.uptime}</span>
       </div>
     </div>
@@ -262,27 +262,27 @@ export function UserStatsWidget({ className }: UserStatsWidgetProps) {
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Total Users */}
-      <div className="flex items-center gap-3">
-        <Users className="h-8 w-8 text-primary" />
+      {/* Total Users — icon + value scale on wider containers */}
+      <div className="flex items-center gap-3 @md:gap-4">
+        <Users className="h-8 w-8 @md:h-10 @md:w-10 text-primary shrink-0" />
         <div>
-          <p className="text-2xl font-bold">{stats.totalUsers}</p>
-          <p className="text-xs text-muted-foreground">Benutzer gesamt</p>
+          <p className="text-2xl @md:text-3xl font-bold">{stats.totalUsers}</p>
+          <p className="text-xs @md:text-sm text-muted-foreground">Benutzer gesamt</p>
         </div>
       </div>
 
       {/* Active Today */}
       <div className="space-y-1">
-        <div className="flex justify-between text-sm">
+        <div className="flex justify-between text-sm @md:text-base">
           <span>Aktiv heute</span>
           <span className="font-medium">{stats.activeToday}</span>
         </div>
         <Progress value={activePercentage} className="h-2" />
-        <p className="text-xs text-muted-foreground">{activePercentage}% der Benutzer</p>
+        <p className="text-xs @md:text-sm text-muted-foreground">{activePercentage}% der Benutzer</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 text-sm">
+      <div className="grid grid-cols-2 gap-3 text-sm @md:text-base">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-muted-foreground" />
           <span>Neu: {stats.newThisMonth}</span>
