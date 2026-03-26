@@ -15,6 +15,8 @@ export default function DashboardError({
 }) {
   useEffect(() => {
     Sentry.captureException(error);
+    // Log to console so errors are visible in Docker/Portainer logs (client-side)
+    console.error("[DashboardError]", error.message, error.stack);
   }, [error]);
 
   return (
@@ -30,7 +32,7 @@ export default function DashboardError({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {process.env.NODE_ENV === "development" && (
+          {error.message && (
             <div className="bg-muted p-4 rounded-lg">
               <p className="text-sm font-mono text-muted-foreground break-all">
                 {error.message}
