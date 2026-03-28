@@ -116,7 +116,8 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
         drawnItems.addLayer(layer);
         const geoJson = (layer as L.Polygon | L.Polyline).toGeoJSON();
         onCreatedRef.current(geoJson.geometry);
-        setTimeout(() => drawnItems.removeLayer(layer), 100);
+        // Remove drawn layer immediately — pendingGeometry preview takes over
+        drawnItems.removeLayer(layer);
       };
 
       map.on(L.Draw.Event.CREATED, handleCreated);
@@ -330,6 +331,7 @@ interface GISMapProps {
   layers: LayerVisibility;
   settings: GISSettings;
   drawMode: "off" | "plot" | "annotation";
+  pendingGeometry: GeoJSON.Geometry | null;
   onDrawCreated: (geometry: GeoJSON.Geometry) => void;
   onFeatureClick: (feature: SelectedFeature) => void;
   onMeasureResult: (result: { type: "distance" | "area"; value: number } | null) => void;
@@ -347,6 +349,7 @@ export function GISMap({
   layers,
   settings,
   drawMode,
+  pendingGeometry,
   onDrawCreated,
   onFeatureClick,
   onMeasureResult,
@@ -593,6 +596,28 @@ export function GISMap({
       {/* Measure draw control (polygon for area measurement) */}
       {isMeasuring && (
         <GISDrawControl mode="polygon" onCreated={handleMeasureCreated} />
+      )}
+
+      {/* Preview of pending geometry (drawn but not yet saved) */}
+      {pendingGeometry && (
+        <GeoJSON
+          key={`pending-${JSON.stringify(pendingGeometry).slice(0, 50)}`}
+          data={{
+            type: "FeatureCollection",
+            features: [{
+              type: "Feature",
+              geometry: pendingGeometry,
+              properties: {},
+            }],
+          } as GeoJSON.FeatureCollection}
+          style={() => ({
+            color: "#335E99",
+            weight: 3,
+            fillColor: "#335E99",
+            fillOpacity: 0.2,
+            dashArray: "8 4",
+          })}
+        />
       )}
     </MapContainer>
   );

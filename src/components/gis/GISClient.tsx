@@ -274,6 +274,7 @@ export function GISClient() {
           layers={layers}
           settings={settings}
           drawMode={drawMode}
+          pendingGeometry={pendingGeometry}
           onDrawCreated={handleDrawCreated}
           onFeatureClick={handleFeatureClick}
           onMeasureResult={handleMeasureResult}
