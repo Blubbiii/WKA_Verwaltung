@@ -57,10 +57,10 @@ export async function GET(request: NextRequest) {
         },
       }),
 
-      // Turbines with coordinates
+      // Turbines with coordinates (no tenantId on Turbine — filter via park relation)
       prisma.turbine.findMany({
         where: {
-          ...tenantFilter,
+          park: tenantFilter,
           ...parkFilter,
           latitude: { not: null },
           longitude: { not: null },
