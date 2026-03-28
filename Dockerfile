@@ -42,8 +42,8 @@ COPY . .
 # Das Lockfile wird auf Windows generiert und enthaelt keine Alpine/musl Binaries
 RUN npm install @parcel/watcher-linux-x64-musl @rollup/rollup-linux-x64-musl --no-save 2>/dev/null; true
 
-# Prisma Client generieren
-RUN npx prisma generate
+# Prisma Client generieren (dummy URL fuer Build-Zeit, wird Runtime ueberschrieben)
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate
 
 # Environment fuer Build
 ENV NEXT_TELEMETRY_DISABLED=1
