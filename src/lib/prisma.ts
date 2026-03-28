@@ -23,13 +23,12 @@ const globalForPrisma = globalThis as unknown as {
  * Models that support soft-delete via `deletedAt` field.
  * When querying these models with findMany/findFirst/findFirstOrThrow/count,
  * `deletedAt: null` is automatically injected unless explicitly overridden.
+ *
+ * NOTE: Only add models here AFTER `prisma db push` has added the `deletedAt`
+ * column to the database. Otherwise queries will fail.
+ * Pending (add after next db push): Park, Fund, Lease, Contract, Document
  */
 const SOFT_DELETE_MODELS = new Set([
-  "Park",
-  "Fund",
-  "Lease",
-  "Contract",
-  "Document",
   "Invoice",
   "JournalEntry",
   "CrmActivity",
