@@ -4,6 +4,31 @@ import { useEffect, useRef, useMemo, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, GeoJSON, Circle, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+// Hide default leaflet-draw toolbar — we use our own toolbar buttons
+const HIDE_DRAW_TOOLBAR_CSS = `
+  .leaflet-draw-toolbar { display: none !important; }
+  .leaflet-draw-actions {
+    left: 60px !important;
+    top: auto !important;
+    bottom: 60px !important;
+    position: fixed !important;
+    z-index: 1001 !important;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    padding: 4px;
+  }
+  .leaflet-draw-actions li a {
+    font-size: 12px;
+    padding: 4px 12px;
+    color: #335E99;
+    font-weight: 500;
+  }
+  .leaflet-draw-tooltip {
+    z-index: 1001 !important;
+  }
+`;
 import { MapAnnotationLayer } from "@/components/maps/MapAnnotationLayer";
 import type {
   ParkData,
@@ -35,6 +60,15 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).L = L;
 
+    // Inject CSS to hide default draw toolbar
+    let styleEl: HTMLStyleElement | null = document.getElementById("gis-draw-css") as HTMLStyleElement;
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = "gis-draw-css";
+      styleEl.textContent = HIDE_DRAW_TOOLBAR_CSS;
+      document.head.appendChild(styleEl);
+    }
+
     let drawControl: L.Control.Draw | null = null;
     const drawnItems = new L.FeatureGroup();
     let cancelled = false;
@@ -44,7 +78,7 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
       map.addLayer(drawnItems);
 
       drawControl = new L.Control.Draw({
-        position: "topleft",
+        position: "bottomleft",
         draw: {
           polygon:
             mode === "polygon"
@@ -67,6 +101,14 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
       });
 
       map.addControl(drawControl);
+
+      // Programmatically start drawing (toolbar is hidden via CSS)
+      const toolbarContainer = (drawControl as unknown as { _toolbars: Record<string, { _modes: Record<string, { handler: { enable: () => void } }> }> })._toolbars;
+      if (mode === "polygon" && toolbarContainer?.draw?._modes?.polygon?.handler) {
+        toolbarContainer.draw._modes.polygon.handler.enable();
+      } else if (mode === "polyline" && toolbarContainer?.draw?._modes?.polyline?.handler) {
+        toolbarContainer.draw._modes.polyline.handler.enable();
+      }
 
       const handleCreated = (e: L.LeafletEvent) => {
         const event = e as L.DrawEvents.Created;
