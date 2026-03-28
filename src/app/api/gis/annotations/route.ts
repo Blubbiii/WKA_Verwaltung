@@ -6,11 +6,18 @@ import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
+// Stricter GeoJSON validation to prevent injection
+const geoJsonGeometrySchema = z.object({
+  type: z.enum(["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection"]),
+  coordinates: z.array(z.unknown()).optional(),
+  geometries: z.array(z.unknown()).optional(),
+});
+
 const createAnnotationSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").max(200),
   type: z.enum(["CABLE_ROUTE", "COMPENSATION_AREA", "ACCESS_ROAD", "EXCLUSION_ZONE", "CUSTOM"]).default("CUSTOM"),
-  geometry: z.record(z.string(), z.unknown()), // GeoJSON
-  description: z.string().optional(),
+  geometry: geoJsonGeometrySchema,
+  description: z.string().max(2000).optional(),
   style: z.record(z.string(), z.unknown()).optional(),
   parkId: z.string(),
 });
@@ -59,6 +66,14 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const data = createAnnotationSchema.parse(body);
+
+    // Verify park belongs to tenant (prevent IDOR)
+    const park = await prisma.park.findFirst({
+      where: { id: data.parkId, tenantId: check.tenantId },
+    });
+    if (!park) {
+      return NextResponse.json({ error: "Park nicht gefunden" }, { status: 404 });
+    }
 
     const annotation = await prisma.mapAnnotation.create({
       data: {

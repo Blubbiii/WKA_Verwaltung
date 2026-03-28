@@ -27,26 +27,35 @@ export async function PUT(
     const body = await request.json();
     const data = updateAnnotationSchema.parse(body);
 
-    // Verify ownership
-    const existing = await prisma.mapAnnotation.findFirst({
+    // Verify ownership — count ensures tenant isolation
+    const count = await prisma.mapAnnotation.count({
       where: { id, tenantId: check.tenantId },
     });
-    if (!existing) {
+    if (count === 0) {
       return NextResponse.json({ error: "Annotation nicht gefunden" }, { status: 404 });
     }
 
-    const updated = await prisma.mapAnnotation.update({
-      where: { id },
-      data: {
-        ...(data.name !== undefined ? { name: data.name } : {}),
-        ...(data.type !== undefined ? { type: data.type } : {}),
-        ...(data.geometry !== undefined ? { geometry: data.geometry as Prisma.InputJsonValue } : {}),
-        ...(data.description !== undefined ? { description: data.description } : {}),
-        ...(data.style !== undefined ? { style: data.style as Prisma.InputJsonValue } : {}),
-      },
+    // Build update payload — only set provided fields
+    const updateData: Prisma.MapAnnotationUpdateInput = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.geometry !== undefined) updateData.geometry = data.geometry as Prisma.InputJsonValue;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.style !== undefined) updateData.style = data.style as Prisma.InputJsonValue;
+
+    // Use deleteMany/updateMany pattern for tenant-safe operations
+    const updated = await prisma.mapAnnotation.updateMany({
+      where: { id, tenantId: check.tenantId },
+      data: updateData,
     });
 
-    return NextResponse.json(updated);
+    if (updated.count === 0) {
+      return NextResponse.json({ error: "Annotation nicht gefunden" }, { status: 404 });
+    }
+
+    // Return the updated annotation
+    const result = await prisma.mapAnnotation.findUnique({ where: { id } });
+    return NextResponse.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -67,14 +76,14 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const existing = await prisma.mapAnnotation.findFirst({
+    // Tenant-safe delete: deleteMany with tenant filter
+    const deleted = await prisma.mapAnnotation.deleteMany({
       where: { id, tenantId: check.tenantId },
     });
-    if (!existing) {
+
+    if (deleted.count === 0) {
       return NextResponse.json({ error: "Annotation nicht gefunden" }, { status: 404 });
     }
-
-    await prisma.mapAnnotation.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

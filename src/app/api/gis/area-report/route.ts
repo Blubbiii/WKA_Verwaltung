@@ -64,6 +64,14 @@ export async function GET(request: NextRequest) {
     };
     headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
 
+    // Prevent Excel formula injection (CSV Injection / DDE attacks)
+    function sanitize(val: string | null | undefined): string {
+      if (!val) return "—";
+      const s = String(val).trim();
+      if (/^[=@+\-|]/.test(s)) return "'" + s;
+      return s;
+    }
+
     let totalAreaAll = 0;
 
     // Data rows
@@ -72,10 +80,10 @@ export async function GET(request: NextRequest) {
 
       if (plot.plotAreas.length === 0) {
         sheet.addRow({
-          park: plot.park?.shortName || plot.park?.name || "—",
-          district: plot.cadastralDistrict,
-          field: plot.fieldNumber,
-          plot: plot.plotNumber,
+          park: sanitize(plot.park?.shortName || plot.park?.name),
+          district: sanitize(plot.cadastralDistrict),
+          field: sanitize(plot.fieldNumber),
+          plot: sanitize(plot.plotNumber),
           type: "Keine Zuordnung",
           areaSqm: plotTotal,
           areaHa: plotTotal / 10000,
@@ -84,18 +92,19 @@ export async function GET(request: NextRequest) {
         totalAreaAll += plotTotal;
       } else {
         for (const area of plot.plotAreas) {
-          const pct = plotTotal > 0 ? (Number(area.areaSqm) / plotTotal) * 100 : 0;
+          const areaSqmNum = area.areaSqm ? Number(area.areaSqm) : 0;
+          const pct = plotTotal > 0 ? (areaSqmNum / plotTotal) * 100 : 0;
           sheet.addRow({
-            park: plot.park?.shortName || plot.park?.name || "—",
-            district: plot.cadastralDistrict,
-            field: plot.fieldNumber,
-            plot: plot.plotNumber,
+            park: sanitize(plot.park?.shortName || plot.park?.name),
+            district: sanitize(plot.cadastralDistrict),
+            field: sanitize(plot.fieldNumber),
+            plot: sanitize(plot.plotNumber),
             type: AREA_TYPE_LABELS[area.areaType] ?? area.areaType,
-            areaSqm: Number(area.areaSqm),
-            areaHa: Number(area.areaSqm) / 10000,
+            areaSqm: areaSqmNum,
+            areaHa: areaSqmNum / 10000,
             pct: Math.round(pct * 100) / 100,
           });
-          totalAreaAll += Number(area.areaSqm);
+          totalAreaAll += areaSqmNum;
         }
       }
     }

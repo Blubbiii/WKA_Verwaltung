@@ -41,9 +41,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // All source plots should be in the same park
+    // Validate all plots are in the same park
     const parkIds = [...new Set(sourcePlots.map((p) => p.parkId).filter(Boolean))];
-    const parkId = parkIds.length === 1 ? parkIds[0] : sourcePlots[0].parkId;
+    if (parkIds.length > 1) {
+      return NextResponse.json(
+        { error: "Alle Flurstücke müssen im selben Park liegen" },
+        { status: 400 }
+      );
+    }
+    const parkId = parkIds[0] ?? sourcePlots[0].parkId;
 
     // Sum up areas
     const totalArea = sourcePlots.reduce((s, p) => s + (p.areaSqm ? Number(p.areaSqm) : 0), 0);
@@ -89,6 +95,13 @@ export async function POST(request: NextRequest) {
 
       return merged;
     });
+
+    logger.info({
+      action: "plot_merge",
+      sourcePlotIds: data.plotIds,
+      mergedPlotId: result.id,
+      userId: check.userId,
+    }, "Plot merge completed");
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

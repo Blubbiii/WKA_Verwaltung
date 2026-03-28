@@ -318,10 +318,10 @@ export function GISMap({
   const tile = TILE_CONFIGS[tileLayer];
 
   // Max area for heatmap normalization
-  const maxArea = useMemo(
-    () => Math.max(...plots.map((p) => p.areaSqm ?? 0), 1),
-    [plots]
-  );
+  const maxArea = useMemo(() => {
+    const areas = plots.map((p) => (typeof p.areaSqm === "number" ? p.areaSqm : 0)).filter((a) => a > 0);
+    return areas.length > 0 ? Math.max(...areas) : 1;
+  }, [plots]);
 
   // Plots GeoJSON
   const plotsGeoJsonKey = useMemo(

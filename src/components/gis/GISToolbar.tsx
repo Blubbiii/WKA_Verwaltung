@@ -71,9 +71,14 @@ export function GISToolbar({
       toast.error("Ungültige Koordinaten. Format: 51.1657, 10.4515");
       return;
     }
+    const [lat, lng] = parts;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      toast.error("Koordinaten außerhalb gültiger Bereiche (Lat: -90..90, Lng: -180..180)");
+      return;
+    }
     // Dispatch custom event for map to handle
     window.dispatchEvent(
-      new CustomEvent("gis:flyto", { detail: { lat: parts[0], lng: parts[1] } })
+      new CustomEvent("gis:flyto", { detail: { lat, lng } })
     );
     setShowCoordSearch(false);
     setCoordInput("");

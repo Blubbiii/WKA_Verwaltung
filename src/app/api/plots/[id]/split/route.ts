@@ -11,7 +11,7 @@ const splitSchema = z.object({
     type: z.enum(["Polygon", "MultiPolygon"]),
     coordinates: z.array(z.unknown()),
   })).min(2, "Mindestens 2 Teilflächen erforderlich"),
-  plotNumbers: z.array(z.string().min(1)),
+  plotNumbers: z.array(z.string().min(1)).min(2, "Mindestens 2 Flurstücknummern erforderlich"),
   areas: z.array(z.number().positive()).optional(),
 });
 
@@ -89,6 +89,13 @@ export async function POST(
 
       return newPlots;
     });
+
+    logger.info({
+      action: "plot_split",
+      originalPlotId: id,
+      newPlotIds: result.map((p) => p.id),
+      userId: check.userId,
+    }, "Plot split completed");
 
     return NextResponse.json({ plots: result }, { status: 201 });
   } catch (error) {

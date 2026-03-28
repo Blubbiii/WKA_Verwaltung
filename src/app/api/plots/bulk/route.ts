@@ -56,18 +56,25 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Pachtvertrag nicht gefunden" }, { status: 404 });
       }
 
-      // Create lease-plot relations
+      // Batch: fetch existing relations, create only missing ones
       await prisma.$transaction(async (tx) => {
-        for (const plotId of parsed.plotIds) {
-          // Skip if already assigned
-          const existing = await tx.leasePlot.findFirst({
-            where: { leaseId: parsed.data.leaseId, plotId },
+        const existing = await tx.leasePlot.findMany({
+          where: {
+            leaseId: parsed.data.leaseId,
+            plotId: { in: parsed.plotIds },
+          },
+          select: { plotId: true },
+        });
+        const existingPlotIds = new Set(existing.map((e) => e.plotId));
+        const toCreate = parsed.plotIds.filter((id) => !existingPlotIds.has(id));
+
+        if (toCreate.length > 0) {
+          await tx.leasePlot.createMany({
+            data: toCreate.map((plotId) => ({
+              leaseId: parsed.data.leaseId,
+              plotId,
+            })),
           });
-          if (!existing) {
-            await tx.leasePlot.create({
-              data: { leaseId: parsed.data.leaseId, plotId },
-            });
-          }
         }
       });
 
@@ -78,28 +85,34 @@ export async function POST(request: NextRequest) {
     }
 
     if (parsed.action === "updateAreaType") {
-      // Add/update plot area for each plot
+      // Batch: fetch existing, split into create/update
       await prisma.$transaction(async (tx) => {
-        for (const plotId of parsed.plotIds) {
-          // Check if area type already exists for this plot
-          const existing = await tx.plotArea.findFirst({
-            where: { plotId, areaType: parsed.data.areaType },
-          });
+        const existing = await tx.plotArea.findMany({
+          where: {
+            plotId: { in: parsed.plotIds },
+            areaType: parsed.data.areaType,
+          },
+        });
+        const existingByPlotId = new Map(existing.map((e) => [e.plotId, e.id]));
 
-          if (existing) {
-            await tx.plotArea.update({
-              where: { id: existing.id },
-              data: { areaSqm: parsed.data.areaSqm },
-            });
-          } else {
-            await tx.plotArea.create({
-              data: {
-                plotId,
-                areaType: parsed.data.areaType,
-                areaSqm: parsed.data.areaSqm,
-              },
-            });
-          }
+        const toCreate = parsed.plotIds.filter((id) => !existingByPlotId.has(id));
+
+        if (toCreate.length > 0) {
+          await tx.plotArea.createMany({
+            data: toCreate.map((plotId) => ({
+              plotId,
+              areaType: parsed.data.areaType,
+              areaSqm: parsed.data.areaSqm,
+            })),
+          });
+        }
+
+        // Update existing ones
+        for (const [, areaId] of existingByPlotId) {
+          await tx.plotArea.update({
+            where: { id: areaId },
+            data: { areaSqm: parsed.data.areaSqm },
+          });
         }
       });
 
