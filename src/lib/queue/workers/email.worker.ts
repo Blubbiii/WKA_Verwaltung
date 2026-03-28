@@ -73,6 +73,13 @@ export interface EmailJobResult {
 
 const logger = emailLogger.child({ component: "email-worker" });
 
+/** Mask email addresses in log output to protect PII */
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return "***";
+  return `${local[0]}***@${domain}`;
+}
+
 function log(level: "info" | "warn" | "error", jobId: string, message: string, meta?: Record<string, unknown>): void {
   const logData = { jobId, ...meta };
   if (level === "error") {
@@ -92,7 +99,7 @@ function log(level: "info" | "warn" | "error", jobId: string, message: string, m
  * Sendet eine E-Mail unter Verwendung der Email-Provider-Abstraktion
  */
 async function sendEmail(data: EmailJobData): Promise<EmailJobResult> {
-  log("info", data.jobId, `Sending email to ${data.to}`, {
+  log("info", data.jobId, `Sending email to ${maskEmail(data.to)}`, {
     type: data.type,
     subject: data.subject,
     hasAttachments: !!data.attachments?.length,
@@ -173,7 +180,7 @@ async function sendEmail(data: EmailJobData): Promise<EmailJobResult> {
 
     log("info", data.jobId, `Email sent successfully`, {
       messageId: result.messageId,
-      to: data.to,
+      to: maskEmail(data.to),
       provider: result.provider,
     });
 
@@ -206,7 +213,7 @@ async function processEmailJob(job: Job<EmailJobData, EmailJobResult>): Promise<
 
   log("info", jobId, `Processing email job`, {
     type: data.type,
-    to: data.to,
+    to: maskEmail(data.to),
     attempt: job.attemptsMade + 1,
   });
 
@@ -218,7 +225,7 @@ async function processEmailJob(job: Job<EmailJobData, EmailJobResult>): Promise<
 
     // E-Mail validieren (einfache Prüfung)
     if (!EMAIL_REGEX.test(data.to)) {
-      throw new Error(`Invalid email address: ${data.to}`);
+      throw new Error(`Invalid email address: ${maskEmail(data.to)}`);
     }
 
     // E-Mail senden

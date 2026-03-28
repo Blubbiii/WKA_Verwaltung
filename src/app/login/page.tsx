@@ -129,7 +129,7 @@ function LoginForm() {
               name="email"
               type="email"
               placeholder="name@example.com"
-              autoComplete="email"
+              autoComplete="username"
               required
               disabled={isLoading}
             />

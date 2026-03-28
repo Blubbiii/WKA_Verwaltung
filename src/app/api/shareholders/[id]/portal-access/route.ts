@@ -7,6 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
+import { AUTH_CONFIG } from "@/lib/config/auth-config";
 
 /**
  * Generate a cryptographically secure temporary password.
@@ -207,7 +208,7 @@ export async function POST(
 
     // Generate temporary password
     const temporaryPassword = generateTemporaryPassword();
-    const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+    const passwordHash = await bcrypt.hash(temporaryPassword, AUTH_CONFIG.bcryptSaltRounds);
 
     // Determine name fields
     const firstName = shareholder.person.firstName || null;

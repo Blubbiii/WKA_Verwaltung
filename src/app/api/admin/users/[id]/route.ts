@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { apiLogger as logger } from "@/lib/logger";
+import { AUTH_CONFIG } from "@/lib/config/auth-config";
 
 const userUpdateSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse").optional(),
@@ -152,7 +153,7 @@ export async function PATCH(
     // Passwort hashen falls angegeben
     let passwordHash: string | undefined;
     if (validatedData.password) {
-      passwordHash = await bcrypt.hash(validatedData.password, 12);
+      passwordHash = await bcrypt.hash(validatedData.password, AUTH_CONFIG.bcryptSaltRounds);
     }
 
     const user = await prisma.user.update({

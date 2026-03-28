@@ -253,6 +253,7 @@ model Park {
   metadata                               Json                        @default("{}")
   createdAt                              DateTime                    @default(now())
   updatedAt                              DateTime                    @updatedAt
+  deletedAt                              DateTime?
   minimumRentPerTurbine                  Decimal?                    @db.Decimal(15, 2)
   weaSharePercentage                     Decimal?                    @db.Decimal(5, 2)
   poolSharePercentage                    Decimal?                    @db.Decimal(5, 2)
@@ -301,6 +302,7 @@ model Park {
   quotes                                 Quote[]
 
   @@index([tenantId])
+  @@index([deletedAt])
   @@map("parks")
 }
 
@@ -439,6 +441,7 @@ model Fund {
   status                                                EntityStatus                     @default(ACTIVE)
   createdAt                                             DateTime                         @default(now())
   updatedAt                                             DateTime                         @updatedAt
+  deletedAt                                             DateTime?
   fundCategoryId                                        String?
   tenantId                                              String
   city                                                  String?
@@ -480,6 +483,7 @@ model Fund {
 
   @@index([tenantId])
   @@index([fundCategoryId])
+  @@index([deletedAt])
   @@map("funds")
 }
 
@@ -627,6 +631,7 @@ model Lease {
   notes                                     String?
   createdAt                                 DateTime                         @default(now())
   updatedAt                                 DateTime                         @updatedAt
+  deletedAt                                 DateTime?
   tenantId                                  String
   lessorId                                  String
   contractPartnerFundId                     String?
@@ -645,6 +650,7 @@ model Lease {
   @@index([lessorId])
   @@index([status])
   @@index([tenantId])
+  @@index([deletedAt])
   @@map("leases")
 }
 
@@ -667,6 +673,7 @@ model Contract {
   notes               String?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?
   tenantId            String
   parkId              String?
   turbineId           String?
@@ -688,6 +695,7 @@ model Contract {
   @@index([parkId])
   @@index([partnerId])
   @@index([status])
+  @@index([deletedAt])
   @@map("contracts")
 }
 
@@ -705,6 +713,7 @@ model Document {
   isArchived                          Boolean                @default(false)
   createdAt                           DateTime               @default(now())
   updatedAt                           DateTime               @updatedAt
+  deletedAt                           DateTime?
   tenantId                            String
   parentId                            String?
   approvalStatus                      DocumentApprovalStatus @default(PUBLISHED)
@@ -747,6 +756,7 @@ model Document {
   @@index([shareholderId])
   @@index([turbineId])
   @@index([paperlessSyncStatus])
+  @@index([deletedAt])
   @@map("documents")
 }
 
@@ -1102,6 +1112,8 @@ model ArchiveVerificationLog {
   validDocs    Int
   invalidDocs  Int
   details      Json?
+  // AUDIT: tenantId is required, so onDelete cannot be SetNull.
+  // If tenant deletion occurs, these audit records would be lost — consider archiving first.
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   verifiedBy        User     @relation(fields: [verifiedById], references: [id], onDelete: Restrict)
 
@@ -3053,6 +3065,8 @@ enum PostingSource {
 model JournalEntry {
   id            String             @id @default(uuid())
   tenantId      String
+  // AUDIT: tenantId is required — onDelete: Cascade kept because tenant deletion is rare
+  // and should remove all financial data. For regulatory retention, archive before deletion.
   tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   entryDate     DateTime
   description   String             @db.VarChar(200)

@@ -61,8 +61,8 @@ services:
       NEXTAUTH_URL: https://${DOMAIN:-localhost}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
 
-      # Redis
-      REDIS_URL: redis://redis:6379
+      # Redis (password-authenticated)
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
 
       # S3/MinIO
       S3_ENDPOINT: http://minio:9000
@@ -143,16 +143,18 @@ services:
     image: redis:7-alpine
     container_name: wpm-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     networks:
       - wpm-network
-    # Nicht nach aussen exponieren in Production!
+    # Do not expose ports in production!
     # ports:
     #   - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $REDIS_PASSWORD ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -255,8 +257,8 @@ services:
       # Database
       DATABASE_URL: postgresql://${POSTGRES_USER:-wpm}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-windparkmanager}?schema=public
 
-      # Redis
-      REDIS_URL: redis://redis:6379
+      # Redis (password-authenticated)
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
 
       # Worker Settings
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}

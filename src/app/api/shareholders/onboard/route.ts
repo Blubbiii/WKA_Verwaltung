@@ -7,6 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
+import { AUTH_CONFIG } from "@/lib/config/auth-config";
 
 // Validation schema for the onboarding request
 const onboardingSchema = z.object({
@@ -131,7 +132,7 @@ export async function POST(request: NextRequest) {
 
     if (portalAccess.createPortalAccess) {
       temporaryPassword = generateTemporaryPassword();
-      passwordHash = await bcrypt.hash(temporaryPassword, 12);
+      passwordHash = await bcrypt.hash(temporaryPassword, AUTH_CONFIG.bcryptSaltRounds);
     }
 
     // Execute everything in a single transaction

@@ -161,8 +161,9 @@ services:
     environment:
       - N8N_HOST=0.0.0.0
       - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - WEBHOOK_URL=http://192.168.178.101:5678/
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      # Use Docker-internal hostname instead of hardcoded LAN IP
+      - WEBHOOK_URL=http://n8n:5678/
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
       - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}

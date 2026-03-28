@@ -91,6 +91,13 @@ export function TurbineQrCodeTab({
     });
   }
 
+  /** Escape user-provided strings to prevent XSS in the print window */
+  function escapeHtml(str: string): string {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
   function handlePrint() {
     if (!printRef.current) return;
     const printWindow = window.open("", "_blank");
@@ -98,11 +105,17 @@ export function TurbineQrCodeTab({
       toast.error("Popup-Blocker verhindert das Drucken");
       return;
     }
+    const safeDesignation = escapeHtml(turbineDesignation);
+    const safeParkName = escapeHtml(parkName ?? "");
+    const safeUrl = escapeHtml(checkInUrl ?? "");
+    // innerHTML from printRef is safe — it only contains the QRCodeSVG output
+    const qrHtml = printRef.current.innerHTML;
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
-        <title>QR-Code - ${turbineDesignation}</title>
+        <title>QR-Code - ${safeDesignation}</title>
         <style>
           body { font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 40px; }
           .label { font-size: 24px; font-weight: bold; margin-bottom: 8px; }
@@ -113,10 +126,10 @@ export function TurbineQrCodeTab({
         </style>
       </head>
       <body>
-        <div class="label">${turbineDesignation}</div>
-        <div class="sublabel">${parkName ?? ""}</div>
-        ${printRef.current.innerHTML}
-        <div class="url">${checkInUrl}</div>
+        <div class="label">${safeDesignation}</div>
+        <div class="sublabel">${safeParkName}</div>
+        ${qrHtml}
+        <div class="url">${safeUrl}</div>
         <script>window.print(); window.close();</script>
       </body>
       </html>

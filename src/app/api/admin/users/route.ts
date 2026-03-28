@@ -6,6 +6,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { apiLogger as logger } from "@/lib/logger";
 import { auth } from "@/lib/auth";
+import { AUTH_CONFIG } from "@/lib/config/auth-config";
 
 /** Quick helper to check if current user is SUPERADMIN (without throwing) */
 async function requireSuperadminCheck(): Promise<boolean> {
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Passwort hashen
-    const passwordHash = await bcrypt.hash(validatedData.password, 12);
+    const passwordHash = await bcrypt.hash(validatedData.password, AUTH_CONFIG.bcryptSaltRounds);
 
     const user = await prisma.user.create({
       data: {

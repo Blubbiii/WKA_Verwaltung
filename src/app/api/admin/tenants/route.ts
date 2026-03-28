@@ -5,6 +5,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
+import { AUTH_CONFIG } from "@/lib/config/auth-config";
 import { Prisma } from "@prisma/client";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
 
@@ -219,8 +220,8 @@ export async function POST(request: NextRequest) {
         // Hash the provided password, or generate a random placeholder for invitation mode
         const passwordHash =
           mode === "password"
-            ? await bcrypt.hash(password!, 12)
-            : await bcrypt.hash(randomUUID(), 12);
+            ? await bcrypt.hash(password!, AUTH_CONFIG.bcryptSaltRounds)
+            : await bcrypt.hash(randomUUID(), AUTH_CONFIG.bcryptSaltRounds);
 
         const user = await tx.user.create({
           data: {

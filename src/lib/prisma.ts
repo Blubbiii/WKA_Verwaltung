@@ -19,6 +19,22 @@ const globalForPrisma = globalThis as unknown as {
   pgPool: Pool | undefined;
 };
 
+/**
+ * Models that support soft-delete via `deletedAt` field.
+ * When querying these models with findMany/findFirst/findFirstOrThrow/count,
+ * `deletedAt: null` is automatically injected unless explicitly overridden.
+ */
+const SOFT_DELETE_MODELS = new Set([
+  "Park",
+  "Fund",
+  "Lease",
+  "Contract",
+  "Document",
+  "Invoice",
+  "JournalEntry",
+  "CrmActivity",
+]);
+
 function createPrismaClient() {
   // Pool as singleton — reused across hot-reloads in development
   const pool = globalForPrisma.pgPool ?? new Pool({
@@ -59,8 +75,53 @@ function createPrismaClient() {
         })
       : baseClient;
 
+  // Soft-delete extension: automatically filter out soft-deleted records
+  // unless the caller explicitly provides a `deletedAt` filter.
+  const clientWithSoftDelete = clientWithLogging.$extends({
+    query: {
+      $allModels: {
+        async findMany({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.has(model)) {
+            const where = (args.where ?? {}) as Record<string, unknown>;
+            if (!("deletedAt" in where)) {
+              args.where = { ...where, deletedAt: null };
+            }
+          }
+          return query(args);
+        },
+        async findFirst({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.has(model)) {
+            const where = (args.where ?? {}) as Record<string, unknown>;
+            if (!("deletedAt" in where)) {
+              args.where = { ...where, deletedAt: null };
+            }
+          }
+          return query(args);
+        },
+        async findFirstOrThrow({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.has(model)) {
+            const where = (args.where ?? {}) as Record<string, unknown>;
+            if (!("deletedAt" in where)) {
+              args.where = { ...where, deletedAt: null };
+            }
+          }
+          return query(args);
+        },
+        async count({ model, args, query }) {
+          if (SOFT_DELETE_MODELS.has(model)) {
+            const where = (args.where ?? {}) as Record<string, unknown>;
+            if (!("deletedAt" in where)) {
+              args.where = { ...where, deletedAt: null };
+            }
+          }
+          return query(args);
+        },
+      },
+    },
+  });
+
   // Apply automatic bank data encryption/decryption extension
-  return withEncryption(clientWithLogging as unknown as PrismaClient);
+  return withEncryption(clientWithSoftDelete as unknown as PrismaClient);
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();

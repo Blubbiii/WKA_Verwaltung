@@ -8,6 +8,7 @@
 
 import { NextResponse, after } from "next/server";
 import { z } from "zod";
+import { AUTH_CONFIG } from "@/lib/config/auth-config";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
     }
 
     // Hash new password
-    const newPasswordHash = await bcrypt.hash(newPassword, 12);
+    const newPasswordHash = await bcrypt.hash(newPassword, AUTH_CONFIG.bcryptSaltRounds);
 
     // Update password and invalidate all existing sessions
     await prisma.$transaction([
