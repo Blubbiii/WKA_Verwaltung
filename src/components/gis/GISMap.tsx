@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useMemo, useCallback } from "react";
-import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON, Circle, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapAnnotationLayer } from "@/components/maps/MapAnnotationLayer";
@@ -12,8 +12,10 @@ import type {
   AnnotationData,
   SelectedFeature,
   TileLayerType,
+  LayerVisibility,
+  GISSettings,
 } from "./types";
-import { PLOT_AREA_COLORS } from "./types";
+import { PLOT_AREA_COLORS, LEASE_STATUS_COLORS } from "./types";
 import type { Feature } from "geojson";
 import type { PathOptions, Layer } from "leaflet";
 
@@ -88,11 +90,38 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
   return null;
 }
 
+// -- Extract points from any GeoJSON geometry type --
+function extractPointsFromGeometry(geom: GeoJSON.Geometry): [number, number][] {
+  const points: [number, number][] = [];
+  switch (geom.type) {
+    case "Point":
+      points.push([geom.coordinates[1], geom.coordinates[0]]);
+      break;
+    case "MultiPoint":
+      geom.coordinates.forEach((c) => points.push([c[1], c[0]]));
+      break;
+    case "LineString":
+      geom.coordinates.forEach((c) => points.push([c[1], c[0]]));
+      break;
+    case "MultiLineString":
+      geom.coordinates.forEach((line) => line.forEach((c) => points.push([c[1], c[0]])));
+      break;
+    case "Polygon":
+      geom.coordinates[0].forEach((c) => points.push([c[1], c[0]]));
+      break;
+    case "MultiPolygon":
+      geom.coordinates.forEach((poly) => poly[0].forEach((c) => points.push([c[1], c[0]])));
+      break;
+    case "GeometryCollection":
+      geom.geometries.forEach((g) => points.push(...extractPointsFromGeometry(g)));
+      break;
+  }
+  return points;
+}
+
 // -- FitBounds component --
 function FitBoundsToData({
-  parks,
-  turbines,
-  plots,
+  parks, turbines, plots,
 }: {
   parks: ParkData[];
   turbines: TurbineData[];
@@ -119,14 +148,7 @@ function FitBoundsToData({
 
     plots.forEach((plot) => {
       if (!plot.geometry) return;
-      const geom = plot.geometry;
-      if (geom.type === "Polygon") {
-        geom.coordinates[0].forEach((c) => points.push([c[1], c[0]]));
-      } else if (geom.type === "MultiPolygon") {
-        geom.coordinates.forEach((poly) =>
-          poly[0].forEach((c) => points.push([c[1], c[0]]))
-        );
-      }
+      points.push(...extractPointsFromGeometry(plot.geometry));
     });
 
     if (points.length > 0) {
@@ -138,7 +160,7 @@ function FitBoundsToData({
   return null;
 }
 
-// -- Icon factories (reuse ParkMap pattern) --
+// -- Icon factories --
 const createParkIcon = () =>
   L.divIcon({
     className: "custom-gis-park-marker",
@@ -235,6 +257,27 @@ function getDominantAreaType(plot: GISPlotFeature): string {
   return sorted[0].areaType;
 }
 
+// -- Get lease status color --
+function getLeaseStatusColor(plot: GISPlotFeature): string {
+  if (!plot.activeLease) return LEASE_STATUS_COLORS.NONE;
+  return LEASE_STATUS_COLORS[plot.activeLease.status] ?? LEASE_STATUS_COLORS.NONE;
+}
+
+// -- Centroid of polygon --
+function getPolygonCentroid(geometry: GeoJSON.Geometry): [number, number] | null {
+  const points = extractPointsFromGeometry(geometry);
+  if (points.length === 0) return null;
+  const lat = points.reduce((s, p) => s + p[0], 0) / points.length;
+  const lng = points.reduce((s, p) => s + p[1], 0) / points.length;
+  return [lat, lng];
+}
+
+// -- Heatmap opacity based on area --
+function getHeatmapOpacity(areaSqm: number | null, maxArea: number): number {
+  if (!areaSqm || maxArea === 0) return 0.1;
+  return 0.1 + 0.6 * (areaSqm / maxArea);
+}
+
 // -- Props --
 interface GISMapProps {
   parks: ParkData[];
@@ -242,15 +285,14 @@ interface GISMapProps {
   plots: GISPlotFeature[];
   annotations: AnnotationData[];
   tileLayer: TileLayerType;
-  showParks: boolean;
-  showTurbines: boolean;
-  showPlots: boolean;
-  showAnnotations: boolean;
-  drawMode: "off" | "plot";
+  layers: LayerVisibility;
+  settings: GISSettings;
+  drawMode: "off" | "plot" | "annotation";
   onDrawCreated: (geometry: GeoJSON.Geometry) => void;
   onFeatureClick: (feature: SelectedFeature) => void;
   onMeasureResult: (result: { type: "distance" | "area"; value: number } | null) => void;
   isMeasuring: boolean;
+  selectedFeatureId: string | null;
 }
 
 // -- Main map component --
@@ -260,15 +302,14 @@ export function GISMap({
   plots,
   annotations,
   tileLayer,
-  showParks,
-  showTurbines,
-  showPlots,
-  showAnnotations,
+  layers,
+  settings,
   drawMode,
   onDrawCreated,
   onFeatureClick,
   onMeasureResult,
   isMeasuring,
+  selectedFeatureId,
 }: GISMapProps) {
   const parkIcon = useMemo(() => createParkIcon(), []);
   const turbineActiveIcon = useMemo(() => createTurbineIcon(true), []);
@@ -276,10 +317,20 @@ export function GISMap({
 
   const tile = TILE_CONFIGS[tileLayer];
 
+  // Max area for heatmap normalization
+  const maxArea = useMemo(
+    () => Math.max(...plots.map((p) => p.areaSqm ?? 0), 1),
+    [plots]
+  );
+
   // Plots GeoJSON
   const plotsGeoJsonKey = useMemo(
-    () => plots.map((p) => `${p.id}-${p.activeLease?.status ?? "none"}`).join("|"),
-    [plots]
+    () => plots.map((p) => `${p.id}-${p.activeLease?.status ?? "none"}`).join("|")
+      + `-sel:${selectedFeatureId}`
+      + `-lease:${layers.leaseStatus}`
+      + `-heat:${layers.heatmap}`
+      + `-op:${settings.plotOpacity}`,
+    [plots, selectedFeatureId, layers.leaseStatus, layers.heatmap, settings.plotOpacity]
   );
 
   const plotsGeoJsonData = useMemo(() => ({
@@ -305,28 +356,52 @@ export function GISMap({
       const plot = plotById.get(feature.properties.plotId);
       if (!plot) return {};
 
+      const isSelected = plot.id === selectedFeatureId;
+
+      // Heatmap mode
+      if (layers.heatmap) {
+        return {
+          color: isSelected ? "#000" : "#ef4444",
+          weight: isSelected ? 3 : 1,
+          fillColor: "#ef4444",
+          fillOpacity: getHeatmapOpacity(plot.areaSqm, maxArea),
+        };
+      }
+
+      // Lease status mode
+      if (layers.leaseStatus) {
+        const statusColor = getLeaseStatusColor(plot);
+        return {
+          color: isSelected ? "#000" : statusColor,
+          weight: isSelected ? 3 : 2,
+          fillColor: statusColor,
+          fillOpacity: isSelected ? 0.5 : settings.plotOpacity + 0.05,
+        };
+      }
+
+      // Default: area type coloring
       const hasLease = !!plot.activeLease;
       const dominantType = getDominantAreaType(plot);
       const fillColor = PLOT_AREA_COLORS[dominantType] ?? "#757575";
 
       if (!hasLease) {
         return {
-          color: "#ef4444",
-          weight: 2,
+          color: isSelected ? "#000" : "#ef4444",
+          weight: isSelected ? 3 : 2,
           fillColor: "#ef4444",
-          fillOpacity: 0.2,
-          dashArray: "6 4",
+          fillOpacity: isSelected ? 0.4 : settings.plotOpacity * 0.67,
+          dashArray: isSelected ? undefined : "6 4",
         };
       }
 
       return {
-        color: fillColor,
-        weight: 2,
+        color: isSelected ? "#000" : fillColor,
+        weight: isSelected ? 3 : 2,
         fillColor,
-        fillOpacity: 0.3,
+        fillOpacity: isSelected ? 0.5 : settings.plotOpacity,
       };
     };
-  }, [plotById]);
+  }, [plotById, selectedFeatureId, layers.leaseStatus, layers.heatmap, maxArea, settings.plotOpacity]);
 
   const onEachPlot = useMemo(() => {
     return (feature: Feature, layer: Layer) => {
@@ -349,11 +424,9 @@ export function GISMap({
   // Measure handler
   const handleMeasureCreated = useCallback((geometry: GeoJSON.Geometry) => {
     if (geometry.type === "LineString") {
-      const dist = calcPolylineLength(geometry);
-      onMeasureResult({ type: "distance", value: dist });
+      onMeasureResult({ type: "distance", value: calcPolylineLength(geometry) });
     } else if (geometry.type === "Polygon") {
-      const area = calcPolygonAreaSqm(geometry);
-      onMeasureResult({ type: "area", value: area });
+      onMeasureResult({ type: "area", value: calcPolygonAreaSqm(geometry) });
     }
   }, [onMeasureResult]);
 
@@ -362,6 +435,22 @@ export function GISMap({
     () => turbines.filter((t) => t.latitude != null && t.longitude != null),
     [turbines]
   );
+
+  // Buffer zones: WEA_STANDORT plots get a 300m circle
+  const bufferRadius = settings.bufferRadiusM;
+  const bufferCenters = useMemo(() => {
+    if (!layers.bufferZones) return [];
+    return plots
+      .filter((p) => {
+        if (!p.geometry) return false;
+        return p.plotAreas.some((a) => a.areaType === "WEA_STANDORT");
+      })
+      .map((p) => {
+        const center = getPolygonCentroid(p.geometry!);
+        return center ? { id: p.id, center, name: p.plotNumber } : null;
+      })
+      .filter(Boolean) as { id: string; center: [number, number]; name: string }[];
+  }, [plots, layers.bufferZones]);
 
   return (
     <MapContainer
@@ -375,7 +464,7 @@ export function GISMap({
       <FitBoundsToData parks={parks} turbines={turbines} plots={plots} />
 
       {/* Plot polygons */}
-      {showPlots && plotsGeoJsonData.features.length > 0 && (
+      {layers.plots && plotsGeoJsonData.features.length > 0 && (
         <GeoJSON
           key={`plots-${plotsGeoJsonKey}`}
           data={plotsGeoJsonData}
@@ -384,16 +473,32 @@ export function GISMap({
         />
       )}
 
+      {/* Buffer zones (300m circles around WEA_STANDORT) */}
+      {layers.bufferZones && bufferCenters.map((bc) => (
+        <Circle
+          key={`buffer-${bc.id}`}
+          center={bc.center}
+          radius={bufferRadius}
+          pathOptions={{
+            color: "#335E99",
+            weight: 1,
+            fillColor: "#335E99",
+            fillOpacity: 0.08,
+            dashArray: "4 4",
+          }}
+        />
+      ))}
+
       {/* Annotations */}
-      {showAnnotations && annotations.length > 0 && (
+      {layers.annotations && annotations.length > 0 && (
         <MapAnnotationLayer
           annotations={annotations}
-          visible={showAnnotations}
+          visible={layers.annotations}
         />
       )}
 
       {/* Park markers */}
-      {showParks &&
+      {layers.parks &&
         parks
           .filter((p) => p.latitude != null && p.longitude != null)
           .map((park) => (
@@ -415,7 +520,7 @@ export function GISMap({
           ))}
 
       {/* Turbine markers */}
-      {showTurbines &&
+      {layers.turbines &&
         turbinesWithCoords.map((turbine) => (
           <Marker
             key={turbine.id}

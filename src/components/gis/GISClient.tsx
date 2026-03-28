@@ -1,21 +1,26 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useReducer, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle, MapPinOff, RefreshCw, Undo2 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { GISToolbar } from "./GISToolbar";
 import { GISLayerPanel } from "./GISLayerPanel";
 import { GISFeatureInfo } from "./GISFeatureInfo";
 import { GISPlotCreatePanel } from "./GISPlotCreatePanel";
 import type {
-  ParkData,
-  TurbineData,
-  GISPlotFeature,
-  AnnotationData,
+  GISState,
+  GISAction,
+  GISData,
+  GISSettings,
   SelectedFeature,
   TileLayerType,
   MeasureResult,
+  DrawnFeature,
+  LayerVisibility,
 } from "./types";
+import { DEFAULT_LAYER_VISIBILITY, DEFAULT_GIS_SETTINGS } from "./types";
 
 // Load the Leaflet map without SSR
 const GISMap = dynamic(
@@ -23,21 +28,87 @@ const GISMap = dynamic(
   { ssr: false, loading: () => <div className="flex-1 bg-muted animate-pulse" /> }
 );
 
-interface GISData {
-  parks: ParkData[];
-  turbines: TurbineData[];
-  plots: GISPlotFeature[];
-  annotations: AnnotationData[];
-}
-
 const EMPTY_DATA: GISData = { parks: [], turbines: [], plots: [], annotations: [] };
 
-function handleExport(
-  type: "all" | "plots" | "annotations",
-  data: GISData
-) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const features: any[] = [];
+const INITIAL_STATE: GISState = {
+  data: EMPTY_DATA,
+  loading: false,
+  error: null,
+  parkFilter: "all",
+  tileLayer: "osm",
+  layers: DEFAULT_LAYER_VISIBILITY,
+  settings: DEFAULT_GIS_SETTINGS,
+  selectedFeature: null,
+  drawMode: "off",
+  pendingGeometry: null,
+  showCreatePanel: false,
+  isMeasuring: false,
+  measureResult: null,
+  drawnFeatures: [],
+  selectedFeatureId: null,
+};
+
+function gisReducer(state: GISState, action: GISAction): GISState {
+  switch (action.type) {
+    case "SET_DATA":
+      return { ...state, data: action.payload, error: null };
+    case "SET_LOADING":
+      return { ...state, loading: action.payload };
+    case "SET_ERROR":
+      return { ...state, error: action.payload };
+    case "SET_PARK_FILTER":
+      return { ...state, parkFilter: action.payload };
+    case "SET_TILE_LAYER":
+      return { ...state, tileLayer: action.payload };
+    case "TOGGLE_LAYER":
+      return {
+        ...state,
+        layers: { ...state.layers, [action.payload]: !state.layers[action.payload] },
+      };
+    case "SET_SELECTED_FEATURE":
+      return {
+        ...state,
+        selectedFeature: action.payload,
+        showCreatePanel: false,
+        selectedFeatureId: action.payload
+          ? ("id" in action.payload.data ? (action.payload.data as { id: string }).id : null)
+          : null,
+      };
+    case "SET_DRAW_MODE":
+      return {
+        ...state,
+        drawMode: action.payload,
+        ...(action.payload === "off" ? { pendingGeometry: null, showCreatePanel: false } : {}),
+      };
+    case "SET_PENDING_GEOMETRY":
+      return { ...state, pendingGeometry: action.payload };
+    case "SET_SHOW_CREATE_PANEL":
+      return { ...state, showCreatePanel: action.payload };
+    case "SET_MEASURING":
+      return {
+        ...state,
+        isMeasuring: action.payload,
+        ...(action.payload ? {} : { measureResult: null }),
+      };
+    case "SET_MEASURE_RESULT":
+      return { ...state, measureResult: action.payload, isMeasuring: false };
+    case "ADD_DRAWN_FEATURE":
+      return { ...state, drawnFeatures: [...state.drawnFeatures, action.payload] };
+    case "UNDO_LAST_DRAW":
+      return { ...state, drawnFeatures: state.drawnFeatures.slice(0, -1) };
+    case "CLEAR_DRAWN_FEATURES":
+      return { ...state, drawnFeatures: [] };
+    case "SET_SELECTED_FEATURE_ID":
+      return { ...state, selectedFeatureId: action.payload };
+    case "UPDATE_SETTINGS":
+      return { ...state, settings: { ...state.settings, ...action.payload } };
+    default:
+      return state;
+  }
+}
+
+function handleExport(type: "all" | "plots" | "annotations", data: GISData) {
+  const features: GeoJSON.Feature[] = [];
 
   if (type === "all" || type === "plots") {
     data.plots.forEach((p) => {
@@ -79,104 +150,116 @@ function handleExport(
   URL.revokeObjectURL(url);
 }
 
+// Validate API response shape
+function isValidGISData(d: unknown): d is GISData {
+  if (!d || typeof d !== "object") return false;
+  const obj = d as Record<string, unknown>;
+  return (
+    Array.isArray(obj.parks) &&
+    Array.isArray(obj.turbines) &&
+    Array.isArray(obj.plots) &&
+    Array.isArray(obj.annotations)
+  );
+}
+
 export function GISClient() {
-  const [data, setData] = useState<GISData>(EMPTY_DATA);
-  const [loading, setLoading] = useState(false);
-  const [parkFilter, setParkFilter] = useState("all");
-
-  // Layer visibility
-  const [showParks, setShowParks] = useState(true);
-  const [showTurbines, setShowTurbines] = useState(true);
-  const [showPlots, setShowPlots] = useState(true);
-  const [showAnnotations, setShowAnnotations] = useState(true);
-
-  // Tile layer
-  const [tileLayer, setTileLayer] = useState<TileLayerType>("osm");
-
-  // Feature selection
-  const [selectedFeature, setSelectedFeature] = useState<SelectedFeature | null>(null);
-
-  // Draw mode
-  const [drawMode, setDrawMode] = useState<"off" | "plot">("off");
-  const [pendingGeometry, setPendingGeometry] = useState<GeoJSON.Geometry | null>(null);
-  const [showCreatePanel, setShowCreatePanel] = useState(false);
-
-  // Measure
-  const [isMeasuring, setIsMeasuring] = useState(false);
-  const [measureResult, setMeasureResult] = useState<MeasureResult | null>(null);
+  const [state, dispatch] = useReducer(gisReducer, INITIAL_STATE);
+  const { data, loading, error, parkFilter, tileLayer, layers, settings,
+    selectedFeature, drawMode, pendingGeometry, showCreatePanel, isMeasuring,
+    measureResult, drawnFeatures, selectedFeatureId } = state;
 
   // Fetch GIS data
-  useEffect(() => {
-    const url =
-      parkFilter === "all"
-        ? "/api/gis/features"
-        : `/api/gis/features?parkId=${parkFilter}`;
+  const fetchData = useCallback((filter: string) => {
+    const url = filter === "all"
+      ? "/api/gis/features"
+      : `/api/gis/features?parkId=${filter}`;
 
-    let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
+    dispatch({ type: "SET_LOADING", payload: true });
+    dispatch({ type: "SET_ERROR", payload: null });
+
     fetch(url)
       .then((r) => r.json())
-      .then((d: GISData) => {
-        if (!cancelled && Array.isArray(d.parks)) setData(d);
+      .then((d: unknown) => {
+        if (isValidGISData(d)) {
+          dispatch({ type: "SET_DATA", payload: d });
+        } else {
+          const errMsg = (d as { error?: string })?.error ?? "Ungültiges Antwortformat";
+          dispatch({ type: "SET_ERROR", payload: errMsg });
+          toast.error(errMsg);
+        }
       })
-      .catch(console.error)
+      .catch((err: Error) => {
+        dispatch({ type: "SET_ERROR", payload: err.message });
+        toast.error("Netzwerkfehler beim Laden der GIS-Daten");
+      })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        dispatch({ type: "SET_LOADING", payload: false });
       });
-    return () => { cancelled = true; };
-  }, [parkFilter]);
+  }, []);
+
+  useEffect(() => {
+    fetchData(parkFilter);
+  }, [parkFilter, fetchData]);
 
   const handleDrawCreated = useCallback((geometry: GeoJSON.Geometry) => {
-    setPendingGeometry(geometry);
-    setShowCreatePanel(true);
-    setDrawMode("off");
+    dispatch({ type: "SET_PENDING_GEOMETRY", payload: geometry });
+    dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: true });
+    dispatch({ type: "SET_DRAW_MODE", payload: "off" });
+    dispatch({ type: "ADD_DRAWN_FEATURE", payload: { id: crypto.randomUUID(), geometry } });
   }, []);
 
   const handleFeatureClick = useCallback((feature: SelectedFeature) => {
-    setSelectedFeature(feature);
-    setShowCreatePanel(false);
+    dispatch({ type: "SET_SELECTED_FEATURE", payload: feature });
   }, []);
 
-  const handleMeasureResult = useCallback(
-    (result: { type: "distance" | "area"; value: number } | null) => {
-      setMeasureResult(result);
-      setIsMeasuring(false);
-    },
-    []
-  );
+  const handleMeasureResult = useCallback((result: MeasureResult | null) => {
+    dispatch({ type: "SET_MEASURE_RESULT", payload: result });
+  }, []);
 
   const handleToggleMeasure = useCallback(() => {
-    setIsMeasuring((v) => {
-      if (v) setMeasureResult(null);
-      return !v;
-    });
-  }, []);
+    dispatch({ type: "SET_MEASURING", payload: !isMeasuring });
+  }, [isMeasuring]);
 
   const handleToggleDrawMode = useCallback(() => {
-    setDrawMode((v) => (v === "off" ? "plot" : "off"));
-    setShowCreatePanel(false);
-    setPendingGeometry(null);
+    dispatch({ type: "SET_DRAW_MODE", payload: drawMode === "off" ? "plot" : "off" });
+  }, [drawMode]);
+
+  const handlePlotSaved = useCallback(() => {
+    dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });
+    dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+    dispatch({ type: "SET_DRAW_MODE", payload: "off" });
+    fetchData(parkFilter);
+  }, [parkFilter, fetchData]);
+
+  const handleAnnotationDeleted = useCallback(() => {
+    dispatch({ type: "SET_SELECTED_FEATURE", payload: null });
+    fetchData(parkFilter);
+  }, [parkFilter, fetchData]);
+
+  const handleUndo = useCallback(() => {
+    dispatch({ type: "UNDO_LAST_DRAW" });
   }, []);
 
-  const handlePlotSaved = useCallback(
-    (plotId: string) => {
-      setShowCreatePanel(false);
-      setPendingGeometry(null);
-      setDrawMode("off");
-      // Refresh data
-      const url =
-        parkFilter === "all"
-          ? "/api/gis/features"
-          : `/api/gis/features?parkId=${parkFilter}`;
-      fetch(url)
-        .then((r) => r.json())
-        .then((d: GISData) => { if (Array.isArray(d.parks)) setData(d); })
-        .catch(console.error);
-      void plotId;
-    },
-    [parkFilter]
-  );
+  const handleTileLayerChange = useCallback((v: TileLayerType) => {
+    dispatch({ type: "SET_TILE_LAYER", payload: v });
+  }, []);
+
+  const handleParkFilterChange = useCallback((v: string) => {
+    dispatch({ type: "SET_PARK_FILTER", payload: v });
+  }, []);
+
+  const handleToggleLayer = useCallback((layer: keyof LayerVisibility) => {
+    dispatch({ type: "TOGGLE_LAYER", payload: layer });
+  }, []);
+
+  const handleSettingsChange = useCallback((update: Partial<GISSettings>) => {
+    dispatch({ type: "UPDATE_SETTINGS", payload: update });
+  }, []);
+
+  const plotsWithGeometry = data.plots.filter((p) => p.geometry).length;
+  const isEmpty = !loading && !error &&
+    data.parks.length === 0 && data.turbines.length === 0 &&
+    data.plots.length === 0 && data.annotations.length === 0;
 
   return (
     <div className="relative overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
@@ -188,49 +271,84 @@ export function GISClient() {
           plots={data.plots}
           annotations={data.annotations}
           tileLayer={tileLayer}
-          showParks={showParks}
-          showTurbines={showTurbines}
-          showPlots={showPlots}
-          showAnnotations={showAnnotations}
+          layers={layers}
+          settings={settings}
           drawMode={drawMode}
           onDrawCreated={handleDrawCreated}
           onFeatureClick={handleFeatureClick}
           onMeasureResult={handleMeasureResult}
           isMeasuring={isMeasuring}
+          selectedFeatureId={selectedFeatureId}
         />
       </div>
 
+      {/* Error banner */}
+      {error && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1001] bg-destructive/90 text-destructive-foreground rounded-lg px-4 py-2 flex items-center gap-2 shadow-lg max-w-md">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="text-sm">{error}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs hover:bg-white/20"
+            onClick={() => fetchData(parkFilter)}
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Retry
+          </Button>
+        </div>
+      )}
+
+      {/* Empty state overlay */}
+      {isEmpty && (
+        <div className="absolute inset-0 z-[999] flex items-center justify-center pointer-events-none">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl border shadow-lg p-8 text-center pointer-events-auto max-w-sm">
+            <MapPinOff className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
+            <h3 className="font-semibold text-sm mb-1">Keine Geodaten vorhanden</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              Es sind noch keine Parks, Turbinen oder Flurstücke mit Koordinaten angelegt.
+            </p>
+            <Button size="sm" variant="outline" onClick={() => fetchData(parkFilter)}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              Erneut laden
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Toolbar — top center */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000]">
-        <GISToolbar
-          tileLayer={tileLayer}
-          onTileLayerChange={setTileLayer}
-          drawMode={drawMode}
-          onToggleDrawMode={handleToggleDrawMode}
-          isMeasuring={isMeasuring}
-          onToggleMeasure={handleToggleMeasure}
-          measureResult={measureResult}
-          onExport={(type) => handleExport(type, data)}
-          loading={loading}
-        />
-      </div>
+      {!error && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000]">
+          <GISToolbar
+            tileLayer={tileLayer}
+            onTileLayerChange={handleTileLayerChange}
+            drawMode={drawMode}
+            onToggleDrawMode={handleToggleDrawMode}
+            isMeasuring={isMeasuring}
+            onToggleMeasure={handleToggleMeasure}
+            measureResult={measureResult}
+            onExport={(type) => handleExport(type, data)}
+            loading={loading}
+            canUndo={drawnFeatures.length > 0}
+            onUndo={handleUndo}
+          />
+        </div>
+      )}
 
       {/* Layer panel — top left */}
       <div className="absolute top-16 left-3 z-[1000]">
         <GISLayerPanel
           parks={data.parks}
           parkFilter={parkFilter}
-          onParkFilterChange={setParkFilter}
-          showParks={showParks}
-          onToggleParks={() => setShowParks((v) => !v)}
-          showTurbines={showTurbines}
-          onToggleTurbines={() => setShowTurbines((v) => !v)}
-          showPlots={showPlots}
-          onTogglePlots={() => setShowPlots((v) => !v)}
-          showAnnotations={showAnnotations}
-          onToggleAnnotations={() => setShowAnnotations((v) => !v)}
-          plotCount={data.plots.filter((p) => p.geometry).length}
+          onParkFilterChange={handleParkFilterChange}
+          layers={layers}
+          onToggleLayer={handleToggleLayer}
+          plotCount={plotsWithGeometry}
           turbineCount={data.turbines.length}
+          annotationCount={data.annotations.length}
+          plots={data.plots}
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
         />
       </div>
 
@@ -240,17 +358,20 @@ export function GISClient() {
           <GISPlotCreatePanel
             geometry={pendingGeometry}
             parks={data.parks}
+            minAreaSqm={settings.minPlotAreaSqm}
             onSaved={handlePlotSaved}
             onCancel={() => {
-              setShowCreatePanel(false);
-              setPendingGeometry(null);
-              setDrawMode("off");
+              dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });
+              dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+              dispatch({ type: "SET_DRAW_MODE", payload: "off" });
             }}
           />
         ) : (
           <GISFeatureInfo
             feature={selectedFeature}
-            onClose={() => setSelectedFeature(null)}
+            onClose={() => dispatch({ type: "SET_SELECTED_FEATURE", payload: null })}
+            onAnnotationDeleted={handleAnnotationDeleted}
+            onRefresh={() => fetchData(parkFilter)}
           />
         )}
       </div>
@@ -261,11 +382,26 @@ export function GISClient() {
         <span>&middot;</span>
         <span>{data.turbines.length} Turbinen</span>
         <span>&middot;</span>
-        <span>{data.plots.filter((p) => p.geometry).length} Flurstücke</span>
+        <span>{plotsWithGeometry} Flurstücke</span>
         <span>&middot;</span>
         <span>{data.annotations.length} Zeichnungen</span>
         {loading && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
       </div>
+
+      {/* Undo button — bottom left */}
+      {drawnFeatures.length > 0 && (
+        <div className="absolute bottom-4 left-3 z-[1000]">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 bg-white/90 backdrop-blur-sm shadow-md"
+            onClick={handleUndo}
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+            Rückgängig ({drawnFeatures.length})
+          </Button>
+        </div>
+      )}
 
       {/* Draw mode hint */}
       {drawMode === "plot" && (

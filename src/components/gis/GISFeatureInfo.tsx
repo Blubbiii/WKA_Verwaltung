@@ -1,14 +1,35 @@
 "use client";
 
-import { X, ExternalLink, MapPin, Zap, PenLine } from "lucide-react";
+import { useState } from "react";
+import { X, ExternalLink, MapPin, Zap, PenLine, Trash2, Clock, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import Link from "next/link";
-import type { SelectedFeature, GISPlotFeature, TurbineData, ParkData, AnnotationData } from "./types";
-import { PLOT_AREA_COLORS, PLOT_AREA_LABELS } from "./types";
+import { toast } from "sonner";
+import type {
+  SelectedFeature,
+  GISPlotFeature,
+  TurbineData,
+  ParkData,
+  AnnotationData,
+} from "./types";
+import { PLOT_AREA_COLORS, PLOT_AREA_LABELS, LEASE_STATUS_COLORS } from "./types";
 
 interface GISFeatureInfoProps {
   feature: SelectedFeature | null;
   onClose: () => void;
+  onAnnotationDeleted?: () => void;
+  onRefresh?: () => void;
 }
 
 function getLeaseStatusBadgeVariant(status: string | null): "default" | "secondary" | "destructive" | "outline" {
@@ -53,6 +74,18 @@ function getAnnotationTypeLabel(type: string): string {
   }
 }
 
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
+  try {
+    return new Date(dateStr).toLocaleDateString("de-DE", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+// -- Plot info with lease timeline --
 function PlotInfo({ plot }: { plot: GISPlotFeature }) {
   const totalAssigned = plot.plotAreas.reduce((s, a) => s + a.areaSqm, 0);
   const totalArea = plot.areaSqm ?? 0;
@@ -79,7 +112,7 @@ function PlotInfo({ plot }: { plot: GISPlotFeature }) {
         </div>
       </div>
 
-      {/* Lease status */}
+      {/* Active lease status */}
       <div>
         <p className="text-xs text-muted-foreground mb-1">Pachtstatus</p>
         <div className="flex items-center gap-2">
@@ -99,7 +132,51 @@ function PlotInfo({ plot }: { plot: GISPlotFeature }) {
         {plot.activeLease?.lessorName && (
           <p className="text-xs text-gray-600 mt-1">Verpächter: {plot.activeLease.lessorName}</p>
         )}
+        {plot.activeLease && (
+          <p className="text-xs text-gray-500 mt-0.5">
+            {formatDate(plot.activeLease.startDate)} — {formatDate(plot.activeLease.endDate)}
+          </p>
+        )}
       </div>
+
+      {/* Lease timeline (all leases) */}
+      {plot.allLeases && plot.allLeases.length > 1 && (
+        <div>
+          <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            Vertragshistorie ({plot.allLeases.length})
+          </p>
+          <div className="relative pl-3 border-l-2 border-muted space-y-2">
+            {plot.allLeases.map((lease, idx) => (
+              <div key={idx} className="relative">
+                <div
+                  className="absolute -left-[calc(0.75rem+1px)] top-1 h-2 w-2 rounded-full border-2 border-white"
+                  style={{ background: LEASE_STATUS_COLORS[lease.status] ?? "#9ca3af" }}
+                />
+                <div className="text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant={getLeaseStatusBadgeVariant(lease.status)} className="text-[10px] px-1.5 py-0">
+                      {getLeaseStatusLabel(lease.status)}
+                    </Badge>
+                    <Link
+                      href={`/leases/${lease.leaseId}`}
+                      className="text-primary hover:underline text-[10px]"
+                    >
+                      <ExternalLink className="h-2.5 w-2.5 inline" />
+                    </Link>
+                  </div>
+                  {lease.lessorName && (
+                    <p className="text-gray-500 mt-0.5">{lease.lessorName}</p>
+                  )}
+                  <p className="text-gray-400">
+                    {formatDate(lease.startDate)} — {formatDate(lease.endDate)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Plot areas breakdown */}
       {plot.plotAreas.length > 0 && (
@@ -153,6 +230,17 @@ function PlotInfo({ plot }: { plot: GISPlotFeature }) {
           </Link>
         </div>
       )}
+
+      {/* Actions */}
+      <div className="pt-1 border-t">
+        <Link
+          href={`/plots/${plot.id}`}
+          className="text-xs text-primary hover:underline flex items-center gap-1"
+        >
+          <ExternalLink className="h-3 w-3" />
+          Flurstück öffnen
+        </Link>
+      </div>
     </div>
   );
 }
@@ -232,7 +320,31 @@ function ParkInfo({ park }: { park: ParkData }) {
   );
 }
 
-function AnnotationInfo({ annotation }: { annotation: AnnotationData }) {
+function AnnotationInfo({
+  annotation,
+  onDelete,
+}: {
+  annotation: AnnotationData;
+  onDelete?: () => void;
+}) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/gis/annotations/${annotation.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Fehler beim Löschen");
+      toast.success("Zeichnung gelöscht");
+      onDelete?.();
+    } catch {
+      toast.error("Fehler beim Löschen der Zeichnung");
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div>
@@ -245,13 +357,48 @@ function AnnotationInfo({ annotation }: { annotation: AnnotationData }) {
       {annotation.description && (
         <p className="text-xs text-gray-600">{annotation.description}</p>
       )}
+
+      {/* Actions */}
+      <div className="pt-2 border-t flex gap-2">
+        <Button
+          variant="destructive"
+          size="sm"
+          className="h-7 text-xs gap-1"
+          onClick={() => setShowDeleteConfirm(true)}
+          disabled={deleting}
+        >
+          <Trash2 className="h-3 w-3" />
+          Löschen
+        </Button>
+      </div>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Zeichnung löschen?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie die Zeichnung &quot;{annotation.name}&quot; wirklich löschen?
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-export function GISFeatureInfo({ feature, onClose }: GISFeatureInfoProps) {
+export function GISFeatureInfo({ feature, onClose, onAnnotationDeleted }: GISFeatureInfoProps) {
   return (
-    <div className="bg-white/95 backdrop-blur-sm border rounded-lg shadow-lg p-4 w-72">
+    <div className="bg-white/95 backdrop-blur-sm border rounded-lg shadow-lg p-4 w-72 max-h-[calc(100vh-160px)] overflow-y-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -281,9 +428,12 @@ export function GISFeatureInfo({ feature, onClose }: GISFeatureInfoProps) {
         <TurbineInfo turbine={feature.data as TurbineData} />
       ) : feature.type === "park" ? (
         <ParkInfo park={feature.data as ParkData} />
-      ) : (
-        <AnnotationInfo annotation={feature.data as AnnotationData} />
-      )}
+      ) : feature.type === "annotation" ? (
+        <AnnotationInfo
+          annotation={feature.data as AnnotationData}
+          onDelete={onAnnotationDeleted}
+        />
+      ) : null}
     </div>
   );
 }

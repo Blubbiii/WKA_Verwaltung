@@ -5,6 +5,30 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { Prisma } from "@prisma/client";
 
+// Lessor display name helper
+interface LessorFields {
+  personType: string;
+  firstName: string | null;
+  lastName: string | null;
+  companyName: string | null;
+}
+
+function getLessorName(lessor: LessorFields): string | null {
+  if (lessor.personType === "legal") return lessor.companyName ?? null;
+  return [lessor.firstName, lessor.lastName].filter(Boolean).join(" ") || null;
+}
+
+// Lease info from LeasePlot join
+interface LeasePlotWithLease {
+  lease: {
+    id: string;
+    status: string;
+    startDate: Date | null;
+    endDate: Date | null;
+    lessor: LessorFields & { id: string };
+  };
+}
+
 // GET /api/gis/features?parkId=xxx (optional filter)
 export async function GET(request: NextRequest) {
   try {
@@ -107,28 +131,17 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    // Helper to derive lessor display name
-    function getLessorName(lessor: {
-      personType: string;
-      firstName: string | null;
-      lastName: string | null;
-      companyName: string | null;
-    }): string | null {
-      if (lessor.personType === "legal") return lessor.companyName ?? null;
-      return [lessor.firstName, lessor.lastName].filter(Boolean).join(" ") || null;
-    }
-
-    // Transform plots: extract activeLease info
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const transformedPlots = plots.map((plot: any) => {
+    // Transform plots: extract active + all lease info
+    const transformedPlots = plots.map((plot) => {
       const { leasePlots, ...basePlot } = plot;
+      const typedLeasePlots = leasePlots as LeasePlotWithLease[];
 
-      const activeLeasePlot = leasePlots?.find(
-        (lp: { lease: { status: string } }) =>
-          lp.lease.status === "ACTIVE" || lp.lease.status === "EXPIRING"
+      // Find active lease
+      const activeLeasePlot = typedLeasePlots.find(
+        (lp) => lp.lease.status === "ACTIVE" || lp.lease.status === "EXPIRING"
       );
       const fallbackLeasePlot =
-        !activeLeasePlot && leasePlots?.length > 0 ? leasePlots[0] : null;
+        !activeLeasePlot && typedLeasePlots.length > 0 ? typedLeasePlots[0] : null;
       const effectiveLease = activeLeasePlot ?? fallbackLeasePlot;
 
       let activeLease = null;
@@ -138,13 +151,25 @@ export async function GET(request: NextRequest) {
           status: effectiveLease.lease.status,
           lessorName: getLessorName(effectiveLease.lease.lessor),
           lessorId: effectiveLease.lease.lessor.id,
+          startDate: effectiveLease.lease.startDate?.toISOString() ?? null,
+          endDate: effectiveLease.lease.endDate?.toISOString() ?? null,
         };
       }
+
+      // Build full lease history for timeline
+      const allLeases = typedLeasePlots.map((lp) => ({
+        leaseId: lp.lease.id,
+        status: lp.lease.status,
+        lessorName: getLessorName(lp.lease.lessor),
+        startDate: lp.lease.startDate?.toISOString() ?? null,
+        endDate: lp.lease.endDate?.toISOString() ?? null,
+      }));
 
       return {
         ...basePlot,
         activeLease,
-        leaseCount: leasePlots?.length ?? 0,
+        allLeases,
+        leaseCount: typedLeasePlots.length,
       };
     });
 

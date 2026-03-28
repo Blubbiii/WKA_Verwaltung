@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { X, ChevronDown, ChevronUp, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import type { ParkData } from "./types";
 import { PLOT_AREA_COLORS, PLOT_AREA_LABELS } from "./types";
 
-// Geodesic area calculation (same as PlotDrawDialog.tsx)
+// Geodesic area calculation
 function calcPolygonAreaSqm(geometry: GeoJSON.Geometry): number {
   if (geometry.type !== "Polygon") return 0;
   const ring = geometry.coordinates[0];
@@ -37,7 +37,9 @@ function calcPolygonAreaSqm(geometry: GeoJSON.Geometry): number {
 }
 
 const AREA_TYPES = ["WEA_STANDORT", "POOL", "WEG", "AUSGLEICH", "KABEL"] as const;
-type AreaType = typeof AREA_TYPES[number];
+type AreaType = (typeof AREA_TYPES)[number];
+
+const DEFAULT_minAreaSqm = 100;
 
 interface PersonSearchResult {
   id: string;
@@ -56,6 +58,7 @@ interface LeaseSearchResult {
 interface GISPlotCreatePanelProps {
   geometry: GeoJSON.Geometry | null;
   parks: ParkData[];
+  minAreaSqm?: number;
   onSaved: (plotId: string) => void;
   onCancel: () => void;
 }
@@ -68,6 +71,7 @@ function getPersonName(p: PersonSearchResult): string {
 export function GISPlotCreatePanel({
   geometry,
   parks,
+  minAreaSqm = DEFAULT_minAreaSqm,
   onSaved,
   onCancel,
 }: GISPlotCreatePanelProps) {
@@ -76,6 +80,13 @@ export function GISPlotCreatePanel({
   const [fieldNumber, setFieldNumber] = useState("0");
   const [plotNumber, setPlotNumber] = useState("");
   const [parkId, setParkId] = useState("");
+
+  // Manual area override
+  const calculatedArea = geometry ? Math.round(calcPolygonAreaSqm(geometry)) : 0;
+  const [manualArea, setManualArea] = useState("");
+  const effectiveArea = manualArea ? parseInt(manualArea, 10) : calculatedArea;
+  const isSmallArea = effectiveArea > 0 && effectiveArea < minAreaSqm;
+  const [smallAreaConfirmed, setSmallAreaConfirmed] = useState(false);
 
   // Plot areas
   const [areasOpen, setAreasOpen] = useState(false);
@@ -93,7 +104,6 @@ export function GISPlotCreatePanel({
   const [lessorSearch, setLessorSearch] = useState("");
   const [lessorResults, setLessorResults] = useState<PersonSearchResult[]>([]);
   const [selectedLessorId, setSelectedLessorId] = useState<string | null>(null);
-  // fundId is included in lease POST but no UI field yet (future: fund selector)
   const [fundId] = useState("");
   const [leaseStartDate, setLeaseStartDate] = useState("");
   const [leaseEndDate, setLeaseEndDate] = useState("");
@@ -103,8 +113,6 @@ export function GISPlotCreatePanel({
 
   const [saving, setSaving] = useState(false);
 
-  const calculatedArea = geometry ? Math.round(calcPolygonAreaSqm(geometry)) : 0;
-
   const totalAssigned = AREA_TYPES.reduce((sum, type) => {
     const v = parseFloat(areaValues[type]);
     return sum + (isNaN(v) ? 0 : v);
@@ -112,7 +120,10 @@ export function GISPlotCreatePanel({
 
   // Search lessors
   const searchLessors = useCallback(async (q: string) => {
-    if (q.length < 2) { setLessorResults([]); return; }
+    if (q.length < 2) {
+      setLessorResults([]);
+      return;
+    }
     try {
       const res = await fetch(`/api/persons?search=${encodeURIComponent(q)}&limit=10`);
       if (!res.ok) return;
@@ -128,7 +139,7 @@ export function GISPlotCreatePanel({
     return () => clearTimeout(t);
   }, [lessorSearch, searchLessors]);
 
-  // Load existing leases when needed
+  // Load existing leases
   useEffect(() => {
     if (!useExistingLease) return;
     fetch("/api/leases?limit=50")
@@ -150,10 +161,14 @@ export function GISPlotCreatePanel({
       toast.error("Keine Geometrie vorhanden");
       return;
     }
+    if (isSmallArea && !smallAreaConfirmed) {
+      toast.error(`Fläche unter ${minAreaSqm} m² — bitte bestätigen Sie die Mindestgröße`);
+      return;
+    }
 
     setSaving(true);
     try {
-      // Build plot areas array
+      // Build plot areas
       const plotAreas = AREA_TYPES.flatMap((type) => {
         const v = parseFloat(areaValues[type]);
         if (isNaN(v) || v <= 0) return [];
@@ -169,7 +184,7 @@ export function GISPlotCreatePanel({
           fieldNumber: fieldNumber.trim() || "0",
           plotNumber: plotNumber.trim(),
           parkId: parkId || undefined,
-          areaSqm: calculatedArea || undefined,
+          areaSqm: effectiveArea || undefined,
           geometry,
           plotAreas: plotAreas.length > 0 ? plotAreas : undefined,
         }),
@@ -181,30 +196,58 @@ export function GISPlotCreatePanel({
       }
 
       const newPlot = await plotRes.json();
+
+      // Validate response has an ID
+      if (!newPlot?.id) {
+        throw new Error("Flurstück wurde erstellt, aber keine ID erhalten");
+      }
+
       const plotId: string = newPlot.id;
 
       // Handle lease assignment
       if (leaseOpen && !useExistingLease && createLease && selectedLessorId && leaseStartDate) {
-        await fetch("/api/leases", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lessorId: selectedLessorId,
-            fundId: fundId || undefined,
-            startDate: leaseStartDate,
-            endDate: leaseEndDate || undefined,
-            plotIds: [plotId],
-          }),
-        });
+        try {
+          const leaseRes = await fetch("/api/leases", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              lessorId: selectedLessorId,
+              fundId: fundId || undefined,
+              startDate: leaseStartDate,
+              endDate: leaseEndDate || undefined,
+              plotIds: [plotId],
+            }),
+          });
+          if (!leaseRes.ok) {
+            const leaseErr = await leaseRes.json().catch(() => ({}));
+            toast.warning(
+              `Flurstück gespeichert, aber Vertrag konnte nicht erstellt werden: ${leaseErr.error || "Unbekannter Fehler"}`
+            );
+          } else {
+            toast.success("Flurstück und Pachtvertrag gespeichert");
+          }
+        } catch {
+          toast.warning("Flurstück gespeichert, aber Vertragserstellung fehlgeschlagen");
+        }
       } else if (leaseOpen && useExistingLease && selectedLeaseId) {
-        await fetch(`/api/leases/${selectedLeaseId}/plots`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ plotIds: [plotId] }),
-        });
+        try {
+          const assignRes = await fetch(`/api/leases/${selectedLeaseId}/plots`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plotIds: [plotId] }),
+          });
+          if (!assignRes.ok) {
+            toast.warning("Flurstück gespeichert, aber Vertragszuordnung fehlgeschlagen");
+          } else {
+            toast.success("Flurstück gespeichert und Vertrag zugeordnet");
+          }
+        } catch {
+          toast.warning("Flurstück gespeichert, aber Vertragszuordnung fehlgeschlagen");
+        }
+      } else {
+        toast.success("Flurstück gespeichert");
       }
 
-      toast.success("Flurstück gespeichert");
       onSaved(plotId);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
@@ -214,7 +257,7 @@ export function GISPlotCreatePanel({
   };
 
   return (
-    <div className="bg-white border-l shadow-xl w-80 flex flex-col overflow-hidden">
+    <div className="bg-white border-l shadow-xl w-80 flex flex-col overflow-hidden rounded-lg">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
         <h2 className="font-semibold text-sm">Neues Flurstück</h2>
@@ -227,16 +270,44 @@ export function GISPlotCreatePanel({
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-        {/* Area display */}
-        {calculatedArea > 0 && (
-          <div className="bg-muted/50 rounded-md px-3 py-2 text-sm">
+        {/* Area display with manual override */}
+        <div className="bg-muted/50 rounded-md px-3 py-2 space-y-2">
+          <div className="text-sm">
             <span className="text-muted-foreground text-xs">Berechnete Fläche: </span>
             <span className="font-semibold">{calculatedArea.toLocaleString("de-DE")} m²</span>
             <span className="text-muted-foreground text-xs ml-2">
               ({(calculatedArea / 10000).toFixed(4)} ha)
             </span>
           </div>
-        )}
+          <div>
+            <Label className="text-xs text-muted-foreground">Fläche überschreiben (Katasterwert)</Label>
+            <Input
+              type="number"
+              min="0"
+              value={manualArea}
+              onChange={(e) => setManualArea(e.target.value)}
+              placeholder={`${calculatedArea} m² (GPS-Berechnung)`}
+              className="h-7 text-xs mt-1"
+            />
+          </div>
+          {isSmallArea && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <p className="text-amber-800 font-medium">Fläche unter {minAreaSqm} m²</p>
+                <label className="flex items-center gap-1.5 mt-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={smallAreaConfirmed}
+                    onChange={(e) => setSmallAreaConfirmed(e.target.checked)}
+                    className="rounded h-3 w-3"
+                  />
+                  <span className="text-amber-700">Kleine Fläche bestätigen</span>
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Basic fields */}
         <div className="space-y-3">
@@ -295,7 +366,11 @@ export function GISPlotCreatePanel({
             className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left hover:bg-muted/50 transition-colors"
           >
             <span>Flächenaufteilung</span>
-            {areasOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {areasOpen ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
           </button>
           {areasOpen && (
             <div className="px-3 pb-3 pt-1 space-y-2 border-t">
@@ -305,7 +380,9 @@ export function GISPlotCreatePanel({
                     className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
                     style={{ background: PLOT_AREA_COLORS[type] }}
                   />
-                  <span className="text-xs text-gray-700 flex-1">{PLOT_AREA_LABELS[type]}</span>
+                  <span className="text-xs text-gray-700 flex-1">
+                    {PLOT_AREA_LABELS[type]}
+                  </span>
                   <Input
                     type="number"
                     min="0"
@@ -319,18 +396,21 @@ export function GISPlotCreatePanel({
                   />
                 </div>
               ))}
-              {calculatedArea > 0 && totalAssigned > 0 && (
+              {effectiveArea > 0 && totalAssigned > 0 && (
                 <div className="pt-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                     <span>Zugeordnet</span>
                     <span>
-                      {Math.round(totalAssigned).toLocaleString("de-DE")} / {calculatedArea.toLocaleString("de-DE")} m²
+                      {Math.round(totalAssigned).toLocaleString("de-DE")} /{" "}
+                      {effectiveArea.toLocaleString("de-DE")} m²
                     </span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full bg-primary transition-all"
-                      style={{ width: `${Math.min(100, (totalAssigned / calculatedArea) * 100)}%` }}
+                      style={{
+                        width: `${Math.min(100, (totalAssigned / effectiveArea) * 100)}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -347,23 +427,35 @@ export function GISPlotCreatePanel({
             className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left hover:bg-muted/50 transition-colors"
           >
             <span>Pachtvertrag zuordnen</span>
-            {leaseOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {leaseOpen ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
           </button>
           {leaseOpen && (
             <div className="px-3 pb-3 pt-1 border-t space-y-3">
-              {/* Toggle between new/existing */}
+              {/* Toggle new/existing */}
               <div className="flex items-center gap-2 text-xs">
                 <button
                   type="button"
                   onClick={() => setUseExistingLease(false)}
-                  className={`px-2 py-1 rounded border text-xs transition-colors ${!useExistingLease ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
+                  className={`px-2 py-1 rounded border text-xs transition-colors ${
+                    !useExistingLease
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:bg-muted"
+                  }`}
                 >
                   Neuer Vertrag
                 </button>
                 <button
                   type="button"
                   onClick={() => setUseExistingLease(true)}
-                  className={`px-2 py-1 rounded border text-xs transition-colors ${useExistingLease ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"}`}
+                  className={`px-2 py-1 rounded border text-xs transition-colors ${
+                    useExistingLease
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:bg-muted"
+                  }`}
                 >
                   Bestehend zuordnen
                 </button>
@@ -474,7 +566,12 @@ export function GISPlotCreatePanel({
         <Button
           size="sm"
           onClick={handleSave}
-          disabled={saving || !cadastralDistrict.trim() || !plotNumber.trim()}
+          disabled={
+            saving ||
+            !cadastralDistrict.trim() ||
+            !plotNumber.trim() ||
+            (isSmallArea && !smallAreaConfirmed)
+          }
           className="flex-1"
         >
           {saving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
