@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, company, email, phone, message } = parsed.data;
+    const { name, company, email, phone, message: _message } = parsed.data;
 
     // Structured logging — no string interpolation of user input
     logger.info({ name, company, email, phone: phone ?? null }, "Demo request received");

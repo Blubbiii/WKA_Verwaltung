@@ -9,7 +9,7 @@ const eslintConfig = [
       // Downgrade to warning - too many existing any types to fix immediately
       "@typescript-eslint/no-explicit-any": "warn",
       // Unused vars are warnings, not errors
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
       // Allow img elements (Next Image is optional)
       "@next/next/no-img-element": "warn",
       // React hooks deps are warnings

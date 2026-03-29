@@ -25,7 +25,7 @@ interface StatsResponse extends AggregatedStats {
  * GET /api/admin/jobs/stats
  * Get statistics for all queues
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Require admin access
     const check = await requireAdmin();

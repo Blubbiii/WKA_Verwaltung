@@ -21,7 +21,7 @@ const itemCreateSchema = z.object({
   datevKostenstelle: z.string().optional(),
 });
 
-const itemUpdateSchema = itemCreateSchema.partial();
+const _itemUpdateSchema = itemCreateSchema.partial();
 
 // Helper: Rechnung-Summen neu berechnen (akzeptiert optionalen Transaction Client)
 async function recalculateInvoiceTotals(invoiceId: string, txClient?: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) {

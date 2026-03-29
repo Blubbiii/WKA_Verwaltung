@@ -17,7 +17,7 @@ const DEFAULT_MESSAGE =
 
 // GET /api/admin/maintenance - Get maintenance mode status
 // Accessible to all authenticated users (needed for the banner)
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
 const check = await requireSuperadmin();
     if (!check.authorized) return check.error!;

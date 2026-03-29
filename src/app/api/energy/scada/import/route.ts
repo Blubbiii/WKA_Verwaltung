@@ -8,7 +8,7 @@ import { apiLogger as logger } from "@/lib/logger";
 // GET /api/energy/scada/import - Liste der Import-Logs
 // =============================================================================
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;

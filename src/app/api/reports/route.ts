@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 
 // GET /api/reports - Get available report types and metadata
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_READ);
     if (!check.authorized) return check.error!;

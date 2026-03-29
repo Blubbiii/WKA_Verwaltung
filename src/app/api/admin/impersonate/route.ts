@@ -168,7 +168,7 @@ const check = await requireSuperadmin();
 }
 
 // DELETE /api/admin/impersonate - Stop impersonating
-export async function DELETE(request: NextRequest) {
+export async function DELETE(_request: NextRequest) {
   try {
     // Security: Require authentication to stop impersonation
     const check = await requireAuth();
@@ -198,7 +198,7 @@ export async function DELETE(request: NextRequest) {
 }
 
 // GET /api/admin/impersonate - Get current impersonation status
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Security: Require authentication to check impersonation status
     const check = await requireAuth();

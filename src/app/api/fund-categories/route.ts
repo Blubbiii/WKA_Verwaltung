@@ -25,7 +25,7 @@ import { apiLogger as logger } from "@/lib/logger";
  * Returns: Nur id, name, code, color, sortOrder (keine _count oder sensitive Daten)
  * Sortierung: Nach sortOrder ASC, dann name ASC
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Auth-Check: Benutzer mit FUNDS_READ Permission duerfen zugreifen
     const check = await requirePermission(PERMISSIONS.FUNDS_READ);

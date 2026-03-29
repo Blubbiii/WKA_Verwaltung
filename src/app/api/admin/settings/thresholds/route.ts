@@ -30,7 +30,7 @@ const DEFAULT_THRESHOLDS: ThresholdSettings = {
 };
 
 // GET /api/admin/settings/thresholds
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;

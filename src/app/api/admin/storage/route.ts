@@ -23,7 +23,7 @@ const CATEGORY_LABELS: Record<string, string> = {
  * Returns storage usage info for the current tenant, including breakdown by category.
  * Permission: settings:read
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
  * Recalculates storage usage from actual document files.
  * Permission: settings:update
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;

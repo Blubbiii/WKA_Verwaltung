@@ -11,7 +11,7 @@ import { DEFAULT_LEGAL_PAGES } from "@/lib/marketing/defaults";
 // Returns the legal pages (Impressum, Datenschutz) for the current tenant.
 // =============================================================================
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("admin:manage");
     if (!check.authorized) return check.error;

@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       "@/lib/management-billing/calculator"
     );
 
-    const { id: billingId, result } = await calculateAndSaveBilling({
+    const { id: billingId, result: _result } = await calculateAndSaveBilling({
       stakeholderId,
       year: parseInt(year, 10),
       month: month !== undefined && month !== null ? parseInt(month, 10) : null,

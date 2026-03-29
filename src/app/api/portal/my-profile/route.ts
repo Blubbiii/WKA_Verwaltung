@@ -34,7 +34,7 @@ const updateProfileSchema = z.object({
 });
 
 // GET /api/portal/my-profile - Get profile data for the current user
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await auth();
 

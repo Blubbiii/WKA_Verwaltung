@@ -14,7 +14,7 @@ const createBatchSchema = z.object({
 });
 
 // GET /api/buchhaltung/sepa — List SEPA batches
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("accounting:read");
     if (!check.authorized) return check.error;

@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     // Escape special characters for LIKE query
     const escapedQuery = query.replace(/[%_\\]/g, "\\$&");
-    const searchPattern = `%${escapedQuery}%`;
+    const _searchPattern = `%${escapedQuery}%`;
 
     // Build where clause
     const whereConditions: Prisma.DocumentWhereInput = {

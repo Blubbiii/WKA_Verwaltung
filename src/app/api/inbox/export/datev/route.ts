@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     const tenantId = check.tenantId!;
 
-    const tenant = await prisma.tenant.findUnique({
+    const _tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
       select: { name: true },
     });

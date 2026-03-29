@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useEffect, useCallback, useRef } from "react";
+import { useReducer, useEffect, useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import { Loader2, AlertTriangle, MapPinOff, RefreshCw, Undo2, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -18,7 +18,6 @@ import type {
   SelectedFeature,
   TileLayerType,
   MeasureResult,
-  DrawnFeature,
   LayerVisibility,
 } from "./types";
 import { DEFAULT_LAYER_VISIBILITY, DEFAULT_GIS_SETTINGS } from "./types";
@@ -245,10 +244,10 @@ export function GISClient() {
   }, [parkFilter]);
 
   // Track which draw mode created the geometry (for panel selection)
-  const pendingDrawType = useRef<"plot" | "annotation">("plot");
+  const [pendingDrawType, setPendingDrawType] = useState<"plot" | "annotation">("plot");
 
   const handleDrawCreated = useCallback((geometry: GeoJSON.Geometry) => {
-    pendingDrawType.current = drawMode === "annotation" ? "annotation" : "plot";
+    setPendingDrawType(drawMode === "annotation" ? "annotation" : "plot");
     dispatch({ type: "SET_PENDING_GEOMETRY", payload: geometry });
     dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: true });
     dispatch({ type: "SET_DRAW_MODE", payload: "off" });
@@ -424,7 +423,7 @@ export function GISClient() {
 
       {/* Right panel — feature info OR plot create */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 z-[1000]">
-        {showCreatePanel && pendingGeometry && pendingDrawType.current === "annotation" ? (
+        {showCreatePanel && pendingGeometry && pendingDrawType === "annotation" ? (
           <GISAnnotationCreatePanel
             geometry={pendingGeometry}
             parks={data.parks}

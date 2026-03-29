@@ -189,8 +189,8 @@ export async function POST(
     }
 
     // Resolve actual rates from central TaxRateConfig
-    const eegTaxRate = await getTaxRate(tenantId, eegTaxType, referenceDate);
-    const dvTaxRate = await getTaxRate(tenantId, dvTaxType, referenceDate);
+    const _eegTaxRate = await getTaxRate(tenantId, eegTaxType, referenceDate);
+    const _dvTaxRate = await getTaxRate(tenantId, dvTaxType, referenceDate);
 
     // Erstelle Gutschriften in einer Transaktion
     const createdInvoices: {

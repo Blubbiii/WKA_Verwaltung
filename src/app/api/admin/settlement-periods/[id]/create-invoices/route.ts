@@ -645,7 +645,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
   const jahresArticle = findArticle(articles, "JAHRESNUTZUNGSENTGELD");
   const verrechnungArticle = findArticle(articles, "VORSCHUSSVERRECHNUNG");
   const jahresTaxRate = jahresArticle?.taxRate ?? 0;
-  const jahresTaxType = taxRateToTaxType(jahresTaxRate);
+  const _jahresTaxType = taxRateToTaxType(jahresTaxRate);
 
   // Load ADVANCE invoices per lease for detailed deduction
   const advanceInvoices = await prisma.invoice.findMany({

@@ -287,7 +287,7 @@ async function testStorageConnection(
 
       // Import AWS SDK dynamically
       try {
-        const { S3Client, ListBucketsCommand, HeadBucketCommand } = await import("@aws-sdk/client-s3");
+        const { S3Client, HeadBucketCommand } = await import("@aws-sdk/client-s3");
 
         const s3Client = new S3Client({
           region: region || "eu-central-1",

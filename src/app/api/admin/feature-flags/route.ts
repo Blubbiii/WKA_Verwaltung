@@ -102,7 +102,7 @@ const DEFAULT_MODULE_FLAGS: ModuleFlags = {
 };
 
 // GET /api/admin/feature-flags - List all tenants with their feature flags (SUPERADMIN only)
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requireSuperadmin();
     if (!check.authorized) return check.error;

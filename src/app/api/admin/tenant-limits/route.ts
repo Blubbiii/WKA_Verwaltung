@@ -11,7 +11,7 @@ export interface TenantLimits {
 }
 
 // GET /api/admin/tenant-limits - List all tenants with limits and current usage
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requireSuperadmin();
     if (!check.authorized) return check.error;

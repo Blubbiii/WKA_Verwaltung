@@ -13,7 +13,7 @@ const bulkCreateSchema = z.object({
 });
 
 // Quartals-Mapping: Welche Monate gehoeren zu welchem Quartal
-const QUARTERLY_MONTHS = [
+const _QUARTERLY_MONTHS = [
   [1, 2, 3],   // Q1
   [4, 5, 6],   // Q2
   [7, 8, 9],   // Q3

@@ -180,7 +180,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
 
     // Dateiname mit Proxy-ID als Prefix
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storageKey = `proxies/${id}/${sanitizedFileName}`;
+    const _storageKey = `proxies/${id}/${sanitizedFileName}`;
 
     // In MinIO hochladen (mit tenantId für Ordnerstruktur)
     // Wir verwenden einen speziellen Pfad für Vollmachten

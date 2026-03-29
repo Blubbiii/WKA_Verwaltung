@@ -47,7 +47,7 @@ const createWebhookSchema = z.object({
 // GET /api/admin/webhooks - List all webhooks
 // =============================================================================
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;

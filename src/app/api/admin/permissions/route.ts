@@ -59,7 +59,7 @@ const actionLabels: Record<string, string> = {
 };
 
 // GET /api/admin/permissions - Alle Permissions laden (gruppiert nach Modul)
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("roles:read");
     if (!check.authorized) return check.error;

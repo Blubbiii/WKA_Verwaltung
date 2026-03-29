@@ -56,7 +56,7 @@ export interface GeneralSettings {
 }
 
 // GET /api/admin/settings - Get general settings
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;

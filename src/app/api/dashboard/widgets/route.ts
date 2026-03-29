@@ -44,11 +44,11 @@ export async function GET(request: NextRequest) {
     const cacheKey = `dashboard:widgets:${userRole}:grouped=${groupByCategory}:category=${category || "all"}`;
 
     // Try cache first
-    let cacheHit = false;
+    let _cacheHit = false;
     try {
       const cached = await cache.get<Record<string, unknown>>(cacheKey);
       if (cached) {
-        cacheHit = true;
+        _cacheHit = true;
         return NextResponse.json(cached, {
           headers: {
             "X-Cache": "HIT",

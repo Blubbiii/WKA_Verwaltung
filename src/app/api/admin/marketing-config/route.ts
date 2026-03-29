@@ -11,7 +11,7 @@ import { DEFAULT_MARKETING_CONFIG } from "@/lib/marketing/defaults";
 // Returns the marketing configuration for the current tenant, merged with defaults.
 // =============================================================================
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("admin:manage");
     if (!check.authorized) return check.error;

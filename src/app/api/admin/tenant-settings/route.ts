@@ -356,7 +356,7 @@ const tenantSettingsSchema = z.object({
 // GET /api/admin/tenant-settings
 // =============================================================================
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
