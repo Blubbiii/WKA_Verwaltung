@@ -52,7 +52,8 @@ const INITIAL_STATE: GISState = {
 function gisReducer(state: GISState, action: GISAction): GISState {
   switch (action.type) {
     case "SET_DATA":
-      return { ...state, data: action.payload, error: null };
+      // Only set data, error is managed separately by SET_ERROR
+      return { ...state, data: action.payload };
     case "SET_LOADING":
       return { ...state, loading: action.payload };
     case "SET_ERROR":
@@ -70,7 +71,8 @@ function gisReducer(state: GISState, action: GISAction): GISState {
       return {
         ...state,
         selectedFeature: action.payload,
-        showCreatePanel: false,
+        // Only close create panel when selecting a feature, not when deselecting
+        ...(action.payload ? { showCreatePanel: false } : {}),
         selectedFeatureId: action.payload
           ? ("id" in action.payload.data ? (action.payload.data as { id: string }).id : null)
           : null,
@@ -280,10 +282,15 @@ export function GISClient() {
     dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });
     dispatch({ type: "SET_DRAW_MODE", payload: "off" });
     // Keep pendingGeometry visible as preview until new data is loaded
-    fetchData(parkFilter).then(() => {
-      dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
-      dispatch({ type: "CLEAR_DRAWN_FEATURES" });
-    });
+    fetchData(parkFilter)
+      .then(() => {
+        dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+        dispatch({ type: "CLEAR_DRAWN_FEATURES" });
+      })
+      .catch(() => {
+        // On refresh failure, still clear preview to avoid stale state
+        dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+      });
   }, [parkFilter, fetchData]);
 
   const handleAnnotationDeleted = useCallback(() => {
@@ -437,10 +444,14 @@ export function GISClient() {
             parks={data.parks}
             onSaved={() => {
               dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });
-              fetchData(parkFilter).then(() => {
-                dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
-                dispatch({ type: "CLEAR_DRAWN_FEATURES" });
-              });
+              fetchData(parkFilter)
+                .then(() => {
+                  dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+                  dispatch({ type: "CLEAR_DRAWN_FEATURES" });
+                })
+                .catch(() => {
+                  dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+                });
             }}
             onCancel={() => {
               dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });
