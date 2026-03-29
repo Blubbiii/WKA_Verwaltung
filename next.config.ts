@@ -53,9 +53,9 @@ const nextConfig: NextConfig = {
                 ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
                 : "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://*.tile.openstreetmap.de https://*.tile.openstreetmap.org",
+              "img-src 'self' data: blob: https://*.tile.openstreetmap.de https://*.tile.openstreetmap.org https://server.arcgisonline.com https://*.tile.opentopomap.org",
               "font-src 'self' data:",
-              "connect-src 'self' https://*.sentry.io https://*.tile.openstreetmap.de https://*.tile.openstreetmap.org",
+              "connect-src 'self' https://*.sentry.io https://*.tile.openstreetmap.de https://*.tile.openstreetmap.org https://server.arcgisonline.com https://*.tile.opentopomap.org",
               frameSrc,
               "frame-ancestors 'self'",
               "base-uri 'self'",

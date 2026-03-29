@@ -54,7 +54,7 @@ function LayerCheckbox({ checked, onToggle, dotColor, label, count }: LayerCheck
         className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
         style={{ background: dotColor }}
       />
-      <span className="text-sm text-gray-700 group-hover:text-gray-900 flex-1">{label}</span>
+      <span className="text-sm text-foreground group-hover:text-foreground flex-1">{label}</span>
       {count !== undefined && (
         <span className="text-xs text-muted-foreground">{count}</span>
       )}
@@ -102,20 +102,20 @@ export function GISLayerPanel({
       <button
         onClick={() => setCollapsed(false)}
         title="Ebenen einblenden"
-        className="bg-white/95 backdrop-blur-sm border rounded-lg shadow-lg p-2.5 flex items-center justify-center hover:bg-white transition-colors"
+        className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-2.5 flex items-center justify-center hover:bg-background transition-colors"
       >
-        <Layers className="h-4 w-4 text-gray-600" />
+        <Layers className="h-4 w-4 text-muted-foreground" />
       </button>
     );
   }
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm border rounded-lg shadow-lg p-3 w-60 max-h-[calc(100vh-160px)] overflow-y-auto">
+    <div className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-3 w-60 max-h-[calc(100vh-160px)] overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Ebenen</span>
+          <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Ebenen</span>
         </div>
         <button
           onClick={() => setCollapsed(true)}
@@ -219,7 +219,7 @@ export function GISLayerPanel({
                     className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
                     style={{ background: LEASE_STATUS_COLORS[status] }}
                   />
-                  <span className="text-xs text-gray-600">{label}</span>
+                  <span className="text-xs text-muted-foreground">{label}</span>
                 </div>
               ))}
             </div>
@@ -239,7 +239,7 @@ export function GISLayerPanel({
                   className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
                   style={{ background: PLOT_AREA_COLORS[type] }}
                 />
-                <span className="text-xs text-gray-600">{label}</span>
+                <span className="text-xs text-muted-foreground">{label}</span>
               </div>
             ))}
             <div className="flex items-center gap-2">
@@ -247,14 +247,14 @@ export function GISLayerPanel({
                 className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
                 style={{ background: "#757575" }}
               />
-              <span className="text-xs text-gray-600">Ohne Typ</span>
+              <span className="text-xs text-muted-foreground">Ohne Typ</span>
             </div>
             <div className="flex items-center gap-2">
               <span
                 className="inline-block h-2.5 w-2.5 rounded-sm shrink-0 border border-dashed border-red-400"
                 style={{ background: "#ef444430" }}
               />
-              <span className="text-xs text-gray-600">Kein Vertrag</span>
+              <span className="text-xs text-muted-foreground">Kein Vertrag</span>
             </div>
           </div>
         </div>
@@ -285,8 +285,8 @@ export function GISLayerPanel({
               if (!val) return null;
               return (
                 <div key={type} className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">{label}</span>
-                  <span className="text-gray-800 font-medium">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="text-foreground font-medium">
                     {(val / 10000).toFixed(2)} ha
                   </span>
                 </div>
@@ -294,8 +294,8 @@ export function GISLayerPanel({
             })}
             {totalArea > 0 && (
               <div className="flex items-center justify-between text-xs pt-1 border-t mt-1">
-                <span className="text-gray-600 font-medium">Gesamt</span>
-                <span className="text-gray-800 font-semibold">
+                <span className="text-muted-foreground font-medium">Gesamt</span>
+                <span className="text-foreground font-semibold">
                   {(totalArea / 10000).toFixed(2)} ha
                 </span>
               </div>
@@ -310,7 +310,7 @@ export function GISLayerPanel({
       <div>
         <button
           onClick={() => setShowSettings(!showSettings)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-gray-900 transition-colors w-full"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
         >
           <Settings2 className="h-3.5 w-3.5" />
           <span className="font-semibold uppercase tracking-wide">Einstellungen</span>
@@ -321,8 +321,8 @@ export function GISLayerPanel({
             {/* Buffer radius */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-600">Abstandszone</span>
-                <span className="text-gray-800 font-medium">{settings.bufferRadiusM} m</span>
+                <span className="text-muted-foreground">Abstandszone</span>
+                <span className="text-foreground font-medium">{settings.bufferRadiusM} m</span>
               </div>
               <input
                 type="range"
@@ -342,8 +342,8 @@ export function GISLayerPanel({
             {/* Plot opacity */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-600">Flächen-Deckkraft</span>
-                <span className="text-gray-800 font-medium">{Math.round(settings.plotOpacity * 100)}%</span>
+                <span className="text-muted-foreground">Flächen-Deckkraft</span>
+                <span className="text-foreground font-medium">{Math.round(settings.plotOpacity * 100)}%</span>
               </div>
               <input
                 type="range"
@@ -359,7 +359,7 @@ export function GISLayerPanel({
             {/* Min plot area */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-600">Mindestfläche</span>
+                <span className="text-muted-foreground">Mindestfläche</span>
               </div>
               <div className="flex items-center gap-1">
                 <Input

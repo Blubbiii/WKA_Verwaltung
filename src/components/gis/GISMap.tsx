@@ -339,6 +339,24 @@ interface GISMapProps {
   selectedFeatureId: string | null;
 }
 
+// -- Event handler for coordinate search flyto --
+function MapEventHandler() {
+  const map = useMap();
+  useEffect(() => {
+    const handleFlyTo = (e: Event) => {
+      const { lat, lng } = (e as CustomEvent).detail;
+      map.setView([lat, lng], 16);
+      // Add temporary marker at searched coordinates
+      const marker = L.marker([lat, lng]).addTo(map);
+      marker.bindPopup(`${lat.toFixed(5)}, ${lng.toFixed(5)}`).openPopup();
+      setTimeout(() => map.removeLayer(marker), 10000);
+    };
+    window.addEventListener("gis:flyto", handleFlyTo);
+    return () => window.removeEventListener("gis:flyto", handleFlyTo);
+  }, [map]);
+  return null;
+}
+
 // -- Main map component --
 export function GISMap({
   parks,
@@ -506,6 +524,7 @@ export function GISMap({
     >
       <TileLayer url={tile.url} attribution={tile.attribution} />
 
+      <MapEventHandler />
       <FitBoundsToData parks={parks} turbines={turbines} plots={plots} />
 
       {/* Plot polygons */}

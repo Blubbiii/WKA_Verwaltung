@@ -257,7 +257,7 @@ export function GISPlotCreatePanel({
   };
 
   return (
-    <div className="bg-white border-l shadow-xl w-80 flex flex-col overflow-hidden rounded-lg">
+    <div className="bg-background border-l shadow-xl w-80 flex flex-col overflow-hidden rounded-lg">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
         <h2 className="font-semibold text-sm">Neues Flurstück</h2>
@@ -380,7 +380,7 @@ export function GISPlotCreatePanel({
                     className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
                     style={{ background: PLOT_AREA_COLORS[type] }}
                   />
-                  <span className="text-xs text-gray-700 flex-1">
+                  <span className="text-xs text-foreground flex-1">
                     {PLOT_AREA_LABELS[type]}
                   </span>
                   <Input

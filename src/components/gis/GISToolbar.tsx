@@ -125,7 +125,7 @@ export function GISToolbar({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="bg-white/95 backdrop-blur-sm border rounded-xl shadow-lg px-3 py-2 flex items-center gap-2">
+      <div className="bg-background/95 backdrop-blur-sm border rounded-xl shadow-lg px-3 py-2 flex items-center gap-2">
         {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
 
         {/* Map icon */}
@@ -143,7 +143,7 @@ export function GISToolbar({
               className={`px-2.5 py-1 text-xs font-medium transition-colors ${
                 tileLayer === btn.key
                   ? "bg-primary text-primary-foreground"
-                  : "bg-white text-muted-foreground hover:bg-muted"
+                  : "bg-background text-muted-foreground hover:bg-muted"
               }`}
             >
               {btn.label}
@@ -160,7 +160,7 @@ export function GISToolbar({
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
             drawMode === "plot"
               ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700"
-              : "bg-white text-muted-foreground border-border hover:bg-muted"
+              : "bg-background text-muted-foreground border-border hover:bg-muted"
           }`}
         >
           <LandPlot className="h-3.5 w-3.5" />
@@ -172,7 +172,7 @@ export function GISToolbar({
           <button
             onClick={onUndo}
             title="Letzte Zeichnung rückgängig"
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border border-border bg-white text-muted-foreground hover:bg-muted transition-colors"
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border border-border bg-background text-muted-foreground hover:bg-muted transition-colors"
           >
             <Undo2 className="h-3.5 w-3.5" />
           </button>
@@ -187,7 +187,7 @@ export function GISToolbar({
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
             isMeasuring
               ? "bg-primary text-primary-foreground border-primary"
-              : "bg-white text-muted-foreground border-border hover:bg-muted"
+              : "bg-background text-muted-foreground border-border hover:bg-muted"
           }`}
         >
           <Ruler className="h-3.5 w-3.5" />
@@ -208,7 +208,7 @@ export function GISToolbar({
           className={`p-1.5 rounded-md border transition-colors ${
             showCoordSearch
               ? "bg-primary text-primary-foreground border-primary"
-              : "bg-white text-muted-foreground border-border hover:bg-muted"
+              : "bg-background text-muted-foreground border-border hover:bg-muted"
           }`}
         >
           <Search className="h-3.5 w-3.5" />
@@ -219,7 +219,7 @@ export function GISToolbar({
           <DropdownMenuTrigger asChild>
             <button
               title="Importieren"
-              className="p-1.5 rounded-md border border-border bg-white text-muted-foreground hover:bg-muted transition-colors"
+              className="p-1.5 rounded-md border border-border bg-background text-muted-foreground hover:bg-muted transition-colors"
             >
               <Upload className="h-3.5 w-3.5" />
             </button>
@@ -243,7 +243,7 @@ export function GISToolbar({
         <button
           onClick={handlePrint}
           title="Karte drucken"
-          className="p-1.5 rounded-md border border-border bg-white text-muted-foreground hover:bg-muted transition-colors"
+          className="p-1.5 rounded-md border border-border bg-background text-muted-foreground hover:bg-muted transition-colors"
         >
           <Printer className="h-3.5 w-3.5" />
         </button>
@@ -282,7 +282,7 @@ export function GISToolbar({
 
       {/* Coordinate search input */}
       {showCoordSearch && (
-        <div className="bg-white/95 backdrop-blur-sm border rounded-lg shadow-lg px-3 py-2 flex items-center gap-2">
+        <div className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg px-3 py-2 flex items-center gap-2">
           <Input
             value={coordInput}
             onChange={(e) => setCoordInput(e.target.value)}

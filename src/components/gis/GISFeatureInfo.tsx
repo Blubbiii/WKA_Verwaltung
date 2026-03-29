@@ -130,10 +130,10 @@ function PlotInfo({ plot }: { plot: GISPlotFeature }) {
           )}
         </div>
         {plot.activeLease?.lessorName && (
-          <p className="text-xs text-gray-600 mt-1">Verpächter: {plot.activeLease.lessorName}</p>
+          <p className="text-xs text-muted-foreground mt-1">Verpächter: {plot.activeLease.lessorName}</p>
         )}
         {plot.activeLease && (
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {formatDate(plot.activeLease.startDate)} — {formatDate(plot.activeLease.endDate)}
           </p>
         )}
@@ -166,7 +166,7 @@ function PlotInfo({ plot }: { plot: GISPlotFeature }) {
                     </Link>
                   </div>
                   {lease.lessorName && (
-                    <p className="text-gray-500 mt-0.5">{lease.lessorName}</p>
+                    <p className="text-muted-foreground mt-0.5">{lease.lessorName}</p>
                   )}
                   <p className="text-gray-400">
                     {formatDate(lease.startDate)} — {formatDate(lease.endDate)}
@@ -194,7 +194,7 @@ function PlotInfo({ plot }: { plot: GISPlotFeature }) {
                         className="inline-block h-2 w-2 rounded-sm shrink-0"
                         style={{ background: color }}
                       />
-                      <span className="text-gray-700">{PLOT_AREA_LABELS[area.areaType] ?? area.areaType}</span>
+                      <span className="text-foreground">{PLOT_AREA_LABELS[area.areaType] ?? area.areaType}</span>
                     </div>
                     <span className="text-muted-foreground font-medium">
                       {area.areaSqm.toLocaleString("de-DE")} m²
@@ -355,7 +355,7 @@ function AnnotationInfo({
         </p>
       </div>
       {annotation.description && (
-        <p className="text-xs text-gray-600">{annotation.description}</p>
+        <p className="text-xs text-muted-foreground">{annotation.description}</p>
       )}
 
       {/* Actions */}
@@ -398,7 +398,7 @@ function AnnotationInfo({
 
 export function GISFeatureInfo({ feature, onClose, onAnnotationDeleted }: GISFeatureInfoProps) {
   return (
-    <div className="bg-white/95 backdrop-blur-sm border rounded-lg shadow-lg p-4 w-72 max-h-[calc(100vh-160px)] overflow-y-auto">
+    <div className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-4 w-72 max-h-[calc(100vh-160px)] overflow-y-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

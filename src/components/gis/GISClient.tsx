@@ -201,6 +201,21 @@ export function GISClient() {
     fetchData(parkFilter);
   }, [parkFilter, fetchData]);
 
+  // Listen for area report export event from toolbar
+  useEffect(() => {
+    const handleExportAreaReport = () => {
+      const url = parkFilter === "all"
+        ? "/api/gis/area-report"
+        : `/api/gis/area-report?parkId=${parkFilter}`;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "flaechenreport.xlsx";
+      a.click();
+    };
+    window.addEventListener("gis:export-area-report", handleExportAreaReport);
+    return () => window.removeEventListener("gis:export-area-report", handleExportAreaReport);
+  }, [parkFilter]);
+
   const handleDrawCreated = useCallback((geometry: GeoJSON.Geometry) => {
     dispatch({ type: "SET_PENDING_GEOMETRY", payload: geometry });
     dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: true });
@@ -257,12 +272,26 @@ export function GISClient() {
   }, []);
 
   const plotsWithGeometry = data.plots.filter((p) => p.geometry).length;
+  const totalHa = data.plots.reduce((s, p) => s + (p.areaSqm ?? 0), 0) / 10000;
   const isEmpty = !loading && !error &&
     data.parks.length === 0 && data.turbines.length === 0 &&
     data.plots.length === 0 && data.annotations.length === 0;
 
   return (
     <div className="relative overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
+      <style>{`
+        @media print {
+          .leaflet-control-container,
+          [class*="absolute top-"],
+          [class*="absolute bottom-"] {
+            display: none !important;
+          }
+          .leaflet-container {
+            width: 100% !important;
+            height: 100vh !important;
+          }
+        }
+      `}</style>
       {/* Map fills 100% */}
       <div className="absolute inset-0">
         <GISMap
@@ -303,7 +332,7 @@ export function GISClient() {
       {/* Empty state overlay */}
       {isEmpty && (
         <div className="absolute inset-0 z-[999] flex items-center justify-center pointer-events-none">
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl border shadow-lg p-8 text-center pointer-events-auto max-w-sm">
+          <div className="bg-background/90 backdrop-blur-sm rounded-xl border shadow-lg p-8 text-center pointer-events-auto max-w-sm">
             <MapPinOff className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
             <h3 className="font-semibold text-sm mb-1">Keine Geodaten vorhanden</h3>
             <p className="text-xs text-muted-foreground mb-3">
@@ -378,7 +407,7 @@ export function GISClient() {
       </div>
 
       {/* Status bar — bottom center */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-white/90 backdrop-blur-sm border rounded-full px-4 py-1.5 text-xs text-muted-foreground flex items-center gap-3 pointer-events-none">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-background/90 backdrop-blur-sm border rounded-full px-4 py-1.5 text-xs text-muted-foreground flex items-center gap-3 pointer-events-none">
         <span>{data.parks.length} Parks</span>
         <span>&middot;</span>
         <span>{data.turbines.length} Turbinen</span>
@@ -386,6 +415,12 @@ export function GISClient() {
         <span>{plotsWithGeometry} Flurstücke</span>
         <span>&middot;</span>
         <span>{data.annotations.length} Zeichnungen</span>
+        {totalHa > 0 && (
+          <>
+            <span>&middot;</span>
+            <span>{totalHa.toFixed(1)} ha</span>
+          </>
+        )}
         {loading && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
       </div>
 
@@ -395,7 +430,7 @@ export function GISClient() {
           <Button
             variant="outline"
             size="sm"
-            className="h-8 gap-1.5 bg-white/90 backdrop-blur-sm shadow-md"
+            className="h-8 gap-1.5 bg-background/90 backdrop-blur-sm shadow-md"
             onClick={handleUndo}
           >
             <Undo2 className="h-3.5 w-3.5" />
