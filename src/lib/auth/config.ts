@@ -155,8 +155,8 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        // Secure cookies when using HTTPS or in production
-        secure: process.env.NEXTAUTH_URL?.startsWith("https://") || process.env.NODE_ENV === "production",
+        // Secure cookies only when explicitly using HTTPS (local network runs on HTTP)
+        secure: process.env.NEXTAUTH_URL?.startsWith("https://") ?? false,
       },
     },
   },
