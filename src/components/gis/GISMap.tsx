@@ -5,28 +5,86 @@ import { MapContainer, TileLayer, Marker, Popup, GeoJSON, Circle, useMap } from 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Hide default leaflet-draw toolbar — we use our own toolbar buttons
-const HIDE_DRAW_TOOLBAR_CSS = `
+// Custom leaflet-draw CSS — hide toolbar, style actions & tooltips
+const LEAFLET_DRAW_CSS = `
+  /* Hide default draw toolbar buttons — our toolbar controls everything */
   .leaflet-draw-toolbar { display: none !important; }
+  .leaflet-draw-section { display: none !important; }
+
+  /* Draw actions (Finish / Delete last point / Cancel) — bottom right */
   .leaflet-draw-actions {
-    left: 60px !important;
+    right: 16px !important;
+    bottom: 70px !important;
+    left: auto !important;
     top: auto !important;
-    bottom: 60px !important;
     position: fixed !important;
     z-index: 1001 !important;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    padding: 4px;
+    background: hsl(var(--background)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    padding: 6px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    list-style: none !important;
+    margin: 0 !important;
+  }
+  .leaflet-draw-actions li {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   .leaflet-draw-actions li a {
-    font-size: 12px;
-    padding: 4px 12px;
-    color: #335E99;
-    font-weight: 500;
+    display: block !important;
+    font-size: 12px !important;
+    padding: 6px 14px !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+    border-radius: 4px !important;
+    text-align: center !important;
+    transition: background-color 0.15s !important;
   }
+  /* Finish = green */
+  .leaflet-draw-actions li:first-child a {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+  }
+  .leaflet-draw-actions li:first-child a:hover {
+    background: #bbf7d0 !important;
+  }
+  /* Delete / Cancel = subtle */
+  .leaflet-draw-actions li:not(:first-child) a {
+    background: hsl(var(--muted)) !important;
+    color: hsl(var(--muted-foreground)) !important;
+  }
+  .leaflet-draw-actions li:not(:first-child) a:hover {
+    background: hsl(var(--accent)) !important;
+  }
+
+  /* Draw tooltip (text next to cursor) */
   .leaflet-draw-tooltip {
     z-index: 1001 !important;
+    background: hsl(var(--background)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    color: hsl(var(--foreground)) !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1) !important;
+    white-space: nowrap !important;
+  }
+  .leaflet-draw-tooltip-subtext {
+    color: hsl(var(--muted-foreground)) !important;
+    font-size: 10px !important;
+  }
+
+  /* Error tooltip */
+  .leaflet-draw-tooltip.leaflet-error-draw-tooltip {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border-color: #fecaca !important;
   }
 `;
 import { MapAnnotationLayer } from "@/components/maps/MapAnnotationLayer";
@@ -60,12 +118,11 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).L = L;
 
-    // Inject CSS to hide default draw toolbar
-    let styleEl: HTMLStyleElement | null = document.getElementById("gis-draw-css") as HTMLStyleElement;
-    if (!styleEl) {
-      styleEl = document.createElement("style");
+    // Inject CSS once
+    if (!document.getElementById("gis-draw-css")) {
+      const styleEl = document.createElement("style");
       styleEl.id = "gis-draw-css";
-      styleEl.textContent = HIDE_DRAW_TOOLBAR_CSS;
+      styleEl.textContent = LEAFLET_DRAW_CSS;
       document.head.appendChild(styleEl);
     }
 
@@ -78,20 +135,16 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
       map.addLayer(drawnItems);
 
       drawControl = new L.Control.Draw({
-        position: "bottomleft",
+        position: "bottomright",
         draw: {
-          polygon:
-            mode === "polygon"
-              ? {
-                  allowIntersection: false,
-                  showArea: true,
-                  shapeOptions: { color: "#335E99", weight: 2, fillOpacity: 0.15 },
-                }
-              : false,
-          polyline:
-            mode === "polyline"
-              ? { shapeOptions: { color: "#335E99", weight: 3 } }
-              : false,
+          polygon: mode === "polygon" ? {
+            allowIntersection: false,
+            showArea: true,
+            shapeOptions: { color: "#335E99", weight: 2, fillOpacity: 0.15 },
+          } : false,
+          polyline: mode === "polyline" ? {
+            shapeOptions: { color: "#335E99", weight: 3 },
+          } : false,
           rectangle: false,
           circle: false,
           circlemarker: false,
@@ -102,13 +155,23 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
 
       map.addControl(drawControl);
 
-      // Programmatically start drawing (toolbar is hidden via CSS)
-      const toolbarContainer = (drawControl as unknown as { _toolbars: Record<string, { _modes: Record<string, { handler: { enable: () => void } }> }> })._toolbars;
-      if (mode === "polygon" && toolbarContainer?.draw?._modes?.polygon?.handler) {
-        toolbarContainer.draw._modes.polygon.handler.enable();
-      } else if (mode === "polyline" && toolbarContainer?.draw?._modes?.polyline?.handler) {
-        toolbarContainer.draw._modes.polyline.handler.enable();
-      }
+      // Programmatically enable the draw handler after a short delay
+      // (leaflet-draw needs a tick to initialize internal state)
+      setTimeout(() => {
+        if (cancelled) return;
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const toolbars = (drawControl as any)?._toolbars;
+          const handler = toolbars?.draw?._modes?.[mode]?.handler;
+          if (handler?.enable) {
+            handler.enable();
+          }
+        } catch {
+          // Fallback: click the toolbar button if programmatic enable fails
+          const btn = document.querySelector(".leaflet-draw-draw-" + mode) as HTMLElement;
+          btn?.click();
+        }
+      }, 50);
 
       const handleCreated = (e: L.LeafletEvent) => {
         const event = e as L.DrawEvents.Created;
@@ -116,7 +179,6 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
         drawnItems.addLayer(layer);
         const geoJson = (layer as L.Polygon | L.Polyline).toGeoJSON();
         onCreatedRef.current(geoJson.geometry);
-        // Remove drawn layer immediately — pendingGeometry preview takes over
         drawnItems.removeLayer(layer);
       };
 
@@ -621,9 +683,14 @@ export function GISMap({
           </Marker>
         ))}
 
-      {/* Plot draw control */}
+      {/* Plot draw control (polygon) */}
       {drawMode === "plot" && (
         <GISDrawControl mode="polygon" onCreated={onDrawCreated} />
+      )}
+
+      {/* Annotation draw control (polyline for cables/roads, polygon for areas) */}
+      {drawMode === "annotation" && (
+        <GISDrawControl mode="polyline" onCreated={onDrawCreated} />
       )}
 
       {/* Measure draw control (polygon for area measurement) */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useEffect, useCallback } from "react";
+import { useReducer, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Loader2, AlertTriangle, MapPinOff, RefreshCw, Undo2, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { GISToolbar } from "./GISToolbar";
 import { GISLayerPanel } from "./GISLayerPanel";
 import { GISFeatureInfo } from "./GISFeatureInfo";
 import { GISPlotCreatePanel } from "./GISPlotCreatePanel";
+import { GISAnnotationCreatePanel } from "./GISAnnotationCreatePanel";
 import type {
   GISState,
   GISAction,
@@ -243,12 +244,16 @@ export function GISClient() {
     return () => window.removeEventListener("gis:export-area-report", handleExportAreaReport);
   }, [parkFilter]);
 
+  // Track which draw mode created the geometry (for panel selection)
+  const pendingDrawType = useRef<"plot" | "annotation">("plot");
+
   const handleDrawCreated = useCallback((geometry: GeoJSON.Geometry) => {
+    pendingDrawType.current = drawMode === "annotation" ? "annotation" : "plot";
     dispatch({ type: "SET_PENDING_GEOMETRY", payload: geometry });
     dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: true });
     dispatch({ type: "SET_DRAW_MODE", payload: "off" });
     dispatch({ type: "ADD_DRAWN_FEATURE", payload: { id: crypto.randomUUID(), geometry } });
-  }, []);
+  }, [drawMode]);
 
   const handleFeatureClick = useCallback((feature: SelectedFeature) => {
     dispatch({ type: "SET_SELECTED_FEATURE", payload: feature });
@@ -262,8 +267,9 @@ export function GISClient() {
     dispatch({ type: "SET_MEASURING", payload: !isMeasuring });
   }, [isMeasuring]);
 
-  const handleToggleDrawMode = useCallback(() => {
-    dispatch({ type: "SET_DRAW_MODE", payload: drawMode === "off" ? "plot" : "off" });
+  const handleToggleDrawMode = useCallback((mode?: "plot" | "annotation") => {
+    const target = mode ?? "plot";
+    dispatch({ type: "SET_DRAW_MODE", payload: drawMode === target ? "off" : target });
   }, [drawMode]);
 
   const handlePlotSaved = useCallback(() => {
@@ -309,7 +315,7 @@ export function GISClient() {
     data.plots.length === 0 && data.annotations.length === 0;
 
   return (
-    <div className="relative overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
+    <div className="relative" style={{ height: "calc(100vh - 64px)" }}>
       <style>{`
         @media print {
           .leaflet-control-container,
@@ -399,8 +405,8 @@ export function GISClient() {
         </div>
       )}
 
-      {/* Layer panel — top left */}
-      <div className="absolute top-16 left-3 z-[1000]">
+      {/* Layer panel — left center */}
+      <div className="absolute left-3 top-1/2 -translate-y-1/2 z-[1000]">
         <GISLayerPanel
           parks={data.parks}
           parkFilter={parkFilter}
@@ -417,8 +423,22 @@ export function GISClient() {
       </div>
 
       {/* Right panel — feature info OR plot create */}
-      <div className="absolute top-16 right-3 z-[1000]">
-        {showCreatePanel && pendingGeometry ? (
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 z-[1000]">
+        {showCreatePanel && pendingGeometry && pendingDrawType.current === "annotation" ? (
+          <GISAnnotationCreatePanel
+            geometry={pendingGeometry}
+            parks={data.parks}
+            onSaved={() => {
+              dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });
+              dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+              fetchData(parkFilter);
+            }}
+            onCancel={() => {
+              dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });
+              dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+            }}
+          />
+        ) : showCreatePanel && pendingGeometry ? (
           <GISPlotCreatePanel
             geometry={pendingGeometry}
             parks={data.parks}
@@ -487,7 +507,12 @@ export function GISClient() {
       {/* Draw mode hint */}
       {drawMode === "plot" && (
         <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-[1000] bg-emerald-600 text-white rounded-full px-4 py-1.5 text-xs font-medium shadow-lg pointer-events-none">
-          Klicke auf die Karte, um ein Flurstück einzuzeichnen
+          Klicke auf die Karte, um ein Flurstück einzuzeichnen (Polygon)
+        </div>
+      )}
+      {drawMode === "annotation" && (
+        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-[1000] bg-indigo-600 text-white rounded-full px-4 py-1.5 text-xs font-medium shadow-lg pointer-events-none">
+          Linie zeichnen für Kabeltrasse/Zuwegung (Doppelklick zum Beenden)
         </div>
       )}
 

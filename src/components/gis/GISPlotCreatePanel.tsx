@@ -79,7 +79,7 @@ export function GISPlotCreatePanel({
   const [cadastralDistrict, setCadastralDistrict] = useState("");
   const [fieldNumber, setFieldNumber] = useState("0");
   const [plotNumber, setPlotNumber] = useState("");
-  const [parkId, setParkId] = useState("");
+  const [parkId, setParkId] = useState(parks.length === 1 ? parks[0].id : "");
 
   // Manual area override
   const calculatedArea = geometry ? Math.round(calcPolygonAreaSqm(geometry)) : 0;
@@ -151,6 +151,10 @@ export function GISPlotCreatePanel({
   const handleSave = async () => {
     if (!cadastralDistrict.trim()) {
       toast.error("Gemarkung ist erforderlich");
+      return;
+    }
+    if (!parkId) {
+      toast.error("Bitte einen Park auswählen");
       return;
     }
     if (!plotNumber.trim()) {
@@ -342,13 +346,12 @@ export function GISPlotCreatePanel({
             </div>
           </div>
           <div>
-            <Label className="text-xs">Park</Label>
+            <Label className="text-xs">Park *</Label>
             <Select value={parkId} onValueChange={setParkId}>
               <SelectTrigger className="h-8 text-sm mt-1">
-                <SelectValue placeholder="Park auswählen (optional)" />
+                <SelectValue placeholder="Park auswählen" />
               </SelectTrigger>
               <SelectContent className="z-[2000]">
-                <SelectItem value="">Kein Park</SelectItem>
                 {parks.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
@@ -575,6 +578,7 @@ export function GISPlotCreatePanel({
             saving ||
             !cadastralDistrict.trim() ||
             !plotNumber.trim() ||
+            !parkId ||
             (isSmallArea && !smallAreaConfirmed)
           }
           className="flex-1"

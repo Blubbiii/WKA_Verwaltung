@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import {
   LandPlot, Ruler, Download, Loader2, Map, Undo2, Redo2, Printer,
-  Search, Upload, Globe, X,
+  Search, Upload, Globe, X, PenLine,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ interface GISToolbarProps {
   tileLayer: TileLayerType;
   onTileLayerChange: (v: TileLayerType) => void;
   drawMode: "off" | "plot" | "annotation";
-  onToggleDrawMode: () => void;
+  onToggleDrawMode: (mode?: "plot" | "annotation") => void;
   isMeasuring: boolean;
   onToggleMeasure: () => void;
   measureResult: MeasureResult | null;
@@ -169,7 +169,7 @@ export function GISToolbar({
 
         {/* Draw plot button */}
         <button
-          onClick={onToggleDrawMode}
+          onClick={() => onToggleDrawMode("plot")}
           title={drawMode === "plot" ? "Zeichenmodus beenden" : "Flurstück einzeichnen"}
           aria-label={drawMode === "plot" ? "Zeichenmodus beenden" : "Flurstück einzeichnen"}
           aria-pressed={drawMode === "plot"}
@@ -181,6 +181,22 @@ export function GISToolbar({
         >
           <LandPlot className="h-3.5 w-3.5" />
           <span>Flurstück</span>
+        </button>
+
+        {/* Draw annotation button */}
+        <button
+          onClick={() => onToggleDrawMode("annotation")}
+          title={drawMode === "annotation" ? "Zeichenmodus beenden" : "Kabeltrasse / Zeichnung erstellen"}
+          aria-label={drawMode === "annotation" ? "Zeichenmodus beenden" : "Zeichnung erstellen"}
+          aria-pressed={drawMode === "annotation"}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+            drawMode === "annotation"
+              ? "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700"
+              : "bg-background text-muted-foreground border-border hover:bg-muted"
+          }`}
+        >
+          <PenLine className="h-3.5 w-3.5" />
+          <span>Zeichnung</span>
         </button>
 
         {/* Undo button */}
