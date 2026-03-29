@@ -366,6 +366,7 @@ function AnnotationInfo({
           className="h-7 text-xs gap-1"
           onClick={() => setShowDeleteConfirm(true)}
           disabled={deleting}
+          aria-label="Zeichnung löschen"
         >
           <Trash2 className="h-3 w-3" />
           Löschen
@@ -407,6 +408,7 @@ export function GISFeatureInfo({ feature, onClose, onAnnotationDeleted }: GISFea
         {feature && (
           <button
             onClick={onClose}
+            aria-label="Auswahl schließen"
             className="p-0.5 rounded hover:bg-muted transition-colors -mt-0.5"
           >
             <X className="h-4 w-4 text-muted-foreground" />

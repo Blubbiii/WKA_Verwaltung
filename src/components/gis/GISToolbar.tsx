@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import {
-  LandPlot, Ruler, Download, Loader2, Map, Undo2, Printer,
+  LandPlot, Ruler, Download, Loader2, Map, Undo2, Redo2, Printer,
   Search, Upload, Globe, X,
 } from "lucide-react";
 import {
@@ -29,6 +29,8 @@ interface GISToolbarProps {
   loading: boolean;
   canUndo: boolean;
   onUndo: () => void;
+  canRedo: boolean;
+  onRedo: () => void;
   onCoordinateSearch?: (lat: number, lng: number) => void;
   onImportGeoJSON?: (geojson: GeoJSON.FeatureCollection) => void;
 }
@@ -60,6 +62,8 @@ export function GISToolbar({
   loading,
   canUndo,
   onUndo,
+  canRedo,
+  onRedo,
 }: GISToolbarProps) {
   const [showCoordSearch, setShowCoordSearch] = useState(false);
   const [coordInput, setCoordInput] = useState("");
@@ -88,6 +92,14 @@ export function GISToolbar({
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // File size limit check (20 MB)
+    const MAX_IMPORT_SIZE = 20 * 1024 * 1024;
+    if (file.size > MAX_IMPORT_SIZE) {
+      toast.error(`Datei zu groß (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum: 20 MB`);
+      e.target.value = "";
+      return;
+    }
 
     const ext = file.name.split(".").pop()?.toLowerCase();
 
@@ -140,6 +152,8 @@ export function GISToolbar({
             <button
               key={btn.key}
               onClick={() => onTileLayerChange(btn.key)}
+              aria-label={btn.label}
+              aria-pressed={tileLayer === btn.key}
               className={`px-2.5 py-1 text-xs font-medium transition-colors ${
                 tileLayer === btn.key
                   ? "bg-primary text-primary-foreground"
@@ -157,6 +171,8 @@ export function GISToolbar({
         <button
           onClick={onToggleDrawMode}
           title={drawMode === "plot" ? "Zeichenmodus beenden" : "Flurstück einzeichnen"}
+          aria-label={drawMode === "plot" ? "Zeichenmodus beenden" : "Flurstück einzeichnen"}
+          aria-pressed={drawMode === "plot"}
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
             drawMode === "plot"
               ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700"
@@ -172,9 +188,21 @@ export function GISToolbar({
           <button
             onClick={onUndo}
             title="Letzte Zeichnung rückgängig"
+            aria-label="Letzte Zeichnung rückgängig"
             className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border border-border bg-background text-muted-foreground hover:bg-muted transition-colors"
           >
             <Undo2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+
+        {canRedo && (
+          <button
+            onClick={onRedo}
+            aria-label="Wiederherstellen"
+            title="Wiederherstellen"
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border border-border bg-background text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <Redo2 className="h-3.5 w-3.5" />
           </button>
         )}
 
@@ -184,6 +212,8 @@ export function GISToolbar({
         <button
           onClick={onToggleMeasure}
           title={isMeasuring ? "Messen beenden" : "Messen (Strecke/Fläche)"}
+          aria-label={isMeasuring ? "Messen beenden" : "Messen (Strecke/Fläche)"}
+          aria-pressed={isMeasuring}
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
             isMeasuring
               ? "bg-primary text-primary-foreground border-primary"
@@ -205,6 +235,8 @@ export function GISToolbar({
         <button
           onClick={() => setShowCoordSearch(!showCoordSearch)}
           title="Koordinatensuche"
+          aria-label="Koordinatensuche"
+          aria-expanded={showCoordSearch}
           className={`p-1.5 rounded-md border transition-colors ${
             showCoordSearch
               ? "bg-primary text-primary-foreground border-primary"
@@ -219,6 +251,7 @@ export function GISToolbar({
           <DropdownMenuTrigger asChild>
             <button
               title="Importieren"
+              aria-label="Importieren"
               className="p-1.5 rounded-md border border-border bg-background text-muted-foreground hover:bg-muted transition-colors"
             >
               <Upload className="h-3.5 w-3.5" />
@@ -243,6 +276,7 @@ export function GISToolbar({
         <button
           onClick={handlePrint}
           title="Karte drucken"
+          aria-label="Karte drucken"
           className="p-1.5 rounded-md border border-border bg-background text-muted-foreground hover:bg-muted transition-colors"
         >
           <Printer className="h-3.5 w-3.5" />
@@ -253,7 +287,7 @@ export function GISToolbar({
         {/* Export dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs px-2.5">
+            <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs px-2.5" aria-label="Export">
               <Download className="h-3.5 w-3.5" />
               Export
             </Button>

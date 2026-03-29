@@ -2,7 +2,7 @@
 
 import { useReducer, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { Loader2, AlertTriangle, MapPinOff, RefreshCw, Undo2 } from "lucide-react";
+import { Loader2, AlertTriangle, MapPinOff, RefreshCw, Undo2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { GISToolbar } from "./GISToolbar";
@@ -45,6 +45,7 @@ const INITIAL_STATE: GISState = {
   isMeasuring: false,
   measureResult: null,
   drawnFeatures: [],
+  redoStack: [],
   selectedFeatureId: null,
 };
 
@@ -93,11 +94,28 @@ function gisReducer(state: GISState, action: GISAction): GISState {
     case "SET_MEASURE_RESULT":
       return { ...state, measureResult: action.payload, isMeasuring: false };
     case "ADD_DRAWN_FEATURE":
-      return { ...state, drawnFeatures: [...state.drawnFeatures, action.payload] };
-    case "UNDO_LAST_DRAW":
-      return { ...state, drawnFeatures: state.drawnFeatures.slice(0, -1) };
+      // Adding a new draw clears the redo stack
+      return { ...state, drawnFeatures: [...state.drawnFeatures, action.payload], redoStack: [] };
+    case "UNDO_LAST_DRAW": {
+      if (state.drawnFeatures.length === 0) return state;
+      const undone = state.drawnFeatures[state.drawnFeatures.length - 1];
+      return {
+        ...state,
+        drawnFeatures: state.drawnFeatures.slice(0, -1),
+        redoStack: [...state.redoStack, undone],
+      };
+    }
+    case "REDO_LAST_DRAW": {
+      if (state.redoStack.length === 0) return state;
+      const redone = state.redoStack[state.redoStack.length - 1];
+      return {
+        ...state,
+        drawnFeatures: [...state.drawnFeatures, redone],
+        redoStack: state.redoStack.slice(0, -1),
+      };
+    }
     case "CLEAR_DRAWN_FEATURES":
-      return { ...state, drawnFeatures: [] };
+      return { ...state, drawnFeatures: [], redoStack: [] };
     case "SET_SELECTED_FEATURE_ID":
       return { ...state, selectedFeatureId: action.payload };
     case "UPDATE_SETTINGS":
@@ -166,7 +184,7 @@ export function GISClient() {
   const [state, dispatch] = useReducer(gisReducer, INITIAL_STATE);
   const { data, loading, error, parkFilter, tileLayer, layers, settings,
     selectedFeature, drawMode, pendingGeometry, showCreatePanel, isMeasuring,
-    measureResult, drawnFeatures, selectedFeatureId } = state;
+    measureResult, drawnFeatures, redoStack, selectedFeatureId } = state;
 
   // Fetch GIS data
   const fetchData = useCallback((filter: string) => {
@@ -200,6 +218,15 @@ export function GISClient() {
   useEffect(() => {
     fetchData(parkFilter);
   }, [parkFilter, fetchData]);
+
+  // Listen for center-copied events from map (Fix 3: copy coordinates)
+  useEffect(() => {
+    const handleCopied = (e: Event) => {
+      toast.success(`Koordinaten kopiert: ${(e as CustomEvent).detail}`);
+    };
+    window.addEventListener("gis:center-copied", handleCopied);
+    return () => window.removeEventListener("gis:center-copied", handleCopied);
+  }, []);
 
   // Listen for area report export event from toolbar
   useEffect(() => {
@@ -253,6 +280,10 @@ export function GISClient() {
 
   const handleUndo = useCallback(() => {
     dispatch({ type: "UNDO_LAST_DRAW" });
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    dispatch({ type: "REDO_LAST_DRAW" });
   }, []);
 
   const handleTileLayerChange = useCallback((v: TileLayerType) => {
@@ -322,6 +353,7 @@ export function GISClient() {
             size="sm"
             className="h-6 px-2 text-xs hover:bg-white/20"
             onClick={() => fetchData(parkFilter)}
+            aria-label="Erneut laden"
           >
             <RefreshCw className="h-3 w-3 mr-1" />
             Retry
@@ -361,6 +393,8 @@ export function GISClient() {
             loading={loading}
             canUndo={drawnFeatures.length > 0}
             onUndo={handleUndo}
+            canRedo={redoStack.length > 0}
+            onRedo={handleRedo}
           />
         </div>
       )}
@@ -422,6 +456,16 @@ export function GISClient() {
           </>
         )}
         {loading && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
+        <button
+          className="pointer-events-auto ml-1 p-0.5 rounded hover:bg-muted/50 transition-colors"
+          aria-label="Koordinaten kopieren"
+          title="Karten-Koordinaten kopieren"
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent("gis:copy-center"));
+          }}
+        >
+          <Copy className="h-3 w-3" />
+        </button>
       </div>
 
       {/* Undo button — bottom left */}
@@ -432,6 +476,7 @@ export function GISClient() {
             size="sm"
             className="h-8 gap-1.5 bg-background/90 backdrop-blur-sm shadow-md"
             onClick={handleUndo}
+            aria-label={`Rückgängig (${drawnFeatures.length})`}
           >
             <Undo2 className="h-3.5 w-3.5" />
             Rückgängig ({drawnFeatures.length})

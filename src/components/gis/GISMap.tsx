@@ -351,8 +351,22 @@ function MapEventHandler() {
       marker.bindPopup(`${lat.toFixed(5)}, ${lng.toFixed(5)}`).openPopup();
       setTimeout(() => map.removeLayer(marker), 10000);
     };
+
+    // Copy map center coordinates to clipboard
+    const handleCopyCenter = () => {
+      const center = map.getCenter();
+      const text = `${center.lat.toFixed(6)}, ${center.lng.toFixed(6)}`;
+      navigator.clipboard.writeText(text).then(() => {
+        window.dispatchEvent(new CustomEvent("gis:center-copied", { detail: text }));
+      });
+    };
+
     window.addEventListener("gis:flyto", handleFlyTo);
-    return () => window.removeEventListener("gis:flyto", handleFlyTo);
+    window.addEventListener("gis:copy-center", handleCopyCenter);
+    return () => {
+      window.removeEventListener("gis:flyto", handleFlyTo);
+      window.removeEventListener("gis:copy-center", handleCopyCenter);
+    };
   }, [map]);
   return null;
 }

@@ -145,6 +145,7 @@ export interface GISState {
   isMeasuring: boolean;
   measureResult: MeasureResult | null;
   drawnFeatures: DrawnFeature[];
+  redoStack: DrawnFeature[];
   selectedFeatureId: string | null;
 }
 
@@ -163,6 +164,7 @@ export type GISAction =
   | { type: "SET_MEASURE_RESULT"; payload: MeasureResult | null }
   | { type: "ADD_DRAWN_FEATURE"; payload: DrawnFeature }
   | { type: "UNDO_LAST_DRAW" }
+  | { type: "REDO_LAST_DRAW" }
   | { type: "CLEAR_DRAWN_FEATURES" }
   | { type: "SET_SELECTED_FEATURE_ID"; payload: string | null }
   | { type: "UPDATE_SETTINGS"; payload: Partial<GISSettings> };

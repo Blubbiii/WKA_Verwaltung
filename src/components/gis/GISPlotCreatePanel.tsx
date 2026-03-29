@@ -263,6 +263,7 @@ export function GISPlotCreatePanel({
         <h2 className="font-semibold text-sm">Neues Flurstück</h2>
         <button
           onClick={onCancel}
+          aria-label="Panel schließen"
           className="p-1 rounded hover:bg-muted transition-colors"
         >
           <X className="h-4 w-4 text-muted-foreground" />
@@ -363,6 +364,7 @@ export function GISPlotCreatePanel({
           <button
             type="button"
             onClick={() => setAreasOpen(!areasOpen)}
+            aria-expanded={areasOpen}
             className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left hover:bg-muted/50 transition-colors"
           >
             <span>Flächenaufteilung</span>
@@ -424,6 +426,7 @@ export function GISPlotCreatePanel({
           <button
             type="button"
             onClick={() => setLeaseOpen(!leaseOpen)}
+            aria-expanded={leaseOpen}
             className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left hover:bg-muted/50 transition-colors"
           >
             <span>Pachtvertrag zuordnen</span>
@@ -440,6 +443,7 @@ export function GISPlotCreatePanel({
                 <button
                   type="button"
                   onClick={() => setUseExistingLease(false)}
+                  aria-pressed={!useExistingLease}
                   className={`px-2 py-1 rounded border text-xs transition-colors ${
                     !useExistingLease
                       ? "bg-primary text-primary-foreground border-primary"
@@ -451,6 +455,7 @@ export function GISPlotCreatePanel({
                 <button
                   type="button"
                   onClick={() => setUseExistingLease(true)}
+                  aria-pressed={useExistingLease}
                   className={`px-2 py-1 rounded border text-xs transition-colors ${
                     useExistingLease
                       ? "bg-primary text-primary-foreground border-primary"

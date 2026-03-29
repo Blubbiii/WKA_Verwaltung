@@ -48,6 +48,7 @@ function LayerCheckbox({ checked, onToggle, dotColor, label, count }: LayerCheck
         type="checkbox"
         checked={checked}
         onChange={onToggle}
+        aria-label={label}
         className="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5"
       />
       <span
@@ -102,6 +103,8 @@ export function GISLayerPanel({
       <button
         onClick={() => setCollapsed(false)}
         title="Ebenen einblenden"
+        aria-label="Ebenen einklappen/einblenden"
+        aria-expanded={false}
         className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-2.5 flex items-center justify-center hover:bg-background transition-colors"
       >
         <Layers className="h-4 w-4 text-muted-foreground" />
@@ -121,6 +124,8 @@ export function GISLayerPanel({
           onClick={() => setCollapsed(true)}
           className="p-0.5 rounded hover:bg-muted transition-colors"
           title="Einklappen"
+          aria-label="Ebenen einklappen/einblenden"
+          aria-expanded={true}
         >
           <ChevronLeft className="h-4 w-4 text-muted-foreground" />
         </button>
@@ -310,6 +315,8 @@ export function GISLayerPanel({
       <div>
         <button
           onClick={() => setShowSettings(!showSettings)}
+          aria-label="Einstellungen"
+          aria-expanded={showSettings}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
         >
           <Settings2 className="h-3.5 w-3.5" />
@@ -331,6 +338,7 @@ export function GISLayerPanel({
                 step="50"
                 value={settings.bufferRadiusM}
                 onChange={(e) => onSettingsChange({ bufferRadiusM: parseInt(e.target.value) })}
+                aria-label="Abstandszone Radius"
                 className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
               />
               <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -352,6 +360,7 @@ export function GISLayerPanel({
                 step="0.05"
                 value={settings.plotOpacity}
                 onChange={(e) => onSettingsChange({ plotOpacity: parseFloat(e.target.value) })}
+                aria-label="Flächen-Deckkraft"
                 className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
               />
             </div>
