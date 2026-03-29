@@ -186,8 +186,8 @@ export function GISClient() {
     selectedFeature, drawMode, pendingGeometry, showCreatePanel, isMeasuring,
     measureResult, drawnFeatures, redoStack, selectedFeatureId } = state;
 
-  // Fetch GIS data
-  const fetchData = useCallback((filter: string) => {
+  // Fetch GIS data — returns a promise so callers can await it
+  const fetchData = useCallback((filter: string): Promise<void> => {
     const url = filter === "all"
       ? "/api/gis/features"
       : `/api/gis/features?parkId=${filter}`;
@@ -195,7 +195,7 @@ export function GISClient() {
     dispatch({ type: "SET_LOADING", payload: true });
     dispatch({ type: "SET_ERROR", payload: null });
 
-    fetch(url)
+    return fetch(url)
       .then((r) => r.json())
       .then((d: unknown) => {
         if (isValidGISData(d)) {
@@ -273,9 +273,12 @@ export function GISClient() {
 
   const handlePlotSaved = useCallback(() => {
     dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });
-    dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
     dispatch({ type: "SET_DRAW_MODE", payload: "off" });
-    fetchData(parkFilter);
+    // Keep pendingGeometry visible as preview until new data is loaded
+    fetchData(parkFilter).then(() => {
+      dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+      dispatch({ type: "CLEAR_DRAWN_FEATURES" });
+    });
   }, [parkFilter, fetchData]);
 
   const handleAnnotationDeleted = useCallback(() => {
@@ -429,8 +432,10 @@ export function GISClient() {
             parks={data.parks}
             onSaved={() => {
               dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });
-              dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
-              fetchData(parkFilter);
+              fetchData(parkFilter).then(() => {
+                dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+                dispatch({ type: "CLEAR_DRAWN_FEATURES" });
+              });
             }}
             onCancel={() => {
               dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });

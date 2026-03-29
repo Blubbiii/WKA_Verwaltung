@@ -462,9 +462,9 @@ export function GISMap({
     return areas.length > 0 ? Math.max(...areas) : 1;
   }, [plots]);
 
-  // Plots GeoJSON
+  // Plots GeoJSON — key MUST change when plots change so react-leaflet re-renders
   const plotsGeoJsonKey = useMemo(
-    () => plots.map((p) => `${p.id}-${p.activeLease?.status ?? "none"}`).join("|")
+    () => `plots-${plots.length}-${plots.map((p) => p.id).join(",")}`
       + `-sel:${selectedFeatureId}`
       + `-lease:${layers.leaseStatus}`
       + `-heat:${layers.heatmap}`
