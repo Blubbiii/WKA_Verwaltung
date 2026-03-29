@@ -329,7 +329,7 @@ export function GISClient() {
     data.plots.length === 0 && data.annotations.length === 0;
 
   return (
-    <div className="relative" style={{ height: "calc(100vh - 64px)" }}>
+    <div className="relative w-full h-full">
       <style>{`
         @media print {
           .leaflet-control-container,

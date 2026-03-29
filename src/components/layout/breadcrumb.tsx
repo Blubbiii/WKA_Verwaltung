@@ -38,8 +38,8 @@ export function Breadcrumb() {
   const tNav = useTranslations("nav");
   const tBc = useTranslations("breadcrumb");
 
-  // Don't show breadcrumb on portal pages or login
-  if (pathname.startsWith("/portal") || pathname === "/login") {
+  // Don't show breadcrumb on portal pages, login, or fullscreen pages
+  if (pathname.startsWith("/portal") || pathname === "/login" || pathname === "/gis") {
     return null;
   }
 

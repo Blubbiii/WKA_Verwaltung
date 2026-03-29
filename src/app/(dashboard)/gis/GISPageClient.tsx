@@ -9,7 +9,7 @@ const GISClient = dynamic(
 
 export function GISPageClient() {
   return (
-    <div className="-mx-6 -my-6 overflow-hidden">
+    <div className="-m-6 -mb-12 overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
       <GISClient />
     </div>
   );
