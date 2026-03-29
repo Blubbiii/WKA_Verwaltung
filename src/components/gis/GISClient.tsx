@@ -79,7 +79,6 @@ function gisReducer(state: GISState, action: GISAction): GISState {
       return {
         ...state,
         drawMode: action.payload,
-        ...(action.payload === "off" ? { pendingGeometry: null, showCreatePanel: false } : {}),
       };
     case "SET_PENDING_GEOMETRY":
       return { ...state, pendingGeometry: action.payload };
@@ -268,7 +267,13 @@ export function GISClient() {
 
   const handleToggleDrawMode = useCallback((mode?: "plot" | "annotation") => {
     const target = mode ?? "plot";
-    dispatch({ type: "SET_DRAW_MODE", payload: drawMode === target ? "off" : target });
+    const newMode = drawMode === target ? "off" : target;
+    dispatch({ type: "SET_DRAW_MODE", payload: newMode });
+    // When toggling off via toolbar, also clear any pending draw state
+    if (newMode === "off") {
+      dispatch({ type: "SET_SHOW_CREATE_PANEL", payload: false });
+      dispatch({ type: "SET_PENDING_GEOMETRY", payload: null });
+    }
   }, [drawMode]);
 
   const handlePlotSaved = useCallback(() => {
