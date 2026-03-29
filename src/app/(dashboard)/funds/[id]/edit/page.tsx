@@ -111,6 +111,7 @@ export default function EditFundPage({
 
   useEffect(() => {
     fetchFund();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function fetchFund() {

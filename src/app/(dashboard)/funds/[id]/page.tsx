@@ -23,7 +23,6 @@ import {
   RefreshCw,
   Loader2,
   Trash2,
-  X,
   Banknote,
   Check,
   Play,
@@ -158,13 +157,6 @@ interface FundPark {
     _count: { turbines: number };
   };
   ownershipPercentage: number | null;
-}
-
-interface AvailablePark {
-  id: string;
-  name: string;
-  shortName: string | null;
-  status: string;
 }
 
 interface FundHierarchyEntry {
@@ -310,7 +302,7 @@ export default function FundDetailsPage({
   const [isAddingHierarchy, setIsAddingHierarchy] = useState(false);
   const [deleteHierarchyDialogOpen, setDeleteHierarchyDialogOpen] = useState(false);
   const [hierarchyToDelete, setHierarchyToDelete] = useState<string | null>(null);
-  const [isDeletingHierarchy, setIsDeletingHierarchy] = useState(false);
+  const [, setIsDeletingHierarchy] = useState(false);
 
   // Turbine operator dialog state
   const [isAddTurbineDialogOpen, setIsAddTurbineDialogOpen] = useState(false);
@@ -388,12 +380,14 @@ export default function FundDetailsPage({
 
   useEffect(() => {
     fetchFund();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
     if (isAddHierarchyDialogOpen) {
       fetchAvailableFunds();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAddHierarchyDialogOpen]);
 
   useEffect(() => {
@@ -442,7 +436,7 @@ export default function FundDetailsPage({
       }
       // Reload fund data to show updated percentages
       await fetchFund();
-    } catch (error) {
+    } catch {
       toast.error("Fehler bei der Neuberechnung der Quoten");
     } finally {
       setIsRecalculating(false);
@@ -812,7 +806,7 @@ export default function FundDetailsPage({
         const error = await response.json();
         toast.error(error.error || "Fehler beim Löschen");
       }
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Löschen des Gesellschafters");
     } finally {
       setIsDeletingShareholder(false);

@@ -1112,30 +1112,6 @@ export default function TurbineDataImportPage() {
     [defaultRevenueType]
   );
 
-  // Build notes from optional turbine fields
-  const buildNotesForRow = useCallback(
-    (row: ParsedRow): string => {
-      const parts: string[] = ["[Turbinendaten-Import]"];
-
-      if (columnMapping.operatingHours && row[columnMapping.operatingHours] != null) {
-        parts.push(
-          `Betriebsstunden: ${row[columnMapping.operatingHours]}`
-        );
-      }
-      if (columnMapping.availability && row[columnMapping.availability] != null) {
-        parts.push(
-          `Verfügbarkeit: ${row[columnMapping.availability]}%`
-        );
-      }
-      if (columnMapping.notes && row[columnMapping.notes]) {
-        parts.push(`${row[columnMapping.notes]}`);
-      }
-
-      return parts.join(" | ");
-    },
-    [columnMapping]
-  );
-
   // Validate data (client-side for turbine-specific fields, plus API validation)
   const validateData = useCallback(async () => {
     if (!parsedData) return;
@@ -1215,7 +1191,7 @@ export default function TurbineDataImportPage() {
       });
 
       setValidationResults(enrichedResults);
-    } catch (error) {
+    } catch {
       toast.error("Fehler bei der Validierung");
       // Fallback: client-side validation
       const results: ValidationResult[] = parsedData.rows.map((row, index) => {
@@ -1354,7 +1330,6 @@ export default function TurbineDataImportPage() {
     }
   }, [
     parsedData,
-    columnMapping,
     skipErrors,
     validationResults,
     buildApiMapping,
