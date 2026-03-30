@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LayoutDashboard, Receipt, Activity, Users } from "lucide-react";
+import { LayoutDashboard, Receipt, Activity, Users, PlayCircle } from "lucide-react";
 
 // ============================================================================
 // ProductShowcase -- Vertical tabs with modernized browser frame.
@@ -214,6 +214,19 @@ export function ProductShowcase() {
           <p className="mt-4 text-[hsl(var(--m-text-muted))] md:text-lg max-w-2xl mx-auto">
             Eine Plattform für alle Bereiche der Windpark-Verwaltung.
           </p>
+        </div>
+
+        {/* Video placeholder */}
+        <div className="mx-auto max-w-4xl mb-16">
+          <div className="relative aspect-video rounded-2xl border border-border/30 bg-slate-900/60 overflow-hidden flex items-center justify-center group cursor-pointer">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+            <div className="flex flex-col items-center gap-4 relative z-10">
+              <div className="rounded-full bg-primary/20 p-5 group-hover:bg-primary/30 transition-colors">
+                <PlayCircle className="h-12 w-12 text-primary" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground">Produktvideo in Kürze verfügbar</p>
+            </div>
+          </div>
         </div>
 
         {/* Desktop: Vertical tabs + content | Mobile: horizontal tabs + content */}

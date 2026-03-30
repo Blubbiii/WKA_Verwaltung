@@ -1,7 +1,15 @@
 // ============================================================================
-// TrustBar -- Minimal trust indicator with partner placeholders.
+// TrustBar -- Trust indicator with professional company name placeholders.
 // Server Component.
 // ============================================================================
+
+const PARTNER_NAMES = [
+  "EnergiePark AG",
+  "WindInvest GmbH",
+  "NordWind Betrieb",
+  "BürgerWind eG",
+  "GreenPower KG",
+];
 
 export function TrustBar() {
   return (
@@ -12,15 +20,15 @@ export function TrustBar() {
             Vertraut von führenden Windpark-Betreibern
           </p>
 
-          {/* Partner logo placeholders */}
-          <div className="flex items-center gap-8 md:gap-12 flex-wrap justify-center">
-            {[1, 2, 3, 4, 5].map((i) => (
+          {/* Partner names */}
+          <div className="flex items-center gap-6 md:gap-10 flex-wrap justify-center">
+            {PARTNER_NAMES.map((name) => (
               <div
-                key={i}
-                className="h-8 w-20 md:w-24 rounded border border-dashed border-[hsl(var(--m-border))] bg-[hsl(var(--m-primary-light))] flex items-center justify-center"
+                key={name}
+                className="h-10 px-5 rounded-lg bg-[hsl(var(--m-primary-light))] flex items-center justify-center"
               >
-                <span className="text-[10px] font-mono text-[hsl(var(--m-text-muted))] opacity-50">
-                  Partner {i}
+                <span className="text-xs font-semibold tracking-wide text-[hsl(var(--m-text-muted))]">
+                  {name}
                 </span>
               </div>
             ))}

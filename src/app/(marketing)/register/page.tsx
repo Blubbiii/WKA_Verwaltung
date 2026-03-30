@@ -6,14 +6,11 @@ import { Wind, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 
 interface FormData {
   name: string;
   company: string;
   email: string;
-  phone: string;
-  message: string;
 }
 
 export default function RegisterPage() {
@@ -21,9 +18,8 @@ export default function RegisterPage() {
     name: "",
     company: "",
     email: "",
-    phone: "",
-    message: "",
   });
+  const [dsgvoAccepted, setDsgvoAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,34 +143,23 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone" className="text-slate-300">
-                    Telefon
-                  </Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="+49 123 456789"
-                    className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-[hsl(var(--m-primary))]"
+                {/* DSGVO checkbox */}
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="dsgvo"
+                    required
+                    checked={dsgvoAccepted}
+                    onChange={(e) => setDsgvoAccepted(e.target.checked)}
+                    className="mt-1 rounded border-slate-600 bg-slate-800 accent-[hsl(var(--m-primary))]"
                   />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="message" className="text-slate-300">
-                    Nachricht
-                  </Label>
-                  <Textarea
-                    id="message"
-                    name="message"
-                    rows={3}
-                    value={formData.message}
-                    onChange={handleChange}
-                    placeholder="Beschreiben Sie kurz Ihren Windpark und Ihre Anforderungen..."
-                    className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus-visible:ring-[hsl(var(--m-primary))] resize-none"
-                  />
+                  <label htmlFor="dsgvo" className="text-xs text-slate-400 leading-relaxed">
+                    Ich stimme der{" "}
+                    <Link href="/datenschutz" className="underline hover:text-white transition-colors">
+                      Datenschutzerklärung
+                    </Link>{" "}
+                    zu und bin mit der Verarbeitung meiner Daten zur Kontaktaufnahme einverstanden. *
+                  </label>
                 </div>
 
                 {error && (

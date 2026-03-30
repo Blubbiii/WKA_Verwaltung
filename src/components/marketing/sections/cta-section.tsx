@@ -38,13 +38,13 @@ export function CtaSection() {
               className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 font-semibold text-white transition-all shadow-lg hover:brightness-110 animate-glow-pulse"
               style={{ backgroundColor: "hsl(var(--m-primary))" }}
             >
-              Kostenlos testen
+              Demo anfordern
             </Link>
             <Link
               href="#features"
               className="inline-flex items-center justify-center rounded-xl border-2 border-slate-600 text-slate-300 font-medium px-8 py-3.5 hover:bg-slate-800/50 hover:border-slate-500 transition-all"
             >
-              Demo ansehen
+              Funktionen ansehen
             </Link>
           </div>
         </div>

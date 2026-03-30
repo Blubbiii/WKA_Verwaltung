@@ -50,9 +50,9 @@ export function HeroSection({ config }: HeroSectionProps) {
                 <span className="font-serif gradient-text-marketing">{config.title}</span>
               ) : (
                 <>
-                  <span className="font-serif text-white">Die Zukunft der</span>
+                  <span className="font-serif text-white">Windpark-Verwaltung</span>
                   <br />
-                  <span className="font-serif gradient-text-marketing">Windpark-Verwaltung</span>
+                  <span className="font-serif gradient-text-marketing">in Minuten statt Tagen</span>
                 </>
               )}
             </h1>
@@ -68,7 +68,7 @@ export function HeroSection({ config }: HeroSectionProps) {
                 href="/register"
                 className="inline-flex items-center justify-center rounded-xl bg-[hsl(var(--m-primary))] px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:brightness-110 hover:shadow-blue-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
-                Kostenlos testen
+                Demo anfordern
               </Link>
               <Link
                 href="#features"

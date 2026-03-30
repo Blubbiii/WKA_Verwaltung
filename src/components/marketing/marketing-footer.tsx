@@ -34,9 +34,13 @@ export function MarketingFooter() {
             <p className="text-sm leading-relaxed text-[hsl(var(--m-text-muted))] mb-4">
               Die moderne Plattform für professionelle Windpark-Verwaltung.
             </p>
-            <div className="flex items-center gap-2 text-xs text-[hsl(var(--m-text-muted))]">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true" />
-              Made in Germany
+            <div className="flex flex-wrap gap-2 mt-1">
+              {["Made in Germany", "DSGVO-konform", "GoBD-zertifiziert"].map((badge) => (
+                <span key={badge} className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/30 px-3 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  {badge}
+                </span>
+              ))}
             </div>
           </div>
 

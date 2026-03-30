@@ -32,9 +32,9 @@ export const DEFAULT_MARKETING_CONFIG: MarketingConfig = {
   sections: DEFAULT_SECTION_ORDER,
 
   hero: {
-    title: "Die Zukunft der Windpark-Verwaltung",
+    title: "Windpark-Verwaltung in Minuten statt Tagen",
     subtitle:
-      "Optimieren Sie Ihre Ertr\u00e4ge mit intelligenter Verwaltungssoftware. Von SCADA-Anbindung bis zur automatisierten Abrechnung \u2014 alles in einer Plattform.",
+      "Pachtabrechnung von 3 Tagen auf 30 Minuten. Automatisierte Betriebsdatenerfassung, transparentes Reporting und revisionssichere Archivierung \u2014 alles in einer Plattform.",
   },
 
   trustBar: {
@@ -49,32 +49,32 @@ export const DEFAULT_MARKETING_CONFIG: MarketingConfig = {
   features: [
     {
       title: "SCADA-Integration",
-      description: "Automatische Erfassung und Analyse von Betriebsdaten Ihrer Windkraftanlagen in Echtzeit.",
+      description: "Sehen Sie auf einen Blick, welche Anlage wie viel produziert \u2014 Ausf\u00e4lle erkennen Sie, bevor sie Geld kosten.",
       icon: "activity",
     },
     {
       title: "Automatisierte Abrechnung",
-      description: "Stromerlös-Abrechnungen, Gutschriften und Gesellschafter-Aussch\u00fcttungen auf Knopfdruck.",
+      description: "Was fr\u00fcher 3 Tage dauerte, erledigen Sie jetzt in 30 Minuten \u2014 inklusive ZUGFeRD und automatischer Flurst\u00fcck-Zuordnung.",
       icon: "credit-card",
     },
     {
       title: "Gesellschafter-Portal",
-      description: "Selbstbedienungsportal f\u00fcr Gesellschafter mit Dokumentenzugang, Abstimmungen und Berichten.",
+      description: "Ihre Investoren informieren sich selbst \u2014 weniger R\u00fcckfragen, mehr Vertrauen.",
       icon: "users",
     },
     {
       title: "GoBD-konforme Archivierung",
-      description: "Revisionssichere Dokumentenarchivierung mit Integrit\u00e4tspr\u00fcfung und Audit-Trail.",
+      description: "Schluss mit Aktenordnern: 10 Jahre revisionssicher archiviert, jederzeit abrufbar.",
       icon: "shield",
     },
     {
       title: "Multi-Mandantenf\u00e4hig",
-      description: "Verwalten Sie mehrere Windparks und Gesellschaften in einer einzigen Installation.",
+      description: "Ob 2 oder 20 Windparks \u2014 eine Installation, strikte Datentrennung, volle Kontrolle.",
       icon: "building",
     },
     {
       title: "Intelligentes Dashboard",
-      description: "Konfigurierbare Dashboards mit Echtzeit-KPIs, Diagrammen und Benachrichtigungen.",
+      description: "Ihre wichtigsten Kennzahlen auf einen Blick, automatische Berichte auf Knopfdruck.",
       icon: "layout-dashboard",
     },
   ],
