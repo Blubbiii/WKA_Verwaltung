@@ -45,6 +45,7 @@ export async function GET() {
       wirtschaftsplanEnabled,
       accountingEnabled,
       documentRoutingEnabled,
+      marketDataEnabled,
     ] = await Promise.all([
       getConfigBoolean("management-billing.enabled", tid, false),
       getConfigBoolean("paperless.enabled", tid, false),
@@ -55,6 +56,7 @@ export async function GET() {
       getConfigBoolean("wirtschaftsplan.enabled", tid, false),
       getConfigBoolean("accounting.enabled", tid, false),
       getConfigBoolean("document-routing.enabled", tid, false),
+      getConfigBoolean("marketData.enabled", tid, false),
     ]);
 
     // Load accounting sub-flags only if master is enabled
@@ -85,6 +87,7 @@ export async function GET() {
       "wirtschaftsplan": wirtschaftsplanEnabled,
       "accounting": accountingEnabled,
       "document-routing": documentRoutingEnabled,
+      "marketData": marketDataEnabled,
       ...accountingSub,
     });
   } catch {

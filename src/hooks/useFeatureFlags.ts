@@ -28,6 +28,7 @@ interface FeatureFlags {
   "accounting.ocr": boolean;
   "accounting.multibanking": boolean;
   "accounting.zm": boolean;
+  "marketData": boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -57,6 +58,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   "accounting.ocr": false,
   "accounting.multibanking": false,
   "accounting.zm": false,
+  "marketData": false,
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : DEFAULT_FLAGS);

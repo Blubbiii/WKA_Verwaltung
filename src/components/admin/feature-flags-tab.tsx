@@ -53,6 +53,7 @@ interface ModuleFlags {
   "inbox": boolean;
   "wirtschaftsplan": boolean;
   "accounting": boolean;
+  "marketData": boolean;
 }
 
 // Accounting sub-module flags
@@ -108,6 +109,7 @@ const MODULE_LABELS: Record<keyof ModuleFlags, string> = {
   "inbox": "Inbox",
   "wirtschaftsplan": "Wirtschaftsplan",
   "accounting": "Buchhaltung",
+  "marketData": "Marktwert-Vergleich",
 };
 
 const ACCOUNTING_SUB_LABELS: Record<keyof AccountingSubFlags, string> = {

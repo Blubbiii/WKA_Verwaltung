@@ -227,6 +227,13 @@ export const CONFIG_KEYS = {
     envFallback: "GIS_ENABLED",
     defaultValue: "false",
   },
+  "marketData.enabled": {
+    category: "features" as ConfigCategory,
+    label: "Marktwert-Vergleich (Day-Ahead Marktpreise vs. EEG)",
+    encrypted: false,
+    envFallback: "MARKET_DATA_ENABLED",
+    defaultValue: "false",
+  },
   "inbox.enabled": {
     category: "features" as ConfigCategory,
     label: "Eingangsrechnungen & Gutschriften (Inbox)",

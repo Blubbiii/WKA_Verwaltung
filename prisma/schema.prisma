@@ -1298,6 +1298,24 @@ model EnergyMonthlyRate {
   @@map("energy_monthly_rates")
 }
 
+// Cached monthly day-ahead market prices (public data, shared across tenants)
+model MarketPrice {
+  id              String   @id @default(uuid())
+  year            Int
+  month           Int
+  avgPriceEurMwh  Decimal  @db.Decimal(10, 2)
+  minPriceEurMwh  Decimal? @db.Decimal(10, 2)
+  maxPriceEurMwh  Decimal? @db.Decimal(10, 2)
+  source          String   @default("SMARD") @db.VarChar(20)
+  dataPoints      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([year, month, source])
+  @@index([year, month])
+  @@map("market_prices")
+}
+
 model EnergyReportConfig {
   id            String   @id @default(uuid())
   name          String

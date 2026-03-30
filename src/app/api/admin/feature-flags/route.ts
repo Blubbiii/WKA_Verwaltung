@@ -35,6 +35,7 @@ const MODULE_FLAG_KEYS = [
   "wirtschaftsplan.enabled",
   "accounting.enabled",
   "document-routing.enabled",
+  "marketData.enabled",
 ] as const;
 
 // Accounting sub-module flags
