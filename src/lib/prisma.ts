@@ -32,6 +32,11 @@ const SOFT_DELETE_MODELS = new Set([
   "Invoice",
   "JournalEntry",
   "CrmActivity",
+  "Park",
+  "Fund",
+  "Lease",
+  "Contract",
+  "Document",
 ]);
 
 function createPrismaClient() {
