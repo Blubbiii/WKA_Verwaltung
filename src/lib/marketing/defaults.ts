@@ -88,6 +88,7 @@ export const DEFAULT_MARKETING_CONFIG: MarketingConfig = {
       { id: "scada", label: "SCADA", icon: "activity", url: "scada" },
       { id: "portal", label: "Portal", icon: "users", url: "portal" },
     ],
+    videoUrl: "",
   },
 
   stats: {

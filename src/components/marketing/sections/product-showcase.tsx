@@ -197,7 +197,7 @@ const mockupComponents: Record<TabId, React.FC> = {
   portal: PortalMockup,
 };
 
-export function ProductShowcase() {
+export function ProductShowcase({ videoUrl }: { videoUrl?: string }) {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
 
   const activeTabData = tabs.find((t) => t.id === activeTab)!;
@@ -216,17 +216,31 @@ export function ProductShowcase() {
           </p>
         </div>
 
-        {/* Video placeholder */}
+        {/* Video section */}
         <div className="mx-auto max-w-4xl mb-16">
-          <div className="relative aspect-video rounded-2xl border border-border/30 bg-slate-900/60 overflow-hidden flex items-center justify-center group cursor-pointer">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-            <div className="flex flex-col items-center gap-4 relative z-10">
-              <div className="rounded-full bg-primary/20 p-5 group-hover:bg-primary/30 transition-colors">
-                <PlayCircle className="h-12 w-12 text-primary" />
-              </div>
-              <p className="text-sm font-medium text-muted-foreground">Produktvideo in Kürze verfügbar</p>
+          {videoUrl ? (
+            <div className="relative aspect-video rounded-2xl border border-border/30 overflow-hidden bg-black">
+              <video
+                className="w-full h-full object-cover"
+                controls
+                preload="metadata"
+                playsInline
+              >
+                <source src={videoUrl} type="video/mp4" />
+                <source src={videoUrl} type="video/webm" />
+              </video>
             </div>
-          </div>
+          ) : (
+            <div className="relative aspect-video rounded-2xl border border-border/30 bg-slate-900/60 overflow-hidden flex items-center justify-center group cursor-pointer">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+              <div className="flex flex-col items-center gap-4 relative z-10">
+                <div className="rounded-full bg-primary/20 p-5 group-hover:bg-primary/30 transition-colors">
+                  <PlayCircle className="h-12 w-12 text-primary" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">Produktvideo in Kürze verfügbar</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Desktop: Vertical tabs + content | Mobile: horizontal tabs + content */}

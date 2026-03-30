@@ -34,7 +34,7 @@ export function MarketingLanding({ config }: MarketingLandingProps) {
       case "showcase":
         return (
           <ScrollReveal>
-            <ProductShowcase />
+            <ProductShowcase videoUrl={config?.showcase?.videoUrl} />
           </ScrollReveal>
         );
       case "stats":

@@ -110,6 +110,7 @@ export const marketingConfigSchema = z.object({
     title: z.string().max(200),
     subtitle: z.string().max(500),
     tabs: z.array(showcaseTabSchema).max(6),
+    videoUrl: z.string().max(500).optional().or(z.literal("")),
   }),
 
   // Stats
