@@ -284,20 +284,20 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full",
                 isActive
-                  ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-[#C09B4A]"
+                  ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
                   : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
               )}
               title={collapsed ? itemTitle : undefined}
               aria-expanded={itemExpanded}
             >
-              <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-[#C09B4A]" : "text-sidebar-foreground/50")} />
+              <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-sidebar-foreground/50")} />
               {!collapsed && (
                 <>
                   <span className="flex-1 text-left">{itemTitle}</span>
                   {itemExpanded ? (
-                    <ChevronDown className={cn("h-4 w-4", isActive ? "text-[#C09B4A]/70" : "text-sidebar-foreground/40")} />
+                    <ChevronDown className={cn("h-4 w-4", isActive ? "text-primary/70" : "text-sidebar-foreground/40")} />
                   ) : (
-                    <ChevronRight className={cn("h-4 w-4", isActive ? "text-[#C09B4A]/70" : "text-sidebar-foreground/40")} />
+                    <ChevronRight className={cn("h-4 w-4", isActive ? "text-primary/70" : "text-sidebar-foreground/40")} />
                   )}
                 </>
               )}
@@ -319,13 +319,13 @@ export function Sidebar() {
                         className={cn(
                           "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
                           isChildItemActive
-                            ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-[#C09B4A]"
+                            ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
                             : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
                         )}
                         aria-current={isChildItemActive ? "page" : undefined}
                       >
                         {ChildIcon && (
-                          <ChildIcon className={cn("h-4 w-4 shrink-0", isChildItemActive ? "text-[#C09B4A]" : "text-sidebar-foreground/50")} />
+                          <ChildIcon className={cn("h-4 w-4 shrink-0", isChildItemActive ? "text-primary" : "text-sidebar-foreground/50")} />
                         )}
                         <span>{childTitle}</span>
                       </Link>
@@ -341,13 +341,13 @@ export function Sidebar() {
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
               isActive
-                ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-[#C09B4A]"
+                ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
                 : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
             )}
             title={collapsed ? itemTitle : undefined}
             aria-current={isActive ? "page" : undefined}
           >
-            <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-[#C09B4A]" : "text-sidebar-foreground/50")} />
+            <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-sidebar-foreground/50")} />
             {!collapsed && (
               <>
                 <span className="flex-1">{itemTitle}</span>
@@ -408,9 +408,9 @@ export function Sidebar() {
             >
               <span className="border-b border-dashed border-sidebar-border/50 pb-0.5 pr-2">{getGroupLabel(group)}</span>
               {groupExpanded ? (
-                <ChevronDown className="h-3 w-3 text-[#C09B4A]/50" />
+                <ChevronDown className="h-3 w-3 text-primary/50" />
               ) : (
-                <ChevronRight className="h-3 w-3 text-[#C09B4A]/50" />
+                <ChevronRight className="h-3 w-3 text-primary/50" />
               )}
             </button>
           </div>

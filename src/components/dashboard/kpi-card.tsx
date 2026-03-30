@@ -132,7 +132,7 @@ export function KPICard({
           <Skeleton className="h-3 w-24" />
           <Skeleton className="h-5 w-5 rounded" />
         </CardHeader>
-        <CardContent className="p-4 pt-1">
+        <CardContent className="p-4 pt-2">
           <Skeleton className="h-8 w-28 mb-2" />
           <Skeleton className="h-3 w-32 mb-1" />
           <Skeleton className="h-3 w-20" />
@@ -159,7 +159,7 @@ export function KPICard({
         borderLeft: `2px solid ${accentHex}`,
       }}
     >
-      <CardHeader className="flex flex-row items-center justify-between p-4 pb-1">
+      <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
         <CardTitle className="uppercase tracking-wider text-[11px] font-semibold text-muted-foreground">
           {title}
         </CardTitle>
@@ -171,7 +171,7 @@ export function KPICard({
             : iconColor || "text-muted-foreground/30"
         )} />
       </CardHeader>
-      <CardContent className="p-4 pt-1">
+      <CardContent className="p-4 pt-2">
         {/* Value text scales up on wider widgets */}
         <div className={cn(
           "text-2xl @md:text-3xl font-bold font-mono truncate leading-tight",
@@ -236,7 +236,7 @@ export function KPICardSkeleton() {
         <Skeleton className="h-3 w-24" />
         <Skeleton className="h-5 w-5 rounded" />
       </CardHeader>
-      <CardContent className="p-4 pt-1">
+      <CardContent className="p-4 pt-2">
         <Skeleton className="h-8 w-28 mb-2" />
         <Skeleton className="h-3 w-32 mb-1" />
         <Skeleton className="h-3 w-20" />

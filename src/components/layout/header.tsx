@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Search, User, LogOut, Settings, Moon, Sun, Shield, X, Keyboard } from "lucide-react";
+import { Search, User, LogOut, Settings, Moon, Sun, Shield, X, Keyboard, Wind } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -146,9 +146,21 @@ export function Header() {
         </div>
       )}
 
-      <header className="flex items-center justify-between h-16 px-6 border-b border-border/50 bg-background/95 backdrop-blur-sm shadow-sm sticky top-0 z-30">
-        {/* Search */}
-        <div data-tour="header-search" className="flex items-center gap-4 flex-1 max-w-md">
+      <header className="flex items-center justify-between h-16 px-6 border-b border-border/50 bg-background/85 backdrop-blur-lg shadow-sm sticky top-0 z-30">
+        {/* Left: Tenant branding + Search */}
+        <div className="flex items-center gap-4 flex-1 max-w-xl">
+          {/* Tenant name */}
+          {session?.user && (
+            <div className="hidden md:flex items-center gap-2 shrink-0">
+              <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                <Wind className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <span className="text-sm font-semibold truncate max-w-[140px]">
+                {(session.user as { tenantName?: string }).tenantName || "WindparkManager"}
+              </span>
+            </div>
+          )}
+          <div data-tour="header-search" className="flex items-center gap-4 flex-1 max-w-md">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -159,6 +171,7 @@ export function Header() {
             <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
               Ctrl+K
             </kbd>
+          </div>
           </div>
         </div>
 
