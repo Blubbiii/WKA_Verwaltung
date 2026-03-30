@@ -438,12 +438,20 @@ export default function DocumentsPage() {
         title="Dokumente"
         description="Verwalten Sie alle Dokumente mit Versionierung"
         actions={
-          <Button asChild>
-            <Link href="/documents/upload">
-              <Upload className="mr-2 h-4 w-4" />
-              Hochladen
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/documents/explorer">
+                <FolderEdit className="mr-2 h-4 w-4" />
+                Explorer
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/documents/upload">
+                <Upload className="mr-2 h-4 w-4" />
+                Hochladen
+              </Link>
+            </Button>
+          </div>
         }
       />
 
