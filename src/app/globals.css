@@ -400,4 +400,32 @@
     background: linear-gradient(135deg, hsl(215 50% 40%), hsl(210 55% 45%), hsl(205 50% 48%));
     z-index: -1;
   }
+
+  /* Recharts tooltip override for consistent theme styling */
+  .recharts-tooltip-wrapper .recharts-default-tooltip {
+    background: hsl(var(--popover)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.1) !important;
+    padding: 0.5rem 0.75rem !important;
+    color: hsl(var(--popover-foreground)) !important;
+  }
+  .recharts-tooltip-wrapper .recharts-tooltip-label {
+    font-weight: 600 !important;
+    font-size: 0.8125rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+  .recharts-tooltip-wrapper .recharts-tooltip-item {
+    font-size: 0.75rem !important;
+  }
+
+  /* Sticky table header utility */
+  .table-sticky-header thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: hsl(var(--background) / 0.95);
+    backdrop-filter: blur(4px);
+    box-shadow: inset 0 -1px 0 hsl(var(--border));
+  }
 }
