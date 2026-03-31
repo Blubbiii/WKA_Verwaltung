@@ -187,6 +187,15 @@ export async function POST(
         };
       });
 
+      // Compensate rounding difference on the last shareholder
+      if (items.length > 0) {
+        const distributedTotal = items.reduce((s, i) => s + i.amount, 0);
+        const roundingDiff = Math.round((data.totalAmount - distributedTotal) * 100) / 100;
+        if (roundingDiff !== 0) {
+          items[items.length - 1].amount += roundingDiff;
+        }
+      }
+
       await tx.distributionItem.createMany({ data: items });
 
       return dist;
