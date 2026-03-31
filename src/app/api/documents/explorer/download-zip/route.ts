@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       const parkName = await getParkName(parkId);
       const yearStart = new Date(year, 0, 1);
       const yearEnd = new Date(year + 1, 0, 1);
-      const parkFilter = parkId ? { parkId } : { parkId: null as unknown as string };
+      const parkFilter = parkId ? { parkId } : {};
 
       if (!category || category !== "INVOICE_PDF") {
         const docs = await prisma.document.findMany({

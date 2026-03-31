@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
     const parkId = searchParams.get("parkId") || null;
     const yearStr = searchParams.get("year");
     const category = searchParams.get("category") || "";
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20));
 
     if (!yearStr || !category) {
       return NextResponse.json(
@@ -26,7 +26,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const year = parseInt(yearStr);
+    const year = parseInt(yearStr, 10);
+    if (isNaN(year) || year < 1970 || year > 2100) {
+      return NextResponse.json({ error: "Ungültiges Jahr" }, { status: 400 });
+    }
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year + 1, 0, 1);
     const skip = (page - 1) * limit;
@@ -56,9 +59,9 @@ export async function GET(request: NextRequest) {
       // Query invoices with PDF
       const where = {
         tenantId: check.tenantId!,
-        pdfUrl: { not: null as unknown as string },
+        pdfUrl: { not: null },
         invoiceDate: { gte: yearStart, lt: yearEnd },
-        ...(parkId ? { parkId } : { parkId: null }),
+        ...(parkId ? { parkId } : {}),
       };
 
       const [invoices, count] = await Promise.all([
@@ -105,7 +108,7 @@ export async function GET(request: NextRequest) {
         tenantId: check.tenantId!,
         category: category as "CONTRACT" | "PROTOCOL" | "REPORT" | "INVOICE" | "PERMIT" | "CORRESPONDENCE" | "OTHER",
         createdAt: { gte: yearStart, lt: yearEnd },
-        ...(parkId ? { parkId } : { parkId: null }),
+        ...(parkId ? { parkId } : {}),
       };
 
       const [documents, count] = await Promise.all([
