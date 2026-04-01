@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import {
   LandPlot, Ruler, Download, Loader2, Map, Undo2, Redo2, Printer,
-  Search, Upload, Globe, X, PenLine,
+  Search, Upload, Globe, X, PenLine, Layers,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -276,7 +276,11 @@ export function GISToolbar({
           <DropdownMenuContent align="end" className="z-[2000]">
             <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
               <Globe className="h-3.5 w-3.5 mr-2" />
-              GeoJSON / Shapefile importieren
+              GeoJSON / Shapefile (Quick-Import)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.location.href = "/gis/import"}>
+              <Layers className="h-3.5 w-3.5 mr-2" />
+              QGIS-Projekt importieren (Wizard)
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
