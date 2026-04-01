@@ -10,6 +10,7 @@ type AnnotationType =
   | "COMPENSATION_AREA"
   | "ACCESS_ROAD"
   | "EXCLUSION_ZONE"
+  | "POOL_AREA"
   | "CUSTOM";
 
 export interface MapAnnotationData {
@@ -56,6 +57,13 @@ const TYPE_STYLES: Record<AnnotationType, PathOptions> = {
     weight: 2,
     dashArray: "4 4",
   },
+  POOL_AREA: {
+    color: "#4CAF50",
+    fillColor: "#4CAF50",
+    fillOpacity: 0.15,
+    weight: 2,
+    dashArray: "6 4",
+  },
   CUSTOM: {
     color: "#6366f1",
     fillColor: "#818cf8",
@@ -69,6 +77,7 @@ const TYPE_LABELS: Record<AnnotationType, string> = {
   COMPENSATION_AREA: "Ausgleichsfläche",
   ACCESS_ROAD: "Zuwegung",
   EXCLUSION_ZONE: "Sperrzone",
+  POOL_AREA: "Poolgebiet",
   CUSTOM: "Sonstiges",
 };
 

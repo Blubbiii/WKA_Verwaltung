@@ -116,6 +116,9 @@ export default function GisImportPage() {
   const [layerTypes, setLayerTypes] = useState<Record<string, ImportLayerType>>({});
   const [layerAreaTypes, setLayerAreaTypes] = useState<Record<string, string>>({});
 
+  // Layer styles (color + opacity per layer)
+  const [layerStyles, setLayerStyles] = useState<Record<string, { color: string; fillOpacity: number }>>({});
+
   // Field mapping (per plot-type layer)
   const [plotMappings, setPlotMappings] = useState<Record<string, Record<string, string | null>>>({});
   const [ownerMappings, setOwnerMappings] = useState<Record<string, Record<string, string | null>>>({});
@@ -174,16 +177,20 @@ export default function GisImportPage() {
       setWarnings(data.warnings || []);
       setFiles([file]);
 
-      // Initialize layer types from suggestions
+      // Initialize layer types + styles from suggestions
       const types: Record<string, ImportLayerType> = {};
+      const styles: Record<string, { color: string; fillOpacity: number }> = {};
       const mappings: Record<string, Record<string, string | null>> = {};
       const ownerMaps: Record<string, Record<string, string | null>> = {};
       for (const layer of data.layers) {
         types[layer.name] = layer.suggestedType;
+        const typeInfo = IMPORT_LAYER_TYPES[layer.suggestedType as ImportLayerType] ?? IMPORT_LAYER_TYPES.CUSTOM;
+        styles[layer.name] = { color: typeInfo.color, fillOpacity: 0.2 };
         mappings[layer.name] = layer.suggestedPlotMapping || {};
         ownerMaps[layer.name] = layer.suggestedOwnerMapping || {};
       }
       setLayerTypes(types);
+      setLayerStyles(styles);
       setPlotMappings(mappings);
       setOwnerMappings(ownerMaps);
 
@@ -210,6 +217,7 @@ export default function GisImportPage() {
     try {
       const importLayers = layers.map((l) => {
         const type = layerTypes[l.name] ?? l.suggestedType;
+        const style = layerStyles[l.name];
         return {
           name: l.name,
           type,
@@ -217,6 +225,12 @@ export default function GisImportPage() {
           plotMapping: plotMappings[l.name] || {},
           ownerMapping: ownerMappings[l.name] || {},
           areaType: layerAreaTypes[l.name] || undefined,
+          style: style ? {
+            color: style.color,
+            fillColor: style.color,
+            fillOpacity: style.fillOpacity,
+            weight: type === "CABLE_ROUTE" || type === "ACCESS_ROAD" ? 3 : 2,
+          } : undefined,
         };
       });
 
@@ -352,6 +366,8 @@ export default function GisImportPage() {
                     <TableHead>Geometrie</TableHead>
                     <TableHead>Features</TableHead>
                     <TableHead>Typ</TableHead>
+                    <TableHead>Farbe</TableHead>
+                    <TableHead>Transparenz</TableHead>
                     <TableHead>Flächentyp</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -386,6 +402,37 @@ export default function GisImportPage() {
                               ))}
                             </SelectContent>
                           </Select>
+                        </TableCell>
+                        <TableCell>
+                          <input
+                            type="color"
+                            value={layerStyles[l.name]?.color || typeInfo.color}
+                            onChange={(e) => setLayerStyles((prev) => ({
+                              ...prev,
+                              [l.name]: { ...prev[l.name], color: e.target.value },
+                            }))}
+                            className="h-8 w-10 rounded border border-border cursor-pointer"
+                            title="Farbe wählen"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 w-32">
+                            <input
+                              type="range"
+                              min="0.05"
+                              max="0.8"
+                              step="0.05"
+                              value={layerStyles[l.name]?.fillOpacity ?? 0.2}
+                              onChange={(e) => setLayerStyles((prev) => ({
+                                ...prev,
+                                [l.name]: { ...prev[l.name], fillOpacity: parseFloat(e.target.value) },
+                              }))}
+                              className="w-20 h-1.5 accent-primary cursor-pointer"
+                            />
+                            <span className="text-xs text-muted-foreground w-8">
+                              {Math.round((layerStyles[l.name]?.fillOpacity ?? 0.2) * 100)}%
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           {isPlot && (

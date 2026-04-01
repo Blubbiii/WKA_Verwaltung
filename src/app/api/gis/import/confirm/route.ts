@@ -30,6 +30,13 @@ const layerImportSchema = z.object({
   plotMapping: z.record(z.string(), z.string().nullable()).optional(),
   ownerMapping: z.record(z.string(), z.string().nullable()).optional(),
   areaType: z.enum(["WEA_STANDORT", "POOL", "WEG", "AUSGLEICH", "KABEL"]).optional(),
+  style: z.object({
+    color: z.string().optional(),
+    fillColor: z.string().optional(),
+    fillOpacity: z.number().optional(),
+    weight: z.number().optional(),
+    dashArray: z.string().optional(),
+  }).optional(),
 });
 
 const confirmSchema = z.object({
@@ -105,6 +112,7 @@ export async function POST(request: NextRequest) {
                 name,
                 type: annotationType,
                 geometry: feature.geometry as Prisma.InputJsonValue,
+                style: layer.style ? (layer.style as Prisma.InputJsonValue) : undefined,
                 description: feature.properties["beschreibung"]
                   ? String(feature.properties["beschreibung"])
                   : undefined,
