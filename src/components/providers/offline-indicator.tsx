@@ -8,14 +8,14 @@ import { WifiOff } from "lucide-react";
  * Automatically hides when the connection is restored.
  */
 export function OfflineIndicator() {
-  const [isOffline, setIsOffline] = useState(false);
+  // Initialize from navigator.onLine (safe because this is "use client")
+  const [isOffline, setIsOffline] = useState(
+    typeof navigator !== "undefined" ? !navigator.onLine : false
+  );
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
-
-    // Check initial state
-    if (!navigator.onLine) setIsOffline(true);
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
