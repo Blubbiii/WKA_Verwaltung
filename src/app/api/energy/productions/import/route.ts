@@ -105,7 +105,7 @@ async function resolveRows(
     rowIndex: number;
     status: "success" | "warning" | "error";
     messages: string[];
-    data: Record<string, any>;
+    data: Record<string, unknown>;
   }>;
 }> {
   // Load all tenant turbines for name/ID resolution

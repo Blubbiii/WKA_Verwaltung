@@ -3,7 +3,7 @@
  * Handles ZIP files containing multiple .shp layers.
  */
 
-import { parseShapefile, type ParsedShpFeature, type ShpParseResult } from "./shp-parser";
+import { parseShapefile, type ParsedShpFeature } from "./shp-parser";
 import { detectLayerType, type ImportLayerType } from "./type-detector";
 import { autoDetectPlotMapping, autoDetectOwnerMapping } from "./field-mapping";
 import { logger } from "@/lib/logger";

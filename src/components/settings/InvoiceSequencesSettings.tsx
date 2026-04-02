@@ -231,7 +231,7 @@ function SequenceCard({
 }
 
 export function InvoiceSequencesSettings() {
-  const { sequences, isLoading, isError, mutate } = useInvoiceSequences();
+  const { sequences, isLoading: _isLoading, isError, mutate } = useInvoiceSequences();
 
   if (isError) {
     return (

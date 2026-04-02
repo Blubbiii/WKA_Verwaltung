@@ -256,7 +256,7 @@ export async function calculateSettlement(
     totalRevenue: overrideRevenue,
     tenantId,
     periodType = "FINAL",
-    month,
+    month: _month,
     linkedEnergySettlementId,
   } = options;
 

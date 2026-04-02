@@ -682,7 +682,7 @@ interface EditShareholderDialogProps {
 }
 
 function EditShareholderDialog({
-  fundId,
+  fundId: _fundId,
   totalCapital,
   existingShareholders,
   shareholder,

@@ -126,7 +126,7 @@ interface CustomTooltipProps {
   unit: string;
 }
 
-function CustomTooltip({ active, payload, dataLabel, unit }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, dataLabel: _dataLabel, unit }: CustomTooltipProps) {
   if (!active || !payload || payload.length === 0) {
     return null;
   }
