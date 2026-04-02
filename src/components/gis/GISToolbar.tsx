@@ -314,14 +314,14 @@ export function GISToolbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="z-[2000]">
             <DropdownMenuItem onClick={() => onExport("all")}>
-              Alle Layer (GeoJSON)
+              QGIS-Export (alle Layer + Attribute)
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onExport("plots")}>
-              Flurstücke
+              Nur Flurstücke
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onExport("annotations")}>
-              Annotationen
+              Nur Annotationen
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => {

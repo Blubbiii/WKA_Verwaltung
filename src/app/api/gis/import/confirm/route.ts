@@ -105,6 +105,26 @@ export async function POST(request: NextRequest) {
               `${layer.name} ${feature.id + 1}`
             );
 
+            // Check if updating existing annotation (QGIS roundtrip)
+            const wpmId = feature.properties["_wpmId"] as string | undefined;
+            if (wpmId) {
+              const existingAnno = await tx.mapAnnotation.findFirst({
+                where: { id: wpmId, tenantId },
+              });
+              if (existingAnno) {
+                await tx.mapAnnotation.update({
+                  where: { id: wpmId },
+                  data: {
+                    geometry: feature.geometry as Prisma.InputJsonValue,
+                    style: layer.style ? (layer.style as Prisma.InputJsonValue) : undefined,
+                    name,
+                  },
+                });
+                annotationsCreated++;
+                continue;
+              }
+            }
+
             await tx.mapAnnotation.create({
               data: {
                 tenantId,
@@ -145,25 +165,35 @@ export async function POST(request: NextRequest) {
             continue;
           }
 
-          // Check for duplicate
-          const existing = await tx.plot.findFirst({
-            where: {
-              tenantId,
-              cadastralDistrict: plotData.cadastralDistrict,
-              fieldNumber: plotData.fieldNumber || "0",
-              plotNumber: plotData.plotNumber,
-            },
-          });
+          // Check for existing plot — update if _wpmId present or duplicate found
+          const wpmId = feature.properties["_wpmId"] as string | undefined;
+          let existingPlot = wpmId
+            ? await tx.plot.findFirst({ where: { id: wpmId, tenantId } })
+            : await tx.plot.findFirst({
+                where: {
+                  tenantId,
+                  cadastralDistrict: plotData.cadastralDistrict,
+                  fieldNumber: plotData.fieldNumber || "0",
+                  plotNumber: plotData.plotNumber,
+                },
+              });
 
-          if (existing) {
-            skipped.push({
-              name: `${plotData.cadastralDistrict} ${plotData.fieldNumber || "0"}/${plotData.plotNumber}`,
-              reason: "Flurstück existiert bereits",
+          if (existingPlot) {
+            // Update existing plot geometry (QGIS roundtrip: re-import edited data)
+            await tx.plot.update({
+              where: { id: existingPlot.id },
+              data: {
+                geometry: feature.geometry as Prisma.InputJsonValue,
+                areaSqm: plotData.areaSqm ?? feature.areaSqm ?? undefined,
+                latitude: feature.centroid?.lat,
+                longitude: feature.centroid?.lng,
+              },
             });
+            plotsCreated++; // count as processed
             continue;
           }
 
-          // Create Plot
+          // Create new Plot
           const newPlot = await tx.plot.create({
             data: {
               tenantId,

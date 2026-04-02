@@ -132,18 +132,29 @@ function handleExport(type: "all" | "plots" | "annotations", data: GISData) {
   if (type === "all" || type === "plots") {
     data.plots.forEach((p) => {
       if (!p.geometry) return;
+      // Full attribute export for QGIS roundtrip
+      const plotAreas = p.plotAreas || [];
+      const areaByType: Record<string, number> = {};
+      plotAreas.forEach((a) => { areaByType[a.areaType] = a.areaSqm; });
+
       features.push({
         type: "Feature",
         geometry: p.geometry,
         properties: {
-          id: p.id,
-          cadastralDistrict: p.cadastralDistrict,
-          fieldNumber: p.fieldNumber,
-          plotNumber: p.plotNumber,
-          areaSqm: p.areaSqm,
-          parkName: p.park?.name ?? null,
-          leaseStatus: p.activeLease?.status ?? null,
-          lessorName: p.activeLease?.lessorName ?? null,
+          _wpmId: p.id,
+          _wpmType: "PLOT",
+          Gemarkung: p.cadastralDistrict,
+          Flur: p.fieldNumber,
+          Flurstueck: p.plotNumber,
+          Flaeche_m2: p.areaSqm,
+          Park: p.park?.name ?? null,
+          Pachtstatus: p.activeLease?.status ?? null,
+          Eigentuemer: p.activeLease?.lessorName ?? null,
+          WEA_Standort_m2: areaByType["WEA_STANDORT"] ?? null,
+          Pool_m2: areaByType["POOL"] ?? null,
+          Weg_m2: areaByType["WEG"] ?? null,
+          Ausgleich_m2: areaByType["AUSGLEICH"] ?? null,
+          Kabel_m2: areaByType["KABEL"] ?? null,
         },
       });
     });
@@ -154,7 +165,13 @@ function handleExport(type: "all" | "plots" | "annotations", data: GISData) {
       features.push({
         type: "Feature",
         geometry: a.geometry,
-        properties: { id: a.id, name: a.name, type: a.type, description: a.description },
+        properties: {
+          _wpmId: a.id,
+          _wpmType: a.type,
+          Name: a.name,
+          Typ: a.type,
+          Beschreibung: a.description,
+        },
       });
     });
   }
