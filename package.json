@@ -59,6 +59,7 @@
     "@tailwindcss/postcss": "^4.2.2",
     "@tanstack/react-query": "^5.62.8",
     "@tanstack/react-table": "^8.20.6",
+    "@tanstack/react-virtual": "^3.13.23",
     "@tiptap/extension-image": "^3.19.0",
     "@tiptap/extension-link": "^3.19.0",
     "@tiptap/extension-placeholder": "^3.19.0",
