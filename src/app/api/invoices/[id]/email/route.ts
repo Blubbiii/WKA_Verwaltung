@@ -91,6 +91,7 @@ export async function POST(
         },
       ],
       tenantId: check.tenantId!,
+      fundId: invoice.fundId ?? undefined,
     });
 
     if (!emailResult.success) {

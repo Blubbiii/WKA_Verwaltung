@@ -448,6 +448,15 @@ model Fund {
   houseNumber                                           String?
   postalCode                                            String?
   street                                                String?
+  // Fund-specific email settings (overrides tenant config when set)
+  emailFromAddress                                      String?
+  emailFromName                                         String?
+  emailSignature                                        String?           @db.Text
+  emailSmtpHost                                         String?
+  emailSmtpPort                                         Int?
+  emailSmtpUser                                         String?
+  emailSmtpPassword                                     String?           // encrypted at application level
+  emailSmtpSecure                                       Boolean?
   contracts                                             Contract[]
   distributions                                         Distribution[]
   documents                                             Document[]

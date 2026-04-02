@@ -82,9 +82,50 @@ const templateNameToQueue: Record<EmailTemplateName, QueueEmailTemplate> = {
  */
 export async function sendEmailSync(options: SendEmailOptions): Promise<EmailSendResult> {
   try {
-    // Get tenant configuration
-    // Note: emailProvider, emailConfig, emailFromAddress, emailFromName are new fields
-    // They will be available after running prisma generate
+    // ---- Fund-level email config (highest priority) ----
+    if (options.fundId) {
+      const fund = await prisma.fund.findUnique({
+        where: { id: options.fundId },
+        select: {
+          emailSmtpHost: true,
+          emailSmtpPort: true,
+          emailSmtpUser: true,
+          emailSmtpPassword: true,
+          emailSmtpSecure: true,
+          emailFromAddress: true,
+          emailFromName: true,
+        },
+      });
+
+      if (fund?.emailSmtpHost && fund?.emailFromAddress) {
+        // Fund has its own SMTP config — use it
+        const fundProvider = new SmtpProvider(
+          {
+            host: fund.emailSmtpHost,
+            port: fund.emailSmtpPort ?? 587,
+            secure: fund.emailSmtpSecure ?? true,
+            user: fund.emailSmtpUser ?? "",
+            password: fund.emailSmtpPassword ?? "",
+          },
+          fund.emailFromAddress,
+          fund.emailFromName ?? fund.emailFromAddress,
+        );
+
+        return fundProvider.send({
+          to: options.to,
+          subject: options.subject,
+          html: options.html,
+          text: options.text,
+          cc: options.cc,
+          bcc: options.bcc,
+          replyTo: options.replyTo,
+          attachments: options.attachments,
+          headers: options.headers,
+        });
+      }
+    }
+
+    // ---- Tenant-level email config (second priority) ----
     const tenant = await prisma.tenant.findUnique({
       where: { id: options.tenantId },
     }) as {

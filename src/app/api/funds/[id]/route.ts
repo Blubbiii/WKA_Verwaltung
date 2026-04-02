@@ -27,6 +27,15 @@ const fundUpdateSchema = z.object({
     bankName: z.string().optional(),
   }).optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).optional(),
+  // Fund-specific email settings
+  emailFromAddress: z.string().max(200).optional().nullable(),
+  emailFromName: z.string().max(100).optional().nullable(),
+  emailSignature: z.string().max(5000).optional().nullable(),
+  emailSmtpHost: z.string().max(200).optional().nullable(),
+  emailSmtpPort: z.number().int().min(1).max(65535).optional().nullable(),
+  emailSmtpUser: z.string().max(200).optional().nullable(),
+  emailSmtpPassword: z.string().max(500).optional().nullable(),
+  emailSmtpSecure: z.boolean().optional().nullable(),
 });
 
 // GET /api/funds/[id] - Einzelne Gesellschaft laden

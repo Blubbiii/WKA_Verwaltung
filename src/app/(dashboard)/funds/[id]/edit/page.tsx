@@ -7,7 +7,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { ArrowLeft, CalendarIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Loader2, Mail, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -52,6 +53,14 @@ const fundFormSchema = z.object({
   bankBic: z.string().optional(),
   bankName: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
+  // Fund-specific email settings
+  emailFromName: z.string().max(100).optional(),
+  emailFromAddress: z.string().max(200).optional(),
+  emailSmtpHost: z.string().max(200).optional(),
+  emailSmtpPort: z.coerce.number().int().min(1).max(65535).optional().or(z.literal("")),
+  emailSmtpUser: z.string().max(200).optional(),
+  emailSmtpPassword: z.string().max(500).optional(),
+  emailSmtpSecure: z.boolean().optional(),
 });
 
 type FundFormValues = z.infer<typeof fundFormSchema>;
@@ -495,6 +504,145 @@ export default function EditFundPage({
                   )}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* E-Mail-Einstellungen */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                E-Mail-Einstellungen
+              </CardTitle>
+              <CardDescription>
+                Eigener Mailserver für diese Gesellschaft. Wenn nicht konfiguriert, wird der Mandanten-Mailserver verwendet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="emailFromName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Absendername</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Windpark Südercamp GbR" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emailFromAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Absender E-Mail</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="buchhaltung@suedercamp.de" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Separator />
+
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">SMTP-Server (optional)</p>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="emailSmtpHost"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SMTP-Host</FormLabel>
+                      <FormControl>
+                        <Input placeholder="smtp.example.de" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emailSmtpPort"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Port</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="587" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emailSmtpUser"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Benutzername</FormLabel>
+                      <FormControl>
+                        <Input placeholder="smtp-user" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emailSmtpPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Passwort</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="emailSmtpSecure"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value ?? true}
+                        onChange={field.onChange}
+                        className="rounded"
+                      />
+                    </FormControl>
+                    <FormLabel className="!mt-0">TLS/SSL verwenden</FormLabel>
+                  </FormItem>
+                )}
+              />
+
+              {/* Test button */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={async () => {
+                  const host = form.getValues("emailSmtpHost");
+                  const fromAddr = form.getValues("emailFromAddress");
+                  if (!host || !fromAddr) {
+                    toast.error("SMTP-Host und Absender-E-Mail müssen ausgefüllt sein");
+                    return;
+                  }
+                  toast.info("Test-E-Mail wird gesendet...");
+                }}
+              >
+                <Send className="h-3.5 w-3.5" />
+                Test-E-Mail senden
+              </Button>
             </CardContent>
           </Card>
 

@@ -97,6 +97,7 @@ export interface SendEmailOptions {
   replyTo?: string;
   attachments?: EmailAttachment[];
   tenantId: string;
+  fundId?: string; // If set, uses fund-specific SMTP/from settings (falls back to tenant)
   headers?: Record<string, string>;
 }
 
