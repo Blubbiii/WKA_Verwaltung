@@ -172,7 +172,7 @@ export default function InspectionReportDetailPage({
 
   const [report, setReport] = useState<InspectionReportDetail | null>(null);
   const [parks, setParks] = useState<ParkOption[]>([]);
-  const [plans, setPlans] = useState<InspectionPlanOption[]>([]);
+  const [_plans, setPlans] = useState<InspectionPlanOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [saving, setSaving] = useState(false);

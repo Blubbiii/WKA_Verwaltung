@@ -220,7 +220,7 @@ async function advanceAlreadyExists(
   month: number
 ): Promise<boolean> {
   const monthStart = new Date(year, month - 1, 1);
-  const monthEnd = new Date(year, month, 0);
+  const _monthEnd = new Date(year, month, 0);
 
   const existing = await prisma.invoice.findFirst({
     where: {
@@ -366,8 +366,8 @@ export class LeaseAdvanceHandler implements RuleHandler {
       }
 
       // Plot description for context
-      const plotDesc = buildPlotDescription(lease.leasePlots);
-      const isPartial = prorationFactor < 1;
+      const _plotDesc = buildPlotDescription(lease.leasePlots);
+      const _isPartial = prorationFactor < 1;
 
       results.push({
         success: true,
@@ -480,7 +480,7 @@ export class LeaseAdvanceHandler implements RuleHandler {
     }
 
     if (leasesToProcess.length === 0) {
-      const successful = invoiceResults.filter((r) => r.success);
+      const _successful = invoiceResults.filter((r) => r.success);
       return {
         status: invoiceResults.length === 0 ? "success" : "partial",
         invoicesCreated: 0,

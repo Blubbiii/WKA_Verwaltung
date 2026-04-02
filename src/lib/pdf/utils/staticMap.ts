@@ -54,11 +54,11 @@ function lat2tile(lat: number, zoom: number): number {
   );
 }
 
-function tile2lng(x: number, zoom: number): number {
+function _tile2lng(x: number, zoom: number): number {
   return (x / Math.pow(2, zoom)) * 360 - 180;
 }
 
-function tile2lat(y: number, zoom: number): number {
+function _tile2lat(y: number, zoom: number): number {
   const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, zoom);
   return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 }
@@ -100,8 +100,8 @@ function calculateZoom(
 
   const lats = turbines.map((t) => t.latitude);
   const lngs = turbines.map((t) => t.longitude);
-  const latSpread = Math.max(...lats) - Math.min(...lats);
-  const lngSpread = Math.max(...lngs) - Math.min(...lngs);
+  const _latSpread = Math.max(...lats) - Math.min(...lats);
+  const _lngSpread = Math.max(...lngs) - Math.min(...lngs);
 
   // Try zoom levels from high to low, pick first that fits
   for (let z = 17; z >= 5; z--) {

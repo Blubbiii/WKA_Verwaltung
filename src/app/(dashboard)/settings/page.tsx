@@ -561,7 +561,7 @@ function AppearanceTab({
       } else {
         toast.error("Fehler beim Speichern der Seitengröße");
       }
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Speichern der Seitengröße");
     } finally {
       setIsSavingPrefs(false);
@@ -586,7 +586,7 @@ function AppearanceTab({
       } else {
         toast.error("Fehler beim Speichern der Startseite");
       }
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Speichern der Startseite");
     } finally {
       setIsSavingPrefs(false);
@@ -1016,7 +1016,7 @@ interface PaperlessAvailableKey {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [_isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { hasPermission, roleHierarchy } = usePermissions();
   const { flags } = useFeatureFlags();

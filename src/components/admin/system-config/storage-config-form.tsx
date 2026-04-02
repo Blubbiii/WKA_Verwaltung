@@ -67,7 +67,7 @@ interface TestResult {
 
 export function StorageConfigForm({
   configs,
-  availableKeys,
+  availableKeys: _availableKeys,
   onSave,
 }: StorageConfigFormProps) {
   // Get initial values from configs

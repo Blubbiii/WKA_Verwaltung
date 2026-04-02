@@ -68,7 +68,7 @@ interface TestResult {
 
 export function EmailConfigForm({
   configs,
-  availableKeys,
+  availableKeys: _availableKeys,
   onSave,
 }: EmailConfigFormProps) {
   // Get initial values from configs

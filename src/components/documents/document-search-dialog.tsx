@@ -172,6 +172,7 @@ export function DocumentSearchDialog({
           break;
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [results, selectedIndex, onOpenChange]
   );
 

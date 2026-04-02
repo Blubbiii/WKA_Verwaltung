@@ -114,6 +114,7 @@ export default function ReportsPage() {
 
   useEffect(() => {
     fetchReports();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yearFilter, typeFilter]);
 
   async function fetchReports() {

@@ -37,7 +37,7 @@ function getCacheKey(parkId: string, type: "current" | "forecast" | "full" = "fu
 /**
  * Generate cache key for park statistics
  */
-function getStatsKey(parkId: string, period: string): string {
+function _getStatsKey(parkId: string, period: string): string {
   return `${CACHE_PREFIX}${parkId}:stats:${period}`;
 }
 

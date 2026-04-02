@@ -131,7 +131,7 @@ const ACCOUNTING_SUB_LABELS: Record<keyof AccountingSubFlags, string> = {
   "accounting.zm": "Zusammenfassende Meldung (ZM)",
 };
 
-const DEFAULT_ACCOUNTING_SUB: AccountingSubFlags = {
+const _DEFAULT_ACCOUNTING_SUB: AccountingSubFlags = {
   "accounting.reports": true,
   "accounting.bank": true,
   "accounting.dunning": true,

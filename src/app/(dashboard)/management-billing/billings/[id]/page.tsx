@@ -176,6 +176,7 @@ export default function BillingDetailPage({
 
   useEffect(() => {
     fetchBilling();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // Create invoice

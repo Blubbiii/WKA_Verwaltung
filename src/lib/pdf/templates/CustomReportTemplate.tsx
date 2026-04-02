@@ -369,7 +369,7 @@ function fmtNum(v: number | null | undefined, dec = 2): string {
   return formatNumber(v, dec);
 }
 
-function fmtMwh(v: number | null | undefined): string {
+function _fmtMwh(v: number | null | undefined): string {
   if (v == null) return "k.A.";
   return `${formatNumber(v / 1000, 2)} MWh`;
 }
@@ -386,7 +386,7 @@ function cfColor(cf: number): string {
 
 function heatmapCellBg(normalized: number): string {
   // normalized: 0-1, map to navy intensity
-  const alpha = Math.round(normalized * 200);
+  const _alpha = Math.round(normalized * 200);
   const r = Math.round(30 + (1 - normalized) * 200);
   const g = Math.round(58 + (1 - normalized) * 160);
   const b = Math.round(95 + (1 - normalized) * 120);
@@ -443,7 +443,7 @@ function SectionHead({ title, subtitle }: { title: string; subtitle?: string }) 
   );
 }
 
-function NoData() {
+function _NoData() {
   return <Text style={s.noData}>Keine Daten verfügbar</Text>;
 }
 

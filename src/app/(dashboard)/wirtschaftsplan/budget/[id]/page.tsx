@@ -193,6 +193,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
     queryKey: [budgetUrl],
     queryFn: () => fetcher(budgetUrl),
   });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const mutate = () => queryClient.invalidateQueries({ queryKey: [budgetUrl] });
   const { data: costCenters } = useQuery<CostCenter[]>({
     queryKey: ["/api/cost-centers"],

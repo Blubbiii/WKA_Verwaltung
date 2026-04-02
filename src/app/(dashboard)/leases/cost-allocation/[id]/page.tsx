@@ -77,7 +77,7 @@ export default function CostAllocationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const router = useRouter();
+  const _router = useRouter();
   const queryClient = useQueryClient();
   const [actionLoading, setActionLoading] = useState(false);
   const [closeLoading, setCloseLoading] = useState(false);

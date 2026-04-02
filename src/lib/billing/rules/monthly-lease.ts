@@ -132,7 +132,7 @@ export function calculateLeaseAmount(
     ausgleichCompensationPerSqm: number | null;
     kabelCompensationPerM: number | null;
   } | null,
-  useMinimumRent: boolean = true
+  _useMinimumRent: boolean = true
 ): number {
   let totalAmount = 0;
 

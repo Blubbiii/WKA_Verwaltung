@@ -98,7 +98,7 @@ const STEPS = [
 // =============================================================================
 
 export function TenantOnboardingWizard() {
-  const router = useRouter();
+  const _router = useRouter();
   const { data: session } = useSession();
 
   // Step state
@@ -111,7 +111,7 @@ export function TenantOnboardingWizard() {
   // Track what was created in this session
   const [createdParkId, setCreatedParkId] = useState<string | null>(null);
   const [createdParkName, setCreatedParkName] = useState<string | null>(null);
-  const [createdFundId, setCreatedFundId] = useState<string | null>(null);
+  const [_createdFundId, setCreatedFundId] = useState<string | null>(null);
   const [createdFundName, setCreatedFundName] = useState<string | null>(null);
   const [invitedUsers, setInvitedUsers] = useState<string[]>([]);
   const [companyUpdated, setCompanyUpdated] = useState(false);

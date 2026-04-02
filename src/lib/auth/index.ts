@@ -161,7 +161,7 @@ export const {
         email: { label: "E-Mail", type: "email" },
         password: { label: "Passwort", type: "password" },
       },
-      async authorize(credentials, request) {
+      async authorize(credentials, _request) {
         const parsed = loginSchema.safeParse(credentials);
 
         if (!parsed.success) {

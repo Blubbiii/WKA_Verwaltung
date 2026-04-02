@@ -292,7 +292,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  function getFileIcon(mimeType: string | null): string {
+  function _getFileIcon(mimeType: string | null): string {
     if (!mimeType) return "file";
     if (mimeType.includes("pdf")) return "pdf";
     if (mimeType.includes("image")) return "image";

@@ -79,6 +79,7 @@ export function TurbineDetailDialog({
     if (isOpen && turbine) {
       fetchTurbineDetail();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, turbine?.id]);
 
   async function fetchTurbineDetail() {

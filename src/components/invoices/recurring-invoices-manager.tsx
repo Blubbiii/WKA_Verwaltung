@@ -679,7 +679,7 @@ export function RecurringInvoicesManager() {
           : t("toast.activated", { name: ri.name })
       );
       invalidate(["recurring-invoices"]);
-    } catch (error) {
+    } catch {
       toast.error(t("toast.toggleError"));
     }
   }
@@ -700,7 +700,7 @@ export function RecurringInvoicesManager() {
       toast.success(t("toast.deactivated"));
       setDeleteId(null);
       invalidate(["recurring-invoices"]);
-    } catch (error) {
+    } catch {
       toast.error(t("toast.deleteError"));
     }
   }

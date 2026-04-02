@@ -305,7 +305,7 @@ export default function EditLeasePage({
           const fundsData = await fundsRes.json();
           setFunds(fundsData.data || []);
         }
-      } catch (error) {
+      } catch {
         toast.error("Fehler beim Laden des Pachtvertrags");
       } finally {
         setLoadingLease(false);

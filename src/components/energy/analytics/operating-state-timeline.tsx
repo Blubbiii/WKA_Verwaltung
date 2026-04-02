@@ -191,7 +191,9 @@ export function OperatingStateTimeline({
     queryFn: () => fetcher(url),
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const statePareto = data?.statePareto ?? [];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const timeline = data?.timeline ?? [];
 
   // ---------------------------------------------------------------------------

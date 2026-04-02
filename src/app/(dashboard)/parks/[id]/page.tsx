@@ -377,6 +377,7 @@ export default function ParkDetailsPage({
 
   useEffect(() => {
     fetchPark();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function fetchPark() {
@@ -498,6 +499,7 @@ export default function ParkDetailsPage({
     if (activeTab === "cost-allocation" && !allocationsLoaded) {
       fetchCostAllocations();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, allocationsLoaded]);
 
   async function fetchCostAllocations() {
@@ -561,7 +563,7 @@ export default function ParkDetailsPage({
 
       toast.success("Konfiguration gespeichert");
       fetchPark();
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Speichern");
     } finally {
       setSavingConfig(false);

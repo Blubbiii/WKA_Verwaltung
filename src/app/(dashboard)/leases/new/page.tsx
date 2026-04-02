@@ -208,7 +208,7 @@ export default function NewLeaseWizardPage() {
           const data = await turbinesRes.json();
           setTurbines(data.turbines || data.data || []);
         }
-      } catch (error) {
+      } catch {
         toast.error("Fehler beim Laden der Daten");
       } finally {
         setLoadingData(false);

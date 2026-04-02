@@ -14,7 +14,7 @@ const KNOWN_SEGMENTS = new Set([
 ]);
 
 // Sections that have detail pages (id-based routes)
-const detailSections = [
+const _detailSections = [
   "parks",
   "funds",
   "leases",
@@ -102,7 +102,7 @@ export function Breadcrumb() {
           </Link>
         </li>
 
-        {items.map((item, index) => (
+        {items.map((item, _index) => (
           <li key={item.href} className="flex items-center gap-1">
             <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
             {item.isCurrentPage ? (

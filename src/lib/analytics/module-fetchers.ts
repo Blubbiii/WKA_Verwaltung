@@ -66,7 +66,7 @@ export async function fetchPerformanceKpis(
     };
   }
 
-  const turbineMap = buildTurbineMap(turbines);
+  const _turbineMap = buildTurbineMap(turbines);
   const turbineIds = turbines.map((t) => t.id);
   const { from, to } = buildDateRange(year);
   const hours = hoursInPeriod(from, to);
@@ -157,7 +157,7 @@ export async function fetchProductionHeatmap(
   const turbines = await loadTurbines(tenantId, parkId);
   if (turbines.length === 0) return [];
 
-  const turbineMap = buildTurbineMap(turbines);
+  const _turbineMap = buildTurbineMap(turbines);
   const turbineIds = turbines.map((t) => t.id);
   const { from, to } = buildDateRange(year);
 
@@ -297,7 +297,7 @@ export async function fetchAvailabilityBreakdown(
   const turbines = await loadTurbines(tenantId, parkId);
   if (turbines.length === 0) return [];
 
-  const turbineMap = buildTurbineMap(turbines);
+  const _turbineMap = buildTurbineMap(turbines);
   const turbineIds = turbines.map((t) => t.id);
   const { from, to } = buildDateRange(year);
 

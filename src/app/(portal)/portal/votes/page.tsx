@@ -65,7 +65,7 @@ const decisionColors: Record<string, string> = {
 
 export default function VotesPage() {
   const [votes, setVotes] = useState<VoteItem[]>([]);
-  const [summary, setSummary] = useState<Summary>({
+  const [_summary, setSummary] = useState<Summary>({
     totalVotes: 0,
     activeVotes: 0,
     pendingVotes: 0,

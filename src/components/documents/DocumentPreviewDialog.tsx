@@ -90,6 +90,7 @@ export function DocumentPreviewDialog({
         }
       }, 0);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [document?.id, open]);
 
   if (!document) return null;
@@ -152,7 +153,7 @@ export function DocumentPreviewDialog({
     setRotation((prev) => (prev + 90) % 360);
   }
 
-  function getOfficeViewerUrl(fileUrl: string): string {
+  function _getOfficeViewerUrl(fileUrl: string): string {
     const encodedUrl = encodeURIComponent(fileUrl);
     return `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
   }

@@ -148,7 +148,7 @@ export async function generateEuer(
   periodEnd: Date
 ): Promise<EuerResult> {
   const settings = await getTenantSettings(tenantId);
-  const fyMonth = (settings.fiscalYearStartMonth || 1) - 1;
+  const _fyMonth = (settings.fiscalYearStartMonth || 1) - 1;
 
   // Previous year same period
   const prevStart = new Date(periodStart);

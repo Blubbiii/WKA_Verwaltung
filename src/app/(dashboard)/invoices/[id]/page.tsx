@@ -246,6 +246,7 @@ export default function InvoiceDetailPage({
 
   useEffect(() => {
     fetchInvoice();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function fetchInvoice() {
@@ -263,7 +264,7 @@ export default function InvoiceDetailPage({
       setInvoice(data);
       // Also fetch correction history
       fetchCorrectionHistory();
-    } catch (error) {
+    } catch {
       toast.error("Fehler beim Laden der Rechnung");
     } finally {
       setLoading(false);

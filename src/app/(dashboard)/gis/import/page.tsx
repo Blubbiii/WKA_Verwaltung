@@ -103,7 +103,7 @@ export default function GisImportPage() {
 
   // Wizard state
   const [step, setStep] = useState(0);
-  const [files, setFiles] = useState<File[]>([]);
+  const [_files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);

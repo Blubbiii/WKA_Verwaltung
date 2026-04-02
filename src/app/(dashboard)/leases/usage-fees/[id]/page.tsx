@@ -119,7 +119,7 @@ function formatPercent(pct: number | null | undefined): string {
   }).format(pct);
 }
 
-function formatArea(sqm: number | null | undefined): string {
+function _formatArea(sqm: number | null | undefined): string {
   if (sqm == null) return "-";
   return new Intl.NumberFormat("de-DE", {
     minimumFractionDigits: 0,
@@ -181,6 +181,7 @@ export default function UsageFeeDetailPage({
   // ---------------------------------------------------------------------------
   // Computed Values
   // ---------------------------------------------------------------------------
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const items: LeaseRevenueSettlementItemResponse[] = settlement?.items || [];
   const costAllocations: ParkCostAllocationResponse[] =
     settlement?.costAllocations || [];

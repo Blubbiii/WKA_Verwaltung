@@ -242,7 +242,7 @@ export function ProductionChart({
 
       return Array.from(periodMap.values())
         .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-        .map(({ sortKey, windCount, ...rest }) => ({
+        .map(({ sortKey: _sortKey, windCount, ...rest }) => ({
           ...rest,
           avgWindSpeed: windCount > 0 ? rest.avgWindSpeed / windCount : 0,
         }));

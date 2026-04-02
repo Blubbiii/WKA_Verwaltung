@@ -94,13 +94,14 @@ interface VoteDetail {
 
 export default function VoteDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const [vote, setVote] = useState<VoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchVote();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   async function fetchVote() {

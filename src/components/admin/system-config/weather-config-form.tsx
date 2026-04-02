@@ -70,7 +70,7 @@ interface TestResult {
 
 export function WeatherConfigForm({
   configs,
-  availableKeys,
+  availableKeys: _availableKeys,
   onSave,
 }: WeatherConfigFormProps) {
   // Get initial values from configs

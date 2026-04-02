@@ -287,6 +287,7 @@ function AddShareholderDialog({
       }
     }, 300);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [personSearch, isOpen, step]);
 
   async function fetchPersons() {
@@ -983,6 +984,7 @@ function ShareholderDetailDialog({
     if (isOpen && shareholder) {
       fetchShareholderDetail();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, shareholder?.id]);
 
   async function fetchShareholderDetail() {

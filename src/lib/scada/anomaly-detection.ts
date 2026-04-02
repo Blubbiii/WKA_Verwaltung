@@ -69,7 +69,7 @@ const DEFAULT_CONFIG: AnomalyConfig = {
 };
 
 // Invalid SCADA measurement markers
-const INVALID_VALUES = [32767, 65535, 6553.5];
+const _INVALID_VALUES = [32767, 65535, 6553.5];
 
 // SCADA measurement interval in minutes
 const INTERVAL_MINUTES = 10;

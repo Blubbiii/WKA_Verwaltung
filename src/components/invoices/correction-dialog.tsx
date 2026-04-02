@@ -313,7 +313,7 @@ export function CorrectionDialog({
                     const isEditing = pos.editing;
                     const newQty = parseFloat(pos.quantity);
                     const newPrice = parseFloat(pos.unitPrice);
-                    const newTaxRate = taxRates[pos.taxType] || 19;
+                    const _newTaxRate = taxRates[pos.taxType] || 19;
                     const newNet =
                       isEditing && !isNaN(newQty) && !isNaN(newPrice)
                         ? Math.round(newQty * newPrice * 100) / 100

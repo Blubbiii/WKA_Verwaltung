@@ -453,7 +453,7 @@ export default function ScadaMappingsTab() {
             if (res.ok) {
               started++;
             } else {
-              const err = await res.json().catch(() => ({}));
+              const _err = await res.json().catch(() => ({}));
               if (res.status === 409) {
                 // Import already running - not an error
                 started++;

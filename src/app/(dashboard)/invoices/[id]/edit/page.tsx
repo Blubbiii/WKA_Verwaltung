@@ -229,7 +229,7 @@ export default function EditInvoicePage({
             taxType: item.taxType as "STANDARD" | "REDUCED" | "EXEMPT",
           }))
         );
-      } catch (error) {
+      } catch {
         toast.error("Fehler beim Laden der Rechnung");
       } finally {
         setLoading(false);

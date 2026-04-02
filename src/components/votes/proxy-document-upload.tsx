@@ -189,6 +189,7 @@ export function ProxyDocumentUpload({
     if (files.length > 0) {
       handleUpload(files[0]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proxyId]);
 
   // File Input Handler

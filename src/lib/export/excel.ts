@@ -36,7 +36,7 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
 function formatValue(
   value: unknown,
   format: ColumnFormat | undefined,
-  options: ExportOptions
+  _options: ExportOptions
 ): string | number | Date | null {
   if (value === null || value === undefined) {
     return null;

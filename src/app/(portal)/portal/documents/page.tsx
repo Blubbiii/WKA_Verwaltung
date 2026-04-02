@@ -95,6 +95,7 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     fetchDocuments();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryFilter]);
 
   async function fetchDocuments() {

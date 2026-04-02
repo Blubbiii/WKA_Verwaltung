@@ -185,7 +185,7 @@ export function TenantManagement() {
 
   // ─── Create / Edit ─────────────────────────────────────────────────────────
 
-  function openCreateDialog() {
+  function _openCreateDialog() {
     setEditingId(null);
     setFormData(EMPTY_FORM);
     setSlugManuallyEdited(false);

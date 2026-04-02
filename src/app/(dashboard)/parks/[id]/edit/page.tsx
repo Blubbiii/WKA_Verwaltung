@@ -50,7 +50,7 @@ export default function EditParkPage({
         }
         const data = await response.json();
         setPark(data);
-      } catch (err) {
+      } catch {
         setError("Fehler beim Laden des Parks");
       } finally {
         setLoading(false);

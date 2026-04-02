@@ -87,7 +87,7 @@ function LoginForm() {
 
       router.push(callbackUrl);
       router.refresh();
-    } catch (err) {
+    } catch {
       setLoginError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
       setIsLoading(false);
     }

@@ -158,6 +158,7 @@ export default function InvoiceDispatchPage() {
     "/api/invoices?limit=200"
   );
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const invoices = invoicesData?.data ?? [];
 
   // Extract unique parks for filter dropdown

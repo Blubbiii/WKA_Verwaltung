@@ -183,6 +183,7 @@ export default function ScadaImportTab() {
   useEffect(() => {
     return () => {
       pollingRefs.current.forEach((interval) => clearInterval(interval));
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       pollingRefs.current.clear();
     };
   }, []);
@@ -197,6 +198,7 @@ export default function ScadaImportTab() {
   const extractLocCode = useCallback((path: string): string | null => {
     const match = path.match(LOC_PATTERN);
     return match ? match[0] : null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Create UploadEntry from file + path
@@ -904,7 +906,7 @@ export default function ScadaImportTab() {
         });
 
         if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
+          const _err = await res.json().catch(() => ({}));
           if (res.status === 409) {
             startedCount++;
           } else {

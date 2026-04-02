@@ -802,7 +802,7 @@ async function processCalculateFees(data: CalculateFeesJobData): Promise<Billing
   const { prisma } = await import("@/lib/prisma");
   const { executeRule } = await import("@/lib/billing/executor");
 
-  const periodStart = new Date(data.periodStart);
+  const _periodStart = new Date(data.periodStart);
   const periodEnd = new Date(data.periodEnd);
 
   // 1. Load all active MANAGEMENT_FEE billing rules for this tenant

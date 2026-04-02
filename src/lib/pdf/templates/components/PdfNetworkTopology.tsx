@@ -186,7 +186,7 @@ const TURBINE_SPACING_Y = 28;
 const BETREIBER_GAP = 22;
 const GROUP_GAP = 26;
 // Keep NODE_R for layout position calculations (use half-widths)
-const NODE_R = { nvp: NVP_W / 2, netz: NETZ_W / 2, betreiber: BET_W / 2, turbine: TURB_W / 2 };
+const _NODE_R = { nvp: NVP_W / 2, netz: NETZ_W / 2, betreiber: BET_W / 2, turbine: TURB_W / 2 };
 
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: "#22c55e",

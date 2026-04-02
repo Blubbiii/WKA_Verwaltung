@@ -171,7 +171,7 @@ export async function generateGuv(
   periodStart: Date,
   periodEnd: Date
 ): Promise<GuvResult> {
-  const settings = await getTenantSettings(tenantId);
+  const _settings = await getTenantSettings(tenantId);
 
   // Previous year same period
   const prevStart = new Date(periodStart);

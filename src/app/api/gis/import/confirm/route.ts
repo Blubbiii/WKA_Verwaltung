@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
 
           // Check for existing plot — update if _wpmId present or duplicate found
           const wpmId = feature.properties["_wpmId"] as string | undefined;
-          let existingPlot = wpmId
+          const existingPlot = wpmId
             ? await tx.plot.findFirst({ where: { id: wpmId, tenantId } })
             : await tx.plot.findFirst({
                 where: {

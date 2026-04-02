@@ -137,6 +137,7 @@ export default function ServiceEventDetailPage({
 
   useEffect(() => {
     fetchEvent();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   async function fetchEvent() {
@@ -153,7 +154,7 @@ export default function ServiceEventDetailPage({
       }
       const data = await response.json();
       setEvent(data);
-    } catch (err) {
+    } catch {
       setError("Fehler beim Laden des Service-Events");
     } finally {
       setLoading(false);
@@ -176,7 +177,7 @@ export default function ServiceEventDetailPage({
         const error = await response.json();
         toast.error(error.error || "Fehler beim Löschen");
       }
-    } catch (err) {
+    } catch {
       toast.error("Fehler beim Löschen des Service-Events");
     } finally {
       setIsDeleting(false);

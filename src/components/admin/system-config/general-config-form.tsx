@@ -54,7 +54,7 @@ interface GeneralConfigFormProps {
 
 export function GeneralConfigForm({
   configs,
-  availableKeys,
+  availableKeys: _availableKeys,
   onSave,
 }: GeneralConfigFormProps) {
   // Get initial values from configs

@@ -357,7 +357,7 @@ function VoteResultsDisplay({ results, requiresCapitalMajority }: VoteResultsDis
 
 export default function VoteDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const [vote, setVote] = useState<VoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

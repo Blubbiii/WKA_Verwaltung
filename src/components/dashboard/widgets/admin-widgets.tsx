@@ -366,7 +366,7 @@ export function AuditLogWidget({ className }: { className?: string }) {
     <div className={cn("flex flex-col h-full", className)}>
       <div className="flex-1 space-y-1 overflow-auto">
         {entries.map((entry) => {
-          const userName = entry.user
+          const _userName = entry.user
             ? [entry.user.firstName, entry.user.lastName].filter(Boolean).join(" ") || entry.user.email
             : "System";
           const timeAgo = formatTimeAgo(new Date(entry.createdAt));

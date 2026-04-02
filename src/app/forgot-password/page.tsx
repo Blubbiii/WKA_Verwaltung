@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
       }
 
       setIsSubmitted(true);
-    } catch (err) {
+    } catch {
       // Show generic success message even on error to prevent email enumeration
       setIsSubmitted(true);
     } finally {

@@ -185,7 +185,7 @@ export default function LeaseDetailPage({
     return [lease.lessor.firstName, lease.lessor.lastName].filter(Boolean).join(" ") || "-";
   }
 
-  function getPlotLabel(plot: Plot): string {
+  function _getPlotLabel(plot: Plot): string {
     const parts = [
       plot.cadastralDistrict,
       plot.fieldNumber && plot.fieldNumber !== "0" ? `Flur ${plot.fieldNumber}` : null,

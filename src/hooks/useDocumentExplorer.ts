@@ -76,8 +76,8 @@ export function useDocumentExplorer() {
     if (activePath) {
       fetchFiles(activePath, 1); // eslint-disable-line react-hooks/set-state-in-effect
     } else {
-      setFiles([]); // eslint-disable-line react-hooks/set-state-in-effect
-      setPagination({ page: 1, limit: 20, total: 0, totalPages: 0 }); // eslint-disable-line react-hooks/set-state-in-effect
+      setFiles([]);  
+      setPagination({ page: 1, limit: 20, total: 0, totalPages: 0 });  
     }
   }, [activePath, fetchFiles]);
 

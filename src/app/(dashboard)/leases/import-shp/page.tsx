@@ -141,13 +141,13 @@ const OWNER_TARGET_FIELDS = [
 // ---------------------------------------------------------------------------
 
 export default function ImportShpPage() {
-  const router = useRouter();
+  const _router = useRouter();
 
   // Wizard state
   const [step, setStep] = useState(0);
   const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
-  const dragCounterRef = useRef(0);
+  const _dragCounterRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);

@@ -194,7 +194,7 @@ export function RecipientSearchDialog({
         throw new Error(error.error || t("toast.createError"));
       }
 
-      const created = await response.json();
+      const _created = await response.json();
       toast.success(t("toast.created"));
 
       // Select the newly created person

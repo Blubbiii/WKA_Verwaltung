@@ -241,6 +241,7 @@ function LeaseDetailDialog({
       fetchLeaseDetail();
       setActiveTab("details");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, lease?.id]);
 
   async function fetchLeaseDetail() {

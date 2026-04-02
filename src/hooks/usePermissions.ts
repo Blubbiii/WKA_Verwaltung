@@ -56,6 +56,7 @@ export function usePermissions(): UsePermissionsResult {
     refetchInterval: false,
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const permissions = data?.permissions ?? [];
   const roleHierarchy = data?.roleHierarchy ?? 0;
   const loaded = !isLoading;

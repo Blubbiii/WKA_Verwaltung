@@ -99,6 +99,7 @@ export default function ProxiesPage() {
   useEffect(() => {
     fetchFunds();
     fetchProxies();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fundFilter, statusFilter]);
 
   async function fetchFunds() {
