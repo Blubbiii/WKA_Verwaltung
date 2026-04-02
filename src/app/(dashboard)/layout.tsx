@@ -5,6 +5,7 @@ import { DashboardFooter } from "@/components/layout/dashboard-footer";
 import { MaintenanceBanner } from "@/components/layout/maintenance-banner";
 import { KeyboardProvider } from "@/components/providers/keyboard-provider";
 import { OnboardingProvider } from "@/components/providers/onboarding-provider";
+import { OfflineIndicator } from "@/components/providers/offline-indicator";
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,7 @@ export default function DashboardLayout({
     <KeyboardProvider>
       <OnboardingProvider>
         <div className="flex h-screen overflow-hidden">
+          <OfflineIndicator />
           <Sidebar />
           <div className="flex flex-1 flex-col overflow-hidden">
             <MaintenanceBanner />

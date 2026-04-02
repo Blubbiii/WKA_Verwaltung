@@ -58,26 +58,25 @@ function createPrismaClient() {
   });
 
   // Slow query logging via Prisma 7 Extension API (works with driver adapters)
-  const clientWithLogging =
-    process.env.NODE_ENV === "development"
-      ? baseClient.$extends({
-          query: {
-            $allModels: {
-              async $allOperations({ model, operation, args, query }) {
-                const start = Date.now();
-                const result = await query(args);
-                const duration = Date.now() - start;
-                if (duration > 100) {
-                  logger.warn(
-                    `[SLOW QUERY] ${duration}ms: ${model}.${operation}`
-                  );
-                }
-                return result;
+  // Dev: warn at 100ms, Production: warn at 500ms
+  const slowQueryThreshold = process.env.NODE_ENV === "development" ? 100 : 500;
+  const clientWithLogging = baseClient.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          const start = Date.now();
+          const result = await query(args);
+          const duration = Date.now() - start;
+          if (duration > slowQueryThreshold) {
+            logger.warn(
+              `[SLOW QUERY] ${duration}ms: ${model}.${operation}`
+            );
+          }
+          return result;
               },
             },
           },
-        })
-      : baseClient;
+        });
 
   // Soft-delete extension: automatically filter out soft-deleted records
   // unless the caller explicitly provides a `deletedAt` filter.
