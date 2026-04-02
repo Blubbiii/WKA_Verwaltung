@@ -26,7 +26,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate file extension
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!ext || !["shp", "zip", "geojson", "json"].includes(ext)) {
+      return NextResponse.json(
+        { error: "Ungültiges Dateiformat. Erlaubt: .shp, .zip, .geojson, .json" },
+        { status: 400 }
+      );
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Basic content validation
+    if (buffer.length < 10) {
+      return NextResponse.json({ error: "Datei ist leer oder beschädigt" }, { status: 400 });
+    }
+
     const result = await parseMultiLayerShapefile(buffer, file.name);
 
     logger.info({
