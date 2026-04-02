@@ -25,7 +25,7 @@ interface GISToolbarProps {
   isMeasuring: boolean;
   onToggleMeasure: () => void;
   measureResult: MeasureResult | null;
-  onExport: (type: "all" | "plots" | "annotations") => void;
+  onExport: (type: "all" | "plots" | "annotations" | "template") => void;
   loading: boolean;
   canUndo: boolean;
   onUndo: () => void;
@@ -314,7 +314,10 @@ export function GISToolbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="z-[2000]">
             <DropdownMenuItem onClick={() => onExport("all")}>
-              QGIS-Export (alle Layer + Attribute)
+              QGIS-Export (alle Daten + Attribute)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onExport("template")}>
+              QGIS-Vorlage (mit allen Spalten)
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onExport("plots")}>

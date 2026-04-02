@@ -15,6 +15,7 @@ import type {
   GISAction,
   GISData,
   GISSettings,
+  GISPlotFeature,
   SelectedFeature,
   TileLayerType,
   MeasureResult,
@@ -126,41 +127,69 @@ function gisReducer(state: GISState, action: GISAction): GISState {
   }
 }
 
-function handleExport(type: "all" | "plots" | "annotations", data: GISData) {
+// Standard plot properties template — ensures all columns exist in export
+function buildPlotProperties(p: GISPlotFeature) {
+  const plotAreas = p.plotAreas || [];
+  const areaByType: Record<string, number> = {};
+  plotAreas.forEach((a: { areaType: string; areaSqm: number }) => { areaByType[a.areaType] = a.areaSqm; });
+
+  return {
+    _wpmId: p.id,
+    _wpmType: "PLOT",
+    Gemarkung: p.cadastralDistrict,
+    Flur: p.fieldNumber,
+    Flurstueck: p.plotNumber,
+    Flaeche_m2: p.areaSqm,
+    Park: p.park?.name ?? null,
+    Pachtstatus: p.activeLease?.status ?? null,
+    Eigentuemer: p.activeLease?.lessorName ?? null,
+    WEA_Standort_m2: areaByType["WEA_STANDORT"] ?? null,
+    Pool_m2: areaByType["POOL"] ?? null,
+    Weg_m2: areaByType["WEG"] ?? null,
+    Ausgleich_m2: areaByType["AUSGLEICH"] ?? null,
+    Kabel_m2: areaByType["KABEL"] ?? null,
+  };
+}
+
+// Empty properties template — all columns with null values
+const EMPTY_PLOT_PROPERTIES = {
+  _wpmId: null,
+  _wpmType: "PLOT",
+  Gemarkung: null,
+  Flur: null,
+  Flurstueck: null,
+  Flaeche_m2: null,
+  Park: null,
+  Pachtstatus: null,
+  Eigentuemer: null,
+  WEA_Standort_m2: null,
+  Pool_m2: null,
+  Weg_m2: null,
+  Ausgleich_m2: null,
+  Kabel_m2: null,
+};
+
+const EMPTY_ANNOTATION_PROPERTIES = {
+  _wpmId: null,
+  _wpmType: null,
+  Name: null,
+  Typ: null,
+  Beschreibung: null,
+};
+
+function handleExport(type: "all" | "plots" | "annotations" | "template", data: GISData) {
   const features: GeoJSON.Feature[] = [];
 
-  if (type === "all" || type === "plots") {
+  if (type === "template") {
+    // Export template with all columns but no geometry — for QGIS field setup
+    // Include existing data if available, plus one empty row to ensure all columns exist
     data.plots.forEach((p) => {
-      if (!p.geometry) return;
-      // Full attribute export for QGIS roundtrip
-      const plotAreas = p.plotAreas || [];
-      const areaByType: Record<string, number> = {};
-      plotAreas.forEach((a) => { areaByType[a.areaType] = a.areaSqm; });
-
       features.push({
         type: "Feature",
-        geometry: p.geometry,
-        properties: {
-          _wpmId: p.id,
-          _wpmType: "PLOT",
-          Gemarkung: p.cadastralDistrict,
-          Flur: p.fieldNumber,
-          Flurstueck: p.plotNumber,
-          Flaeche_m2: p.areaSqm,
-          Park: p.park?.name ?? null,
-          Pachtstatus: p.activeLease?.status ?? null,
-          Eigentuemer: p.activeLease?.lessorName ?? null,
-          WEA_Standort_m2: areaByType["WEA_STANDORT"] ?? null,
-          Pool_m2: areaByType["POOL"] ?? null,
-          Weg_m2: areaByType["WEG"] ?? null,
-          Ausgleich_m2: areaByType["AUSGLEICH"] ?? null,
-          Kabel_m2: areaByType["KABEL"] ?? null,
-        },
+        geometry: p.geometry ?? { type: "Polygon", coordinates: [] },
+        properties: buildPlotProperties(p),
       });
     });
-  }
-
-  if (type === "all" || type === "annotations") {
     data.annotations.forEach((a) => {
       features.push({
         type: "Feature",
@@ -174,6 +203,48 @@ function handleExport(type: "all" | "plots" | "annotations", data: GISData) {
         },
       });
     });
+    // Add empty template rows so QGIS creates all columns even when no data exists
+    if (data.plots.length === 0) {
+      features.push({
+        type: "Feature",
+        geometry: { type: "Polygon", coordinates: [] },
+        properties: EMPTY_PLOT_PROPERTIES,
+      });
+    }
+    if (data.annotations.length === 0) {
+      features.push({
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: [] },
+        properties: EMPTY_ANNOTATION_PROPERTIES,
+      });
+    }
+  } else {
+    if (type === "all" || type === "plots") {
+      data.plots.forEach((p) => {
+        if (!p.geometry) return;
+        features.push({
+          type: "Feature",
+          geometry: p.geometry,
+          properties: buildPlotProperties(p),
+        });
+      });
+    }
+
+    if (type === "all" || type === "annotations") {
+      data.annotations.forEach((a) => {
+        features.push({
+          type: "Feature",
+          geometry: a.geometry,
+          properties: {
+            _wpmId: a.id,
+            _wpmType: a.type,
+            Name: a.name,
+            Typ: a.type,
+            Beschreibung: a.description,
+          },
+        });
+      });
+    }
   }
 
   const geojson = JSON.stringify({ type: "FeatureCollection", features }, null, 2);
