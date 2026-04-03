@@ -133,6 +133,7 @@ model User {
   lastName                                                                String?
   phone                                                                   String?
   avatarUrl                                                               String?
+  preferredLocale                                                         String                      @default("de") // "de" | "de-personal" | "en"
 
   emailVerified                                                           DateTime?
   lastLoginAt                                                             DateTime?
