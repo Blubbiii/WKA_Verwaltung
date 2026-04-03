@@ -388,6 +388,186 @@ const EN_STEPS: TourStep[] = [
   },
 ];
 
-export function getMainTourSteps(locale: "de" | "en"): TourStep[] {
-  return locale === "de" ? DE_STEPS : EN_STEPS;
+const DE_PERSONAL_STEPS: TourStep[] = [
+  {
+    popover: {
+      title: "Hey, willkommen! 👋",
+      description:
+        "Wir zeigen dir in ein paar Schritten, wo du alles findest. Du kannst die Tour jederzeit mit Escape abbrechen.",
+    },
+  },
+  {
+    element: '[data-tour="sidebar"]',
+    popover: {
+      title: "Deine Navigation",
+      description:
+        "Hier findest du alles, schön nach Themen sortiert: Windparks, Finanzen, Verwaltung und Admin-Bereich.",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-dashboard"]',
+    popover: {
+      title: "Dein Dashboard",
+      description:
+        "Dein persönliches Dashboard — mit KPIs, Diagrammen und Widgets. Kannst du frei anpassen!",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-group-windparks"]',
+    popover: {
+      title: "Deine Windparks",
+      description:
+        "Hier verwaltest du deine Windparks, Turbinen und Service-Events. Jeder Park hat eigene Stammdaten und Karten.",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-group-finances"]',
+    popover: {
+      title: "Deine Finanzen",
+      description:
+        "Rechnungen, Verträge, Beteiligungen, Energiedaten — alles rund ums Geld findest du hier.",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-invoices"]',
+    popover: {
+      title: "Deine Rechnungen",
+      description:
+        "Erstell und verwalte Rechnungen, Gutschriften und DATEV-Exporte. Mit Versandübersicht und Zahlungsabgleich.",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-funds"]',
+    popover: {
+      title: "Deine Gesellschaften",
+      description:
+        "Verwalte Gesellschaften, Gesellschafter-Anteile, Ausschüttungen und Hierarchien.",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-energy"]',
+    popover: {
+      title: "Deine Energiedaten",
+      description:
+        "SCADA-Daten importieren, Produktionszahlen checken, Abrechnungen und Analysen ansehen.",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-group-administration"]',
+    popover: {
+      title: "Verwaltung",
+      description:
+        "Pachtverträge, Dokumente, Abstimmungen, Berichte — alles für den laufenden Betrieb.",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-leases"]',
+    popover: {
+      title: "Deine Pachtverträge",
+      description:
+        "Verwalte Pachtverträge und erstelle Abrechnungen für Grundeigentümer.",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-documents"]',
+    popover: {
+      title: "Deine Dokumente",
+      description:
+        "Zentrales Dokumentenmanagement mit Kategorien und Versionierung. Alles an einem Ort!",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-reports"]',
+    popover: {
+      title: "Deine Berichte",
+      description:
+        "Erstell individuelle Berichte und greif auf dein Berichtsarchiv zu.",
+      side: "right",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="sidebar-group-admin"]',
+    popover: {
+      title: "Admin-Bereich",
+      description:
+        "Einstellungen, Rollen & Rechte, Abrechnungsregeln und mehr — nur für Admins sichtbar.",
+      side: "right",
+      align: "start",
+    },
+    minRole: "ADMIN",
+  },
+  {
+    element: '[data-tour="header-search"]',
+    popover: {
+      title: "Schnellsuche",
+      description:
+        "Drück Ctrl+K und spring direkt zu Windparks, Gesellschaften oder Rechnungen. Super praktisch!",
+      side: "bottom",
+      align: "start",
+    },
+  },
+  {
+    element: '[data-tour="header-theme-toggle"]',
+    popover: {
+      title: "Hell oder Dunkel?",
+      description: "Wechsel zwischen hellem und dunklem Design — ganz wie du magst.",
+      side: "bottom",
+      align: "center",
+    },
+  },
+  {
+    element: '[data-tour="header-user-menu"]',
+    popover: {
+      title: "Dein Menü",
+      description:
+        "Hier findest du dein Profil, persönliche Einstellungen und kannst die Tour nochmal starten.",
+      side: "bottom",
+      align: "end",
+    },
+  },
+  {
+    element: '[data-tour="dashboard-customize"]',
+    popover: {
+      title: "Dashboard anpassen",
+      description:
+        "Klick hier, um Widgets hinzuzufügen oder umzusortieren. Dein Layout wird automatisch gespeichert!",
+      side: "bottom",
+      align: "end",
+    },
+    requiresPage: "/dashboard",
+  },
+  {
+    popover: {
+      title: "Fertig — du kennst dich aus! 🎉",
+      description:
+        "Du kannst die Tour jederzeit über dein Benutzermenü nochmal starten. Viel Spaß mit WindparkManager!",
+    },
+  },
+];
+
+export function getMainTourSteps(locale: "de" | "de-personal" | "en"): TourStep[] {
+  if (locale === "en") return EN_STEPS;
+  if (locale === "de-personal") return DE_PERSONAL_STEPS;
+  return DE_STEPS;
 }

@@ -253,7 +253,8 @@ export default function GisImportPage() {
       const result = await res.json();
       setImportResult(result);
       setStep(6);
-      toast.success("Import abgeschlossen!");
+      const { celebrationToast } = await import("@/lib/celebration-toast");
+      celebrationToast("Import abgeschlossen!");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Fehler beim Import");
     } finally {

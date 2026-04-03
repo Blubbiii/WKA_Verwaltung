@@ -84,7 +84,8 @@ export function useOnboarding(): UseOnboardingResult {
 
   // Filter steps based on role and current page
   const getFilteredSteps = useCallback((): TourStep[] => {
-    const allSteps = getMainTourSteps(locale === "en" ? "en" : "de");
+    const tourLocale = locale === "en" ? "en" : locale === "de-personal" ? "de-personal" : "de";
+    const allSteps = getMainTourSteps(tourLocale);
     const userRole = (session?.user as { role?: string })?.role || "VIEWER";
     const userRoleLevel = ROLE_HIERARCHY[userRole] ?? 0;
 

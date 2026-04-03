@@ -307,7 +307,8 @@ function NewInvoiceContent() {
       }
 
       const invoice = await response.json();
-      toast.success(type === "INVOICE" ? "Rechnung erstellt" : "Gutschrift erstellt");
+      const { celebrationToast } = await import("@/lib/celebration-toast");
+      celebrationToast(type === "INVOICE" ? "Rechnung erstellt!" : "Gutschrift erstellt!");
       router.push(`/invoices/${invoice.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");

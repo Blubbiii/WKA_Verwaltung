@@ -6,13 +6,14 @@ import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Activity, Cog, ToggleLeft, HardDrive } from "lucide-react";
+import { Activity, Cog, ToggleLeft, HardDrive, Languages } from "lucide-react";
 
 // Lazy-loaded tab content
 const HealthContent = dynamic(() => import("./tabs/health"), { ssr: false });
 const ConfigContent = dynamic(() => import("./tabs/config"), { ssr: false });
 const FlagsContent = dynamic(() => import("./tabs/flags"), { ssr: false });
 const BackupContent = dynamic(() => import("./tabs/backup"), { ssr: false });
+const TranslationsContent = dynamic(() => import("./tabs/translations"), { ssr: false });
 
 function LoadingSkeleton() {
   return (
@@ -58,6 +59,10 @@ function SystemAdminPageInner() {
             <HardDrive className="h-4 w-4" />
             Backup & Speicher
           </TabsTrigger>
+          <TabsTrigger value="translations" className="flex items-center gap-2">
+            <Languages className="h-4 w-4" />
+            Übersetzungen
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="health">
           <Suspense fallback={<LoadingSkeleton />}><HealthContent /></Suspense>
@@ -70,6 +75,9 @@ function SystemAdminPageInner() {
         </TabsContent>
         <TabsContent value="backup">
           <Suspense fallback={<LoadingSkeleton />}><BackupContent /></Suspense>
+        </TabsContent>
+        <TabsContent value="translations">
+          <Suspense fallback={<LoadingSkeleton />}><TranslationsContent /></Suspense>
         </TabsContent>
       </Tabs>
     </div>

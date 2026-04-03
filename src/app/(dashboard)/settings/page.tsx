@@ -363,7 +363,8 @@ function ProfileTab({
         throw new Error(errorData.error || "Fehler beim Speichern");
       }
 
-      toast.success("Profil wurde erfolgreich gespeichert");
+      const { celebrationToast } = await import("@/lib/celebration-toast");
+      celebrationToast("Profil gespeichert!");
       onSettingsUpdated();
     } catch (error) {
       toast.error(
@@ -782,7 +783,8 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
         throw new Error(result.error || "Fehler beim Aendern des Passworts");
       }
 
-      toast.success("Passwort wurde erfolgreich geändert");
+      const { celebrationToast } = await import("@/lib/celebration-toast");
+      celebrationToast("Passwort geändert!");
       passwordForm.reset();
       setServerErrors({});
     } catch (error) {
