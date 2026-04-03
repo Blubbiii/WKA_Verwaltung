@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,17 +18,14 @@ import { useDashboardConfig } from "@/hooks/useDashboardConfig";
 export default function DashboardPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [isEditing, setIsEditing] = useState(false);
+  const editParam = searchParams.get("edit") === "true";
+  const [isEditing, setIsEditing] = useState(editParam);
   const { error, refetch, isLoading } = useDashboardConfig();
 
-  // Support ?edit=true from header menu
-  useEffect(() => {
-    if (searchParams.get("edit") === "true") {
-      setIsEditing(true);
-      // Clean up URL
-      router.replace("/dashboard", { scroll: false });
-    }
-  }, [searchParams, router]);
+  // Clean up URL after entering edit mode via query param
+  if (editParam && typeof window !== "undefined") {
+    router.replace("/dashboard", { scroll: false });
+  }
 
   const handleStopEditing = () => {
     setIsEditing(false);
