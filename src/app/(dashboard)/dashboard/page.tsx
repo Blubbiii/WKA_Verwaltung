@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Settings2, RefreshCcw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
@@ -15,12 +16,19 @@ import { useDashboardConfig } from "@/hooks/useDashboardConfig";
 // =============================================================================
 
 export default function DashboardPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const { error, refetch, isLoading } = useDashboardConfig();
 
-  const handleStartEditing = () => {
-    setIsEditing(true);
-  };
+  // Support ?edit=true from header menu
+  useEffect(() => {
+    if (searchParams.get("edit") === "true") {
+      setIsEditing(true);
+      // Clean up URL
+      router.replace("/dashboard", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const handleStopEditing = () => {
     setIsEditing(false);
@@ -46,23 +54,17 @@ export default function DashboardPage() {
         </div>
 
         {!isEditing && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isLoading}
-            >
-              <RefreshCcw
-                className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-              />
-              Aktualisieren
-            </Button>
-            <Button data-tour="dashboard-customize" variant="outline" size="sm" onClick={handleStartEditing}>
-              <Settings2 className="mr-2 h-4 w-4" />
-              Dashboard anpassen
-            </Button>
-          </div>
+          <Button
+            data-tour="dashboard-customize"
+            variant="ghost"
+            size="icon"
+            onClick={() => refetch()}
+            disabled={isLoading}
+            title="Dashboard aktualisieren"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCcw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          </Button>
         )}
       </div>
 
@@ -94,7 +96,7 @@ export default function DashboardPage() {
       ) : (
         <>
           <ParkHealthPulse />
-          <DashboardView onEdit={handleStartEditing} />
+          <DashboardView onEdit={() => setIsEditing(true)} />
         </>
       )}
     </div>

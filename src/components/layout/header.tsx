@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Search, User, LogOut, Settings, Moon, Sun, Shield, X, Keyboard, Wind } from "lucide-react";
+import { Search, User, LogOut, Settings, Settings2, Moon, Sun, Shield, X, Keyboard, Wind } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -252,6 +252,12 @@ export function Header() {
                 <Link href="/settings">
                   <Settings className="mr-2 h-4 w-4" />
                   {t("common.settings")}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard?edit=true">
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  Dashboard anpassen
                 </Link>
               </DropdownMenuItem>
               <TourTriggerMenuItem />
