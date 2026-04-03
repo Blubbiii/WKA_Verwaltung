@@ -6,6 +6,8 @@ import { MaintenanceBanner } from "@/components/layout/maintenance-banner";
 import { KeyboardProvider } from "@/components/providers/keyboard-provider";
 import { OnboardingProvider } from "@/components/providers/onboarding-provider";
 import { OfflineIndicator } from "@/components/providers/offline-indicator";
+import { PageTransition } from "@/components/providers/page-transition";
+import { CommandPalette } from "@/components/ui/command-palette";
 
 export default function DashboardLayout({
   children,
@@ -17,14 +19,17 @@ export default function DashboardLayout({
       <OnboardingProvider>
         <div className="flex h-screen overflow-hidden">
           <OfflineIndicator />
+          <CommandPalette />
           <Sidebar />
           <div className="flex flex-1 flex-col overflow-hidden">
             <MaintenanceBanner />
             <Header />
             <main className="flex-1 overflow-y-auto overscroll-contain bg-muted/30 p-6 flex flex-col">
               <Breadcrumb />
-              <div className="animate-fade-in flex-1">
-                {children}
+              <div className="flex-1">
+                <PageTransition>
+                  {children}
+                </PageTransition>
               </div>
               <DashboardFooter />
             </main>

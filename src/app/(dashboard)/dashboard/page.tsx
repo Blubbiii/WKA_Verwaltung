@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { DashboardEditor, DashboardView, OnboardingBanner } from "@/components/dashboard";
 import { ParkHealthPulse } from "@/components/dashboard/ParkHealthPulse";
+import { DashboardGreeting } from "@/components/dashboard/greeting";
 import { useDashboardConfig } from "@/hooks/useDashboardConfig";
 
 // =============================================================================
@@ -34,12 +35,14 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            {isEditing
-              ? "Passen Sie Ihr Dashboard an"
-              : "Willkommen zurück! Hier ist Ihre Übersicht."}
-          </p>
+          {isEditing ? (
+            <>
+              <h1 className="text-3xl font-bold tracking-tight">Dashboard anpassen</h1>
+              <p className="text-muted-foreground">Widgets hinzufügen, entfernen und anordnen</p>
+            </>
+          ) : (
+            <DashboardGreeting />
+          )}
         </div>
 
         {!isEditing && (
