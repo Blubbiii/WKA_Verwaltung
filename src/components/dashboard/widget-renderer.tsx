@@ -42,6 +42,7 @@ import {
   BudgetVarianceKPI,
   WirtschaftsplanPLChart,
 } from "./widgets";
+import { RecentlyVisitedWidget } from "./widgets/recently-visited-widget";
 import { useAnalytics, useFormatCurrencyCompact } from "@/hooks/useAnalytics";
 import type { AvailableWidget } from "@/hooks/useDashboardConfig";
 
@@ -89,6 +90,7 @@ const WIDGET_TITLE_KEYS: Record<string, string> = {
   "chart-production-forecast": "productionForecast",
   "chart-revenue-by-park": "revenueByPark",
   "list-lease-overview": "leaseOverview",
+  "list-recently-visited": "recentlyVisited",
   "kpi-budget-variance": "budgetVariance",
   "chart-wirtschaftsplan-pl": "wirtschaftsplanPL",
 };
@@ -370,6 +372,19 @@ export function WidgetRenderer({
           onRemove={onRemove}
         >
           <PendingActionsWidget />
+        </WidgetWrapper>
+      );
+    }
+
+    // Recently Visited Widget
+    if (widgetId === "list-recently-visited") {
+      return (
+        <WidgetWrapper
+          title={widgetTitle}
+          isEditing={isEditing}
+          onRemove={onRemove}
+        >
+          <RecentlyVisitedWidget />
         </WidgetWrapper>
       );
     }

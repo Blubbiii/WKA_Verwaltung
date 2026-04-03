@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";
+import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -566,6 +567,21 @@ export default function LeaseDetailPage({
             </CardContent>
           </Card>
         )}
+
+        {/* File Upload */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Dokumente hochladen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FileUploadDropzone
+              endpoint="/api/documents"
+              additionalFields={{ category: "LEASE" }}
+              onUploadComplete={() => router.refresh()}
+              hint="Pachtvertrag, Anlagen oder sonstige Dokumente"
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

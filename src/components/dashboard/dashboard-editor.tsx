@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Save, X, RotateCcw, Plus, Loader2 } from "lucide-react";
+import { Save, X, RotateCcw, Plus, Loader2, LayoutTemplate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -24,6 +24,8 @@ import {
 } from "@/hooks/useDashboardConfig";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
+import { TemplatePicker } from "./template-picker";
+import type { DashboardTemplate } from "@/lib/dashboard/dashboard-templates";
 
 // =============================================================================
 // TYPES
@@ -60,6 +62,7 @@ export function DashboardEditor({
   const [showSidebar, setShowSidebar] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
   // Initialize local widgets from config
   useEffect(() => {
@@ -149,6 +152,16 @@ export function DashboardEditor({
     }
   }, [resetConfig]);
 
+  const handleApplyTemplate = useCallback((template: DashboardTemplate) => {
+    const newWidgets: DashboardWidget[] = template.widgets.map((w) => ({
+      id: uuidv4(),
+      widgetId: w.id,
+      position: { x: w.x, y: w.y, w: w.w, h: w.h },
+    }));
+    setLocalWidgets(newWidgets);
+    setHasChanges(true);
+  }, []);
+
   // Loading state
   if (isLoading) {
     return (
@@ -183,6 +196,16 @@ export function DashboardEditor({
             >
               <Plus className="h-4 w-4 mr-2" />
               Widget hinzufügen
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTemplatePicker(true)}
+              disabled={isSaving}
+            >
+              <LayoutTemplate className="h-4 w-4 mr-2" />
+              Vorlage
             </Button>
 
             <Button
@@ -279,6 +302,13 @@ export function DashboardEditor({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Template Picker */}
+      <TemplatePicker
+        open={showTemplatePicker}
+        onOpenChange={setShowTemplatePicker}
+        onApply={handleApplyTemplate}
+      />
     </div>
   );
 }

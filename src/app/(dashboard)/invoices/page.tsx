@@ -66,6 +66,7 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { DatevExportDialog } from "@/components/invoices/datev-export-dialog";
 import { getSkontoStatus, getSkontoStatusLabel, getSkontoStatusBadgeClass } from "@/lib/invoices/skonto";
 import { RecurringInvoicesManager } from "@/components/invoices/recurring-invoices-manager";
+import { InvoicePreviewDialog } from "@/components/invoices";
 
 interface Invoice {
   id: string;
@@ -151,6 +152,8 @@ export default function InvoicesPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [previewNumber, setPreviewNumber] = useState<string>("");
 
   const invalidate = useInvalidateQuery();
 
@@ -381,6 +384,96 @@ export default function InvoicesPage() {
     URL.revokeObjectURL(url);
 
     toast.success(`${selected.length} Beleg(e) exportiert`);
+  }
+
+  // Batch: download selected as PDF ZIP
+  async function handleBatchPdfExport() {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+
+    setIsBatchProcessing(true);
+    try {
+      const res = await fetch("/api/invoices/batch-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceIds: ids }),
+      });
+      if (!res.ok) throw new Error("Fehler beim PDF-Export");
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Rechnungen-${format(new Date(), "yyyy-MM-dd")}.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success(`${ids.length} PDF(s) als ZIP exportiert`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "PDF-Export fehlgeschlagen");
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  }
+
+  // Batch: send selected via email
+  async function handleBatchEmail() {
+    const sentableIds = sortedInvoices
+      .filter((inv) => selectedIds.has(inv.id) && inv.status !== "CANCELLED")
+      .map((inv) => inv.id);
+
+    if (sentableIds.length === 0) {
+      toast.error("Keine versandfähigen Belege ausgewählt.");
+      return;
+    }
+
+    setIsBatchProcessing(true);
+    try {
+      const res = await fetch("/api/invoices/batch-send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceIds: sentableIds }),
+      });
+      if (!res.ok) throw new Error("Fehler beim Versand");
+      const data = await res.json();
+      toast.success(`${data.sent || sentableIds.length} Beleg(e) per E-Mail versendet`);
+      clearSelection();
+      invalidate(["invoices"]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "E-Mail-Versand fehlgeschlagen");
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  }
+
+  // Batch: mark selected DRAFT as SENT
+  async function handleBatchMarkSent() {
+    const draftIds = sortedInvoices
+      .filter((inv) => selectedIds.has(inv.id) && inv.status === "DRAFT")
+      .map((inv) => inv.id);
+
+    if (draftIds.length === 0) {
+      toast.error("Nur Entwürfe können als versendet markiert werden.");
+      return;
+    }
+
+    setIsBatchProcessing(true);
+    try {
+      const res = await fetch("/api/invoices/batch-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceIds: draftIds, status: "SENT" }),
+      });
+      if (!res.ok) throw new Error("Fehler beim Statuswechsel");
+      const data = await res.json();
+      toast.success(`${data.updated} Beleg(e) als versendet markiert`);
+      if (data.skipped > 0) toast.info(`${data.skipped} übersprungen (nicht im Entwurf)`);
+      clearSelection();
+      invalidate(["invoices"]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Statuswechsel fehlgeschlagen");
+    } finally {
+      setIsBatchProcessing(false);
+    }
   }
 
   // Stats
@@ -615,6 +708,14 @@ export default function InvoicesPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
+                                setPreviewId(invoice.id);
+                                setPreviewNumber(invoice.invoiceNumber);
+                              }}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Vorschau
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
                                 window.open(`/api/invoices/${invoice.id}/pdf`, "_blank");
                               }}>
                                 <Download className="mr-2 h-4 w-4" />
@@ -675,6 +776,14 @@ export default function InvoicesPage() {
         title="Rechnung löschen"
       />
 
+      {/* PDF Preview Dialog */}
+      <InvoicePreviewDialog
+        open={!!previewId}
+        onOpenChange={(open) => { if (!open) setPreviewId(null); }}
+        invoiceId={previewId}
+        invoiceNumber={previewNumber}
+      />
+
       {/* DATEV Export Dialog */}
       <DatevExportDialog
         open={showDatevExport}
@@ -687,13 +796,31 @@ export default function InvoicesPage() {
         onClearSelection={clearSelection}
         actions={[
           {
-            label: "Exportieren",
-            icon: <Download className="h-4 w-4" />,
+            label: "CSV Export",
+            icon: <FileSpreadsheet className="h-4 w-4" />,
             onClick: handleBatchExport,
             disabled: isBatchProcessing,
           },
           {
-            label: "Als bezahlt markieren",
+            label: "PDF Export",
+            icon: <FileText className="h-4 w-4" />,
+            onClick: handleBatchPdfExport,
+            disabled: isBatchProcessing,
+          },
+          {
+            label: "E-Mail senden",
+            icon: <Mail className="h-4 w-4" />,
+            onClick: handleBatchEmail,
+            disabled: isBatchProcessing,
+          },
+          {
+            label: "Als versendet",
+            icon: <Send className="h-4 w-4" />,
+            onClick: handleBatchMarkSent,
+            disabled: isBatchProcessing,
+          },
+          {
+            label: "Als bezahlt",
             icon: isBatchProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />,
             onClick: handleBatchMarkPaid,
             disabled: isBatchProcessing,

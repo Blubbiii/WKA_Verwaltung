@@ -329,6 +329,13 @@ export const navGroups: NavGroup[] = [
         permission: "plots:read",
         featureFlag: "gis" as const,
       },
+      {
+        title: "Fristen-Kalender",
+        titleKey: "deadlines",
+        href: "/verwaltung/fristen",
+        icon: CalendarClock,
+        permission: "leases:read",
+      },
     ],
   },
 

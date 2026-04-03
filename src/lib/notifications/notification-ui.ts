@@ -5,6 +5,8 @@ import {
   FileSignature,
   Receipt,
   Info,
+  LandPlot,
+  Zap,
 } from "lucide-react";
 import { formatDate } from "@/lib/format";
 
@@ -12,7 +14,7 @@ import { formatDate } from "@/lib/format";
 // Notification type constants shared between NotificationBell and /notifications
 // =============================================================================
 
-export type NotificationType = "DOCUMENT" | "VOTE" | "CONTRACT" | "INVOICE" | "SYSTEM";
+export type NotificationType = "DOCUMENT" | "VOTE" | "CONTRACT" | "INVOICE" | "LEASE" | "SCADA" | "SYSTEM";
 
 export interface NotificationItem {
   id: string;
@@ -30,6 +32,8 @@ export const TYPE_ICON: Record<NotificationType, typeof Bell> = {
   VOTE: Vote,
   CONTRACT: FileSignature,
   INVOICE: Receipt,
+  LEASE: LandPlot,
+  SCADA: Zap,
   SYSTEM: Info,
 };
 
@@ -39,6 +43,8 @@ export const TYPE_COLOR: Record<NotificationType, string> = {
   VOTE: "text-purple-500",
   CONTRACT: "text-amber-500",
   INVOICE: "text-green-500",
+  LEASE: "text-emerald-500",
+  SCADA: "text-orange-500",
   SYSTEM: "text-muted-foreground",
 };
 
@@ -48,6 +54,8 @@ export const TYPE_LABEL: Record<NotificationType, string> = {
   VOTE: "Abstimmung",
   CONTRACT: "Vertrag",
   INVOICE: "Rechnung",
+  LEASE: "Pacht",
+  SCADA: "SCADA",
   SYSTEM: "System",
 };
 
@@ -57,6 +65,8 @@ export const ALL_NOTIFICATION_TYPES: NotificationType[] = [
   "VOTE",
   "CONTRACT",
   "INVOICE",
+  "LEASE",
+  "SCADA",
   "SYSTEM",
 ];
 

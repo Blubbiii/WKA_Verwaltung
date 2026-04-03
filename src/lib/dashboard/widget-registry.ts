@@ -295,6 +295,22 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     resizable: true,
   },
 
+  {
+    id: "list-recently-visited",
+    name: "Zuletzt besucht",
+    description: "Zuletzt besuchte Parks, Gesellschaften, Rechnungen",
+    category: "utility",
+    minRole: "VIEWER",
+    defaultWidth: 3,
+    defaultHeight: 4,
+    minWidth: 3,
+    minHeight: 3,
+    maxWidth: 6,
+    maxHeight: 8,
+    icon: "Clock",
+    resizable: true,
+  },
+
   // ===========================================
   // ADMIN WIDGETS - Standard: 6x4 (medium) / 6x6 (large)
   // ===========================================
