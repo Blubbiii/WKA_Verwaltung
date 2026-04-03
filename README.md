@@ -1,27 +1,81 @@
-# WindparkManager
+# WindparkManager (WPM)
 
-Verwaltungs- und Abrechnungsplattform für Windkraftanlagen mit Multi-Tenant-Architektur.
+Verwaltungs-, Abrechnungs- und Analyseplattform für Windkraftanlagen mit Multi-Tenant-Architektur.
 
 ## Features
 
-- Multi-Tenant System mit Admin-Bereich
-- Park- und Turbinenverwaltung
-- Beteiligungsverwaltung (Fonds & Gesellschafter)
-- Pacht- und Grundstücksverwaltung
-- Vertragsverwaltung mit Fristenwarnung
-- Dokumentenmanagement mit Versionierung
-- Abstimmungssystem
-- Rechnungsstellung
-- Audit-Log
+### Windparks & Anlagen
+- Park- und Turbinenverwaltung mit Stammdaten und Notizen
+- SCADA-Datenimport (Enercon WSD/UID) mit automatisierter n8n-Pipeline
+- Service-Events, Wartungspläne und Checklisten
+- Netzwerktopologie und Turbinenvergleiche
+
+### GIS-Modul
+- Leaflet-Karte mit Flurstücken, Kabeltrassen, Poolgebieten und Annotationen
+- Zeichenwerkzeuge (Polygon, Linie, Punkt, Kreis) mit Undo/Redo
+- Shapefile/ZIP-Import (Multi-Layer) mit QGIS-Roundtrip
+- Layer-Management, Tile-Switching, Buffer-Zonen, Heatmap
+
+### Finanzen & Buchhaltung
+- Rechnungsstellung mit PDF-Generierung (DIN 5008), DATEV/GoBD-Export
+- Consolidated Invoices, Gutschriften, Mahnwesen, SEPA-XML
+- Vollständige Buchhaltung: SKR03, EÜR, GuV, BWA, UStVA, SuSa
+- Angebote mit Status-Workflow (Entwurf → Rechnung)
+- Bankimport (CSV), Multibanking, Liquiditätsplanung
+- AfA-Verwaltung, Kassenbuch, Jahresabschluss
+- Kostenstellen-Report und Budget Soll/Ist-Vergleich
+
+### Beteiligungen & Gesellschaften
+- Fund-Hierarchien (GbR, GmbH & Co. KG)
+- Gesellschafter-Verwaltung mit Anteilen und Ausschüttungen
+- Onboarding-Wizard für neue Gesellschafter
+- Fund-spezifischer E-Mail-Versand mit eigenem SMTP
+
+### Energiedaten
+- Produktionsdaten, Netzbetreiber-Abrechnungen
+- Marktwert-Vergleiche (SMARD/BnetzA API)
+- Leistungskurven, Windrose, Tagesprofile
+- Anomalie-Erkennung und Analytics
+
+### Pacht & Grundstücke
+- Pachtverträge mit Fristenwarnung
+- Nutzungsentgelte, Vorschüsse, Abrechnungen
+- Kostenverteilung und Zahlungsmanagement
+
+### Verwaltung
+- Dokumenten-Explorer mit Ordnerstruktur und ZIP-Download
+- Kommunikationsmodul (Mailings an Gesellschafter)
+- E-Mail-Vorlagen und Massenversand via BullMQ
+- CRM mit Kontaktverwaltung
+
+### Administration
+- Multi-Tenant mit RBAC (Viewer, Manager, Admin, SuperAdmin)
+- Feature-Flags (16 granulare Flags) für modulares Upselling
+- System-Konfiguration (E-Mail, Storage, Wetter-API)
+- Übersetzungs-Editor (3 Sprachen: DE Formell, DE Persönlich, EN)
+- Audit-Log, Webhook-Management, Backup-Verwaltung
+
+### UX & Design
+- Persönliches Dashboard mit konfigurierbaren Widgets (12-Spalten Grid)
+- Command Palette (Ctrl+K) für schnelle Navigation
+- Framer Motion Animationen (Seitenübergänge, Listen, Erfolgs-Animationen)
+- Personalisierte Begrüßung basierend auf Tageszeit
+- Geführtes Onboarding (driver.js Tour in 3 Sprachen)
+- Dark/Light Mode, Responsive Design
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15, React 19, Tailwind CSS, shadcn/ui
-- **Backend**: Next.js API Routes, Prisma ORM
+- **Frontend**: Next.js 16.2, React 19, Tailwind CSS 4.2, shadcn/ui (Radix v2)
+- **Backend**: Next.js API Routes, Prisma 7.5 ORM
 - **Datenbank**: PostgreSQL 16
-- **Auth**: Auth.js (NextAuth v5)
+- **Auth**: Auth.js (NextAuth v5) mit RBAC
 - **Storage**: MinIO (S3-kompatibel)
 - **Cache**: Redis
+- **i18n**: next-intl 4.8 (DE Formell, DE Persönlich, EN)
+- **GIS**: Leaflet 1.9, react-leaflet 5, leaflet-draw
+- **Animationen**: Framer Motion 12
+- **Queue**: BullMQ (E-Mail-Versand)
+- **SCADA**: n8n Workflow + PowerShell Upload-Script
 
 ## Lokale Entwicklung
 
@@ -30,7 +84,7 @@ Verwaltungs- und Abrechnungsplattform für Windkraftanlagen mit Multi-Tenant-Arc
 - Node.js 20+
 - Docker Desktop (empfohlen) oder lokale PostgreSQL-Installation
 
-### Option 1: Mit Docker (empfohlen)
+### Schnellstart
 
 ```bash
 # 1. Dependencies installieren
@@ -42,7 +96,7 @@ docker compose -f docker-compose.dev.yml up -d
 # 3. Prisma Client generieren
 npx prisma generate
 
-# 4. Datenbank migrieren
+# 4. Datenbank synchronisieren
 npx prisma db push
 
 # 5. Testdaten einfügen
@@ -52,33 +106,19 @@ npx prisma db seed
 npm run dev
 ```
 
-### Option 2: Mit lokaler PostgreSQL
+Die Anwendung ist unter http://localhost:3000 erreichbar.
 
-1. PostgreSQL installieren und Datenbank erstellen:
+### Alternative: Lokale PostgreSQL
+
 ```sql
 CREATE DATABASE windparkmanager;
 CREATE USER wpm WITH PASSWORD 'devpassword';
 GRANT ALL PRIVILEGES ON DATABASE windparkmanager TO wpm;
 ```
 
-2. `.env.local` anpassen (falls andere Credentials):
-```env
-DATABASE_URL="postgresql://wpm:devpassword@localhost:5432/windparkmanager"
-```
-
-3. Fortfahren ab Schritt 3 von Option 1
-
-### Anwendung starten
-
-```bash
-npm run dev
-```
-
-Die Anwendung ist unter http://localhost:3000 erreichbar.
+`.env.local` anpassen und ab Schritt 3 fortfahren.
 
 ### Test-Zugangsdaten
-
-Nach dem Seeding stehen folgende Benutzer zur Verfügung:
 
 | E-Mail | Passwort | Rolle |
 |--------|----------|-------|
@@ -90,28 +130,35 @@ Nach dem Seeding stehen folgende Benutzer zur Verfügung:
 
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── (dashboard)/        # Dashboard-Layout & Seiten
-│   ├── api/                # API Routes
-│   └── login/              # Login-Seite
-├── components/             # React-Komponenten
-│   ├── layout/             # Layout-Komponenten
-│   └── ui/                 # shadcn/ui Komponenten
-├── lib/                    # Hilfsfunktionen
-│   ├── auth/               # Authentifizierung
-│   └── prisma.ts           # Prisma Client
-└── middleware.ts           # Auth Middleware
+├── app/                        # Next.js App Router
+│   ├── (dashboard)/            # Dashboard-Layout & alle Seiten
+│   ├── api/                    # API Routes (~80+ Endpoints)
+│   ├── login/                  # Login
+│   └── register/               # Demo-Request Landing Page
+├── components/                 # React-Komponenten
+│   ├── admin/                  # Admin-UI (Config, Roles, etc.)
+│   ├── dashboard/              # Dashboard-Widgets & Greeting
+│   ├── invoices/               # Rechnungskomponenten
+│   ├── layout/                 # Sidebar, Header
+│   ├── maps/                   # GIS/Leaflet-Komponenten
+│   ├── providers/              # Context Provider
+│   └── ui/                     # shadcn/ui + Custom Components
+├── hooks/                      # Custom React Hooks
+├── i18n/                       # Internationalisierung (Config)
+├── lib/                        # Utilities & Business Logic
+│   ├── auth/                   # Auth & Permission Checks
+│   ├── dashboard/              # Widget Registry & Layouts
+│   ├── email/                  # E-Mail-Versand (SMTP, Queue)
+│   ├── i18n/                   # Translation Loader
+│   ├── onboarding/             # Tour-Definitionen
+│   └── prisma.ts               # Prisma Client
+├── messages/                   # i18n JSON-Dateien (de, de-personal, en)
+├── styles/                     # Globale CSS-Styles
+└── middleware.ts               # Auth & i18n Middleware
 
 prisma/
-├── schema.prisma           # Datenbank-Schema
-└── seed.ts                 # Testdaten
-
-docs/
-├── requirements/           # Feature-Spezifikationen
-├── architecture/           # System-Architektur
-├── frontend/               # UI/UX-Konzept
-├── devops/                 # Deployment-Anleitung
-└── ROADMAP.md              # Entwicklungs-Roadmap
+├── schema.prisma               # Datenbank-Schema (~90 Models)
+└── seed.ts                     # Testdaten
 ```
 
 ## Verfügbare Skripte
@@ -127,8 +174,7 @@ npm run lint         # ESLint ausführen
 
 ```bash
 npx prisma generate   # Client generieren
-npx prisma db push    # Schema synchronisieren (dev)
-npx prisma migrate dev # Migration erstellen (dev)
+npx prisma db push    # Schema synchronisieren
 npx prisma db seed    # Testdaten einfügen
 npx prisma studio     # Datenbank-GUI
 ```
@@ -142,13 +188,13 @@ npx prisma studio     # Datenbank-GUI
 | MinIO | 9000, 9001 | S3-kompatibler Storage |
 | Mailhog | 1025, 8025 | E-Mail-Testing |
 
-## Dokumentation
+## Deployment
 
-- [Feature-Spezifikationen](docs/requirements/feature-specifications.md)
-- [System-Architektur](docs/architecture/system-architecture.md)
-- [UI/UX-Konzept](docs/frontend/ui-ux-concept.md)
-- [Deployment-Anleitung](docs/devops/deployment-guide.md)
-- [Roadmap](docs/ROADMAP.md)
+Produktions-Deployment via Docker (Multi-Stage Build) auf internem Server mit Portainer.
+
+- Image: `ghcr.io/blubbiii/wka_verwaltung:latest`
+- Datenbank-Sync: `prisma db push` (keine Migration-Historie)
+- SCADA-Pipeline: n8n Workflow + Windows Scheduled Task
 
 ## Lizenz
 
