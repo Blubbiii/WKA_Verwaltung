@@ -7,11 +7,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import type { UserRole } from "@/types/dashboard";
+import { hasMinimumRole } from "@/types/dashboard";
 import {
-  getWidgetsForRole,
-  getWidgetsByCategory,
+  WIDGET_REGISTRY,
   WIDGET_CATEGORIES,
 } from "@/lib/dashboard/widget-registry";
+import { prisma } from "@/lib/prisma";
 import { cache } from "@/lib/cache";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { apiLogger as logger } from "@/lib/logger";
@@ -40,33 +41,66 @@ export async function GET(request: NextRequest) {
     const groupByCategory = searchParams.get("grouped") === "true";
     const category = searchParams.get("category");
 
-    // Build cache key based on role + query params (widgets are role-dependent, not user-specific)
-    const cacheKey = `dashboard:widgets:${userRole}:grouped=${groupByCategory}:category=${category || "all"}`;
-
-    // Try cache first
-    let _cacheHit = false;
+    // Fetch DB overrides for widget minRole (per tenant)
+    const tenantId = check.tenantId ?? null;
+    const overrideMap = new Map<string, UserRole>();
     try {
-      const cached = await cache.get<Record<string, unknown>>(cacheKey);
-      if (cached) {
-        _cacheHit = true;
-        return NextResponse.json(cached, {
-          headers: {
-            "X-Cache": "HIT",
-            "Cache-Control": `private, max-age=${CACHE_TTL.DASHBOARD}, stale-while-revalidate=${CACHE_TTL.DASHBOARD * 2}`,
-          },
-        });
+      const overrides = await prisma.systemConfig.findMany({
+        where: {
+          tenantId,
+          key: { startsWith: "widget.minRole." },
+          category: "dashboard",
+        },
+      });
+      for (const o of overrides) {
+        const widgetId = o.key.replace("widget.minRole.", "");
+        overrideMap.set(widgetId, o.value as UserRole);
       }
-    } catch (error) {
-      logger.warn("[Widgets] Cache read error: %s", error instanceof Error ? error.message : "Unknown error");
+    } catch (err) {
+      logger.warn({ err }, "[Widgets] Failed to load widget visibility overrides, using defaults");
+    }
+
+    // Helper: get effective minRole for a widget (DB override > registry default)
+    const getEffectiveMinRole = (widgetId: string, defaultMinRole: UserRole): UserRole =>
+      overrideMap.get(widgetId) ?? defaultMinRole;
+
+    // Filter widgets using effective minRole (override or default)
+    const getWidgetsForRoleWithOverrides = () =>
+      WIDGET_REGISTRY.filter((w) =>
+        hasMinimumRole(userRole, getEffectiveMinRole(w.id, w.minRole as UserRole))
+      );
+
+    // Build cache key — include tenant to separate override sets
+    const cacheKey = `dashboard:widgets:${tenantId || "global"}:${userRole}:grouped=${groupByCategory}:category=${category || "all"}`;
+
+    // Skip cache when overrides exist (they change infrequently but should take effect immediately)
+    if (overrideMap.size === 0) {
+      try {
+        const cached = await cache.get<Record<string, unknown>>(cacheKey);
+        if (cached) {
+          return NextResponse.json(cached, {
+            headers: {
+              "X-Cache": "HIT",
+              "Cache-Control": `private, max-age=${CACHE_TTL.DASHBOARD}, stale-while-revalidate=${CACHE_TTL.DASHBOARD * 2}`,
+            },
+          });
+        }
+      } catch (error) {
+        logger.warn("[Widgets] Cache read error: %s", error instanceof Error ? error.message : "Unknown error");
+      }
     }
 
     let result: Record<string, unknown>;
 
     if (groupByCategory) {
-      // Return widgets grouped by category
-      const widgetsByCategory = getWidgetsByCategory(userRole);
+      // Return widgets grouped by category (with override-aware filtering)
+      const allWidgets = getWidgetsForRoleWithOverrides();
+      const widgetsByCategory = allWidgets.reduce((acc, widget) => {
+        if (!acc[widget.category]) acc[widget.category] = [];
+        acc[widget.category].push(widget);
+        return acc;
+      }, {} as Record<string, typeof allWidgets>);
 
-      // Filter categories that have widgets
       const availableCategories = WIDGET_CATEGORIES.filter(
         (cat) => widgetsByCategory[cat.id] && widgetsByCategory[cat.id].length > 0
       );
@@ -74,11 +108,11 @@ export async function GET(request: NextRequest) {
       result = {
         categories: availableCategories,
         widgetsByCategory,
-        totalCount: Object.values(widgetsByCategory).flat().length,
+        totalCount: allWidgets.length,
       };
     } else {
-      // Get all available widgets for the role
-      let widgets = getWidgetsForRole(userRole);
+      // Get all available widgets for the role (with overrides)
+      let widgets = getWidgetsForRoleWithOverrides();
 
       // Filter by category if specified
       if (category) {
@@ -86,9 +120,14 @@ export async function GET(request: NextRequest) {
       }
 
       // Filter available categories (only those with widgets)
-      const widgetsByCategory = getWidgetsByCategory(userRole);
+      const allWidgets = getWidgetsForRoleWithOverrides();
+      const widgetsByCat = allWidgets.reduce((acc, widget) => {
+        if (!acc[widget.category]) acc[widget.category] = [];
+        acc[widget.category].push(widget);
+        return acc;
+      }, {} as Record<string, typeof allWidgets>);
       const availableCategories = WIDGET_CATEGORIES.filter(
-        (cat) => widgetsByCategory[cat.id] && widgetsByCategory[cat.id].length > 0
+        (cat) => widgetsByCat[cat.id] && widgetsByCat[cat.id].length > 0
       );
 
       result = {
