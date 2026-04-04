@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 
@@ -315,17 +316,7 @@ export async function PUT(
 
     return NextResponse.json(response);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ungültige Daten", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating contract");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Interner Serverfehler");
   }
 }
 

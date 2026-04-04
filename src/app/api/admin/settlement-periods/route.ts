@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Prisma, SettlementPeriodStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { dispatchWebhook } from "@/lib/webhooks";
 
 const createPeriodSchema = z.object({
@@ -183,16 +184,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(period, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating settlement period");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Abrechnungsperiode" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Abrechnungsperiode");
   }
 }

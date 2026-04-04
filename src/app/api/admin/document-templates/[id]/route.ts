@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const updateTemplateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -124,17 +125,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating document template");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Vorlage" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der Vorlage");
   }
 }
 

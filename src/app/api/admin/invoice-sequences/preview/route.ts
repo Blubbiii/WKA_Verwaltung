@@ -5,6 +5,7 @@ import { generatePreview } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
 import { InvoiceType } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const previewSchema = z.object({
   type: z.enum(["INVOICE", "CREDIT_NOTE"]),
@@ -51,16 +52,6 @@ export async function POST(request: NextRequest) {
       digitCount: sequence.digitCount,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error generating preview");
-    return NextResponse.json(
-      { error: "Fehler beim Generieren der Vorschau" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Generieren der Vorschau");
   }
 }

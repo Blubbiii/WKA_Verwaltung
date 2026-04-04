@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
 
 const querySchema = z.object({
@@ -150,16 +151,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ungültige Parameter", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error fetching audit logs");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Audit-Logs" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Laden der Audit-Logs");
   }
 }

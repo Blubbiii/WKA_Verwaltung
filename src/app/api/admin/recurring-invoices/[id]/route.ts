@@ -14,6 +14,7 @@ import {
 } from "@/lib/invoices/recurring-invoice-service";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 // ============================================================================
 // Validation
@@ -289,17 +290,7 @@ async function patchHandler(
       updatedAt: updated.updatedAt.toISOString(),
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating recurring invoice");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der wiederkehrenden Rechnung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der wiederkehrenden Rechnung");
   }
 }
 

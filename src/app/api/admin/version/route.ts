@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const packageVersion = process.env.NEXT_PUBLIC_APP_VERSION || "0.0.0";
 
@@ -89,16 +90,6 @@ export async function PATCH(request: NextRequest) {
       message: "Version aktualisiert",
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating version");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Version" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der Version");
   }
 }

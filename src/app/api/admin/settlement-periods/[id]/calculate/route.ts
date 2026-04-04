@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import {
   calculateSettlement,
   calculateMonthlyAdvance,
@@ -202,17 +203,7 @@ export async function POST(
       });
     }
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error calculating settlement");
-    return NextResponse.json(
-      { error: "Fehler bei der Berechnung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler bei der Berechnung");
   }
 }
 

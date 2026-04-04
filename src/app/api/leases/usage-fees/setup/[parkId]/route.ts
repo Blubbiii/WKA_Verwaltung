@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { parkLeaseSettlementSetupSchema } from "@/types/billing";
 import type { ParkSetupData } from "@/types/billing";
@@ -310,19 +311,6 @@ export async function PUT(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error(
-      { err: error },
-      "Error updating lease settlement setup"
-    );
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Park-Konfiguration" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Speichern der Park-Konfiguration");
   }
 }

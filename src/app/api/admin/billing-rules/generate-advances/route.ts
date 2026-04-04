@@ -24,6 +24,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { leaseAdvanceHandler } from "@/lib/billing/rules/lease-advance";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 
 const generateAdvancesSchema = z.object({
@@ -121,40 +122,6 @@ export async function POST(request: NextRequest) {
     const statusCode = result.status === "failed" ? 422 : 200;
     return NextResponse.json(response, { status: statusCode });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          error: "Validierungsfehler",
-          details: error.issues.map((e) => ({
-            field: e.path.join("."),
-            message: e.message,
-          })),
-        },
-        { status: 400 }
-      );
-    }
-
-    logger.error({ err: error }, "Error generating lease advances");
-
-    const errorMessage =
-      error instanceof Error ? error.message : "Unbekannter Fehler";
-
-    return NextResponse.json(
-      {
-        success: false,
-        status: "failed",
-        error: errorMessage,
-        summary: {
-          invoicesCreated: 0,
-          totalAmount: 0,
-          totalProcessed: 0,
-          successful: 0,
-          failed: 0,
-          skipped: 0,
-        },
-        invoices: [],
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Generieren der Vorschüsse");
   }
 }

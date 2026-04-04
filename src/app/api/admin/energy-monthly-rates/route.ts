@@ -13,6 +13,7 @@ import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
 // ============================================================================
@@ -263,14 +264,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    // Zod Validation Error
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-
     // Prisma Unique Constraint Error (Fallback)
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
@@ -281,10 +274,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    logger.error({ err: error }, "Error creating energy monthly rate");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des monatlichen Vergütungssatzes" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen des monatlichen Vergütungssatzes");
   }
 }

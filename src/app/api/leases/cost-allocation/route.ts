@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { Prisma, ParkCostAllocationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { createCostAllocationSchema } from "@/types/billing";
 import { executeCostAllocation } from "@/lib/lease-revenue/allocator";
@@ -141,13 +142,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-
     const message =
       error instanceof Error ? error.message : "Unbekannter Fehler";
 
@@ -160,10 +154,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    logger.error({ err: error }, "Error creating cost allocation");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Kostenaufteilung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Kostenaufteilung");
   }
 }

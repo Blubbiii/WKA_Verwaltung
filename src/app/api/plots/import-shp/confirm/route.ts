@@ -21,6 +21,7 @@ import {
   type OwnerMappableField,
 } from "@/lib/shapefile/field-mapping";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 // ---------------------------------------------------------------------------
 // Request validation schema
@@ -487,16 +488,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 },
-      );
-    }
-    logger.error({ err: error }, "Error executing SHP import");
-    return NextResponse.json(
-      { error: "Interner Serverfehler beim Ausführen des Shapefile-Imports." },
-      { status: 500 },
-    );
+    return handleApiError(error, "Fehler beim Ausführen des Shapefile-Imports");
   }
 }

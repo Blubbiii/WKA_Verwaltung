@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const updateRuleSchema = z.object({
   fundId: z.uuid().optional().nullable(),
@@ -60,17 +61,7 @@ export async function PATCH(
 
     return NextResponse.json(rule);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating document routing rule");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Routing-Regel" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der Routing-Regel");
   }
 }
 

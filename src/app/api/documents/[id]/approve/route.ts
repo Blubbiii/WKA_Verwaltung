@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 
@@ -259,16 +260,6 @@ export async function POST(
       message: `Status geändert: ${statusLabels[targetStatus] || targetStatus}`,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error in document approval workflow");
-    return NextResponse.json(
-      { error: "Fehler bei der Dokumenten-Freigabe" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler bei der Dokumenten-Freigabe");
   }
 }

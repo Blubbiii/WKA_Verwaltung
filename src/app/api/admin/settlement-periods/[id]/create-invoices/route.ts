@@ -13,6 +13,7 @@ import type {
 import type { SettlementPdfDetails, CalculationSummary, RevenueTableEntry, TurbineProductionEntry } from "@/types/pdf";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { formatDate } from "@/lib/format";
 
 const revenueSourceSchema = z.object({
@@ -250,18 +251,7 @@ export async function POST(
       });
     }
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating credit notes");
-    const errMsg = error instanceof Error ? error.message : "Unbekannter Fehler";
-    return NextResponse.json(
-      { error: `Fehler beim Erstellen der Gutschriften: ${errMsg}` },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Gutschriften");
   }
 }
 

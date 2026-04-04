@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { logDeletion } from "@/lib/audit";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -190,17 +191,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
 
     return NextResponse.json(plot);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating plot");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Flurstücks" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren des Flurstücks");
   }
 }
 

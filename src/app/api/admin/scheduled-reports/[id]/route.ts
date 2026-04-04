@@ -13,6 +13,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { z } from "zod";
 import { calculateNextRun } from "@/lib/reports/scheduled-report-service";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 // Validation schema for updating a scheduled report
 const updateScheduledReportSchema = z.object({
@@ -220,17 +221,7 @@ export async function PATCH(
       createdBy: updatedReport.createdBy,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating scheduled report");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des geplanten Berichts" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren des geplanten Berichts");
   }
 }
 

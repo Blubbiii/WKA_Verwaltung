@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 
 const leaseUpdateSchema = z.object({
@@ -220,23 +221,13 @@ export async function PATCH(
 
     return NextResponse.json(transformedLease);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    if (error instanceof Error) {
+    if (error instanceof Error && !(error instanceof z.ZodError)) {
       return NextResponse.json(
         { error: error.message },
         { status: 400 }
       );
     }
-    logger.error({ err: error }, "Error updating lease");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Pachtvertrags" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren des Pachtvertrags");
   }
 }
 

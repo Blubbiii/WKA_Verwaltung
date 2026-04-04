@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const bulkCreateSchema = z.object({
   parkId: z.uuid(),
@@ -147,17 +148,7 @@ export async function POST(request: NextRequest) {
       })),
     }, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error bulk creating settlement periods");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Abrechnungsperioden" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Abrechnungsperioden");
   }
 }
 

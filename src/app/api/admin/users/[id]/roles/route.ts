@@ -4,6 +4,7 @@ import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission"
 import { invalidateUser } from "@/lib/auth/permissionCache";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const roleAssignSchema = z.object({
   roleId: z.string().uuid("Ungültige Rollen-ID"),
@@ -170,17 +171,7 @@ export async function POST(
 
     return NextResponse.json(assignment, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error assigning role");
-    return NextResponse.json(
-      { error: "Fehler beim Zuweisen der Rolle" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Zuweisen der Rolle");
   }
 }
 

@@ -12,6 +12,7 @@ import {
 import { withMonitoring } from "@/lib/monitoring";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { getTenantSettings } from "@/lib/tenant-settings";
 
 // ============================================================================
@@ -283,18 +284,7 @@ async function getHandler(request: NextRequest) {
       },
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ungültige Parameter", details: error.issues },
-        { status: 400 }
-      );
-    }
-
-    logger.error({ err: error }, "Error generating DATEV export");
-    return NextResponse.json(
-      { error: "Fehler beim Generieren des DATEV-Exports" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Generieren des DATEV-Exports");
   }
 }
 

@@ -7,6 +7,7 @@ import { API_LIMITS } from "@/lib/config/api-limits";
 import { generateAuditLogPdf, type AuditLogPdfData } from "@/lib/pdf/generators/auditLogPdf";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -457,17 +458,6 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ungültige Parameter", details: error.issues },
-        { status: 400 }
-      );
-    }
-
-    logger.error({ err: error }, "Error exporting audit logs");
-    return NextResponse.json(
-      { error: "Fehler beim Exportieren der Audit-Logs" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Exportieren der Audit-Logs");
   }
 }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
 
 const userUpdateSchema = z.object({
@@ -215,17 +216,7 @@ export async function PATCH(
 
     return NextResponse.json(user);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating user");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Benutzers" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren des Benutzers");
   }
 }
 

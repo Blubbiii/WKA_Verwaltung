@@ -12,6 +12,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { z } from "zod";
 import { calculateInitialNextRun } from "@/lib/reports/scheduled-report-service";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
 // Validation schema for creating a scheduled report
@@ -203,16 +204,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating scheduled report");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des geplanten Berichts" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen des geplanten Berichts");
   }
 }

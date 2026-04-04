@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { ProductionDataSource, ProductionStatus, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -213,16 +214,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(production, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating production");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Produktionsdaten" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Produktionsdaten");
   }
 }

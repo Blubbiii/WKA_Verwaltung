@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -127,16 +128,6 @@ const check = await requirePermission(PERMISSIONS.LEASES_CREATE);
 
     return NextResponse.json(person, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating person");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Person" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Person");
   }
 }

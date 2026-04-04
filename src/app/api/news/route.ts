@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
-import { parsePaginationParams } from "@/lib/api-utils";
+import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { NewsCategory } from "@prisma/client";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -144,16 +144,6 @@ const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
 
     return NextResponse.json(news, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating news");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Meldung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Meldung");
   }
 }

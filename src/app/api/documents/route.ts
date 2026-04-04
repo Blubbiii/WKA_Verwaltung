@@ -7,6 +7,7 @@ import { DocumentCategory, DocumentApprovalStatus } from "@prisma/client";
 import { uploadFile, ensureBucket } from "@/lib/storage";
 import { validateFileContent } from "@/lib/file-validation";
 import { z } from "zod";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import {
   rateLimit,
@@ -269,19 +270,7 @@ export async function POST(request: NextRequest) {
     // JSON: Dokument ohne Datei-Upload erstellen (z.B. für externe URLs)
     return handleJsonCreate(request, check.tenantId, check.userId);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    // Log full error for debugging
-    logger.error({ err: error }, "Error creating document");
-    const errorMessage = error instanceof Error ? error.message : "Unbekannter Fehler";
-    return NextResponse.json(
-      { error: `Fehler beim Erstellen des Dokuments: ${errorMessage}` },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen des Dokuments");
   }
 }
 

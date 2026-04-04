@@ -3,6 +3,7 @@ import { requireSuperadmin, requireAdmin } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const tenantUpdateSchema = z.object({
   name: z.string().min(1, "Firmenname ist erforderlich").optional(),
@@ -154,17 +155,7 @@ export async function PATCH(
 
     return NextResponse.json(tenant);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating tenant");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Mandanten" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren des Mandanten");
   }
 }
 

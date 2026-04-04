@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices/skonto";
-import { parsePaginationParams } from "@/lib/api-utils";
+import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { TaxType } from "@prisma/client";
 import { withMonitoring } from "@/lib/monitoring";
@@ -259,17 +259,7 @@ async function postHandler(request: NextRequest) {
 
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating invoice");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Rechnung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Rechnung");
   }
 }
 

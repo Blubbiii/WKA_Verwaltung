@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 
 // Schema für das Verknuepfen eines existierenden Dokuments
@@ -176,17 +177,7 @@ export async function POST(
       updatedAt: updatedDocument.updatedAt.toISOString(),
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ungültige Daten", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error linking document to contract");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Interner Serverfehler");
   }
 }
 

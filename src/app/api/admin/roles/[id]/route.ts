@@ -5,6 +5,7 @@ import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission"
 import { invalidateAll } from "@/lib/auth/permissionCache";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const roleUpdateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").optional(),
@@ -231,17 +232,7 @@ export async function PATCH(
 
     return NextResponse.json(role);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating role");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Rolle" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der Rolle");
   }
 }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
-import { parsePaginationParams } from "@/lib/api-utils";
+import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { withMonitoring } from "@/lib/monitoring";
@@ -277,17 +277,7 @@ async function postHandler(request: NextRequest) {
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ungültige Daten", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating contract");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Interner Serverfehler");
   }
 }
 

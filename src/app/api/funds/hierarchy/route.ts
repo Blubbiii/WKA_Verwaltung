@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
@@ -377,16 +378,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(hierarchy, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating fund hierarchy");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Fund-Hierarchie" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Fund-Hierarchie");
   }
 }

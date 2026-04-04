@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { deleteFile } from "@/lib/storage";
 import { z } from "zod";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 
 const documentUpdateSchema = z.object({
@@ -228,17 +229,7 @@ export async function PUT(
 
     return NextResponse.json(document);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating document");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Dokuments" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren des Dokuments");
   }
 }
 

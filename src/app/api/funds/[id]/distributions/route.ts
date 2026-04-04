@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 
 const createDistributionSchema = z.object({
@@ -228,16 +229,6 @@ export async function POST(
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating distribution");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Ausschuettung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Ausschuettung");
   }
 }

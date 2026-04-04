@@ -11,6 +11,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { validateRuleParameters, calculateNextRun, BillingRuleType, BillingRuleFrequency } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
 // Validation Schema für neue Regel
@@ -196,16 +197,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating billing rule");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Abrechnungsregel" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Abrechnungsregel");
   }
 }

@@ -13,6 +13,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { WEBHOOK_EVENTS } from "@/lib/webhooks/events";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 // =============================================================================
 // Validation Schema
@@ -181,17 +182,7 @@ export async function PUT(
       updatedAt: updated.updatedAt.toISOString(),
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating webhook");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Webhooks" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren des Webhooks");
   }
 }
 

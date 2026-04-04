@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { logDeletion } from "@/lib/audit";
 import { serializePrisma } from "@/lib/serialize";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 
@@ -288,17 +289,7 @@ export async function PUT(
 
     return NextResponse.json(park);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating park");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Parks" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren des Parks");
   }
 }
 

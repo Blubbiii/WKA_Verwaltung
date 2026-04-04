@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { getFileBuffer } from "@/lib/storage";
 import { CATEGORY_LABELS } from "@/types/document-explorer";
@@ -195,13 +196,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    logger.error({ err: error }, "Error generating ZIP download");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Downloads" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen des Downloads");
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { ProductionDataSource, ProductionStatus, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -471,17 +472,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result, { status: statusCode });
     }
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { success: false, error: "Validierungsfehler im Import-Format", details: error.issues },
-        { status: 400 }
-      );
-    }
-
-    logger.error({ err: error }, "Error importing productions");
-    return NextResponse.json(
-      { success: false, error: "Fehler beim Import der Produktionsdaten", details: error instanceof Error ? error.message : "Unbekannter Fehler" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Import der Produktionsdaten");
   }
 }

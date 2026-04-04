@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const updatePeriodSchema = z.object({
   status: z.enum(["OPEN", "IN_PROGRESS", "PENDING_REVIEW", "APPROVED", "CLOSED", "CANCELLED"]).optional(),
@@ -184,17 +185,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating settlement period");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Abrechnungsperiode" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der Abrechnungsperiode");
   }
 }
 

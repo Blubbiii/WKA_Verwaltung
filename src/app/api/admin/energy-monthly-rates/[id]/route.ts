@@ -14,6 +14,7 @@ import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -217,19 +218,7 @@ export async function PATCH(
       updatedAt: updatedRate.updatedAt.toISOString(),
     });
   } catch (error) {
-    // Zod Validation Error
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-
-    logger.error({ err: error }, "Error updating energy monthly rate");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des monatlichen Vergütungssatzes" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren des monatlichen Vergütungssatzes");
   }
 }
 

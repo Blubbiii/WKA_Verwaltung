@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/withPermission';
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import {
   findJobById,
   findJobInQueue,
@@ -113,42 +114,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
+    if (error instanceof Error && error.message.includes('not in a failed state')) {
       return NextResponse.json(
         {
-          error: 'Ungültige Parameter',
-          details: error.issues.map((e) => ({
-            field: e.path.join('.'),
-            message: e.message,
-          })),
+          error: 'Job ist nicht im fehlgeschlagenen Status',
+          message: 'Der Job wurde moeglicherweise bereits erneut gestartet.',
         },
         { status: 400 }
       );
     }
 
-    logger.error({ err: error }, '[API:admin/jobs/[id]/retry] Error');
-
-    if (error instanceof Error) {
-      // Handle specific BullMQ errors
-      if (error.message.includes('not in a failed state')) {
-        return NextResponse.json(
-          {
-            error: 'Job ist nicht im fehlgeschlagenen Status',
-            message: 'Der Job wurde moeglicherweise bereits erneut gestartet.',
-          },
-          { status: 400 }
-        );
-      }
-
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Fehler beim erneuten Starten des Jobs' },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim erneuten Starten des Jobs");
   }
 }

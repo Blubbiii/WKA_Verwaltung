@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const createRuleSchema = z.object({
   fundId: z.uuid().optional().nullable(),
@@ -69,16 +70,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(rule, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating document routing rule");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Routing-Regel" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Routing-Regel");
   }
 }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
-import { parsePaginationParams, parseSortParams } from "@/lib/api-utils";
+import { parsePaginationParams, parseSortParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
@@ -196,17 +196,7 @@ async function postHandler(request: NextRequest) {
 
     return NextResponse.json(park, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating park");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Parks" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen des Parks");
   }
 }
 

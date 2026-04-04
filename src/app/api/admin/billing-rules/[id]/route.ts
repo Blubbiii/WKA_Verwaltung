@@ -12,6 +12,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { validateRuleParameters, calculateNextRun, BillingRuleType, BillingRuleFrequency } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 // Validation Schema für Update
 const updateRuleSchema = z.object({
@@ -201,17 +202,7 @@ export async function PATCH(
       updatedAt: updatedRule.updatedAt.toISOString(),
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating billing rule");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Abrechnungsregel" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der Abrechnungsregel");
   }
 }
 

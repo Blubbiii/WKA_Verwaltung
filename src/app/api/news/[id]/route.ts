@@ -3,6 +3,7 @@ import { requireAuth, requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { logDeletion } from "@/lib/audit";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -156,17 +157,7 @@ const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
 
     return NextResponse.json(news);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating news");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Meldung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der Meldung");
   }
 }
 

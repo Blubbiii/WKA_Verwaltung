@@ -13,6 +13,7 @@ import {
 } from "@/lib/invoices/recurring-invoice-service";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
 // ============================================================================
@@ -231,17 +232,7 @@ async function postHandler(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating recurring invoice");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der wiederkehrenden Rechnung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der wiederkehrenden Rechnung");
   }
 }
 

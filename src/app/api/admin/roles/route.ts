@@ -4,6 +4,7 @@ import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission"
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const roleCreateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
@@ -152,16 +153,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(role, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating role");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Rolle" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Rolle");
   }
 }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
 
@@ -173,16 +174,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating user");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Benutzers" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen des Benutzers");
   }
 }

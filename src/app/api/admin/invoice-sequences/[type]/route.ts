@@ -5,6 +5,7 @@ import { generatePreview } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
 import { InvoiceType } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const updateSequenceSchema = z.object({
   format: z
@@ -154,16 +155,6 @@ export async function PATCH(
       preview: generatePreview(sequence.format, sequence.nextNumber, sequence.digitCount),
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating invoice sequence");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Nummernkreises" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren des Nummernkreises");
   }
 }

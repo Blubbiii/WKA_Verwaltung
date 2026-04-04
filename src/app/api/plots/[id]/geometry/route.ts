@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
@@ -43,10 +44,6 @@ export async function PUT(
 
     return NextResponse.json({ id: updated.id, geometry: updated.geometry });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Ungültige Geometrie: " + error.message }, { status: 400 });
-    }
-    logger.error({ err: error }, "Error updating plot geometry");
-    return NextResponse.json({ error: "Fehler beim Aktualisieren der Geometrie" }, { status: 500 });
+    return handleApiError(error, "Fehler beim Aktualisieren der Geometrie");
   }
 }

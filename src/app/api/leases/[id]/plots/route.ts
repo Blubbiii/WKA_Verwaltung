@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 
 const addPlotsSchema = z.object({
@@ -158,17 +159,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
       plots: updatedLease?.leasePlots.map((lp) => lp.plot) || [],
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error adding plots to lease");
-    return NextResponse.json(
-      { error: "Fehler beim Hinzufügen der Flurstücke" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Hinzufügen der Flurstücke");
   }
 }
 
@@ -247,16 +238,6 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
       plots: updatedLease?.leasePlots.map((lp) => lp.plot) || [],
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error removing plots from lease");
-    return NextResponse.json(
-      { error: "Fehler beim Entfernen der Flurstücke" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Entfernen der Flurstücke");
   }
 }

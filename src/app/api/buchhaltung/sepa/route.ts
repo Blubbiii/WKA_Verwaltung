@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { generateSepaXml } from "@/lib/export/sepa-export";
 import { z } from "zod";
@@ -127,10 +128,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: batch });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
-    }
-    logger.error({ err: error }, "Error creating SEPA batch");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return handleApiError(error, "Fehler beim Erstellen des SEPA-Batch");
   }
 }

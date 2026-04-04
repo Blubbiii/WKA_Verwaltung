@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 
 const bulkSchema = z.discriminatedUnion("action", [
@@ -124,10 +125,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: "Unbekannte Aktion" }, { status: 400 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    logger.error({ err: error }, "Error in bulk operation");
-    return NextResponse.json({ error: "Fehler bei der Massenoperation" }, { status: 500 });
+    return handleApiError(error, "Fehler bei der Massenoperation");
   }
 }

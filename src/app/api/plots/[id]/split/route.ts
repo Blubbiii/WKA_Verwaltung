@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
@@ -99,10 +100,6 @@ export async function POST(
 
     return NextResponse.json({ plots: result }, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    logger.error({ err: error }, "Error splitting plot");
-    return NextResponse.json({ error: "Fehler beim Teilen des Flurstücks" }, { status: 500 });
+    return handleApiError(error, "Fehler beim Teilen des Flurstücks");
   }
 }

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
+import { handleApiError } from "@/lib/api-utils";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import type { DashboardConfig, UserRole, UserSettings } from "@/types/dashboard";
 import {
@@ -206,17 +207,6 @@ export async function PUT(request: NextRequest) {
       message: "Dashboard-Konfiguration gespeichert",
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-
-    logger.error({ err: error }, "Error updating dashboard config");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Dashboard-Konfiguration" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Speichern der Dashboard-Konfiguration");
   }
 }

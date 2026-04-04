@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices/skonto";
 import { z } from "zod";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { serializePrisma } from "@/lib/serialize";
@@ -323,17 +324,7 @@ export async function PATCH(
 
     return NextResponse.json(serializePrisma(invoice));
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating invoice");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Rechnung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der Rechnung");
   }
 }
 

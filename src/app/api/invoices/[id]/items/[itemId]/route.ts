@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
 import { TaxType, PlotAreaType } from "@prisma/client";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 
 const itemUpdateSchema = z.object({
@@ -140,17 +141,7 @@ export async function PATCH(
 
     return NextResponse.json(item);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating invoice item");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Position" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der Position");
   }
 }
 

@@ -14,6 +14,7 @@ import { z } from "zod";
 import { applyPlotMapping, applyOwnerMapping } from "@/lib/shapefile/field-mapping";
 import type { PlotMappableField, OwnerMappableField } from "@/lib/shapefile/field-mapping";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 
 const featureSchema = z.object({
   id: z.number(),
@@ -340,13 +341,6 @@ export async function POST(request: NextRequest) {
       errors,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    logger.error({ err: error }, "Error executing GIS import");
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Fehler beim Import" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim GIS-Import");
   }
 }

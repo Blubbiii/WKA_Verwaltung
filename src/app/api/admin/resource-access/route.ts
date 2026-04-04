@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import {
   grantResourceAccess,
   revokeResourceAccess,
@@ -185,17 +186,7 @@ const check = await requireAdmin();
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error granting resource access");
-    return NextResponse.json(
-      { error: "Fehler beim Gewaehren des Zugriffs" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Gewaehren des Zugriffs");
   }
 }
 
@@ -229,17 +220,7 @@ const check = await requireAdmin();
       message: "Zugriff erfolgreich entzogen",
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error revoking resource access");
-    return NextResponse.json(
-      { error: "Fehler beim Entziehen des Zugriffs" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Entziehen des Zugriffs");
   }
 }
 

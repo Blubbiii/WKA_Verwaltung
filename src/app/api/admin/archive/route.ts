@@ -15,6 +15,7 @@ import {
 import { autoArchiveInvoice, autoArchiveContract } from "@/lib/archive/auto-archive";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
 
 // ---------------------------------------------------------------------------
@@ -79,17 +80,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Ungültige Parameter", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error searching archive");
-    return NextResponse.json(
-      { error: "Fehler beim Durchsuchen des Archivs" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Durchsuchen des Archivs");
   }
 }
 

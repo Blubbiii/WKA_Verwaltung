@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { handleApiError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { findDunningCandidates, executeDunningRun } from "@/lib/accounting/dunning";
 import { z } from "zod";
@@ -52,10 +53,6 @@ export async function POST(request: NextRequest) {
     const result = await executeDunningRun(check.tenantId!, check.userId!, parsed.invoiceIds);
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
-    }
-    logger.error({ err: error }, "Error executing dunning run");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return handleApiError(error, "Fehler beim Ausführen des Mahnlaufs");
   }
 }

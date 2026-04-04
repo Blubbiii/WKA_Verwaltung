@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
+import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import {
@@ -110,12 +111,6 @@ export async function POST(
       );
     }
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
     if (error instanceof Error) {
       // Business logic errors from the correction functions
       const isClientError = [
@@ -140,10 +135,6 @@ export async function POST(
       }
     }
 
-    logger.error({ err: error }, "Error creating invoice correction");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Korrektur" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Korrektur");
   }
 }

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { logDeletion, createAuditLog } from "@/lib/audit";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -293,17 +294,7 @@ export async function PATCH(
 
     return NextResponse.json(operator);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error updating turbine operator");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Betreiber-Zuordnung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Aktualisieren der Betreiber-Zuordnung");
   }
 }
 

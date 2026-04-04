@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
+import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
@@ -335,16 +336,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
-    }
-    logger.error({ err: error }, "Error creating turbine operator");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Betreiber-Zuordnung" },
-      { status: 500 }
-    );
+    return handleApiError(error, "Fehler beim Erstellen der Betreiber-Zuordnung");
   }
 }
