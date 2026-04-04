@@ -5,8 +5,7 @@ import { generateInvoicePdf } from "@/lib/pdf";
 import { sendEmailSync } from "@/lib/email/sender";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
-
-const MAX_BATCH_SIZE = 50;
+import { API_LIMITS } from "@/lib/config/api-limits";
 
 // Statuses that should be skipped (not an error, just ignored)
 const SKIP_STATUSES = new Set(["PAID", "CANCELLED"]);
@@ -54,10 +53,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (invoiceIds.length > MAX_BATCH_SIZE) {
+    if (invoiceIds.length > API_LIMITS.batchSize) {
       return NextResponse.json(
         {
-          error: `Maximal ${MAX_BATCH_SIZE} Rechnungen pro Batch erlaubt (erhalten: ${invoiceIds.length})`,
+          error: `Maximal ${API_LIMITS.batchSize} Rechnungen pro Batch erlaubt (erhalten: ${invoiceIds.length})`,
         },
         { status: 400 }
       );

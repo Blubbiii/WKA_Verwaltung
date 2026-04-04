@@ -7,9 +7,10 @@ import { getFileBuffer } from "@/lib/storage";
 import { CATEGORY_LABELS } from "@/types/document-explorer";
 import { z } from "zod";
 import JSZip from "jszip";
+import { API_LIMITS } from "@/lib/config/api-limits";
 
-const MAX_FILES = 200;
-const MAX_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB
+const MAX_FILES = API_LIMITS.zipMaxFiles;
+const MAX_SIZE_BYTES = API_LIMITS.zipMaxSizeBytes;
 
 const downloadSchema = z.object({
   documentIds: z.array(z.string()).optional(),

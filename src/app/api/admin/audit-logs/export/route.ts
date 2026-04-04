@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { generateCsvBuffer, generateExcel, type ColumnDef } from "@/lib/export";
+import { API_LIMITS } from "@/lib/config/api-limits";
 import { generateAuditLogPdf, type AuditLogPdfData } from "@/lib/pdf/generators/auditLogPdf";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -24,7 +25,7 @@ const querySchema = z.object({
 // CONSTANTS
 // ============================================================================
 
-const MAX_EXPORT_ENTRIES = 10000;
+const MAX_EXPORT_ENTRIES = API_LIMITS.maxExportEntries;
 
 // Action display names for export
 const ACTION_LABELS: Record<string, string> = {

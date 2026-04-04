@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
-
-const MAX_BATCH_SIZE = 50;
+import { API_LIMITS } from "@/lib/config/api-limits";
 
 // PATCH /api/invoices/batch-status - Rechnungsstatus in Bulk ändern
 export async function PATCH(request: NextRequest) {
@@ -44,10 +43,10 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (invoiceIds.length > MAX_BATCH_SIZE) {
+    if (invoiceIds.length > API_LIMITS.batchSize) {
       return NextResponse.json(
         {
-          error: `Maximal ${MAX_BATCH_SIZE} Rechnungen pro Batch erlaubt (erhalten: ${invoiceIds.length})`,
+          error: `Maximal ${API_LIMITS.batchSize} Rechnungen pro Batch erlaubt (erhalten: ${invoiceIds.length})`,
         },
         { status: 400 }
       );

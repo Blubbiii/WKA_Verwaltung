@@ -3,8 +3,9 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiLogger as logger } from "@/lib/logger";
 import { parseMultiLayerShapefile } from "@/lib/shapefile/multi-layer-parser";
+import { API_LIMITS } from "@/lib/config/api-limits";
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_FILE_SIZE = API_LIMITS.gisMaxFileSize;
 
 // POST /api/gis/import/preview — Parse SHP/ZIP and return multi-layer preview
 export async function POST(request: NextRequest) {
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     }, "GIS import preview parsed");
 
     // Serialize features (limit to prevent huge responses)
-    const MAX_FEATURES_PER_LAYER = 5000;
+    const MAX_FEATURES_PER_LAYER = API_LIMITS.gisMaxFeaturesPerLayer;
     const layers = result.layers.map((l) => ({
       name: l.name,
       geometryType: l.geometryType,

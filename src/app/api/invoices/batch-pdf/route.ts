@@ -4,8 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { generateInvoicePdf } from "@/lib/pdf";
 import { apiLogger as logger } from "@/lib/logger";
 import JSZip from "jszip";
-
-const MAX_BATCH_SIZE = 50;
+import { API_LIMITS } from "@/lib/config/api-limits";
 
 // POST /api/invoices/batch-pdf - Generate PDFs for multiple invoices and return as ZIP
 export async function POST(request: NextRequest) {
@@ -38,10 +37,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (invoiceIds.length > MAX_BATCH_SIZE) {
+    if (invoiceIds.length > API_LIMITS.batchSize) {
       return NextResponse.json(
         {
-          error: `Maximal ${MAX_BATCH_SIZE} Rechnungen pro Batch erlaubt (erhalten: ${invoiceIds.length})`,
+          error: `Maximal ${API_LIMITS.batchSize} Rechnungen pro Batch erlaubt (erhalten: ${invoiceIds.length})`,
         },
         { status: 400 }
       );

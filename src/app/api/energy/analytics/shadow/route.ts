@@ -6,6 +6,7 @@ import {
   fetchShadowDailyProfile,
 } from "@/lib/analytics/module-fetchers";
 import { apiLogger as logger } from "@/lib/logger";
+import { BIMSCHG_SHADOW_LIMIT_HOURS } from "@/lib/config/business-thresholds";
 
 // =============================================================================
 // GET /api/energy/analytics/shadow
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Build summary from per-turbine data
-    const BIMSCHG_LIMIT_HOURS = 30; // BImSchG limit per turbine per year
+    // BImSchG limit from centralized config
 
     const totalShadowHoursYear = perTurbine.reduce(
       (sum, t) => sum + t.totalShadowHoursYear,
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
       worstTurbineDesignation = worstTurbine.designation;
       budgetUsedPercent =
         Math.round(
-          (worstTurbine.totalShadowHoursYear / BIMSCHG_LIMIT_HOURS) * 100 * 100
+          (worstTurbine.totalShadowHoursYear / BIMSCHG_SHADOW_LIMIT_HOURS) * 100 * 100
         ) / 100;
     }
 

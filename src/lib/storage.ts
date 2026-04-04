@@ -15,19 +15,22 @@ import { getSignedUrl as awsGetSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "@/lib/logger";
 
-// Environment-Variablen mit Defaults für lokale Entwicklung (MinIO)
+// Environment-Variablen — kein Fallback für Credentials (Sicherheit)
 const S3_ENDPOINT = process.env.S3_ENDPOINT || "http://localhost:9000";
-const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY || "minioadmin";
-const S3_SECRET_KEY = process.env.S3_SECRET_KEY || "minioadmin";
+const S3_ACCESS_KEY = process.env.S3_ACCESS_KEY || "";
+const S3_SECRET_KEY = process.env.S3_SECRET_KEY || "";
 const S3_BUCKET = process.env.S3_BUCKET || "wpm-documents";
 const S3_REGION = process.env.S3_REGION || "us-east-1";
 
-// Security: warn loudly if default credentials are used in production
-if (process.env.NODE_ENV === "production" && S3_ACCESS_KEY === "minioadmin") {
+// Security: fail fast if credentials are missing in production
+if (process.env.NODE_ENV === "production" && !S3_ACCESS_KEY) {
   logger.error(
-    "SECURITY WARNING: S3_ACCESS_KEY is set to default 'minioadmin' in production! " +
-    "Set S3_ACCESS_KEY and S3_SECRET_KEY environment variables immediately."
+    "CRITICAL: S3_ACCESS_KEY and S3_SECRET_KEY must be set in production! " +
+    "Storage operations will fail."
   );
+}
+if (!S3_ACCESS_KEY && process.env.NODE_ENV !== "production") {
+  logger.warn("S3_ACCESS_KEY not set — storage operations will fail. Set S3_ACCESS_KEY and S3_SECRET_KEY env vars.");
 }
 
 /**

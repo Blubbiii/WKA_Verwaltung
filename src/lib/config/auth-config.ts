@@ -25,6 +25,9 @@ export const AUTH_CONFIG = {
 
   /** Impersonation session duration in seconds (default: 1 hour) */
   impersonationMaxAge: envInt("IMPERSONATION_MAX_AGE", 60 * 60),
+
+  /** Password reset token validity in hours */
+  passwordResetTokenExpiryHours: envInt("PASSWORD_RESET_TOKEN_EXPIRY_HOURS", 1),
 } as const;
 
 /** Default tenant limits (env-overridable) */

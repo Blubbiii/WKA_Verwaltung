@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { getSignedUrl } from "@/lib/storage";
+import { API_LIMITS } from "@/lib/config/api-limits";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -31,12 +32,10 @@ export async function GET(
     // Query Parameter
     const shouldRedirect = searchParams.get("redirect") === "true";
     const expiresInParam = searchParams.get("expiresIn");
-    const expiresIn = expiresInParam ? parseInt(expiresInParam, 10) : 3600;
+    const expiresIn = expiresInParam ? parseInt(expiresInParam, 10) : API_LIMITS.signedUrlDefaultExpires;
 
     // Validiere expiresIn (1 Minute bis 7 Tage)
-    const MIN_EXPIRES = 60; // 1 Minute
-    const MAX_EXPIRES = 604800; // 7 Tage
-    const validExpiresIn = Math.min(Math.max(expiresIn, MIN_EXPIRES), MAX_EXPIRES);
+    const validExpiresIn = Math.min(Math.max(expiresIn, API_LIMITS.signedUrlMinExpires), API_LIMITS.signedUrlMaxExpires);
 
     // Hole Dokument aus der Datenbank
     const document = await prisma.document.findFirst({

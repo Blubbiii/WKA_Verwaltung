@@ -10,14 +10,14 @@ import {
   AUTH_RATE_LIMIT,
 } from "@/lib/rate-limit";
 import { sendTemplatedEmailSync } from "@/lib/email";
+import { AUTH_CONFIG } from "@/lib/config/auth-config";
 
 // Validation Schema
 const forgotPasswordSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse"),
 });
 
-// Token Expiry: 1 hour
-const TOKEN_EXPIRY_HOURS = 1;
+const TOKEN_EXPIRY_HOURS = AUTH_CONFIG.passwordResetTokenExpiryHours;
 
 export async function POST(request: Request) {
   // Rate limiting: 5 attempts per 15 minutes

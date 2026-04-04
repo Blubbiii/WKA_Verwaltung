@@ -17,6 +17,7 @@ import {
   SendGridConfig,
   SesConfig,
 } from './types';
+import { EMAIL_CONFIG } from '@/lib/config/email-config';
 import { decryptConfig, isEncrypted } from './encryption';
 import { emailLogger as logger } from "@/lib/logger";
 
@@ -76,10 +77,10 @@ export class SmtpProvider implements EmailProvider {
         user: config.user,
         pass: config.password,
       },
-      // Timeouts (env-overridable)
-      connectionTimeout: parseInt(process.env.SMTP_CONNECTION_TIMEOUT_MS || "10000"),
-      greetingTimeout: parseInt(process.env.SMTP_GREETING_TIMEOUT_MS || "10000"),
-      socketTimeout: parseInt(process.env.SMTP_SOCKET_TIMEOUT_MS || "30000"),
+      // Timeouts (centralized in email-config.ts)
+      connectionTimeout: EMAIL_CONFIG.smtpConnectionTimeout,
+      greetingTimeout: EMAIL_CONFIG.smtpGreetingTimeout,
+      socketTimeout: EMAIL_CONFIG.smtpSocketTimeout,
     });
   }
 
@@ -207,7 +208,7 @@ export class SendGridProvider implements EmailProvider {
       };
 
       const controller = new AbortController();
-      const timeoutMs = parseInt(process.env.SENDGRID_TIMEOUT_MS || "30000");
+      const timeoutMs = EMAIL_CONFIG.sendgridTimeout;
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
         method: 'POST',
@@ -249,7 +250,7 @@ export class SendGridProvider implements EmailProvider {
       // SendGrid doesn't have a verify endpoint, so we check the API key format
       // and make a simple API call
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), EMAIL_CONFIG.smtpConnectionTimeout);
       const response = await fetch('https://api.sendgrid.com/v3/scopes', {
         method: 'GET',
         headers: {

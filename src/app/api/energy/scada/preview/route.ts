@@ -3,14 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { scanLocation, readWsdFile } from "@/lib/scada/dbf-reader";
 import { apiLogger as logger } from "@/lib/logger";
+import { API_LIMITS } from "@/lib/config/api-limits";
 
 // =============================================================================
 // POST /api/energy/scada/preview - Vorschau für einen SCADA-Standort
 // Liest den ersten WSD-File eines Standorts und zeigt Beispieldaten + Mappings
 // =============================================================================
 
-/** Max. Anzahl Records die aus der ersten WSD-Datei gelesen werden */
-const MAX_SAMPLE_RECORDS = 500;
+const MAX_SAMPLE_RECORDS = API_LIMITS.scadaPreviewMaxRecords;
 
 export async function POST(request: NextRequest) {
   try {
