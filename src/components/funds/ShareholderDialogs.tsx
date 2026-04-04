@@ -129,16 +129,16 @@ interface ShareholderDialogsProps {
   viewingShareholder: Shareholder | null;
 }
 
-const statusColors = {
-  ACTIVE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  INACTIVE: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  ARCHIVED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+import { ENTITY_STATUS, getStatusColor, getStatusLabel } from "@/lib/status-config";
+const statusColors: Record<string, string> = {
+  ACTIVE: getStatusColor(ENTITY_STATUS, "ACTIVE"),
+  INACTIVE: getStatusColor(ENTITY_STATUS, "INACTIVE"),
+  ARCHIVED: getStatusColor(ENTITY_STATUS, "ARCHIVED"),
 };
-
-const statusLabels = {
-  ACTIVE: "Aktiv",
-  INACTIVE: "Inaktiv",
-  ARCHIVED: "Archiviert",
+const statusLabels: Record<string, string> = {
+  ACTIVE: getStatusLabel(ENTITY_STATUS, "ACTIVE"),
+  INACTIVE: getStatusLabel(ENTITY_STATUS, "INACTIVE"),
+  ARCHIVED: getStatusLabel(ENTITY_STATUS, "ARCHIVED"),
 };
 
 function getPersonName(person: Person): string {

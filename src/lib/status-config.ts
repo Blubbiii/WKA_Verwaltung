@@ -75,6 +75,27 @@ export const PORTAL_DISTRIBUTION_STATUS: Record<string, BadgeVariant> = {
 };
 
 // ---------------------------------------------------------------------------
+// Shareholder Status (extends ENTITY_STATUS with PENDING)
+// ---------------------------------------------------------------------------
+export const SHAREHOLDER_STATUS: Record<string, BadgeVariant> = {
+  ACTIVE: ENTITY_STATUS.ACTIVE,
+  INACTIVE: ENTITY_STATUS.INACTIVE,
+  ARCHIVED: ENTITY_STATUS.ARCHIVED,
+  PENDING: { label: "Ausstehend", className: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200" },
+};
+
+// ---------------------------------------------------------------------------
+// Lease Status (extends CONTRACT_STATUS)
+// ---------------------------------------------------------------------------
+export const LEASE_STATUS: Record<string, BadgeVariant> = {
+  DRAFT: CONTRACT_STATUS.DRAFT,
+  ACTIVE: CONTRACT_STATUS.ACTIVE,
+  EXPIRING: CONTRACT_STATUS.EXPIRING,
+  EXPIRED: CONTRACT_STATUS.EXPIRED,
+  TERMINATED: CONTRACT_STATUS.TERMINATED,
+};
+
+// ---------------------------------------------------------------------------
 // Helper function to get status badge info with fallback
 // ---------------------------------------------------------------------------
 export function getStatusBadge(
@@ -87,4 +108,20 @@ export function getStatusBadge(
       className: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
     }
   );
+}
+
+/** Get only the className for a status (for components that don't use BadgeVariant) */
+export function getStatusColor(
+  statusMap: Record<string, BadgeVariant>,
+  status: string
+): string {
+  return getStatusBadge(statusMap, status).className;
+}
+
+/** Get only the label for a status */
+export function getStatusLabel(
+  statusMap: Record<string, BadgeVariant>,
+  status: string
+): string {
+  return getStatusBadge(statusMap, status).label;
 }

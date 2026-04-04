@@ -148,22 +148,14 @@ interface LeaseDetail {
   plots: Plot[];
 }
 
-// Constants
-const statusColors: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-800",
-  ACTIVE: "bg-green-100 text-green-800",
-  EXPIRING: "bg-yellow-100 text-yellow-800",
-  EXPIRED: "bg-red-100 text-red-800",
-  TERMINATED: "bg-gray-100 text-gray-800",
-};
-
-const statusLabels: Record<string, string> = {
-  DRAFT: "Entwurf",
-  ACTIVE: "Aktiv",
-  EXPIRING: "Läuft aus",
-  EXPIRED: "Abgelaufen",
-  TERMINATED: "Gekuendigt",
-};
+// Status colors + labels from central config
+import { LEASE_STATUS, getStatusColor, getStatusLabel } from "@/lib/status-config";
+const statusColors: Record<string, string> = Object.fromEntries(
+  Object.keys(LEASE_STATUS).map((k) => [k, getStatusColor(LEASE_STATUS, k)])
+);
+const statusLabels: Record<string, string> = Object.fromEntries(
+  Object.keys(LEASE_STATUS).map((k) => [k, getStatusLabel(LEASE_STATUS, k)])
+);
 
 const areaTypeLabels: Record<string, string> = {
   WEA_STANDORT: "WEA-Standort",
