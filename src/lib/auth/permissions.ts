@@ -2,27 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "./index";
 import { getCachedPermissions, setCachedPermissions } from "./permissionCache";
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
-export interface UserPermissions {
-  permissions: string[];
-  roles: Array<{
-    id: string;
-    name: string;
-    isSystem: boolean;
-    resourceType: string;
-    resourceIds: string[];
-    permissions: string[];
-  }>;
-}
-
-export interface PermissionCheck {
-  hasPermission: boolean;
-  resourceRestricted: boolean;
-  allowedResourceIds: string[];
-}
+// Types extracted to permission-types.ts to break circular dependency
+import type { UserPermissions, PermissionCheck } from "./permission-types";
+export type { UserPermissions, PermissionCheck } from "./permission-types";
 
 // ============================================================================
 // PERMISSION HELPERS

@@ -1,4 +1,4 @@
-import type { UserPermissions } from "./permissions";
+import type { UserPermissions } from "./permission-types";
 import { cache } from "@/lib/cache";
 import { CACHE_PREFIXES } from "@/lib/cache/types";
 
