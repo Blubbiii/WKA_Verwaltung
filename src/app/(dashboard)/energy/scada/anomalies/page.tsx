@@ -232,7 +232,7 @@ export default function ScadaAnomaliesPage() {
       setTotal(data.total);
       setStats(data.stats);
     } catch (err) {
-      console.error("Error fetching anomalies:", err);
+      // Silent — UI shows loading/empty state
     } finally {
       setLoading(false);
     }
@@ -257,7 +257,7 @@ export default function ScadaAnomaliesPage() {
       const data = await res.json();
       setConfig(data.config);
     } catch (err) {
-      console.error("Error fetching config:", err);
+      // Silent — config is optional
     } finally {
       setConfigLoading(false);
     }
@@ -289,7 +289,7 @@ export default function ScadaAnomaliesPage() {
       toast.success(data.message);
       await fetchAnomalies();
     } catch (err) {
-      console.error("Error running detection:", err);
+      // toast.error below handles user feedback
       toast.error("Fehler bei der Anomalie-Erkennung");
     } finally {
       setRunningDetection(false);
@@ -306,7 +306,7 @@ export default function ScadaAnomaliesPage() {
       if (!res.ok) throw new Error("Fehler");
       await fetchAnomalies();
     } catch (err) {
-      console.error("Error acknowledging:", err);
+      // Silent — non-critical action
     }
   };
 
@@ -329,7 +329,7 @@ export default function ScadaAnomaliesPage() {
       setNotes("");
       await fetchAnomalies();
     } catch (err) {
-      console.error("Error resolving:", err);
+      // Silent — UI shows saving state
     } finally {
       setSaving(false);
     }
@@ -347,7 +347,7 @@ export default function ScadaAnomaliesPage() {
       if (!res.ok) throw new Error("Fehler");
       await fetchAnomalies();
     } catch (err) {
-      console.error("Error saving notes:", err);
+      // Silent — UI shows saving state
     } finally {
       setSaving(false);
     }
@@ -366,7 +366,7 @@ export default function ScadaAnomaliesPage() {
       const data = await res.json();
       setConfig(data.config);
     } catch (err) {
-      console.error("Error saving config:", err);
+      // Silent — UI shows saving state
     } finally {
       setConfigSaving(false);
     }

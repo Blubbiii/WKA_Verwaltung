@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
+import { apiLogger as logger } from "@/lib/logger";
 
 const ACTION_LABELS: Record<string, string> = {
   CREATE: "erstellt",
@@ -71,7 +72,7 @@ export async function GET() {
 
     return NextResponse.json(activities);
   } catch (error) {
-    console.error("[activities] Error:", error);
+    logger.error({ error }, "[activities] Error");
     return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
   }
 }

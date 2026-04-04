@@ -38,7 +38,7 @@ export function useDocumentExplorer() {
           setUnassigned(d.unassigned ?? null);
         }
       })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setTreeLoading(false));
   }, []);
 
@@ -62,7 +62,7 @@ export function useDocumentExplorer() {
           setPagination(d.pagination);
         }
       })
-      .catch(console.error)
+      .catch(() => {})
       .finally(() => setFilesLoading(false));
   }, []);
 

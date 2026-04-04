@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
+import { apiLogger as logger } from "@/lib/logger";
 
 function addDays(date: Date, days: number): Date {
   const result = new Date(date);
@@ -79,7 +80,7 @@ export async function GET() {
 
     return NextResponse.json(deadlines);
   } catch (error) {
-    console.error("[deadlines] Error:", error);
+    logger.error({ error }, "[deadlines] Error");
     return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
   }
 }

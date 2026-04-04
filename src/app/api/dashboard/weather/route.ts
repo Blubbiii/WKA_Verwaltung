@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
+import { apiLogger as logger } from "@/lib/logger";
 
 // WMO weather code → condition mapping
 function mapWeatherCode(code: number, windSpeedKmh: number): "sunny" | "cloudy" | "rainy" | "windy" {
@@ -89,7 +90,7 @@ export async function GET() {
 
     return NextResponse.json(weather);
   } catch (error) {
-    console.error("[weather] Error:", error);
+    logger.error({ error }, "[weather] Error");
     return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
   }
 }
