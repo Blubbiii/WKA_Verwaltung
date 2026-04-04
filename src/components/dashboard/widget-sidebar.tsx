@@ -119,7 +119,7 @@ export function WidgetSidebar({
           </p>
         </div>
         {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Schließen">
             <X className="h-4 w-4" />
           </Button>
         )}

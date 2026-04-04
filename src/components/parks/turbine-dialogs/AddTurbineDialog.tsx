@@ -527,7 +527,7 @@ export function AddTurbineDialog({
                   <Input placeholder="TT.MM.JJJJ" value={commissioningDateText} onChange={(e) => { setCommissioningDateText(e.target.value); const parsed = parseDateInput(e.target.value); if (parsed) setCommissioningDate(parsed); }} onBlur={() => { if (commissioningDate) setCommissioningDateText(formatDateInput(commissioningDate)); }} className="flex-1" />
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" size="icon" className="shrink-0"><CalendarIcon className="h-4 w-4" /></Button>
+                      <Button variant="outline" size="icon" className="shrink-0" aria-label="Datum auswählen"><CalendarIcon className="h-4 w-4" /></Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar mode="single" selected={commissioningDate} onSelect={(date) => { setCommissioningDate(date); setCommissioningDateText(formatDateInput(date)); }} locale={de} captionLayout="dropdown" startMonth={new Date(2000, 0)} endMonth={new Date()} />
@@ -541,7 +541,7 @@ export function AddTurbineDialog({
                   <Input placeholder="TT.MM.JJJJ" value={warrantyEndDateText} onChange={(e) => { setWarrantyEndDateText(e.target.value); const parsed = parseDateInput(e.target.value); if (parsed) setWarrantyEndDate(parsed); }} onBlur={() => { if (warrantyEndDate) setWarrantyEndDateText(formatDateInput(warrantyEndDate)); }} className="flex-1" />
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" size="icon" className="shrink-0"><CalendarIcon className="h-4 w-4" /></Button>
+                      <Button variant="outline" size="icon" className="shrink-0" aria-label="Datum auswählen"><CalendarIcon className="h-4 w-4" /></Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar mode="single" selected={warrantyEndDate} onSelect={(date) => { setWarrantyEndDate(date); setWarrantyEndDateText(formatDateInput(date)); }} locale={de} captionLayout="dropdown" startMonth={new Date()} endMonth={new Date(2050, 11)} />

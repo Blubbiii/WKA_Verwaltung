@@ -423,7 +423,7 @@ export default function BankImportPage() {
                           {match.transaction.reference || "—"}
                         </p>
                         {match.transaction.counterpartName && (
-                          <p className="text-xs text-muted-foreground/70 truncate">
+                          <p className="text-xs text-muted-foreground truncate">
                             {match.transaction.counterpartName}
                           </p>
                         )}

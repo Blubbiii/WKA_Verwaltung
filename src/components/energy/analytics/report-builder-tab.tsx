@@ -608,7 +608,7 @@ export function ReportBuilderTab() {
           <div className="lg:col-span-2">
             <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground block mb-3">
               Module auswählen
-              <span className="ml-2 normal-case tracking-normal font-normal text-muted-foreground/70">
+              <span className="ml-2 normal-case tracking-normal font-normal text-muted-foreground">
                 {selectedModules.size} von {TOTAL_MODULE_COUNT} ausgewählt
               </span>
             </Label>

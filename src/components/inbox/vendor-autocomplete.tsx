@@ -132,7 +132,7 @@ export function VendorAutocomplete({
           {vendorName}
         </Badge>
         {!disabled && (
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={clear}>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={clear} aria-label="Auswahl zurücksetzen">
             <X className="h-3 w-3" />
           </Button>
         )}

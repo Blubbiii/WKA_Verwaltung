@@ -182,7 +182,7 @@ export function TurbineQrCodeTab({
       {/* URL */}
       <div className="flex items-center gap-2">
         <Input value={checkInUrl ?? ""} readOnly className="text-xs font-mono" />
-        <Button variant="outline" size="icon" onClick={copyUrl}>
+        <Button variant="outline" size="icon" onClick={copyUrl} aria-label="URL kopieren">
           {copied ? (
             <Check className="h-4 w-4 text-green-600" />
           ) : (

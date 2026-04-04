@@ -74,7 +74,7 @@ export function DocumentPreviewDialogPDF({
     <div className="flex flex-col h-full">
       {/* PDF Controls */}
       <div className="flex items-center justify-center gap-2 p-2 border-b bg-background">
-        <Button variant="outline" size="icon" onClick={goToPrevPage} disabled={pageNumber <= 1}>
+        <Button variant="outline" size="icon" onClick={goToPrevPage} disabled={pageNumber <= 1} aria-label="Vorherige Seite">
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="text-sm min-w-[100px] text-center">
@@ -89,14 +89,14 @@ export function DocumentPreviewDialogPDF({
           <ChevronRight className="h-4 w-4" />
         </Button>
         <div className="w-px h-6 bg-border mx-2" />
-        <Button variant="outline" size="icon" onClick={zoomOut} disabled={scale <= 0.5}>
+        <Button variant="outline" size="icon" onClick={zoomOut} disabled={scale <= 0.5} aria-label="Verkleinern">
           <ZoomOut className="h-4 w-4" />
         </Button>
         <span className="text-sm min-w-[60px] text-center">{Math.round(scale * 100)}%</span>
-        <Button variant="outline" size="icon" onClick={zoomIn} disabled={scale >= 3}>
+        <Button variant="outline" size="icon" onClick={zoomIn} disabled={scale >= 3} aria-label="Vergrößern">
           <ZoomIn className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="icon" onClick={rotate}>
+        <Button variant="outline" size="icon" onClick={rotate} aria-label="Drehen">
           <RotateCw className="h-4 w-4" />
         </Button>
       </div>

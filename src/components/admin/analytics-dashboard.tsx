@@ -106,7 +106,7 @@ export function AnalyticsDashboard() {
             icon={Building2}
             description={`${kpis.totalCapacityMW} MW Gesamtleistung`}
             accentColor="text-cyan-600 dark:text-cyan-400"
-            iconColor="text-cyan-500/40 dark:text-cyan-400/30"
+            iconColor="text-cyan-500/70 dark:text-cyan-400/60"
           />
           <KPICard
             title="Turbinen"
@@ -114,7 +114,7 @@ export function AnalyticsDashboard() {
             icon={Wind}
             description={`${kpis.turbinesInMaintenance} in Wartung`}
             accentColor="text-slate-600 dark:text-slate-400"
-            iconColor="text-slate-500/40 dark:text-slate-400/30"
+            iconColor="text-slate-500/70 dark:text-slate-400/60"
             isAlert={kpis.turbinesInMaintenance > 0}
           />
           <KPICard
@@ -123,7 +123,7 @@ export function AnalyticsDashboard() {
             icon={Gauge}
             description={`Ø ${kpis.averageTurbineAge.toFixed(1)} Jahre Alter`}
             accentColor="text-emerald-600 dark:text-emerald-400"
-            iconColor="text-emerald-500/40 dark:text-emerald-400/30"
+            iconColor="text-emerald-500/70 dark:text-emerald-400/60"
           />
           <KPICard
             title="Verträge"
@@ -135,7 +135,7 @@ export function AnalyticsDashboard() {
                 : "Keine auslaufend"
             }
             accentColor="text-orange-600 dark:text-orange-400"
-            iconColor="text-orange-500/40 dark:text-orange-400/30"
+            iconColor="text-orange-500/70 dark:text-orange-400/60"
             isAlert={kpis.expiringContractsCount > 0}
           />
         </div>
@@ -150,7 +150,7 @@ export function AnalyticsDashboard() {
             icon={Receipt}
             description={formatCurrency(parseFloat(kpis.openInvoicesAmount))}
             accentColor="text-amber-600 dark:text-amber-400"
-            iconColor="text-amber-500/40 dark:text-amber-400/30"
+            iconColor="text-amber-500/70 dark:text-amber-400/60"
             isAlert={kpis.openInvoicesCount > 0}
           />
           <KPICard
@@ -159,7 +159,7 @@ export function AnalyticsDashboard() {
             icon={CreditCard}
             trend={kpis.trends.revenue}
             accentColor="text-green-600 dark:text-green-400"
-            iconColor="text-green-500/40 dark:text-green-400/30"
+            iconColor="text-green-500/70 dark:text-green-400/60"
           />
           <KPICard
             title="Dokumente"
@@ -168,7 +168,7 @@ export function AnalyticsDashboard() {
             description={`${kpis.documentsThisMonth} diesen Monat`}
             trend={kpis.trends.documents}
             accentColor="text-pink-600 dark:text-pink-400"
-            iconColor="text-pink-500/40 dark:text-pink-400/30"
+            iconColor="text-pink-500/70 dark:text-pink-400/60"
           />
           <KPICard
             title="Abstimmungen"
@@ -180,7 +180,7 @@ export function AnalyticsDashboard() {
                 : "Keine offenen"
             }
             accentColor="text-indigo-600 dark:text-indigo-400"
-            iconColor="text-indigo-500/40 dark:text-indigo-400/30"
+            iconColor="text-indigo-500/70 dark:text-indigo-400/60"
           />
         </div>
       )}
