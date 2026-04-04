@@ -151,7 +151,7 @@ export default function ScadaImportTab() {
   // Fetch configured default scan path from server
   useEffect(() => {
     fetch("/api/energy/scada/scan")
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : Promise.reject())
       .then((data) => {
         if (data.defaultPath) setScanPath(data.defaultPath);
       })

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
+import { apiLogger as logger } from "@/lib/logger";
 
 const updateSchema = z.object({
   label: z.string().min(1).max(100).optional(),
@@ -18,51 +19,61 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const check = await requireAdmin();
-  if (!check.authorized) return check.error!;
+  try {
+    const check = await requireAdmin();
+    if (!check.authorized) return check.error!;
 
-  const { id } = await params;
-  const existing = await prisma.sidebarLink.findFirst({
-    where: { id, tenantId: check.tenantId },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    const { id } = await params;
+    const existing = await prisma.sidebarLink.findFirst({
+      where: { id, tenantId: check.tenantId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const parsed = updateSchema.safeParse(body);
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      const firstError =
+        Object.values(fieldErrors).flat()[0] ??
+        parsed.error.flatten().formErrors[0] ??
+        "Ungültige Eingabe";
+      return NextResponse.json({ error: firstError }, { status: 400 });
+    }
+
+    const link = await prisma.sidebarLink.update({
+      where: { id },
+      data: parsed.data,
+    });
+
+    return NextResponse.json(link);
+  } catch (error) {
+    logger.error({ error }, "[sidebar-links] PATCH error");
+    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
   }
-
-  const body = await request.json();
-  const parsed = updateSchema.safeParse(body);
-  if (!parsed.success) {
-    const fieldErrors = parsed.error.flatten().fieldErrors;
-    const firstError =
-      Object.values(fieldErrors).flat()[0] ??
-      parsed.error.flatten().formErrors[0] ??
-      "Ungültige Eingabe";
-    return NextResponse.json({ error: firstError }, { status: 400 });
-  }
-
-  const link = await prisma.sidebarLink.update({
-    where: { id },
-    data: parsed.data,
-  });
-
-  return NextResponse.json(link);
 }
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const check = await requireAdmin();
-  if (!check.authorized) return check.error!;
+  try {
+    const check = await requireAdmin();
+    if (!check.authorized) return check.error!;
 
-  const { id } = await params;
-  const existing = await prisma.sidebarLink.findFirst({
-    where: { id, tenantId: check.tenantId },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    const { id } = await params;
+    const existing = await prisma.sidebarLink.findFirst({
+      where: { id, tenantId: check.tenantId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+    }
+
+    await prisma.sidebarLink.delete({ where: { id } });
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    logger.error({ error }, "[sidebar-links] DELETE error");
+    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
   }
-
-  await prisma.sidebarLink.delete({ where: { id } });
-  return new NextResponse(null, { status: 204 });
 }

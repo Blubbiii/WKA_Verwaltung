@@ -242,12 +242,12 @@ export default function EditInvoicePage({
   // Lade Parks und Gesellschaften
   useEffect(() => {
     fetch("/api/parks?limit=100")
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : Promise.reject())
       .then((data) => setParks(data.data || []))
       .catch(() => { /* silently ignore */ });
 
     fetch("/api/funds?limit=100")
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : Promise.reject())
       .then((data) => setFunds(data.data || []))
       .catch(() => { /* silently ignore */ });
   }, []);

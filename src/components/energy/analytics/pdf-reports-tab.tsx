@@ -132,7 +132,7 @@ export function PdfReportsTab() {
 
   useEffect(() => {
     fetch("/api/parks?limit=100")
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : Promise.reject())
       .then((data) => {
         const parkList = data.data || [];
         setParks(parkList);

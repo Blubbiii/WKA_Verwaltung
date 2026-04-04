@@ -211,7 +211,7 @@ export function DataExplorerTab() {
       const parkId = selectedParkId;
       setTimeout(() => setTurbinesLoading(true), 0);
       fetch(`/api/parks/${parkId}`)
-        .then((res) => res.json())
+        .then((res) => res.ok ? res.json() : Promise.reject())
         .then((data) => {
           setTurbines(data.turbines || []);
         })

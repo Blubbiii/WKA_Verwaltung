@@ -38,7 +38,7 @@ function LoginForm() {
   // Fetch SSO configuration from the server (non-sensitive, public endpoint)
   useEffect(() => {
     fetch("/api/auth/sso-config")
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : Promise.reject())
       .then((data: { ssoEnabled: boolean; providerName: string }) => {
         setSsoEnabled(data.ssoEnabled);
         setSsoProviderName(data.providerName);

@@ -298,7 +298,7 @@ export function EnergyReportBuilder() {
     if (selectedParkId) {
       setTurbinesLoading(true);
       fetch(`/api/parks/${selectedParkId}`)
-        .then((res) => res.json())
+        .then((res) => res.ok ? res.json() : Promise.reject())
         .then((data) => {
           setTurbines(data.turbines || []);
         })
