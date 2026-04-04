@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { parsePaginationParams } from "@/lib/api-utils";
 import { dispatchWebhook } from "@/lib/webhooks";
 
 const serviceEventSchema = z.object({
@@ -43,8 +44,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
     const dateTo = searchParams.get("dateTo");
     const sortBy = searchParams.get("sortBy") || "eventDate";
     const sortOrder = searchParams.get("sortOrder") || "desc";
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     const where: Prisma.ServiceEventWhereInput = {
       turbine: {
@@ -113,7 +113,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
             },
           },
           orderBy: { [validSortField]: validSortOrder },
-          skip: (page - 1) * limit,
+          skip,
           take: limit,
         }),
         prisma.serviceEvent.count({ where }),

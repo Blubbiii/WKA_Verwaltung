@@ -16,6 +16,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { getHistoricalWeather, WeatherApiError } from "@/lib/weather";
 import { apiLogger as logger } from "@/lib/logger";
+import { parsePaginationParams } from "@/lib/api-utils";
 import { CACHE_TTL } from "@/lib/cache/types";
 
 export async function GET(
@@ -33,8 +34,7 @@ export async function GET(
     // Parse query parameters
     const fromParam = searchParams.get("from");
     const toParam = searchParams.get("to");
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(500, Math.max(1, parseInt(searchParams.get("limit") || "100", 10)));
+    const { page, limit } = parsePaginationParams(searchParams, { defaultLimit: 100, maxLimit: 500 });
     const period = searchParams.get("period") as "7d" | "30d" | "90d" | "365d" | null;
 
     // Parse dates

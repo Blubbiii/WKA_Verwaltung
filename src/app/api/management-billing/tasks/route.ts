@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma, OperationalTaskStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { parsePaginationParams } from "@/lib/api-utils";
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -46,8 +47,7 @@ export async function GET(request: NextRequest) {
     const assignedToId = searchParams.get("assignedToId");
     const taskType = searchParams.get("taskType");
     const search = searchParams.get("search");
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     const where: Prisma.OperationalTaskWhereInput = {
       tenantId: check.tenantId,
@@ -71,8 +71,6 @@ export async function GET(request: NextRequest) {
         },
       ];
     }
-
-    const skip = (page - 1) * limit;
 
     const [tasks, total] = await Promise.all([
       prisma.operationalTask.findMany({

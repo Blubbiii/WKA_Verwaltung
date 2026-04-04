@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { parsePaginationParams } from "@/lib/api-utils";
 import { CATEGORY_LABELS } from "@/types/document-explorer";
 import type { ExplorerFile, FolderPath } from "@/types/document-explorer";
 
@@ -16,8 +17,7 @@ export async function GET(request: NextRequest) {
     const parkId = searchParams.get("parkId") || null;
     const yearStr = searchParams.get("year");
     const category = searchParams.get("category") || "";
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10) || 20));
+    const { page, limit, skip } = parsePaginationParams(searchParams);
 
     if (!yearStr || !category) {
       return NextResponse.json(
@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
     }
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year + 1, 0, 1);
-    const skip = (page - 1) * limit;
 
     // Get park name for folder path
     let parkName = "Ohne Zuordnung";

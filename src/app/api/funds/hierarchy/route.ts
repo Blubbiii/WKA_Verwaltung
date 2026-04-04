@@ -4,7 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { handleApiError } from "@/lib/api-utils";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
@@ -134,8 +134,7 @@ export async function GET(request: NextRequest) {
     const activeOnly = searchParams.get("activeOnly") === "true";
 
     // Paginierung
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     // Where-Clause aufbauen mit Multi-Tenancy Filter
     const where: Prisma.FundHierarchyWhereInput = {
@@ -186,7 +185,7 @@ export async function GET(request: NextRequest) {
           { parentFund: { name: "asc" } },
           { validFrom: "desc" },
         ],
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.fundHierarchy.count({ where }),

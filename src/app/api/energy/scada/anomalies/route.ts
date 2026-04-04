@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { runAnomalyDetection } from "@/lib/scada/anomaly-detection";
 import { Prisma } from "@prisma/client";
+import { parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
@@ -23,12 +24,8 @@ export async function GET(request: NextRequest) {
     const severity = searchParams.get("severity");
     const acknowledged = searchParams.get("acknowledged");
     const resolved = searchParams.get("resolved");
-    const limitParam = searchParams.get("limit");
-    const pageParam = searchParams.get("page");
 
-    const limit = Math.min(Math.max(parseInt(limitParam || "50", 10) || 50, 1), 200);
-    const page = Math.max(parseInt(pageParam || "1", 10) || 1, 1);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50, maxLimit: 200 });
 
     // Build where clause
     const where: Prisma.ScadaAnomalyWhereInput = {

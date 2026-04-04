@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
-import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
+import { parsePaginationParams } from "@/lib/api-utils";
 
 // GET /api/admin/billing-rules/[id]/executions
 export async function GET(
@@ -20,8 +20,7 @@ export async function GET(
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_DEFAULT), 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams);
     const status = searchParams.get("status");
 
     // Pruefe ob Regel existiert und zum Tenant gehoert
@@ -55,7 +54,7 @@ export async function GET(
       prisma.billingRuleExecution.findMany({
         where,
         orderBy: { startedAt: "desc" },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
         select: {
           id: true,

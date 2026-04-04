@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { handleApiError } from "@/lib/api-utils";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { DistributionMode, EnergySettlementStatus, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -51,8 +51,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
 
     // Paginierung
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     // Where-Clause mit Multi-Tenancy Filter
     const where: Prisma.EnergySettlementWhereInput = {
@@ -118,7 +117,7 @@ export async function GET(request: NextRequest) {
           { month: "desc" },
           { createdAt: "desc" },
         ],
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.energySettlement.count({ where }),

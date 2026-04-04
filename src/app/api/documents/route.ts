@@ -7,7 +7,7 @@ import { DocumentCategory, DocumentApprovalStatus } from "@prisma/client";
 import { uploadFile, ensureBucket } from "@/lib/storage";
 import { validateFileContent } from "@/lib/file-validation";
 import { z } from "zod";
-import { handleApiError } from "@/lib/api-utils";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import {
   rateLimit,
@@ -23,7 +23,6 @@ import {
   getUserHighestHierarchy,
   ROLE_HIERARCHY,
 } from "@/lib/auth/permissions";
-import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 
 // Schema für JSON-basierte Dokument-Erstellung (ohne Datei-Upload)
 const documentCreateSchema = z.object({
@@ -88,8 +87,7 @@ export async function GET(request: NextRequest) {
     const serviceEventId = searchParams.get("serviceEventId");
     const approvalStatus = searchParams.get("approvalStatus");
     const includeArchived = searchParams.get("includeArchived") === "true";
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_DEFAULT), 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams);
 
     const where = {
       tenantId: check.tenantId,
@@ -141,7 +139,7 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.document.count({ where }),

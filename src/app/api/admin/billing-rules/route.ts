@@ -11,8 +11,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { validateRuleParameters, calculateNextRun, BillingRuleType, BillingRuleFrequency } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
-import { handleApiError } from "@/lib/api-utils";
-import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 
 // Validation Schema für neue Regel
 const createRuleSchema = z.object({
@@ -36,8 +35,7 @@ export async function GET(request: NextRequest) {
     const ruleType = searchParams.get("ruleType");
     const frequency = searchParams.get("frequency");
     const isActive = searchParams.get("isActive");
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_LARGE), 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     const where = {
       tenantId: check.tenantId!,
@@ -68,7 +66,7 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: [{ isActive: "desc" }, { nextRunAt: "asc" }],
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.billingRule.count({ where }),

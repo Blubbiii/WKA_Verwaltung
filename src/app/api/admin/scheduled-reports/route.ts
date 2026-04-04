@@ -12,8 +12,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { z } from "zod";
 import { calculateInitialNextRun } from "@/lib/reports/scheduled-report-service";
 import { apiLogger as logger } from "@/lib/logger";
-import { handleApiError } from "@/lib/api-utils";
-import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 
 // Validation schema for creating a scheduled report
 const createScheduledReportSchema = z.object({
@@ -46,8 +45,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const reportType = searchParams.get("reportType");
     const enabled = searchParams.get("enabled");
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_LARGE), 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     // Build where clause
     const where: Prisma.ScheduledReportWhereInput = {
@@ -73,7 +71,7 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: [{ enabled: "desc" }, { nextRunAt: "asc" }],
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.scheduledReport.count({ where }),

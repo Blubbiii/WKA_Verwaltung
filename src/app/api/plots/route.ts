@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
-import { handleApiError } from "@/lib/api-utils";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -41,8 +41,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
     const areaType = searchParams.get("areaType") || "";
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "100", 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 100 });
 
     const validAreaTypes = ["WEA_STANDORT", "POOL", "WEG", "AUSGLEICH", "KABEL"];
 
@@ -122,7 +121,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
           { fieldNumber: "asc" },
           { plotNumber: "asc" },
         ],
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.plot.count({ where }),

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
+import { parsePaginationParams } from "@/lib/api-utils";
 import { serializePrisma } from "@/lib/serialize";
 
 const createSchema = z.object({
@@ -38,8 +39,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q") ?? "";
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-    const limit = Math.min(100, parseInt(searchParams.get("limit") ?? "50"));
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     const where = {
       tenantId: check.tenantId!,
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
           person: { select: { id: true, firstName: true, lastName: true, companyName: true } },
         },
         orderBy: { name: "asc" },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.vendor.count({ where }),

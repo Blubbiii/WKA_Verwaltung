@@ -4,7 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { handleApiError } from "@/lib/api-utils";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 
 const leaseCreateSchema = z.object({
@@ -42,8 +42,7 @@ export async function GET(request: NextRequest) {
     const plotId = searchParams.get("plotId");
     const parkId = searchParams.get("parkId");
     const status = searchParams.get("status");
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     // Build where clause - now using tenantId directly on lease
     const where: Prisma.LeaseWhereInput = {
@@ -103,7 +102,7 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: { endDate: "asc" },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.lease.count({ where }),

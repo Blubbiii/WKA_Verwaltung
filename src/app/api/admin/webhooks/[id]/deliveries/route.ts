@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
-import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
+import { parsePaginationParams } from "@/lib/api-utils";
 
 // =============================================================================
 // GET /api/admin/webhooks/[id]/deliveries - Paginated delivery log
@@ -26,9 +26,7 @@ export async function GET(
     const { id } = await params;
     const { searchParams } = new URL(request.url);
 
-    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || String(PAGE_SIZE_ADMIN), 10)));
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 25 });
 
     // Verify webhook belongs to tenant
     const webhook = await prisma.webhook.findUnique({

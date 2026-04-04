@@ -13,8 +13,7 @@ import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
-import { handleApiError } from "@/lib/api-utils";
-import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -88,12 +87,7 @@ export async function GET(request: NextRequest) {
     const yearParam = searchParams.get("year");
     const monthParam = searchParams.get("month");
     const revenueTypeId = searchParams.get("revenueTypeId");
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_LARGE), 10);
-
-    // Validiere Paginierung
-    const validPage = Math.max(1, page);
-    const validLimit = Math.min(Math.max(1, limit), 100);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     // WHERE-Bedingungen aufbauen
     const where: Prisma.EnergyMonthlyRateWhereInput = {
@@ -121,8 +115,8 @@ export async function GET(request: NextRequest) {
           { year: "desc" },
           { month: "desc" },
         ],
-        skip: (validPage - 1) * validLimit,
-        take: validLimit,
+        skip,
+        take: limit,
       }),
       prisma.energyMonthlyRate.count({ where }),
     ]);
@@ -145,10 +139,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data: transformedRates,
       pagination: {
-        page: validPage,
-        limit: validLimit,
+        page: page,
+        limit: limit,
         total,
-        totalPages: Math.ceil(total / validLimit),
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (error) {

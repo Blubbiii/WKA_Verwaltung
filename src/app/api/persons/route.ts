@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
-import { handleApiError } from "@/lib/api-utils";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -38,8 +38,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
     const search = searchParams.get("search") || "";
     const personType = searchParams.get("personType");
     const status = searchParams.get("status") || "";
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     const where = {
       tenantId: check.tenantId,
@@ -68,7 +67,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
           { firstName: "asc" },
           { companyName: "asc" },
         ],
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.person.count({ where }),

@@ -13,8 +13,7 @@ import {
 } from "@/lib/invoices/recurring-invoice-service";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
-import { handleApiError } from "@/lib/api-utils";
-import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 
 // ============================================================================
 // Validation Schemas
@@ -60,8 +59,7 @@ async function getHandler(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const enabled = searchParams.get("enabled");
     const frequency = searchParams.get("frequency");
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = Math.min(parseInt(searchParams.get("limit") || String(PAGE_SIZE_LARGE), 10), 100);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     const where = {
       tenantId: check.tenantId!,
@@ -80,7 +78,7 @@ async function getHandler(request: NextRequest) {
           },
         },
         orderBy: [{ enabled: "desc" }, { nextRunAt: "asc" }],
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.recurringInvoice.count({ where }),

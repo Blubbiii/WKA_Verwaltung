@@ -3,10 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
-import { handleApiError } from "@/lib/api-utils";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
-import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -54,8 +53,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status"); // ACTIVE oder HISTORICAL
 
     // Paginierung
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_LARGE), 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     // Where-Clause aufbauen
     // Multi-Tenancy: Filter über Turbine -> Park -> Tenant
@@ -124,7 +122,7 @@ export async function GET(request: NextRequest) {
           { turbine: { designation: "asc" } },
           { validFrom: "desc" },
         ],
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.turbineOperator.count({ where }),

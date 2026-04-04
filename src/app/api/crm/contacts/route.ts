@@ -5,7 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
-import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
+import { parsePaginationParams } from "@/lib/api-utils";
 
 const createSchema = z.object({
   personType: z.enum(["natural", "legal"]).default("natural"),
@@ -34,9 +34,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") ?? "";
     const contactType = searchParams.get("contactType");
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-    const limit = Math.min(parseInt(searchParams.get("limit") ?? String(PAGE_SIZE_LARGE)), 200);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50, maxLimit: 200 });
 
     const where = {
       tenantId: check.tenantId!,

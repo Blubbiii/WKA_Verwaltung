@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
+import { parsePaginationParams } from "@/lib/api-utils";
 
 // =============================================================================
 // Validation
@@ -57,8 +58,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const page = Math.max(1, Number(searchParams.get("page")) || 1);
-    const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit")) || 20));
+    const { page, limit, skip } = parsePaginationParams(searchParams, { maxLimit: 50 });
 
     const [mailings, total] = await Promise.all([
       prisma.mailing.findMany({
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
           fund: { select: { name: true } },
         },
         orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.mailing.count({ where: { tenantId: check.tenantId! } }),

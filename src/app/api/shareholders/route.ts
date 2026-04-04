@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
-import { handleApiError } from "@/lib/api-utils";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -99,8 +99,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     const fundId = searchParams.get("fundId");
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     const where = {
       fund: {
@@ -148,7 +147,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
           },
         },
         orderBy: [{ status: "asc" }, { ownershipPercentage: "desc" }],
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.shareholder.count({ where }),

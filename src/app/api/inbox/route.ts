@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma, IncomingInvoiceStatus, IncomingInvoiceType } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { parsePaginationParams } from "@/lib/api-utils";
 import { serializePrisma } from "@/lib/serialize";
 import { uploadFile } from "@/lib/storage";
 import { enqueueInboxOcrJob } from "@/lib/queue/queues/inbox-ocr.queue";
@@ -32,8 +33,7 @@ export async function GET(request: NextRequest) {
     const recipientFundId = searchParams.get("recipientFundId");
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-    const limit = Math.min(100, parseInt(searchParams.get("limit") ?? "50"));
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     const where: Prisma.IncomingInvoiceWhereInput = {
       tenantId: check.tenantId!,
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
           createdBy: { select: { id: true, firstName: true, lastName: true } },
         },
         orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.incomingInvoice.count({ where }),

@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { parsePaginationParams } from "@/lib/api-utils";
 
 const turbineCreateSchema = z.object({
   parkId: z.string().uuid("Ungültige Park-ID"),
@@ -45,8 +46,7 @@ export async function GET(request: NextRequest) {
     const parkId = searchParams.get("parkId");
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     const where = {
       park: {
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: [{ park: { name: "asc" } }, { designation: "asc" }],
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.turbine.count({ where }),

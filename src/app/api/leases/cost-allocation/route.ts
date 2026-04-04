@@ -4,7 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { Prisma, ParkCostAllocationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
-import { handleApiError } from "@/lib/api-utils";
+import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { createCostAllocationSchema } from "@/types/billing";
 import { executeCostAllocation } from "@/lib/lease-revenue/allocator";
@@ -27,8 +27,7 @@ export async function GET(request: NextRequest) {
     const parkId = searchParams.get("parkId");
 
     // Pagination
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     // Build where clause with multi-tenancy filter
     const where: Prisma.ParkCostAllocationWhereInput = {
@@ -68,7 +67,7 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
       }),
       prisma.parkCostAllocation.count({ where }),

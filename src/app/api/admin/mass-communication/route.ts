@@ -15,11 +15,11 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { auth } from "@/lib/auth";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
+import { parsePaginationParams } from "@/lib/api-utils";
 import { createAuditLog } from "@/lib/audit";
 import { sendEmailSync } from "@/lib/email";
 import { getFilteredRecipients } from "@/lib/mass-communication/recipient-filter";
 import { wrapEmailBody, stripHtml } from "@/lib/mailings/email-wrapper";
-import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 
 // Type-safe accessor for the MassCommunication model
 const massCommunicationModel = getPrismaModel("massCommunication");
@@ -73,9 +73,7 @@ export async function GET(request: NextRequest) {
     if (!enabled) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || String(PAGE_SIZE_DEFAULT), 10);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePaginationParams(searchParams);
 
     const tenantId = check.tenantId!;
 
