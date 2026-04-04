@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({
-      notifications,
+      data: notifications,
       pagination: {
         page,
         limit,

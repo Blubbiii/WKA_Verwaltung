@@ -209,7 +209,6 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
 
     return NextResponse.json({
       data: transformedPlots,
-      plots: transformedPlots, // Also return as 'plots' for compatibility
       pagination: {
         page,
         limit,

@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
       orderBy: { entryDate: "desc" },
     });
 
-    return NextResponse.json(serializePrisma(entries));
+    return NextResponse.json({ data: serializePrisma(entries) });
   } catch (error) {
     logger.error({ err: error }, "Error fetching journal entries");
     return NextResponse.json(

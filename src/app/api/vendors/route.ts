@@ -67,7 +67,10 @@ export async function GET(request: NextRequest) {
       prisma.vendor.count({ where }),
     ]);
 
-    return NextResponse.json({ data: serializePrisma(vendors), total, page, limit });
+    return NextResponse.json({
+      data: serializePrisma(vendors),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     logger.error({ err: error }, "Error fetching vendors");
     return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });

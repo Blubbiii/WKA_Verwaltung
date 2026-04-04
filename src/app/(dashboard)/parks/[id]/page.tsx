@@ -678,7 +678,7 @@ export default function ParkDetailsPage({
       const res = await fetch("/api/plots?noPark=true&limit=500&includeLeases=true");
       if (res.ok) {
         const data = await res.json();
-        setUnassignedPlots(data.data ?? data.plots ?? []);
+        setUnassignedPlots(data.data ?? []);
       }
     } catch {
       toast.error("Fehler beim Laden der Flurstücke");

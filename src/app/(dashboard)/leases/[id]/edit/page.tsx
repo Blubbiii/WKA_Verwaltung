@@ -265,7 +265,7 @@ export default function EditLeasePage({
         let allPlots: Plot[] = [];
         if (plotsRes.ok) {
           const plotsData = await plotsRes.json();
-          allPlots = plotsData.plots || plotsData.data || [];
+          allPlots = plotsData.data || [];
         }
 
         // Ensure lease plots are always included in available plots

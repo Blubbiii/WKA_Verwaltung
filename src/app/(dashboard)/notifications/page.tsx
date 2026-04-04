@@ -79,7 +79,7 @@ function NotificationsPageInner() {
       const res = await fetch(`/api/notifications?${params}`);
       if (res.ok) {
         const data = await res.json();
-        setNotifications(data.notifications ?? []);
+        setNotifications(data.data ?? []);
         setTotalPages(data.pagination?.totalPages ?? 1);
       }
     } catch {

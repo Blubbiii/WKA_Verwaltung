@@ -65,9 +65,9 @@ export function NotificationBell() {
       const res = await fetch("/api/notifications?limit=15");
       if (res.ok) {
         const data = await res.json();
-        setNotifications(data.notifications ?? []);
+        setNotifications(data.data ?? []);
         // Also update unread count from the full list
-        const unread = (data.notifications ?? []).filter(
+        const unread = (data.data ?? []).filter(
           (n: NotificationItem) => !n.isRead
         ).length;
         // Use the server count if available, else count from list

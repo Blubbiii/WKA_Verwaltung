@@ -460,7 +460,10 @@ export default function JournalEntriesPage() {
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (yearFilter) params.set("year", yearFilter);
       const res = await fetch(`/api/journal-entries?${params}`);
-      if (res.ok) setEntries(await res.json());
+      if (res.ok) {
+        const json = await res.json();
+        setEntries(json.data ?? []);
+      }
     } finally {
       setLoading(false);
     }
