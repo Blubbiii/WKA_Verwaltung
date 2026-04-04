@@ -52,23 +52,21 @@ export async function POST(request: NextRequest) {
       recipients: [] as string[],
     };
 
-    for (const user of users) {
-      try {
-        // Create in-app notification for each user
-        await prisma.notification.create({
-          data: {
-            type: "SYSTEM",
-            title: subject,
-            message: body,
-            userId: user.id,
-            tenantId: check.tenantId!,
-          },
-        });
-        emailResults.queued++;
-        emailResults.recipients.push(user.email);
-      } catch {
-        emailResults.failed++;
-      }
+    try {
+      // Batch-create notifications (1 query instead of N)
+      const result = await prisma.notification.createMany({
+        data: users.map((user) => ({
+          type: "SYSTEM" as const,
+          title: subject,
+          message: body,
+          userId: user.id,
+          tenantId: check.tenantId!,
+        })),
+      });
+      emailResults.queued = result.count;
+      emailResults.recipients = users.map((u) => u.email);
+    } catch {
+      emailResults.failed = users.length;
     }
 
     // Audit log (deferred: runs after response is sent)

@@ -34,10 +34,10 @@ export async function POST(request: NextRequest) {
     let updated = 0;
     let skipped = 0;
 
-    for (const mp of monthlyPrices) {
-      try {
-        if (forceRefresh) {
-          // Upsert: update if exists, create if not
+    if (forceRefresh) {
+      // Upsert all — still needs loop due to composite unique key
+      for (const mp of monthlyPrices) {
+        try {
           await prisma.marketPrice.upsert({
             where: {
               year_month_source: { year: mp.year, month: mp.month, source: "SMARD" },
@@ -59,33 +59,36 @@ export async function POST(request: NextRequest) {
             },
           });
           updated++;
-        } else {
-          // Only create if not exists
-          const existing = await prisma.marketPrice.findUnique({
-            where: {
-              year_month_source: { year: mp.year, month: mp.month, source: "SMARD" },
-            },
-          });
-          if (existing) {
-            skipped++;
-          } else {
-            await prisma.marketPrice.create({
-              data: {
-                year: mp.year,
-                month: mp.month,
-                avgPriceEurMwh: mp.avgPriceEurMwh,
-                minPriceEurMwh: mp.minPriceEurMwh,
-                maxPriceEurMwh: mp.maxPriceEurMwh,
-                source: "SMARD",
-                dataPoints: mp.dataPoints,
-              },
-            });
-            inserted++;
-          }
+        } catch (err) {
+          logger.warn({ month: mp.month, err }, "Failed to save market price");
+          skipped++;
         }
-      } catch (err) {
-        logger.warn({ month: mp.month, err }, "Failed to save market price");
-        skipped++;
+      }
+    } else {
+      // Batch-lookup existing records (1 query instead of N)
+      const existing = await prisma.marketPrice.findMany({
+        where: { year, source: "SMARD" },
+        select: { month: true },
+      });
+      const existingMonths = new Set(existing.map((e) => e.month));
+
+      const toCreate = monthlyPrices.filter((mp) => !existingMonths.has(mp.month));
+      skipped = monthlyPrices.length - toCreate.length;
+
+      if (toCreate.length > 0) {
+        const result = await prisma.marketPrice.createMany({
+          data: toCreate.map((mp) => ({
+            year: mp.year,
+            month: mp.month,
+            avgPriceEurMwh: mp.avgPriceEurMwh,
+            minPriceEurMwh: mp.minPriceEurMwh,
+            maxPriceEurMwh: mp.maxPriceEurMwh,
+            source: "SMARD",
+            dataPoints: mp.dataPoints,
+          })),
+          skipDuplicates: true,
+        });
+        inserted = result.count;
       }
     }
 

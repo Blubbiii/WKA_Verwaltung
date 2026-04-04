@@ -182,20 +182,13 @@ async function processPrint(
   userId: string,
   result: DeliverResult
 ) {
+  const successfulIds: string[] = [];
+
   for (const entry of entries) {
     try {
       // Generate PDF to validate it can be created (side effect: caches template)
       await generateInvoicePdf(entry.invoice.id);
-
-      // Mark as printed
-      await prisma.invoice.update({
-        where: { id: entry.invoice.id },
-        data: {
-          printedAt: new Date(),
-          printedById: userId,
-        },
-      });
-
+      successfulIds.push(entry.invoice.id);
       result.printed++;
     } catch (error) {
       const lessorName = getLessorDisplayName(entry.item.lessorPerson);
@@ -209,6 +202,17 @@ async function processPrint(
         "Error printing invoice in batch delivery"
       );
     }
+  }
+
+  // Batch-update all successful prints (1 query instead of N)
+  if (successfulIds.length > 0) {
+    await prisma.invoice.updateMany({
+      where: { id: { in: successfulIds } },
+      data: {
+        printedAt: new Date(),
+        printedById: userId,
+      },
+    });
   }
 }
 

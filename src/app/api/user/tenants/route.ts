@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
-import { getRoleHierarchyForTenant } from "@/lib/auth/role-hierarchy";
 
 // GET /api/user/tenants — list all tenant memberships for the current user
 export async function GET() {
@@ -20,17 +19,39 @@ export async function GET() {
     orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
   });
 
-  // Compute role hierarchy per tenant
-  const tenants = await Promise.all(
-    memberships.map(async (m) => ({
-      id: m.tenant.id,
-      name: m.tenant.name,
-      slug: m.tenant.slug,
-      logoUrl: m.tenant.logoUrl,
-      isPrimary: m.isPrimary,
-      roleHierarchy: await getRoleHierarchyForTenant(userId, m.tenant.id),
-    }))
+  // Batch-fetch all role assignments for this user across all tenants (1 query instead of N)
+  const tenantIds = memberships.map((m) => m.tenant.id);
+  const allAssignments = await prisma.userRoleAssignment.findMany({
+    where: {
+      userId,
+      OR: [{ tenantId: { in: tenantIds } }, { tenantId: null }],
+    },
+    include: { role: { select: { hierarchy: true } } },
+  });
+
+  // Build hierarchy map per tenant
+  const globalMax = Math.max(
+    0,
+    ...allAssignments.filter((a) => a.tenantId === null).map((a) => a.role.hierarchy)
   );
+
+  const hierarchyByTenant = new Map<string, number>();
+  for (const tenantId of tenantIds) {
+    const tenantAssignments = allAssignments.filter((a) => a.tenantId === tenantId);
+    const tenantMax = tenantAssignments.length > 0
+      ? Math.max(0, ...tenantAssignments.map((a) => a.role.hierarchy))
+      : 0;
+    hierarchyByTenant.set(tenantId, Math.max(tenantMax, globalMax));
+  }
+
+  const tenants = memberships.map((m) => ({
+    id: m.tenant.id,
+    name: m.tenant.name,
+    slug: m.tenant.slug,
+    logoUrl: m.tenant.logoUrl,
+    isPrimary: m.isPrimary,
+    roleHierarchy: hierarchyByTenant.get(m.tenant.id) ?? 0,
+  }));
 
   return NextResponse.json({ tenants });
 }
