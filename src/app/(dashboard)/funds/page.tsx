@@ -259,7 +259,7 @@ export default function FundsPage() {
           />
 
           {/* Table */}
-          <div className="mt-4 rounded-md border">
+          <div className="mt-4 rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

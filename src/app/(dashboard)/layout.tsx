@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/layout/sidebar";
+import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 import { Header } from "@/components/layout/header";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { DashboardFooter } from "@/components/layout/dashboard-footer";
@@ -20,11 +21,16 @@ export default function DashboardLayout({
         <div className="flex h-screen overflow-hidden">
           <OfflineIndicator />
           <CommandPalette />
-          <Sidebar />
+          {/* Desktop sidebar */}
+          <div className="hidden md:block">
+            <Sidebar />
+          </div>
+          {/* Mobile sidebar (Sheet drawer) */}
+          <MobileSidebar />
           <div className="flex flex-1 flex-col overflow-hidden">
             <MaintenanceBanner />
             <Header />
-            <main className="flex-1 overflow-y-auto overscroll-contain bg-muted/30 p-6 flex flex-col">
+            <main className="flex-1 overflow-y-auto overscroll-contain bg-muted/30 p-3 sm:p-4 md:p-6 flex flex-col">
               <Breadcrumb />
               <div className="flex-1">
                 <PageTransition>

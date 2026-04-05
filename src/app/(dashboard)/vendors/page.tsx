@@ -345,6 +345,7 @@ export default function VendorsPage() {
               </Button>
             </div>
           ) : (
+            <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -398,6 +399,7 @@ export default function VendorsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

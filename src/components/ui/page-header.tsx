@@ -19,24 +19,26 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">{title}</h1>
           {description && (
-            <p className="text-muted-foreground mt-1">{description}</p>
+            <p className="text-muted-foreground mt-1 text-sm">{description}</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          {actions}
-          {createHref && (
-            <Button asChild>
-              <Link href={createHref}>
-                <Plus className="mr-2 h-4 w-4" />
-                {createLabel || "Erstellen"}
-              </Link>
-            </Button>
-          )}
-        </div>
+        {(actions || createHref) && (
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {actions}
+            {createHref && (
+              <Button asChild>
+                <Link href={createHref}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {createLabel || "Erstellen"}
+                </Link>
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       <div className="h-px bg-gradient-to-r from-primary/40 via-border/50 to-transparent" />
     </div>

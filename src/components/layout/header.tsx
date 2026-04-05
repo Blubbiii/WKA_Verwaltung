@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Search, User, LogOut, Settings, Settings2, Moon, Sun, Shield, X, Keyboard, Wind } from "lucide-react";
+import { Search, User, LogOut, Settings, Settings2, Moon, Sun, Shield, X, Keyboard, Wind, Menu } from "lucide-react";
+import { getMobileSidebarOpener } from "@/components/layout/mobile-sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -146,9 +147,19 @@ export function Header() {
         </div>
       )}
 
-      <header className="flex items-center justify-between h-16 px-6 border-b border-border/50 bg-background/85 backdrop-blur-lg shadow-sm sticky top-0 z-30">
-        {/* Left: Tenant branding + Search */}
-        <div className="flex items-center gap-4 flex-1 max-w-xl">
+      <header className="flex items-center justify-between h-16 px-3 sm:px-4 md:px-6 border-b border-border/50 bg-background/85 backdrop-blur-lg shadow-sm sticky top-0 z-30">
+        {/* Left: Mobile hamburger + Tenant branding + Search */}
+        <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-xl">
+          {/* Mobile hamburger */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden shrink-0"
+            onClick={() => getMobileSidebarOpener()?.()}
+            aria-label="Menü öffnen"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
           {/* Tenant name */}
           {session?.user && (
             <div className="hidden md:flex items-center gap-2 shrink-0">
@@ -176,7 +187,7 @@ export function Header() {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* Tenant Switcher / Badge */}
           {impersonation ? (
             <div className="hidden lg:flex items-center px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
@@ -191,15 +202,17 @@ export function Header() {
             {mounted ? (resolvedTheme === "dark" ? <Sun className="h-5 w-5 transition-transform duration-200 hover:rotate-12" /> : <Moon className="h-5 w-5 transition-transform duration-200 hover:-rotate-12" />) : <div className="h-5 w-5" />}
           </Button>
 
-          {/* Language Switcher */}
-          <LanguageSwitcher />
+          {/* Language Switcher — hidden on small mobile */}
+          <div className="hidden sm:flex">
+            <LanguageSwitcher />
+          </div>
 
-          {/* Keyboard Shortcuts */}
+          {/* Keyboard Shortcuts — hidden on mobile */}
           <Button
             variant="ghost"
             size="icon"
             onClick={openShortcutsDialog}
-            className="transition-all duration-200 hover:bg-accent"
+            className="hidden md:inline-flex transition-all duration-200 hover:bg-accent"
             title={t("header.keyboardShortcuts") + " (?)"}
             aria-label={t("header.keyboardShortcuts")}
           >

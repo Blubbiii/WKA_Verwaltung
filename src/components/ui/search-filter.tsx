@@ -58,7 +58,7 @@ export function SearchFilter({
           value={filter.value}
           onValueChange={filter.onChange}
         >
-          <SelectTrigger className={filter.width || "w-[180px]"}>
+          <SelectTrigger className={filter.width ? `w-full sm:${filter.width}` : "w-full sm:w-[180px]"}>
             {filter.icon}
             <SelectValue placeholder={filter.placeholder || "Filter"} />
           </SelectTrigger>

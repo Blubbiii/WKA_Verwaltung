@@ -599,6 +599,7 @@ export default function JournalEntriesPage() {
               </Button>
             </div>
           ) : (
+            <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -690,6 +691,7 @@ export default function JournalEntriesPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
