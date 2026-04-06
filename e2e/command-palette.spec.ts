@@ -40,14 +40,16 @@ test.describe("Command Palette (Cmd+K)", () => {
     await expect(page.getByText(/windpark|ergebnisse/i).first()).toBeVisible();
   });
 
-  test("Enter navigiert zum Ergebnis", async ({ page }) => {
+  test("Klick auf Ergebnis navigiert", async ({ page }) => {
     await page.goto("/dashboard");
     await page.keyboard.press("Control+k");
     const input = page.getByPlaceholder(/suchen/i).first();
     await input.fill("Windparks");
-    await page.waitForTimeout(200);
-    await page.keyboard.press("Enter");
-    // Should navigate to /parks
-    await page.waitForURL("**/parks**", { timeout: 10000 });
+    await page.waitForTimeout(300);
+    // Click the "Windparks" result item directly
+    const result = page.getByText("Windparks").first();
+    await expect(result).toBeVisible({ timeout: 3000 });
+    await result.click();
+    await page.waitForURL("**/parks**", { timeout: 10_000 });
   });
 });

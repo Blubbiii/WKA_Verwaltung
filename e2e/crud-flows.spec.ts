@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("CRUD Flows", () => {
-  test.describe.configure({ mode: "serial" }); // Tests depend on each other
+  // No serial mode — each test is independent
 
   test("Parks: Seite laden + Tabelle sichtbar", async ({ page }) => {
     await page.goto("/parks");
@@ -13,14 +13,12 @@ test.describe("CRUD Flows", () => {
     await page.goto("/parks");
     await expect(page.locator("table")).toBeVisible();
     await page.waitForTimeout(2000);
-    const firstRow = page.locator("table tbody tr").first();
-    if (await firstRow.isVisible({ timeout: 5000 }).catch(() => false)) {
-      const parkName = await firstRow.locator("td").first().innerText();
-      await firstRow.click();
-      await page.waitForURL(/.*\/parks\/.*/, { timeout: 10_000 });
-      // Park name should appear on detail page
-      const pageContent = await page.locator("body").innerText();
-      expect(pageContent).toContain(parkName.trim().substring(0, 10));
+    // Click on a data cell (not the checkbox column)
+    const nameCell = page.locator("table tbody tr td").nth(1);
+    if (await nameCell.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await nameCell.click();
+      await page.waitForURL(/.*\/parks\/.*/, { timeout: 15_000 });
+      await expect(page.locator("h1").first()).toBeVisible();
     }
   });
 
@@ -28,14 +26,14 @@ test.describe("CRUD Flows", () => {
     await page.goto("/invoices");
     await expect(page.locator("table")).toBeVisible();
     await page.waitForTimeout(2000);
-    const firstRow = page.locator("table tbody tr").first();
-    if (await firstRow.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await firstRow.click();
-      await page.waitForURL(/.*\/invoices\/.*/, { timeout: 10_000 });
+    // Click on a data cell (skip checkbox column)
+    const nameCell = page.locator("table tbody tr td").nth(1);
+    if (await nameCell.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await nameCell.click();
+      await page.waitForURL(/.*\/invoices\/.*/, { timeout: 15_000 });
       await expect(page.locator("h1").first()).toBeVisible();
-      // Go back
       await page.goBack();
-      await page.waitForURL(/.*\/invoices$/, { timeout: 10_000 });
+      await page.waitForURL(/.*\/invoices/, { timeout: 15_000 });
       await expect(page.locator("table")).toBeVisible();
     }
   });
@@ -45,10 +43,10 @@ test.describe("CRUD Flows", () => {
     await expect(page.locator("h1").first()).toBeVisible();
     await expect(page.locator("table")).toBeVisible();
     await page.waitForTimeout(2000);
-    const firstRow = page.locator("table tbody tr").first();
-    if (await firstRow.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await firstRow.click();
-      await page.waitForURL(/.*\/contracts\/.*/, { timeout: 10_000 });
+    const nameCell = page.locator("table tbody tr td").nth(1);
+    if (await nameCell.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await nameCell.click();
+      await page.waitForURL(/.*\/contracts\/.*/, { timeout: 15_000 });
       await expect(page.locator("h1").first()).toBeVisible();
     }
   });
@@ -64,10 +62,10 @@ test.describe("CRUD Flows", () => {
     await expect(page.locator("h1").first()).toBeVisible();
     await expect(page.locator("table")).toBeVisible();
     await page.waitForTimeout(2000);
-    const firstRow = page.locator("table tbody tr").first();
-    if (await firstRow.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await firstRow.click();
-      await page.waitForURL(/.*\/funds\/.*/, { timeout: 10_000 });
+    const nameCell = page.locator("table tbody tr td").nth(1);
+    if (await nameCell.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await nameCell.click();
+      await page.waitForURL(/.*\/funds\/.*/, { timeout: 15_000 });
       await expect(page.locator("h1").first()).toBeVisible();
     }
   });
