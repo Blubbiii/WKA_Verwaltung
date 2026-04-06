@@ -22,6 +22,7 @@ import {
   Calendar,
   RefreshCw,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/format";
 import { EditableCell } from "@/components/ui/editable-cell";
 import { toast } from "sonner";
@@ -349,7 +350,7 @@ export default function ContractsPage() {
             ]}
           />
 
-          <div className="rounded-md border overflow-x-auto">
+          <div className={cn("rounded-md border overflow-x-auto transition-opacity", loading && contracts.length > 0 && "opacity-50 pointer-events-none")}>
             <Table>
               <TableHeader>
                 <TableRow>

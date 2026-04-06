@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
+import { cn } from "@/lib/utils";
 import { EditableCell } from "@/components/ui/editable-cell";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { BatchActionBar } from "@/components/ui/batch-action-bar";
@@ -337,7 +338,7 @@ export default function ParksPage() {
 
           {/* Content: Table or Map */}
           {viewMode === "table" ? (
-          <div className="mt-4 rounded-md border overflow-x-auto">
+          <div className={cn("mt-4 rounded-md border overflow-x-auto transition-opacity", loading && parks.length > 0 && "opacity-50 pointer-events-none")}>
             <Table>
               <TableHeader>
                 <TableRow>

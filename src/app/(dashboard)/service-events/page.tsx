@@ -10,6 +10,7 @@ import {
   useApiMutation,
   useInvalidateQuery,
 } from "@/hooks/useApiQuery";
+import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/format";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
@@ -451,7 +452,7 @@ export default function ServiceEventsPage() {
           />
 
           {/* Table */}
-          <div className="rounded-md border overflow-x-auto">
+          <div className={cn("rounded-md border overflow-x-auto transition-opacity", loading && events.length > 0 && "opacity-50 pointer-events-none")}>
             <Table>
               <TableHeader>
                 <TableRow>

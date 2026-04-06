@@ -63,6 +63,7 @@ import { StatsCards } from "@/components/ui/stats-cards";
 import { SearchFilter } from "@/components/ui/search-filter";
 import { INVOICE_STATUS, getStatusBadge } from "@/lib/status-config";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { cn } from "@/lib/utils";
 import { EditableCell } from "@/components/ui/editable-cell";
 import { DatevExportDialog } from "@/components/invoices/datev-export-dialog";
 import { getSkontoStatus, getSkontoStatusLabel, getSkontoStatusBadgeClass } from "@/lib/invoices/skonto";
@@ -568,7 +569,7 @@ export default function InvoicesPage() {
             ]}
           />
 
-          <div className="mt-4 rounded-md border overflow-x-auto">
+          <div className={cn("mt-4 rounded-md border overflow-x-auto transition-opacity", loading && invoices.length > 0 && "opacity-50 pointer-events-none")}>
             <Table>
               <TableHeader>
                 <TableRow>

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
+import { cn } from "@/lib/utils";
 import { EditableCell } from "@/components/ui/editable-cell";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { BatchActionBar } from "@/components/ui/batch-action-bar";
@@ -313,7 +314,7 @@ export default function FundsPage() {
           />
 
           {/* Table */}
-          <div className="mt-4 rounded-md border overflow-x-auto">
+          <div className={cn("mt-4 rounded-md border overflow-x-auto transition-opacity", loading && funds.length > 0 && "opacity-50 pointer-events-none")}>
             <Table>
               <TableHeader>
                 <TableRow>

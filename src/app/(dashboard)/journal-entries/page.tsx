@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 import {
   BookOpen,
@@ -648,12 +649,12 @@ export default function JournalEntriesPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {loading ? (
+          {loading && entries.length === 0 ? (
             <div className="flex items-center justify-center py-14 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin mr-3" />
               Wird geladen…
             </div>
-          ) : entries.length === 0 ? (
+          ) : !loading && entries.length === 0 ? (
             <div className="flex flex-col items-center py-14 text-muted-foreground gap-2">
               <BookOpen className="h-10 w-10 opacity-30" />
               <p className="text-sm">Keine Buchungen vorhanden</p>
@@ -668,7 +669,7 @@ export default function JournalEntriesPage() {
               </Button>
             </div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
+            <div className={cn("rounded-md border overflow-x-auto transition-opacity", loading && entries.length > 0 && "opacity-50 pointer-events-none")}>
             <Table>
               <TableHeader>
                 <TableRow>

@@ -41,6 +41,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { BatchActionBar } from "@/components/ui/batch-action-bar";
 import { Badge } from "@/components/ui/badge";
@@ -318,7 +319,7 @@ export default function LeasesPage() {
             ]}
           />
 
-          <div className="mt-4 rounded-md border overflow-x-auto">
+          <div className={cn("mt-4 rounded-md border overflow-x-auto transition-opacity", loading && leases.length > 0 && "opacity-50 pointer-events-none")}>
             <Table>
               <TableHeader>
                 <TableRow>

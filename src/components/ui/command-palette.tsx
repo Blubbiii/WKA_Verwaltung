@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { useTranslations } from "next-intl";
 import {
   Wind, Receipt, FileText, Users, Settings, BarChart3,
-  Map, LandPlot, Building2, Search, ArrowRight,
+  Map, LandPlot, Building2, Search, ArrowRight, Loader2,
 } from "lucide-react";
 
 /**
  * Command Palette — Spotlight search (Ctrl+K)
- * Searches across pages, parks, invoices, contacts, and actions.
+ * Searches across pages, actions, AND live data (Parks, Invoices, Contacts, etc.)
  */
 
 const PAGES = [
@@ -35,11 +35,38 @@ const ACTIONS = [
   { name: "Dokumenten-Explorer", href: "/documents/explorer", icon: FileText, group: "Aktionen" },
 ];
 
+const TYPE_ICONS: Record<string, typeof Wind> = {
+  park: Wind,
+  invoice: Receipt,
+  contact: Users,
+  contract: FileText,
+  fund: Building2,
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  park: "Park",
+  invoice: "Rechnung",
+  contact: "Kontakt",
+  contract: "Vertrag",
+  fund: "Beteiligung",
+};
+
+interface LiveResult {
+  type: string;
+  id: string;
+  title: string;
+  subtitle: string;
+  href: string;
+}
+
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [liveResults, setLiveResults] = useState<LiveResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const router = useRouter();
   const t = useTranslations("header");
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Ctrl+K / Cmd+K toggle
   useEffect(() => {
@@ -54,9 +81,40 @@ export function CommandPalette() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Live search with debounce
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (search.length < 2) {
+      setLiveResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/quick-search?q=${encodeURIComponent(search)}&limit=8`);
+        if (res.ok) {
+          const data = await res.json();
+          setLiveResults(data.results || []);
+        }
+      } catch {
+        // Silently fail — static results still work
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [search]);
+
   const navigate = useCallback((href: string) => {
     setOpen(false);
     setSearch("");
+    setLiveResults([]);
     router.push(href);
   }, [router]);
 
@@ -81,6 +139,7 @@ export function CommandPalette() {
               placeholder={t("search")}
               className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
+            {searching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
             <kbd className="hidden sm:inline-flex items-center rounded border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
               ESC
             </kbd>
@@ -88,9 +147,41 @@ export function CommandPalette() {
 
           <Command.List className="max-h-80 overflow-y-auto p-2">
             <Command.Empty className="py-8 text-center text-sm text-muted-foreground">
-              Nichts gefunden
+              {searching ? "Suche..." : "Nichts gefunden"}
             </Command.Empty>
 
+            {/* Live search results */}
+            {liveResults.length > 0 && (
+              <>
+                <Command.Group heading="Ergebnisse" className="text-xs text-muted-foreground font-semibold uppercase tracking-wide px-2 py-1.5">
+                  {liveResults.map((result) => {
+                    const Icon = TYPE_ICONS[result.type] || FileText;
+                    return (
+                      <Command.Item
+                        key={`${result.type}-${result.id}`}
+                        value={`${result.title} ${result.subtitle}`}
+                        onSelect={() => navigate(result.href)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer data-[selected=true]:bg-accent transition-colors"
+                      >
+                        <Icon className="h-4 w-4 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <span className="block truncate">{result.title}</span>
+                          {result.subtitle && (
+                            <span className="block text-xs text-muted-foreground truncate">{result.subtitle}</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {TYPE_LABELS[result.type] || result.type}
+                        </span>
+                      </Command.Item>
+                    );
+                  })}
+                </Command.Group>
+                <Command.Separator className="my-2 h-px bg-border" />
+              </>
+            )}
+
+            {/* Static pages */}
             <Command.Group heading="Seiten" className="text-xs text-muted-foreground font-semibold uppercase tracking-wide px-2 py-1.5">
               {PAGES.map((page) => (
                 <Command.Item
@@ -108,6 +199,7 @@ export function CommandPalette() {
 
             <Command.Separator className="my-2 h-px bg-border" />
 
+            {/* Static actions */}
             <Command.Group heading="Aktionen" className="text-xs text-muted-foreground font-semibold uppercase tracking-wide px-2 py-1.5">
               {ACTIONS.map((action) => (
                 <Command.Item
