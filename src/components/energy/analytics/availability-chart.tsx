@@ -22,6 +22,7 @@ import type {
   AvailabilityTrendPoint,
   HeatmapData,
   ParetoItem,
+  AvailabilityTarget,
 } from "@/types/analytics";
 import { T_CATEGORIES } from "@/types/analytics";
 
@@ -40,6 +41,7 @@ interface AvailabilityChartProps {
     totalDowntimeHours: number;
     totalMaintenanceHours: number;
   };
+  targets?: AvailabilityTarget[];
   isLoading?: boolean;
 }
 
@@ -99,6 +101,7 @@ export function AvailabilityChart({
   heatmap,
   pareto,
   fleet,
+  targets,
   isLoading,
 }: AvailabilityChartProps) {
   // Convert breakdown to percentage-based stacked data
@@ -346,6 +349,49 @@ export function AvailabilityChart({
                 <p className="text-sm text-muted-foreground">Sonstige externe (T5.3)</p>
                 <p className="text-xl font-bold mt-1">{formatHours(externalStops.t5_3)}</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Availability Targets (Soll/Ist) */}
+      {targets && targets.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Verfügbarkeitsziele (Soll/Ist)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {targets.map((t) => (
+                <div
+                  key={t.parkId}
+                  className={`rounded-lg border p-4 ${
+                    t.status === "green"
+                      ? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30"
+                      : t.status === "yellow"
+                        ? "border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30"
+                        : "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium truncate">{t.parkName}</p>
+                    <span className={`inline-flex h-2.5 w-2.5 rounded-full ${
+                      t.status === "green" ? "bg-green-500" : t.status === "yellow" ? "bg-yellow-500" : "bg-red-500"
+                    }`} />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold">{dec2Fmt.format(t.actualPct)} %</span>
+                    <span className="text-sm text-muted-foreground">
+                      / {dec2Fmt.format(t.targetPct)} % Ziel
+                    </span>
+                  </div>
+                  <p className={`text-xs mt-1 ${
+                    t.delta >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                  }`}>
+                    {t.delta >= 0 ? "+" : ""}{dec2Fmt.format(t.delta)} Pp
+                  </p>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

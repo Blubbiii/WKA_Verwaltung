@@ -113,6 +113,52 @@ export interface AvailabilityResponse {
   };
 }
 
+// --- Availability Detail (Drill-Down) ---
+
+export interface AvailabilityMonthlyDetail {
+  month: number;
+  year: number;
+  label: string;
+  t1Hours: number;
+  t2Hours: number;
+  t3Hours: number;
+  t4Hours: number;
+  t5Hours: number;
+  t6Hours: number;
+  technicalPct: number;   // T1/(T1+T5)
+  contractualPct: number; // T1/(T1+T5 - excluded categories)
+}
+
+export interface DowntimeEvent {
+  id: string;
+  timestamp: string;
+  state: number;
+  subState: number;
+  isFault: boolean;
+  isService: boolean;
+  description: string;
+  category: string; // Mechanisch, Elektrisch, Umwelt, Netz, Wartung, Sonstige
+}
+
+export interface AvailabilityTarget {
+  parkId: string;
+  parkName: string;
+  targetPct: number;
+  actualPct: number;
+  delta: number;
+  status: "green" | "yellow" | "red";
+}
+
+export interface AvailabilityDetailResponse {
+  turbineId: string;
+  designation: string;
+  monthlyDetail: AvailabilityMonthlyDetail[];
+  technicalPct: number;
+  contractualPct: number;
+  downtimeEvents: DowntimeEvent[];
+  targets: AvailabilityTarget[];
+}
+
 // --- Turbine Comparison ---
 
 export interface TurbineComparisonEntry {

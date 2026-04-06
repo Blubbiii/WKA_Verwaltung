@@ -39,6 +39,7 @@ import type {
   FinancialResponse,
   ShadowResponse,
   PhaseSymmetryResponse,
+  AvailabilityTarget,
 } from "@/types/analytics";
 
 // =============================================================================
@@ -153,6 +154,15 @@ export default function AnalyticsPage() {
     queryKey: [availUrl],
     queryFn: () => fetcher(availUrl!),
     enabled: !!availUrl,
+    refetchOnWindowFocus: false,
+  });
+
+  // Availability targets (Soll/Ist per park)
+  const targetsUrl = isOperationsTab ? `/api/energy/analytics/availability-detail?${baseParams}` : null;
+  const { data: targetsData } = useQuery<{ targets: AvailabilityTarget[] }>({
+    queryKey: [targetsUrl],
+    queryFn: () => fetcher(targetsUrl!),
+    enabled: !!targetsUrl,
     refetchOnWindowFocus: false,
   });
   const { data: faultData, error: faultError, isLoading: faultLoading } = useQuery<FaultsResponse>({
@@ -335,6 +345,7 @@ export default function AnalyticsPage() {
                 heatmap={availData?.heatmap ?? []}
                 pareto={availData?.pareto ?? []}
                 fleet={availData?.fleet ?? { avgAvailability: 0, totalProductionHours: 0, totalDowntimeHours: 0, totalMaintenanceHours: 0 }}
+                targets={targetsData?.targets}
                 isLoading={availLoading}
               />
             )}
