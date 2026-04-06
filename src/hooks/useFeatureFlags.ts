@@ -29,6 +29,11 @@ interface FeatureFlags {
   "accounting.multibanking": boolean;
   "accounting.zm": boolean;
   "marketData": boolean;
+  "ppa-management": boolean;
+  "solar": boolean;
+  "storage": boolean;
+  "predictive-maintenance": boolean;
+  "investor-reports": boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -59,6 +64,11 @@ const DEFAULT_FLAGS: FeatureFlags = {
   "accounting.multibanking": false,
   "accounting.zm": false,
   "marketData": false,
+  "ppa-management": false,
+  "solar": false,
+  "storage": false,
+  "predictive-maintenance": false,
+  "investor-reports": false,
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : DEFAULT_FLAGS);

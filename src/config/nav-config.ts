@@ -133,7 +133,9 @@ export interface NavChild {
     | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
     | "accounting.assets" | "accounting.cashbook" | "accounting.datev" | "accounting.yearend"
     | "accounting.costcenter" | "accounting.budget" | "accounting.quotes" | "accounting.liquidity"
-    | "accounting.ocr" | "accounting.multibanking" | "accounting.zm";
+    | "accounting.ocr" | "accounting.multibanking" | "accounting.zm"
+    | "ppa-management" | "solar" | "storage"
+    | "predictive-maintenance" | "investor-reports";
 }
 
 export interface NavItem {
@@ -151,7 +153,9 @@ export interface NavItem {
     | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
     | "accounting.assets" | "accounting.cashbook" | "accounting.datev" | "accounting.yearend"
     | "accounting.costcenter" | "accounting.budget" | "accounting.quotes" | "accounting.liquidity"
-    | "accounting.ocr" | "accounting.multibanking" | "accounting.zm";
+    | "accounting.ocr" | "accounting.multibanking" | "accounting.zm"
+    | "ppa-management" | "solar" | "storage"
+    | "predictive-maintenance" | "investor-reports";
 }
 
 export interface NavGroup {
@@ -358,6 +362,7 @@ export const navGroups: NavGroup[] = [
           { title: "Bank-Import", titleKey: "bankImport", href: "/invoices/bank-import", icon: Landmark },
           { title: "Mahnwesen", titleKey: "reminders", href: "/invoices/reminders", icon: Bell },
           { title: "Buchungsjournal", titleKey: "journalEntries", href: "/journal-entries", icon: BookOpen },
+          { title: "PPA-Verträge", titleKey: "ppa", href: "/invoices/ppa", icon: Zap, featureFlag: "ppa-management" },
         ],
       },
       {
