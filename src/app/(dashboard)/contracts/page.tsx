@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { format, differenceInDays } from "date-fns";
 import { de } from "date-fns/locale";
@@ -16,11 +17,13 @@ import {
   Eye,
   Pencil,
   Trash2,
+  Download,
   Filter,
   Calendar,
   RefreshCw,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { EditableCell } from "@/components/ui/editable-cell";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,7 +48,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { BatchActionBar } from "@/components/ui/batch-action-bar";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
@@ -67,6 +72,7 @@ interface ContractItem {
   park: { id: string; name: string; shortName: string | null } | null;
   fund: { id: string; name: string } | null;
   partner: { id: string; name: string } | null;
+  notes: string | null;
   documentCount: number;
 }
 
@@ -156,6 +162,63 @@ export default function ContractsPage() {
       contract.partner?.name.toLowerCase().includes(searchLower)
     );
   });
+
+  // Batch selection
+  const {
+    selectedIds,
+    isAllSelected,
+    isSomeSelected,
+    toggleItem,
+    toggleAll,
+    clearSelection,
+    selectedCount,
+  } = useBatchSelection({ items: filteredContracts });
+
+  // CSV export for selected contracts
+  function handleCsvExport() {
+    const selected = filteredContracts.filter((c) => selectedIds.has(c.id));
+    const header = "Titel;Typ;Zuordnung;Jahreswert;Status";
+    const rows = selected.map((c) => {
+      const zuordnung = c.park?.shortName || c.park?.name || c.partner?.name || "-";
+      return [
+        c.title,
+        typeConfig[c.contractType]?.label || c.contractType,
+        zuordnung,
+        c.annualValue != null ? c.annualValue.toString().replace(".", ",") : "-",
+        getStatusBadge(CONTRACT_STATUS, c.status).label,
+      ].join(";");
+    });
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vertraege_export_${format(new Date(), "yyyyMMdd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${selected.length} Verträge exportiert`);
+  }
+
+  // Bulk delete for selected contracts
+  async function handleBulkDelete() {
+    const ids = [...selectedIds];
+    let successCount = 0;
+    for (const id of ids) {
+      try {
+        const response = await fetch(`/api/contracts/${id}`, { method: "DELETE" });
+        if (response.ok) successCount++;
+      } catch {
+        // continue with next
+      }
+    }
+    clearSelection();
+    invalidate(["contracts"]);
+    if (successCount === ids.length) {
+      toast.success(`${successCount} Verträge gelöscht`);
+    } else {
+      toast.warning(`${successCount} von ${ids.length} Verträgen gelöscht`);
+    }
+  }
 
   const totalActive = stats.byStatus.ACTIVE || 0;
   const totalExpiring = (stats.byStatus.EXPIRING || 0) + stats.expiringIn30Days;
@@ -290,12 +353,17 @@ export default function ContractsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label="Alle auswählen"
+                      {...(isSomeSelected ? { "data-state": "indeterminate" } : {})} />
+                  </TableHead>
                   <TableHead>Vertrag</TableHead>
                   <TableHead>Typ</TableHead>
                   <TableHead>Zuordnung</TableHead>
                   <TableHead>Laufzeit</TableHead>
                   <TableHead>Wert p.a.</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Notizen</TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -303,7 +371,7 @@ export default function ContractsPage() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 7 }).map((_, j) => (
+                      {Array.from({ length: 9 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-5 w-20" />
                         </TableCell>
@@ -312,7 +380,7 @@ export default function ContractsPage() {
                   ))
                 ) : filteredContracts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                       Keine Verträge gefunden
                     </TableCell>
                   </TableRow>
@@ -334,6 +402,9 @@ export default function ContractsPage() {
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/contracts/${contract.id}`); } }}
                       >
+                        <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox checked={selectedIds.has(contract.id)} onCheckedChange={() => toggleItem(contract.id)} aria-label="Auswählen" />
+                        </TableCell>
                         <TableCell>
                           <div>
                             <p className="font-medium">{contract.title}</p>
@@ -400,6 +471,25 @@ export default function ContractsPage() {
                             </Badge>
                             {daysIndicator}
                           </div>
+                        </TableCell>
+                        <TableCell className="max-w-[200px]" onClick={(e) => e.stopPropagation()}>
+                          <EditableCell
+                            value={contract.notes}
+                            placeholder="—"
+                            onSave={async (newValue) => {
+                              const res = await fetch(`/api/contracts/${contract.id}`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ notes: newValue || null }),
+                              });
+                              if (!res.ok) {
+                                const data = await res.json().catch(() => ({ error: "Fehler" }));
+                                throw new Error(data.error || "Fehler beim Speichern");
+                              }
+                              toast.success("Notiz gespeichert");
+                              invalidate(["contracts"]);
+                            }}
+                          />
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
@@ -471,6 +561,25 @@ export default function ContractsPage() {
         }}
         title="Vertrag löschen"
         itemName={contractToDelete?.title}
+      />
+
+      {/* Batch Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedCount}
+        onClearSelection={clearSelection}
+        actions={[
+          {
+            label: "CSV Export",
+            icon: <Download className="h-4 w-4" />,
+            onClick: handleCsvExport,
+          },
+          {
+            label: "Löschen",
+            icon: <Trash2 className="h-4 w-4" />,
+            onClick: handleBulkDelete,
+            variant: "destructive",
+          },
+        ]}
       />
     </div>
   );

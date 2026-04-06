@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { format, differenceInDays } from "date-fns";
 import { de } from "date-fns/locale";
@@ -15,6 +16,7 @@ import {
   Eye,
   Pencil,
   Trash2,
+  Download,
   Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,7 +42,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { BatchActionBar } from "@/components/ui/batch-action-bar";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
@@ -189,6 +193,63 @@ export default function LeasesPage() {
     );
   });
 
+  // Batch selection
+  const {
+    selectedIds,
+    isAllSelected,
+    isSomeSelected,
+    toggleItem,
+    toggleAll,
+    clearSelection,
+    selectedCount,
+  } = useBatchSelection({ items: filteredLeases });
+
+  // CSV export for selected leases
+  function handleCsvExport() {
+    const selected = filteredLeases.filter((l) => selectedIds.has(l.id));
+    const header = "Vertrag;Verpächter;Grundstück;Park;Jahrespacht;Status";
+    const rows = selected.map((l) =>
+      [
+        l.contractNumber || "-",
+        getLessorName(l.lessor),
+        getPlotsLabel(l.plots),
+        getParksLabel(l.plots),
+        l.annualRent != null ? l.annualRent.toString().replace(".", ",") : "-",
+        getStatusBadge(CONTRACT_STATUS, l.status).label,
+      ].join(";")
+    );
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `pachtvertraege_export_${format(new Date(), "yyyyMMdd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${selected.length} Pachtverträge exportiert`);
+  }
+
+  // Bulk delete for selected leases
+  async function handleBulkDelete() {
+    const ids = [...selectedIds];
+    let successCount = 0;
+    for (const id of ids) {
+      try {
+        const response = await fetch(`/api/leases/${id}`, { method: "DELETE" });
+        if (response.ok) successCount++;
+      } catch {
+        // continue with next
+      }
+    }
+    clearSelection();
+    invalidate(["leases"]);
+    if (successCount === ids.length) {
+      toast.success(`${successCount} Pachtverträge gelöscht`);
+    } else {
+      toast.warning(`${successCount} von ${ids.length} Pachtverträgen gelöscht`);
+    }
+  }
+
   // Expiring leases (within 90 days)
   const expiringLeases = leases.filter((l) => {
     const days = getDaysUntilEnd(l.endDate);
@@ -261,6 +322,10 @@ export default function LeasesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label="Alle auswählen"
+                      {...(isSomeSelected ? { "data-state": "indeterminate" } : {})} />
+                  </TableHead>
                   <TableHead>Vertrag</TableHead>
                   <TableHead>Verpächter</TableHead>
                   <TableHead>Flurstück</TableHead>
@@ -275,7 +340,7 @@ export default function LeasesPage() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 8 }).map((_, j) => (
+                      {Array.from({ length: 9 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-5 w-20" />
                         </TableCell>
@@ -284,7 +349,7 @@ export default function LeasesPage() {
                   ))
                 ) : filteredLeases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                       Keine Pachtverträge gefunden
                     </TableCell>
                   </TableRow>
@@ -302,6 +367,9 @@ export default function LeasesPage() {
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedLease(lease); setIsDetailOpen(true); } }}
                       >
+                        <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox checked={selectedIds.has(lease.id)} onCheckedChange={() => toggleItem(lease.id)} aria-label="Auswählen" />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {lease.contractNumber || "-"}
                         </TableCell>
@@ -418,6 +486,25 @@ export default function LeasesPage() {
         }}
         title="Pachtvertrag löschen"
         itemName={leaseToDelete?.contractNumber || (leaseToDelete?.lessor ? `Vertrag mit ${getLessorName(leaseToDelete.lessor)}` : "Pachtvertrag")}
+      />
+
+      {/* Batch Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedCount}
+        onClearSelection={clearSelection}
+        actions={[
+          {
+            label: "CSV Export",
+            icon: <Download className="h-4 w-4" />,
+            onClick: handleCsvExport,
+          },
+          {
+            label: "Löschen",
+            icon: <Trash2 className="h-4 w-4" />,
+            onClick: handleBulkDelete,
+            variant: "destructive",
+          },
+        ]}
       />
     </div>
   );

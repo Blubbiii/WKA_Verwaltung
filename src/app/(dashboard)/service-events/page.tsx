@@ -16,10 +16,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SearchFilter } from "@/components/ui/search-filter";
 import { StatsCards } from "@/components/ui/stats-cards";
 import { EmptyState } from "@/components/ui/empty-state";
+import { EditableCell } from "@/components/ui/editable-cell";
 import {
   Wrench,
   Eye,
   Trash2,
+  Download,
   MoreHorizontal,
   Filter,
   Calendar,
@@ -29,6 +31,9 @@ import {
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
+import { useBatchSelection } from "@/hooks/useBatchSelection";
+import { BatchActionBar } from "@/components/ui/batch-action-bar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -232,6 +237,10 @@ export default function ServiceEventsPage() {
   );
 
   const events = eventsData?.data ?? [];
+
+  // Batch selection
+  const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =
+    useBatchSelection({ items: events });
   const pagination = eventsData?.pagination ?? {
     page: 1,
     limit,
@@ -293,6 +302,57 @@ export default function ServiceEventsPage() {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
   }
+
+  // Batch CSV export
+  const handleBatchExport = useCallback(() => {
+    const selected = events.filter((e) => selectedIds.has(e.id));
+    const header = "Datum;Typ;Anlage;Park;Beschreibung;Kosten;Dauer (h)";
+    const rows = selected.map((e) =>
+      [
+        format(new Date(e.eventDate), "dd.MM.yyyy", { locale: de }),
+        eventTypeLabels[e.eventType] || e.eventType,
+        e.turbine.designation,
+        e.turbine.park.shortName || e.turbine.park.name,
+        (e.description || "").replace(/;/g, ","),
+        e.cost != null ? e.cost.toFixed(2).replace(".", ",") : "",
+        e.durationHours != null ? String(e.durationHours) : "",
+      ].join(";")
+    );
+    const csv = "\uFEFF" + [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `service-events-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${selected.length} Service-Events exportiert`);
+  }, [events, selectedIds]);
+
+  // Batch delete
+  const handleBatchDelete = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    if (!confirm(`${ids.length} Service-Event(s) wirklich löschen?`)) return;
+    let success = 0;
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        const res = await fetch(`/api/service-events/${id}`, { method: "DELETE" });
+        if (res.ok) success++;
+        else failed++;
+      } catch {
+        failed++;
+      }
+    }
+    if (success > 0) {
+      toast.success(`${success} Service-Event(s) gelöscht`);
+      clearSelection();
+      invalidate(["service-events"]);
+    }
+    if (failed > 0) {
+      toast.error(`${failed} Service-Event(s) konnten nicht gelöscht werden`);
+    }
+  }, [selectedIds, clearSelection, invalidate]);
 
   if (error) {
     return (
@@ -395,6 +455,10 @@ export default function ServiceEventsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label="Alle auswählen"
+                      {...(isSomeSelected ? { "data-state": "indeterminate" } : {})} />
+                  </TableHead>
                   <TableHead>
                     <button
                       type="button"
@@ -452,6 +516,7 @@ export default function ServiceEventsPage() {
                       <SortIcon field="durationHours" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
+                  <TableHead>Notizen</TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -459,6 +524,9 @@ export default function ServiceEventsPage() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
+                      <TableCell className="w-12">
+                        <Skeleton className="h-4 w-4" />
+                      </TableCell>
                       <TableCell>
                         <Skeleton className="h-5 w-20" />
                       </TableCell>
@@ -481,13 +549,16 @@ export default function ServiceEventsPage() {
                         <Skeleton className="h-5 w-12 ml-auto" />
                       </TableCell>
                       <TableCell>
+                        <Skeleton className="h-5 w-24" />
+                      </TableCell>
+                      <TableCell>
                         <Skeleton className="h-5 w-8" />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : events.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="p-0">
+                    <TableCell colSpan={10} className="p-0">
                       <EmptyState
                         icon={Wrench}
                         title="Keine Service-Events gefunden"
@@ -511,6 +582,9 @@ export default function ServiceEventsPage() {
                         }
                       }}
                     >
+                      <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={selectedIds.has(event.id)} onCheckedChange={() => toggleItem(event.id)} aria-label="Auswählen" />
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">
                         {format(
                           new Date(event.eventDate),
@@ -564,6 +638,25 @@ export default function ServiceEventsPage() {
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}
+                      </TableCell>
+                      <TableCell className="max-w-[200px]" onClick={(e) => e.stopPropagation()}>
+                        <EditableCell
+                          value={event.notes}
+                          placeholder="—"
+                          onSave={async (newValue) => {
+                            const res = await fetch(`/api/service-events/${event.id}`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ notes: newValue || null }),
+                            });
+                            if (!res.ok) {
+                              const data = await res.json().catch(() => ({ error: "Fehler" }));
+                              throw new Error(data.error || "Fehler beim Speichern");
+                            }
+                            toast.success("Notiz gespeichert");
+                            invalidate(["service-events"]);
+                          }}
+                        />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
@@ -645,6 +738,25 @@ export default function ServiceEventsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Batch Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedCount}
+        onClearSelection={clearSelection}
+        actions={[
+          {
+            label: "CSV Export",
+            icon: <Download className="h-4 w-4" />,
+            onClick: handleBatchExport,
+          },
+          {
+            label: "Löschen",
+            icon: <Trash2 className="h-4 w-4" />,
+            onClick: handleBatchDelete,
+            variant: "destructive",
+          },
+        ]}
+      />
 
       {/* Delete Confirm Dialog */}
       <DeleteConfirmDialog

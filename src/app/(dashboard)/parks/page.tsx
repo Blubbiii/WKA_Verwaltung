@@ -3,8 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
+import { EditableCell } from "@/components/ui/editable-cell";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { BatchActionBar } from "@/components/ui/batch-action-bar";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Wind,
   MapPin,
@@ -17,6 +21,7 @@ import {
   List,
   Map,
   Trash2,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,6 +64,7 @@ interface Park {
   city: string | null;
   latitude: number | null;
   longitude: number | null;
+  notes: string | null;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   commissioningDate: string | null;
   totalCapacityKw: number | null;
@@ -116,6 +122,45 @@ export default function ParksPage() {
 
   const parks = parksData?.data ?? [];
   const pagination = parksData?.pagination ?? { page: 1, limit, total: 0, totalPages: 0 };
+
+  // Bulk selection
+  const {
+    selectedIds,
+    selectedCount,
+    isAllSelected,
+    isSomeSelected,
+    toggleItem,
+    toggleAll,
+    clearSelection,
+  } = useBatchSelection({ items: parks });
+
+  function handleBulkCsvExport() {
+    const selected = parks.filter(p => selectedIds.has(p.id));
+    const header = "Name;Standort;Leistung (MW);Anlagen;Status";
+    const rows = selected.map(p => `"${p.name}";"${p.city || ''}";"${(p.stats?.totalCapacityKw ?? 0) / 1000}";"${p.stats?.turbineCount ?? 0}";"${p.status}"`);
+    const csv = "\uFEFF" + [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `parks-export-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleBulkDelete() {
+    if (!confirm(`${selectedCount} Parks wirklich löschen?`)) return;
+    let deleted = 0;
+    for (const id of selectedIds) {
+      try {
+        const res = await fetch(`/api/parks/${id}`, { method: "DELETE" });
+        if (res.ok) deleted++;
+      } catch { /* skip */ }
+    }
+    toast.success(`${deleted} Parks gelöscht`);
+    clearSelection();
+    refetch();
+  }
 
   // Archive mutation
   const archiveMutation = useApiMutation(
@@ -296,11 +341,20 @@ export default function ParksPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Alle auswählen"
+                      {...(isSomeSelected ? { "data-state": "indeterminate" } : {})}
+                    />
+                  </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Standort</TableHead>
                   <TableHead className="text-center">Anlagen</TableHead>
                   <TableHead className="text-right">Leistung</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Notizen</TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -308,6 +362,9 @@ export default function ParksPage() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
+                      <TableCell className="w-12">
+                        <Skeleton className="h-4 w-4" />
+                      </TableCell>
                       <TableCell>
                         <Skeleton className="h-5 w-32" />
                       </TableCell>
@@ -324,13 +381,16 @@ export default function ParksPage() {
                         <Skeleton className="h-5 w-16" />
                       </TableCell>
                       <TableCell>
+                        <Skeleton className="h-5 w-24" />
+                      </TableCell>
+                      <TableCell>
                         <Skeleton className="h-5 w-20" />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : parks.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="p-0">
+                    <TableCell colSpan={8} className="p-0">
                       <EmptyState
                         icon={Wind}
                         title="Keine Parks gefunden"
@@ -347,6 +407,13 @@ export default function ParksPage() {
                       tabIndex={0}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/parks/${park.id}`); } }}
                     >
+                      <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(park.id)}
+                          onCheckedChange={() => toggleItem(park.id)}
+                          aria-label={`${park.name} auswählen`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium">{park.name}</div>
                         {park.shortName && (
@@ -388,6 +455,20 @@ export default function ParksPage() {
                         >
                           {getStatusBadge(ENTITY_STATUS, park.status).label}
                         </Badge>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <EditableCell
+                          value={park.notes}
+                          onSave={async (val) => {
+                            await fetch(`/api/parks/${park.id}`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ notes: val }),
+                            });
+                            refetch();
+                          }}
+                          placeholder="—"
+                        />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
@@ -525,6 +606,15 @@ export default function ParksPage() {
         }}
         title="Park löschen"
         itemName={parkToDelete?.name}
+      />
+
+      <BatchActionBar
+        selectedCount={selectedCount}
+        onClearSelection={clearSelection}
+        actions={[
+          { label: "CSV Export", icon: <Download className="h-4 w-4" />, onClick: handleBulkCsvExport },
+          { label: "Löschen", icon: <Trash2 className="h-4 w-4" />, onClick: handleBulkDelete, variant: "destructive" as const },
+        ]}
       />
     </div>
   );

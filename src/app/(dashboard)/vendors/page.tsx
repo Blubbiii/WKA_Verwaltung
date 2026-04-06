@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Building2, Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Building2, Plus, Search, Pencil, Trash2, Download } from "lucide-react";
+import { EditableCell } from "@/components/ui/editable-cell";
+import { useBatchSelection } from "@/hooks/useBatchSelection";
+import { BatchActionBar } from "@/components/ui/batch-action-bar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Card, CardContent } from "@/components/ui/card";
@@ -243,6 +247,10 @@ export default function VendorsPage() {
   const [deleteVendor, setDeleteVendor] = useState<Vendor | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Batch selection
+  const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =
+    useBatchSelection({ items: vendors });
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -285,6 +293,53 @@ export default function VendorsPage() {
       setDeleting(false);
     }
   };
+
+  // Batch CSV export
+  const handleBatchExport = useCallback(() => {
+    const selected = vendors.filter((v) => selectedIds.has(v.id));
+    const header = "Name;IBAN;E-Mail";
+    const rows = selected.map((v) =>
+      [
+        (v.name || "").replace(/;/g, ","),
+        v.iban || "",
+        v.email || "",
+      ].join(";")
+    );
+    const csv = "\uFEFF" + [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `lieferanten-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${selected.length} Lieferant(en) exportiert`);
+  }, [vendors, selectedIds]);
+
+  // Batch delete
+  const handleBatchDelete = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    if (!confirm(`${ids.length} Lieferant(en) wirklich löschen?`)) return;
+    let success = 0;
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        const res = await fetch(`/api/vendors/${id}`, { method: "DELETE" });
+        if (res.ok) success++;
+        else failed++;
+      } catch {
+        failed++;
+      }
+    }
+    if (success > 0) {
+      toast.success(`${success} Lieferant(en) gelöscht`);
+      clearSelection();
+      load();
+    }
+    if (failed > 0) {
+      toast.error(`${failed} Lieferant(en) konnten nicht gelöscht werden`);
+    }
+  }, [selectedIds, clearSelection, load]);
 
   if (flagsLoading) return null;
 
@@ -349,6 +404,10 @@ export default function VendorsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label="Alle auswählen"
+                      {...(isSomeSelected ? { "data-state": "indeterminate" } : {})} />
+                  </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>IBAN</TableHead>
                   <TableHead>E-Mail</TableHead>
@@ -359,9 +418,43 @@ export default function VendorsPage() {
               <TableBody>
                 {vendors.map((v) => (
                   <TableRow key={v.id}>
-                    <TableCell className="font-medium">{v.name}</TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
-                      {v.iban ?? "—"}
+                    <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox checked={selectedIds.has(v.id)} onCheckedChange={() => toggleItem(v.id)} aria-label="Auswählen" />
+                    </TableCell>
+                    <TableCell className="font-medium" onClick={(e) => e.stopPropagation()}>
+                      <EditableCell
+                        value={v.name}
+                        onSave={async (val) => {
+                          const res = await fetch(`/api/vendors/${v.id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ name: val }),
+                          });
+                          if (!res.ok) {
+                            const err = await res.json();
+                            throw new Error(err.error ?? "Fehler beim Speichern");
+                          }
+                          load();
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                      <EditableCell
+                        value={v.iban}
+                        placeholder="—"
+                        onSave={async (val) => {
+                          const res = await fetch(`/api/vendors/${v.id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ iban: val || null }),
+                          });
+                          if (!res.ok) {
+                            const err = await res.json();
+                            throw new Error(err.error ?? "Fehler beim Speichern");
+                          }
+                          load();
+                        }}
+                      />
                     </TableCell>
                     <TableCell className="text-muted-foreground">{v.email ?? "—"}</TableCell>
                     <TableCell>
@@ -409,6 +502,25 @@ export default function VendorsPage() {
         onClose={() => setDialogOpen(false)}
         onSaved={load}
         vendor={editVendor}
+      />
+
+      {/* Batch Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedCount}
+        onClearSelection={clearSelection}
+        actions={[
+          {
+            label: "CSV Export",
+            icon: <Download className="h-4 w-4" />,
+            onClick: handleBatchExport,
+          },
+          {
+            label: "Löschen",
+            icon: <Trash2 className="h-4 w-4" />,
+            onClick: handleBatchDelete,
+            variant: "destructive",
+          },
+        ]}
       />
 
       <AlertDialog open={!!deleteVendor} onOpenChange={(v) => !v && setDeleteVendor(null)}>

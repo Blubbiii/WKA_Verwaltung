@@ -7,7 +7,10 @@ import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
+import { useBatchSelection } from "@/hooks/useBatchSelection";
+import { EditableCell } from "@/components/ui/editable-cell";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { BatchActionBar } from "@/components/ui/batch-action-bar";
 import {
   Building2,
   Users,
@@ -19,6 +22,7 @@ import {
   Filter,
   Wind,
   Trash2,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +47,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
@@ -63,6 +68,7 @@ interface Fund {
   name: string;
   legalForm: string | null;
   totalCapital: number | null;
+  notes: string | null;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   fundParks: FundPark[];
   stats: {
@@ -115,6 +121,17 @@ export default function FundsPage() {
 
   const funds = fundsData?.data ?? [];
   const pagination = fundsData?.pagination ?? { page: 1, limit, total: 0, totalPages: 0 };
+
+  // Batch selection
+  const {
+    selectedIds,
+    isAllSelected,
+    isSomeSelected,
+    toggleItem,
+    toggleAll,
+    clearSelection,
+    selectedCount,
+  } = useBatchSelection({ items: funds });
 
   // Archive mutation
   const archiveMutation = useApiMutation(
@@ -180,6 +197,43 @@ export default function FundsPage() {
   function openDeleteDialog(fund: Fund) {
     setFundToDelete(fund);
     setDeleteDialogOpen(true);
+  }
+
+  // CSV export of selected funds
+  function handleCsvExport() {
+    const selected = funds.filter((f) => selectedIds.has(f.id));
+    const header = ["Name", "Rechtsform", "Status", "Gesellschafter", "Kapital", "Parks"];
+    const rows = selected.map((f) => [
+      f.name,
+      f.legalForm ?? "",
+      f.status,
+      String(f.stats.activeShareholderCount),
+      String(f.stats.totalContributions),
+      f.fundParks.map((fp) => fp.park.shortName || fp.park.name).join("; "),
+    ]);
+    const csv = "\uFEFF" + [header, ...rows].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(";")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "beteiligungen.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Bulk delete selected funds
+  async function handleBulkDelete() {
+    if (!confirm(`${selectedCount} Beteiligungen wirklich löschen?`)) return;
+    let deleted = 0;
+    for (const id of selectedIds) {
+      try {
+        const res = await fetch(`/api/funds/${id}`, { method: "DELETE" });
+        if (res.ok) deleted++;
+      } catch { /* skip */ }
+    }
+    toast.success(`${deleted} Beteiligungen gelöscht`);
+    clearSelection();
+    refetch();
   }
 
   // Berechne Gesamtstatistiken
@@ -263,11 +317,20 @@ export default function FundsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={toggleAll}
+                      aria-label="Alle auswählen"
+                      {...(isSomeSelected ? { "data-state": "indeterminate" } : {})}
+                    />
+                  </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Parks</TableHead>
                   <TableHead className="text-center">Gesellschafter</TableHead>
                   <TableHead className="text-right">Kapital</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Notizen</TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -275,18 +338,20 @@ export default function FundsPage() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-40" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-8 mx-auto" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-8" /></TableCell>
                     </TableRow>
                   ))
                 ) : funds.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={8}
                       className="h-32 text-center text-muted-foreground"
                     >
                       Keine Gesellschaften gefunden
@@ -301,6 +366,13 @@ export default function FundsPage() {
                       tabIndex={0}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/funds/${fund.id}`); } }}
                     >
+                      <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(fund.id)}
+                          onCheckedChange={() => toggleItem(fund.id)}
+                          aria-label={`${fund.name} auswählen`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium">{fund.name}</div>
                         {fund.legalForm && (
@@ -340,6 +412,20 @@ export default function FundsPage() {
                         >
                           {getStatusBadge(ENTITY_STATUS, fund.status).label}
                         </Badge>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <EditableCell
+                          value={fund.notes}
+                          onSave={async (val) => {
+                            await fetch(`/api/funds/${fund.id}`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ notes: val }),
+                            });
+                            refetch();
+                          }}
+                          placeholder="—"
+                        />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
@@ -459,6 +545,25 @@ export default function FundsPage() {
         }}
         title="Gesellschaft löschen"
         itemName={fundToDelete?.name}
+      />
+
+      {/* Batch Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedCount}
+        onClearSelection={clearSelection}
+        actions={[
+          {
+            label: "CSV Export",
+            icon: <Download className="h-4 w-4" />,
+            onClick: handleCsvExport,
+          },
+          {
+            label: "Löschen",
+            icon: <Trash2 className="h-4 w-4" />,
+            onClick: handleBulkDelete,
+            variant: "destructive",
+          },
+        ]}
       />
     </div>
   );

@@ -63,6 +63,7 @@ import { StatsCards } from "@/components/ui/stats-cards";
 import { SearchFilter } from "@/components/ui/search-filter";
 import { INVOICE_STATUS, getStatusBadge } from "@/lib/status-config";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { EditableCell } from "@/components/ui/editable-cell";
 import { DatevExportDialog } from "@/components/invoices/datev-export-dialog";
 import { getSkontoStatus, getSkontoStatusLabel, getSkontoStatusBadgeClass } from "@/lib/invoices/skonto";
 import { RecurringInvoicesManager } from "@/components/invoices/recurring-invoices-manager";
@@ -653,11 +654,31 @@ export default function InvoicesPage() {
                       <TableCell className="text-right font-medium">
                         {formatCurrency(invoice.grossAmount)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
-                          <Badge variant="secondary" className={getStatusBadge(INVOICE_STATUS, invoice.status).className}>
-                            {getStatusBadge(INVOICE_STATUS, invoice.status).label}
-                          </Badge>
+                          <EditableCell
+                            value={invoice.status}
+                            type="select"
+                            options={[
+                              { value: "DRAFT", label: "Entwurf" },
+                              { value: "SENT", label: "Versendet" },
+                              { value: "PAID", label: "Bezahlt" },
+                              { value: "CANCELLED", label: "Storniert" },
+                            ]}
+                            formatDisplay={() => getStatusBadge(INVOICE_STATUS, invoice.status).label}
+                            onSave={async (val) => {
+                              const res = await fetch(`/api/invoices/${invoice.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ status: val }),
+                              });
+                              if (!res.ok) {
+                                const err = await res.json().catch(() => ({ error: "Fehler" }));
+                                throw new Error(err.error ?? "Fehler beim Speichern");
+                              }
+                              refetch();
+                            }}
+                          />
                           {getSkontoStatus(invoice) !== "NONE" && (
                             <Badge variant="outline" className={`text-xs ${getSkontoStatusBadgeClass(getSkontoStatus(invoice))}`}>
                               {getSkontoStatusLabel(getSkontoStatus(invoice))}

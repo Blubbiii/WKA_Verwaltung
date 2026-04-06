@@ -5,6 +5,7 @@ import { formatDate } from "@/lib/format";
 import {
   BookOpen,
   CheckCircle2,
+  Download,
   Loader2,
   Pencil,
   Plus,
@@ -12,8 +13,12 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { useBatchSelection } from "@/hooks/useBatchSelection";
+import { BatchActionBar } from "@/components/ui/batch-action-bar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { EditableCell } from "@/components/ui/editable-cell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -453,6 +458,10 @@ export default function JournalEntriesPage() {
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Batch selection
+  const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =
+    useBatchSelection({ items: entries });
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -485,6 +494,66 @@ export default function JournalEntriesPage() {
     } catch { toast.error("Verbindungsfehler"); }
     finally { setDeletingId(null); }
   };
+
+  // Batch CSV export
+  const handleBatchExport = useCallback(() => {
+    const selected = entries.filter((e) => selectedIds.has(e.id));
+    const header = "Datum;Buchungsnummer;Beschreibung;Soll;Haben;Status";
+    const rows = selected.map((e) => {
+      const totalDebit = e.lines.reduce((s, l) => s + (l.debitAmount ? parseFloat(l.debitAmount) : 0), 0);
+      const totalCredit = e.lines.reduce((s, l) => s + (l.creditAmount ? parseFloat(l.creditAmount) : 0), 0);
+      return [
+        formatDate(e.entryDate),
+        e.reference || "",
+        (e.description || "").replace(/;/g, ","),
+        totalDebit.toFixed(2).replace(".", ","),
+        totalCredit.toFixed(2).replace(".", ","),
+        e.status === "POSTED" ? "Gebucht" : "Entwurf",
+      ].join(";");
+    });
+    const csv = "\uFEFF" + [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `buchungsjournal-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${selected.length} Buchung(en) exportiert`);
+  }, [entries, selectedIds]);
+
+  // Batch delete (only DRAFT entries)
+  const handleBatchDelete = useCallback(async () => {
+    const draftIds = Array.from(selectedIds).filter((id) => {
+      const entry = entries.find((e) => e.id === id);
+      return entry?.status === "DRAFT";
+    });
+    if (draftIds.length === 0) {
+      toast.error("Nur Entwürfe können gelöscht werden");
+      return;
+    }
+    const skipped = selectedIds.size - draftIds.length;
+    if (!confirm(`${draftIds.length} Entwurf/Entwürfe wirklich löschen?${skipped > 0 ? ` (${skipped} gebuchte Einträge werden übersprungen)` : ""}`)) return;
+    let success = 0;
+    let failed = 0;
+    for (const id of draftIds) {
+      try {
+        const res = await fetch(`/api/journal-entries/${id}`, { method: "DELETE" });
+        if (res.ok) success++;
+        else failed++;
+      } catch {
+        failed++;
+      }
+    }
+    if (success > 0) {
+      toast.success(`${success} Buchung(en) gelöscht`);
+      clearSelection();
+      load();
+    }
+    if (failed > 0) {
+      toast.error(`${failed} Buchung(en) konnten nicht gelöscht werden`);
+    }
+  }, [selectedIds, entries, clearSelection, load]);
 
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -603,6 +672,10 @@ export default function JournalEntriesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label="Alle auswählen"
+                      {...(isSomeSelected ? { "data-state": "indeterminate" } : {})} />
+                  </TableHead>
                   <TableHead>Datum</TableHead>
                   <TableHead>Beschreibung</TableHead>
                   <TableHead>Beleg</TableHead>
@@ -627,11 +700,29 @@ export default function JournalEntriesPage() {
                         setDialogOpen(true);
                       }}
                     >
+                      <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={selectedIds.has(entry.id)} onCheckedChange={() => toggleItem(entry.id)} aria-label="Auswählen" />
+                      </TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
                         {formatDate(entry.entryDate)}
                       </TableCell>
-                      <TableCell className="text-sm max-w-[280px]">
-                        <p className="truncate">{entry.description}</p>
+                      <TableCell className="text-sm max-w-[280px]" onClick={(e) => e.stopPropagation()}>
+                        <EditableCell
+                          value={entry.description}
+                          disabled={entry.status !== "DRAFT"}
+                          onSave={async (val) => {
+                            const res = await fetch(`/api/journal-entries/${entry.id}`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ description: val }),
+                            });
+                            if (!res.ok) {
+                              const err = await res.json().catch(() => ({ error: "Fehler" }));
+                              throw new Error(err.error ?? "Fehler beim Speichern");
+                            }
+                            load();
+                          }}
+                        />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {entry.reference ?? "—"}
@@ -695,6 +786,25 @@ export default function JournalEntriesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Batch Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedCount}
+        onClearSelection={clearSelection}
+        actions={[
+          {
+            label: "CSV Export",
+            icon: <Download className="h-4 w-4" />,
+            onClick: handleBatchExport,
+          },
+          {
+            label: "Löschen",
+            icon: <Trash2 className="h-4 w-4" />,
+            onClick: handleBatchDelete,
+            variant: "destructive",
+          },
+        ]}
+      />
 
       <EntryFormDialog
         open={dialogOpen}
