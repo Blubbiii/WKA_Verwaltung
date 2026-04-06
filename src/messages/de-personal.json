@@ -200,7 +200,7 @@
   },
   "dashboard": {
     "title": "Deine Übersicht",
-    "welcome": "Hey, willkommen zurück!",
+    "welcome": "Willkommen zurück!",
     "overview": "Übersicht",
     "editMode": "Anpassen",
     "addWidget": "Widget hinzufügen",
