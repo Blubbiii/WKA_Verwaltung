@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       where: {
         tenantId,
         ...(parkId ? { parkId } : {}),
-        ...(status ? { status: status as any } : {}),
+        ...(status ? { status: status as "DRAFT" | "ACTIVE" | "EXPIRED" | "TERMINATED" } : {}),
       },
       include: {
         park: { select: { id: true, name: true } },

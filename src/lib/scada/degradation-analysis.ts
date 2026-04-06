@@ -42,13 +42,12 @@ function linearRegression(points: { x: number; y: number }[]): { slope: number; 
   const n = points.length;
   if (n < 2) return { slope: 0, intercept: 0, rSquared: 0 };
 
-  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, sumYY = 0;
+  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
   for (const p of points) {
     sumX += p.x;
     sumY += p.y;
     sumXY += p.x * p.y;
     sumXX += p.x * p.x;
-    sumYY += p.y * p.y;
   }
 
   const denom = n * sumXX - sumX * sumX;

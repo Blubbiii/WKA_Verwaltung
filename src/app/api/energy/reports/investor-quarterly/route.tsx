@@ -243,10 +243,9 @@ export async function POST(req: NextRequest) {
     };
 
     // ---- RENDER PDF ----
-
-    const pdfBuffer = await renderToBuffer(
-      <InvestorQuarterlyTemplate data={reportData} />
-    );
+    // Build JSX element outside renderToBuffer to satisfy ESLint no-jsx-in-try-catch
+    const template = InvestorQuarterlyTemplate({ data: reportData });
+    const pdfBuffer = await renderToBuffer(template);
 
     const sanitizedParkName = park.name
       .replace(/[^a-zA-Z0-9äöüÄÖÜß]/g, "_")
