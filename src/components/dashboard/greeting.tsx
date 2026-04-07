@@ -44,7 +44,6 @@ export function DashboardGreeting() {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{greeting}</h1>
-      <p className="text-muted-foreground mt-1">{t("welcome")}</p>
     </motion.div>
   );
 }
