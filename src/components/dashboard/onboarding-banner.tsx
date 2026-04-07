@@ -16,17 +16,17 @@ interface OnboardingStep {
   completed: boolean;
 }
 
+function getInitialDismissed(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem("wpm:onboarding-dismissed") === "true";
+}
+
 export function OnboardingBanner() {
   const [steps, setSteps] = useState<OnboardingStep[] | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(getInitialDismissed);
 
   useEffect(() => {
-    // Check if user dismissed the banner
-    const wasDismissed = localStorage.getItem("wpm:onboarding-dismissed");
-    if (wasDismissed === "true") {
-      setDismissed(true);
-      return;
-    }
+    if (dismissed) return;
 
     fetch("/api/admin/onboarding-status")
       .then(res => res.ok ? res.json() : null)
