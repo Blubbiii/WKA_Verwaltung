@@ -15,7 +15,7 @@ test.describe("PDF & Export", () => {
       // Wait for batch bar to appear
       await page.waitForTimeout(500);
       const batchBar = page
-        .getByText(/ausgewählt|ausgewaehlt/i)
+        .getByText(/ausgew[aä]hlt/i)
         .first();
       if (await batchBar.isVisible({ timeout: 3000 }).catch(() => false)) {
         // Look for CSV button
@@ -59,7 +59,7 @@ test.describe("PDF & Export", () => {
       await checkbox.click();
       await page.waitForTimeout(500);
       const batchBar = page
-        .getByText(/ausgewählt|ausgewaehlt/i)
+        .getByText(/ausgew[aä]hlt/i)
         .first();
       if (await batchBar.isVisible({ timeout: 3000 }).catch(() => false)) {
         await expect(batchBar).toBeVisible();
