@@ -521,7 +521,15 @@ export const navGroups: NavGroup[] = [
         permission: "admin:manage",
         featureFlag: "document-routing" as const,
       },
-      // System items (merged from former "System" group)
+    ],
+  },
+
+  // ---- System (SUPERADMIN only, pinned bottom) ----
+  {
+    label: "System",
+    labelKey: "system",
+    showSeparator: true,
+    items: [
       {
         title: "Mandanten",
         titleKey: "tenants",
@@ -530,7 +538,7 @@ export const navGroups: NavGroup[] = [
         permission: "system:tenants",
       },
       {
-        title: "Systemeinstellungen",
+        title: "Einstellungen",
         titleKey: "systemSettings",
         href: "/admin/settings",
         icon: Cog,

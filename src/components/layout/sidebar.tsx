@@ -90,7 +90,7 @@ function getSidebarLinkIcon(name: string): React.ElementType {
 // Group pinning: top (Dashboard) and bottom (Admin, System) are fixed
 // ---------------------------------------------------------------------------
 
-const PINNED_BOTTOM_KEYS = new Set(["admin"]);
+const PINNED_BOTTOM_KEYS = new Set(["admin", "system"]);
 
 /** Partition navGroups into pinned-top, reorderable middle, pinned-bottom */
 function partitionGroups(groups: NavGroup[]) {
