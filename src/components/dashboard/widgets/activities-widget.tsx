@@ -13,10 +13,19 @@ interface ActivityItem {
   action: string;
   detail: string;
   time: string;
+  type?: "financial" | "warning" | "system";
 }
 
 interface ActivitiesWidgetProps {
   className?: string;
+}
+
+// Classify activity type based on keywords in action/detail
+function classifyActivity(action: string, detail: string): ActivityItem["type"] {
+  const text = `${action} ${detail}`.toLowerCase();
+  if (/zahlung|bezahlt|gutschrift|eingang/.test(text)) return "financial";
+  if (/warnung|fehler|störung|überfällig|abgelaufen/.test(text)) return "warning";
+  return undefined;
 }
 
 // =============================================================================
@@ -36,8 +45,13 @@ export function ActivitiesWidget({ className }: ActivitiesWidgetProps) {
       const response = await fetch("/api/dashboard/activities");
 
       if (response.ok) {
-        const data = await response.json();
-        setActivities(data);
+        const data: ActivityItem[] = await response.json();
+        setActivities(
+          data.map((a) => ({
+            ...a,
+            type: a.type ?? classifyActivity(a.action, a.detail),
+          }))
+        );
       } else {
         // Use mock data if API is not available
         setActivities([
@@ -149,7 +163,12 @@ export function ActivitiesWidget({ className }: ActivitiesWidgetProps) {
           key={activity.id}
           className="flex items-start gap-3 border-b pb-4 last:border-0 last:pb-0"
         >
-          <div className="h-2 w-2 mt-2 rounded-full bg-primary flex-shrink-0" />
+          <div className={cn(
+            "h-2 w-2 mt-2 rounded-full flex-shrink-0",
+            activity.type === "financial" ? "bg-emerald-500"
+              : activity.type === "warning" ? "bg-amber-500"
+              : "bg-primary"
+          )} />
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm @md:text-base">{activity.action}</p>
             {/* Show full detail text on wider widgets, truncate on narrow ones */}

@@ -157,12 +157,41 @@ export function DashboardGrid({
       };
     });
 
+    // Generate responsive layouts for smaller breakpoints
+    // Mobile: 2 cols, stack widgets vertically with full width
+    const mobileLayout: Layout[] = lgLayout.map((item, idx) => ({
+      ...item,
+      x: 0,
+      y: idx * item.h,
+      w: 2, // full width on 2-col grid
+      minW: 1,
+      maxW: 2,
+    }));
+
+    // Small: 6 cols, KPI cards side by side, charts full width
+    const smLayout: Layout[] = lgLayout.map((item, idx) => ({
+      ...item,
+      x: item.w <= 3 ? (idx % 2) * 3 : 0, // KPIs 2 per row, charts full
+      y: item.w <= 3 ? Math.floor(idx / 2) * item.h : idx * item.h,
+      w: item.w <= 3 ? 3 : 6, // KPIs half, others full
+      minW: item.w <= 3 ? 2 : 4,
+      maxW: 6,
+    }));
+
+    // Medium: 10 cols, similar to lg but slightly compressed
+    const mdLayout: Layout[] = lgLayout.map((item) => ({
+      ...item,
+      w: Math.min(item.w, 10),
+      x: Math.min(item.x, 10 - Math.min(item.w, 10)),
+      maxW: 10,
+    }));
+
     return {
       lg: lgLayout,
-      md: lgLayout,
-      sm: lgLayout,
-      xs: lgLayout,
-      xxs: lgLayout,
+      md: mdLayout,
+      sm: smLayout,
+      xs: mobileLayout,
+      xxs: mobileLayout,
     };
   }, [widgets, isEditing]);
 

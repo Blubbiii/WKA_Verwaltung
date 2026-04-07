@@ -53,8 +53,8 @@ export const MANAGER_DEFAULT_LAYOUT: DashboardWidget[] = [
   { id: "quick-actions",      x: 9, y: 2, w: 3, h: 2 },
 
   // Group 2 — Large Charts  (gap at y=4-5, starts at y=6, h=6 → ends at y=12)
-  { id: "chart-monthly-invoices",    x: 0, y: 6, w: 6, h: 6 },
-  { id: "chart-capital-development", x: 6, y: 6, w: 6, h: 6 },
+  { id: "chart-production-forecast", x: 0, y: 6, w: 6, h: 6 },
+  { id: "chart-turbine-status",      x: 6, y: 6, w: 6, h: 6 },
 
   // Group 3 — Lists & P&L  (gap at y=12-13, starts at y=14)
   { id: "list-deadlines",          x: 0, y: 14, w: 6, h: 4 },

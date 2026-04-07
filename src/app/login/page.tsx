@@ -185,6 +185,11 @@ function LoginForm() {
           >
             Passwort vergessen?
           </Link>
+
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-4">
+            <Shield className="h-4 w-4" />
+            <span>Ihre Daten sind sicher — DSGVO-konform & verschlüsselt</span>
+          </div>
         </CardFooter>
       </form>
     </Card>

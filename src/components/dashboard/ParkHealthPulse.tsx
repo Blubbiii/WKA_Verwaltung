@@ -19,6 +19,7 @@ export function ParkHealthPulse() {
   const [parks, setParks] = useState<ParkStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredPark, setHoveredPark] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string>("");
   const [availabilityWarning, setAvailabilityWarning] = useState(
     AVAILABILITY_WARNING_THRESHOLD
   );
@@ -75,6 +76,12 @@ export function ParkHealthPulse() {
           })
         );
         setParks(statusResults.filter(Boolean) as ParkStatus[]);
+        setLastUpdated(
+          new Date().toLocaleTimeString("de-DE", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        );
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -126,11 +133,11 @@ export function ParkHealthPulse() {
   return (
     <div className="mb-5">
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+        <span className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">
           Park-Status
         </span>
         <div className="flex-1 h-px bg-border/50" />
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {parks.filter((p) => p.activeFaults === 0).length}/{parks.length} OK
         </span>
       </div>
@@ -160,10 +167,10 @@ export function ParkHealthPulse() {
                   <p className="font-semibold text-xs text-foreground">
                     {park.name}
                   </p>
-                  <p className="text-[10px] mt-0.5" style={{ color: bar }}>
+                  <p className="text-xs mt-0.5" style={{ color: bar }}>
                     {label}
                   </p>
-                  <div className="text-[10px] text-muted-foreground mt-1 space-y-0.5">
+                  <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
                     <p>
                       Produktion:{" "}
                       {(park.totalProductionKwh / 1000).toFixed(1)} MWh
@@ -186,6 +193,11 @@ export function ParkHealthPulse() {
           );
         })}
       </div>
+      {lastUpdated && (
+        <p className="text-xs text-muted-foreground mt-2">
+          Stand: heute, {lastUpdated}
+        </p>
+      )}
     </div>
   );
 }

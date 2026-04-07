@@ -55,11 +55,11 @@ export function StatsCards({ stats, columns = 4 }: StatsCardsProps) {
             )}
           </CardHeader>
           <CardContent>
-            <div className={cn("text-2xl font-bold tracking-tight font-mono", stat.valueClassName)}>
+            <div className={cn("text-3xl font-bold tracking-tight tabular-nums", stat.valueClassName)}>
               {stat.value}
             </div>
             {stat.subtitle && (
-              <p className="text-xs text-muted-foreground mt-1">{stat.subtitle}</p>
+              <p className="text-sm text-muted-foreground mt-1">{stat.subtitle}</p>
             )}
           </CardContent>
         </Card>

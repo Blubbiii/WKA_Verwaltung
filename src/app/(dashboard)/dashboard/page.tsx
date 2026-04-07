@@ -58,7 +58,7 @@ export default function DashboardPage() {
             onClick={() => refetch()}
             disabled={isLoading}
             title="Dashboard aktualisieren"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground"
           >
             <RefreshCcw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>

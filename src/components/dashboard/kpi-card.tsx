@@ -122,7 +122,7 @@ export function KPICard({
 
   const formatTrend = (value: number): string => {
     const sign = value > 0 ? "+" : "";
-    return `~ ${sign}${value.toFixed(1)} %`;
+    return `${sign}${value.toFixed(1)} %`;
   };
 
   if (isLoading) {
@@ -160,7 +160,7 @@ export function KPICard({
       }}
     >
       <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-        <CardTitle className="uppercase tracking-wider text-[11px] font-semibold text-muted-foreground">
+        <CardTitle className="uppercase tracking-wider text-xs font-semibold text-muted-foreground">
           {title}
         </CardTitle>
         {/* Icon scales up on wider widgets (@md = container ≥ 28rem / ~448px) */}
@@ -174,7 +174,7 @@ export function KPICard({
       <CardContent className="p-4 pt-2">
         {/* Value text scales up on wider widgets */}
         <div className={cn(
-          "text-2xl @md:text-3xl font-bold font-mono truncate leading-tight",
+          "text-2xl @md:text-3xl font-bold tabular-nums truncate leading-tight",
           isAlert ? "text-destructive" : accentColor || "text-foreground"
         )}>
           {value}

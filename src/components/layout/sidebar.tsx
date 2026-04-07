@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   Menu,
+  Shield,
   GripVertical,
   RotateCcw,
   Globe,
@@ -89,7 +90,7 @@ function getSidebarLinkIcon(name: string): React.ElementType {
 // Group pinning: top (Dashboard) and bottom (Admin, System) are fixed
 // ---------------------------------------------------------------------------
 
-const PINNED_BOTTOM_KEYS = new Set(["admin", "system"]);
+const PINNED_BOTTOM_KEYS = new Set(["admin"]);
 
 /** Partition navGroups into pinned-top, reorderable middle, pinned-bottom */
 function partitionGroups(groups: NavGroup[]) {
@@ -282,7 +283,7 @@ export function Sidebar() {
             <button
               onClick={() => toggleExpanded(item.href)}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full",
+                "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 w-full",
                 isActive
                   ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
                   : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
@@ -290,7 +291,7 @@ export function Sidebar() {
               title={collapsed ? itemTitle : undefined}
               aria-expanded={itemExpanded}
             >
-              <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-sidebar-foreground/50")} />
+              <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-sidebar-foreground/65")} />
               {!collapsed && (
                 <>
                   <span className="flex-1 text-left">{itemTitle}</span>
@@ -317,7 +318,7 @@ export function Sidebar() {
                       <Link
                         href={child.href}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+                          "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200",
                           isChildItemActive
                             ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
                             : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
@@ -325,7 +326,7 @@ export function Sidebar() {
                         aria-current={isChildItemActive ? "page" : undefined}
                       >
                         {ChildIcon && (
-                          <ChildIcon className={cn("h-4 w-4 shrink-0", isChildItemActive ? "text-primary" : "text-sidebar-foreground/50")} />
+                          <ChildIcon className={cn("h-4 w-4 shrink-0", isChildItemActive ? "text-primary" : "text-sidebar-foreground/65")} />
                         )}
                         <span>{childTitle}</span>
                       </Link>
@@ -339,7 +340,7 @@ export function Sidebar() {
           <Link
             href={item.href}
             className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
+              "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200",
               isActive
                 ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
                 : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
@@ -347,7 +348,7 @@ export function Sidebar() {
             title={collapsed ? itemTitle : undefined}
             aria-current={isActive ? "page" : undefined}
           >
-            <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-sidebar-foreground/50")} />
+            <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-sidebar-foreground/65")} />
             {!collapsed && (
               <>
                 <span className="flex-1">{itemTitle}</span>
@@ -404,13 +405,13 @@ export function Sidebar() {
             )}
             <button
               onClick={() => toggleGroup(group.label!)}
-              className="flex items-center justify-between flex-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center justify-between flex-1 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
             >
               <span className="border-b border-dashed border-sidebar-border/50 pb-0.5 pr-2">{getGroupLabel(group)}</span>
               {groupExpanded ? (
-                <ChevronDown className="h-3 w-3 text-primary/50" />
+                <ChevronDown className="h-3 w-3 text-primary/60" />
               ) : (
-                <ChevronRight className="h-3 w-3 text-primary/50" />
+                <ChevronRight className="h-3 w-3 text-primary/60" />
               )}
             </button>
           </div>
@@ -564,7 +565,7 @@ export function Sidebar() {
             <div className="mx-3 mb-3 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
             {!collapsed && (
               <div className="px-4 mb-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Links
                 </span>
               </div>
@@ -579,9 +580,9 @@ export function Sidebar() {
                       target={link.openInNewTab ? "_blank" : "_self"}
                       rel="noopener noreferrer"
                       title={collapsed ? link.label : link.description ?? undefined}
-                      className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
                     >
-                      <IconComp className="h-5 w-5 shrink-0 text-sidebar-foreground/50" />
+                      <IconComp className="h-5 w-5 shrink-0 text-sidebar-foreground/65" />
                       {!collapsed && (
                         <>
                           <span className="flex-1">{link.label}</span>
@@ -601,6 +602,16 @@ export function Sidebar() {
           renderGroupContent(group, pinnedTop.length + sortedMiddle.length + idx)
         )}
       </nav>
+
+      {/* Trust badges footer */}
+      {!collapsed && (
+        <div className="flex items-center gap-1.5 px-4 py-2 text-[11px] text-muted-foreground/60">
+          <Shield className="h-3 w-3" />
+          <span>DSGVO-konform</span>
+          <span className="text-muted-foreground/30">|</span>
+          <span>GoBD-gerecht</span>
+        </div>
+      )}
     </aside>
   );
 }

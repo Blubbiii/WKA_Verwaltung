@@ -276,6 +276,7 @@ export const navGroups: NavGroup[] = [
           { title: "SCADA-Zuordnung", titleKey: "scadaMapping", href: "/energy/scada", icon: Radio },
           { title: "Netz-Topologie", titleKey: "networkTopology", href: "/energy/topology", icon: Network },
           { title: "Anomalie-Erkennung", titleKey: "anomalyDetection", href: "/energy/scada/anomalies", icon: AlertTriangle },
+          { title: "Energie-Analysen", titleKey: "energyAnalytics", href: "/energy/analytics", icon: TrendingUp },
         ],
       },
     ],
@@ -411,6 +412,17 @@ export const navGroups: NavGroup[] = [
           { title: "Export & Abschluss", titleKey: "accountingExport", href: "/buchhaltung/abschluss", icon: Archive, featureFlag: "accounting.datev" },
         ],
       },
+      {
+        title: "Dokumente",
+        titleKey: "documents",
+        href: "/documents",
+        icon: FolderOpen,
+        permission: "documents:read",
+        children: [
+          { title: "Übersicht", titleKey: "documentOverview", href: "/documents" },
+          { title: "Paperless-ngx", titleKey: "paperless", href: "/documents/paperless", featureFlag: "paperless" },
+        ],
+      },
     ],
   },
 
@@ -456,32 +468,6 @@ export const navGroups: NavGroup[] = [
         href: "/news",
         icon: Newspaper,
         permission: "news:read",
-      },
-    ],
-  },
-
-  // ---- Berichte & Dokumente ----
-  {
-    label: "Berichte & Dokumente",
-    labelKey: "reportsDocuments",
-    items: [
-      {
-        title: "Dokumente",
-        titleKey: "documents",
-        href: "/documents",
-        icon: FolderOpen,
-        permission: "documents:read",
-        children: [
-          { title: "Übersicht", titleKey: "documentOverview", href: "/documents" },
-          { title: "Paperless-ngx", titleKey: "paperless", href: "/documents/paperless", featureFlag: "paperless" },
-        ],
-      },
-      {
-        title: "Energie-Analysen",
-        titleKey: "energyAnalytics",
-        href: "/energy/analytics",
-        icon: TrendingUp,
-        permission: "energy:read",
       },
     ],
   },
@@ -535,15 +521,7 @@ export const navGroups: NavGroup[] = [
         permission: "admin:manage",
         featureFlag: "document-routing" as const,
       },
-    ],
-  },
-
-  // ---- System (permission-based, typically Superadmin only) ----
-  {
-    label: "System",
-    labelKey: "system",
-    showSeparator: true,
-    items: [
+      // System items (merged from former "System" group)
       {
         title: "Mandanten",
         titleKey: "tenants",
@@ -552,7 +530,7 @@ export const navGroups: NavGroup[] = [
         permission: "system:tenants",
       },
       {
-        title: "Einstellungen",
+        title: "Systemeinstellungen",
         titleKey: "systemSettings",
         href: "/admin/settings",
         icon: Cog,
