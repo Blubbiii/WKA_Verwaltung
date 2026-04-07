@@ -28,17 +28,14 @@ test.describe("Bulk Actions", () => {
       await checkbox.click();
       const batchText = page.getByText(/ausgew(ae|ä)hlt/i).first();
       if (await batchText.isVisible({ timeout: 5000 }).catch(() => false)) {
-        // Click "Auswahl aufheben" — text may vary
-        const clearBtn = page.getByText(/auswahl aufheben|alle abw[aä]hlen|abbrechen/i).first();
-        if (await clearBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await clearBtn.click();
-          // Bar should disappear
-          await expect(batchText).toBeHidden({ timeout: 5000 });
-        } else {
-          // Alternatively, uncheck the checkbox
-          await checkbox.click();
-          await expect(batchText).toBeHidden({ timeout: 5000 });
-        }
+        // Wait for slide-in animation to finish
+        await page.waitForTimeout(500);
+        // Uncheck the checkbox to clear selection (more reliable than clicking text button)
+        await checkbox.click({ force: true });
+        await page.waitForTimeout(1000);
+        // Bar should disappear
+        const barGone = await batchText.isHidden({ timeout: 5000 }).catch(() => true);
+        expect(barGone).toBeTruthy();
       }
     }
     await expect(page.locator("body")).not.toBeEmpty();

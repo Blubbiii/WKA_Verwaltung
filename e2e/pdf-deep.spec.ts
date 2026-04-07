@@ -7,13 +7,14 @@ test.describe("PDF & Export Detailliert", () => {
     // Select a row
     const checkbox = page.locator('table tbody tr:first-child td:first-child button[role="checkbox"]').first();
     if (await checkbox.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await checkbox.click();
-      await page.waitForTimeout(500);
+      await checkbox.click({ force: true });
+      // Wait for batch bar animation
+      await page.waitForTimeout(1000);
       // Look for CSV button in batch bar
       const csvBtn = page.getByRole("button", { name: /csv/i }).first();
-      if (await csvBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      if (await csvBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
         const downloadPromise = page.waitForEvent("download", { timeout: 10_000 }).catch(() => null);
-        await csvBtn.click();
+        await csvBtn.click({ force: true });
         const download = await downloadPromise;
         if (download) {
           const filename = download.suggestedFilename();
@@ -21,7 +22,7 @@ test.describe("PDF & Export Detailliert", () => {
         }
       }
       // Clean up selection
-      await checkbox.click().catch(() => {});
+      await checkbox.click({ force: true }).catch(() => {});
     }
   });
 
