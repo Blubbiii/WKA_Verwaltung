@@ -13,7 +13,7 @@ test.describe("Bulk Actions", () => {
       await checkbox.click();
       // BatchActionBar should appear at bottom
       await expect(
-        page.getByText(/ausgew[aä]hlt/i).first()
+        page.getByText(/ausgew(ae|ä)hlt/i).first()
       ).toBeVisible({ timeout: 5000 });
     }
   });
@@ -26,7 +26,7 @@ test.describe("Bulk Actions", () => {
     const checkbox = page.locator("table tbody tr td").first().locator('button[role="checkbox"]');
     if (await checkbox.isVisible({ timeout: 3000 }).catch(() => false)) {
       await checkbox.click();
-      const batchText = page.getByText(/ausgew[aä]hlt/i).first();
+      const batchText = page.getByText(/ausgew(ae|ä)hlt/i).first();
       if (await batchText.isVisible({ timeout: 5000 }).catch(() => false)) {
         // Click "Auswahl aufheben" — text may vary
         const clearBtn = page.getByText(/auswahl aufheben|alle abw[aä]hlen|abbrechen/i).first();
