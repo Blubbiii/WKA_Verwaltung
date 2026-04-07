@@ -98,6 +98,16 @@ export async function requirePermission(
   const userId = session.user.id;
   const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
 
+  // Global API rate limit — applies to all authenticated requests.
+  // Individual routes can add stricter limits on top (e.g. AUTH_RATE_LIMIT).
+  const rateLimitResult = await rateLimit(`${userId}:api`, API_RATE_LIMIT);
+  if (!rateLimitResult.success) {
+    return {
+      authorized: false,
+      error: getRateLimitResponse(rateLimitResult, API_RATE_LIMIT),
+    };
+  }
+
   // Validate roleHierarchy is a finite integer within the expected range.
   // Reject sessions carrying invalid values (e.g. NaN, Infinity, negative numbers, or
   // absurdly large values that could result from a tampered header).
@@ -181,6 +191,15 @@ export async function requirePermissionWithResources(
 
   const userId = session.user.id;
   const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
+
+  // Global API rate limit
+  const rateLimitResult = await rateLimit(`${userId}:api`, API_RATE_LIMIT);
+  if (!rateLimitResult.success) {
+    return {
+      authorized: false,
+      error: getRateLimitResponse(rateLimitResult, API_RATE_LIMIT),
+    };
+  }
 
   // Validate roleHierarchy (same bounds check as requirePermission)
   const rawHierarchy = session.user.roleHierarchy ?? 0;

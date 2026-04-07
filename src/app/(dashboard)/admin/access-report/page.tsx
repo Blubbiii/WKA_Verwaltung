@@ -133,6 +133,7 @@ export default function AccessReportPage() {
         );
       }
     } catch {
+      toast.error("Fehler beim Laden der Rollen");
     }
   }, []);
 

@@ -18,6 +18,7 @@
  */
 
 import type { XRechnungInvoiceData, XRechnungLineItem } from "./xrechnung-generator";
+import { formatAmountFixed2 as formatAmount, formatDateCII as formatDate } from "@/lib/formatters";
 
 // ============================================================================
 // XML HELPERS
@@ -30,18 +31,6 @@ function escapeXml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
-}
-
-function formatDate(date: Date): string {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}${month}${day}`; // CII uses YYYYMMDD format
-}
-
-function formatAmount(amount: number): string {
-  return amount.toFixed(2);
 }
 
 // ============================================================================

@@ -5,6 +5,8 @@
  * No external npm package required — pure XML template.
  */
 
+import { formatAmountFixed2 as formatAmount } from "@/lib/formatters";
+
 export interface SepaPayment {
   endToEndId: string;
   amount: number;
@@ -32,10 +34,6 @@ function escapeXml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
-}
-
-function formatAmount(amount: number): string {
-  return amount.toFixed(2);
 }
 
 export function generateSepaXml(options: SepaExportOptions): string {

@@ -9,6 +9,8 @@
  * Required by German law since 2025 for B2B invoices.
  */
 
+import { formatAmountFixed2 as formatAmount, formatDateISO as formatDate } from "@/lib/formatters";
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -167,24 +169,6 @@ function escapeXml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
-}
-
-/**
- * Format a Date to ISO 8601 date string (YYYY-MM-DD)
- */
-function formatDate(date: Date): string {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-/**
- * Format a number to 2 decimal places for XML output
- */
-function formatAmount(amount: number): string {
-  return amount.toFixed(2);
 }
 
 /**

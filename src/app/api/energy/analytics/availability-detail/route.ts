@@ -212,51 +212,54 @@ export async function GET(request: NextRequest) {
     const targets: AvailabilityTarget[] = [];
 
     if (parks.length > 0) {
-      // Get availability per park
+      // Collect all turbine IDs with their park mapping
+      const turbineToPark = new Map<string, { parkId: string; parkName: string }>();
       for (const park of parks) {
-        if (park.turbines.length === 0) continue;
+        for (const t of park.turbines) {
+          turbineToPark.set(t.id, { parkId: park.id, parkName: park.name });
+        }
+      }
+      const allTurbineIds = [...turbineToPark.keys()];
 
-        const turbineIds = park.turbines.map((t) => t.id);
-
-        const rows = await prisma.$queryRaw<ParkAvailRow[]>`
+      if (allTurbineIds.length > 0) {
+        const rows = await prisma.$queryRaw<{ turbineId: string; t1_total: bigint; t5_total: bigint }[]>`
           SELECT
-            ${park.id} AS "parkId",
-            ${park.name} AS "parkName",
+            "turbineId",
             SUM(t1)::bigint AS t1_total,
             SUM(t5)::bigint AS t5_total
           FROM scada_availability
           WHERE "tenantId" = ${tenantId}
             AND "periodType" = 'MONTHLY'
-            AND "turbineId" = ANY(${turbineIds})
+            AND "turbineId" = ANY(${allTurbineIds})
             AND date >= ${from}
             AND date < ${to}
+          GROUP BY "turbineId"
         `;
 
-        if (rows.length > 0 && rows[0].t1_total !== null) {
-          const t1 = Number(rows[0].t1_total);
-          const t5 = Number(rows[0].t5_total);
-          const relevant = t1 + t5;
-          const actualPct = relevant > 0 ? round((t1 / relevant) * 100, 2) : 0;
+        // Group results by park
+        const parkTotals = new Map<string, { t1: number; t5: number }>();
+        for (const row of rows) {
+          const parkInfo = turbineToPark.get(row.turbineId);
+          if (!parkInfo) continue;
+          const existing = parkTotals.get(parkInfo.parkId) || { t1: 0, t5: 0 };
+          existing.t1 += Number(row.t1_total);
+          existing.t5 += Number(row.t5_total);
+          parkTotals.set(parkInfo.parkId, existing);
+        }
 
-          // Target from park metadata (default 97%)
+        // Build targets from aggregated data
+        for (const park of parks) {
+          const totals = parkTotals.get(park.id);
+          if (!totals) continue;
+          const relevant = totals.t1 + totals.t5;
+          const actualPct = relevant > 0 ? round((totals.t1 / relevant) * 100, 2) : 0;
           const meta = (park.metadata as Record<string, unknown>) || {};
-          const targetPct = typeof meta.availabilityTargetPct === "number"
-            ? meta.availabilityTargetPct
-            : 97;
-
+          const targetPct = typeof meta.availabilityTargetPct === "number" ? meta.availabilityTargetPct : 97;
           const delta = round(actualPct - targetPct, 2);
           let status: "green" | "yellow" | "red" = "green";
           if (delta < -2) status = "red";
           else if (delta < 0) status = "yellow";
-
-          targets.push({
-            parkId: park.id,
-            parkName: park.name,
-            targetPct,
-            actualPct,
-            delta,
-            status,
-          });
+          targets.push({ parkId: park.id, parkName: park.name, targetPct, actualPct, delta, status });
         }
       }
     }

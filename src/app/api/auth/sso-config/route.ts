@@ -8,8 +8,12 @@ import { NextResponse } from "next/server";
  * No auth required: the response contains no sensitive data.
  */
 export async function GET() {
-  return NextResponse.json({
-    ssoEnabled: !!process.env.AUTHENTIK_ISSUER,
-    providerName: process.env.AUTHENTIK_DISPLAY_NAME || "SSO Login",
-  });
+  try {
+    return NextResponse.json({
+      ssoEnabled: !!process.env.AUTHENTIK_ISSUER,
+      providerName: process.env.AUTHENTIK_DISPLAY_NAME || "SSO Login",
+    });
+  } catch {
+    return NextResponse.json({ ssoEnabled: false, providerName: "SSO Login" });
+  }
 }
