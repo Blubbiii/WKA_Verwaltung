@@ -18,21 +18,30 @@ test.describe("Navigation & Layout", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/dashboard");
     await page.waitForTimeout(2000);
-    // Click hamburger
-    const hamburger = page
-      .getByLabel(/men[uü]|menu|navigation/i)
-      .first()
-      .or(page.locator("button.md\\:hidden").first())
-      .or(page.locator('[data-tour="mobile-menu"]').first())
-      .or(page.locator("header button").first())
-      .or(page.locator("button:has(svg)").first());
-    if (await hamburger.isVisible({ timeout: 5000 }).catch(() => false)) {
+    // Try multiple selectors for the hamburger button
+    const hamburgerSelectors = [
+      page.getByLabel(/men[uü]|menu|navigation/i).first(),
+      page.locator("button.md\\:hidden").first(),
+      page.locator('[data-tour="mobile-menu"]').first(),
+      page.locator("header button").first(),
+      page.locator("button:has(svg)").first(),
+    ];
+    let hamburger = null;
+    for (const sel of hamburgerSelectors) {
+      if (await sel.isVisible({ timeout: 2000 }).catch(() => false)) {
+        hamburger = sel;
+        break;
+      }
+    }
+    if (hamburger) {
       await hamburger.click();
-      // Sheet should open with navigation links
-      const dialog = page.locator('[role="dialog"]').first()
-        .or(page.locator("nav").first());
-      if (await dialog.isVisible({ timeout: 5000 }).catch(() => false)) {
-        const sheetLinks = dialog.locator("a");
+      // Sheet should open with navigation links — check dialog first, then nav
+      const dialog = page.locator('[role="dialog"]').first();
+      const nav = page.locator("nav").first();
+      const hasDialog = await dialog.isVisible({ timeout: 5000 }).catch(() => false);
+      const container = hasDialog ? dialog : nav;
+      if (await container.isVisible({ timeout: 3000 }).catch(() => false)) {
+        const sheetLinks = container.locator("a");
         const count = await sheetLinks.count();
         expect(count).toBeGreaterThan(3);
       }
@@ -44,25 +53,34 @@ test.describe("Navigation & Layout", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/dashboard");
     await page.waitForTimeout(2000);
-    const hamburger = page
-      .getByLabel(/men[uü]|menu|navigation/i)
-      .first()
-      .or(page.locator("button.md\\:hidden").first())
-      .or(page.locator('[data-tour="mobile-menu"]').first())
-      .or(page.locator("header button").first())
-      .or(page.locator("button:has(svg)").first());
-    if (await hamburger.isVisible({ timeout: 5000 }).catch(() => false)) {
+    const hamburgerSelectors = [
+      page.getByLabel(/men[uü]|menu|navigation/i).first(),
+      page.locator("button.md\\:hidden").first(),
+      page.locator('[data-tour="mobile-menu"]').first(),
+      page.locator("header button").first(),
+      page.locator("button:has(svg)").first(),
+    ];
+    let hamburger = null;
+    for (const sel of hamburgerSelectors) {
+      if (await sel.isVisible({ timeout: 2000 }).catch(() => false)) {
+        hamburger = sel;
+        break;
+      }
+    }
+    if (hamburger) {
       await hamburger.click();
-      const dialog = page.locator('[role="dialog"]').first()
-        .or(page.locator("nav").first());
-      if (await dialog.isVisible({ timeout: 5000 }).catch(() => false)) {
+      const dialog = page.locator('[role="dialog"]').first();
+      const nav = page.locator("nav").first();
+      const hasDialog = await dialog.isVisible({ timeout: 5000 }).catch(() => false);
+      const container = hasDialog ? dialog : nav;
+      if (await container.isVisible({ timeout: 3000 }).catch(() => false)) {
         // Click a navigation link inside the sheet
-        const navLink = dialog.locator("a").first();
+        const navLink = container.locator("a").first();
         if (await navLink.isVisible({ timeout: 3000 }).catch(() => false)) {
           await navLink.click();
           // Sheet should close after navigation
           await page.waitForTimeout(2000);
-          await expect(dialog).toBeHidden({ timeout: 10_000 }).catch(() => {});
+          await expect(container).toBeHidden({ timeout: 10_000 }).catch(() => {});
         }
       }
     }
@@ -73,21 +91,14 @@ test.describe("Navigation & Layout", () => {
     await page.goto("/parks");
     await page.waitForTimeout(2000);
     // Click first park link to go to detail
-    const parkLink = page
-      .locator("table tbody tr a")
-      .first()
-      .or(page.locator("table tbody tr td:nth-child(2)").first());
+    const parkLink = page.locator("table tbody tr a").first();
     if (await parkLink.isVisible({ timeout: 5000 }).catch(() => false)) {
       await parkLink.click();
       await page
         .waitForURL(/.*\/parks\/.*/, { timeout: 15_000 })
         .catch(() => {});
       // At minimum, the page should have loaded with a title
-      await expect(
-        page.locator("h1").first()
-          .or(page.locator("h2").first())
-          .or(page.locator("body"))
-      ).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator("h1").first()).toBeVisible({ timeout: 10_000 });
     }
     await expect(page.locator("body")).not.toBeEmpty();
   });

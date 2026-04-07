@@ -28,14 +28,12 @@ test.describe("Auth & Security", () => {
     const page = await context.newPage();
     await page.goto("/login", { waitUntil: "domcontentloaded", timeout: 45_000 });
     // Wait for the login form to render (SSR + hydration) — Docker cold start can take 20s+
-    await expect(
-      page
-        .locator("#email")
-        .or(page.getByPlaceholder(/e-?mail|name@|benutzer/i).first())
-        .or(page.locator("input[type='email']").first())
-        .or(page.locator("form input").first())
-        .or(page.locator("input").first())
-    ).toBeVisible({ timeout: 45_000 });
+    const hasEmail = await page.locator("#email").isVisible({ timeout: 45_000 }).catch(() => false);
+    const hasPlaceholder = await page.getByPlaceholder(/e-?mail|name@|benutzer/i).first().isVisible({ timeout: 2000 }).catch(() => false);
+    const hasEmailInput = await page.locator("input[type='email']").first().isVisible({ timeout: 2000 }).catch(() => false);
+    const hasFormInput = await page.locator("form input").first().isVisible({ timeout: 2000 }).catch(() => false);
+    const hasAnyInput = await page.locator("input").first().isVisible({ timeout: 2000 }).catch(() => false);
+    expect(hasEmail || hasPlaceholder || hasEmailInput || hasFormInput || hasAnyInput).toBeTruthy();
     await context.close();
   });
 

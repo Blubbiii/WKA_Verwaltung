@@ -9,11 +9,7 @@ test.describe("Error Handling", () => {
   test("API-Fehler zeigt keine weiße Seite", async ({ page }) => {
     // Visit a page that loads data — even if API fails, error boundary should catch it
     await page.goto("/dashboard");
-    await expect(
-      page.locator("h1").first()
-        .or(page.locator("h2").first())
-        .or(page.locator("body"))
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("h1").first()).toBeVisible({ timeout: 10_000 });
     // Page should not be blank
     const bodyText = await page.locator("body").innerText();
     expect(bodyText.length).toBeGreaterThan(10);
@@ -24,11 +20,7 @@ test.describe("Performance", () => {
   test("Dashboard lädt in unter 10 Sekunden", async ({ page }) => {
     const start = Date.now();
     await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
-    await expect(
-      page.locator("h1").first()
-        .or(page.locator("h2").first())
-        .or(page.locator("body"))
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("h1").first()).toBeVisible({ timeout: 10_000 });
     const elapsed = Date.now() - start;
     expect(elapsed).toBeLessThan(10_000);
   });
@@ -36,11 +28,7 @@ test.describe("Performance", () => {
   test("Parks-Seite lädt in unter 10 Sekunden", async ({ page }) => {
     const start = Date.now();
     await page.goto("/parks", { waitUntil: "domcontentloaded" });
-    await expect(
-      page.locator("h1").first()
-        .or(page.locator("h2").first())
-        .or(page.locator("body"))
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("h1").first()).toBeVisible({ timeout: 10_000 });
     const elapsed = Date.now() - start;
     expect(elapsed).toBeLessThan(10_000);
   });
@@ -51,9 +39,7 @@ test.describe("Performance", () => {
     const hasTable = await page.locator("table").isVisible({ timeout: 5000 }).catch(() => false);
     if (hasTable) {
       // Check if pagination exists (optional — may have fewer items than page size)
-      const paginationBtn = page.getByRole("button", { name: /n[aä]chste|weiter|next|>/i }).first()
-        .or(page.locator('[aria-label*="next"]').first())
-        .or(page.locator('[aria-label*="Next"]').first());
+      const paginationBtn = page.getByRole("button", { name: /n[aä]chste|weiter|next|>/i }).first();
       if (await paginationBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await paginationBtn.click();
         await page.waitForTimeout(1000);

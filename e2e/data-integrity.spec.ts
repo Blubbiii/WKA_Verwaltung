@@ -16,11 +16,7 @@ test.describe("Daten-Integrität", () => {
           .catch(() => false);
         if (navigated) {
           // Page should load without error
-          await expect(
-            page.locator("h1").first()
-              .or(page.locator("h2").first())
-              .or(page.locator("body"))
-          ).toBeVisible({ timeout: 10_000 });
+          await expect(page.locator("h1").first()).toBeVisible({ timeout: 10_000 });
         }
       }
     }
@@ -29,11 +25,7 @@ test.describe("Daten-Integrität", () => {
 
   test("Stats-Cards zeigen konsistente Zahlen", async ({ page }) => {
     await page.goto("/parks");
-    await expect(
-      page.locator("h1").first()
-        .or(page.locator("h2").first())
-        .or(page.locator("body"))
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("h1").first()).toBeVisible({ timeout: 10_000 });
     await page.waitForTimeout(3000);
     // Stats cards should have numeric values (not NaN or undefined)
     const statsText = await page.locator("body").innerText();
@@ -79,11 +71,7 @@ test.describe("Daten-Integrität", () => {
     await page.goto("/funds");
     await page.goto("/dashboard");
     // App should still be functional
-    await expect(
-      page.locator("h1").first()
-        .or(page.locator("h2").first())
-        .or(page.locator("body"))
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("h1").first()).toBeVisible({ timeout: 10_000 });
     const body = await page.locator("body").innerText();
     expect(body).not.toContain("Unhandled Runtime Error");
   });

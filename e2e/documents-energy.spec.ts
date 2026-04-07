@@ -2,12 +2,10 @@ import { test, expect } from "@playwright/test";
 
 // Helper: flexible page-loaded assertion for feature-flagged pages
 async function expectPageLoaded(page: import("@playwright/test").Page, keywords: RegExp) {
-  await expect(
-    page.locator("h1").first()
-      .or(page.locator("h2").first())
-      .or(page.getByText(keywords).first())
-      .or(page.locator("body"))
-  ).toBeVisible({ timeout: 10_000 });
+  const hasH1 = await page.locator("h1").first().isVisible({ timeout: 5000 }).catch(() => false);
+  const hasH2 = await page.locator("h2").first().isVisible({ timeout: 2000 }).catch(() => false);
+  const hasText = await page.getByText(keywords).first().isVisible({ timeout: 2000 }).catch(() => false);
+  expect(hasH1 || hasH2 || hasText).toBeTruthy();
 }
 
 test.describe("Dokumente", () => {
@@ -27,13 +25,11 @@ test.describe("Dokumente", () => {
     await page.goto("/documents/upload");
     await page.waitForTimeout(2000);
     // Should have a file input, drop zone, upload text, or at least a heading
-    const uploadIndicator = page
-      .locator("input[type='file']")
-      .or(page.getByText(/hochladen|upload|drag|drop|datei/i).first())
-      .or(page.locator("h1").first())
-      .or(page.locator("h2").first())
-      .or(page.locator("body"));
-    await expect(uploadIndicator).toBeVisible({ timeout: 10_000 });
+    const hasFileInput = await page.locator("input[type='file']").isVisible({ timeout: 5000 }).catch(() => false);
+    const hasUploadText = await page.getByText(/hochladen|upload|drag|drop|datei/i).first().isVisible({ timeout: 2000 }).catch(() => false);
+    const hasH1 = await page.locator("h1").first().isVisible({ timeout: 2000 }).catch(() => false);
+    const hasH2 = await page.locator("h2").first().isVisible({ timeout: 2000 }).catch(() => false);
+    expect(hasFileInput || hasUploadText || hasH1 || hasH2).toBeTruthy();
   });
 });
 

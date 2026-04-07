@@ -33,10 +33,7 @@ test.describe("PDF & Export", () => {
   test("Rechnung-Detail Seite hat Aktionen", async ({ page }) => {
     await page.goto("/invoices");
     await page.waitForTimeout(2000);
-    const firstLink = page
-      .locator("table tbody tr a")
-      .first()
-      .or(page.locator("table tbody tr").first());
+    const firstLink = page.locator("table tbody tr a").first();
     if (await firstLink.isVisible({ timeout: 5000 }).catch(() => false)) {
       await firstLink.click();
       await page

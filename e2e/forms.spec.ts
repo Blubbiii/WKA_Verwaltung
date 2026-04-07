@@ -4,11 +4,12 @@ test.describe("Formulare", () => {
   test("Park-Erstellungsformular öffnet sich", async ({ page }) => {
     await page.goto("/parks");
     // Click "Neuer Park" or similar create button
-    const createBtn = page
-      .getByRole("link", { name: /neuer park|park erstellen|neu/i })
-      .first()
-      .or(page.getByRole("button", { name: /neuer park|park erstellen|neu/i }).first());
-    if (await createBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+    const linkBtn = page.getByRole("link", { name: /neuer park|park erstellen|neu/i }).first();
+    const btnBtn = page.getByRole("button", { name: /neuer park|park erstellen|neu/i }).first();
+    const hasLink = await linkBtn.isVisible({ timeout: 5000 }).catch(() => false);
+    const hasBtn = await btnBtn.isVisible({ timeout: 2000 }).catch(() => false);
+    const createBtn = hasLink ? linkBtn : hasBtn ? btnBtn : null;
+    if (createBtn) {
       await createBtn.click();
       await page
         .waitForURL(/.*\/parks\/new.*|.*\/parks\/create.*/i, { timeout: 10_000 })
@@ -55,14 +56,10 @@ test.describe("Formulare", () => {
     await page.goto("/crm/contacts");
     await page.waitForTimeout(2000);
     // CRM might be feature-flagged — accept heading, table, or redirect/error as success
-    await expect(
-      page
-        .locator("h1")
-        .first()
-        .or(page.locator("h2").first())
-        .or(page.locator("table").first())
-        .or(page.getByText(/kontakt|contact|crm|fehler|nicht verf/i).first())
-        .or(page.locator("body"))
-    ).toBeVisible({ timeout: 10_000 });
+    const hasH1 = await page.locator("h1").first().isVisible({ timeout: 5000 }).catch(() => false);
+    const hasH2 = await page.locator("h2").first().isVisible({ timeout: 2000 }).catch(() => false);
+    const hasTable = await page.locator("table").first().isVisible({ timeout: 2000 }).catch(() => false);
+    const hasText = await page.getByText(/kontakt|contact|crm|fehler|nicht verf/i).first().isVisible({ timeout: 2000 }).catch(() => false);
+    expect(hasH1 || hasH2 || hasTable || hasText).toBeTruthy();
   });
 });

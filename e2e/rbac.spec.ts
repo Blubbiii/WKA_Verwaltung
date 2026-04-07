@@ -7,9 +7,9 @@ test.describe("RBAC & Berechtigungen", () => {
     const body = await page.locator("body").innerText();
     expect(body.length).toBeGreaterThan(10);
     // Should have some heading or error message
-    await expect(
-      page.locator("h1").first().or(page.getByText(/fehler|zugriff|admin/i).first())
-    ).toBeVisible({ timeout: 10_000 });
+    const hasH1 = await page.locator("h1").first().isVisible({ timeout: 5000 }).catch(() => false);
+    const hasErrorText = await page.getByText(/fehler|zugriff|admin/i).first().isVisible({ timeout: 2000 }).catch(() => false);
+    expect(hasH1 || hasErrorText).toBeTruthy();
   });
 
   test("User-Menü zeigt aktuelle Rolle", async ({ page }) => {
@@ -24,12 +24,10 @@ test.describe("RBAC & Berechtigungen", () => {
   test("Einstellungen-Seite ist erreichbar", async ({ page }) => {
     await page.goto("/settings");
     // Accept h1, h2, or any settings-related content
-    await expect(
-      page.locator("h1").first()
-        .or(page.locator("h2").first())
-        .or(page.getByText(/profil|einstellungen|settings|konto/i).first())
-        .or(page.locator("body"))
-    ).toBeVisible({ timeout: 10_000 });
+    const hasH1 = await page.locator("h1").first().isVisible({ timeout: 5000 }).catch(() => false);
+    const hasH2 = await page.locator("h2").first().isVisible({ timeout: 2000 }).catch(() => false);
+    const hasText = await page.getByText(/profil|einstellungen|settings|konto/i).first().isVisible({ timeout: 2000 }).catch(() => false);
+    expect(hasH1 || hasH2 || hasText).toBeTruthy();
   });
 
   test("Rollen & Rechte Seite laden", async ({ page }) => {
