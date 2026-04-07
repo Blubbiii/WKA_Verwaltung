@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, EntityStatus, EnergyCalculationType, TaxType, AccountCategory, TaxBehavior } from "@prisma/client";
+import { PrismaClient, EntityStatus, EnergyCalculationType, TaxType, AccountCategory, TaxBehavior } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
@@ -843,7 +843,29 @@ async function main() {
   await seedLedgerAccounts(systemTenant.id);
   await seedLedgerAccounts(demoTenant.id);
 
-  // Create Superadmin User
+  // ==========================================================================
+  // ROLES — create system roles (hierarchy determines access level)
+  // ==========================================================================
+  const roleSuperadmin = await prisma.role.upsert({
+    where: { name_tenantId: { name: "SUPERADMIN", tenantId: systemTenant.id } },
+    update: {},
+    create: { name: "SUPERADMIN", description: "Vollzugriff auf alle Mandanten", isSystem: true, hierarchy: 100, tenantId: systemTenant.id },
+  });
+  const roleAdmin = await prisma.role.upsert({
+    where: { name_tenantId: { name: "ADMIN", tenantId: demoTenant.id } },
+    update: {},
+    create: { name: "ADMIN", description: "Administrator", isSystem: true, hierarchy: 80, tenantId: demoTenant.id },
+  });
+  const roleManager = await prisma.role.upsert({
+    where: { name_tenantId: { name: "MANAGER", tenantId: demoTenant.id } },
+    update: {},
+    create: { name: "MANAGER", description: "Manager", isSystem: true, hierarchy: 60, tenantId: demoTenant.id },
+  });
+  console.log("Roles created/verified");
+
+  // ==========================================================================
+  // USERS — create without role field (uses UserRoleAssignment instead)
+  // ==========================================================================
   const superadminPassword = await bcrypt.hash("admin123", 12);
   const superadmin = await prisma.user.upsert({
     where: { email: "admin@windparkmanager.de" },
@@ -853,15 +875,24 @@ async function main() {
       passwordHash: superadminPassword,
       firstName: "Super",
       lastName: "Admin",
-      role: UserRole.SUPERADMIN,
       tenantId: systemTenant.id,
       status: EntityStatus.ACTIVE,
     },
   });
 
+  // Assign role + tenant membership
+  await prisma.userRoleAssignment.upsert({
+    where: { userId_roleId_resourceType: { userId: superadmin.id, roleId: roleSuperadmin.id, resourceType: "__global__" } },
+    update: {},
+    create: { userId: superadmin.id, roleId: roleSuperadmin.id, tenantId: systemTenant.id },
+  });
+  await prisma.userTenantMembership.upsert({
+    where: { userId_tenantId: { userId: superadmin.id, tenantId: systemTenant.id } },
+    update: {},
+    create: { userId: superadmin.id, tenantId: systemTenant.id, isPrimary: true },
+  });
   console.log("Created superadmin:", superadmin.email);
 
-  // Create Demo Admin User
   const demoAdminPassword = await bcrypt.hash("demo123", 12);
   const demoAdmin = await prisma.user.upsert({
     where: { email: "admin@demo-windpark.de" },
@@ -871,15 +902,22 @@ async function main() {
       passwordHash: demoAdminPassword,
       firstName: "Demo",
       lastName: "Admin",
-      role: UserRole.ADMIN,
       tenantId: demoTenant.id,
       status: EntityStatus.ACTIVE,
     },
   });
-
+  await prisma.userRoleAssignment.upsert({
+    where: { userId_roleId_resourceType: { userId: demoAdmin.id, roleId: roleAdmin.id, resourceType: "__global__" } },
+    update: {},
+    create: { userId: demoAdmin.id, roleId: roleAdmin.id, tenantId: demoTenant.id },
+  });
+  await prisma.userTenantMembership.upsert({
+    where: { userId_tenantId: { userId: demoAdmin.id, tenantId: demoTenant.id } },
+    update: {},
+    create: { userId: demoAdmin.id, tenantId: demoTenant.id, isPrimary: true },
+  });
   console.log("Created demo admin:", demoAdmin.email);
 
-  // Create Demo Manager User
   const demoManagerPassword = await bcrypt.hash("demo123", 12);
   const demoManager = await prisma.user.upsert({
     where: { email: "manager@demo-windpark.de" },
@@ -889,12 +927,20 @@ async function main() {
       passwordHash: demoManagerPassword,
       firstName: "Max",
       lastName: "Manager",
-      role: UserRole.MANAGER,
       tenantId: demoTenant.id,
       status: EntityStatus.ACTIVE,
     },
   });
-
+  await prisma.userRoleAssignment.upsert({
+    where: { userId_roleId_resourceType: { userId: demoManager.id, roleId: roleManager.id, resourceType: "__global__" } },
+    update: {},
+    create: { userId: demoManager.id, roleId: roleManager.id, tenantId: demoTenant.id },
+  });
+  await prisma.userTenantMembership.upsert({
+    where: { userId_tenantId: { userId: demoManager.id, tenantId: demoTenant.id } },
+    update: {},
+    create: { userId: demoManager.id, tenantId: demoTenant.id, isPrimary: true },
+  });
   console.log("Created demo manager:", demoManager.email);
 
   // Create Demo Parks
