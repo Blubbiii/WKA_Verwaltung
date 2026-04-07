@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q")?.trim();
-    const limit = Math.min(parseInt(searchParams.get("limit") || "10", 10), 20);
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "10", 10) || 10, 1), 20);
 
     if (!q || q.length < 2) {
       return NextResponse.json({ results: [] });

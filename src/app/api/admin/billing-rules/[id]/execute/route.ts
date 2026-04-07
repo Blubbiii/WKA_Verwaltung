@@ -5,10 +5,15 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { executeRule } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
+
+const executeSchema = z.object({
+  overrideParameters: z.record(z.string(), z.unknown()).optional(),
+}).optional();
 
 // POST /api/admin/billing-rules/[id]/execute
 export async function POST(
@@ -48,8 +53,15 @@ export async function POST(
     let overrideParameters: Record<string, unknown> | undefined;
     try {
       const body = await request.json();
-      if (body && typeof body === "object" && Object.keys(body).length > 0) {
-        overrideParameters = body;
+      const result = executeSchema.safeParse(body);
+      if (!result.success) {
+        return NextResponse.json(
+          { error: "Ungültige Eingabe", details: result.error.flatten().fieldErrors },
+          { status: 400 }
+        );
+      }
+      if (result.data?.overrideParameters) {
+        overrideParameters = result.data.overrideParameters;
       }
     } catch {
       // Kein Body oder ungültiges JSON - ignorieren

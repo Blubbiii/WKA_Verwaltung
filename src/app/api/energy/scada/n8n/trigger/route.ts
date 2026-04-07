@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireApiKey } from "@/lib/auth/apiKeyAuth";
 import { scanAllFileTypes, startImport, isValidFileType, type ScadaFileType } from "@/lib/scada/import-service";
 import { apiLogger as logger } from "@/lib/logger";
+
+const triggerSchema = z.object({
+  locationCode: z.string().regex(/^Loc_\d+$/, "Ungültiger Location-Code"),
+  fileTypes: z.array(z.string()).optional(),
+});
 
 // =============================================================================
 // POST /api/energy/scada/n8n/trigger
@@ -30,14 +36,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { locationCode, fileTypes: requestedTypes } = body;
-
-    if (!locationCode || typeof locationCode !== "string" || !/^Loc_\d+$/.test(locationCode)) {
+    const result = triggerSchema.safeParse(body);
+    if (!result.success) {
       return NextResponse.json(
-        { error: "locationCode ist erforderlich und muss dem Format 'Loc_XXXX' entsprechen (nur Ziffern)" },
+        { error: "Ungültige Eingabe", details: result.error.flatten().fieldErrors },
         { status: 400 },
       );
     }
+    const { locationCode, fileTypes: requestedTypes } = result.data;
 
     // Scan for available file types at this location
     const availableTypes = await scanAllFileTypes(scadaBasePath, locationCode);

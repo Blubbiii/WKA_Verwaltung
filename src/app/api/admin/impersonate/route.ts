@@ -1,10 +1,16 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireSuperadmin, requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { apiLogger as logger } from "@/lib/logger";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
+
+const impersonateSchema = z.object({
+  userId: z.string().uuid().optional(),
+  tenantId: z.string().uuid().optional(),
+}).refine(d => d.userId || d.tenantId, { message: "userId oder tenantId erforderlich" });
 
 function signCookieValue(data: object): string {
   const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
@@ -31,14 +37,14 @@ const check = await requireSuperadmin();
     if (!check.authorized) return check.error!;
 
     const body = await request.json();
-    const { userId, tenantId } = body;
-
-    if (!userId && !tenantId) {
+    const result = impersonateSchema.safeParse(body);
+    if (!result.success) {
       return NextResponse.json(
-        { error: "userId oder tenantId erforderlich" },
+        { error: "Ungültige Eingabe", details: result.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { userId, tenantId } = result.data;
 
     let targetUser = null;
     let targetTenant = null;

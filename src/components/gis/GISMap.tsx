@@ -115,8 +115,7 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).L = L;
+    window.L = L;
 
     // Inject CSS once
     if (!document.getElementById("gis-draw-css")) {
@@ -160,7 +159,7 @@ function GISDrawControl({ mode, onCreated }: GISDrawControlProps) {
       setTimeout(() => {
         if (cancelled) return;
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- leaflet-draw private API
           const toolbars = (drawControl as any)?._toolbars;
           const handler = toolbars?.draw?._modes?.[mode]?.handler;
           if (handler?.enable) {

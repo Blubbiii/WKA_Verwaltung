@@ -1,7 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+
+const ppaUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  counterparty: z.string().min(1).optional(),
+  pricingMode: z.enum(["FIXED", "INDEXED", "COLLAR"]).optional(),
+  fixedPriceCentKwh: z.number().optional().nullable(),
+  floorPriceCentKwh: z.number().optional().nullable(),
+  capPriceCentKwh: z.number().optional().nullable(),
+  indexBase: z.string().optional().nullable(),
+  indexMarkupCentKwh: z.number().optional().nullable(),
+  minQuantityMwh: z.number().optional().nullable(),
+  maxQuantityMwh: z.number().optional().nullable(),
+  billingPeriod: z.enum(["MONTHLY", "QUARTERLY", "YEARLY"]).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  status: z.enum(["DRAFT", "ACTIVE", "EXPIRED", "TERMINATED"]).optional(),
+  notes: z.string().optional().nullable(),
+  contractNumber: z.string().optional().nullable(),
+});
 
 export async function GET(
   request: NextRequest,
@@ -50,26 +70,34 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const result = ppaUpdateSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: result.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const data = result.data;
 
     const ppa = await prisma.powerPurchaseAgreement.update({
       where: { id },
       data: {
-        ...(body.title !== undefined && { title: body.title }),
-        ...(body.contractNumber !== undefined && { contractNumber: body.contractNumber }),
-        ...(body.counterparty !== undefined && { counterparty: body.counterparty }),
-        ...(body.pricingMode !== undefined && { pricingMode: body.pricingMode }),
-        ...(body.fixedPriceCentKwh !== undefined && { fixedPriceCentKwh: body.fixedPriceCentKwh }),
-        ...(body.floorPriceCentKwh !== undefined && { floorPriceCentKwh: body.floorPriceCentKwh }),
-        ...(body.capPriceCentKwh !== undefined && { capPriceCentKwh: body.capPriceCentKwh }),
-        ...(body.indexBase !== undefined && { indexBase: body.indexBase }),
-        ...(body.indexMarkupCentKwh !== undefined && { indexMarkupCentKwh: body.indexMarkupCentKwh }),
-        ...(body.minQuantityMwh !== undefined && { minQuantityMwh: body.minQuantityMwh }),
-        ...(body.maxQuantityMwh !== undefined && { maxQuantityMwh: body.maxQuantityMwh }),
-        ...(body.billingPeriod !== undefined && { billingPeriod: body.billingPeriod }),
-        ...(body.startDate !== undefined && { startDate: new Date(body.startDate) }),
-        ...(body.endDate !== undefined && { endDate: new Date(body.endDate) }),
-        ...(body.status !== undefined && { status: body.status }),
-        ...(body.notes !== undefined && { notes: body.notes }),
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.contractNumber !== undefined && { contractNumber: data.contractNumber }),
+        ...(data.counterparty !== undefined && { counterparty: data.counterparty }),
+        ...(data.pricingMode !== undefined && { pricingMode: data.pricingMode }),
+        ...(data.fixedPriceCentKwh !== undefined && { fixedPriceCentKwh: data.fixedPriceCentKwh }),
+        ...(data.floorPriceCentKwh !== undefined && { floorPriceCentKwh: data.floorPriceCentKwh }),
+        ...(data.capPriceCentKwh !== undefined && { capPriceCentKwh: data.capPriceCentKwh }),
+        ...(data.indexBase !== undefined && { indexBase: data.indexBase }),
+        ...(data.indexMarkupCentKwh !== undefined && { indexMarkupCentKwh: data.indexMarkupCentKwh }),
+        ...(data.minQuantityMwh !== undefined && { minQuantityMwh: data.minQuantityMwh }),
+        ...(data.maxQuantityMwh !== undefined && { maxQuantityMwh: data.maxQuantityMwh }),
+        ...(data.billingPeriod !== undefined && { billingPeriod: data.billingPeriod }),
+        ...(data.startDate !== undefined && { startDate: new Date(data.startDate) }),
+        ...(data.endDate !== undefined && { endDate: new Date(data.endDate) }),
+        ...(data.status !== undefined && { status: data.status }),
+        ...(data.notes !== undefined && { notes: data.notes }),
       },
       include: {
         park: { select: { id: true, name: true } },

@@ -4,6 +4,18 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { uploadFile, deleteFile, getSignedUrl } from "@/lib/storage";
 
+interface TenantSettings {
+  marketingVideoUrl?: string;
+  marketing?: {
+    showcase?: {
+      videoUrl?: string;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB
 const ALLOWED_TYPES = ["video/mp4", "video/webm"];
 
@@ -47,8 +59,7 @@ export async function POST(request: NextRequest) {
       select: { settings: true },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const settings = (tenant?.settings as any) || {};
+    const settings = (tenant?.settings as TenantSettings) || {};
     const marketing = settings.marketing || {};
     const showcase = marketing.showcase || {};
     showcase.videoUrl = key; // Store S3 key, not signed URL
@@ -89,8 +100,7 @@ export async function DELETE(_request: NextRequest) {
       select: { settings: true },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const settings = (tenant?.settings as any) || {};
+    const settings = (tenant?.settings as TenantSettings) || {};
     const videoKey = settings?.marketing?.showcase?.videoUrl;
 
     if (videoKey) {

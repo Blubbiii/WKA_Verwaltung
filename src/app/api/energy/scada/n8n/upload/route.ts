@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import * as path from "path";
 import * as fs from "fs/promises";
 import { requireApiKey } from "@/lib/auth/apiKeyAuth";
 import { apiLogger as logger } from "@/lib/logger";
+
+const locationSchema = z.string().regex(/^Loc_\d+$/, "Ungültiger Location-Code");
 
 // Supported SCADA file extensions
 const SCADA_EXTENSIONS = new Set([
@@ -43,12 +46,11 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const locationCode = formData.get("locationCode") as string | null;
 
-    if (!locationCode || !/^Loc_\d+$/.test(locationCode)) {
-      return NextResponse.json(
-        { error: "locationCode ist erforderlich und muss dem Format 'Loc_XXXX' entsprechen (nur Ziffern)" },
-        { status: 400 },
-      );
+    const locResult = locationSchema.safeParse(locationCode);
+    if (!locResult.success) {
+      return NextResponse.json({ error: "Ungültiger Location-Code" }, { status: 400 });
     }
+    const validatedLocationCode = locResult.data;
 
     // Collect files
     const files: File[] = [];
@@ -98,10 +100,10 @@ export async function POST(request: NextRequest) {
       const dateMatch = baseName.match(/^(\d{4})(\d{2})(\d{2})$/);
       if (dateMatch) {
         const [, year, month] = dateMatch;
-        targetDir = path.join(scadaBasePath, locationCode, year, month);
+        targetDir = path.join(scadaBasePath, validatedLocationCode, year, month);
       } else {
         // Fallback: flat dir under locationCode
-        targetDir = path.join(scadaBasePath, locationCode);
+        targetDir = path.join(scadaBasePath, validatedLocationCode);
       }
 
       await fs.mkdir(targetDir, { recursive: true });
@@ -125,12 +127,12 @@ export async function POST(request: NextRequest) {
     }
 
     logger.info(
-      { locationCode, saved: saved.length, skipped: skipped.length },
+      { locationCode: validatedLocationCode, saved: saved.length, skipped: skipped.length },
       `n8n SCADA upload: ${saved.length} saved, ${skipped.length} skipped`,
     );
 
     return NextResponse.json({
-      locationCode,
+      locationCode: validatedLocationCode,
       saved: saved.length,
       skipped: skipped.length,
       savedFiles: saved,

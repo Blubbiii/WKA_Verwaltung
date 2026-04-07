@@ -9,8 +9,7 @@ import "leaflet-draw/dist/leaflet.draw.css";
 // Webpack resolves leaflet's ESM module which does NOT set window.L,
 // so we must assign it manually before dynamically importing leaflet-draw.
 if (typeof window !== "undefined") {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).L = L;
+  window.L = L;
 }
 
 interface DrawControlProps {

@@ -8,7 +8,7 @@
 ## 1. Grundprinzipien
 
 ### Zielgruppe
-WindparkManager richtet sich an **Betreibergesellschaften, Gesellschafter und Geschaeftsfuehrer** im Bereich erneuerbare Energien. Die Nutzer sind keine Entwickler — die UI muss intuitiv, uebersichtlich und vertrauenswuerdig wirken.
+WindparkManager richtet sich an **Betreibergesellschaften, Gesellschafter und Geschaeftsfuehrer** im Bereich erneuerbare Energien. Die Zielgruppe ist **30-65 Jahre**, wobei vor allem juengere Mitarbeiter (30-45) taeglich mit der Software arbeiten. Die UI muss intuitiv, uebersichtlich und vertrauenswuerdig wirken.
 
 ### Design-Philosophie
 1. **Klarheit vor Aesthetik** — Daten muessen sofort erfassbar sein

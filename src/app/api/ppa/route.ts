@@ -1,7 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+
+const ppaCreateSchema = z.object({
+  title: z.string().min(1, "Titel erforderlich"),
+  counterparty: z.string().min(1, "Vertragspartner erforderlich"),
+  parkId: z.string().uuid("Ungültige Park-ID"),
+  startDate: z.string().min(1, "Startdatum erforderlich"),
+  endDate: z.string().min(1, "Enddatum erforderlich"),
+  contractNumber: z.string().optional().nullable(),
+  pricingMode: z.enum(["FIXED", "INDEXED", "COLLAR"]).default("FIXED"),
+  fixedPriceCentKwh: z.number().optional().nullable(),
+  floorPriceCentKwh: z.number().optional().nullable(),
+  capPriceCentKwh: z.number().optional().nullable(),
+  indexBase: z.string().optional().nullable(),
+  indexMarkupCentKwh: z.number().optional().nullable(),
+  minQuantityMwh: z.number().optional().nullable(),
+  maxQuantityMwh: z.number().optional().nullable(),
+  billingPeriod: z.enum(["MONTHLY", "QUARTERLY", "YEARLY"]).default("MONTHLY"),
+  status: z.enum(["DRAFT", "ACTIVE", "EXPIRED", "TERMINATED"]).default("DRAFT"),
+  notes: z.string().optional().nullable(),
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,15 +60,18 @@ export async function POST(request: NextRequest) {
     const tenantId = check.tenantId!;
 
     const body = await request.json();
-
-    // Validate required fields
-    if (!body.title || !body.counterparty || !body.parkId || !body.startDate || !body.endDate) {
-      return NextResponse.json({ error: "Pflichtfelder fehlen" }, { status: 400 });
+    const result = ppaCreateSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: result.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+    const data = result.data;
 
     // Verify park belongs to tenant
     const park = await prisma.park.findFirst({
-      where: { id: body.parkId, tenantId, deletedAt: null },
+      where: { id: data.parkId, tenantId, deletedAt: null },
     });
     if (!park) {
       return NextResponse.json({ error: "Park nicht gefunden" }, { status: 404 });
@@ -55,23 +79,23 @@ export async function POST(request: NextRequest) {
 
     const ppa = await prisma.powerPurchaseAgreement.create({
       data: {
-        title: body.title,
-        contractNumber: body.contractNumber || null,
-        counterparty: body.counterparty,
-        pricingMode: body.pricingMode || "FIXED",
-        fixedPriceCentKwh: body.fixedPriceCentKwh ?? null,
-        floorPriceCentKwh: body.floorPriceCentKwh ?? null,
-        capPriceCentKwh: body.capPriceCentKwh ?? null,
-        indexBase: body.indexBase || null,
-        indexMarkupCentKwh: body.indexMarkupCentKwh ?? null,
-        minQuantityMwh: body.minQuantityMwh ?? null,
-        maxQuantityMwh: body.maxQuantityMwh ?? null,
-        billingPeriod: body.billingPeriod || "MONTHLY",
-        startDate: new Date(body.startDate),
-        endDate: new Date(body.endDate),
-        status: body.status || "DRAFT",
-        notes: body.notes || null,
-        parkId: body.parkId,
+        title: data.title,
+        contractNumber: data.contractNumber || null,
+        counterparty: data.counterparty,
+        pricingMode: data.pricingMode,
+        fixedPriceCentKwh: data.fixedPriceCentKwh ?? null,
+        floorPriceCentKwh: data.floorPriceCentKwh ?? null,
+        capPriceCentKwh: data.capPriceCentKwh ?? null,
+        indexBase: data.indexBase || null,
+        indexMarkupCentKwh: data.indexMarkupCentKwh ?? null,
+        minQuantityMwh: data.minQuantityMwh ?? null,
+        maxQuantityMwh: data.maxQuantityMwh ?? null,
+        billingPeriod: data.billingPeriod,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+        status: data.status,
+        notes: data.notes || null,
+        parkId: data.parkId,
         tenantId,
       },
       include: {
