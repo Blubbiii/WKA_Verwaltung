@@ -11,9 +11,9 @@ import {
   Legend,
   ComposedChart,
   BarChart,
-  LineChart,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SwitchableChart } from "@/components/ui/switchable-chart";
 import { Clock, CheckCircle, AlertTriangle, Wrench } from "lucide-react";
 import { AnalyticsKpiRow } from "./kpi-row";
 import { HeatmapChart } from "./heatmap-chart";
@@ -282,41 +282,19 @@ export function AvailabilityChart({
             <CardTitle className="text-sm font-medium">Verfügbarkeits-Trend (monatlich)</CardTitle>
           </CardHeader>
           <CardContent>
-              <LineChart width="100%" height={300} data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => `${v}%`}
-                  domain={[
-                    (min: number) => Math.max(0, Math.floor(min - 5)),
-                    100,
-                  ]}
-                />
-                <Tooltip
-                  formatter={(value) => {
-                    const num = typeof value === "number" ? value : 0;
-                    return [`${dec2Fmt.format(num)} %`, "Verfügbarkeit"];
-                  }}
-                  contentStyle={{ borderRadius: 8 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="verfügbarkeit"
-                  name="Verfügbarkeit"
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: "#22c55e" }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
+            <SwitchableChart
+              chartId="analytics-availability-trend"
+              data={trendData}
+              dataKeys={[
+                { key: "verfügbarkeit", label: "Verfügbarkeit", color: "#22c55e" },
+              ]}
+              xAxisKey="label"
+              defaultType="line"
+              allowedTypes={["line", "area"]}
+              height={300}
+              showLegend={false}
+              tooltipFormatter={(value) => [`${dec2Fmt.format(value)} %`, "Verfügbarkeit"]}
+            />
           </CardContent>
         </Card>
       )}

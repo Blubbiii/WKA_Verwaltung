@@ -1,24 +1,17 @@
 "use client";
 
 import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/format";
+import { SwitchableChart } from "@/components/ui/switchable-chart";
 import type {
   MonthlyInvoiceData,
   CapitalDevelopmentData,
@@ -86,7 +79,6 @@ export function MonthlyInvoicesChart({
   className,
 }: MonthlyInvoicesChartProps) {
   const colors = useChartColors();
-  const tooltipStyle = useTooltipStyle();
 
   if (isLoading) {
     return (
@@ -125,38 +117,20 @@ export function MonthlyInvoicesChart({
         <CardDescription className="text-xs">Erstellt vs. Bezahlt (letzte 6 Monate)</CardDescription>
       </CardHeader>
       <CardContent className="p-4 pt-0 flex-1 min-h-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: 11, fill: colors.text }}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: colors.text }}
-              tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-              width={40}
-            />
-            <Tooltip
-              formatter={(value) => formatCurrency(typeof value === "number" ? value : 0)}
-              labelStyle={{ fontWeight: 600, color: "hsl(var(--foreground))" }}
-              contentStyle={tooltipStyle}
-            />
-            <Legend wrapperStyle={{ fontSize: "11px" }} />
-            <Bar
-              dataKey="invoiced"
-              name="Erstellt"
-              fill={colors.primary}
-              radius={[4, 4, 0, 0]}
-            />
-            <Bar
-              dataKey="paid"
-              name="Bezahlt"
-              fill={colors.secondary}
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        <SwitchableChart
+          chartId="dashboard-monthly-invoices"
+          data={data}
+          dataKeys={[
+            { key: "invoiced", label: "Erstellt", color: colors.primary },
+            { key: "paid", label: "Bezahlt", color: colors.secondary },
+          ]}
+          xAxisKey="month"
+          defaultType="bar"
+          allowedTypes={["bar", "line", "area"]}
+          height={250}
+          showLegend={true}
+          tooltipFormatter={(value) => [formatCurrency(value), ""]}
+        />
       </CardContent>
     </Card>
   );
@@ -178,7 +152,6 @@ export function CapitalDevelopmentChart({
   className,
 }: CapitalDevelopmentChartProps) {
   const colors = useChartColors();
-  const tooltipStyle = useTooltipStyle();
 
   if (isLoading) {
     return (
@@ -217,34 +190,19 @@ export function CapitalDevelopmentChart({
         <CardDescription className="text-xs">Gesamtkapital der Gesellschaften (12 Monate)</CardDescription>
       </CardHeader>
       <CardContent className="p-4 pt-0 flex-1 min-h-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: 11, fill: colors.text }}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: colors.text }}
-              tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
-              width={45}
-            />
-            <Tooltip
-              formatter={(value) => formatCurrency(typeof value === "number" ? value : 0)}
-              labelStyle={{ fontWeight: 600, color: "hsl(var(--foreground))" }}
-              contentStyle={tooltipStyle}
-            />
-            <Line
-              type="monotone"
-              dataKey="capital"
-              name="Kapital"
-              stroke={colors.primary}
-              strokeWidth={2}
-              dot={{ fill: colors.primary, strokeWidth: 2 }}
-              activeDot={{ r: 6 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <SwitchableChart
+          chartId="dashboard-capital"
+          data={data}
+          dataKeys={[
+            { key: "capital", label: "Kapital", color: colors.primary },
+          ]}
+          xAxisKey="month"
+          defaultType="area"
+          allowedTypes={["line", "area"]}
+          height={250}
+          showLegend={false}
+          tooltipFormatter={(value) => [formatCurrency(value), "Kapital"]}
+        />
       </CardContent>
     </Card>
   );
