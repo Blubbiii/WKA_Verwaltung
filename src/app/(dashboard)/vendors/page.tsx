@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Building2, Plus, Search, Pencil, Trash2, Download } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { EditableCell } from "@/components/ui/editable-cell";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { BatchActionBar } from "@/components/ui/batch-action-bar";
@@ -387,18 +388,17 @@ export default function VendorsPage() {
               ))}
             </div>
           ) : vendors.length === 0 ? (
-            <div className="py-12 text-center">
-              <Building2 className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-              <p className="text-muted-foreground">Keine Lieferanten gefunden</p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => { setEditVendor(null); setDialogOpen(true); }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Ersten Lieferanten anlegen
-              </Button>
-            </div>
+            <EmptyState
+              icon={Building2}
+              title="Keine Lieferanten gefunden"
+              description="Erstellen Sie Ihren ersten Lieferanten"
+              action={
+                <Button onClick={() => { setEditVendor(null); setDialogOpen(true); }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Lieferant anlegen
+                </Button>
+              }
+            />
           ) : (
             <div className="rounded-md border overflow-x-auto">
             <Table>

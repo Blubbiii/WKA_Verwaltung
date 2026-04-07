@@ -733,11 +733,11 @@ export default function JournalEntriesPage() {
                       </TableCell>
                       <TableCell>
                         {entry.status === "POSTED" ? (
-                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                          <Badge variant="success">
                             Gebucht
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                          <Badge variant="warning">
                             Entwurf
                           </Badge>
                         )}

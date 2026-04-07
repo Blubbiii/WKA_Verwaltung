@@ -130,27 +130,17 @@ const eventTypeLabels: Record<string, string> = {
   OTHER: "Sonstiges",
 };
 
-const eventTypeColors: Record<string, string> = {
-  MAINTENANCE:
-    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  REPAIR:
-    "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
-  INSPECTION:
-    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-  BLADE_INSPECTION:
-    "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-  GEARBOX_SERVICE:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-  GENERATOR_SERVICE:
-    "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300",
-  SOFTWARE_UPDATE:
-    "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
-  EMERGENCY:
-    "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  TECHNICIAN_VISIT:
-    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
-  OTHER:
-    "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300",
+const eventTypeBadgeVariants: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "warning"> = {
+  MAINTENANCE: "warning",
+  REPAIR: "warning",
+  INSPECTION: "default",
+  BLADE_INSPECTION: "default",
+  GEARBOX_SERVICE: "secondary",
+  GENERATOR_SERVICE: "secondary",
+  SOFTWARE_UPDATE: "outline",
+  EMERGENCY: "destructive",
+  TECHNICIAN_VISIT: "success",
+  OTHER: "secondary",
 };
 
 type SortField =
@@ -595,10 +585,9 @@ export default function ServiceEventsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          variant="secondary"
-                          className={
-                            eventTypeColors[event.eventType] ||
-                            eventTypeColors.OTHER
+                          variant={
+                            eventTypeBadgeVariants[event.eventType] ||
+                            eventTypeBadgeVariants.OTHER
                           }
                         >
                           {eventTypeLabels[event.eventType] ||

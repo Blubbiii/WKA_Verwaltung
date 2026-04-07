@@ -56,6 +56,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
 import { SearchFilter } from "@/components/ui/search-filter";
+import { EmptyState } from "@/components/ui/empty-state";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
 import { CONTRACT_WARNING_DAYS, CONTRACT_CALENDAR_LOOKAHEAD_DAYS } from "@/lib/config/business-thresholds";
 
@@ -85,13 +86,13 @@ interface ContractsResponse {
   };
 }
 
-const typeConfig: Record<string, { label: string; color: string }> = {
-  LEASE: { label: "Pacht", color: "bg-blue-100 text-blue-800" },
-  SERVICE: { label: "Service", color: "bg-purple-100 text-purple-800" },
-  INSURANCE: { label: "Versicherung", color: "bg-green-100 text-green-800" },
-  GRID_CONNECTION: { label: "Netzanschluss", color: "bg-orange-100 text-orange-800" },
-  MARKETING: { label: "Vermarktung", color: "bg-pink-100 text-pink-800" },
-  OTHER: { label: "Sonstiges", color: "bg-gray-100 text-gray-800" },
+const typeConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" }> = {
+  LEASE: { label: "Pacht", variant: "default" },
+  SERVICE: { label: "Service", variant: "secondary" },
+  INSURANCE: { label: "Versicherung", variant: "success" },
+  GRID_CONNECTION: { label: "Netzanschluss", variant: "warning" },
+  MARKETING: { label: "Vermarktung", variant: "outline" },
+  OTHER: { label: "Sonstiges", variant: "secondary" },
 };
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -381,8 +382,12 @@ export default function ContractsPage() {
                   ))
                 ) : filteredContracts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
-                      Keine Verträge gefunden
+                    <TableCell colSpan={9} className="p-0">
+                      <EmptyState
+                        icon={FileText}
+                        title="Keine Verträge gefunden"
+                        description="Es wurden keine Verträge gefunden, die Ihren Filterkriterien entsprechen."
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -417,7 +422,7 @@ export default function ContractsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className={typeConf?.color}>
+                          <Badge variant={typeConf?.variant || "secondary"}>
                             {typeConf?.label || contract.contractType}
                           </Badge>
                         </TableCell>
