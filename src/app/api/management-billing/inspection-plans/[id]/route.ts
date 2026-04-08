@@ -11,6 +11,17 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const inspectionPlanUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().nullish(),
+  recurrence: z.string().min(1).optional(),
+  nextDueDate: z.string().optional(),
+  parkId: z.string().nullish(),
+  turbineId: z.string().nullish(),
+  isActive: z.boolean().optional(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -97,6 +108,14 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+    const parsed = inspectionPlanUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const { title, description, recurrence, nextDueDate, parkId, turbineId, isActive } = parsed.data;
 
     const existing = await prisma.inspectionPlan.findUnique({
       where: { id },
@@ -116,8 +135,6 @@ export async function PUT(
         { status: 403 }
       );
     }
-
-    const { title, description, recurrence, nextDueDate, parkId, turbineId, isActive } = body;
 
     const updated = await prisma.inspectionPlan.update({
       where: { id },

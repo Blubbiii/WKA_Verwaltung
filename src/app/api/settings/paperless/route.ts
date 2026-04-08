@@ -15,6 +15,15 @@ import {
   type ConfigCategory,
   type ConfigKey,
 } from "@/lib/config";
+import { z } from "zod";
+
+const paperlessConfigSchema = z.object({
+  configs: z.array(z.object({
+    key: z.string().min(1),
+    value: z.string(),
+    category: z.literal("paperless"),
+  })).min(1, "Keine Konfigurationsdaten"),
+});
 
 // =============================================================================
 // GET /api/settings/paperless
@@ -70,26 +79,14 @@ export async function POST(request: Request) {
     if (!check.authorized) return check.error;
 
     const body = await request.json();
-    const { configs } = body as {
-      configs: Array<{ key: string; value: string; category: string }>;
-    };
-
-    if (!Array.isArray(configs) || configs.length === 0) {
+    const parsed = paperlessConfigSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Keine Konfigurationsdaten" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
-
-    // Validate all keys belong to paperless category
-    for (const c of configs) {
-      if (c.category !== "paperless") {
-        return NextResponse.json(
-          { error: `Ungültige Kategorie: ${c.category}` },
-          { status: 400 }
-        );
-      }
-    }
+    const { configs } = parsed.data;
 
     const results = [];
     for (const c of configs) {

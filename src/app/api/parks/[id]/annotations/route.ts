@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const annotationCreateSchema = z.object({
+  name: z.string().min(1, "Name ist erforderlich"),
+  type: z.enum(["CABLE_ROUTE", "COMPENSATION_AREA", "ACCESS_ROAD", "EXCLUSION_ZONE", "CUSTOM"]).optional().default("CUSTOM"),
+  geometry: z.record(z.string(), z.unknown()).refine((v) => v !== null && typeof v === "object", { message: "geometry (GeoJSON) ist erforderlich" }),
+  style: z.record(z.string(), z.unknown()).nullable().optional(),
+  description: z.string().nullable().optional(),
+});
 
 // =============================================================================
 // GET /api/parks/[id]/annotations
@@ -58,33 +67,23 @@ export async function POST(
 
     const { id: parkId } = await params;
     const body = await request.json();
-    const { name, type, geometry, style, description } = body;
-
-    if (!name || typeof name !== "string") {
+    const parsed = annotationCreateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "name ist erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 },
       );
     }
-
-    if (!geometry || typeof geometry !== "object") {
-      return NextResponse.json(
-        { error: "geometry (GeoJSON) ist erforderlich" },
-        { status: 400 },
-      );
-    }
-
-    const validTypes = ["CABLE_ROUTE", "COMPENSATION_AREA", "ACCESS_ROAD", "EXCLUSION_ZONE", "CUSTOM"];
-    const annotationType = validTypes.includes(type) ? type : "CUSTOM";
+    const { name, type, geometry, style, description } = parsed.data;
 
     const annotation = await prisma.mapAnnotation.create({
       data: {
         tenantId: check.tenantId!,
         parkId,
         name: name.trim(),
-        type: annotationType,
+        type,
         geometry,
-        style: style ?? null,
+        style: style ?? undefined,
         description: description?.trim() || null,
         createdById: check.userId!,
       },

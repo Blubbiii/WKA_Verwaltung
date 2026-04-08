@@ -5,6 +5,11 @@ import { generateInvoicePdf } from "@/lib/pdf";
 import { apiLogger as logger } from "@/lib/logger";
 import JSZip from "jszip";
 import { API_LIMITS } from "@/lib/config/api-limits";
+import { z } from "zod";
+
+const batchPdfSchema = z.object({
+  invoiceIds: z.array(z.string().min(1)).min(1).max(API_LIMITS.batchSize),
+});
 
 // POST /api/invoices/batch-pdf - Generate PDFs for multiple invoices and return as ZIP
 export async function POST(request: NextRequest) {
@@ -13,7 +18,7 @@ export async function POST(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     // Parse and validate request body
-    let body: { invoiceIds?: unknown };
+    let body: unknown;
     try {
       body = await request.json();
     } catch {
@@ -23,28 +28,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { invoiceIds } = body;
-
-    // Validate invoiceIds is a non-empty string array
-    if (
-      !Array.isArray(invoiceIds) ||
-      invoiceIds.length === 0 ||
-      !invoiceIds.every((id) => typeof id === "string" && id.length > 0)
-    ) {
+    const parsed = batchPdfSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "invoiceIds muss ein nicht-leeres Array von Strings sein" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
-
-    if (invoiceIds.length > API_LIMITS.batchSize) {
-      return NextResponse.json(
-        {
-          error: `Maximal ${API_LIMITS.batchSize} Rechnungen pro Batch erlaubt (erhalten: ${invoiceIds.length})`,
-        },
-        { status: 400 }
-      );
-    }
+    const { invoiceIds } = parsed.data;
 
     // Deduplicate IDs
     const uniqueIds = [...new Set(invoiceIds)];

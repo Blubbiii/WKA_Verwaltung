@@ -11,6 +11,18 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const reportCreateSchema = z.object({
+  inspectionDate: z.string().min(1),
+  inspectionPlanId: z.string().nullish(),
+  serviceEventId: z.string().nullish(),
+  inspector: z.string().nullish(),
+  result: z.string().nullish(),
+  summary: z.string().nullish(),
+  parkId: z.string().nullish(),
+  turbineId: z.string().nullish(),
+});
 
 // =============================================================================
 // Feature Flag Check
@@ -101,25 +113,14 @@ export async function POST(request: NextRequest) {
     if (featureCheck) return featureCheck;
 
     const body = await request.json();
-
-    const {
-      inspectionDate,
-      inspectionPlanId,
-      serviceEventId,
-      inspector,
-      result,
-      summary,
-      parkId,
-      turbineId,
-    } = body;
-
-    // Validation
-    if (!inspectionDate) {
+    const parsed = reportCreateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "inspectionDate ist erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { inspectionDate, inspectionPlanId, serviceEventId, inspector, result, summary, parkId, turbineId } = parsed.data;
 
     // Determine tenant
     const tenantId = check.tenantId;

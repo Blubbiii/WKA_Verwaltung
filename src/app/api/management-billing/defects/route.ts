@@ -11,6 +11,18 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma, DefectSeverity, OperationalTaskStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const defectCreateSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().nullish(),
+  severity: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional().default("MEDIUM"),
+  dueDate: z.string().nullish(),
+  costEstimateEur: z.number().nullish(),
+  inspectionReportId: z.string().nullish(),
+  parkId: z.string().nullish(),
+  turbineId: z.string().nullish(),
+});
 
 // =============================================================================
 // Feature Flag Check
@@ -104,25 +116,14 @@ export async function POST(request: NextRequest) {
     if (featureCheck) return featureCheck;
 
     const body = await request.json();
-
-    const {
-      title,
-      description,
-      severity,
-      dueDate,
-      costEstimateEur,
-      inspectionReportId,
-      parkId,
-      turbineId,
-    } = body;
-
-    // Validation
-    if (!title) {
+    const parsed = defectCreateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "title ist erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { title, description, severity, dueDate, costEstimateEur, inspectionReportId, parkId, turbineId } = parsed.data;
 
     // Determine tenant
     const tenantId = check.tenantId;
@@ -133,23 +134,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate severity if provided
-    if (severity) {
-      const validSeverities: DefectSeverity[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-      if (!validSeverities.includes(severity)) {
-        return NextResponse.json(
-          { error: `Ungueltige Schwere. Erlaubt: ${validSeverities.join(", ")}` },
-          { status: 400 }
-        );
-      }
-    }
-
     const defect = await prisma.defect.create({
       data: {
         tenantId,
         title,
         description: description || null,
-        severity: severity || "MEDIUM",
+        severity,
         dueDate: dueDate ? new Date(dueDate) : null,
         costEstimateEur: costEstimateEur ?? null,
         inspectionReportId: inspectionReportId || null,

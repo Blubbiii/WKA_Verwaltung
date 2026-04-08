@@ -3,6 +3,25 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { EMAIL_REGEX } from "@/lib/validation/patterns";
+import { z } from "zod";
+
+const putSettingsSchema = z.object({
+  applicationName: z.string().min(1, "Anwendungsname ist erforderlich"),
+  defaultTimezone: z.string().optional().default("Europe/Berlin"),
+  defaultLanguage: z.string().optional().default("de"),
+  dateFormat: z.string().optional().default("DD.MM.YYYY"),
+  currency: z.string().optional().default("EUR"),
+  maintenanceModeEnabled: z.boolean().optional().default(false),
+  maintenanceMessage: z.string().optional().default(""),
+  scheduledMaintenanceTime: z.string().nullable().optional().default(null),
+  sessionTimeoutMinutes: z.number().min(5).max(1440).optional().default(30),
+  maxLoginAttempts: z.number().min(1).max(10).optional().default(5),
+  minPasswordLength: z.number().min(6).max(32).optional().default(8),
+  passwordRequiresSpecialChar: z.boolean().optional().default(true),
+  passwordRequiresNumber: z.boolean().optional().default(true),
+  emailNotificationsEnabled: z.boolean().optional().default(true),
+  adminEmail: z.string().optional().default(""),
+});
 
 // Default settings
 const DEFAULT_SETTINGS = {
@@ -100,40 +119,18 @@ export async function PUT(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     const body = await request.json();
-
-    // Validate required fields
-    if (!body.applicationName || typeof body.applicationName !== "string" || !body.applicationName.trim()) {
+    const parsed = putSettingsSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Anwendungsname ist erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
-
-    // Validate numeric ranges
-    if (body.sessionTimeoutMinutes < 5 || body.sessionTimeoutMinutes > 1440) {
-      return NextResponse.json(
-        { error: "Session-Timeout muss zwischen 5 und 1440 Minuten liegen" },
-        { status: 400 }
-      );
-    }
-
-    if (body.maxLoginAttempts < 1 || body.maxLoginAttempts > 10) {
-      return NextResponse.json(
-        { error: "Maximale Login-Versuche muss zwischen 1 und 10 liegen" },
-        { status: 400 }
-      );
-    }
-
-    if (body.minPasswordLength < 6 || body.minPasswordLength > 32) {
-      return NextResponse.json(
-        { error: "Passwort-Mindestlaenge muss zwischen 6 und 32 liegen" },
-        { status: 400 }
-      );
-    }
+    const data = parsed.data;
 
     // Validate email if notifications are enabled
-    if (body.emailNotificationsEnabled && body.adminEmail) {
-      if (!EMAIL_REGEX.test(body.adminEmail)) {
+    if (data.emailNotificationsEnabled && data.adminEmail) {
+      if (!EMAIL_REGEX.test(data.adminEmail)) {
         return NextResponse.json(
           { error: "Ungültige E-Mail-Adresse" },
           { status: 400 }
@@ -143,21 +140,21 @@ export async function PUT(request: NextRequest) {
 
     // Build the settings object with only known fields
     const generalSettings: GeneralSettings = {
-      applicationName: body.applicationName.trim(),
-      defaultTimezone: body.defaultTimezone || "Europe/Berlin",
-      defaultLanguage: body.defaultLanguage || "de",
-      dateFormat: body.dateFormat || "DD.MM.YYYY",
-      currency: body.currency || "EUR",
-      maintenanceModeEnabled: Boolean(body.maintenanceModeEnabled),
-      maintenanceMessage: body.maintenanceMessage || "",
-      scheduledMaintenanceTime: body.scheduledMaintenanceTime || null,
-      sessionTimeoutMinutes: Number(body.sessionTimeoutMinutes) || 30,
-      maxLoginAttempts: Number(body.maxLoginAttempts) || 5,
-      minPasswordLength: Number(body.minPasswordLength) || 8,
-      passwordRequiresSpecialChar: Boolean(body.passwordRequiresSpecialChar),
-      passwordRequiresNumber: Boolean(body.passwordRequiresNumber),
-      emailNotificationsEnabled: Boolean(body.emailNotificationsEnabled),
-      adminEmail: body.adminEmail || "",
+      applicationName: data.applicationName.trim(),
+      defaultTimezone: data.defaultTimezone,
+      defaultLanguage: data.defaultLanguage,
+      dateFormat: data.dateFormat,
+      currency: data.currency,
+      maintenanceModeEnabled: data.maintenanceModeEnabled,
+      maintenanceMessage: data.maintenanceMessage,
+      scheduledMaintenanceTime: data.scheduledMaintenanceTime ?? null,
+      sessionTimeoutMinutes: data.sessionTimeoutMinutes,
+      maxLoginAttempts: data.maxLoginAttempts,
+      minPasswordLength: data.minPasswordLength,
+      passwordRequiresSpecialChar: data.passwordRequiresSpecialChar,
+      passwordRequiresNumber: data.passwordRequiresNumber,
+      emailNotificationsEnabled: data.emailNotificationsEnabled,
+      adminEmail: data.adminEmail,
     };
 
     // Save to tenant settings

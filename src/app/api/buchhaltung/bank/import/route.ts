@@ -7,6 +7,11 @@ import { parseCamt054 } from "@/lib/bank-import/camt054-parser";
 import { matchTransactions } from "@/lib/bank-import/matcher";
 import { randomUUID } from "crypto";
 import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
+import { z } from "zod";
+
+const bankImportFieldsSchema = z.object({
+  iban: z.string().min(1).nullable(),
+});
 
 // POST /api/buchhaltung/bank/import — Upload + Parse + Persist bank statement
 export async function POST(request: NextRequest) {
@@ -16,7 +21,16 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const iban = formData.get("iban") as string | null;
+    const rawIban = formData.get("iban") as string | null;
+
+    const fieldsParsed = bankImportFieldsSchema.safeParse({ iban: rawIban });
+    if (!fieldsParsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: fieldsParsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const iban = fieldsParsed.data.iban;
 
     if (!file) {
       return NextResponse.json({ error: "Keine Datei hochgeladen" }, { status: 400 });

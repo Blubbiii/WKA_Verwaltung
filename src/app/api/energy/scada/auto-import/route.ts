@@ -6,6 +6,14 @@ import {
 } from "@/lib/scada/auto-import-service";
 import { enqueueScadaAutoImportForTenant } from "@/lib/queue";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const postAutoImportSchema = z.object({
+  action: z.enum(["enable", "disable", "run-now", "configure"]),
+  locationCode: z.string().optional(),
+  interval: z.enum(["DAILY", "HOURLY", "WEEKLY"]).optional(),
+  autoImportPath: z.string().optional(),
+});
 
 // =============================================================================
 // GET /api/energy/scada/auto-import
@@ -47,14 +55,14 @@ export async function POST(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     const body = await request.json();
-    const { action, locationCode, interval, autoImportPath } = body;
-
-    if (!action || typeof action !== "string") {
+    const parsed = postAutoImportSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "action ist erforderlich (enable, disable, run-now, configure)" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 },
       );
     }
+    const { action, locationCode, interval, autoImportPath } = parsed.data;
 
     switch (action) {
       case "enable": {
@@ -103,13 +111,6 @@ export async function POST(request: NextRequest) {
         if (!locationCode) {
           return NextResponse.json(
             { error: "locationCode ist erforderlich für configure" },
-            { status: 400 },
-          );
-        }
-
-        if (interval && !["DAILY", "HOURLY", "WEEKLY"].includes(interval)) {
-          return NextResponse.json(
-            { error: "interval muss DAILY, HOURLY oder WEEKLY sein" },
             { status: 400 },
           );
         }

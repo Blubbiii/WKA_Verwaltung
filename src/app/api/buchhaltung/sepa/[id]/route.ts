@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+const patchSepaSchema = z.object({
+  status: z.enum(["APPROVED", "EXPORTED", "CANCELLED"]),
+});
 
 // GET /api/buchhaltung/sepa/[id] — Get batch details or download XML
 export async function GET(
@@ -60,11 +65,14 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { status } = body;
-
-    if (!["APPROVED", "EXPORTED", "CANCELLED"].includes(status)) {
-      return NextResponse.json({ error: "Ungültiger Status" }, { status: 400 });
+    const parsed = patchSepaSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+    const { status } = parsed.data;
 
     const batch = await prisma.sepaPaymentBatch.findFirst({
       where: { id, tenantId: check.tenantId! },

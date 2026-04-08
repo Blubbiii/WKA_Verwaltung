@@ -11,6 +11,23 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma, ParkStakeholderRole } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const stakeholderCreateSchema = z.object({
+  stakeholderTenantId: z.string().min(1),
+  parkTenantId: z.string().min(1),
+  parkId: z.string().min(1),
+  role: z.enum(["DEVELOPER", "GRID_OPERATOR", "TECHNICAL_BF", "COMMERCIAL_BF", "OPERATOR"]),
+  visibleFundIds: z.array(z.string()).optional(),
+  billingEnabled: z.boolean().optional().default(false),
+  feePercentage: z.number().positive().optional(),
+  taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]).optional().default("STANDARD"),
+  sepaMandate: z.string().nullish(),
+  creditorId: z.string().nullish(),
+  validFrom: z.string().optional(),
+  validTo: z.string().nullish(),
+  notes: z.string().nullish(),
+});
 
 // =============================================================================
 // Feature Flag Check
@@ -121,38 +138,14 @@ export async function POST(request: NextRequest) {
     if (featureCheck) return featureCheck;
 
     const body = await request.json();
-
-    const {
-      stakeholderTenantId,
-      parkTenantId,
-      parkId,
-      role,
-      visibleFundIds,
-      billingEnabled,
-      feePercentage,
-      taxType,
-      sepaMandate,
-      creditorId,
-      validFrom,
-      validTo,
-      notes,
-    } = body;
-
-    // Validation
-    if (!stakeholderTenantId || !parkTenantId || !parkId || !role) {
+    const parsed = stakeholderCreateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "stakeholderTenantId, parkTenantId, parkId und role sind erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
-
-    const validRoles = ["DEVELOPER", "GRID_OPERATOR", "TECHNICAL_BF", "COMMERCIAL_BF", "OPERATOR"];
-    if (!validRoles.includes(role)) {
-      return NextResponse.json(
-        { error: `Ungültige Rolle. Erlaubt: ${validRoles.join(", ")}` },
-        { status: 400 }
-      );
-    }
+    const { stakeholderTenantId, parkTenantId, parkId, role, visibleFundIds, billingEnabled, feePercentage, taxType, sepaMandate, creditorId, validFrom, validTo, notes } = parsed.data;
 
     // Verify stakeholder tenant exists
     const stakeholderTenant = await prisma.tenant.findUnique({

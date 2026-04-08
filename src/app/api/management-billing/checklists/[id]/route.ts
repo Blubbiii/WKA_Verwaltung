@@ -11,6 +11,16 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const checklistUpdateSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().nullish(),
+  items: z.array(z.any()).optional(),
+  recurrence: z.string().nullish(),
+  parkId: z.string().nullish(),
+  isActive: z.boolean().optional(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -102,32 +112,14 @@ export async function PUT(
     }
 
     const body = await request.json();
-
-    const { title, description, items, recurrence, parkId, isActive } = body;
-
-    // Validate title if provided
-    if (title !== undefined) {
-      if (typeof title !== "string" || title.trim().length === 0) {
-        return NextResponse.json(
-          { error: "title darf nicht leer sein" },
-          { status: 400 }
-        );
-      }
-      if (title.length > 200) {
-        return NextResponse.json(
-          { error: "title darf maximal 200 Zeichen lang sein" },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validate items if provided
-    if (items !== undefined && !Array.isArray(items)) {
+    const parsed = checklistUpdateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "items muss ein Array sein" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { title, description, items, recurrence, parkId, isActive } = parsed.data;
 
     // Build update data - only include provided fields
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

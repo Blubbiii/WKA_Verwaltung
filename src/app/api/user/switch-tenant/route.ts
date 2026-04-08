@@ -4,6 +4,11 @@ import { cookies } from "next/headers";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getRoleHierarchyForTenant } from "@/lib/auth/role-hierarchy";
+import { z } from "zod";
+
+const switchTenantSchema = z.object({
+  tenantId: z.string().min(1, "tenantId ist erforderlich"),
+});
 
 const COOKIE_NAME = "wpm-active-tenant";
 const COOKIE_MAX_AGE = 60 * 60 * 24; // 24 hours
@@ -69,11 +74,14 @@ export async function POST(request: NextRequest) {
 
   const userId = check.userId!;
   const body = await request.json();
-  const tenantId: string = body.tenantId;
-
-  if (!tenantId || typeof tenantId !== "string") {
-    return NextResponse.json({ error: "tenantId erforderlich" }, { status: 400 });
+  const parsed = switchTenantSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
   }
+  const { tenantId } = parsed.data;
 
   // Verify user is a member of the target tenant
   const membership = await prisma.userTenantMembership.findUnique({

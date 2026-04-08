@@ -3,6 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { API_LIMITS } from "@/lib/config/api-limits";
+import { z } from "zod";
+
+const batchStatusSchema = z.object({
+  invoiceIds: z.array(z.string().min(1)).min(1).max(API_LIMITS.batchSize),
+  status: z.literal("SENT"),
+});
 
 // PATCH /api/invoices/batch-status - Rechnungsstatus in Bulk ändern
 export async function PATCH(request: NextRequest) {
@@ -11,7 +17,7 @@ export async function PATCH(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     // Parse and validate request body
-    let body: { invoiceIds?: unknown; status?: unknown };
+    let body: unknown;
     try {
       body = await request.json();
     } catch {
@@ -21,39 +27,17 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { invoiceIds, status } = body;
-
-    // Only DRAFT → SENT transition is allowed
-    if (status !== "SENT") {
+    const parsed = batchStatusSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Nur der Status-Übergang DRAFT → SENT ist erlaubt" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
-
-    // Validate invoiceIds is a non-empty string array
-    if (
-      !Array.isArray(invoiceIds) ||
-      invoiceIds.length === 0 ||
-      !invoiceIds.every((id) => typeof id === "string" && id.length > 0)
-    ) {
-      return NextResponse.json(
-        { error: "invoiceIds muss ein nicht-leeres Array von Strings sein" },
-        { status: 400 }
-      );
-    }
-
-    if (invoiceIds.length > API_LIMITS.batchSize) {
-      return NextResponse.json(
-        {
-          error: `Maximal ${API_LIMITS.batchSize} Rechnungen pro Batch erlaubt (erhalten: ${invoiceIds.length})`,
-        },
-        { status: 400 }
-      );
-    }
+    const { invoiceIds, status } = parsed.data;
 
     // Deduplicate IDs
-    const uniqueIds = [...new Set(invoiceIds as string[])];
+    const uniqueIds = [...new Set(invoiceIds)];
 
     logger.info(
       { count: uniqueIds.length, status, userId: check.userId },

@@ -10,6 +10,12 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const batchCalculateSchema = z.object({
+  year: z.coerce.number().int().min(2000).max(2100),
+  month: z.coerce.number().int().min(1).max(12).nullish(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -28,18 +34,16 @@ export async function POST(request: NextRequest) {
     if (featureCheck) return featureCheck;
 
     const body = await request.json();
-    const { year, month } = body;
-
-    if (!year) {
+    const parsed = batchCalculateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "year ist erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    const parsedYear = parseInt(year, 10);
-    const parsedMonth =
-      month !== undefined && month !== null ? parseInt(month, 10) : null;
+    const parsedYear = parsed.data.year;
+    const parsedMonth = parsed.data.month ?? null;
 
     // Find all active stakeholders with billing enabled
     const where: Prisma.ParkStakeholderWhereInput = {

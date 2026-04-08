@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const patchAnomalySchema = z.object({
+  acknowledged: z.boolean().optional(),
+  notes: z.string().optional(),
+  resolvedAt: z.string().nullable().optional(),
+});
 
 // =============================================================================
 // PATCH /api/energy/scada/anomalies/[id] - Acknowledge or update anomaly
@@ -35,7 +42,14 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { acknowledged, notes, resolvedAt } = body;
+    const parsed = patchAnomalySchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const { acknowledged, notes, resolvedAt } = parsed.data;
 
     // Build update data
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

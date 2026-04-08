@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const annotationUpdateSchema = z.object({
+  name: z.string().min(1).optional(),
+  type: z.enum(["CABLE_ROUTE", "COMPENSATION_AREA", "ACCESS_ROAD", "EXCLUSION_ZONE", "CUSTOM"]).optional(),
+  geometry: z.record(z.string(), z.unknown()).optional(),
+  style: z.record(z.string(), z.unknown()).nullable().optional(),
+  description: z.string().nullable().optional(),
+});
 
 type RouteParams = { params: Promise<{ id: string; annotationId: string }> };
 
@@ -17,7 +26,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { id: parkId, annotationId } = await params;
     const body = await request.json();
-    const { name, type, geometry, style, description } = body;
+    const parsed = annotationUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 },
+      );
+    }
+    const { name, type, geometry, style, description } = parsed.data;
 
     const existing = await prisma.mapAnnotation.findFirst({
       where: { id: annotationId, tenantId: check.tenantId!, parkId },
@@ -30,17 +46,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const validTypes = ["CABLE_ROUTE", "COMPENSATION_AREA", "ACCESS_ROAD", "EXCLUSION_ZONE", "CUSTOM"];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: Record<string, any> = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (type !== undefined) updateData.type = type;
+    if (geometry !== undefined) updateData.geometry = geometry;
+    if (style !== undefined) updateData.style = style;
+    if (description !== undefined) updateData.description = description?.trim() || null;
 
     const updated = await prisma.mapAnnotation.update({
       where: { id: annotationId, tenantId: check.tenantId! },
-      data: {
-        ...(name !== undefined ? { name: name.trim() } : {}),
-        ...(type !== undefined && validTypes.includes(type) ? { type } : {}),
-        ...(geometry !== undefined ? { geometry } : {}),
-        ...(style !== undefined ? { style } : {}),
-        ...(description !== undefined ? { description: description?.trim() || null } : {}),
-      },
+      data: updateData,
     });
 
     return NextResponse.json({ data: updated });

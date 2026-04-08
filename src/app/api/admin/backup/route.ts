@@ -11,6 +11,14 @@ import {
   getBackupConfigSummary,
   checkPgDumpAvailable,
 } from "@/lib/backup";
+import { z } from "zod";
+
+const backupActionSchema = z.object({
+  action: z.enum(["create", "applyRetention", "searchOrphans", "clearCache", "deleteTemp", "export"]),
+  type: z.enum(["daily", "weekly", "monthly", "manual"]).optional(),
+  format: z.string().optional(),
+  tables: z.array(z.string().min(1)).optional(),
+});
 
 // Category display names for document storage stats
 const categoryDisplayNames: Record<string, string> = {
@@ -117,21 +125,19 @@ export async function POST(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     const body = await request.json();
-    const { action } = body;
+    const parsed = backupActionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const { action } = parsed.data;
 
     switch (action) {
       case "create": {
-        const { type = "manual" } = body;
+        const type = parsed.data.type ?? "manual";
         logger.info({ type }, "[BACKUP] Creating database backup...");
-
-        // Validate type
-        const validTypes = ["daily", "weekly", "monthly", "manual"] as const;
-        if (!validTypes.includes(type)) {
-          return NextResponse.json(
-            { error: `Ungültiger Backup-Typ: ${type}` },
-            { status: 400 }
-          );
-        }
 
         // Check if pg_dump is available
         const pgDumpAvailable = await checkPgDumpAvailable();
@@ -268,7 +274,7 @@ export async function POST(request: NextRequest) {
       }
 
       case "export": {
-        const { format, tables } = body;
+        const { format, tables } = parsed.data;
 
         if (!tables || tables.length === 0) {
           return NextResponse.json(

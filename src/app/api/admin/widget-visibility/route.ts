@@ -10,8 +10,14 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { WIDGET_REGISTRY } from "@/lib/dashboard/widget-registry";
 import type { UserRole } from "@/types/dashboard";
+import { z } from "zod";
 
 const VALID_ROLES: UserRole[] = ["VIEWER", "MANAGER", "ADMIN", "SUPERADMIN"];
+
+const putWidgetVisibilitySchema = z.object({
+  widgetId: z.string().min(1),
+  minRole: z.enum(["VIEWER", "MANAGER", "ADMIN", "SUPERADMIN"]),
+});
 
 // ===========================================
 // GET /api/admin/widget-visibility
@@ -75,22 +81,14 @@ export async function PUT(request: NextRequest) {
     const { tenantId } = check;
 
     const body = await request.json();
-    const { widgetId, minRole } = body as { widgetId: string; minRole: string };
-
-    // Validate inputs
-    if (!widgetId || !minRole) {
+    const parsed = putWidgetVisibilitySchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "widgetId und minRole sind erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
-
-    if (!VALID_ROLES.includes(minRole as UserRole)) {
-      return NextResponse.json(
-        { error: `Ungültige Rolle: ${minRole}` },
-        { status: 400 }
-      );
-    }
+    const { widgetId, minRole } = parsed.data;
 
     // Verify widget exists in registry
     const widget = WIDGET_REGISTRY.find((w) => w.id === widgetId);

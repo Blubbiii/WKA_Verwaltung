@@ -15,6 +15,11 @@ import {
   setConfig,
   type ConfigCategory,
 } from "@/lib/config";
+import { z } from "zod";
+
+const putFeaturesSchema = z.object({
+  features: z.record(z.string(), z.boolean()),
+});
 
 // Known feature flags
 const FEATURE_FLAGS = [
@@ -61,14 +66,14 @@ export async function PUT(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     const body = await request.json();
-    const { features } = body as { features: Record<string, boolean> };
-
-    if (!features || typeof features !== "object") {
+    const parsed = putFeaturesSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "features Objekt ist erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { features } = parsed.data;
 
     // Only allow known feature flags
     const knownKeys = new Set<string>(FEATURE_FLAGS.map((f) => f.key));

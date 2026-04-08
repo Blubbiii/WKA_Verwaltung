@@ -11,6 +11,21 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma, ClaimStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const claimCreateSchema = z.object({
+  title: z.string().min(1),
+  incidentDate: z.string().min(1),
+  claimType: z.string().min(1),
+  claimNumber: z.string().nullish(),
+  description: z.string().nullish(),
+  estimatedCostEur: z.number().nullish(),
+  contractId: z.string().nullish(),
+  vendorId: z.string().nullish(),
+  defectId: z.string().nullish(),
+  parkId: z.string().nullish(),
+  turbineId: z.string().nullish(),
+});
 
 // =============================================================================
 // Feature Flag Check
@@ -112,28 +127,14 @@ export async function POST(request: NextRequest) {
     if (featureCheck) return featureCheck;
 
     const body = await request.json();
-
-    const {
-      title,
-      incidentDate,
-      claimType,
-      claimNumber,
-      description,
-      estimatedCostEur,
-      contractId,
-      vendorId,
-      defectId,
-      parkId,
-      turbineId,
-    } = body;
-
-    // Validation
-    if (!title || !incidentDate || !claimType) {
+    const parsed = claimCreateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "title, incidentDate und claimType sind erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { title, incidentDate, claimType, claimNumber, description, estimatedCostEur, contractId, vendorId, defectId, parkId, turbineId } = parsed.data;
 
     // Determine tenant
     const tenantId = check.tenantId;

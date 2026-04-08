@@ -4,6 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateInvoicePdf } from "@/lib/pdf/generators/invoicePdf";
 import { sendEmailSync } from "@/lib/email/sender";
+import { z } from "zod";
+
+const deliverSchema = z.object({
+  method: z.enum(["print", "email", "both"]),
+  invoiceIds: z.array(z.string().min(1)).optional(),
+});
 
 // =============================================================================
 // POST /api/leases/settlement/[id]/deliver - Batch deliver credit notes
@@ -45,16 +51,15 @@ export async function POST(
 
     const { id } = await params;
 
-    const body: DeliverBody = await request.json();
-    const { method, invoiceIds } = body;
-
-    // Validate method
-    if (!method || !["print", "email", "both"].includes(method)) {
+    const body = await request.json();
+    const parsed = deliverSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Ungültige Zustellmethode. Erlaubt: print, email, both" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { method, invoiceIds } = parsed.data;
 
     // Load settlement with all items that have invoices
     const settlement = await prisma.leaseRevenueSettlement.findFirst({

@@ -11,6 +11,16 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const inspectionPlanCreateSchema = z.object({
+  title: z.string().min(1),
+  recurrence: z.string().min(1),
+  nextDueDate: z.string().min(1),
+  description: z.string().nullish(),
+  parkId: z.string().nullish(),
+  turbineId: z.string().nullish(),
+});
 
 // =============================================================================
 // Feature Flag Check
@@ -93,16 +103,14 @@ export async function POST(request: NextRequest) {
     if (featureCheck) return featureCheck;
 
     const body = await request.json();
-
-    const { title, recurrence, nextDueDate, description, parkId, turbineId } = body;
-
-    // Validation
-    if (!title || !recurrence || !nextDueDate) {
+    const parsed = inspectionPlanCreateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "title, recurrence und nextDueDate sind erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { title, recurrence, nextDueDate, description, parkId, turbineId } = parsed.data;
 
     // Determine tenant
     const tenantId = check.tenantId;

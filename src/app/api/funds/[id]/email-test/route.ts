@@ -4,6 +4,11 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { SmtpProvider } from "@/lib/email/provider";
+import { z } from "zod";
+
+const emailTestSchema = z.object({
+  to: z.string().email("Ungültige E-Mail-Adresse"),
+});
 
 // POST /api/funds/[id]/email-test — Send test email via fund SMTP
 export async function POST(
@@ -16,11 +21,14 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const testTo = body.to as string;
-
-    if (!testTo) {
-      return NextResponse.json({ error: "Empfänger-E-Mail ist erforderlich" }, { status: 400 });
+    const parsed = emailTestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+    const testTo = parsed.data.to;
 
     // Load fund with email settings
     const fund = await prisma.fund.findFirst({

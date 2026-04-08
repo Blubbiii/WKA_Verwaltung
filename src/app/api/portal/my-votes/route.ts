@@ -4,6 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { VoteStatus } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const voteSubmitSchema = z.object({
+  voteId: z.string().min(1, "Vote-ID ist erforderlich"),
+  decision: z.string().min(1, "Entscheidung ist erforderlich"),
+});
 
 // Interface für Ergebnis-Berechnung
 interface VoteResults {
@@ -419,14 +425,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { voteId, decision } = body;
-
-    if (!voteId || !decision) {
+    const parsed = voteSubmitSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Vote ID und Entscheidung erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { voteId, decision } = parsed.data;
 
     // Valid options are typically "Ja", "Nein", "Enthaltung" but we also accept YES/NO/ABSTAIN
     const optionMapping: Record<string, string> = {

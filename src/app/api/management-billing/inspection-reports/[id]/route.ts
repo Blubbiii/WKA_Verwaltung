@@ -11,6 +11,16 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const reportUpdateSchema = z.object({
+  inspectionDate: z.string().optional(),
+  inspector: z.string().nullish(),
+  result: z.string().nullish(),
+  summary: z.string().nullish(),
+  parkId: z.string().nullish(),
+  turbineId: z.string().nullish(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -109,6 +119,14 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+    const parsed = reportUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const { inspectionDate, inspector, result, summary, parkId, turbineId } = parsed.data;
 
     const existing = await prisma.inspectionReport.findUnique({
       where: { id },
@@ -128,8 +146,6 @@ export async function PUT(
         { status: 403 }
       );
     }
-
-    const { inspectionDate, inspector, result, summary, parkId, turbineId } = body;
 
     const updated = await prisma.inspectionReport.update({
       where: { id },

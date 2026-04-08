@@ -10,6 +10,13 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const feeHistoryCreateSchema = z.object({
+  feePercentage: z.number().gt(0).lte(100),
+  validFrom: z.string().optional(),
+  reason: z.string().nullish(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -73,15 +80,14 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-
-    const { feePercentage, validFrom, reason } = body;
-
-    if (!feePercentage || feePercentage <= 0 || feePercentage > 100) {
+    const parsed = feeHistoryCreateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Gebührensatz muss zwischen 0 und 100 liegen" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { feePercentage, validFrom, reason } = parsed.data;
 
     // Close the current open entry
     const lastEntry = await prisma.stakeholderFeeHistory.findFirst({

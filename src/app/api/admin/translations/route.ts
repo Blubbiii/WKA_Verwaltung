@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
 import deMessages from "@/messages/de.json";
 import dePersonalMessages from "@/messages/de-personal.json";
 import enMessages from "@/messages/en.json";
+
+const putTranslationSchema = z.object({
+  key: z.string().min(1),
+  locale: z.enum(["de", "de-personal", "en"]),
+  value: z.string().nullable(),
+});
 
 // GET /api/admin/translations — Load all translation keys with all 3 variants
 export async function GET(_request: NextRequest) {
@@ -78,11 +85,14 @@ export async function PUT(request: NextRequest) {
     if (!check.authorized) return check.error!;
 
     const body = await request.json();
-    const { key, locale, value } = body as { key: string; locale: string; value: string };
-
-    if (!key || !locale || !["de", "de-personal", "en"].includes(locale)) {
-      return NextResponse.json({ error: "key und locale sind erforderlich" }, { status: 400 });
+    const parsed = putTranslationSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+    const { key, locale, value } = parsed.data;
 
     const configKey = `i18n.${locale}.${key}`;
 

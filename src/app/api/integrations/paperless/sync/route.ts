@@ -12,6 +12,11 @@ import { getConfigBoolean } from "@/lib/config";
 import { getPaperlessClient } from "@/lib/paperless";
 import { enqueuePaperlessJob } from "@/lib/queue/queues/paperless.queue";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+const paperlessSyncSchema = z.object({
+  documentId: z.string().min(1, "documentId ist erforderlich"),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,11 +34,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { documentId } = body;
-
-    if (!documentId) {
-      return NextResponse.json({ error: "documentId required" }, { status: 400 });
+    const parsed = paperlessSyncSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
+    const { documentId } = parsed.data;
 
     // Verify document exists and belongs to this tenant
     const document = await prisma.document.findFirst({

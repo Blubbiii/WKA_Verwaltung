@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const putAnomalyConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  performanceThreshold: z.number().min(1).max(100).optional(),
+  availabilityThreshold: z.number().min(1).max(100).optional(),
+  downtimeHoursThreshold: z.number().min(1).max(720).optional(),
+  curveDeviationThreshold: z.number().min(1).max(100).optional(),
+  dataQualityThreshold: z.number().min(1).max(100).optional(),
+  notifyByEmail: z.boolean().optional(),
+  notifyInApp: z.boolean().optional(),
+});
 
 // =============================================================================
 // GET /api/energy/scada/anomalies/config - Get anomaly detection config
@@ -69,6 +81,13 @@ export async function PUT(request: NextRequest) {
 
     const tenantId = check.tenantId!;
     const body = await request.json();
+    const parsed = putAnomalyConfigSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
 
     const {
       enabled,
@@ -79,58 +98,7 @@ export async function PUT(request: NextRequest) {
       dataQualityThreshold,
       notifyByEmail,
       notifyInApp,
-    } = body;
-
-    // Validate thresholds
-    if (performanceThreshold !== undefined) {
-      const val = Number(performanceThreshold);
-      if (isNaN(val) || val < 1 || val > 100) {
-        return NextResponse.json(
-          { error: "performanceThreshold muss zwischen 1 und 100 liegen" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (availabilityThreshold !== undefined) {
-      const val = Number(availabilityThreshold);
-      if (isNaN(val) || val < 1 || val > 100) {
-        return NextResponse.json(
-          { error: "availabilityThreshold muss zwischen 1 und 100 liegen" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (downtimeHoursThreshold !== undefined) {
-      const val = Number(downtimeHoursThreshold);
-      if (isNaN(val) || val < 1 || val > 720) {
-        return NextResponse.json(
-          { error: "downtimeHoursThreshold muss zwischen 1 und 720 liegen" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (curveDeviationThreshold !== undefined) {
-      const val = Number(curveDeviationThreshold);
-      if (isNaN(val) || val < 1 || val > 100) {
-        return NextResponse.json(
-          { error: "curveDeviationThreshold muss zwischen 1 und 100 liegen" },
-          { status: 400 }
-        );
-      }
-    }
-
-    if (dataQualityThreshold !== undefined) {
-      const val = Number(dataQualityThreshold);
-      if (isNaN(val) || val < 1 || val > 100) {
-        return NextResponse.json(
-          { error: "dataQualityThreshold muss zwischen 1 und 100 liegen" },
-          { status: 400 }
-        );
-      }
-    }
+    } = parsed.data;
 
     // Build update data - only include provided fields
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -138,15 +106,15 @@ export async function PUT(request: NextRequest) {
 
     if (typeof enabled === "boolean") data.enabled = enabled;
     if (performanceThreshold !== undefined)
-      data.performanceThreshold = Number(performanceThreshold);
+      data.performanceThreshold = performanceThreshold;
     if (availabilityThreshold !== undefined)
-      data.availabilityThreshold = Number(availabilityThreshold);
+      data.availabilityThreshold = availabilityThreshold;
     if (downtimeHoursThreshold !== undefined)
-      data.downtimeHoursThreshold = Number(downtimeHoursThreshold);
+      data.downtimeHoursThreshold = downtimeHoursThreshold;
     if (curveDeviationThreshold !== undefined)
-      data.curveDeviationThreshold = Number(curveDeviationThreshold);
+      data.curveDeviationThreshold = curveDeviationThreshold;
     if (dataQualityThreshold !== undefined)
-      data.dataQualityThreshold = Number(dataQualityThreshold);
+      data.dataQualityThreshold = dataQualityThreshold;
     if (typeof notifyByEmail === "boolean") data.notifyByEmail = notifyByEmail;
     if (typeof notifyInApp === "boolean") data.notifyInApp = notifyInApp;
 

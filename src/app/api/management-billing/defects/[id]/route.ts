@@ -12,6 +12,20 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { OperationalTaskStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const defectUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().nullish(),
+  severity: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
+  status: z.enum(["OPEN", "IN_PROGRESS", "DONE", "CANCELLED"]).optional(),
+  dueDate: z.string().nullish(),
+  resolutionNotes: z.string().nullish(),
+  costEstimateEur: z.number().nullish(),
+  actualCostEur: z.number().nullish(),
+  parkId: z.string().nullish(),
+  turbineId: z.string().nullish(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -110,6 +124,14 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+    const parsed = defectUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const { title, description, severity, status, dueDate, resolutionNotes, costEstimateEur, actualCostEur, parkId, turbineId } = parsed.data;
 
     const existing = await prisma.defect.findUnique({
       where: { id },
@@ -129,19 +151,6 @@ export async function PUT(
         { status: 403 }
       );
     }
-
-    const {
-      title,
-      description,
-      severity,
-      status,
-      dueDate,
-      resolutionNotes,
-      costEstimateEur,
-      actualCostEur,
-      parkId,
-      turbineId,
-    } = body;
 
     // Auto-set resolvedAt when status changes to DONE
     let resolvedAt = undefined;

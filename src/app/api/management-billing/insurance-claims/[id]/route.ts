@@ -12,6 +12,24 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { ClaimStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const claimUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  claimNumber: z.string().nullish(),
+  description: z.string().nullish(),
+  status: z.enum(["REPORTED", "CLAIM_IN_PROGRESS", "RESOLVED", "REJECTED"]).optional(),
+  claimType: z.string().optional(),
+  estimatedCostEur: z.number().nullish(),
+  actualCostEur: z.number().nullish(),
+  reimbursedEur: z.number().nullish(),
+  resolutionNotes: z.string().nullish(),
+  contractId: z.string().nullish(),
+  vendorId: z.string().nullish(),
+  defectId: z.string().nullish(),
+  parkId: z.string().nullish(),
+  turbineId: z.string().nullish(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -126,6 +144,14 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+    const parsed = claimUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const { title, claimNumber, description, status, claimType, estimatedCostEur, actualCostEur, reimbursedEur, resolutionNotes, contractId, vendorId, defectId, parkId, turbineId } = parsed.data;
 
     const existing = await prisma.insuranceClaim.findUnique({
       where: { id },
@@ -145,23 +171,6 @@ export async function PUT(
         { status: 403 }
       );
     }
-
-    const {
-      title,
-      claimNumber,
-      description,
-      status,
-      claimType,
-      estimatedCostEur,
-      actualCostEur,
-      reimbursedEur,
-      resolutionNotes,
-      contractId,
-      vendorId,
-      defectId,
-      parkId,
-      turbineId,
-    } = body;
 
     // Auto-set resolvedAt when status changes to RESOLVED
     let resolvedAt = undefined;

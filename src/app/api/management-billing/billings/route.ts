@@ -11,6 +11,13 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma, ManagementBillingStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const billingCreateSchema = z.object({
+  stakeholderId: z.string().min(1),
+  year: z.coerce.number().int().min(2000).max(2100),
+  month: z.coerce.number().int().min(1).max(12).nullish(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -116,14 +123,14 @@ export async function POST(request: NextRequest) {
     if (featureCheck) return featureCheck;
 
     const body = await request.json();
-    const { stakeholderId, year, month } = body;
-
-    if (!stakeholderId || !year) {
+    const parsed = billingCreateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "stakeholderId und year sind erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { stakeholderId, year, month } = parsed.data;
 
     // Verify stakeholder exists and belongs to user's tenant
     const stakeholder = await prisma.parkStakeholder.findUnique({
@@ -158,8 +165,8 @@ export async function POST(request: NextRequest) {
 
     const { id, result } = await calculateAndSaveBilling({
       stakeholderId,
-      year: parseInt(year, 10),
-      month: month !== undefined && month !== null ? parseInt(month, 10) : null,
+      year,
+      month: month ?? null,
     });
 
     logger.info(

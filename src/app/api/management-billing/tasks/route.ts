@@ -12,6 +12,26 @@ import { getConfigBoolean } from "@/lib/config";
 import { Prisma, OperationalTaskStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
+import { z } from "zod";
+
+const taskCreateSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().nullish(),
+  status: z.enum(["OPEN", "IN_PROGRESS", "DONE", "CANCELLED"]).optional().default("OPEN"),
+  priority: z.number().int().optional().default(2),
+  taskType: z.string().optional().default("OPERATIONAL"),
+  category: z.string().nullish(),
+  dueDate: z.string().nullish(),
+  notes: z.string().nullish(),
+  checklistData: z.any().nullish(),
+  parkId: z.string().nullish(),
+  turbineId: z.string().nullish(),
+  checklistId: z.string().nullish(),
+  assignedToId: z.string().nullish(),
+  costEstimateEur: z.number().nullish(),
+  actualCostEur: z.number().nullish(),
+  benefitNotes: z.string().nullish(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -130,58 +150,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-
-    const {
-      title,
-      description,
-      status,
-      priority,
-      taskType,
-      category,
-      dueDate,
-      notes,
-      checklistData,
-      parkId,
-      turbineId,
-      checklistId,
-      assignedToId,
-      costEstimateEur,
-      actualCostEur,
-      benefitNotes,
-    } = body;
-
-    // Validation
-    if (!title || typeof title !== "string" || title.trim().length === 0) {
+    const parsed = taskCreateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "title ist erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
-
-    if (title.length > 200) {
-      return NextResponse.json(
-        { error: "title darf maximal 200 Zeichen lang sein" },
-        { status: 400 }
-      );
-    }
-
-    // Validate status if provided
-    const validStatuses: OperationalTaskStatus[] = ["OPEN", "IN_PROGRESS", "DONE", "CANCELLED"];
-    if (status && !validStatuses.includes(status)) {
-      return NextResponse.json(
-        { error: `Ungueltiger Status. Erlaubt: ${validStatuses.join(", ")}` },
-        { status: 400 }
-      );
-    }
+    const { title, description, status, priority, taskType, category, dueDate, notes, checklistData, parkId, turbineId, checklistId, assignedToId, costEstimateEur, actualCostEur, benefitNotes } = parsed.data;
 
     const task = await prisma.operationalTask.create({
       data: {
         tenantId: check.tenantId,
         title: title.trim(),
         description: description || null,
-        status: status || "OPEN",
-        priority: priority ?? 2,
-        taskType: taskType || "OPERATIONAL",
+        status,
+        priority,
+        taskType,
         category: category || null,
         dueDate: dueDate ? new Date(dueDate) : null,
         completedAt: status === "DONE" ? new Date() : null,

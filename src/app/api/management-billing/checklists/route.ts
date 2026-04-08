@@ -11,6 +11,16 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const checklistCreateSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().nullish(),
+  items: z.array(z.any()).min(0),
+  recurrence: z.string().nullish(),
+  parkId: z.string().nullish(),
+  isActive: z.boolean().optional().default(true),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -103,30 +113,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-
-    const { title, description, items, recurrence, parkId, isActive } = body;
-
-    // Validation
-    if (!title || typeof title !== "string" || title.trim().length === 0) {
+    const parsed = checklistCreateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "title ist erforderlich" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
-
-    if (title.length > 200) {
-      return NextResponse.json(
-        { error: "title darf maximal 200 Zeichen lang sein" },
-        { status: 400 }
-      );
-    }
-
-    if (!items || !Array.isArray(items)) {
-      return NextResponse.json(
-        { error: "items ist erforderlich und muss ein Array sein" },
-        { status: 400 }
-      );
-    }
+    const { title, description, items, recurrence, parkId, isActive } = parsed.data;
 
     const checklist = await prisma.operationalChecklist.create({
       data: {
@@ -136,7 +130,7 @@ export async function POST(request: NextRequest) {
         items,
         recurrence: recurrence || null,
         parkId: parkId || null,
-        isActive: isActive !== undefined ? isActive : true,
+        isActive,
       },
       include: {
         park: { select: { id: true, name: true } },

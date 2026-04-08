@@ -11,6 +11,20 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const stakeholderUpdateSchema = z.object({
+  visibleFundIds: z.array(z.string()).optional(),
+  billingEnabled: z.boolean().optional(),
+  feePercentage: z.number().optional(),
+  taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]).optional(),
+  sepaMandate: z.string().nullish(),
+  creditorId: z.string().nullish(),
+  validTo: z.string().nullish(),
+  isActive: z.boolean().optional(),
+  notes: z.string().nullish(),
+  feeChangeReason: z.string().nullish(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -142,6 +156,14 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+    const parsed = stakeholderUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const { visibleFundIds, billingEnabled, feePercentage, taxType, sepaMandate, creditorId, validTo, isActive, notes } = parsed.data;
 
     const existing = await prisma.parkStakeholder.findUnique({
       where: { id },
@@ -161,18 +183,6 @@ export async function PUT(
         { status: 403 }
       );
     }
-
-    const {
-      visibleFundIds,
-      billingEnabled,
-      feePercentage,
-      taxType,
-      sepaMandate,
-      creditorId,
-      validTo,
-      isActive,
-      notes,
-    } = body;
 
     // If fee percentage changed, create a history entry
     if (
@@ -198,7 +208,7 @@ export async function PUT(
           stakeholderId: id,
           feePercentage,
           validFrom: new Date(),
-          reason: body.feeChangeReason || null,
+          reason: parsed.data.feeChangeReason || null,
         },
       });
     }

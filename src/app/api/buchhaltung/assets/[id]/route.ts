@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+const putAssetSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  notes: z.string().optional(),
+  accountNumber: z.string().optional(),
+  depAccountNumber: z.string().optional(),
+  disposalDate: z.string().optional(),
+  disposalProceeds: z.number().optional(),
+});
 
 // GET /api/buchhaltung/assets/[id] — Asset details with depreciation history
 export async function GET(
@@ -43,6 +55,14 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+    const parsed = putAssetSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const data = parsed.data;
 
     const asset = await prisma.fixedAsset.findFirst({
       where: { id, tenantId: check.tenantId! },
@@ -55,15 +75,15 @@ export async function PUT(
     const updated = await prisma.fixedAsset.update({
       where: { id, tenantId: check.tenantId! },
       data: {
-        name: body.name,
-        description: body.description,
-        category: body.category,
-        notes: body.notes,
-        accountNumber: body.accountNumber,
-        depAccountNumber: body.depAccountNumber,
-        ...(body.disposalDate && {
-          disposalDate: new Date(body.disposalDate),
-          disposalProceeds: body.disposalProceeds,
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        notes: data.notes,
+        accountNumber: data.accountNumber,
+        depAccountNumber: data.depAccountNumber,
+        ...(data.disposalDate && {
+          disposalDate: new Date(data.disposalDate),
+          disposalProceeds: data.disposalProceeds,
           status: "DISPOSED",
         }),
       },

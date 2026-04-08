@@ -12,6 +12,26 @@ import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { OperationalTaskStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const taskUpdateSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().nullish(),
+  status: z.enum(["OPEN", "IN_PROGRESS", "DONE", "CANCELLED"]).optional(),
+  priority: z.number().int().optional(),
+  taskType: z.string().optional(),
+  category: z.string().nullish(),
+  dueDate: z.string().nullish(),
+  notes: z.string().nullish(),
+  checklistData: z.any().nullish(),
+  parkId: z.string().nullish(),
+  turbineId: z.string().nullish(),
+  checklistId: z.string().nullish(),
+  assignedToId: z.string().nullish(),
+  costEstimateEur: z.number().nullish(),
+  actualCostEur: z.number().nullish(),
+  benefitNotes: z.string().nullish(),
+});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
@@ -112,50 +132,14 @@ export async function PUT(
     }
 
     const body = await request.json();
-
-    const {
-      title,
-      description,
-      status,
-      priority,
-      taskType,
-      category,
-      dueDate,
-      notes,
-      checklistData,
-      parkId,
-      turbineId,
-      checklistId,
-      assignedToId,
-      costEstimateEur,
-      actualCostEur,
-      benefitNotes,
-    } = body;
-
-    // Validate title length if provided
-    if (title !== undefined) {
-      if (typeof title !== "string" || title.trim().length === 0) {
-        return NextResponse.json(
-          { error: "title darf nicht leer sein" },
-          { status: 400 }
-        );
-      }
-      if (title.length > 200) {
-        return NextResponse.json(
-          { error: "title darf maximal 200 Zeichen lang sein" },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validate status if provided
-    const validStatuses: OperationalTaskStatus[] = ["OPEN", "IN_PROGRESS", "DONE", "CANCELLED"];
-    if (status && !validStatuses.includes(status)) {
+    const parsed = taskUpdateSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: `Ungueltiger Status. Erlaubt: ${validStatuses.join(", ")}` },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+    const { title, description, status, priority, taskType, category, dueDate, notes, checklistData, parkId, turbineId, checklistId, assignedToId, costEstimateEur, actualCostEur, benefitNotes } = parsed.data;
 
     // Build update data - only include provided fields
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

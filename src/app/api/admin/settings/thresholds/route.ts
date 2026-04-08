@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
 import {
   AVAILABILITY_WARNING_THRESHOLD,
   AVAILABILITY_CRITICAL_THRESHOLD,
@@ -19,6 +20,15 @@ export interface ThresholdSettings {
   contractLookaheadDays: number;
   parkHealthLookbackDays: number;
 }
+
+const putThresholdsSchema = z.object({
+  availabilityWarning: z.number().min(0).max(100),
+  availabilityCritical: z.number().min(0).max(100),
+  contractWarningDays: z.number().min(1).max(365),
+  contractUrgentDays: z.number().min(1).max(365),
+  contractLookaheadDays: z.number().min(1).max(730),
+  parkHealthLookbackDays: z.number().min(1).max(90),
+});
 
 const DEFAULT_THRESHOLDS: ThresholdSettings = {
   availabilityWarning: AVAILABILITY_WARNING_THRESHOLD,
@@ -69,42 +79,28 @@ export async function PUT(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     const body = await request.json();
-
-    const aw = Number(body.availabilityWarning);
-    const ac = Number(body.availabilityCritical);
-    const cw = Number(body.contractWarningDays);
-    const cu = Number(body.contractUrgentDays);
-    const cl = Number(body.contractLookaheadDays);
-    const ph = Number(body.parkHealthLookbackDays);
-
-    // Validate availability thresholds
-    if (
-      isNaN(aw) || aw < 0 || aw > 100 ||
-      isNaN(ac) || ac < 0 || ac > 100 ||
-      ac >= aw
-    ) {
+    const parsed = putThresholdsSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "Verfügbarkeitsschwellen ungültig (0–100, kritisch < Warnung)" },
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    // Validate contract days
-    if (
-      isNaN(cw) || cw < 1 || cw > 365 ||
-      isNaN(cu) || cu < 1 || cu > cw ||
-      isNaN(cl) || cl < 1 || cl > 730
-    ) {
+    const { availabilityWarning: aw, availabilityCritical: ac, contractWarningDays: cw, contractUrgentDays: cu, contractLookaheadDays: cl, parkHealthLookbackDays: ph } = parsed.data;
+
+    // Cross-field validation: critical must be less than warning
+    if (ac >= aw) {
+      return NextResponse.json(
+        { error: "Verfügbarkeitsschwellen ungültig (kritisch < Warnung)" },
+        { status: 400 }
+      );
+    }
+
+    // Cross-field validation: urgent must be <= warning
+    if (cu > cw) {
       return NextResponse.json(
         { error: "Vertragsschwellen ungültig (Dringend muss kleiner als Warnung sein)" },
-        { status: 400 }
-      );
-    }
-
-    // Validate park health lookback
-    if (isNaN(ph) || ph < 1 || ph > 90) {
-      return NextResponse.json(
-        { error: "Park-Health-Zeitfenster muss zwischen 1 und 90 Tagen liegen" },
         { status: 400 }
       );
     }

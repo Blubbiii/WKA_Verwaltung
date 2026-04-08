@@ -3,6 +3,11 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { apiLogger as logger } from "@/lib/logger";
+import { z } from "zod";
+
+const browseSchema = z.object({
+  currentPath: z.string().optional(),
+});
 
 // =============================================================================
 // POST /api/energy/scada/browse - Verzeichnisse durchsuchen
@@ -15,7 +20,14 @@ export async function POST(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     const body = await request.json();
-    const { currentPath } = body;
+    const parsed = browseSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const { currentPath } = parsed.data;
 
     // Security: SCADA_BASE_PATH must be set in production
     const scadaBasePath = process.env.SCADA_BASE_PATH;
@@ -28,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Ohne Pfad: Laufwerke/Root-Verzeichnisse zurückgeben
-    if (!currentPath || typeof currentPath !== "string") {
+    if (!currentPath) {
       // Auf Windows: Gaengige Laufwerke prüfen
       const drives: Array<{ name: string; path: string }> = [];
       for (const letter of ["C", "D", "E", "F", "G", "H"]) {
