@@ -117,6 +117,8 @@ model Tenant {
   defects                   Defect[]
   insuranceClaims           InsuranceClaim[]
   powerPurchaseAgreements   PowerPurchaseAgreement[]
+  emailRoutes               EmailRoute[]
+  inboundEmails             InboundEmail[]
   quotes                    Quote[]
   quoteNumberSequences      QuoteNumberSequence[]
   bankAccounts              BankAccount[]
@@ -4250,4 +4252,51 @@ model PowerPurchaseAgreement {
   @@index([parkId])
   @@index([status])
   @@map("power_purchase_agreements")
+}
+
+// =============================================================================
+// Email Routing (Catch-All → Park/Fund/Tenant Zuordnung)
+// =============================================================================
+
+model EmailRoute {
+  id          String   @id @default(uuid())
+  address     String   // Email-Prefix vor @ (z.B. "windpark-nord")
+  targetType  String   // "PARK" | "FUND" | "TENANT" | "INBOX"
+  targetId    String   // UUID des Ziel-Entities
+  description String?  // Freitext-Beschreibung
+  isActive    Boolean  @default(true)
+  autoAction  String   @default("INBOX") // "INBOX" | "DOCUMENT" | "IGNORE"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([address, tenantId])
+  @@index([tenantId])
+  @@index([address])
+  @@map("email_routes")
+}
+
+model InboundEmail {
+  id            String   @id @default(uuid())
+  fromAddress   String
+  toAddress     String
+  subject       String?
+  textBody      String?  @db.Text
+  htmlBody      String?  @db.Text
+  receivedAt    DateTime
+  status        String   @default("RECEIVED") // RECEIVED | PROCESSED | FAILED | IGNORED
+  routeId       String?  // Matched EmailRoute
+  targetType    String?  // Resolved target type
+  targetId      String?  // Resolved target ID
+  attachmentCount Int    @default(0)
+  processingNotes String? @db.Text
+  createdAt     DateTime @default(now())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([toAddress])
+  @@index([status])
+  @@map("inbound_emails")
 }

@@ -1,0 +1,74 @@
+{
+  "name": "WPM Email Inbound",
+  "nodes": [
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "action": "read",
+        "format": "resolved",
+        "options": {
+          "customHeaders": true,
+          "attachments": true
+        }
+      },
+      "name": "IMAP Email Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "credentials": {
+        "imap": {
+          "id": "CONFIGURE_ME",
+          "name": "Strato IMAP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const email = $input.first().json;\nconst attachments = (email.attachments || []).map(att => ({\n  filename: att.filename || 'attachment',\n  contentType: att.contentType || 'application/octet-stream',\n  content: att.content ? Buffer.from(att.content).toString('base64') : '',\n  size: att.size || 0\n}));\n\nreturn [{\n  json: {\n    from: email.from?.text || email.from || '',\n    to: email.to?.text || email.to || '',\n    subject: email.subject || '',\n    textBody: email.text || '',\n    htmlBody: email.html || '',\n    date: email.date || new Date().toISOString(),\n    attachments: attachments\n  }\n}];"
+      },
+      "name": "Parse Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://app:3050/api/email/inbound",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "name": "Send to WPM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [690, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_ME",
+          "name": "WPM Inbound Email Key"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "IMAP Email Trigger": {
+      "main": [
+        [{ "node": "Parse Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Email": {
+      "main": [
+        [{ "node": "Send to WPM", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "email" }]
+}

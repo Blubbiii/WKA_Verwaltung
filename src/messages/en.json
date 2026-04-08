@@ -92,6 +92,7 @@
     "scheduledReports": "Scheduled Reports",
     "gobdArchive": "GoBD Archive",
     "documentRouting": "Document Routing",
+    "emailRoutes": "Email Routes",
     "scadaCodes": "SCADA Status Codes",
     "billing": "Billing",
     "documentsAdmin": "Documents & Templates",

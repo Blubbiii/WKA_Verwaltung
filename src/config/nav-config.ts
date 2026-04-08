@@ -521,6 +521,13 @@ export const navGroups: NavGroup[] = [
         permission: "admin:manage",
         featureFlag: "document-routing" as const,
       },
+      {
+        title: "E-Mail-Routen",
+        titleKey: "emailRoutes",
+        href: "/admin/email-routes",
+        icon: Mail,
+        permission: "admin:manage",
+      },
     ],
   },
 
