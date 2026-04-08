@@ -9,9 +9,11 @@
  *           "$0,,,Anlage in Betrieb,,,T1,,,,,"  ← sub code entry (col A = $N, col D = desc, col G = T1-T6/W/I)
  *
  * Time keys T1-T6 map to IEC 61400-26-2 availability categories.
+ *
+ * Uses exceljs instead of xlsx (xlsx is unmaintained and has known vulnerabilities).
  */
 
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,25 +35,52 @@ export interface ParseResult {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Get cell value as string, handling ExcelJS cell value types */
+function cellToString(cell: ExcelJS.Cell | undefined): string {
+  if (!cell || cell.value === null || cell.value === undefined) return "";
+  if (typeof cell.value === "object" && "result" in cell.value) {
+    return String(cell.value.result ?? "");
+  }
+  return String(cell.value);
+}
+
+/** Get cell value as raw (number or string) */
+function cellRaw(cell: ExcelJS.Cell | undefined): string | number | null {
+  if (!cell || cell.value === null || cell.value === undefined) return null;
+  if (typeof cell.value === "number") return cell.value;
+  if (typeof cell.value === "object" && "result" in cell.value) {
+    return cell.value.result as string | number;
+  }
+  return String(cell.value);
+}
+
+// ---------------------------------------------------------------------------
 // Parser
 // ---------------------------------------------------------------------------
 
 /**
  * Parse an Enercon ServiceOrderDocuments XLSX buffer into status codes.
  */
-export function parseStatusCodeXlsx(buffer: Buffer): ParseResult {
-  const workbook = XLSX.read(buffer, { type: "buffer" });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) {
+export async function parseStatusCodeXlsx(buffer: Buffer): Promise<ParseResult> {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+
+  const sheet = workbook.worksheets[0];
+  if (!sheet) {
     throw new Error("XLSX enthält kein Arbeitsblatt");
   }
 
-  const sheet = workbook.Sheets[sheetName];
-  // Convert to array of arrays (each row = string[])
-  const rows: string[][] = XLSX.utils.sheet_to_json(sheet, {
-    header: 1,
-    defval: "",
-    blankrows: true,
+  // Convert sheet to array of arrays (each row = values[])
+  const rows: (string | number | null)[][] = [];
+  sheet.eachRow({ includeEmpty: true }, (row) => {
+    const values: (string | number | null)[] = [];
+    for (let c = 1; c <= 12; c++) {
+      values.push(cellRaw(row.getCell(c)));
+    }
+    rows.push(values);
   });
 
   // Try to extract controller type — search first 10 rows for a CS-pattern

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = parseStatusCodeXlsx(buffer);
+    const result = await parseStatusCodeXlsx(buffer);
 
     // Use override if provided, otherwise use detected controller type
     const controllerType =
