@@ -168,17 +168,18 @@ export function SwitchableChart({
   };
 
   // Merge comparison data with primary data (same x-axis, prefixed keys)
+  const comparisonData = comparison?.data;
   const mergedData = useMemo(() => {
-    if (!comparison?.data?.length) return data;
+    if (!comparisonData?.length) return data;
     return data.map((item, i) => {
-      const compItem = comparison.data[i] || {};
+      const compItem = comparisonData[i] || {};
       const merged = { ...item };
       for (const dk of dataKeys) {
         merged[`_cmp_${dk.key}`] = compItem[dk.key] ?? null;
       }
       return merged;
     });
-  }, [data, comparison?.data, dataKeys]);
+  }, [data, comparisonData, dataKeys]);
 
   // Common chart props
   const commonProps = {
