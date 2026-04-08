@@ -124,16 +124,16 @@ RUN chown -R nextjs:nodejs /app
 # Non-root User aktivieren
 USER nextjs
 
-# Port exponieren
-EXPOSE 3000
+# Port exponieren (default 3050, ueberschreibbar via PORT env)
+EXPOSE 3050
 
 # Environment Variable fuer Port
-ENV PORT=3000
+ENV PORT=3050
 ENV HOSTNAME="0.0.0.0"
 
-# Healthcheck
+# Healthcheck — nutzt $PORT damit es mit docker-compose ENV uebereinstimmt
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:3000/api/health || exit 1
+    CMD curl -f http://localhost:${PORT:-3050}/api/health || exit 1
 
 # Entrypoint (fuehrt Migrations aus, dann startet App)
 ENTRYPOINT ["./docker-entrypoint.sh"]
