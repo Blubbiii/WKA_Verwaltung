@@ -55,6 +55,18 @@ Verwaltungs-, Abrechnungs- und Analyseplattform für Windkraftanlagen mit Multi-
 - Übersetzungs-Editor (3 Sprachen: DE Formell, DE Persönlich, EN)
 - Audit-Log, Webhook-Management, Backup-Verwaltung
 
+### Email-Routing
+- Catch-All Email → automatische Verarbeitung via n8n
+- PDF-Rechnungen → Inbox mit OCR
+- Dokumente → Dokumentenablage
+- Admin-UI für E-Mail-Routen Konfiguration
+
+### Charts & Analytics
+- SwitchableChart: Diagrammtyp wechselbar (Balken/Linie/Fläche)
+- Area Charts mit Gradient-Füllung (Wellen-Effekt)
+- Periodenvergleich (vs. Vorjahr/Vorperiode)
+- 62+ Recharts-basierte Visualisierungen
+
 ### UX & Design
 - Persönliches Dashboard mit konfigurierbaren Widgets (12-Spalten Grid)
 - Command Palette (Ctrl+K) für schnelle Navigation
@@ -66,6 +78,7 @@ Verwaltungs-, Abrechnungs- und Analyseplattform für Windkraftanlagen mit Multi-
 ## Tech Stack
 
 - **Frontend**: Next.js 16.2, React 19, Tailwind CSS 4.2, shadcn/ui (Radix v2)
+- **Typografie**: Inter (next/font/google, self-hosted, DSGVO-konform)
 - **Backend**: Next.js API Routes, Prisma 7.5 ORM
 - **Datenbank**: PostgreSQL 16
 - **Auth**: Auth.js (NextAuth v5) mit RBAC
@@ -73,9 +86,11 @@ Verwaltungs-, Abrechnungs- und Analyseplattform für Windkraftanlagen mit Multi-
 - **Cache**: Redis
 - **i18n**: next-intl 4.8 (DE Formell, DE Persönlich, EN)
 - **GIS**: Leaflet 1.9, react-leaflet 5, leaflet-draw
+- **Charts**: Recharts (62+ Visualisierungen)
 - **Animationen**: Framer Motion 12
 - **Queue**: BullMQ (E-Mail-Versand)
 - **SCADA**: n8n Workflow + PowerShell Upload-Script
+- **Testing**: Playwright (E2E, 3 Browser)
 
 ## Lokale Entwicklung
 
@@ -125,6 +140,28 @@ GRANT ALL PRIVILEGES ON DATABASE windparkmanager TO wpm;
 | admin@windparkmanager.de | admin123 | SUPERADMIN |
 | manager@demo.de | demo123 | ADMIN |
 | viewer@demo.de | demo123 | VIEWER |
+
+## Testing
+
+### E2E Tests (Playwright)
+- **148 Tests** in 35 Dateien (Chromium, Firefox, Mobile Safari)
+- Smoke, Auth, Navigation, CRUD, Formulare, Bulk-Actions, Inline-Edit
+- Dashboard, Dokumente, Energie/SCADA, Performance, Accessibility
+- Multi-Tab, Offline-Verhalten, File Upload, Visual Regression, Load Tests
+
+```bash
+npm run test:e2e                                    # Headless
+npm run test:e2e:headed                             # Sichtbarer Browser
+npm run test:e2e:ui                                 # UI-Modus
+E2E_BASE_URL=http://192.168.178.101:3050 npm run test:e2e  # Gegen Proxmox
+```
+
+## Dokumentation
+
+- `docs/DESIGN-SYSTEM.md` — Design System (773 Zeilen, Farben, Typografie, Komponenten)
+- `docs/API.md` — API Dokumentation (460+ Endpoints)
+- `docs/PERFORMANCE-AUDIT.md` — Performance Audit Ergebnisse
+- `CHANGELOG.md` — Versionshistorie ab v0.2.0
 
 ## Projektstruktur
 

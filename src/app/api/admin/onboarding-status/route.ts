@@ -15,6 +15,9 @@ export interface OnboardingStatus {
     park: boolean;
     fund: boolean;
     users: boolean;
+    turbine: boolean;
+    scada: boolean;
+    invite: boolean;
   };
   tenant: {
     id: string;
@@ -46,7 +49,7 @@ export async function GET() {
     }
 
     // Fetch tenant data and counts in parallel
-    const [tenant, parkCount, fundCount, userCount] = await Promise.all([
+    const [tenant, parkCount, fundCount, userCount, turbineCount, scadaCount] = await Promise.all([
       prisma.tenant.findUnique({
         where: { id: check.tenantId },
         select: {
@@ -68,6 +71,8 @@ export async function GET() {
       prisma.park.count({ where: { tenantId: check.tenantId } }),
       prisma.fund.count({ where: { tenantId: check.tenantId } }),
       prisma.user.count({ where: { tenantId: check.tenantId } }),
+      prisma.turbine.count({ where: { park: { tenantId: check.tenantId } } }),
+      prisma.scadaMeasurement.count({ where: { tenantId: check.tenantId }, take: 1 }),
     ]);
 
     if (!tenant) {
@@ -82,6 +87,9 @@ export async function GET() {
       park: parkCount > 0,
       fund: fundCount > 0,
       users: userCount > 1, // Admin user + at least 1 more
+      turbine: turbineCount > 0,
+      scada: scadaCount > 0,
+      invite: userCount > 1, // Alias for users — frontend expects this key
     };
 
     // Minimum for operation: at least one park AND one fund
