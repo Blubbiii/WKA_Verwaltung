@@ -57,6 +57,12 @@ interface SwitchableChartProps {
   showLegend?: boolean;
   /** Custom tooltip value formatter */
   tooltipFormatter?: (value: number, name: string) => [string, string];
+  /** Comparison data overlay (rendered as dashed/light series) */
+  comparison?: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: Record<string, any>[];
+    label?: string; // e.g. "Vorjahr"
+  };
   /** Additional className for wrapper */
   className?: string;
 }
@@ -149,6 +155,7 @@ export function SwitchableChart({
   stacked = false,
   showLegend = true,
   tooltipFormatter,
+  comparison,
   className,
 }: SwitchableChartProps) {
   const [chartType, setChartType] = useState<ChartType>(() =>
@@ -160,9 +167,22 @@ export function SwitchableChart({
     localStorage.setItem(`${STORAGE_PREFIX}${chartId}`, type);
   };
 
+  // Merge comparison data with primary data (same x-axis, prefixed keys)
+  const mergedData = useMemo(() => {
+    if (!comparison?.data?.length) return data;
+    return data.map((item, i) => {
+      const compItem = comparison.data[i] || {};
+      const merged = { ...item };
+      for (const dk of dataKeys) {
+        merged[`_cmp_${dk.key}`] = compItem[dk.key] ?? null;
+      }
+      return merged;
+    });
+  }, [data, comparison?.data, dataKeys]);
+
   // Common chart props
   const commonProps = {
-    data,
+    data: mergedData,
     margin: { top: 8, right: 8, left: 0, bottom: 0 },
   };
 
@@ -243,6 +263,17 @@ export function SwitchableChart({
                 yAxisId={dk.yAxisId}
               />
             ))}
+            {comparison?.data && dataKeys.map((dk) => (
+              <Bar
+                key={`_cmp_${dk.key}`}
+                dataKey={`_cmp_${dk.key}`}
+                name={`${dk.label} (${comparison.label || "Vorperiode"})`}
+                fill={dk.color}
+                fillOpacity={0.25}
+                radius={[4, 4, 0, 0]}
+                yAxisId={dk.yAxisId}
+              />
+            ))}
           </BarChart>
         );
 
@@ -254,6 +285,20 @@ export function SwitchableChart({
             {yAxis}
             {tooltip}
             {legend}
+            {comparison?.data && dataKeys.map((dk) => (
+              <Line
+                key={`_cmp_${dk.key}`}
+                dataKey={`_cmp_${dk.key}`}
+                name={`${dk.label} (${comparison.label || "Vorperiode"})`}
+                stroke={dk.color}
+                strokeWidth={1.5}
+                strokeDasharray="5 5"
+                strokeOpacity={0.4}
+                type="monotone"
+                dot={false}
+                yAxisId={dk.yAxisId}
+              />
+            ))}
             {dataKeys.map((dk) => (
               <Line
                 key={dk.key}
@@ -279,6 +324,21 @@ export function SwitchableChart({
             {yAxis}
             {tooltip}
             {legend}
+            {comparison?.data && dataKeys.map((dk) => (
+              <Area
+                key={`_cmp_${dk.key}`}
+                dataKey={`_cmp_${dk.key}`}
+                name={`${dk.label} (${comparison.label || "Vorperiode"})`}
+                stroke={dk.color}
+                strokeWidth={1}
+                strokeDasharray="5 5"
+                strokeOpacity={0.4}
+                type="monotone"
+                fill={dk.color}
+                fillOpacity={0.08}
+                yAxisId={dk.yAxisId}
+              />
+            ))}
             {dataKeys.map((dk, i) => (
               <Area
                 key={dk.key}
