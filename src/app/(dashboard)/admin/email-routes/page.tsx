@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Mail, Plus, Pencil, Trash2 } from "lucide-react";
+import { Mail, Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface EmailRoute {
@@ -76,9 +76,19 @@ export default function EmailRoutesPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  /** Generate a random, hard-to-guess email prefix like "wp-a7f3x9k2" */
+  const generateAddress = (prefix = "wp") => {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    let random = "";
+    for (let i = 0; i < 8; i++) {
+      random += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return `${prefix}-${random}`;
+  };
+
   const openCreate = () => {
     setEditingRoute(null);
-    setAddress("");
+    setAddress(generateAddress());
     setTargetType("INBOX");
     setTargetId("");
     setDescription("");
@@ -222,11 +232,23 @@ export default function EmailRoutesPage() {
                 <Input
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="windpark-nord"
-                  className="font-mono"
+                  placeholder="wp-a7f3x9k2"
+                  className="font-mono flex-1"
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setAddress(generateAddress())}
+                  title="Neue Adresse generieren"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
                 <span className="text-muted-foreground text-sm whitespace-nowrap">@{domain}</span>
               </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Kryptische Adressen schuetzen vor Spam. Klicke das Wuerfel-Icon fuer eine neue.
+              </p>
             </div>
             <div>
               <Label>Zuordnung</Label>
