@@ -17,6 +17,7 @@ interface ExpiringContract {
   expiryDate: string;
   daysUntilExpiry: number;
   status: "critical" | "warning" | "normal";
+  href?: string;
 }
 
 interface ExpiringContractsWidgetProps {
@@ -171,7 +172,7 @@ export function ExpiringContractsWidget({ className }: ExpiringContractsWidgetPr
               {contract.daysUntilExpiry} Tage
             </span>
             <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-              <Link href={`/contracts/${contract.id}`}>
+              <Link href={contract.href ?? `/contracts/${contract.id}`}>
                 <ExternalLink className="h-3 w-3" />
               </Link>
             </Button>

@@ -15,6 +15,10 @@ const updateSchema = z.object({
   startTime: z.iso.datetime().optional().nullable(),
   dueDate: z.iso.datetime().optional().nullable(),
   assignedToId: z.uuid().optional().nullable(),
+  emailFrom: z.string().max(320).optional().nullable(),
+  emailTo: z.array(z.string().max(320)).optional(),
+  emailCc: z.array(z.string().max(320)).optional(),
+  emailSubject: z.string().max(500).optional().nullable(),
 });
 
 // GET /api/crm/activities/[id]
@@ -92,6 +96,10 @@ export async function PUT(
         ...(d.startTime !== undefined && { startTime: d.startTime ? new Date(d.startTime) : null }),
         ...(d.dueDate !== undefined && { dueDate: d.dueDate ? new Date(d.dueDate) : null }),
         ...(d.assignedToId !== undefined && { assignedToId: d.assignedToId }),
+        ...(d.emailFrom !== undefined && { emailFrom: d.emailFrom }),
+        ...(d.emailTo !== undefined && { emailTo: d.emailTo }),
+        ...(d.emailCc !== undefined && { emailCc: d.emailCc }),
+        ...(d.emailSubject !== undefined && { emailSubject: d.emailSubject }),
       },
     });
 

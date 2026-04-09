@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma, ContactRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { parsePaginationParams } from "@/lib/api-utils";
+
+const VALID_ROLES: ContactRole[] = [
+  "VERPAECHTER",
+  "NETZBETREIBER",
+  "GUTACHTER",
+  "BETRIEBSFUEHRER",
+  "VERSICHERUNG",
+  "RECHTSANWALT",
+  "STEUERBERATER",
+  "DIENSTLEISTER",
+  "BEHOERDE",
+  "SONSTIGES",
+];
 
 const createSchema = z.object({
   personType: z.enum(["natural", "legal"]).default("natural"),
@@ -34,9 +48,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") ?? "";
     const contactType = searchParams.get("contactType");
+    const roleParam = searchParams.get("role");
+    const tagId = searchParams.get("tagId");
+    const role =
+      roleParam && VALID_ROLES.includes(roleParam as ContactRole)
+        ? (roleParam as ContactRole)
+        : null;
     const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50, maxLimit: 200 });
 
-    const where = {
+    const where: Prisma.PersonWhereInput = {
       tenantId: check.tenantId!,
       ...(search && {
         OR: [
@@ -47,6 +67,8 @@ export async function GET(request: NextRequest) {
         ],
       }),
       ...(contactType && { contactType }),
+      ...(role && { contactLinks: { some: { role } } }),
+      ...(tagId && { tags: { some: { id: tagId } } }),
     };
 
     const [persons, total] = await Promise.all([
@@ -66,6 +88,9 @@ export async function GET(request: NextRequest) {
           _count: { select: { crmActivities: { where: { deletedAt: null } } } },
           shareholders: {
             select: { fund: { select: { id: true, name: true } } },
+          },
+          tags: {
+            select: { id: true, name: true, color: true },
           },
         },
         orderBy: [{ lastName: "asc" }, { firstName: "asc" }],

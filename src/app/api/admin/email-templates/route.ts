@@ -96,9 +96,14 @@ export async function GET() {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
 
-    // Fetch all custom templates for this tenant from the DB
+    // Fetch all custom templates for this tenant from the DB.
+    // Exclude CRM-category templates — those are managed separately via the
+    // CRM-Vorlagen section and have free-form names that don't match built-in keys.
     const customTemplates = await prisma.emailTemplate.findMany({
-      where: { tenantId: check.tenantId! },
+      where: {
+        tenantId: check.tenantId!,
+        OR: [{ category: null }, { category: { not: "CRM" } }],
+      },
       select: {
         name: true,
         subject: true,

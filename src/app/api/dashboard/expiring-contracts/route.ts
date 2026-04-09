@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
+import { getExpiringItems } from "@/lib/crm/expiring-items";
 
 function formatDate(date: Date): string {
   const d = date.getDate().toString().padStart(2, "0");
@@ -16,73 +10,57 @@ function formatDate(date: Date): string {
   return `${d}.${m}.${y}`;
 }
 
+function statusFor(days: number): "critical" | "warning" | "normal" {
+  if (days <= 30) return "critical";
+  if (days <= 60) return "warning";
+  return "normal";
+}
+
 export async function GET() {
   const check = await requireAuth();
   if (!check.authorized) return check.error;
 
   try {
-    const now = new Date();
-    const horizon = addDays(now, 180);
+    const items = await getExpiringItems(check.tenantId!, 180);
 
-    const leases = await prisma.lease.findMany({
-      where: {
-        tenantId: check.tenantId,
-        status: "ACTIVE",
-        endDate: { gte: now, lte: horizon },
-      },
-      include: {
-        leasePlots: {
-          include: {
-            plot: {
-              include: {
-                park: { select: { name: true } },
-              },
-            },
-          },
-          take: 1,
-        },
-      },
-      orderBy: { endDate: "asc" },
-      take: 10,
-    });
-
-    const contracts = leases.map((lease) => {
-      const endDate = lease.endDate!;
-      const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / 86400000);
-
-      // Build title from first linked plot/park
-      const firstLeasePlot = lease.leasePlots[0];
-      const plot = firstLeasePlot?.plot;
-      const parkName = plot?.park?.name;
-      const plotLabel = plot ? `${plot.cadastralDistrict} ${plot.plotNumber}` : null;
-
-      let title: string;
-      if (parkName && plotLabel) {
-        title = `${parkName} – Flurstück ${plotLabel}`;
-      } else if (parkName) {
-        title = `${parkName} – Pachtvertrag`;
-      } else if (plotLabel) {
-        title = `Flurstück ${plotLabel}`;
-      } else {
-        title = `Pachtvertrag #${lease.id.slice(0, 8)}`;
-      }
-
-      const status: "critical" | "warning" | "normal" =
-        daysUntilExpiry <= 30 ? "critical" : daysUntilExpiry <= 60 ? "warning" : "normal";
-
+    const leaseRows = items.leases.map((l) => {
+      const title = l.parkName
+        ? `${l.parkName} – Pachtvertrag`
+        : `Pachtvertrag (${l.lessorName})`;
       return {
-        id: lease.id,
+        id: l.id,
         title,
         type: "Pacht",
-        expiryDate: formatDate(endDate),
-        daysUntilExpiry,
-        status,
+        expiryDate: formatDate(l.endDate),
+        daysUntilExpiry: l.daysUntilExpiry,
+        status: statusFor(l.daysUntilExpiry),
+        href: `/leases/${l.id}`,
       };
     });
 
-    return NextResponse.json(contracts);
+    const contractRows = items.contracts.map((c) => {
+      const title = c.contractNumber ? `${c.contractNumber} – ${c.title}` : c.title;
+      return {
+        id: c.id,
+        title,
+        type: c.contractType,
+        expiryDate: formatDate(c.endDate),
+        daysUntilExpiry: c.daysUntilExpiry,
+        status: statusFor(c.daysUntilExpiry),
+        href: `/contracts/${c.id}`,
+      };
+    });
+
+    const all = [...leaseRows, ...contractRows]
+      .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry)
+      .slice(0, 15);
+
+    return NextResponse.json(all);
   } catch (error) {
     logger.error({ error }, "[expiring-contracts] Error");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Interner Serverfehler" },
+      { status: 500 },
+    );
   }
 }

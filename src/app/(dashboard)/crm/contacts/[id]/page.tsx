@@ -2,8 +2,19 @@
 
 import { use, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { formatDate } from "@/lib/format";
-import { ArrowLeft, Mail, Phone, MapPin, Building2, User, Users, Pencil } from "lucide-react";
+import {
+  ArrowLeft,
+  Mail,
+  Phone,
+  MapPin,
+  User,
+  Users,
+  Pencil,
+  FileText,
+  Building2,
+  CheckSquare,
+  ClipboardList,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Button } from "@/components/ui/button";
@@ -21,6 +32,13 @@ import {
 } from "@/components/ui/select";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";
 import { ContactEditDialog } from "@/components/crm/contact-edit-dialog";
+import {
+  RelatedEntitiesPanel,
+  type Contact360Dto,
+} from "@/components/crm/related-entities-panel";
+import { ContactLinkDialog } from "@/components/crm/contact-link-dialog";
+import { PersonTags, type PersonTag } from "@/components/crm/person-tags";
+import { EmailLogDialog } from "@/components/crm/email-log-dialog";
 
 // ============================================================================
 // Types
@@ -44,15 +62,8 @@ interface CrmContactDetail {
   status: string;
   notes: string | null;
   lastActivityAt: string | null;
-  shareholders: Array<{
-    fund: { id: string; name: string; legalForm: string | null };
-  }>;
-  leases: Array<{
-    id: string;
-    startDate: string;
-    endDate: string | null;
-    status: string;
-  }>;
+  contact360: Contact360Dto;
+  tags: PersonTag[];
 }
 
 const CONTACT_TYPES = [
@@ -63,6 +74,32 @@ const CONTACT_TYPES = [
   "Dienstleister",
   "Sonstiges",
 ];
+
+// ============================================================================
+// Small presentational pieces
+// ============================================================================
+
+function StatTile({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-3 pt-6">
+        <div className="p-2 bg-primary/10 rounded-md text-primary">{icon}</div>
+        <div>
+          <div className="text-2xl font-bold leading-none">{value}</div>
+          <div className="text-xs text-muted-foreground mt-1">{label}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 // ============================================================================
 // Page
@@ -80,6 +117,8 @@ export default function CrmContactDetailPage({
   const [loading, setLoading] = useState(true);
   const [savingType, setSavingType] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,7 +133,9 @@ export default function CrmContactDetailPage({
     }
   }, [id]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleContactTypeChange = async (value: string) => {
     setSavingType(true);
@@ -105,7 +146,9 @@ export default function CrmContactDetailPage({
         body: JSON.stringify({ contactType: value === "none" ? null : value }),
       });
       if (!res.ok) throw new Error();
-      setContact((prev) => prev ? { ...prev, contactType: value === "none" ? null : value } : null);
+      setContact((prev) =>
+        prev ? { ...prev, contactType: value === "none" ? null : value } : null,
+      );
       toast.success("Typ aktualisiert");
     } catch {
       toast.error("Fehler beim Speichern");
@@ -117,7 +160,7 @@ export default function CrmContactDetailPage({
   const displayName = contact
     ? contact.firstName || contact.lastName
       ? `${contact.salutation ? contact.salutation + " " : ""}${contact.firstName ?? ""} ${contact.lastName ?? ""}`.trim()
-      : contact.companyName ?? "—"
+      : (contact.companyName ?? "—")
     : "";
 
   if (!flags.crm) {
@@ -126,7 +169,8 @@ export default function CrmContactDetailPage({
         <Users className="h-12 w-12 text-muted-foreground mb-4" />
         <h2 className="text-lg font-semibold">CRM nicht aktiviert</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-          Das CRM-Modul ist für diesen Mandanten nicht freigeschaltet. Bitte wenden Sie sich an Ihren Administrator.
+          Das CRM-Modul ist für diesen Mandanten nicht freigeschaltet. Bitte
+          wenden Sie sich an Ihren Administrator.
         </p>
       </div>
     );
@@ -142,8 +186,14 @@ export default function CrmContactDetailPage({
   }
 
   if (!contact) {
-    return <div className="text-center py-12 text-muted-foreground">Kontakt nicht gefunden.</div>;
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        Kontakt nicht gefunden.
+      </div>
+    );
   }
+
+  const stats = contact.contact360.stats;
 
   return (
     <div className="space-y-6">
@@ -159,28 +209,99 @@ export default function CrmContactDetailPage({
               {contact.contactType ? (
                 <Badge variant="secondary">{contact.contactType}</Badge>
               ) : null}
-              <Badge variant={contact.status === "ACTIVE" ? "default" : "outline"}>
+              <Badge
+                variant={contact.status === "ACTIVE" ? "default" : "outline"}
+              >
                 {contact.status === "ACTIVE" ? "Aktiv" : contact.status}
               </Badge>
             </div>
+            <div className="mt-2">
+              <PersonTags
+                personId={id}
+                tags={contact.tags}
+                onChange={(newTags) =>
+                  setContact((prev) => (prev ? { ...prev, tags: newTags } : prev))
+                }
+              />
+            </div>
           </div>
         </div>
-        <Button variant="outline" onClick={() => setShowEditDialog(true)}>
-          <Pencil className="mr-2 h-4 w-4" />
-          Bearbeiten
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setShowEmailDialog(true)}>
+            <Mail className="mr-2 h-4 w-4" />
+            E-Mail protokollieren
+          </Button>
+          <Button variant="outline" onClick={() => setShowEditDialog(true)}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Bearbeiten
+          </Button>
+        </div>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatTile
+          icon={<FileText className="h-4 w-4" />}
+          label="Pachtverträge"
+          value={stats.leaseCount}
+        />
+        <StatTile
+          icon={<Building2 className="h-4 w-4" />}
+          label="Fonds"
+          value={stats.fundCount}
+        />
+        <StatTile
+          icon={<ClipboardList className="h-4 w-4" />}
+          label="Verträge"
+          value={stats.contractCount}
+        />
+        <StatTile
+          icon={<CheckSquare className="h-4 w-4" />}
+          label="Offene Aufgaben"
+          value={stats.openTaskCount}
+        />
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="details">
+      <Tabs defaultValue="overview">
         <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="overview">Übersicht</TabsTrigger>
+          <TabsTrigger value="relations">
+            Beziehungen
+            {stats.leaseCount +
+              stats.fundCount +
+              stats.contractCount +
+              stats.parkRoleCount >
+            0 ? (
+              <Badge variant="secondary" className="ml-2">
+                {stats.leaseCount +
+                  stats.fundCount +
+                  stats.contractCount +
+                  stats.parkRoleCount}
+              </Badge>
+            ) : null}
+          </TabsTrigger>
           <TabsTrigger value="activities">Aktivitäten</TabsTrigger>
-          <TabsTrigger value="relations">Verknüpfungen</TabsTrigger>
+          <TabsTrigger value="tasks">
+            Aufgaben
+            {stats.openTaskCount > 0 ? (
+              <Badge variant="destructive" className="ml-2">
+                {stats.openTaskCount}
+              </Badge>
+            ) : null}
+          </TabsTrigger>
+          <TabsTrigger value="documents">
+            Dokumente
+            {stats.documentCount > 0 ? (
+              <Badge variant="secondary" className="ml-2">
+                {stats.documentCount}
+              </Badge>
+            ) : null}
+          </TabsTrigger>
         </TabsList>
 
-        {/* Details Tab */}
-        <TabsContent value="details" className="mt-4 space-y-4">
+        {/* Übersicht Tab */}
+        <TabsContent value="overview" className="mt-4 space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             {/* Contact Info */}
             <Card>
@@ -194,13 +315,23 @@ export default function CrmContactDetailPage({
                 {contact.email && (
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <a href={`mailto:${contact.email}`} className="hover:underline">{contact.email}</a>
+                    <a
+                      href={`mailto:${contact.email}`}
+                      className="hover:underline"
+                    >
+                      {contact.email}
+                    </a>
                   </div>
                 )}
                 {contact.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <a href={`tel:${contact.phone}`} className="hover:underline">{contact.phone}</a>
+                    <a
+                      href={`tel:${contact.phone}`}
+                      className="hover:underline"
+                    >
+                      {contact.phone}
+                    </a>
                   </div>
                 )}
                 {contact.mobile && (
@@ -214,12 +345,21 @@ export default function CrmContactDetailPage({
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
                       {contact.street && (
-                        <div>{contact.street}{contact.houseNumber ? ` ${contact.houseNumber}` : ""}</div>
+                        <div>
+                          {contact.street}
+                          {contact.houseNumber ? ` ${contact.houseNumber}` : ""}
+                        </div>
                       )}
                       {(contact.postalCode || contact.city) && (
-                        <div>{[contact.postalCode, contact.city].filter(Boolean).join(" ")}</div>
+                        <div>
+                          {[contact.postalCode, contact.city]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </div>
                       )}
-                      <div className="text-muted-foreground">{contact.country}</div>
+                      <div className="text-muted-foreground">
+                        {contact.country}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -229,7 +369,9 @@ export default function CrmContactDetailPage({
             {/* CRM Classification */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">CRM-Klassifizierung</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  CRM-Klassifizierung
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
@@ -245,7 +387,9 @@ export default function CrmContactDetailPage({
                     <SelectContent>
                       <SelectItem value="none">Kein Typ</SelectItem>
                       {CONTACT_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -255,7 +399,9 @@ export default function CrmContactDetailPage({
                     <Separator />
                     <div>
                       <div className="text-sm font-medium mb-1">Notizen</div>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{contact.notes}</p>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {contact.notes}
+                      </p>
                     </div>
                   </>
                 )}
@@ -264,7 +410,15 @@ export default function CrmContactDetailPage({
           </div>
         </TabsContent>
 
-        {/* Activities Tab */}
+        {/* Beziehungen Tab — the core of the 360° view */}
+        <TabsContent value="relations" className="mt-4">
+          <RelatedEntitiesPanel
+            data={contact.contact360}
+            onAddContactLink={() => setShowLinkDialog(true)}
+          />
+        </TabsContent>
+
+        {/* Aktivitäten Tab */}
         <TabsContent value="activities" className="mt-4">
           <Card>
             <CardContent className="pt-6">
@@ -273,69 +427,75 @@ export default function CrmContactDetailPage({
           </Card>
         </TabsContent>
 
-        {/* Relations Tab */}
-        <TabsContent value="relations" className="mt-4 space-y-4">
-          {/* Funds */}
-          {contact.shareholders.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Beteiligungen ({contact.shareholders.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {contact.shareholders.map((sh, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{sh.fund.name}</span>
-                      {sh.fund.legalForm && (
-                        <Badge variant="outline" className="text-xs">{sh.fund.legalForm}</Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        {/* Aufgaben Tab — reuses ActivityTimeline with type filter via description */}
+        <TabsContent value="tasks" className="mt-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-sm text-muted-foreground mb-4">
+                Offene und geplante Aufgaben für diesen Kontakt. Aufgaben sind
+                Aktivitäten vom Typ TASK.
+              </div>
+              <ActivityTimeline entityType="person" entityId={id} />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* Leases */}
-          {contact.leases.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Pachtverträge ({contact.leases.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {contact.leases.map((l) => (
-                    <div key={l.id} className="flex items-center justify-between text-sm">
-                      <span>ab {formatDate(l.startDate)}</span>
-                      <Badge variant={l.status === "ACTIVE" ? "default" : "outline"} className="text-xs">
-                        {l.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {contact.shareholders.length === 0 && contact.leases.length === 0 && (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              Keine Verknüpfungen vorhanden
+        {/* Dokumente Tab */}
+        <TabsContent value="documents" className="mt-4">
+          {contact.contact360.documents.length === 0 ? (
+            <div className="py-12 text-center text-sm text-muted-foreground border rounded-md">
+              Keine Dokumente mit diesem Kontakt verknüpft.
             </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6 space-y-2">
+                {contact.contact360.documents.map((d) => (
+                  <a
+                    key={d.id}
+                    href={`/documents/${d.id}`}
+                    className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors"
+                  >
+                    <div>
+                      <div className="text-sm font-medium">{d.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {d.fileName} · {d.category} · via {d.linkedVia}
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
       </Tabs>
 
-      {/* Edit Dialog */}
+      {/* Dialogs */}
       <ContactEditDialog
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
         contact={contact}
         onSaved={load}
+      />
+      <ContactLinkDialog
+        open={showLinkDialog}
+        onOpenChange={setShowLinkDialog}
+        personId={id}
+        onSuccess={load}
+      />
+      <EmailLogDialog
+        open={showEmailDialog}
+        onOpenChange={setShowEmailDialog}
+        personId={id}
+        personContext={{
+          person: {
+            firstName: contact.firstName,
+            lastName: contact.lastName,
+            salutation: contact.salutation,
+            companyName: contact.companyName,
+            email: contact.email,
+          },
+        }}
+        onSuccess={load}
       />
     </div>
   );

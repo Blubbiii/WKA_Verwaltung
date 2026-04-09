@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { loadContact360 } from "@/lib/crm/contact-360";
 
 const updateSchema = z.object({
   salutation: z.string().max(20).optional().nullable(),
@@ -47,16 +48,8 @@ export async function GET(
           orderBy: { createdAt: "desc" },
           take: 100,
         },
-        shareholders: {
-          include: { fund: { select: { id: true, name: true, legalForm: true } } },
-        },
-        leases: {
-          select: {
-            id: true,
-            startDate: true,
-            endDate: true,
-            status: true,
-          },
+        tags: {
+          select: { id: true, name: true, color: true },
         },
       },
     });
@@ -65,7 +58,11 @@ export async function GET(
       return NextResponse.json({ error: "Kontakt nicht gefunden" }, { status: 404 });
     }
 
-    return NextResponse.json(serializePrisma(person));
+    const contact360 = await loadContact360(id, check.tenantId!);
+
+    return NextResponse.json(
+      serializePrisma({ ...person, contact360 }),
+    );
   } catch (error) {
     logger.error({ err: error }, "Error fetching CRM contact");
     return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });

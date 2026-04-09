@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
 import { de } from "date-fns/locale";
-import { Search, Plus, Users } from "lucide-react";
+import { Search, Plus, Users, Download, Tag as TagIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,14 +12,17 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import { BatchActionBar } from "@/components/ui/batch-action-bar";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -54,6 +57,13 @@ interface CrmContact {
   lastActivityAt: string | null;
   _count: { crmActivities: number };
   shareholders: Array<{ fund: { id: string; name: string } }>;
+  tags: Array<{ id: string; name: string; color: string | null }>;
+}
+
+interface PersonTagLite {
+  id: string;
+  name: string;
+  color: string | null;
 }
 
 const CONTACT_TYPES = [
@@ -63,6 +73,19 @@ const CONTACT_TYPES = [
   "Partner",
   "Dienstleister",
   "Sonstiges",
+];
+
+const ROLES: { value: string; label: string }[] = [
+  { value: "VERPAECHTER", label: "Verpächter" },
+  { value: "NETZBETREIBER", label: "Netzbetreiber" },
+  { value: "GUTACHTER", label: "Gutachter" },
+  { value: "BETRIEBSFUEHRER", label: "Betriebsführer" },
+  { value: "VERSICHERUNG", label: "Versicherung" },
+  { value: "RECHTSANWALT", label: "Rechtsanwalt" },
+  { value: "STEUERBERATER", label: "Steuerberater" },
+  { value: "DIENSTLEISTER", label: "Dienstleister" },
+  { value: "BEHOERDE", label: "Behörde" },
+  { value: "SONSTIGES", label: "Sonstiges" },
 ];
 
 function activityAgeClass(lastActivityAt: string | null): string {
@@ -107,6 +130,12 @@ export default function CrmContactsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [contactType, setContactType] = useState("all");
+  const [role, setRole] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [allTags, setAllTags] = useState<PersonTagLite[]>([]);
+  const [tagDialogOpen, setTagDialogOpen] = useState(false);
+  const [bulkTagId, setBulkTagId] = useState<string>("");
+  const [bulkTagging, setBulkTagging] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<CreateForm>(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
@@ -151,6 +180,7 @@ export default function CrmContactsPage() {
       const params = new URLSearchParams({ limit: "100" });
       if (search) params.set("search", search);
       if (contactType !== "all") params.set("contactType", contactType);
+      if (role !== "all") params.set("role", role);
 
       const res = await fetch(`/api/crm/contacts?${params}`);
       if (!res.ok) throw new Error();
@@ -164,11 +194,121 @@ export default function CrmContactsPage() {
     }
   };
 
-  useEffect(() => { if (flags.crm) load(); }, [search, contactType, flags.crm]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (flags.crm) load(); }, [search, contactType, role, flags.crm]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset selection on filter change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [search, contactType, role]);
+
+  // Load all tags once for bulk operations
+  useEffect(() => {
+    if (!flags.crm) return;
+    fetch("/api/crm/tags")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setAllTags)
+      .catch(() => {});
+  }, [flags.crm]);
 
   const displayName = (c: CrmContact) => {
     if (c.firstName || c.lastName) return `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim();
     return c.companyName ?? "—";
+  };
+
+  const toggleOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === contacts.length && contacts.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(contacts.map((c) => c.id)));
+    }
+  };
+
+  const exportCsv = () => {
+    const selected = contacts.filter((c) => selectedIds.has(c.id));
+    if (selected.length === 0) {
+      toast.error("Keine Kontakte ausgewählt");
+      return;
+    }
+    const header = [
+      "Name",
+      "Firma",
+      "E-Mail",
+      "Telefon",
+      "Mobil",
+      "Kontakttyp",
+      "Status",
+      "Tags",
+    ];
+    const rows = selected.map((c) => [
+      displayName(c),
+      c.companyName ?? "",
+      c.email ?? "",
+      c.phone ?? "",
+      c.mobile ?? "",
+      c.contactType ?? "",
+      c.status,
+      c.tags.map((t) => t.name).join("; "),
+    ]);
+    const csv = [header, ...rows]
+      .map((row) =>
+        row
+          .map((cell) => {
+            const s = String(cell ?? "");
+            return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+          })
+          .join(";"),
+      )
+      .join("\n");
+    // UTF-8 BOM for Excel
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `kontakte-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${selected.length} Kontakte exportiert`);
+  };
+
+  const bulkAssignTag = async () => {
+    if (!bulkTagId) {
+      toast.error("Bitte einen Tag auswählen");
+      return;
+    }
+    setBulkTagging(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          fetch(`/api/crm/contacts/${id}/tags`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tagId: bulkTagId }),
+          }),
+        ),
+      );
+      const ok = results.filter(
+        (r) => r.status === "fulfilled" && (r.value as Response).ok,
+      ).length;
+      toast.success(`${ok} von ${ids.length} Kontakten getaggt`);
+      setTagDialogOpen(false);
+      setBulkTagId("");
+      setSelectedIds(new Set());
+      load();
+    } catch {
+      toast.error("Fehler beim Bulk-Tagging");
+    } finally {
+      setBulkTagging(false);
+    }
   };
 
   if (!flags.crm) {
@@ -215,6 +355,19 @@ export default function CrmContactsPage() {
             <SelectItem value="all">Alle Typen</SelectItem>
             {CONTACT_TYPES.map((t) => (
               <SelectItem key={t} value={t}>{t}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={role} onValueChange={setRole}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Alle Rollen" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Rollen</SelectItem>
+            {ROLES.map((r) => (
+              <SelectItem key={r.value} value={r.value}>
+                {r.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -336,6 +489,15 @@ export default function CrmContactsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={
+                      contacts.length > 0 && selectedIds.size === contacts.length
+                    }
+                    onCheckedChange={toggleAll}
+                    aria-label="Alle auswählen"
+                  />
+                </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Typ</TableHead>
                 <TableHead className="hidden md:table-cell">E-Mail</TableHead>
@@ -348,14 +510,14 @@ export default function CrmContactsPage() {
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((__, j) => (
+                    {Array.from({ length: 7 }).map((__, j) => (
                       <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : contacts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
                     Keine Kontakte gefunden
                   </TableCell>
                 </TableRow>
@@ -366,7 +528,42 @@ export default function CrmContactsPage() {
                     className="cursor-pointer hover:bg-muted/40"
                     onClick={() => router.push(`/crm/contacts/${c.id}`)}
                   >
-                    <TableCell className="font-medium">{displayName(c)}</TableCell>
+                    <TableCell
+                      className="w-10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        checked={selectedIds.has(c.id)}
+                        onCheckedChange={() => toggleOne(c.id)}
+                        aria-label={`${displayName(c)} auswählen`}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {displayName(c)}
+                      {c.tags.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {c.tags.slice(0, 3).map((t) => (
+                            <Badge
+                              key={t.id}
+                              variant="secondary"
+                              className="text-[10px] h-4 px-1.5"
+                              style={
+                                t.color
+                                  ? { backgroundColor: `${t.color}20`, color: t.color }
+                                  : undefined
+                              }
+                            >
+                              {t.name}
+                            </Badge>
+                          ))}
+                          {c.tags.length > 3 && (
+                            <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                              +{c.tags.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {c.contactType ? (
                         <Badge variant="outline" className="text-xs">{c.contactType}</Badge>
@@ -402,6 +599,68 @@ export default function CrmContactsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <BatchActionBar
+          selectedCount={selectedIds.size}
+          onClearSelection={() => setSelectedIds(new Set())}
+          actions={[
+            {
+              label: "CSV exportieren",
+              icon: <Download className="h-4 w-4" />,
+              onClick: exportCsv,
+            },
+            {
+              label: "Tag zuweisen",
+              icon: <TagIcon className="h-4 w-4" />,
+              onClick: () => setTagDialogOpen(true),
+              disabled: allTags.length === 0,
+            },
+          ]}
+        />
+      )}
+
+      {/* Bulk tag dialog */}
+      <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Tag zuweisen</DialogTitle>
+            <DialogDescription>
+              Weise {selectedIds.size} Kontakten einen Tag zu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Tag</Label>
+              <Select value={bulkTagId} onValueChange={setBulkTagId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tag wählen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allTags.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setTagDialogOpen(false)}
+              disabled={bulkTagging}
+            >
+              Abbrechen
+            </Button>
+            <Button onClick={bulkAssignTag} disabled={bulkTagging || !bulkTagId}>
+              {bulkTagging ? "Wird zugewiesen..." : "Zuweisen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -124,6 +124,7 @@ model Tenant {
   bankAccounts              BankAccount[]
   userTenantMemberships     UserTenantMembership[]
   sidebarLinks              SidebarLink[]
+  personTags                PersonTag[]
 
   @@map("tenants")
 }
@@ -552,6 +553,7 @@ model Person {
   crmActivities                  CrmActivity[]
   vendorProfiles                 Vendor[]
   contactLinks                   ContactLink[]
+  tags                           PersonTag[]                      @relation("PersonToPersonTag")
 
   @@index([tenantId])
   @@index([lastName, firstName])
@@ -1295,6 +1297,8 @@ model EmailTemplate {
   htmlContent String
   textContent String?
   isActive    Boolean  @default(true)
+  /** "CRM" for CRM contact templates, null/"SYSTEM" for internal admin templates */
+  category    String?  @db.VarChar(50)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   tenantId    String
@@ -1302,6 +1306,7 @@ model EmailTemplate {
 
   @@unique([tenantId, name])
   @@index([tenantId])
+  @@index([category])
   @@map("email_templates")
 }
 
@@ -3209,6 +3214,12 @@ model CrmActivity {
   parkId      String?
   park        Park?           @relation(fields: [parkId], references: [id], onDelete: Cascade)
 
+  // E-Mail protocol fields (filled when type=EMAIL)
+  emailFrom    String?        @db.VarChar(320)
+  emailTo      String[]       @default([])
+  emailCc      String[]       @default([])
+  emailSubject String?        @db.VarChar(500)
+
   assignedToId String?
   assignedTo   User?          @relation("CrmActivityAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   createdById  String
@@ -3227,6 +3238,25 @@ model CrmActivity {
   @@index([status])
   @@index([dueDate])
   @@map("crm_activities")
+}
+
+// =============================================================================
+// Person Tags (free-form multi-tagging for CRM)
+// =============================================================================
+
+model PersonTag {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String   @db.VarChar(50)
+  color       String?  @db.VarChar(20)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  persons     Person[] @relation("PersonToPersonTag")
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("person_tags")
 }
 
 // =============================================================================

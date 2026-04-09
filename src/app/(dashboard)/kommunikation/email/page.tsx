@@ -63,7 +63,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Trash2, Users, Info } from "lucide-react";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { SUPPORTED_TOKENS } from "@/lib/crm/template-renderer";
 
 // Dynamic import for Rich Text Editor (SSR-incompatible)
 const RichTextEditor = dynamic(
@@ -119,6 +122,13 @@ interface NotificationSettings {
   contractWarning: boolean;
 }
 
+interface CrmEmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  htmlContent: string;
+}
+
 interface TestEmailResult {
   success: boolean;
   message: string;
@@ -152,6 +162,14 @@ export default function EmailConfigPage() {
   // Template state
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
+
+  // CRM template state
+  const [crmTemplates, setCrmTemplates] = useState<CrmEmailTemplate[]>([]);
+  const [crmTemplatesLoading, setCrmTemplatesLoading] = useState(true);
+  const [crmDialogOpen, setCrmDialogOpen] = useState(false);
+  const [crmEditing, setCrmEditing] = useState<CrmEmailTemplate | null>(null);
+  const [crmForm, setCrmForm] = useState({ name: "", subject: "", body: "" });
+  const [crmSaving, setCrmSaving] = useState(false);
 
   // Test email state
   const [testEmail, setTestEmail] = useState("");
@@ -209,6 +227,84 @@ export default function EmailConfigPage() {
   useEffect(() => {
     if (flags.communication) loadTemplates();
   }, [loadTemplates, flags.communication]);
+
+  const loadCrmTemplates = useCallback(async () => {
+    if (!flags.crm) {
+      setCrmTemplatesLoading(false);
+      return;
+    }
+    try {
+      setCrmTemplatesLoading(true);
+      const res = await fetch("/api/crm/email-templates");
+      if (res.ok) setCrmTemplates(await res.json());
+    } catch {
+      // Silently ignore — CRM is optional
+    } finally {
+      setCrmTemplatesLoading(false);
+    }
+  }, [flags.crm]);
+
+  useEffect(() => {
+    loadCrmTemplates();
+  }, [loadCrmTemplates]);
+
+  const openCrmNew = () => {
+    setCrmEditing(null);
+    setCrmForm({ name: "", subject: "", body: "" });
+    setCrmDialogOpen(true);
+  };
+
+  const openCrmEdit = (t: CrmEmailTemplate) => {
+    setCrmEditing(t);
+    setCrmForm({ name: t.name, subject: t.subject, body: t.htmlContent });
+    setCrmDialogOpen(true);
+  };
+
+  const saveCrmTemplate = async () => {
+    if (!crmForm.name.trim() || !crmForm.subject.trim() || !crmForm.body.trim()) {
+      toast.error("Name, Betreff und Inhalt sind Pflicht");
+      return;
+    }
+    setCrmSaving(true);
+    try {
+      const res = crmEditing
+        ? await fetch(`/api/crm/email-templates/${crmEditing.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(crmForm),
+          })
+        : await fetch("/api/crm/email-templates", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(crmForm),
+          });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Fehler");
+      }
+      toast.success(crmEditing ? "Vorlage aktualisiert" : "Vorlage erstellt");
+      setCrmDialogOpen(false);
+      loadCrmTemplates();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Fehler");
+    } finally {
+      setCrmSaving(false);
+    }
+  };
+
+  const deleteCrmTemplate = async (t: CrmEmailTemplate) => {
+    if (!confirm(`Vorlage "${t.name}" wirklich löschen?`)) return;
+    try {
+      const res = await fetch(`/api/crm/email-templates/${t.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Vorlage gelöscht");
+      loadCrmTemplates();
+    } catch {
+      toast.error("Fehler beim Löschen");
+    }
+  };
 
   async function loadNotificationConfig() {
     try {
@@ -595,6 +691,98 @@ export default function EmailConfigPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* CRM Templates Card */}
+          {flags.crm && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      CRM-Vorlagen
+                    </CardTitle>
+                    <CardDescription>
+                      Freie Vorlagen für E-Mails an Kontakte. Werden im CRM
+                      beim Protokollieren einer E-Mail angeboten.
+                    </CardDescription>
+                  </div>
+                  <Button onClick={openCrmNew} size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Neue Vorlage
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Unterstützte Merge-Felder:{" "}
+                    {SUPPORTED_TOKENS.map((t, i) => (
+                      <span key={t}>
+                        <code className="rounded bg-muted px-1 py-0.5 text-[11px]">
+                          {t}
+                        </code>
+                        {i < SUPPORTED_TOKENS.length - 1 ? " " : ""}
+                      </span>
+                    ))}
+                  </AlertDescription>
+                </Alert>
+
+                {crmTemplatesLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : crmTemplates.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground border rounded-md">
+                    Noch keine CRM-Vorlagen. Lege deine erste Vorlage an.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Betreff</TableHead>
+                        <TableHead className="w-[120px] text-right">
+                          Aktionen
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {crmTemplates.map((t) => (
+                        <TableRow key={t.id}>
+                          <TableCell className="font-medium">{t.name}</TableCell>
+                          <TableCell className="text-muted-foreground max-w-[300px] truncate">
+                            {t.subject}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openCrmEdit(t)}
+                              title="Bearbeiten"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteCrmTemplate(t)}
+                              title="Löschen"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* SMTP Server Tab */}
@@ -922,6 +1110,68 @@ export default function EmailConfigPage() {
                 Speichern
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CRM Template Editor Dialog */}
+      <Dialog open={crmDialogOpen} onOpenChange={setCrmDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              {crmEditing ? "CRM-Vorlage bearbeiten" : "Neue CRM-Vorlage"}
+            </DialogTitle>
+            <DialogDescription>
+              Verwende Merge-Felder wie {"{{person.firstName}}"}, um den Text
+              pro Kontakt zu personalisieren.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Name</Label>
+              <Input
+                value={crmForm.name}
+                onChange={(e) =>
+                  setCrmForm((f) => ({ ...f, name: e.target.value }))
+                }
+                placeholder="z.B. Quartalsrundschreiben"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Betreff</Label>
+              <Input
+                value={crmForm.subject}
+                onChange={(e) =>
+                  setCrmForm((f) => ({ ...f, subject: e.target.value }))
+                }
+                placeholder="z.B. Ihre Quartalsinformation {{today}}"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Inhalt</Label>
+              <Textarea
+                value={crmForm.body}
+                onChange={(e) =>
+                  setCrmForm((f) => ({ ...f, body: e.target.value }))
+                }
+                placeholder={`Sehr geehrte(r) {{person.salutation}} {{person.lastName}},\n\n...`}
+                rows={12}
+                className="font-mono text-sm"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCrmDialogOpen(false)}
+              disabled={crmSaving}
+            >
+              Abbrechen
+            </Button>
+            <Button onClick={saveCrmTemplate} disabled={crmSaving}>
+              {crmSaving ? "Speichert..." : "Speichern"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

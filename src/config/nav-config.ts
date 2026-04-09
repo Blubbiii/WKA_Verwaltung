@@ -56,6 +56,9 @@ import {
   Link2,
   Map,
   Database,
+  CheckSquare,
+  Sprout,
+  Handshake,
 } from "lucide-react";
 
 // Re-export icons so sidebar.tsx can import them from here for SIDEBAR_LINK_ICONS
@@ -210,6 +213,30 @@ export const navGroups: NavGroup[] = [
         titleKey: "crmContacts",
         href: "/crm/contacts",
         icon: ContactRound,
+        permission: "crm:read",
+        featureFlag: "crm" as const,
+      },
+      {
+        title: "Aufgaben",
+        titleKey: "crmTasks",
+        href: "/crm/tasks",
+        icon: CheckSquare,
+        permission: "crm:read",
+        featureFlag: "crm" as const,
+      },
+      {
+        title: "Verpächter",
+        titleKey: "crmLessors",
+        href: "/crm/verpaechter",
+        icon: Sprout,
+        permission: "crm:read",
+        featureFlag: "crm" as const,
+      },
+      {
+        title: "Gesellschafter",
+        titleKey: "crmShareholders",
+        href: "/crm/gesellschafter",
+        icon: Handshake,
         permission: "crm:read",
         featureFlag: "crm" as const,
       },

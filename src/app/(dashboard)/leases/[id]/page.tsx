@@ -367,7 +367,12 @@ export default function LeaseDetailPage({
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Name</p>
-              <p className="font-medium">{getLessorName()}</p>
+              <Link
+                href={`/crm/contacts/${lease.lessor.id}`}
+                className="font-medium hover:underline hover:text-primary transition-colors inline-flex items-center gap-1"
+              >
+                {getLessorName()}
+              </Link>
               <p className="text-xs text-muted-foreground">
                 {lease.lessor.personType === "legal" ? "Juristische Person" : "Natürliche Person"}
               </p>

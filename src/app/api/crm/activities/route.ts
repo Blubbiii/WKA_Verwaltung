@@ -26,6 +26,11 @@ const activitySchema = z.object({
   leaseId: z.uuid().optional().nullable(),
   parkId: z.uuid().optional().nullable(),
   assignedToId: z.uuid().optional().nullable(),
+  // Email-specific fields (only used when type=EMAIL)
+  emailFrom: z.string().max(320).optional().nullable(),
+  emailTo: z.array(z.string().max(320)).optional(),
+  emailCc: z.array(z.string().max(320)).optional(),
+  emailSubject: z.string().max(500).optional().nullable(),
 }).refine(
   (d) => d.personId || d.fundId || d.leaseId || d.parkId,
   { message: "Mindestens eine Entität muss verknüpft sein" }
@@ -130,6 +135,10 @@ export async function POST(request: NextRequest) {
         leaseId: data.leaseId ?? null,
         parkId: data.parkId ?? null,
         assignedToId: data.assignedToId ?? null,
+        emailFrom: data.emailFrom ?? null,
+        emailTo: data.emailTo ?? [],
+        emailCc: data.emailCc ?? [],
+        emailSubject: data.emailSubject ?? null,
       },
       include: {
         createdBy: { select: { id: true, firstName: true, lastName: true } },
