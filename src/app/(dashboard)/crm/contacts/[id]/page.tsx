@@ -39,6 +39,7 @@ import {
 import { ContactLinkDialog } from "@/components/crm/contact-link-dialog";
 import { PersonTags, type PersonTag } from "@/components/crm/person-tags";
 import { EmailLogDialog } from "@/components/crm/email-log-dialog";
+import { DERIVED_LABEL_KEYS } from "@/lib/crm/derived-labels";
 
 // ============================================================================
 // Types
@@ -64,6 +65,7 @@ interface CrmContactDetail {
   lastActivityAt: string | null;
   contact360: Contact360Dto;
   tags: PersonTag[];
+  labels: string[];
 }
 
 const CONTACT_TYPES = [
@@ -206,21 +208,33 @@ export default function CrmContactDetailPage({
           <div>
             <h1 className="text-xl font-bold">{displayName}</h1>
             <div className="flex items-center gap-2 mt-1">
-              {contact.contactType ? (
-                <Badge variant="secondary">{contact.contactType}</Badge>
-              ) : null}
               <Badge
                 variant={contact.status === "ACTIVE" ? "default" : "outline"}
               >
                 {contact.status === "ACTIVE" ? "Aktiv" : contact.status}
               </Badge>
+              {/* Derived labels — automatic, read-only */}
+              {contact.labels
+                .filter((l) =>
+                  DERIVED_LABEL_KEYS.includes(
+                    l as (typeof DERIVED_LABEL_KEYS)[number],
+                  ),
+                )
+                .map((label) => (
+                  <Badge key={label} variant="secondary">
+                    {label}
+                  </Badge>
+                ))}
             </div>
+            {/* Custom labels — editable via PersonTags popover */}
             <div className="mt-2">
               <PersonTags
                 personId={id}
                 tags={contact.tags}
                 onChange={(newTags) =>
-                  setContact((prev) => (prev ? { ...prev, tags: newTags } : prev))
+                  setContact((prev) =>
+                    prev ? { ...prev, tags: newTags } : prev,
+                  )
                 }
               />
             </div>

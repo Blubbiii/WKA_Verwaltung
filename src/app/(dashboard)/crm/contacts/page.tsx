@@ -1,10 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
 import { de } from "date-fns/locale";
-import { Search, Plus, Users, Download, Tag as TagIcon } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Users,
+  Download,
+  Tag as TagIcon,
+  X,
+  Check,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +25,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { BatchActionBar } from "@/components/ui/batch-action-bar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -39,10 +53,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatCurrency } from "@/lib/format";
+import { DERIVED_LABEL_KEYS } from "@/lib/crm/derived-labels";
 
 // ============================================================================
 // Types
 // ============================================================================
+
+interface ContactContext {
+  activeLeaseCount: number;
+  activeShareholderCount: number;
+  totalYearlyRentEur: number | null;
+  totalCapitalContributionEur: number | null;
+}
 
 interface CrmContact {
   id: string;
@@ -52,53 +75,35 @@ interface CrmContact {
   email: string | null;
   phone: string | null;
   mobile: string | null;
+  street: string | null;
+  houseNumber: string | null;
+  postalCode: string | null;
+  city: string | null;
   contactType: string | null;
   status: string;
   lastActivityAt: string | null;
   _count: { crmActivities: number };
-  shareholders: Array<{ fund: { id: string; name: string } }>;
-  tags: Array<{ id: string; name: string; color: string | null }>;
+  labels: string[];
+  context: ContactContext;
 }
 
-interface PersonTagLite {
+interface CustomLabelLite {
   id: string;
   name: string;
   color: string | null;
 }
 
-const CONTACT_TYPES = [
-  "Gesellschafter",
-  "Pächter",
-  "Investor",
-  "Partner",
-  "Dienstleister",
-  "Sonstiges",
-];
-
-const ROLES: { value: string; label: string }[] = [
-  { value: "VERPAECHTER", label: "Verpächter" },
-  { value: "NETZBETREIBER", label: "Netzbetreiber" },
-  { value: "GUTACHTER", label: "Gutachter" },
-  { value: "BETRIEBSFUEHRER", label: "Betriebsführer" },
-  { value: "VERSICHERUNG", label: "Versicherung" },
-  { value: "RECHTSANWALT", label: "Rechtsanwalt" },
-  { value: "STEUERBERATER", label: "Steuerberater" },
-  { value: "DIENSTLEISTER", label: "Dienstleister" },
-  { value: "BEHOERDE", label: "Behörde" },
-  { value: "SONSTIGES", label: "Sonstiges" },
-];
-
-function activityAgeClass(lastActivityAt: string | null): string {
-  if (!lastActivityAt) return "text-destructive";
-  const days = Math.floor((Date.now() - new Date(lastActivityAt).getTime()) / 86_400_000);
-  if (days < 30) return "text-green-600 dark:text-green-400";
-  if (days < 90) return "text-amber-600 dark:text-amber-400";
-  return "text-destructive";
+interface ExistingMatch {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  companyName: string | null;
+  street: string | null;
+  houseNumber: string | null;
+  postalCode: string | null;
+  city: string | null;
+  email: string | null;
 }
-
-// ============================================================================
-// Page
-// ============================================================================
 
 interface CreateForm {
   personType: "natural" | "legal";
@@ -108,7 +113,10 @@ interface CreateForm {
   companyName: string;
   email: string;
   phone: string;
-  contactType: string;
+  street: string;
+  houseNumber: string;
+  postalCode: string;
+  city: string;
 }
 
 const EMPTY_FORM: CreateForm = {
@@ -119,68 +127,64 @@ const EMPTY_FORM: CreateForm = {
   companyName: "",
   email: "",
   phone: "",
-  contactType: "",
+  street: "",
+  houseNumber: "",
+  postalCode: "",
+  city: "",
 };
+
+function activityAgeClass(lastActivityAt: string | null): string {
+  if (!lastActivityAt) return "text-destructive";
+  const days = Math.floor(
+    (Date.now() - new Date(lastActivityAt).getTime()) / 86_400_000,
+  );
+  if (days < 30) return "text-green-600 dark:text-green-400";
+  if (days < 90) return "text-amber-600 dark:text-amber-400";
+  return "text-destructive";
+}
+
+// ============================================================================
+// Page
+// ============================================================================
 
 export default function CrmContactsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { flags } = useFeatureFlags();
+
   const [contacts, setContacts] = useState<CrmContact[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
-  const [contactType, setContactType] = useState("all");
-  const [role, setRole] = useState("all");
+  // Initialize from URL ?labels=Verpächter,Bank so deep links work
+  const [activeLabels, setActiveLabels] = useState<string[]>(() => {
+    const p = searchParams.get("labels");
+    return p ? p.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  });
+  const [labelPopoverOpen, setLabelPopoverOpen] = useState(false);
+
+  const [customLabels, setCustomLabels] = useState<CustomLabelLite[]>([]);
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [allTags, setAllTags] = useState<PersonTagLite[]>([]);
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [bulkTagId, setBulkTagId] = useState<string>("");
   const [bulkTagging, setBulkTagging] = useState(false);
+
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<CreateForm>(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
+  const [dedupMatch, setDedupMatch] = useState<ExistingMatch | null>(null);
 
-  const handleCreate = async () => {
-    setCreating(true);
-    try {
-      const body = {
-        personType: form.personType,
-        salutation: form.salutation || null,
-        firstName: form.firstName || null,
-        lastName: form.lastName || null,
-        companyName: form.companyName || null,
-        email: form.email || null,
-        phone: form.phone || null,
-        contactType: form.contactType || null,
-      };
-      const res = await fetch("/api/crm/contacts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Fehler");
-      }
-      const created = await res.json();
-      toast.success("Kontakt erstellt");
-      setCreateOpen(false);
-      setForm(EMPTY_FORM);
-      router.push(`/crm/contacts/${created.id}`);
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Fehler beim Erstellen");
-    } finally {
-      setCreating(false);
-    }
-  };
-
+  // --------------------------------------------------------------------------
+  // Data loading
+  // --------------------------------------------------------------------------
   const load = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "100" });
+      const params = new URLSearchParams({ limit: "200" });
       if (search) params.set("search", search);
-      if (contactType !== "all") params.set("contactType", contactType);
-      if (role !== "all") params.set("role", role);
+      if (activeLabels.length > 0) params.set("labels", activeLabels.join(","));
 
       const res = await fetch(`/api/crm/contacts?${params}`);
       if (!res.ok) throw new Error();
@@ -194,26 +198,51 @@ export default function CrmContactsPage() {
     }
   };
 
-  useEffect(() => { if (flags.crm) load(); }, [search, contactType, role, flags.crm]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Reset selection on filter change
   useEffect(() => {
-    setSelectedIds(new Set());
-  }, [search, contactType, role]);
+    if (flags.crm) load();
+  }, [search, activeLabels, flags.crm]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load all tags once for bulk operations
+  // Load custom labels (PersonTag table) once for the filter dropdown
   useEffect(() => {
     if (!flags.crm) return;
     fetch("/api/crm/tags")
       .then((r) => (r.ok ? r.json() : []))
-      .then(setAllTags)
+      .then(setCustomLabels)
       .catch(() => {});
   }, [flags.crm]);
 
+  // Reset selection when filter or search changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [search, activeLabels]);
+
+  // Keep URL in sync with label filter
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (activeLabels.length > 0) {
+      url.searchParams.set("labels", activeLabels.join(","));
+    } else {
+      url.searchParams.delete("labels");
+    }
+    window.history.replaceState({}, "", url.toString());
+  }, [activeLabels]);
+
+  // --------------------------------------------------------------------------
+  // Helpers
+  // --------------------------------------------------------------------------
   const displayName = (c: CrmContact) => {
-    if (c.firstName || c.lastName) return `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim();
+    if (c.firstName || c.lastName)
+      return `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim();
     return c.companyName ?? "—";
   };
+
+  const toggleLabel = (label: string) => {
+    setActiveLabels((prev) =>
+      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label],
+    );
+  };
+
+  const clearLabels = () => setActiveLabels([]);
 
   const toggleOne = (id: string) => {
     setSelectedIds((prev) => {
@@ -232,6 +261,15 @@ export default function CrmContactsPage() {
     }
   };
 
+  // --------------------------------------------------------------------------
+  // Dynamic columns — show context-specific data when filter implies it
+  // --------------------------------------------------------------------------
+  const showLeaseColumn = activeLabels.includes("Verpächter");
+  const showShareholderColumn = activeLabels.includes("Gesellschafter");
+
+  // --------------------------------------------------------------------------
+  // Bulk actions
+  // --------------------------------------------------------------------------
   const exportCsv = () => {
     const selected = contacts.filter((c) => selectedIds.has(c.id));
     if (selected.length === 0) {
@@ -243,20 +281,20 @@ export default function CrmContactsPage() {
       "Firma",
       "E-Mail",
       "Telefon",
-      "Mobil",
-      "Kontakttyp",
-      "Status",
-      "Tags",
+      "Straße",
+      "PLZ",
+      "Ort",
+      "Labels",
     ];
     const rows = selected.map((c) => [
       displayName(c),
       c.companyName ?? "",
       c.email ?? "",
       c.phone ?? "",
-      c.mobile ?? "",
-      c.contactType ?? "",
-      c.status,
-      c.tags.map((t) => t.name).join("; "),
+      [c.street, c.houseNumber].filter(Boolean).join(" "),
+      c.postalCode ?? "",
+      c.city ?? "",
+      c.labels.join("; "),
     ]);
     const csv = [header, ...rows]
       .map((row) =>
@@ -268,8 +306,9 @@ export default function CrmContactsPage() {
           .join(";"),
       )
       .join("\n");
-    // UTF-8 BOM for Excel
-    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([`\uFEFF${csv}`], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -281,7 +320,7 @@ export default function CrmContactsPage() {
 
   const bulkAssignTag = async () => {
     if (!bulkTagId) {
-      toast.error("Bitte einen Tag auswählen");
+      toast.error("Bitte ein Label auswählen");
       return;
     }
     setBulkTagging(true);
@@ -299,29 +338,100 @@ export default function CrmContactsPage() {
       const ok = results.filter(
         (r) => r.status === "fulfilled" && (r.value as Response).ok,
       ).length;
-      toast.success(`${ok} von ${ids.length} Kontakten getaggt`);
+      toast.success(`${ok} von ${ids.length} Kontakten mit Label versehen`);
       setTagDialogOpen(false);
       setBulkTagId("");
       setSelectedIds(new Set());
       load();
     } catch {
-      toast.error("Fehler beim Bulk-Tagging");
+      toast.error("Fehler beim Bulk-Labeln");
     } finally {
       setBulkTagging(false);
     }
   };
 
+  // --------------------------------------------------------------------------
+  // Create contact — with dedup check
+  // --------------------------------------------------------------------------
+  const handleCreate = async (force = false) => {
+    setCreating(true);
+    try {
+      const body = {
+        personType: form.personType,
+        salutation: form.salutation || null,
+        firstName: form.firstName || null,
+        lastName: form.lastName || null,
+        companyName: form.companyName || null,
+        email: form.email || null,
+        phone: form.phone || null,
+        street: form.street || null,
+        houseNumber: form.houseNumber || null,
+        postalCode: form.postalCode || null,
+        city: form.city || null,
+        force,
+      };
+      const res = await fetch("/api/crm/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.status === 409) {
+        const err = await res.json();
+        setDedupMatch(err.existing as ExistingMatch);
+        return;
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Fehler");
+      }
+      const created = await res.json();
+      toast.success("Kontakt erstellt");
+      setCreateOpen(false);
+      setForm(EMPTY_FORM);
+      setDedupMatch(null);
+      router.push(`/crm/contacts/${created.id}`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Fehler beim Erstellen");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const openExistingFromDedup = () => {
+    if (dedupMatch) {
+      setCreateOpen(false);
+      setDedupMatch(null);
+      setForm(EMPTY_FORM);
+      router.push(`/crm/contacts/${dedupMatch.id}`);
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // Label filter: all available labels = derived keys + custom tag names
+  // --------------------------------------------------------------------------
+  const allAvailableLabels = useMemo(() => {
+    const derived = [...DERIVED_LABEL_KEYS];
+    const custom = customLabels.map((t) => t.name);
+    return [...derived, ...custom.filter((c) => !derived.includes(c as (typeof DERIVED_LABEL_KEYS)[number]))];
+  }, [customLabels]);
+
+  // --------------------------------------------------------------------------
+  // Guard
+  // --------------------------------------------------------------------------
   if (!flags.crm) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <Users className="h-12 w-12 text-muted-foreground mb-4" />
         <h2 className="text-lg font-semibold">CRM nicht aktiviert</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-          Das CRM-Modul ist für diesen Mandanten nicht freigeschaltet. Bitte wenden Sie sich an Ihren Administrator.
+          Das CRM-Modul ist für diesen Mandanten nicht freigeschaltet. Bitte
+          wenden Sie sich an Ihren Administrator.
         </p>
       </div>
     );
   }
+
+  const columnCount = 5 + (showLeaseColumn ? 1 : 0) + (showShareholderColumn ? 2 : 0);
 
   return (
     <div className="space-y-6">
@@ -336,7 +446,7 @@ export default function CrmContactsPage() {
         }
       />
 
-      {/* Filters */}
+      {/* Filter bar */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -347,141 +457,70 @@ export default function CrmContactsPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select value={contactType} onValueChange={setContactType}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Alle Typen" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle Typen</SelectItem>
-            {CONTACT_TYPES.map((t) => (
-              <SelectItem key={t} value={t}>{t}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={role} onValueChange={setRole}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Alle Rollen" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle Rollen</SelectItem>
-            {ROLES.map((r) => (
-              <SelectItem key={r.value} value={r.value}>
-                {r.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/* Label multi-select */}
+        <Popover open={labelPopoverOpen} onOpenChange={setLabelPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full sm:w-64 justify-start gap-2"
+            >
+              <TagIcon className="h-4 w-4" />
+              {activeLabels.length === 0
+                ? "Alle Labels"
+                : `${activeLabels.length} Label${activeLabels.length === 1 ? "" : "s"} aktiv`}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-2" align="start">
+            <div className="flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground">
+              <span>Labels filtern (UND)</span>
+              {activeLabels.length > 0 && (
+                <button
+                  onClick={clearLabels}
+                  className="hover:text-foreground"
+                >
+                  Zurücksetzen
+                </button>
+              )}
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {allAvailableLabels.map((label) => {
+                const isActive = activeLabels.includes(label);
+                return (
+                  <button
+                    key={label}
+                    onClick={() => toggleLabel(label)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-muted"
+                  >
+                    <div className="w-4 h-4 flex items-center justify-center">
+                      {isActive && <Check className="h-3 w-3" />}
+                    </div>
+                    <span className="flex-1 text-left">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) setForm(EMPTY_FORM); }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Neuer Kontakt</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label>Typ</Label>
-              <Select value={form.personType} onValueChange={(v) => setForm((f) => ({ ...f, personType: v as "natural" | "legal" }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="natural">Natürliche Person</SelectItem>
-                  <SelectItem value="legal">Juristische Person / Firma</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {form.personType === "natural" && (
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Anrede</Label>
-                  <Select value={form.salutation || "none"} onValueChange={(v) => setForm((f) => ({ ...f, salutation: v === "none" ? "" : v }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">—</SelectItem>
-                      <SelectItem value="Herr">Herr</SelectItem>
-                      <SelectItem value="Frau">Frau</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 space-y-1.5">
-                  <Label>Vorname</Label>
-                  <input
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                    value={form.firstName}
-                    onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-                    placeholder="Max"
-                  />
-                </div>
-              </div>
-            )}
-            {form.personType === "natural" ? (
-              <div className="space-y-1.5">
-                <Label>Nachname *</Label>
-                <input
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                  value={form.lastName}
-                  onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-                  placeholder="Mustermann"
-                />
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <Label>Firmenname *</Label>
-                <input
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                  value={form.companyName}
-                  onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
-                  placeholder="Muster GmbH"
-                />
-              </div>
-            )}
-            <div className="space-y-1.5">
-              <Label>E-Mail</Label>
-              <input
-                type="email"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                placeholder="m.mustermann@beispiel.de"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Telefon</Label>
-              <input
-                type="tel"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                value={form.phone}
-                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                placeholder="+49 123 456789"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Kontakttyp</Label>
-              <Select value={form.contactType || "none"} onValueChange={(v) => setForm((f) => ({ ...f, contactType: v === "none" ? "" : v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Kein Typ" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Kein Typ</SelectItem>
-                  {CONTACT_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>Abbrechen</Button>
-            <Button onClick={handleCreate} disabled={creating}>
-              {creating ? "Speichern..." : "Kontakt anlegen"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Active label chips */}
+      {activeLabels.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {activeLabels.map((label) => (
+            <Badge key={label} variant="secondary" className="gap-1 pr-1">
+              {label}
+              <button
+                onClick={() => toggleLabel(label)}
+                className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5"
+                aria-label={`${label} entfernen`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
 
       {/* Table */}
       <Card>
@@ -492,32 +531,45 @@ export default function CrmContactsPage() {
                 <TableHead className="w-10">
                   <Checkbox
                     checked={
-                      contacts.length > 0 && selectedIds.size === contacts.length
+                      contacts.length > 0 &&
+                      selectedIds.size === contacts.length
                     }
                     onCheckedChange={toggleAll}
                     aria-label="Alle auswählen"
                   />
                 </TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Typ</TableHead>
                 <TableHead className="hidden md:table-cell">E-Mail</TableHead>
                 <TableHead className="hidden lg:table-cell">Telefon</TableHead>
+                {showLeaseColumn && (
+                  <TableHead className="text-right">Pachtverträge</TableHead>
+                )}
+                {showShareholderColumn && (
+                  <>
+                    <TableHead className="text-right">Fonds</TableHead>
+                    <TableHead className="text-right">Kapital</TableHead>
+                  </>
+                )}
                 <TableHead>Letzte Aktivität</TableHead>
-                <TableHead className="text-right">Aktivitäten</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((__, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                    {Array.from({ length: columnCount }).map((__, j) => (
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : contacts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={columnCount}
+                    className="py-12 text-center text-muted-foreground"
+                  >
                     Keine Kontakte gefunden
                   </TableCell>
                 </TableRow>
@@ -538,37 +590,28 @@ export default function CrmContactsPage() {
                         aria-label={`${displayName(c)} auswählen`}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">
-                      {displayName(c)}
-                      {c.tags.length > 0 && (
+                    <TableCell>
+                      <div className="font-medium">{displayName(c)}</div>
+                      {c.labels.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {c.tags.slice(0, 3).map((t) => (
+                          {c.labels.slice(0, 4).map((label) => (
                             <Badge
-                              key={t.id}
+                              key={label}
                               variant="secondary"
                               className="text-[10px] h-4 px-1.5"
-                              style={
-                                t.color
-                                  ? { backgroundColor: `${t.color}20`, color: t.color }
-                                  : undefined
-                              }
                             >
-                              {t.name}
+                              {label}
                             </Badge>
                           ))}
-                          {c.tags.length > 3 && (
-                            <Badge variant="outline" className="text-[10px] h-4 px-1.5">
-                              +{c.tags.length - 3}
+                          {c.labels.length > 4 && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] h-4 px-1.5"
+                            >
+                              +{c.labels.length - 4}
                             </Badge>
                           )}
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {c.contactType ? (
-                        <Badge variant="outline" className="text-xs">{c.contactType}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
                       )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
@@ -577,20 +620,49 @@ export default function CrmContactsPage() {
                     <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                       {c.phone ?? c.mobile ?? "—"}
                     </TableCell>
+                    {showLeaseColumn && (
+                      <TableCell className="text-right">
+                        <Badge variant="outline">
+                          {c.context.activeLeaseCount}
+                        </Badge>
+                      </TableCell>
+                    )}
+                    {showShareholderColumn && (
+                      <>
+                        <TableCell className="text-right">
+                          <Badge variant="outline">
+                            {c.context.activeShareholderCount}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-sm font-medium">
+                          {c.context.totalCapitalContributionEur !== null
+                            ? formatCurrency(
+                                c.context.totalCapitalContributionEur,
+                              )
+                            : "—"}
+                        </TableCell>
+                      </>
+                    )}
                     <TableCell>
                       {c.lastActivityAt ? (
                         <span
                           className={`text-sm ${activityAgeClass(c.lastActivityAt)}`}
-                          title={format(new Date(c.lastActivityAt), "dd.MM.yyyy HH:mm", { locale: de })}
+                          title={format(
+                            new Date(c.lastActivityAt),
+                            "dd.MM.yyyy HH:mm",
+                            { locale: de },
+                          )}
                         >
-                          {formatDistanceToNow(new Date(c.lastActivityAt), { addSuffix: true, locale: de })}
+                          {formatDistanceToNow(new Date(c.lastActivityAt), {
+                            addSuffix: true,
+                            locale: de,
+                          })}
                         </span>
                       ) : (
-                        <span className="text-sm text-destructive">Kein Kontakt</span>
+                        <span className="text-sm text-destructive">
+                          Kein Kontakt
+                        </span>
                       )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant="secondary">{c._count.crmActivities}</Badge>
                     </TableCell>
                   </TableRow>
                 ))
@@ -612,33 +684,34 @@ export default function CrmContactsPage() {
               onClick: exportCsv,
             },
             {
-              label: "Tag zuweisen",
+              label: "Label zuweisen",
               icon: <TagIcon className="h-4 w-4" />,
               onClick: () => setTagDialogOpen(true),
-              disabled: allTags.length === 0,
+              disabled: customLabels.length === 0,
             },
           ]}
         />
       )}
 
-      {/* Bulk tag dialog */}
+      {/* Bulk label dialog */}
       <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Tag zuweisen</DialogTitle>
+            <DialogTitle>Label zuweisen</DialogTitle>
             <DialogDescription>
-              Weise {selectedIds.size} Kontakten einen Tag zu.
+              Weise {selectedIds.size} Kontakten ein eigenes Label zu.
+              Abgeleitete Labels entstehen automatisch aus Verträgen.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Tag</Label>
+              <Label>Label</Label>
               <Select value={bulkTagId} onValueChange={setBulkTagId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Tag wählen..." />
+                  <SelectValue placeholder="Label wählen..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {allTags.map((t) => (
+                  {customLabels.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name}
                     </SelectItem>
@@ -655,8 +728,248 @@ export default function CrmContactsPage() {
             >
               Abbrechen
             </Button>
-            <Button onClick={bulkAssignTag} disabled={bulkTagging || !bulkTagId}>
+            <Button
+              onClick={bulkAssignTag}
+              disabled={bulkTagging || !bulkTagId}
+            >
               {bulkTagging ? "Wird zugewiesen..." : "Zuweisen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Dialog */}
+      <Dialog
+        open={createOpen}
+        onOpenChange={(o) => {
+          setCreateOpen(o);
+          if (!o) {
+            setForm(EMPTY_FORM);
+            setDedupMatch(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Neuer Kontakt</DialogTitle>
+            <DialogDescription>
+              Labels wie Verpächter oder Gesellschafter werden automatisch
+              vergeben, sobald ein Vertrag angelegt ist.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Dedup warning banner */}
+          {dedupMatch && (
+            <div className="rounded-md border border-amber-500/50 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
+                <div className="flex-1 text-sm">
+                  <div className="font-medium text-amber-900 dark:text-amber-200">
+                    Existiert bereits
+                  </div>
+                  <div className="mt-1 text-amber-800 dark:text-amber-300">
+                    {dedupMatch.companyName ??
+                      `${dedupMatch.firstName ?? ""} ${dedupMatch.lastName ?? ""}`.trim()}
+                    {dedupMatch.street && (
+                      <>
+                        , {dedupMatch.street} {dedupMatch.houseNumber}
+                        <br />
+                        {dedupMatch.postalCode} {dedupMatch.city}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={openExistingFromDedup}
+                >
+                  Bestehenden öffnen
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setDedupMatch(null);
+                    handleCreate(true);
+                  }}
+                >
+                  Trotzdem neu anlegen
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Typ</Label>
+              <Select
+                value={form.personType}
+                onValueChange={(v) =>
+                  setForm((f) => ({
+                    ...f,
+                    personType: v as "natural" | "legal",
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="natural">Natürliche Person</SelectItem>
+                  <SelectItem value="legal">
+                    Juristische Person / Firma
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {form.personType === "natural" && (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Anrede</Label>
+                  <Select
+                    value={form.salutation || "none"}
+                    onValueChange={(v) =>
+                      setForm((f) => ({
+                        ...f,
+                        salutation: v === "none" ? "" : v,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">—</SelectItem>
+                      <SelectItem value="Herr">Herr</SelectItem>
+                      <SelectItem value="Frau">Frau</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label>Vorname</Label>
+                  <Input
+                    value={form.firstName}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, firstName: e.target.value }))
+                    }
+                    placeholder="Max"
+                  />
+                </div>
+              </div>
+            )}
+
+            {form.personType === "natural" ? (
+              <div className="space-y-1.5">
+                <Label>Nachname *</Label>
+                <Input
+                  value={form.lastName}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, lastName: e.target.value }))
+                  }
+                  placeholder="Mustermann"
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Firmenname *</Label>
+                <Input
+                  value={form.companyName}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, companyName: e.target.value }))
+                  }
+                  placeholder="Muster GmbH"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label>E-Mail</Label>
+              <Input
+                type="email"
+                value={form.email}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
+                placeholder="m.mustermann@beispiel.de"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Telefon</Label>
+              <Input
+                type="tel"
+                value={form.phone}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, phone: e.target.value }))
+                }
+                placeholder="+49 123 456789"
+              />
+            </div>
+
+            {/* Address — needed for dedup key */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2 space-y-1.5">
+                <Label>Straße</Label>
+                <Input
+                  value={form.street}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, street: e.target.value }))
+                  }
+                  placeholder="Hauptstraße"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Hausnr.</Label>
+                <Input
+                  value={form.houseNumber}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, houseNumber: e.target.value }))
+                  }
+                  placeholder="12a"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label>PLZ</Label>
+                <Input
+                  value={form.postalCode}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, postalCode: e.target.value }))
+                  }
+                  placeholder="12345"
+                />
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label>Ort</Label>
+                <Input
+                  value={form.city}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, city: e.target.value }))
+                  }
+                  placeholder="Berlin"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCreateOpen(false)}
+              disabled={creating}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              onClick={() => handleCreate(false)}
+              disabled={creating || dedupMatch !== null}
+            >
+              {creating ? "Speichern..." : "Kontakt anlegen"}
             </Button>
           </DialogFooter>
         </DialogContent>

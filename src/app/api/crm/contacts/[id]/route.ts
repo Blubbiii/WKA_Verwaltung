@@ -6,6 +6,7 @@ import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { loadContact360 } from "@/lib/crm/contact-360";
+import { loadLabelsForPersons } from "@/lib/crm/derived-labels";
 
 const updateSchema = z.object({
   salutation: z.string().max(20).optional().nullable(),
@@ -58,10 +59,18 @@ export async function GET(
       return NextResponse.json({ error: "Kontakt nicht gefunden" }, { status: 404 });
     }
 
-    const contact360 = await loadContact360(id, check.tenantId!);
+    const [contact360, labelBundleMap] = await Promise.all([
+      loadContact360(id, check.tenantId!),
+      loadLabelsForPersons(check.tenantId!, [id]),
+    ]);
+    const bundle = labelBundleMap.get(id);
 
     return NextResponse.json(
-      serializePrisma({ ...person, contact360 }),
+      serializePrisma({
+        ...person,
+        contact360,
+        labels: bundle?.labels ?? [],
+      }),
     );
   } catch (error) {
     logger.error({ err: error }, "Error fetching CRM contact");
