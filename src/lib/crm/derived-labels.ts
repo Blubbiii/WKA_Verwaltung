@@ -10,18 +10,17 @@
  * filter drop-down.
  */
 
+/**
+ * Server-only module — never import from client components.
+ * Client-safe constants live in ./label-constants.ts
+ */
 import { prisma } from "@/lib/prisma";
+import { DERIVED_LABEL_KEYS, type DerivedLabel } from "./label-constants";
 
-export const DERIVED_LABEL_KEYS = [
-  "Verpächter",
-  "Gesellschafter",
-  "Wartungsfirma",
-  "Versicherung",
-  "Netzbetreiber",
-  "Direktvermarkter",
-] as const;
-
-export type DerivedLabel = (typeof DERIVED_LABEL_KEYS)[number];
+// Re-export for convenience so existing server-side imports from this module
+// keep working after the client/server split.
+export { DERIVED_LABEL_KEYS };
+export type { DerivedLabel };
 
 /**
  * Raw relation data needed to decide whether a person has a given derived label.

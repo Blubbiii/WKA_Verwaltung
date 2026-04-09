@@ -39,7 +39,7 @@ import {
 import { ContactLinkDialog } from "@/components/crm/contact-link-dialog";
 import { PersonTags, type PersonTag } from "@/components/crm/person-tags";
 import { EmailLogDialog } from "@/components/crm/email-log-dialog";
-import { DERIVED_LABEL_KEYS } from "@/lib/crm/derived-labels";
+import { DERIVED_LABEL_KEYS } from "@/lib/crm/label-constants";
 
 // ============================================================================
 // Types

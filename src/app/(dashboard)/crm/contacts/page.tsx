@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -54,7 +54,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format";
-import { DERIVED_LABEL_KEYS } from "@/lib/crm/derived-labels";
+import { DERIVED_LABEL_KEYS } from "@/lib/crm/label-constants";
 
 // ============================================================================
 // Types
@@ -149,7 +149,6 @@ function activityAgeClass(lastActivityAt: string | null): string {
 
 export default function CrmContactsPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { flags } = useFeatureFlags();
 
   const [contacts, setContacts] = useState<CrmContact[]>([]);
@@ -157,12 +156,19 @@ export default function CrmContactsPage() {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
-  // Initialize from URL ?labels=Verpächter,Bank so deep links work
-  const [activeLabels, setActiveLabels] = useState<string[]>(() => {
-    const p = searchParams.get("labels");
-    return p ? p.split(",").map((s) => s.trim()).filter(Boolean) : [];
-  });
+  const [activeLabels, setActiveLabels] = useState<string[]>([]);
   const [labelPopoverOpen, setLabelPopoverOpen] = useState(false);
+
+  // Initialize from URL ?labels=Verpächter,Bank so deep links work
+  // Read from window directly (not useSearchParams) to avoid the Next.js
+  // "useSearchParams() should be wrapped in a suspense boundary" build error.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search).get("labels");
+    if (p) {
+      setActiveLabels(p.split(",").map((s) => s.trim()).filter(Boolean));
+    }
+  }, []);
 
   const [customLabels, setCustomLabels] = useState<CustomLabelLite[]>([]);
 
