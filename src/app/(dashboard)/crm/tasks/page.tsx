@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { format, formatDistanceToNow, isBefore, isToday } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import {
   CheckSquare,
   Clock,
@@ -66,39 +67,38 @@ function personLabel(p: CrmUser | null): string {
   return [p.firstName, p.lastName].filter(Boolean).join(" ") || "—";
 }
 
-function linkedEntityLabel(t: TaskItem): {
-  label: string;
-  href: string;
-  icon: React.ReactNode;
-} | null {
-  if (t.person) {
+function linkedEntityLabel(
+  task: TaskItem,
+  leaseFallback: string,
+): { label: string; href: string; icon: React.ReactNode } | null {
+  if (task.person) {
     return {
-      label: personLabel(t.person),
-      href: `/crm/contacts/${t.person.id}`,
+      label: personLabel(task.person),
+      href: `/crm/contacts/${task.person.id}`,
       icon: <UserIcon className="h-3 w-3" />,
     };
   }
-  if (t.fund) {
+  if (task.fund) {
     return {
-      label: t.fund.name,
-      href: `/funds/${t.fund.id}`,
+      label: task.fund.name,
+      href: `/funds/${task.fund.id}`,
       icon: <Building2 className="h-3 w-3" />,
     };
   }
-  if (t.lease) {
+  if (task.lease) {
     return {
       label:
-        [t.lease.lessor.firstName, t.lease.lessor.lastName]
+        [task.lease.lessor.firstName, task.lease.lessor.lastName]
           .filter(Boolean)
-          .join(" ") || "Pachtvertrag",
-      href: `/leases/${t.lease.id}`,
+          .join(" ") || leaseFallback,
+      href: `/leases/${task.lease.id}`,
       icon: <FileText className="h-3 w-3" />,
     };
   }
-  if (t.park) {
+  if (task.park) {
     return {
-      label: t.park.name,
-      href: `/parks/${t.park.id}`,
+      label: task.park.name,
+      href: `/parks/${task.park.id}`,
       icon: <Wind className="h-3 w-3" />,
     };
   }
@@ -107,6 +107,11 @@ function linkedEntityLabel(t: TaskItem): {
 
 export default function CrmTasksPage() {
   const { flags } = useFeatureFlags();
+  const t = useTranslations("crm.tasks");
+  const tContacts = useTranslations("crm.contacts");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
+  const dateFormat = locale === "en" ? "yyyy-MM-dd" : "dd.MM.yyyy";
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("all");
@@ -120,11 +125,11 @@ export default function CrmTasksPage() {
       if (!res.ok) throw new Error();
       setTasks(await res.json());
     } catch {
-      toast.error("Aufgaben konnten nicht geladen werden");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -138,19 +143,19 @@ export default function CrmTasksPage() {
         body: JSON.stringify({ status: "DONE" }),
       });
       if (!res.ok) throw new Error();
-      toast.success("Als erledigt markiert");
-      setTasks((prev) => prev.filter((t) => t.id !== id));
+      toast.success(t("markedDone"));
+      setTasks((prev) => prev.filter((task) => task.id !== id));
     } catch {
-      toast.error("Fehler beim Aktualisieren");
+      toast.error(t("updateError"));
     }
   };
 
   const filteredTasks = useMemo(() => {
     const now = new Date();
-    return tasks.filter((t) => {
+    return tasks.filter((task) => {
       if (filter === "all") return true;
-      if (!t.dueDate) return filter === "upcoming";
-      const due = new Date(t.dueDate);
+      if (!task.dueDate) return filter === "upcoming";
+      const due = new Date(task.dueDate);
       switch (filter) {
         case "overdue":
           return isBefore(due, now) && !isToday(due);
@@ -169,12 +174,12 @@ export default function CrmTasksPage() {
     let overdue = 0;
     let today = 0;
     let upcoming = 0;
-    for (const t of tasks) {
-      if (!t.dueDate) {
+    for (const task of tasks) {
+      if (!task.dueDate) {
         upcoming++;
         continue;
       }
-      const due = new Date(t.dueDate);
+      const due = new Date(task.dueDate);
       if (isBefore(due, now) && !isToday(due)) overdue++;
       else if (isToday(due)) today++;
       else upcoming++;
@@ -186,9 +191,9 @@ export default function CrmTasksPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <CheckSquare className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">CRM nicht aktiviert</h2>
+        <h2 className="text-lg font-semibold">{tContacts("crmDisabled")}</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-          Das CRM-Modul ist für diesen Mandanten nicht freigeschaltet.
+          {tContacts("crmDisabledHint")}
         </p>
       </div>
     );
@@ -196,21 +201,18 @@ export default function CrmTasksPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Aufgaben"
-        description="Offene Aufgaben aus dem CRM. Erledige sie direkt, um sie aus der Liste zu entfernen."
-      />
+      <PageHeader title={t("title")} description={t("description")} />
 
       <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
         <TabsList>
           <TabsTrigger value="all">
-            Alle
+            {t("filterAll")}
             <Badge variant="secondary" className="ml-2">
               {counts.all}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="overdue">
-            Überfällig
+            {t("filterOverdue")}
             {counts.overdue > 0 ? (
               <Badge variant="destructive" className="ml-2">
                 {counts.overdue}
@@ -218,7 +220,7 @@ export default function CrmTasksPage() {
             ) : null}
           </TabsTrigger>
           <TabsTrigger value="today">
-            Heute
+            {t("filterToday")}
             {counts.today > 0 ? (
               <Badge variant="default" className="ml-2">
                 {counts.today}
@@ -226,7 +228,7 @@ export default function CrmTasksPage() {
             ) : null}
           </TabsTrigger>
           <TabsTrigger value="upcoming">
-            Bevorstehend
+            {t("filterUpcoming")}
             <Badge variant="secondary" className="ml-2">
               {counts.upcoming}
             </Badge>
@@ -243,37 +245,40 @@ export default function CrmTasksPage() {
       ) : filteredTasks.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center text-sm text-muted-foreground">
-            Keine Aufgaben in dieser Ansicht.
+            {t("noTasks")}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {filteredTasks.map((t) => {
-            const linked = linkedEntityLabel(t);
-            const due = t.dueDate ? new Date(t.dueDate) : null;
+          {filteredTasks.map((task) => {
+            const linked = linkedEntityLabel(task, t("leaseFallback"));
+            const due = task.dueDate ? new Date(task.dueDate) : null;
             const overdue = due
               ? isBefore(due, new Date()) && !isToday(due)
               : false;
             return (
-              <Card key={t.id} className={overdue ? "border-destructive/50" : ""}>
+              <Card
+                key={task.id}
+                className={overdue ? "border-destructive/50" : ""}
+              >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-3">
                     <CardTitle className="text-base font-medium flex items-center gap-2">
                       <CheckSquare className="h-4 w-4 text-muted-foreground" />
-                      {t.title}
+                      {task.title}
                     </CardTitle>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => markDone(t.id)}
+                      onClick={() => markDone(task.id)}
                     >
-                      Erledigen
+                      {t("markDone")}
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0 text-sm space-y-2">
-                  {t.description && (
-                    <p className="text-muted-foreground">{t.description}</p>
+                  {task.description && (
+                    <p className="text-muted-foreground">{task.description}</p>
                   )}
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     {due && (
@@ -286,9 +291,16 @@ export default function CrmTasksPage() {
                         ) : (
                           <Clock className="h-3 w-3" />
                         )}
-                        Fällig {format(due, "dd.MM.yyyy", { locale: de })}
+                        {t("dueBadge", {
+                          date: format(due, dateFormat, { locale: dateLocale }),
+                        })}
                         {overdue
-                          ? ` (${formatDistanceToNow(due, { locale: de, addSuffix: false })} überfällig)`
+                          ? ` (${t("overdueSuffix", {
+                              distance: formatDistanceToNow(due, {
+                                locale: dateLocale,
+                                addSuffix: false,
+                              }),
+                            })})`
                           : ""}
                       </Badge>
                     )}
@@ -301,9 +313,9 @@ export default function CrmTasksPage() {
                         {linked.label}
                       </Link>
                     )}
-                    {t.assignedTo && (
+                    {task.assignedTo && (
                       <Badge variant="secondary">
-                        {personLabel(t.assignedTo)}
+                        {personLabel(task.assignedTo)}
                       </Badge>
                     )}
                   </div>

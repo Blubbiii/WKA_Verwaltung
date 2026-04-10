@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -47,15 +48,15 @@ interface ContactEditDialogProps {
   onSaved: () => void;
 }
 
-const SALUTATIONS = ["Herr", "Frau", "Firma", "Dr.", "Prof."];
-const CONTACT_TYPES = [
+const SALUTATIONS = ["Herr", "Frau", "Firma", "Dr.", "Prof."] as const;
+const CONTACT_TYPE_KEYS = [
   "Gesellschafter",
   "Pächter",
   "Investor",
   "Partner",
   "Dienstleister",
   "Sonstiges",
-];
+] as const;
 
 export function ContactEditDialog({
   open,
@@ -63,6 +64,9 @@ export function ContactEditDialog({
   contact,
   onSaved,
 }: ContactEditDialogProps) {
+  const t = useTranslations("crm.contactEdit");
+  const tDetail = useTranslations("crm.detail");
+  const tCommon = useTranslations("common");
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     salutation: contact.salutation ?? "",
@@ -123,14 +127,14 @@ export function ContactEditDialog({
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Speichern");
+        throw new Error(err.error || t("saveError"));
       }
 
-      toast.success("Kontakt aktualisiert");
+      toast.success(t("saveSuccess"));
       onSaved();
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setSaving(false);
     }
@@ -140,95 +144,143 @@ export function ContactEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Kontakt bearbeiten</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           {/* Name Section */}
           <div className="grid grid-cols-4 gap-3">
             <div className="space-y-1.5">
-              <Label>Anrede</Label>
-              <Select value={form.salutation || "none"} onValueChange={(v) => update("salutation", v === "none" ? "" : v)}>
+              <Label>{t("salutationLabel")}</Label>
+              <Select
+                value={form.salutation || "none"}
+                onValueChange={(v) =>
+                  update("salutation", v === "none" ? "" : v)
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="—" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">—</SelectItem>
                   {SALUTATIONS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Vorname</Label>
-              <Input value={form.firstName} onChange={(e) => update("firstName", e.target.value)} />
+              <Label>{t("firstNameLabel")}</Label>
+              <Input
+                value={form.firstName}
+                onChange={(e) => update("firstName", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label>Nachname</Label>
-              <Input value={form.lastName} onChange={(e) => update("lastName", e.target.value)} />
+              <Label>{t("lastNameLabel")}</Label>
+              <Input
+                value={form.lastName}
+                onChange={(e) => update("lastName", e.target.value)}
+              />
             </div>
           </div>
 
           {/* Company */}
           <div className="space-y-1.5">
-            <Label>Firma / Organisation</Label>
-            <Input value={form.companyName} onChange={(e) => update("companyName", e.target.value)} />
+            <Label>{t("companyNameLabel")}</Label>
+            <Input
+              value={form.companyName}
+              onChange={(e) => update("companyName", e.target.value)}
+            />
           </div>
 
           {/* Contact Info */}
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label>E-Mail</Label>
-              <Input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} />
+              <Label>{t("emailLabel")}</Label>
+              <Input
+                type="email"
+                value={form.email}
+                onChange={(e) => update("email", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label>Telefon</Label>
-              <Input value={form.phone} onChange={(e) => update("phone", e.target.value)} />
+              <Label>{t("phoneLabel")}</Label>
+              <Input
+                value={form.phone}
+                onChange={(e) => update("phone", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label>Mobil</Label>
-              <Input value={form.mobile} onChange={(e) => update("mobile", e.target.value)} />
+              <Label>{t("mobileLabel")}</Label>
+              <Input
+                value={form.mobile}
+                onChange={(e) => update("mobile", e.target.value)}
+              />
             </div>
           </div>
 
           {/* Address */}
           <div className="grid grid-cols-4 gap-3">
             <div className="space-y-1.5 col-span-3">
-              <Label>Straße</Label>
-              <Input value={form.street} onChange={(e) => update("street", e.target.value)} />
+              <Label>{t("streetLabel")}</Label>
+              <Input
+                value={form.street}
+                onChange={(e) => update("street", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label>Hausnr.</Label>
-              <Input value={form.houseNumber} onChange={(e) => update("houseNumber", e.target.value)} />
+              <Label>{t("houseNumberLabel")}</Label>
+              <Input
+                value={form.houseNumber}
+                onChange={(e) => update("houseNumber", e.target.value)}
+              />
             </div>
           </div>
           <div className="grid grid-cols-4 gap-3">
             <div className="space-y-1.5">
-              <Label>PLZ</Label>
-              <Input value={form.postalCode} onChange={(e) => update("postalCode", e.target.value)} />
+              <Label>{t("postalCodeLabel")}</Label>
+              <Input
+                value={form.postalCode}
+                onChange={(e) => update("postalCode", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label>Ort</Label>
-              <Input value={form.city} onChange={(e) => update("city", e.target.value)} />
+              <Label>{t("cityLabel")}</Label>
+              <Input
+                value={form.city}
+                onChange={(e) => update("city", e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label>Land</Label>
-              <Input value={form.country} onChange={(e) => update("country", e.target.value)} />
+              <Label>{t("countryLabel")}</Label>
+              <Input
+                value={form.country}
+                onChange={(e) => update("country", e.target.value)}
+              />
             </div>
           </div>
 
           {/* Type */}
           <div className="space-y-1.5">
-            <Label>Kontakttyp</Label>
-            <Select value={form.contactType || "none"} onValueChange={(v) => update("contactType", v === "none" ? "" : v)}>
+            <Label>{tDetail("contactTypeLabel")}</Label>
+            <Select
+              value={form.contactType || "none"}
+              onValueChange={(v) => update("contactType", v === "none" ? "" : v)}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Typ wählen..." />
+                <SelectValue placeholder={tDetail("contactTypePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Kein Typ</SelectItem>
-                {CONTACT_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                <SelectItem value="none">
+                  {tDetail("contactTypeNone")}
+                </SelectItem>
+                {CONTACT_TYPE_KEYS.map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {tDetail(`contactTypes.${key}`)}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -236,22 +288,27 @@ export function ContactEditDialog({
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <Label>Notizen</Label>
+            <Label>{t("notesLabel")}</Label>
             <Textarea
               value={form.notes}
               onChange={(e) => update("notes", e.target.value)}
               rows={3}
+              placeholder={t("notesPlaceholder")}
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Abbrechen
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+          >
+            {tCommon("cancel")}
           </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Speichern
+            {t("saveButton")}
           </Button>
         </DialogFooter>
       </DialogContent>

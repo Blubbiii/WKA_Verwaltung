@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from "react";
 import { format, formatDistanceToNow } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Phone,
   Mail,
@@ -66,14 +67,6 @@ const TYPE_ICONS: Record<ActivityType, React.ElementType> = {
   TASK: CheckSquare,
 };
 
-const TYPE_LABELS: Record<ActivityType, string> = {
-  CALL: "Anruf",
-  EMAIL: "E-Mail",
-  MEETING: "Meeting",
-  NOTE: "Notiz",
-  TASK: "Aufgabe",
-};
-
 const TYPE_COLORS: Record<ActivityType, string> = {
   CALL: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   EMAIL: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
@@ -104,23 +97,48 @@ function ActivityCard({
   onDeleted: (id: string) => void;
   onUpdated: (id: string) => void;
 }) {
+  const t = useTranslations("crm.activityTimeline");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
+  const dateFormat = locale === "en" ? "yyyy-MM-dd" : "dd.MM.yyyy";
+  const dateTimeFormat =
+    locale === "en" ? "yyyy-MM-dd HH:mm" : "dd.MM.yyyy HH:mm";
+
   const [editOpen, setEditOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const Icon = activity.type === "TASK" && activity.status !== "DONE"
-    ? Square
-    : TYPE_ICONS[activity.type];
+  const Icon =
+    activity.type === "TASK" && activity.status !== "DONE"
+      ? Square
+      : TYPE_ICONS[activity.type];
+
+  const typeLabel = (type: ActivityType): string => {
+    switch (type) {
+      case "CALL":
+        return t("typeCall");
+      case "EMAIL":
+        return t("typeEmail");
+      case "MEETING":
+        return t("typeMeeting");
+      case "NOTE":
+        return t("typeNote");
+      case "TASK":
+        return t("typeTask");
+    }
+  };
 
   const handleDelete = async () => {
-    if (!confirm("Aktivität löschen?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/crm/activities/${activity.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Fehler");
-      toast.success("Aktivität gelöscht");
+      const res = await fetch(`/api/crm/activities/${activity.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error();
+      toast.success(t("deletedSuccess"));
       onDeleted(activity.id);
     } catch {
-      toast.error("Löschen fehlgeschlagen");
+      toast.error(t("deleteError"));
     } finally {
       setDeleting(false);
     }
@@ -147,29 +165,42 @@ function ActivityCard({
               <span className="font-medium text-sm">{activity.title}</span>
               <div className="flex flex-wrap items-center gap-2 mt-0.5">
                 <Badge variant="outline" className="text-xs py-0">
-                  {TYPE_LABELS[activity.type]}
+                  {typeLabel(activity.type)}
                 </Badge>
                 {activity.direction && (
                   <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                    {activity.direction === "INBOUND" ? (
+                      <ArrowDownLeft className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpRight className="h-3 w-3" />
+                    )}
                     {activity.direction === "INBOUND"
-                      ? <ArrowDownLeft className="h-3 w-3" />
-                      : <ArrowUpRight className="h-3 w-3" />}
-                    {activity.direction === "INBOUND" ? "Eingehend" : "Ausgehend"}
+                      ? t("directionInbound")
+                      : t("directionOutbound")}
                   </span>
                 )}
                 {activity.duration && (
                   <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    {activity.duration} Min.
+                    {t("durationMinutes", { minutes: activity.duration })}
                   </span>
                 )}
                 {activity.type === "TASK" && (
                   <Badge
-                    variant={activity.status === "DONE" ? "secondary" : isOverdue ? "destructive" : "outline"}
+                    variant={
+                      activity.status === "DONE"
+                        ? "secondary"
+                        : isOverdue
+                          ? "destructive"
+                          : "outline"
+                    }
                     className="text-xs py-0"
                   >
-                    {activity.status === "DONE" ? "Erledigt" :
-                     activity.status === "CANCELLED" ? "Abgebrochen" : "Offen"}
+                    {activity.status === "DONE"
+                      ? t("statusDone")
+                      : activity.status === "CANCELLED"
+                        ? t("statusCancelled")
+                        : t("statusPending")}
                   </Badge>
                 )}
               </div>
@@ -202,13 +233,27 @@ function ActivityCard({
           )}
 
           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-            <span title={format(new Date(activity.createdAt), "dd.MM.yyyy HH:mm", { locale: de })}>
-              {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true, locale: de })}
+            <span
+              title={format(new Date(activity.createdAt), dateTimeFormat, {
+                locale: dateLocale,
+              })}
+            >
+              {formatDistanceToNow(new Date(activity.createdAt), {
+                addSuffix: true,
+                locale: dateLocale,
+              })}
             </span>
-            <span>· {userName(activity.createdBy)}</span>
+            <span>
+              · {t("byUser", { name: userName(activity.createdBy) })}
+            </span>
             {activity.dueDate && activity.type === "TASK" && (
               <span className={isOverdue ? "text-destructive" : ""}>
-                · Fällig: {format(new Date(activity.dueDate), "dd.MM.yyyy", { locale: de })}
+                ·{" "}
+                {t("dueOn", {
+                  date: format(new Date(activity.dueDate), dateFormat, {
+                    locale: dateLocale,
+                  }),
+                })}
               </span>
             )}
           </div>
@@ -231,7 +276,11 @@ function ActivityCard({
 // Main: ActivityTimeline
 // ============================================================================
 
-export function ActivityTimeline({ entityType, entityId }: ActivityTimelineProps) {
+export function ActivityTimeline({
+  entityType,
+  entityId,
+}: ActivityTimelineProps) {
+  const t = useTranslations("crm.activityTimeline");
   const [activities, setActivities] = useState<CrmActivity[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -240,18 +289,20 @@ export function ActivityTimeline({ entityType, entityId }: ActivityTimelineProps
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/crm/activities?${entityType}Id=${entityId}&limit=100`);
+      const res = await fetch(
+        `/api/crm/activities?${entityType}Id=${entityId}&limit=100`,
+      );
       if (!res.ok) throw new Error();
       const data = await res.json();
       setActivities(data);
     } catch {
-      toast.error("Aktivitäten konnten nicht geladen werden");
+      toast.error(t("loadError"));
       setActivities([]);
     } finally {
       setLoading(false);
       setInitialized(true);
     }
-  }, [entityType, entityId]);
+  }, [entityType, entityId, t]);
 
   // Lazy load on first render
   if (!initialized && !loading) {
@@ -267,13 +318,10 @@ export function ActivityTimeline({ entityType, entityId }: ActivityTimelineProps
   return (
     <div className="space-y-2">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">
-          {activities ? `${activities.length} Aktivität${activities.length !== 1 ? "en" : ""}` : ""}
-        </span>
+      <div className="flex items-center justify-end">
         <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
           <Plus className="mr-1.5 h-4 w-4" />
-          Aktivität
+          {t("addButton")}
         </Button>
       </div>
 
@@ -305,12 +353,12 @@ export function ActivityTimeline({ entityType, entityId }: ActivityTimelineProps
         </div>
       ) : (
         <div className="py-8 text-center text-sm text-muted-foreground">
-          Noch keine Aktivitäten.{" "}
+          {t("empty")}{" "}
           <button
             className="underline hover:no-underline"
             onClick={() => setAddOpen(true)}
           >
-            Erste Aktivität erstellen
+            {t("addFirst")}
           </button>
         </div>
       )}

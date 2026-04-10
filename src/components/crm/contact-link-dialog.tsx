@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -22,28 +23,43 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const ENTITY_TYPES = [
-  { value: "PARK", label: "Park" },
-  { value: "FUND", label: "Fonds" },
-  { value: "LEASE", label: "Pachtvertrag" },
-  { value: "CONTRACT", label: "Vertrag" },
+const ENTITY_TYPE_KEYS = ["PARK", "FUND", "LEASE", "CONTRACT"] as const;
+
+const ROLE_KEYS = [
+  "VERPAECHTER",
+  "NETZBETREIBER",
+  "GUTACHTER",
+  "BETRIEBSFUEHRER",
+  "VERSICHERUNG",
+  "RECHTSANWALT",
+  "STEUERBERATER",
+  "DIENSTLEISTER",
+  "BEHOERDE",
+  "SONSTIGES",
 ] as const;
 
-const ROLES = [
-  { value: "VERPAECHTER", label: "Verpächter" },
-  { value: "NETZBETREIBER", label: "Netzbetreiber" },
-  { value: "GUTACHTER", label: "Gutachter" },
-  { value: "BETRIEBSFUEHRER", label: "Betriebsführer" },
-  { value: "VERSICHERUNG", label: "Versicherung" },
-  { value: "RECHTSANWALT", label: "Rechtsanwalt" },
-  { value: "STEUERBERATER", label: "Steuerberater" },
-  { value: "DIENSTLEISTER", label: "Dienstleister" },
-  { value: "BEHOERDE", label: "Behörde" },
-  { value: "SONSTIGES", label: "Sonstiges" },
-] as const;
+type EntityType = (typeof ENTITY_TYPE_KEYS)[number];
+type Role = (typeof ROLE_KEYS)[number];
 
-type EntityType = (typeof ENTITY_TYPES)[number]["value"];
-type Role = (typeof ROLES)[number]["value"];
+const ROLE_I18N_KEY: Record<Role, string> = {
+  VERPAECHTER: "roleVerpaechter",
+  NETZBETREIBER: "roleNetzbetreiber",
+  GUTACHTER: "roleGutachter",
+  BETRIEBSFUEHRER: "roleBetriebsfuehrer",
+  VERSICHERUNG: "roleVersicherung",
+  RECHTSANWALT: "roleRechtsanwalt",
+  STEUERBERATER: "roleSteuerberater",
+  DIENSTLEISTER: "roleDienstleister",
+  BEHOERDE: "roleBehoerde",
+  SONSTIGES: "roleSonstiges",
+};
+
+const ENTITY_I18N_KEY: Record<EntityType, string> = {
+  PARK: "targetPark",
+  FUND: "targetFund",
+  LEASE: "targetLease",
+  CONTRACT: "targetContract",
+};
 
 interface EntityOption {
   id: string;
@@ -132,6 +148,8 @@ export function ContactLinkDialog({
   personId,
   onSuccess,
 }: ContactLinkDialogProps) {
+  const t = useTranslations("crm.contactLink");
+  const tCommon = useTranslations("common");
   const [entityType, setEntityType] = useState<EntityType>("PARK");
   const [entityId, setEntityId] = useState<string>("");
   const [role, setRole] = useState<Role>("BETRIEBSFUEHRER");
@@ -152,7 +170,7 @@ export function ContactLinkDialog({
 
   const handleSubmit = async () => {
     if (!entityId) {
-      toast.error("Bitte eine Entität auswählen");
+      toast.error(t("targetPlaceholder"));
       return;
     }
     setSaving(true);
@@ -171,9 +189,9 @@ export function ContactLinkDialog({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Fehler beim Speichern");
+        throw new Error(err.error ?? t("saveError"));
       }
-      toast.success("Verknüpfung angelegt");
+      toast.success(t("saveSuccess"));
       onSuccess?.();
       onOpenChange(false);
       // Reset for next open
@@ -181,7 +199,7 @@ export function ContactLinkDialog({
       setNotes("");
       setIsPrimary(false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler beim Speichern");
+      toast.error(e instanceof Error ? e.message : t("saveError"));
     } finally {
       setSaving(false);
     }
@@ -191,16 +209,13 @@ export function ContactLinkDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Verknüpfung hinzufügen</DialogTitle>
-          <DialogDescription>
-            Verknüpfe diesen Kontakt mit einem Park, Fonds, Pacht- oder sonstigen
-            Vertrag und weise eine Rolle zu.
-          </DialogDescription>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label>Art der Entität</Label>
+            <Label>{t("targetTypeLabel")}</Label>
             <Select
               value={entityType}
               onValueChange={(v) => setEntityType(v as EntityType)}
@@ -209,9 +224,9 @@ export function ContactLinkDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ENTITY_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
+                {ENTITY_TYPE_KEYS.map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {t(ENTITY_I18N_KEY[key])}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -219,7 +234,7 @@ export function ContactLinkDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Entität</Label>
+            <Label>{t("targetIdLabel")}</Label>
             <Select
               value={entityId}
               onValueChange={setEntityId}
@@ -229,10 +244,10 @@ export function ContactLinkDialog({
                 <SelectValue
                   placeholder={
                     loadingOptions
-                      ? "Lade..."
+                      ? tCommon("loading")
                       : options.length === 0
-                        ? "Keine Einträge verfügbar"
-                        : "Bitte wählen..."
+                        ? t("loadError")
+                        : t("targetPlaceholder")
                   }
                 />
               </SelectTrigger>
@@ -247,15 +262,15 @@ export function ContactLinkDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Rolle</Label>
+            <Label>{t("roleLabel")}</Label>
             <Select value={role} onValueChange={(v) => setRole(v as Role)}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder={t("rolePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                {ROLES.map((r) => (
-                  <SelectItem key={r.value} value={r.value}>
-                    {r.label}
+                {ROLE_KEYS.map((key) => (
+                  <SelectItem key={key} value={key}>
+                    {t(ROLE_I18N_KEY[key])}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -263,11 +278,11 @@ export function ContactLinkDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Notiz (optional)</Label>
+            <Label>{t("notesLabel")}</Label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="z.B. Ansprechpartner für Havariefälle"
+              placeholder={t("notesPlaceholder")}
               rows={3}
             />
           </div>
@@ -279,7 +294,7 @@ export function ContactLinkDialog({
               onCheckedChange={(v) => setIsPrimary(v === true)}
             />
             <Label htmlFor="isPrimary" className="cursor-pointer">
-              Primärer Ansprechpartner für diese Entität
+              {t("isPrimaryLabel")}
             </Label>
           </div>
         </div>
@@ -290,10 +305,10 @@ export function ContactLinkDialog({
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
-            Abbrechen
+            {tCommon("cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={saving || !entityId}>
-            {saving ? "Speichert..." : "Speichern"}
+            {saving ? t("saving") : t("saveButton")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Building2,
   FileText,
@@ -194,19 +195,20 @@ function EntityRow({
 }
 
 function ExpiryBadge({ days }: { days: number | null }) {
+  const t = useTranslations("crm.relatedEntities");
   if (days === null) return null;
   if (days < 0) {
     return (
       <Badge variant="destructive" className="text-xs gap-1">
         <AlertTriangle className="h-3 w-3" />
-        Abgelaufen
+        {t("expiredBadge")}
       </Badge>
     );
   }
   if (days <= 30) {
     return (
       <Badge variant="destructive" className="text-xs">
-        {days} Tage
+        {t("daysBadge", { count: days })}
       </Badge>
     );
   }
@@ -216,7 +218,7 @@ function ExpiryBadge({ days }: { days: number | null }) {
         variant="outline"
         className="text-xs border-amber-500 text-amber-600 dark:text-amber-400"
       >
-        {days} Tage
+        {t("daysBadge", { count: days })}
       </Badge>
     );
   }
@@ -231,6 +233,7 @@ export function RelatedEntitiesPanel({
   data,
   onAddContactLink,
 }: RelatedEntitiesPanelProps) {
+  const t = useTranslations("crm.relatedEntities");
   const {
     leases,
     shareholders,
@@ -255,27 +258,25 @@ export function RelatedEntitiesPanel({
       {/* Header with "Verknüpfung hinzufügen" button */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-muted-foreground">
-          Alle Verknüpfungen dieses Kontakts
+          {t("allLinksHeader")}
         </h3>
         {onAddContactLink && (
           <Button variant="outline" size="sm" onClick={onAddContactLink}>
             <Plus className="mr-2 h-4 w-4" />
-            Verknüpfung
+            {t("addLinkButton")}
           </Button>
         )}
       </div>
 
       {nothingLinked ? (
         <div className="py-12 text-center text-sm text-muted-foreground border rounded-md">
-          Keine Verknüpfungen vorhanden. Nutze den Button oben, um diesen Kontakt
-          mit einem Park, Fonds, Pachtvertrag oder sonstigem Vertrag zu
-          verknüpfen.
+          {t("noLinksHint")}
         </div>
       ) : null}
 
       {/* Pachtverträge — CRITICAL section per user requirement */}
       <Section
-        title="Pachtverträge"
+        title={t("sectionLeasesTitle")}
         icon={<FileText className="h-4 w-4" />}
         count={stats.leaseCount}
         defaultOpen
@@ -287,7 +288,7 @@ export function RelatedEntitiesPanel({
               href={`/leases/${l.id}`}
               title={
                 <>
-                  {l.linkedParkName ?? "Pachtvertrag"}
+                  {l.linkedParkName ?? t("leaseUntitled")}
                   {l.source === "CONTACT_LINK" && l.linkRole ? (
                     <Badge variant="outline" className="text-xs">
                       {l.linkRole}
@@ -298,7 +299,9 @@ export function RelatedEntitiesPanel({
               subtitle={
                 <>
                   {formatDate(l.startDate)}
-                  {l.endDate ? ` – ${formatDate(l.endDate)}` : " – unbefristet"}
+                  {l.endDate
+                    ? ` – ${formatDate(l.endDate)}`
+                    : ` – ${t("unlimited")}`}
                 </>
               }
               right={
@@ -318,7 +321,7 @@ export function RelatedEntitiesPanel({
 
       {/* Fonds-Beteiligungen */}
       <Section
-        title="Fonds-Beteiligungen"
+        title={t("sectionFundsTitle")}
         icon={<Building2 className="h-4 w-4" />}
         count={stats.fundCount}
       >
@@ -340,18 +343,20 @@ export function RelatedEntitiesPanel({
               subtitle={
                 <>
                   {s.ownershipPercentage !== null
-                    ? `${s.ownershipPercentage}% Anteil`
-                    : "Anteil unbekannt"}
+                    ? t("shareSuffix", { percent: s.ownershipPercentage })
+                    : t("shareUnknown")}
                   {s.capitalContribution !== null
                     ? ` · ${formatCurrency(s.capitalContribution)}`
                     : null}
-                  {s.entryDate ? ` · ab ${formatDate(s.entryDate)}` : null}
+                  {s.entryDate
+                    ? ` · ${t("fromDate", { date: formatDate(s.entryDate) })}`
+                    : null}
                 </>
               }
               right={
                 s.exitDate ? (
                   <Badge variant="outline" className="text-xs">
-                    Ausgetreten
+                    {t("exited")}
                   </Badge>
                 ) : null
               }
@@ -362,7 +367,7 @@ export function RelatedEntitiesPanel({
 
       {/* Verträge */}
       <Section
-        title="Verträge"
+        title={t("sectionContractsTitle")}
         icon={<FileText className="h-4 w-4" />}
         count={stats.contractCount}
       >
@@ -388,7 +393,9 @@ export function RelatedEntitiesPanel({
                 <>
                   {c.contractNumber ? `${c.contractNumber} · ` : ""}
                   {formatDate(c.startDate)}
-                  {c.endDate ? ` – ${formatDate(c.endDate)}` : " – unbefristet"}
+                  {c.endDate
+                    ? ` – ${formatDate(c.endDate)}`
+                    : ` – ${t("unlimited")}`}
                 </>
               }
               right={
@@ -409,7 +416,7 @@ export function RelatedEntitiesPanel({
 
       {/* Parks (Rollen) */}
       <Section
-        title="Parks (Rollen)"
+        title={t("sectionParkRolesTitle")}
         icon={<Wind className="h-4 w-4" />}
         count={stats.parkRoleCount}
       >
@@ -426,7 +433,7 @@ export function RelatedEntitiesPanel({
                   </Badge>
                   {p.isPrimary ? (
                     <Badge variant="default" className="text-xs">
-                      Primär
+                      {t("primaryBadge")}
                     </Badge>
                   ) : null}
                 </>
@@ -439,7 +446,7 @@ export function RelatedEntitiesPanel({
 
       {/* Rechnungen */}
       <Section
-        title="Rechnungen"
+        title={t("sectionInvoicesTitle")}
         icon={<Receipt className="h-4 w-4" />}
         count={stats.invoiceCount}
       >
@@ -458,7 +465,8 @@ export function RelatedEntitiesPanel({
               }
               subtitle={
                 <>
-                  {formatDate(inv.invoiceDate)} · via {inv.linkedVia}
+                  {formatDate(inv.invoiceDate)} ·{" "}
+                  {t("viaLinked", { source: inv.linkedVia })}
                 </>
               }
               right={
@@ -478,7 +486,7 @@ export function RelatedEntitiesPanel({
           ))}
           {invoices.length > 20 && (
             <div className="text-xs text-muted-foreground text-center pt-2">
-              {invoices.length - 20} weitere Rechnungen nicht angezeigt
+              {t("moreInvoices", { count: invoices.length - 20 })}
             </div>
           )}
         </div>
@@ -486,7 +494,7 @@ export function RelatedEntitiesPanel({
 
       {/* Dokumente */}
       <Section
-        title="Dokumente"
+        title={t("sectionDocumentsTitle")}
         icon={<FolderOpen className="h-4 w-4" />}
         count={stats.documentCount}
       >
@@ -505,14 +513,15 @@ export function RelatedEntitiesPanel({
               }
               subtitle={
                 <>
-                  {d.fileName} · {formatDate(d.createdAt)} · via {d.linkedVia}
+                  {d.fileName} · {formatDate(d.createdAt)} ·{" "}
+                  {t("viaLinked", { source: d.linkedVia })}
                 </>
               }
             />
           ))}
           {documents.length > 30 && (
             <div className="text-xs text-muted-foreground text-center pt-2">
-              {documents.length - 30} weitere Dokumente nicht angezeigt
+              {t("moreDocuments", { count: documents.length - 30 })}
             </div>
           )}
         </div>
