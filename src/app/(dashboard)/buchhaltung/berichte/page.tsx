@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +24,7 @@ function LoadingSkeleton() {
 }
 
 function BerichtePageInner() {
+  const t = useTranslations("buchhaltung.berichte");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") || "susa";
@@ -33,17 +35,14 @@ function BerichtePageInner() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Berichte"
-        description="Finanzberichte und Auswertungen"
-      />
+      <PageHeader title={t("title")} description={t("description")} />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="susa">Summen & Salden</TabsTrigger>
-          <TabsTrigger value="bwa">BWA</TabsTrigger>
-          <TabsTrigger value="euer">EÜR</TabsTrigger>
-          <TabsTrigger value="guv">GuV</TabsTrigger>
+          <TabsTrigger value="susa">{t("tabSusa")}</TabsTrigger>
+          <TabsTrigger value="bwa">{t("tabBwa")}</TabsTrigger>
+          <TabsTrigger value="euer">{t("tabEuer")}</TabsTrigger>
+          <TabsTrigger value="guv">{t("tabGuv")}</TabsTrigger>
         </TabsList>
         <TabsContent value="susa">
           <Suspense fallback={<LoadingSkeleton />}><SuSaContent /></Suspense>

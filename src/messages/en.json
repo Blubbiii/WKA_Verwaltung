@@ -1065,5 +1065,46 @@
       "syncSuccess": "Auto-sync done: {parks} parks, {turbines} turbines created",
       "syncError": "Auto-sync failed"
     }
+  },
+  "buchhaltung": {
+    "abschluss": {
+      "title": "Export & Year-end",
+      "description": "DATEV export and year-end closing",
+      "tabDatev": "DATEV export",
+      "tabJahresabschluss": "Year-end"
+    },
+    "banking": {
+      "title": "Banking",
+      "description": "Bank import and account management",
+      "tabImport": "Bank import",
+      "tabKonten": "Bank accounts"
+    },
+    "berichte": {
+      "title": "Reports",
+      "description": "Financial reports and analysis",
+      "tabSusa": "Trial balance",
+      "tabBwa": "BWA",
+      "tabEuer": "EÜR",
+      "tabGuv": "P&L"
+    },
+    "planung": {
+      "title": "Planning",
+      "description": "Cost centers, budget and liquidity planning",
+      "tabKostenstellen": "Cost centers",
+      "tabBudget": "Budget plan/actual",
+      "tabLiquiditaet": "Liquidity"
+    },
+    "steuern": {
+      "title": "Taxes & filings",
+      "description": "VAT and EU filings",
+      "tabUstva": "UStVA",
+      "tabZm": "EU recap statement"
+    },
+    "zahlungen": {
+      "title": "Payments",
+      "description": "Dunning and SEPA export",
+      "tabMahnwesen": "Dunning",
+      "tabSepa": "SEPA export"
+    }
   }
 }

@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +22,7 @@ function LoadingSkeleton() {
 }
 
 function AbschlussPageInner() {
+  const t = useTranslations("buchhaltung.abschluss");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") || "datev";
@@ -30,11 +32,11 @@ function AbschlussPageInner() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Export & Abschluss" description="DATEV-Export und Jahresabschluss" />
+      <PageHeader title={t("title")} description={t("description")} />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="datev">DATEV-Export</TabsTrigger>
-          <TabsTrigger value="jahresabschluss">Jahresabschluss</TabsTrigger>
+          <TabsTrigger value="datev">{t("tabDatev")}</TabsTrigger>
+          <TabsTrigger value="jahresabschluss">{t("tabJahresabschluss")}</TabsTrigger>
         </TabsList>
         <TabsContent value="datev">
           <Suspense fallback={<LoadingSkeleton />}><DatevContent /></Suspense>

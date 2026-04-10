@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +22,7 @@ function LoadingSkeleton() {
 }
 
 function SteuernPageInner() {
+  const t = useTranslations("buchhaltung.steuern");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") || "ustva";
@@ -30,11 +32,11 @@ function SteuernPageInner() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Steuern & Meldungen" description="Umsatzsteuer und EU-Meldungen" />
+      <PageHeader title={t("title")} description={t("description")} />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="ustva">UStVA</TabsTrigger>
-          <TabsTrigger value="zm">ZM (EU-Meldung)</TabsTrigger>
+          <TabsTrigger value="ustva">{t("tabUstva")}</TabsTrigger>
+          <TabsTrigger value="zm">{t("tabZm")}</TabsTrigger>
         </TabsList>
         <TabsContent value="ustva">
           <Suspense fallback={<LoadingSkeleton />}><UstvaContent /></Suspense>

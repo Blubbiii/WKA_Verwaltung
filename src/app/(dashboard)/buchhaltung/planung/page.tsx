@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +23,7 @@ function LoadingSkeleton() {
 }
 
 function PlanungPageInner() {
+  const t = useTranslations("buchhaltung.planung");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") || "kostenstellen";
@@ -31,12 +33,12 @@ function PlanungPageInner() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Planung" description="Kostenstellen, Budget und Liquiditaetsplanung" />
+      <PageHeader title={t("title")} description={t("description")} />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="kostenstellen">Kostenstellen</TabsTrigger>
-          <TabsTrigger value="budget">Budget Soll/Ist</TabsTrigger>
-          <TabsTrigger value="liquiditaet">Liquiditaet</TabsTrigger>
+          <TabsTrigger value="kostenstellen">{t("tabKostenstellen")}</TabsTrigger>
+          <TabsTrigger value="budget">{t("tabBudget")}</TabsTrigger>
+          <TabsTrigger value="liquiditaet">{t("tabLiquiditaet")}</TabsTrigger>
         </TabsList>
         <TabsContent value="kostenstellen">
           <Suspense fallback={<LoadingSkeleton />}><KostenstellenContent /></Suspense>

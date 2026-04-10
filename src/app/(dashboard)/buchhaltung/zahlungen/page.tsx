@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +22,7 @@ function LoadingSkeleton() {
 }
 
 function ZahlungenPageInner() {
+  const t = useTranslations("buchhaltung.zahlungen");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") || "mahnwesen";
@@ -30,11 +32,11 @@ function ZahlungenPageInner() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Zahlungen" description="Mahnwesen und SEPA-Export" />
+      <PageHeader title={t("title")} description={t("description")} />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="mahnwesen">Mahnwesen</TabsTrigger>
-          <TabsTrigger value="sepa">SEPA-Export</TabsTrigger>
+          <TabsTrigger value="mahnwesen">{t("tabMahnwesen")}</TabsTrigger>
+          <TabsTrigger value="sepa">{t("tabSepa")}</TabsTrigger>
         </TabsList>
         <TabsContent value="mahnwesen">
           <Suspense fallback={<LoadingSkeleton />}><MahnwesenContent /></Suspense>

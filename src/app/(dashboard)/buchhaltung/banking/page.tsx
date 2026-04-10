@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +22,7 @@ function LoadingSkeleton() {
 }
 
 function BankingPageInner() {
+  const t = useTranslations("buchhaltung.banking");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") || "import";
@@ -30,11 +32,11 @@ function BankingPageInner() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Banking" description="Bankimport und Kontenverwaltung" />
+      <PageHeader title={t("title")} description={t("description")} />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="import">Bankimport</TabsTrigger>
-          <TabsTrigger value="konten">Bankkonten</TabsTrigger>
+          <TabsTrigger value="import">{t("tabImport")}</TabsTrigger>
+          <TabsTrigger value="konten">{t("tabKonten")}</TabsTrigger>
         </TabsList>
         <TabsContent value="import">
           <Suspense fallback={<LoadingSkeleton />}><BankImportContent /></Suspense>

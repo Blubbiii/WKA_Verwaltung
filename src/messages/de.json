@@ -1065,5 +1065,46 @@
       "syncSuccess": "Auto-Sync abgeschlossen: {parks} Parks, {turbines} Turbinen erstellt",
       "syncError": "Fehler beim Auto-Sync"
     }
+  },
+  "buchhaltung": {
+    "abschluss": {
+      "title": "Export & Abschluss",
+      "description": "DATEV-Export und Jahresabschluss",
+      "tabDatev": "DATEV-Export",
+      "tabJahresabschluss": "Jahresabschluss"
+    },
+    "banking": {
+      "title": "Banking",
+      "description": "Bankimport und Kontenverwaltung",
+      "tabImport": "Bankimport",
+      "tabKonten": "Bankkonten"
+    },
+    "berichte": {
+      "title": "Berichte",
+      "description": "Finanzberichte und Auswertungen",
+      "tabSusa": "Summen & Salden",
+      "tabBwa": "BWA",
+      "tabEuer": "EÜR",
+      "tabGuv": "GuV"
+    },
+    "planung": {
+      "title": "Planung",
+      "description": "Kostenstellen, Budget und Liquiditätsplanung",
+      "tabKostenstellen": "Kostenstellen",
+      "tabBudget": "Budget Soll/Ist",
+      "tabLiquiditaet": "Liquidität"
+    },
+    "steuern": {
+      "title": "Steuern & Meldungen",
+      "description": "Umsatzsteuer und EU-Meldungen",
+      "tabUstva": "UStVA",
+      "tabZm": "ZM (EU-Meldung)"
+    },
+    "zahlungen": {
+      "title": "Zahlungen",
+      "description": "Mahnwesen und SEPA-Export",
+      "tabMahnwesen": "Mahnwesen",
+      "tabSepa": "SEPA-Export"
+    }
   }
 }
