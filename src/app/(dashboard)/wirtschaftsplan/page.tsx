@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   TrendingUp,
   TrendingDown,
@@ -20,8 +20,14 @@ const fetcher = (url: string) =>
     return r.json();
   });
 
-function formatEur(val: number): string {
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(val);
+function useFormatEur() {
+  const locale = useLocale();
+  return (val: number): string =>
+    new Intl.NumberFormat(locale === "en" ? "en-US" : "de-DE", {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: 0,
+    }).format(val);
 }
 
 interface OverviewData {
@@ -65,8 +71,8 @@ function KpiCard({
             trend === "positive"
               ? "text-green-600 dark:text-green-400"
               : trend === "negative"
-              ? "text-destructive"
-              : ""
+                ? "text-destructive"
+                : ""
           }`}
         >
           {value}
@@ -78,27 +84,45 @@ function KpiCard({
 }
 
 export default function WirtschaftsplanOverviewPage() {
-  const t = useTranslations();
+  const t = useTranslations("wirtschaftsplan.overview");
+  const tMonths = useTranslations("wirtschaftsplan.months");
+  const tNav = useTranslations("nav");
+  const formatEur = useFormatEur();
+
   const { data, isLoading, error } = useQuery<OverviewData>({
     queryKey: ["/api/wirtschaftsplan/overview"],
     queryFn: () => fetcher("/api/wirtschaftsplan/overview"),
   });
 
-  const MONTH_NAMES = [
-    "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
-    "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
-  ];
+  const MONTH_KEYS = [
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "may",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dec",
+  ] as const;
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">{t("nav.wirtschaftsplan")}</h1>
-          <p className="text-muted-foreground">Wirtschaftliche Übersicht</p>
+          <h1 className="text-2xl font-bold">{tNav("wirtschaftsplan")}</h1>
+          <p className="text-muted-foreground">{t("shortSubtitle")}</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}><CardContent className="pt-6"><Skeleton className="h-16 w-full" /></CardContent></Card>
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <Skeleton className="h-16 w-full" />
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
@@ -109,31 +133,31 @@ export default function WirtschaftsplanOverviewPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">{t("nav.wirtschaftsplan")}</h1>
+          <h1 className="text-2xl font-bold">{tNav("wirtschaftsplan")}</h1>
         </div>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Fehler beim Laden der Wirtschaftsplan-Daten.</AlertDescription>
+          <AlertDescription>{t("loadError")}</AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  const currentMonthName = MONTH_NAMES[data.currentMonth - 1];
+  const currentMonthName = tMonths(MONTH_KEYS[data.currentMonth - 1]);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t("nav.wirtschaftsplan")}</h1>
+          <h1 className="text-2xl font-bold">{tNav("wirtschaftsplan")}</h1>
           <p className="text-muted-foreground">
-            Jahresübersicht {data.year} · Stand: {currentMonthName} {data.year}
+            {t("subtitle", { year: data.year, month: currentMonthName })}
           </p>
         </div>
         {!data.hasBudget && (
           <Badge variant="outline" className="text-amber-600 border-amber-300">
-            Kein genehmigter Budgetplan
+            {t("noBudget")}
           </Badge>
         )}
       </div>
@@ -141,38 +165,70 @@ export default function WirtschaftsplanOverviewPage() {
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          title="Gesamterlös YTD"
+          title={t("kpiRevenueYtd")}
           value={formatEur(data.totalRevenue)}
-          sub={data.hasBudget ? `Plan: ${formatEur(data.budgetRevenue)}` : undefined}
+          sub={
+            data.hasBudget
+              ? t("planPrefix", { value: formatEur(data.budgetRevenue) })
+              : undefined
+          }
           icon={TrendingUp}
-          trend={data.hasBudget ? (data.varianceRevenue >= 0 ? "positive" : "negative") : "neutral"}
+          trend={
+            data.hasBudget
+              ? data.varianceRevenue >= 0
+                ? "positive"
+                : "negative"
+              : "neutral"
+          }
         />
         <KpiCard
-          title="Gesamtkosten YTD"
+          title={t("kpiCostsYtd")}
           value={formatEur(data.totalCosts)}
-          sub={data.hasBudget ? `Plan: ${formatEur(data.budgetCosts)}` : undefined}
+          sub={
+            data.hasBudget
+              ? t("planPrefix", { value: formatEur(data.budgetCosts) })
+              : undefined
+          }
           icon={TrendingDown}
-          trend={data.hasBudget ? (data.varianceCosts <= 0 ? "positive" : "negative") : "neutral"}
+          trend={
+            data.hasBudget
+              ? data.varianceCosts <= 0
+                ? "positive"
+                : "negative"
+              : "neutral"
+          }
         />
         <KpiCard
-          title="Ergebnis YTD"
+          title={t("kpiNetPlYtd")}
           value={formatEur(data.netPL)}
-          sub={data.hasBudget ? `Plan: ${formatEur(data.budgetNetPL)}` : undefined}
+          sub={
+            data.hasBudget
+              ? t("planPrefix", { value: formatEur(data.budgetNetPL) })
+              : undefined
+          }
           icon={Wallet}
           trend={data.netPL >= 0 ? "positive" : "negative"}
         />
         <KpiCard
-          title="Budget-Auslastung"
-          value={data.budgetUsagePct !== null ? `${data.budgetUsagePct.toFixed(1)} %` : "–"}
-          sub={data.hasBudget ? "Ist-Kosten vs. Plan-Kosten" : "Kein Budgetplan"}
+          title={t("kpiBudgetUsage")}
+          value={
+            data.budgetUsagePct !== null
+              ? `${data.budgetUsagePct.toFixed(1)} %`
+              : "–"
+          }
+          sub={
+            data.hasBudget
+              ? t("kpiBudgetUsageSub")
+              : t("kpiBudgetUsageNone")
+          }
           icon={BarChart3}
           trend={
             data.budgetUsagePct !== null
               ? data.budgetUsagePct > 110
                 ? "negative"
                 : data.budgetUsagePct < 90
-                ? "positive"
-                : "neutral"
+                  ? "positive"
+                  : "neutral"
               : "neutral"
           }
         />
@@ -183,19 +239,19 @@ export default function WirtschaftsplanOverviewPage() {
         <div className="grid gap-4 md:grid-cols-3">
           {[
             {
-              label: "Erlös-Abweichung",
+              label: t("varianceRevenue"),
               val: data.varianceRevenue,
-              hint: "Ist − Plan Einnahmen",
+              hint: t("varianceRevenueHint"),
             },
             {
-              label: "Kosten-Abweichung",
+              label: t("varianceCosts"),
               val: -data.varianceCosts, // negative means under budget = good
-              hint: "Plan − Ist Kosten",
+              hint: t("varianceCostsHint"),
             },
             {
-              label: "Ergebnis-Abweichung",
+              label: t("varianceNetPl"),
               val: data.varianceNetPL,
-              hint: "Ist − Plan Ergebnis",
+              hint: t("varianceNetPlHint"),
             },
           ].map(({ label, val, hint }) => (
             <Card key={label}>
@@ -206,8 +262,8 @@ export default function WirtschaftsplanOverviewPage() {
                     val > 0
                       ? "text-green-600 dark:text-green-400"
                       : val < 0
-                      ? "text-destructive"
-                      : ""
+                        ? "text-destructive"
+                        : ""
                   }`}
                 >
                   {val > 0 ? "+" : ""}
@@ -223,9 +279,24 @@ export default function WirtschaftsplanOverviewPage() {
       {/* Quick Links */}
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          { label: "Gewinn & Verlust", href: "/wirtschaftsplan/pl", icon: BarChart3, desc: "Monatliche P&L mit Soll/Ist-Vergleich" },
-          { label: "Budgetplanung", href: "/wirtschaftsplan/budget", icon: Wallet, desc: "Jahrespläne verwalten und bearbeiten" },
-          { label: "Kostenstellen", href: "/wirtschaftsplan/cost-centers", icon: TrendingUp, desc: "Kostenstellen anlegen und zuordnen" },
+          {
+            label: t("quickLinkPlTitle"),
+            href: "/wirtschaftsplan/pl",
+            icon: BarChart3,
+            desc: t("quickLinkPlDesc"),
+          },
+          {
+            label: t("quickLinkBudgetTitle"),
+            href: "/wirtschaftsplan/budget",
+            icon: Wallet,
+            desc: t("quickLinkBudgetDesc"),
+          },
+          {
+            label: t("quickLinkCostCentersTitle"),
+            href: "/wirtschaftsplan/cost-centers",
+            icon: TrendingUp,
+            desc: t("quickLinkCostCentersDesc"),
+          },
         ].map(({ label, href, icon: Icon, desc }) => (
           <a key={href} href={href}>
             <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">

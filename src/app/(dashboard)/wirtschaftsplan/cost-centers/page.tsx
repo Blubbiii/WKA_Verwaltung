@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Plus,
   RefreshCw,
@@ -49,12 +50,19 @@ const fetcher = (url: string) =>
     return r.json();
   });
 
-const TYPE_META: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  PARK: { label: "Park", icon: Building2, color: "text-blue-600" },
-  TURBINE: { label: "Turbine", icon: Wind, color: "text-green-600" },
-  FUND: { label: "Fonds", icon: Briefcase, color: "text-purple-600" },
-  OVERHEAD: { label: "Overhead", icon: LayoutGrid, color: "text-orange-600" },
-  CUSTOM: { label: "Benutzerdefiniert", icon: LayoutGrid, color: "text-muted-foreground" },
+const TYPE_META: Record<
+  string,
+  { key: string; icon: React.ElementType; color: string }
+> = {
+  PARK: { key: "typePark", icon: Building2, color: "text-blue-600" },
+  TURBINE: { key: "typeTurbine", icon: Wind, color: "text-green-600" },
+  FUND: { key: "typeFund", icon: Briefcase, color: "text-purple-600" },
+  OVERHEAD: { key: "typeOverhead", icon: LayoutGrid, color: "text-orange-600" },
+  CUSTOM: {
+    key: "typeCustom",
+    icon: LayoutGrid,
+    color: "text-muted-foreground",
+  },
 };
 
 interface CostCenter {
@@ -79,13 +87,15 @@ interface NewCostCenterForm {
 
 export default function CostCentersPage() {
   const router = useRouter();
+  const t = useTranslations("wirtschaftsplan.costCenters");
   const queryClient = useQueryClient();
   const costCentersUrl = "/api/cost-centers?activeOnly=false";
   const { data, isLoading } = useQuery<CostCenter[]>({
     queryKey: [costCentersUrl],
     queryFn: () => fetcher(costCentersUrl),
   });
-  const mutate = () => queryClient.invalidateQueries({ queryKey: [costCentersUrl] });
+  const mutate = () =>
+    queryClient.invalidateQueries({ queryKey: [costCentersUrl] });
   const [search, setSearch] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -108,13 +118,16 @@ export default function CostCentersPage() {
     try {
       const res = await fetch("/api/cost-centers/sync", { method: "POST" });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error ?? "Fehler");
+      if (!res.ok) throw new Error(result.error ?? t("syncError"));
       toast.success(
-        `Auto-Sync abgeschlossen: ${result.created.parks} Parks, ${result.created.turbines} Turbinen erstellt`
+        t("syncSuccess", {
+          parks: result.created.parks,
+          turbines: result.created.turbines,
+        }),
       );
       mutate();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler beim Auto-Sync");
+      toast.error(e instanceof Error ? e.message : t("syncError"));
     } finally {
       setSyncing(false);
     }
@@ -122,7 +135,7 @@ export default function CostCentersPage() {
 
   async function handleCreate() {
     if (!form.code.trim() || !form.name.trim()) {
-      toast.error("Code und Name sind erforderlich");
+      toast.error(t("validationRequired"));
       return;
     }
     setCreating(true);
@@ -139,14 +152,14 @@ export default function CostCentersPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Fehler");
+        throw new Error(err.error ?? t("createError"));
       }
-      toast.success("Kostenstelle angelegt");
+      toast.success(t("createSuccess"));
       setShowNew(false);
       setForm({ code: "", name: "", type: "CUSTOM", description: "" });
       mutate();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler beim Erstellen");
+      toast.error(e instanceof Error ? e.message : t("createError"));
     } finally {
       setCreating(false);
     }
@@ -164,8 +177,8 @@ export default function CostCentersPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Kostenstellen</h1>
-          <p className="text-muted-foreground">Kostenstellen verwalten und zuordnen</p>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleSync} disabled={syncing}>
@@ -174,11 +187,11 @@ export default function CostCentersPage() {
             ) : (
               <RefreshCw className="h-4 w-4 mr-2" />
             )}
-            Auto-Sync (Parks & Turbinen)
+            {t("autoSyncButton")}
           </Button>
           <Button onClick={() => setShowNew(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Neue Kostenstelle
+            {t("newButton")}
           </Button>
         </div>
       </div>
@@ -186,12 +199,12 @@ export default function CostCentersPage() {
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
         {[
-          { label: "Gesamt", val: stats.total },
-          { label: "Parks", val: stats.parks },
-          { label: "Turbinen", val: stats.turbines },
-          { label: "Sonstige", val: stats.custom },
-        ].map(({ label, val }) => (
-          <Card key={label}>
+          { key: "total", label: t("statTotal"), val: stats.total },
+          { key: "parks", label: t("statParks"), val: stats.parks },
+          { key: "turbines", label: t("statTurbines"), val: stats.turbines },
+          { key: "custom", label: t("statCustom"), val: stats.custom },
+        ].map(({ key, label, val }) => (
+          <Card key={key}>
             <CardContent className="pt-4">
               <p className="text-sm text-muted-foreground">{label}</p>
               <p className="text-2xl font-bold mt-1">{isLoading ? "–" : val}</p>
@@ -207,14 +220,14 @@ export default function CostCentersPage() {
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Suchen..."
+                placeholder={t("searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
               />
             </div>
             <CardTitle className="ml-auto text-sm text-muted-foreground">
-              {filtered.length} Kostenstellen
+              {t("countSuffix", { count: filtered.length })}
             </CardTitle>
           </div>
         </CardHeader>
@@ -222,13 +235,15 @@ export default function CostCentersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Typ</TableHead>
-                <TableHead>Zuordnung</TableHead>
-                <TableHead>Übergeordnet</TableHead>
-                <TableHead className="text-right">Budgetzeilen</TableHead>
-                <TableHead className="text-right">Status</TableHead>
+                <TableHead>{t("tableCode")}</TableHead>
+                <TableHead>{t("tableName")}</TableHead>
+                <TableHead>{t("tableType")}</TableHead>
+                <TableHead>{t("tableAssignment")}</TableHead>
+                <TableHead>{t("tableParent")}</TableHead>
+                <TableHead className="text-right">
+                  {t("tableBudgetLines")}
+                </TableHead>
+                <TableHead className="text-right">{t("tableStatus")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -236,43 +251,64 @@ export default function CostCentersPage() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: 7 }).map((_, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                    {search ? "Keine Kostenstellen gefunden." : "Noch keine Kostenstellen. Klicke auf Auto-Sync oder lege eine neue an."}
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-12 text-muted-foreground"
+                  >
+                    {search ? t("emptySearch") : t("emptyNone")}
                   </TableCell>
                 </TableRow>
               ) : (
                 filtered.map((c) => {
                   const meta = TYPE_META[c.type] ?? TYPE_META.CUSTOM;
                   const Icon = meta.icon;
-                  const assignment = c.park?.name ?? c.turbine?.designation ?? c.fund?.name ?? "–";
+                  const assignment =
+                    c.park?.name ??
+                    c.turbine?.designation ??
+                    c.fund?.name ??
+                    "–";
                   return (
                     <TableRow
                       key={c.id}
                       className="cursor-pointer"
-                      onClick={() => router.push(`/wirtschaftsplan/cost-centers/${c.id}`)}
+                      onClick={() =>
+                        router.push(`/wirtschaftsplan/cost-centers/${c.id}`)
+                      }
                     >
-                      <TableCell className="font-mono text-sm">{c.code}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {c.code}
+                      </TableCell>
                       <TableCell>{c.name}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
                           <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
-                          <span className="text-sm">{meta.label}</span>
+                          <span className="text-sm">{t(meta.key)}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{assignment}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {c.parent ? `${c.parent.code} – ${c.parent.name}` : "–"}
+                        {assignment}
                       </TableCell>
-                      <TableCell className="text-right">{c._count.budgetLines}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {c.parent
+                          ? `${c.parent.code} – ${c.parent.name}`
+                          : "–"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {c._count.budgetLines}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Badge variant={c.isActive ? "default" : "secondary"}>
-                          {c.isActive ? "Aktiv" : "Inaktiv"}
+                          {c.isActive
+                            ? t("statusActive")
+                            : t("statusInactive")}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -288,52 +324,67 @@ export default function CostCentersPage() {
       <Dialog open={showNew} onOpenChange={setShowNew}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Neue Kostenstelle anlegen</DialogTitle>
+            <DialogTitle>{t("dialogTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Code *</Label>
+                <Label>{t("fieldCode")}</Label>
                 <Input
                   value={form.code}
-                  onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-                  placeholder="z.B. VW-ALLG"
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, code: e.target.value }))
+                  }
+                  placeholder={t("placeholderCode")}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Typ</Label>
-                <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Label>{t("fieldType")}</Label>
+                <Select
+                  value={form.type}
+                  onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {Object.entries(TYPE_META).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                      <SelectItem key={k} value={k}>
+                        {t(v.key)}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Name *</Label>
+              <Label>{t("fieldName")}</Label>
               <Input
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="z.B. Allgemeine Verwaltung"
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, name: e.target.value }))
+                }
+                placeholder={t("placeholderName")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Beschreibung (optional)</Label>
+              <Label>{t("fieldDescription")}</Label>
               <Input
                 value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Kurze Beschreibung..."
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, description: e.target.value }))
+                }
+                placeholder={t("placeholderDescription")}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNew(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setShowNew(false)}>
+              {t("cancelButton")}
+            </Button>
             <Button onClick={handleCreate} disabled={creating}>
               {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Erstellen
+              {t("createButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
