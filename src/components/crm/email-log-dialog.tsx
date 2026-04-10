@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +51,8 @@ export function EmailLogDialog({
   personContext,
   onSuccess,
 }: EmailLogDialogProps) {
+  const t = useTranslations("crm.emailLog");
+  const tCommon = useTranslations("common");
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
   const [direction, setDirection] = useState<"OUTBOUND" | "INBOUND">("OUTBOUND");
@@ -77,7 +80,7 @@ export function EmailLogDialog({
   const applyTemplate = (templateId: string) => {
     setSelectedTemplateId(templateId);
     if (templateId === "none") return;
-    const tpl = templates.find((t) => t.id === templateId);
+    const tpl = templates.find((x) => x.id === templateId);
     if (!tpl) return;
     setSubject(renderTemplate(tpl.subject, supportedTokens));
     setBody(renderTemplate(tpl.htmlContent, supportedTokens));
@@ -95,7 +98,7 @@ export function EmailLogDialog({
 
   const handleSubmit = async () => {
     if (!subject.trim() || !body.trim()) {
-      toast.error("Betreff und Inhalt sind Pflicht");
+      toast.error(t("validationMissing"));
       return;
     }
     setSaving(true);
@@ -127,14 +130,14 @@ export function EmailLogDialog({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Fehler");
+        throw new Error(err.error ?? t("errorMessage"));
       }
-      toast.success("E-Mail protokolliert");
+      toast.success(t("successMessage"));
       onSuccess?.();
       onOpenChange(false);
       reset();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler");
+      toast.error(e instanceof Error ? e.message : t("errorMessage"));
     } finally {
       setSaving(false);
     }
@@ -146,12 +149,9 @@ export function EmailLogDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            E-Mail protokollieren
+            {t("title")}
           </DialogTitle>
-          <DialogDescription>
-            Halte eine gesendete oder empfangene E-Mail als Aktivität fest.
-            Optional kannst du ein Template als Ausgangspunkt verwenden.
-          </DialogDescription>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -159,20 +159,20 @@ export function EmailLogDialog({
             <div className="space-y-1.5">
               <Label className="flex items-center gap-2">
                 <Sparkles className="h-3 w-3" />
-                Template einfügen
+                {t("templateField")}
               </Label>
               <Select
                 value={selectedTemplateId}
                 onValueChange={applyTemplate}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Kein Template" />
+                  <SelectValue placeholder={t("templateNone")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Kein Template</SelectItem>
-                  {templates.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
+                  <SelectItem value="none">{t("templateNone")}</SelectItem>
+                  {templates.map((tpl) => (
+                    <SelectItem key={tpl.id} value={tpl.id}>
+                      {tpl.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -181,7 +181,7 @@ export function EmailLogDialog({
           )}
 
           <div className="space-y-1.5">
-            <Label>Richtung</Label>
+            <Label>{t("directionField")}</Label>
             <RadioGroup
               value={direction}
               onValueChange={(v) => setDirection(v as "OUTBOUND" | "INBOUND")}
@@ -189,14 +189,17 @@ export function EmailLogDialog({
             >
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="OUTBOUND" id="dir-out" />
-                <Label htmlFor="dir-out" className="cursor-pointer font-normal">
-                  Ausgehend
+                <Label
+                  htmlFor="dir-out"
+                  className="cursor-pointer font-normal"
+                >
+                  {t("directionOutbound")}
                 </Label>
               </div>
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="INBOUND" id="dir-in" />
                 <Label htmlFor="dir-in" className="cursor-pointer font-normal">
-                  Eingehend
+                  {t("directionInbound")}
                 </Label>
               </div>
             </RadioGroup>
@@ -204,34 +207,34 @@ export function EmailLogDialog({
 
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>Von</Label>
+              <Label>{t("fromField")}</Label>
               <Input
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                placeholder="ich@firma.de"
+                placeholder={t("fromPlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>An (komma-separiert)</Label>
+              <Label>{t("toField")}</Label>
               <Input
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                placeholder="kontakt@beispiel.de"
+                placeholder={t("toPlaceholder")}
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Cc (optional, komma-separiert)</Label>
+            <Label>{t("ccField")}</Label>
             <Input
               value={cc}
               onChange={(e) => setCc(e.target.value)}
-              placeholder="kollege@firma.de"
+              placeholder={t("ccPlaceholder")}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Betreff</Label>
+            <Label>{t("subjectField")}</Label>
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
@@ -239,7 +242,7 @@ export function EmailLogDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Inhalt</Label>
+            <Label>{t("bodyField")}</Label>
             <Textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
@@ -255,10 +258,10 @@ export function EmailLogDialog({
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
-            Abbrechen
+            {tCommon("cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? "Speichert..." : "Protokollieren"}
+            {saving ? t("submitting") : t("submitButton")}
           </Button>
         </DialogFooter>
       </DialogContent>

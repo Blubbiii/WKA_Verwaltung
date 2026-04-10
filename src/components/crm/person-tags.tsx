@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, X, Tag as TagIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ interface PersonTagsProps {
  * Fetches all available tenant tags on open and supports creating new ones inline.
  */
 export function PersonTags({ personId, tags, onChange }: PersonTagsProps) {
+  const t = useTranslations("crm.personLabels");
   const [allTags, setAllTags] = useState<PersonTag[]>([]);
   const [loadingTags, setLoadingTags] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -59,7 +61,7 @@ export function PersonTags({ personId, tags, onChange }: PersonTagsProps) {
       if (!res.ok) throw new Error();
       onChange([...tags, tag]);
     } catch {
-      toast.error("Fehler beim Zuweisen");
+      toast.error(t("attachError"));
     }
   };
 
@@ -70,9 +72,9 @@ export function PersonTags({ personId, tags, onChange }: PersonTagsProps) {
         { method: "DELETE" },
       );
       if (!res.ok) throw new Error();
-      onChange(tags.filter((t) => t.id !== tagId));
+      onChange(tags.filter((tg) => tg.id !== tagId));
     } catch {
-      toast.error("Fehler beim Entfernen");
+      toast.error(t("detachError"));
     }
   };
 
@@ -87,37 +89,41 @@ export function PersonTags({ personId, tags, onChange }: PersonTagsProps) {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Fehler");
+        throw new Error(err.error ?? t("createError"));
       }
       const tag: PersonTag = await res.json();
       setAllTags([...allTags, tag]);
       await attach(tag);
       setNewTagName("");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler");
+      toast.error(e instanceof Error ? e.message : t("createError"));
     } finally {
       setCreating(false);
     }
   };
 
-  const attachedIds = new Set(tags.map((t) => t.id));
-  const availableToAttach = allTags.filter((t) => !attachedIds.has(t.id));
+  const attachedIds = new Set(tags.map((tg) => tg.id));
+  const availableToAttach = allTags.filter((tg) => !attachedIds.has(tg.id));
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {tags.map((t) => (
+      {tags.map((tg) => (
         <Badge
-          key={t.id}
+          key={tg.id}
           variant="secondary"
           className="gap-1 pr-1"
-          style={t.color ? { backgroundColor: `${t.color}20`, color: t.color } : undefined}
+          style={
+            tg.color
+              ? { backgroundColor: `${tg.color}20`, color: tg.color }
+              : undefined
+          }
         >
           <TagIcon className="h-3 w-3" />
-          {t.name}
+          {tg.name}
           <button
-            onClick={() => detach(t.id)}
+            onClick={() => detach(tg.id)}
             className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5"
-            aria-label={`Tag ${t.name} entfernen`}
+            aria-label={t("removeAria", { name: tg.name })}
           >
             <X className="h-3 w-3" />
           </button>
@@ -128,30 +134,32 @@ export function PersonTags({ personId, tags, onChange }: PersonTagsProps) {
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
             <Plus className="h-3 w-3 mr-1" />
-            Tag
+            {t("addButton")}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64 p-3" align="start">
           <div className="space-y-3">
             <div className="text-xs font-medium text-muted-foreground">
-              Verfügbare Tags
+              {t("availableHeader")}
             </div>
             {loadingTags ? (
-              <div className="text-xs text-muted-foreground">Lade...</div>
+              <div className="text-xs text-muted-foreground">
+                {t("loading")}
+              </div>
             ) : availableToAttach.length === 0 ? (
               <div className="text-xs text-muted-foreground">
-                Keine weiteren Tags vorhanden
+                {t("noneAvailable")}
               </div>
             ) : (
               <div className="flex flex-wrap gap-1">
-                {availableToAttach.map((t) => (
+                {availableToAttach.map((tg) => (
                   <button
-                    key={t.id}
-                    onClick={() => attach(t)}
+                    key={tg.id}
+                    onClick={() => attach(tg)}
                     className="inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs hover:bg-muted"
                   >
                     <TagIcon className="h-3 w-3" />
-                    {t.name}
+                    {tg.name}
                   </button>
                 ))}
               </div>
@@ -159,13 +167,13 @@ export function PersonTags({ personId, tags, onChange }: PersonTagsProps) {
 
             <div className="border-t pt-3">
               <div className="text-xs font-medium text-muted-foreground mb-2">
-                Neuen Tag anlegen
+                {t("newHeader")}
               </div>
               <div className="flex gap-2">
                 <Input
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
-                  placeholder="z.B. VIP"
+                  placeholder={t("newPlaceholder")}
                   className="h-8 text-xs"
                   onKeyDown={(e) => e.key === "Enter" && createAndAttach()}
                 />
@@ -174,7 +182,7 @@ export function PersonTags({ personId, tags, onChange }: PersonTagsProps) {
                   onClick={createAndAttach}
                   disabled={creating || !newTagName.trim()}
                 >
-                  {creating ? "..." : "Anlegen"}
+                  {creating ? "..." : t("newCreate")}
                 </Button>
               </div>
             </div>

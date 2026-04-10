@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   ArrowLeft,
   Mail,
@@ -39,7 +40,7 @@ import {
 import { ContactLinkDialog } from "@/components/crm/contact-link-dialog";
 import { PersonTags, type PersonTag } from "@/components/crm/person-tags";
 import { EmailLogDialog } from "@/components/crm/email-log-dialog";
-import { DERIVED_LABEL_KEYS } from "@/lib/crm/label-constants";
+import { isDerivedLabel } from "@/lib/crm/label-constants";
 
 // ============================================================================
 // Types
@@ -68,14 +69,14 @@ interface CrmContactDetail {
   labels: string[];
 }
 
-const CONTACT_TYPES = [
+const CONTACT_TYPE_KEYS = [
   "Gesellschafter",
   "Pächter",
   "Investor",
   "Partner",
   "Dienstleister",
   "Sonstiges",
-];
+] as const;
 
 // ============================================================================
 // Small presentational pieces
@@ -115,6 +116,9 @@ export default function CrmContactDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const { flags } = useFeatureFlags();
+  const t = useTranslations("crm.detail");
+  const tContacts = useTranslations("crm.contacts");
+  const tLabels = useTranslations("crm.labels");
   const [contact, setContact] = useState<CrmContactDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingType, setSavingType] = useState(false);
@@ -129,11 +133,11 @@ export default function CrmContactDetailPage({
       if (!res.ok) throw new Error();
       setContact(await res.json());
     } catch {
-      toast.error("Kontakt konnte nicht geladen werden");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     load();
@@ -151,9 +155,9 @@ export default function CrmContactDetailPage({
       setContact((prev) =>
         prev ? { ...prev, contactType: value === "none" ? null : value } : null,
       );
-      toast.success("Typ aktualisiert");
+      toast.success(t("typeUpdated"));
     } catch {
-      toast.error("Fehler beim Speichern");
+      toast.error(t("saveError"));
     } finally {
       setSavingType(false);
     }
@@ -169,10 +173,9 @@ export default function CrmContactDetailPage({
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <Users className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">CRM nicht aktiviert</h2>
+        <h2 className="text-lg font-semibold">{tContacts("crmDisabled")}</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-          Das CRM-Modul ist für diesen Mandanten nicht freigeschaltet. Bitte
-          wenden Sie sich an Ihren Administrator.
+          {tContacts("crmDisabledHint")}
         </p>
       </div>
     );
@@ -190,7 +193,7 @@ export default function CrmContactDetailPage({
   if (!contact) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        Kontakt nicht gefunden.
+        {t("notFound")}
       </div>
     );
   }
@@ -202,7 +205,12 @@ export default function CrmContactDetailPage({
       {/* Back + Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            aria-label={t("backAria")}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -211,18 +219,16 @@ export default function CrmContactDetailPage({
               <Badge
                 variant={contact.status === "ACTIVE" ? "default" : "outline"}
               >
-                {contact.status === "ACTIVE" ? "Aktiv" : contact.status}
+                {contact.status === "ACTIVE"
+                  ? t("statusActive")
+                  : contact.status}
               </Badge>
               {/* Derived labels — automatic, read-only */}
               {contact.labels
-                .filter((l) =>
-                  DERIVED_LABEL_KEYS.includes(
-                    l as (typeof DERIVED_LABEL_KEYS)[number],
-                  ),
-                )
+                .filter((l) => isDerivedLabel(l))
                 .map((label) => (
                   <Badge key={label} variant="secondary">
-                    {label}
+                    {tLabels(label)}
                   </Badge>
                 ))}
             </div>
@@ -243,11 +249,11 @@ export default function CrmContactDetailPage({
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => setShowEmailDialog(true)}>
             <Mail className="mr-2 h-4 w-4" />
-            E-Mail protokollieren
+            {t("logEmailButton")}
           </Button>
           <Button variant="outline" onClick={() => setShowEditDialog(true)}>
             <Pencil className="mr-2 h-4 w-4" />
-            Bearbeiten
+            {t("editButton")}
           </Button>
         </div>
       </div>
@@ -256,22 +262,22 @@ export default function CrmContactDetailPage({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatTile
           icon={<FileText className="h-4 w-4" />}
-          label="Pachtverträge"
+          label={t("statLeases")}
           value={stats.leaseCount}
         />
         <StatTile
           icon={<Building2 className="h-4 w-4" />}
-          label="Fonds"
+          label={t("statFunds")}
           value={stats.fundCount}
         />
         <StatTile
           icon={<ClipboardList className="h-4 w-4" />}
-          label="Verträge"
+          label={t("statContracts")}
           value={stats.contractCount}
         />
         <StatTile
           icon={<CheckSquare className="h-4 w-4" />}
-          label="Offene Aufgaben"
+          label={t("statOpenTasks")}
           value={stats.openTaskCount}
         />
       </div>
@@ -279,9 +285,9 @@ export default function CrmContactDetailPage({
       {/* Tabs */}
       <Tabs defaultValue="overview">
         <TabsList>
-          <TabsTrigger value="overview">Übersicht</TabsTrigger>
+          <TabsTrigger value="overview">{t("tabOverview")}</TabsTrigger>
           <TabsTrigger value="relations">
-            Beziehungen
+            {t("tabRelations")}
             {stats.leaseCount +
               stats.fundCount +
               stats.contractCount +
@@ -295,9 +301,9 @@ export default function CrmContactDetailPage({
               </Badge>
             ) : null}
           </TabsTrigger>
-          <TabsTrigger value="activities">Aktivitäten</TabsTrigger>
+          <TabsTrigger value="activities">{t("tabActivities")}</TabsTrigger>
           <TabsTrigger value="tasks">
-            Aufgaben
+            {t("tabTasks")}
             {stats.openTaskCount > 0 ? (
               <Badge variant="destructive" className="ml-2">
                 {stats.openTaskCount}
@@ -305,7 +311,7 @@ export default function CrmContactDetailPage({
             ) : null}
           </TabsTrigger>
           <TabsTrigger value="documents">
-            Dokumente
+            {t("tabDocuments")}
             {stats.documentCount > 0 ? (
               <Badge variant="secondary" className="ml-2">
                 {stats.documentCount}
@@ -322,7 +328,7 @@ export default function CrmContactDetailPage({
               <CardHeader>
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Kontaktdaten
+                  {t("contactDataTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -351,7 +357,9 @@ export default function CrmContactDetailPage({
                 {contact.mobile && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{contact.mobile} (Mobil)</span>
+                    <span>
+                      {contact.mobile} ({t("mobileSuffix")})
+                    </span>
                   </div>
                 )}
                 {(contact.street || contact.city) && (
@@ -384,25 +392,29 @@ export default function CrmContactDetailPage({
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium">
-                  CRM-Klassifizierung
+                  {t("classificationTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Kontakttyp</label>
+                  <label className="text-sm font-medium">
+                    {t("contactTypeLabel")}
+                  </label>
                   <Select
                     value={contact.contactType ?? "none"}
                     onValueChange={handleContactTypeChange}
                     disabled={savingType}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Typ wählen..." />
+                      <SelectValue placeholder={t("contactTypePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Kein Typ</SelectItem>
-                      {CONTACT_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
+                      <SelectItem value="none">
+                        {t("contactTypeNone")}
+                      </SelectItem>
+                      {CONTACT_TYPE_KEYS.map((key) => (
+                        <SelectItem key={key} value={key}>
+                          {t(`contactTypes.${key}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -412,7 +424,9 @@ export default function CrmContactDetailPage({
                   <>
                     <Separator />
                     <div>
-                      <div className="text-sm font-medium mb-1">Notizen</div>
+                      <div className="text-sm font-medium mb-1">
+                        {t("notesLabel")}
+                      </div>
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                         {contact.notes}
                       </p>
@@ -446,8 +460,7 @@ export default function CrmContactDetailPage({
           <Card>
             <CardContent className="pt-6">
               <div className="text-sm text-muted-foreground mb-4">
-                Offene und geplante Aufgaben für diesen Kontakt. Aufgaben sind
-                Aktivitäten vom Typ TASK.
+                {t("tasksHint")}
               </div>
               <ActivityTimeline entityType="person" entityId={id} />
             </CardContent>
@@ -458,7 +471,7 @@ export default function CrmContactDetailPage({
         <TabsContent value="documents" className="mt-4">
           {contact.contact360.documents.length === 0 ? (
             <div className="py-12 text-center text-sm text-muted-foreground border rounded-md">
-              Keine Dokumente mit diesem Kontakt verknüpft.
+              {t("noDocuments")}
             </div>
           ) : (
             <Card>

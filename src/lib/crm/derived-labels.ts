@@ -37,12 +37,12 @@ export interface LabelSource {
 
 export function computeDerivedLabels(src: LabelSource): DerivedLabel[] {
   const out: DerivedLabel[] = [];
-  if ((src.activeLeaseCount ?? 0) > 0) out.push("Verpächter");
-  if ((src.activeShareholderCount ?? 0) > 0) out.push("Gesellschafter");
-  if ((src.serviceContractCount ?? 0) > 0) out.push("Wartungsfirma");
-  if ((src.insuranceContractCount ?? 0) > 0) out.push("Versicherung");
-  if ((src.gridContractCount ?? 0) > 0) out.push("Netzbetreiber");
-  if ((src.marketingContractCount ?? 0) > 0) out.push("Direktvermarkter");
+  if ((src.activeLeaseCount ?? 0) > 0) out.push("LESSOR");
+  if ((src.activeShareholderCount ?? 0) > 0) out.push("SHAREHOLDER");
+  if ((src.serviceContractCount ?? 0) > 0) out.push("MAINTENANCE");
+  if ((src.insuranceContractCount ?? 0) > 0) out.push("INSURANCE");
+  if ((src.gridContractCount ?? 0) > 0) out.push("GRID_OPERATOR");
+  if ((src.marketingContractCount ?? 0) > 0) out.push("DIRECT_MARKETING");
   return out;
 }
 
@@ -222,8 +222,9 @@ export async function loadLabelsForPersons(
       marketingContractCount: marketingCount.get(id) ?? 0,
     });
     const custom = tagsByPerson.get(id) ?? [];
-    // Dedupe: derived first, then custom, drop exact duplicates
-    const labels = [...derived, ...custom.filter((c) => !derived.includes(c as DerivedLabel))];
+    // Derived keys are UPPER_SNAKE (LESSOR, ...) and custom labels are
+    // user-typed free text — no collision risk. Concatenate directly.
+    const labels = [...derived, ...custom];
 
     out.set(id, {
       personId: id,
@@ -254,21 +255,21 @@ export function labelFilterToWhere(labels: string[]): object[] {
   const ands: object[] = [];
   for (const label of labels) {
     switch (label) {
-      case "Verpächter":
+      case "LESSOR":
         ands.push({
           leases: {
             some: { status: "ACTIVE", deletedAt: null },
           },
         });
         break;
-      case "Gesellschafter":
+      case "SHAREHOLDER":
         ands.push({
           shareholders: {
             some: { status: "ACTIVE" },
           },
         });
         break;
-      case "Wartungsfirma":
+      case "MAINTENANCE":
         ands.push({
           contracts: {
             some: {
@@ -279,7 +280,7 @@ export function labelFilterToWhere(labels: string[]): object[] {
           },
         });
         break;
-      case "Versicherung":
+      case "INSURANCE":
         ands.push({
           contracts: {
             some: {
@@ -290,7 +291,7 @@ export function labelFilterToWhere(labels: string[]): object[] {
           },
         });
         break;
-      case "Netzbetreiber":
+      case "GRID_OPERATOR":
         ands.push({
           contracts: {
             some: {
@@ -301,7 +302,7 @@ export function labelFilterToWhere(labels: string[]): object[] {
           },
         });
         break;
-      case "Direktvermarkter":
+      case "DIRECT_MARKETING":
         ands.push({
           contracts: {
             some: {

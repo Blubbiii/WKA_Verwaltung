@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Search,
   Plus,
@@ -54,7 +55,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/format";
-import { DERIVED_LABEL_KEYS } from "@/lib/crm/label-constants";
+import {
+  DERIVED_LABEL_KEYS,
+  isDerivedLabel,
+} from "@/lib/crm/label-constants";
 
 // ============================================================================
 // Types
@@ -150,6 +154,11 @@ function activityAgeClass(lastActivityAt: string | null): string {
 export default function CrmContactsPage() {
   const router = useRouter();
   const { flags } = useFeatureFlags();
+  const t = useTranslations("crm.contacts");
+  const tLabels = useTranslations("crm.labels");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
 
   const [contacts, setContacts] = useState<CrmContact[]>([]);
   const [total, setTotal] = useState(0);
@@ -198,11 +207,16 @@ export default function CrmContactsPage() {
       setContacts(json.data ?? []);
       setTotal(json.pagination?.total ?? 0);
     } catch {
-      toast.error("Kontakte konnten nicht geladen werden");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
   };
+
+  // Render a label key for display. Derived keys are translated via i18n,
+  // custom tag names are shown verbatim.
+  const labelDisplay = (key: string): string =>
+    isDerivedLabel(key) ? tLabels(key) : key;
 
   useEffect(() => {
     if (flags.crm) load();
@@ -270,8 +284,8 @@ export default function CrmContactsPage() {
   // --------------------------------------------------------------------------
   // Dynamic columns — show context-specific data when filter implies it
   // --------------------------------------------------------------------------
-  const showLeaseColumn = activeLabels.includes("Verpächter");
-  const showShareholderColumn = activeLabels.includes("Gesellschafter");
+  const showLeaseColumn = activeLabels.includes("LESSOR");
+  const showShareholderColumn = activeLabels.includes("SHAREHOLDER");
 
   // --------------------------------------------------------------------------
   // Bulk actions
@@ -279,17 +293,17 @@ export default function CrmContactsPage() {
   const exportCsv = () => {
     const selected = contacts.filter((c) => selectedIds.has(c.id));
     if (selected.length === 0) {
-      toast.error("Keine Kontakte ausgewählt");
+      toast.error(t("bulkExportNone"));
       return;
     }
     const header = [
-      "Name",
-      "Firma",
-      "E-Mail",
-      "Telefon",
-      "Straße",
-      "PLZ",
-      "Ort",
+      t("tableName"),
+      t("fieldCompanyName").replace(" *", ""),
+      t("tableEmail"),
+      t("tablePhone"),
+      t("fieldStreet"),
+      t("fieldPostalCode"),
+      t("fieldCity"),
       "Labels",
     ];
     const rows = selected.map((c) => [
@@ -300,7 +314,7 @@ export default function CrmContactsPage() {
       [c.street, c.houseNumber].filter(Boolean).join(" "),
       c.postalCode ?? "",
       c.city ?? "",
-      c.labels.join("; "),
+      c.labels.map(labelDisplay).join("; "),
     ]);
     const csv = [header, ...rows]
       .map((row) =>
@@ -318,15 +332,15 @@ export default function CrmContactsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `kontakte-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `contacts-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`${selected.length} Kontakte exportiert`);
+    toast.success(t("bulkExportSuccess", { count: selected.length }));
   };
 
   const bulkAssignTag = async () => {
     if (!bulkTagId) {
-      toast.error("Bitte ein Label auswählen");
+      toast.error(t("bulkAssignNoLabel"));
       return;
     }
     setBulkTagging(true);
@@ -344,13 +358,13 @@ export default function CrmContactsPage() {
       const ok = results.filter(
         (r) => r.status === "fulfilled" && (r.value as Response).ok,
       ).length;
-      toast.success(`${ok} von ${ids.length} Kontakten mit Label versehen`);
+      toast.success(t("bulkAssignedSuccess", { ok, total: ids.length }));
       setTagDialogOpen(false);
       setBulkTagId("");
       setSelectedIds(new Set());
       load();
     } catch {
-      toast.error("Fehler beim Bulk-Labeln");
+      toast.error(t("bulkAssignError"));
     } finally {
       setBulkTagging(false);
     }
@@ -388,16 +402,16 @@ export default function CrmContactsPage() {
       }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Fehler");
+        throw new Error(err.error ?? t("createError"));
       }
       const created = await res.json();
-      toast.success("Kontakt erstellt");
+      toast.success(t("createSuccess"));
       setCreateOpen(false);
       setForm(EMPTY_FORM);
       setDedupMatch(null);
       router.push(`/crm/contacts/${created.id}`);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Fehler beim Erstellen");
+      toast.error(e instanceof Error ? e.message : t("createError"));
     } finally {
       setCreating(false);
     }
@@ -418,7 +432,7 @@ export default function CrmContactsPage() {
   const allAvailableLabels = useMemo(() => {
     const derived = [...DERIVED_LABEL_KEYS];
     const custom = customLabels.map((t) => t.name);
-    return [...derived, ...custom.filter((c) => !derived.includes(c as (typeof DERIVED_LABEL_KEYS)[number]))];
+    return [...derived, ...custom];
   }, [customLabels]);
 
   // --------------------------------------------------------------------------
@@ -428,10 +442,9 @@ export default function CrmContactsPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <Users className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">CRM nicht aktiviert</h2>
+        <h2 className="text-lg font-semibold">{t("crmDisabled")}</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-          Das CRM-Modul ist für diesen Mandanten nicht freigeschaltet. Bitte
-          wenden Sie sich an Ihren Administrator.
+          {t("crmDisabledHint")}
         </p>
       </div>
     );
@@ -442,12 +455,12 @@ export default function CrmContactsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Kontakte"
-        description={`${total} Kontakte im CRM`}
+        title={t("title")}
+        description={t("description", { count: total })}
         actions={
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Neuer Kontakt
+            {t("newButton")}
           </Button>
         }
       />
@@ -458,7 +471,7 @@ export default function CrmContactsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="Name, E-Mail oder Firma suchen..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -473,19 +486,23 @@ export default function CrmContactsPage() {
             >
               <TagIcon className="h-4 w-4" />
               {activeLabels.length === 0
-                ? "Alle Labels"
-                : `${activeLabels.length} Label${activeLabels.length === 1 ? "" : "s"} aktiv`}
+                ? t("labelFilter")
+                : activeLabels.length === 1
+                  ? t("labelFilterActive", { count: 1 })
+                  : t("labelFilterActivePlural", {
+                      count: activeLabels.length,
+                    })}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-64 p-2" align="start">
             <div className="flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground">
-              <span>Labels filtern (UND)</span>
+              <span>{t("labelFilterTitle")}</span>
               {activeLabels.length > 0 && (
                 <button
                   onClick={clearLabels}
                   className="hover:text-foreground"
                 >
-                  Zurücksetzen
+                  {t("labelFilterReset")}
                 </button>
               )}
             </div>
@@ -501,7 +518,9 @@ export default function CrmContactsPage() {
                     <div className="w-4 h-4 flex items-center justify-center">
                       {isActive && <Check className="h-3 w-3" />}
                     </div>
-                    <span className="flex-1 text-left">{label}</span>
+                    <span className="flex-1 text-left">
+                      {labelDisplay(label)}
+                    </span>
                   </button>
                 );
               })}
@@ -515,11 +534,13 @@ export default function CrmContactsPage() {
         <div className="flex flex-wrap items-center gap-2">
           {activeLabels.map((label) => (
             <Badge key={label} variant="secondary" className="gap-1 pr-1">
-              {label}
+              {labelDisplay(label)}
               <button
                 onClick={() => toggleLabel(label)}
                 className="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5"
-                aria-label={`${label} entfernen`}
+                aria-label={t("removeLabelAria", {
+                  label: labelDisplay(label),
+                })}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -541,22 +562,32 @@ export default function CrmContactsPage() {
                       selectedIds.size === contacts.length
                     }
                     onCheckedChange={toggleAll}
-                    aria-label="Alle auswählen"
+                    aria-label={t("selectAllAria")}
                   />
                 </TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden md:table-cell">E-Mail</TableHead>
-                <TableHead className="hidden lg:table-cell">Telefon</TableHead>
+                <TableHead>{t("tableName")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("tableEmail")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("tablePhone")}
+                </TableHead>
                 {showLeaseColumn && (
-                  <TableHead className="text-right">Pachtverträge</TableHead>
+                  <TableHead className="text-right">
+                    {t("tableLeases")}
+                  </TableHead>
                 )}
                 {showShareholderColumn && (
                   <>
-                    <TableHead className="text-right">Fonds</TableHead>
-                    <TableHead className="text-right">Kapital</TableHead>
+                    <TableHead className="text-right">
+                      {t("tableFunds")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("tableCapital")}
+                    </TableHead>
                   </>
                 )}
-                <TableHead>Letzte Aktivität</TableHead>
+                <TableHead>{t("tableLastActivity")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -576,7 +607,7 @@ export default function CrmContactsPage() {
                     colSpan={columnCount}
                     className="py-12 text-center text-muted-foreground"
                   >
-                    Keine Kontakte gefunden
+                    {t("noContacts")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -593,7 +624,9 @@ export default function CrmContactsPage() {
                       <Checkbox
                         checked={selectedIds.has(c.id)}
                         onCheckedChange={() => toggleOne(c.id)}
-                        aria-label={`${displayName(c)} auswählen`}
+                        aria-label={t("selectContactAria", {
+                          name: displayName(c),
+                        })}
                       />
                     </TableCell>
                     <TableCell>
@@ -606,7 +639,7 @@ export default function CrmContactsPage() {
                               variant="secondary"
                               className="text-[10px] h-4 px-1.5"
                             >
-                              {label}
+                              {labelDisplay(label)}
                             </Badge>
                           ))}
                           {c.labels.length > 4 && (
@@ -655,18 +688,20 @@ export default function CrmContactsPage() {
                           className={`text-sm ${activityAgeClass(c.lastActivityAt)}`}
                           title={format(
                             new Date(c.lastActivityAt),
-                            "dd.MM.yyyy HH:mm",
-                            { locale: de },
+                            locale === "en"
+                              ? "yyyy-MM-dd HH:mm"
+                              : "dd.MM.yyyy HH:mm",
+                            { locale: dateLocale },
                           )}
                         >
                           {formatDistanceToNow(new Date(c.lastActivityAt), {
                             addSuffix: true,
-                            locale: de,
+                            locale: dateLocale,
                           })}
                         </span>
                       ) : (
                         <span className="text-sm text-destructive">
-                          Kein Kontakt
+                          {t("noContact")}
                         </span>
                       )}
                     </TableCell>
@@ -685,12 +720,12 @@ export default function CrmContactsPage() {
           onClearSelection={() => setSelectedIds(new Set())}
           actions={[
             {
-              label: "CSV exportieren",
+              label: t("bulkExport"),
               icon: <Download className="h-4 w-4" />,
               onClick: exportCsv,
             },
             {
-              label: "Label zuweisen",
+              label: t("bulkAssignLabel"),
               icon: <TagIcon className="h-4 w-4" />,
               onClick: () => setTagDialogOpen(true),
               disabled: customLabels.length === 0,
@@ -703,23 +738,22 @@ export default function CrmContactsPage() {
       <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Label zuweisen</DialogTitle>
+            <DialogTitle>{t("bulkDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Weise {selectedIds.size} Kontakten ein eigenes Label zu.
-              Abgeleitete Labels entstehen automatisch aus Verträgen.
+              {t("bulkDialogDescription", { count: selectedIds.size })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Label</Label>
+              <Label>{t("bulkDialogFieldLabel")}</Label>
               <Select value={bulkTagId} onValueChange={setBulkTagId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Label wählen..." />
+                  <SelectValue placeholder={t("bulkDialogPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {customLabels.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
+                  {customLabels.map((lbl) => (
+                    <SelectItem key={lbl.id} value={lbl.id}>
+                      {lbl.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -732,13 +766,15 @@ export default function CrmContactsPage() {
               onClick={() => setTagDialogOpen(false)}
               disabled={bulkTagging}
             >
-              Abbrechen
+              {tCommon("cancel")}
             </Button>
             <Button
               onClick={bulkAssignTag}
               disabled={bulkTagging || !bulkTagId}
             >
-              {bulkTagging ? "Wird zugewiesen..." : "Zuweisen"}
+              {bulkTagging
+                ? t("bulkDialogConfirming")
+                : t("bulkDialogConfirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -757,10 +793,9 @@ export default function CrmContactsPage() {
       >
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Neuer Kontakt</DialogTitle>
+            <DialogTitle>{t("createDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Labels wie Verpächter oder Gesellschafter werden automatisch
-              vergeben, sobald ein Vertrag angelegt ist.
+              {t("createDialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -771,7 +806,7 @@ export default function CrmContactsPage() {
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
                 <div className="flex-1 text-sm">
                   <div className="font-medium text-amber-900 dark:text-amber-200">
-                    Existiert bereits
+                    {t("createDedupTitle")}
                   </div>
                   <div className="mt-1 text-amber-800 dark:text-amber-300">
                     {dedupMatch.companyName ??
@@ -792,7 +827,7 @@ export default function CrmContactsPage() {
                   variant="outline"
                   onClick={openExistingFromDedup}
                 >
-                  Bestehenden öffnen
+                  {t("createDedupOpenExisting")}
                 </Button>
                 <Button
                   size="sm"
@@ -802,7 +837,7 @@ export default function CrmContactsPage() {
                     handleCreate(true);
                   }}
                 >
-                  Trotzdem neu anlegen
+                  {t("createDedupCreateAnyway")}
                 </Button>
               </div>
             </div>
@@ -810,7 +845,7 @@ export default function CrmContactsPage() {
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Typ</Label>
+              <Label>{t("fieldType")}</Label>
               <Select
                 value={form.personType}
                 onValueChange={(v) =>
@@ -824,10 +859,8 @@ export default function CrmContactsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="natural">Natürliche Person</SelectItem>
-                  <SelectItem value="legal">
-                    Juristische Person / Firma
-                  </SelectItem>
+                  <SelectItem value="natural">{t("typeNatural")}</SelectItem>
+                  <SelectItem value="legal">{t("typeLegal")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -835,7 +868,7 @@ export default function CrmContactsPage() {
             {form.personType === "natural" && (
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Anrede</Label>
+                  <Label>{t("fieldSalutation")}</Label>
                   <Select
                     value={form.salutation || "none"}
                     onValueChange={(v) =>
@@ -856,13 +889,13 @@ export default function CrmContactsPage() {
                   </Select>
                 </div>
                 <div className="col-span-2 space-y-1.5">
-                  <Label>Vorname</Label>
+                  <Label>{t("fieldFirstName")}</Label>
                   <Input
                     value={form.firstName}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, firstName: e.target.value }))
                     }
-                    placeholder="Max"
+                    placeholder={t("placeholderFirstName")}
                   />
                 </div>
               </div>
@@ -870,94 +903,94 @@ export default function CrmContactsPage() {
 
             {form.personType === "natural" ? (
               <div className="space-y-1.5">
-                <Label>Nachname *</Label>
+                <Label>{t("fieldLastName")}</Label>
                 <Input
                   value={form.lastName}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, lastName: e.target.value }))
                   }
-                  placeholder="Mustermann"
+                  placeholder={t("placeholderLastName")}
                 />
               </div>
             ) : (
               <div className="space-y-1.5">
-                <Label>Firmenname *</Label>
+                <Label>{t("fieldCompanyName")}</Label>
                 <Input
                   value={form.companyName}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, companyName: e.target.value }))
                   }
-                  placeholder="Muster GmbH"
+                  placeholder={t("placeholderCompanyName")}
                 />
               </div>
             )}
 
             <div className="space-y-1.5">
-              <Label>E-Mail</Label>
+              <Label>{t("fieldEmail")}</Label>
               <Input
                 type="email"
                 value={form.email}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, email: e.target.value }))
                 }
-                placeholder="m.mustermann@beispiel.de"
+                placeholder={t("placeholderEmail")}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label>Telefon</Label>
+              <Label>{t("fieldPhone")}</Label>
               <Input
                 type="tel"
                 value={form.phone}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, phone: e.target.value }))
                 }
-                placeholder="+49 123 456789"
+                placeholder={t("placeholderPhone")}
               />
             </div>
 
             {/* Address — needed for dedup key */}
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2 space-y-1.5">
-                <Label>Straße</Label>
+                <Label>{t("fieldStreet")}</Label>
                 <Input
                   value={form.street}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, street: e.target.value }))
                   }
-                  placeholder="Hauptstraße"
+                  placeholder={t("placeholderStreet")}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Hausnr.</Label>
+                <Label>{t("fieldHouseNumber")}</Label>
                 <Input
                   value={form.houseNumber}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, houseNumber: e.target.value }))
                   }
-                  placeholder="12a"
+                  placeholder={t("placeholderHouseNumber")}
                 />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label>PLZ</Label>
+                <Label>{t("fieldPostalCode")}</Label>
                 <Input
                   value={form.postalCode}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, postalCode: e.target.value }))
                   }
-                  placeholder="12345"
+                  placeholder={t("placeholderPostalCode")}
                 />
               </div>
               <div className="col-span-2 space-y-1.5">
-                <Label>Ort</Label>
+                <Label>{t("fieldCity")}</Label>
                 <Input
                   value={form.city}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, city: e.target.value }))
                   }
-                  placeholder="Berlin"
+                  placeholder={t("placeholderCity")}
                 />
               </div>
             </div>
@@ -969,13 +1002,13 @@ export default function CrmContactsPage() {
               onClick={() => setCreateOpen(false)}
               disabled={creating}
             >
-              Abbrechen
+              {tCommon("cancel")}
             </Button>
             <Button
               onClick={() => handleCreate(false)}
               disabled={creating || dedupMatch !== null}
             >
-              {creating ? "Speichern..." : "Kontakt anlegen"}
+              {creating ? t("saving") : t("saveButton")}
             </Button>
           </DialogFooter>
         </DialogContent>
