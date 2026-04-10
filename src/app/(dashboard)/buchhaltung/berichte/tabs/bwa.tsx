@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ function currentMonth(): { from: string; to: string } {
 const BOLD_LINES = new Set(["Rohertrag", "Betriebsergebnis", "Ergebnis vor Steuern"]);
 
 export default function BwaContent() {
+  const t = useTranslations("buchhaltung.berichteBwa");
   const [data, setData] = useState<BwaResult | null>(null);
   const [loading, setLoading] = useState(true);
   const defaults = currentMonth();
@@ -62,17 +64,17 @@ export default function BwaContent() {
       const json = await res.json();
       setData(json.data || null);
     } catch {
-      toast.error("BWA konnte nicht geladen werden");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, [from, to]);
+  }, [from, to, t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   function exportCsv() {
     if (!data) return;
-    const header = "Position;Periode;Vorperiode;Kumuliert;Vorjahr kum.\n";
+    const header = t("csvHeader") + "\n";
     const rows = data.lines.map((l) =>
       [l.label, fmt(l.currentPeriod), fmt(l.previousPeriod), fmt(l.ytd), fmt(l.previousYtd)].join(";")
     );
@@ -90,26 +92,26 @@ export default function BwaContent() {
     <Card>
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
-          <div className="space-y-1"><Label>Von</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-          <div className="space-y-1"><Label>Bis</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-          <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" />Aktualisieren</Button>
-          <Button variant="outline" onClick={exportCsv} disabled={!data}><Download className="h-4 w-4 mr-2" />CSV</Button>
+          <div className="space-y-1"><Label>{t("from")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+          <div className="space-y-1"><Label>{t("to")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}</Button>
+          <Button variant="outline" onClick={exportCsv} disabled={!data}><Download className="h-4 w-4 mr-2" />{t("exportBtn")}</Button>
         </div>
 
         {loading ? (
           <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
         ) : !data ? (
-          <div className="text-center text-muted-foreground py-12">Keine Daten vorhanden.</div>
+          <div className="text-center text-muted-foreground py-12">{t("emptyState")}</div>
         ) : (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Position</TableHead>
-                  <TableHead className="text-right">Periode</TableHead>
-                  <TableHead className="text-right">Vorperiode</TableHead>
-                  <TableHead className="text-right">Kumuliert</TableHead>
-                  <TableHead className="text-right">Vorjahr kum.</TableHead>
+                  <TableHead>{t("colPosition")}</TableHead>
+                  <TableHead className="text-right">{t("colCurrentPeriod")}</TableHead>
+                  <TableHead className="text-right">{t("colPreviousPeriod")}</TableHead>
+                  <TableHead className="text-right">{t("colYtd")}</TableHead>
+                  <TableHead className="text-right">{t("colPreviousYtd")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

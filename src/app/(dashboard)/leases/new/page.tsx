@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import {
   ArrowLeft,
   ArrowRight,
@@ -109,16 +110,18 @@ interface NewPlot {
   notes: string;
 }
 
-// Wizard Steps
-const STEPS = [
-  { id: "lessor", title: "Verpächter", description: "Vertragspartner" },
-  { id: "plots", title: "Flurstücke", description: "Grundstücke" },
-  { id: "contract", title: "Vertragsdaten", description: "Konditionen" },
-  { id: "review", title: "Übersicht", description: "Prüfen & Speichern" },
-];
-
 export default function NewLeaseWizardPage() {
   const router = useRouter();
+  const t = useTranslations("leases.new");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
+  const STEPS = [
+    { id: "lessor", title: t("steps.lessor.title"), description: t("steps.lessor.description") },
+    { id: "plots", title: t("steps.plots.title"), description: t("steps.plots.description") },
+    { id: "contract", title: t("steps.contract.title"), description: t("steps.contract.description") },
+    { id: "review", title: t("steps.review.title"), description: t("steps.review.description") },
+  ];
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -209,12 +212,13 @@ export default function NewLeaseWizardPage() {
           setTurbines(data.turbines || data.data || []);
         }
       } catch {
-        toast.error("Fehler beim Laden der Daten");
+        toast.error(t("loadDataError"));
       } finally {
         setLoadingData(false);
       }
     }
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Helper functions
@@ -228,8 +232,10 @@ export default function NewLeaseWizardPage() {
   function getPlotLabel(plot: Plot | NewPlot): string {
     const parts = [
       plot.cadastralDistrict,
-      plot.fieldNumber && plot.fieldNumber !== "0" ? `Flur ${plot.fieldNumber}` : null,
-      `Flurstück ${plot.plotNumber}`,
+      plot.fieldNumber && plot.fieldNumber !== "0"
+        ? t("plots.flur", { value: plot.fieldNumber })
+        : null,
+      t("plots.flurstueck", { value: plot.plotNumber }),
     ].filter(Boolean);
     return parts.join(", ");
   }
@@ -275,7 +281,7 @@ export default function NewLeaseWizardPage() {
   // Add new plot to list
   function addNewPlot() {
     if (!currentNewPlot.cadastralDistrict || !currentNewPlot.plotNumber) {
-      toast.error("Gemarkung und Flurstücknummer sind erforderlich");
+      toast.error(t("plots.addPlotError"));
       return;
     }
 
@@ -295,7 +301,7 @@ export default function NewLeaseWizardPage() {
       notes: "",
     });
     setShowNewPlotForm(false);
-    toast.success("Flurstück hinzugefügt");
+    toast.success(t("plots.addPlotSuccess"));
   }
 
   function removeNewPlot(tempId: string) {
@@ -340,7 +346,7 @@ export default function NewLeaseWizardPage() {
         });
 
         if (!lessorRes.ok) {
-          throw new Error("Fehler beim Erstellen des Verpächters");
+          throw new Error(t("lessor.createError"));
         }
 
         const lessorData = await lessorRes.json();
@@ -369,7 +375,7 @@ export default function NewLeaseWizardPage() {
 
         if (!plotRes.ok) {
           const errorData = await plotRes.json();
-          throw new Error(errorData.error || "Fehler beim Erstellen des Flurstücks");
+          throw new Error(errorData.error || t("plots.createError"));
         }
 
         const plotData = await plotRes.json();
@@ -414,14 +420,14 @@ export default function NewLeaseWizardPage() {
 
       if (!leaseRes.ok) {
         const errorData = await leaseRes.json();
-        throw new Error(errorData.error || "Fehler beim Erstellen des Pachtvertrags");
+        throw new Error(errorData.error || t("actions.createError"));
       }
 
       const leaseData = await leaseRes.json();
-      toast.success("Pachtvertrag erfolgreich erstellt");
+      toast.success(t("actions.createSuccess"));
       router.push(`/leases/${leaseData.id}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Erstellen");
+      toast.error(error instanceof Error ? error.message : t("actions.genericError"));
     } finally {
       setLoading(false);
     }
@@ -451,10 +457,10 @@ export default function NewLeaseWizardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Verpächter auswählen oder anlegen
+              {t("lessor.cardTitle")}
             </CardTitle>
             <CardDescription>
-              Wählen Sie einen bestehenden Verpächter oder legen Sie einen neuen an
+              {t("lessor.cardDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -465,20 +471,20 @@ export default function NewLeaseWizardPage() {
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="select" id="select" />
-                <Label htmlFor="select">Bestehenden auswählen</Label>
+                <Label htmlFor="select">{t("lessor.modeSelectExisting")}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="create" id="create" />
-                <Label htmlFor="create">Neuen anlegen</Label>
+                <Label htmlFor="create">{t("lessor.modeCreateNew")}</Label>
               </div>
             </RadioGroup>
 
             {lessorMode === "select" ? (
               <div className="space-y-2">
-                <Label>Verpächter *</Label>
+                <Label>{t("lessor.selectLabel")}</Label>
                 <Select value={selectedLessorId} onValueChange={setSelectedLessorId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Verpächter auswählen..." />
+                    <SelectValue placeholder={t("lessor.selectPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {persons.map((person) => (
@@ -504,14 +510,16 @@ export default function NewLeaseWizardPage() {
                       return (
                         <div className="space-y-2 text-sm">
                           <p className="font-medium">{getPersonLabel(person)}</p>
-                          {person.email && <p>E-Mail: {person.email}</p>}
-                          {person.phone && <p>Telefon: {person.phone}</p>}
+                          {person.email && <p>{t("lessor.emailLine", { value: person.email })}</p>}
+                          {person.phone && <p>{t("lessor.phoneLine", { value: person.phone })}</p>}
                           {(person.street || person.city) && (
                             <p>
-                              Adresse: {[
-                                [person.street, person.houseNumber].filter(Boolean).join(" "),
-                                [person.postalCode, person.city].filter(Boolean).join(" "),
-                              ].filter(Boolean).join(", ")}
+                              {t("lessor.addressLine", {
+                                value: [
+                                  [person.street, person.houseNumber].filter(Boolean).join(" "),
+                                  [person.postalCode, person.city].filter(Boolean).join(" "),
+                                ].filter(Boolean).join(", "),
+                              })}
                             </p>
                           )}
                         </div>
@@ -523,7 +531,7 @@ export default function NewLeaseWizardPage() {
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Personentyp</Label>
+                  <Label>{t("lessor.personType")}</Label>
                   <RadioGroup
                     value={newLessor.personType}
                     onValueChange={(v) =>
@@ -533,11 +541,11 @@ export default function NewLeaseWizardPage() {
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="natural" id="natural" />
-                      <Label htmlFor="natural">Natürliche Person</Label>
+                      <Label htmlFor="natural">{t("lessor.naturalPerson")}</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="legal" id="legal" />
-                      <Label htmlFor="legal">Juristische Person</Label>
+                      <Label htmlFor="legal">{t("lessor.legalPerson")}</Label>
                     </div>
                   </RadioGroup>
                 </div>
@@ -545,35 +553,35 @@ export default function NewLeaseWizardPage() {
                 {newLessor.personType === "natural" ? (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Vorname *</Label>
+                      <Label>{t("lessor.firstName")}</Label>
                       <Input
                         value={newLessor.firstName}
                         onChange={(e) =>
                           setNewLessor({ ...newLessor, firstName: e.target.value })
                         }
-                        placeholder="Max"
+                        placeholder={t("lessor.firstNamePlaceholder")}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Nachname *</Label>
+                      <Label>{t("lessor.lastName")}</Label>
                       <Input
                         value={newLessor.lastName}
                         onChange={(e) =>
                           setNewLessor({ ...newLessor, lastName: e.target.value })
                         }
-                        placeholder="Mustermann"
+                        placeholder={t("lessor.lastNamePlaceholder")}
                       />
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Label>Firmenname *</Label>
+                    <Label>{t("lessor.companyName")}</Label>
                     <Input
                       value={newLessor.companyName}
                       onChange={(e) =>
                         setNewLessor({ ...newLessor, companyName: e.target.value })
                       }
-                      placeholder="Musterfirma GmbH"
+                      placeholder={t("lessor.companyNamePlaceholder")}
                     />
                   </div>
                 )}
@@ -582,107 +590,107 @@ export default function NewLeaseWizardPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>E-Mail</Label>
+                    <Label>{t("lessor.email")}</Label>
                     <Input
                       type="email"
                       value={newLessor.email}
                       onChange={(e) =>
                         setNewLessor({ ...newLessor, email: e.target.value })
                       }
-                      placeholder="email@beispiel.de"
+                      placeholder={t("lessor.emailPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Telefon</Label>
+                    <Label>{t("lessor.phone")}</Label>
                     <Input
                       value={newLessor.phone}
                       onChange={(e) =>
                         setNewLessor({ ...newLessor, phone: e.target.value })
                       }
-                      placeholder="+49 123 456789"
+                      placeholder={t("lessor.phonePlaceholder")}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-4">
                   <div className="col-span-8 space-y-2">
-                    <Label>Straße</Label>
+                    <Label>{t("lessor.street")}</Label>
                     <Input
                       value={newLessor.street}
                       onChange={(e) =>
                         setNewLessor({ ...newLessor, street: e.target.value })
                       }
-                      placeholder="Musterstraße"
+                      placeholder={t("lessor.streetPlaceholder")}
                     />
                   </div>
                   <div className="col-span-4 space-y-2">
-                    <Label>Hausnummer</Label>
+                    <Label>{t("lessor.houseNumber")}</Label>
                     <Input
                       value={newLessor.houseNumber}
                       onChange={(e) =>
                         setNewLessor({ ...newLessor, houseNumber: e.target.value })
                       }
-                      placeholder="123"
+                      placeholder={t("lessor.houseNumberPlaceholder")}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-4">
                   <div className="col-span-4 space-y-2">
-                    <Label>PLZ</Label>
+                    <Label>{t("lessor.postalCode")}</Label>
                     <Input
                       value={newLessor.postalCode}
                       onChange={(e) =>
                         setNewLessor({ ...newLessor, postalCode: e.target.value })
                       }
-                      placeholder="12345"
+                      placeholder={t("lessor.postalCodePlaceholder")}
                     />
                   </div>
                   <div className="col-span-8 space-y-2">
-                    <Label>Ort</Label>
+                    <Label>{t("lessor.city")}</Label>
                     <Input
                       value={newLessor.city}
                       onChange={(e) =>
                         setNewLessor({ ...newLessor, city: e.target.value })
                       }
-                      placeholder="Musterstadt"
+                      placeholder={t("lessor.cityPlaceholder")}
                     />
                   </div>
                 </div>
 
                 <Separator />
-                <p className="text-sm font-medium">Bankverbindung</p>
+                <p className="text-sm font-medium">{t("lessor.bankSection")}</p>
 
                 <div className="space-y-2">
-                  <Label>IBAN</Label>
+                  <Label>{t("lessor.iban")}</Label>
                   <Input
                     value={newLessor.bankIban}
                     onChange={(e) =>
                       setNewLessor({ ...newLessor, bankIban: e.target.value })
                     }
-                    placeholder="DE89 3704 0044 0532 0130 00"
+                    placeholder={t("lessor.ibanPlaceholder")}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>BIC</Label>
+                    <Label>{t("lessor.bic")}</Label>
                     <Input
                       value={newLessor.bankBic}
                       onChange={(e) =>
                         setNewLessor({ ...newLessor, bankBic: e.target.value })
                       }
-                      placeholder="COBADEFFXXX"
+                      placeholder={t("lessor.bicPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Bank</Label>
+                    <Label>{t("lessor.bank")}</Label>
                     <Input
                       value={newLessor.bankName}
                       onChange={(e) =>
                         setNewLessor({ ...newLessor, bankName: e.target.value })
                       }
-                      placeholder="Commerzbank"
+                      placeholder={t("lessor.bankPlaceholder")}
                     />
                   </div>
                 </div>
@@ -709,19 +717,22 @@ export default function NewLeaseWizardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                Bestehende Flurstücke auswählen
+                {t("plots.existingCardTitle")}
               </CardTitle>
               <CardDescription>
-                Wählen Sie Flurstücke aus, die bereits im System erfasst sind
+                {t("plots.existingCardDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Filter Toggle */}
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">Nur verfügbare Flurstücke</Label>
+                  <Label className="text-sm font-medium">{t("plots.filterAvailableLabel")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    {availablePlots.length} verfügbar, {plotsWithActiveLease.length} in aktiven Verträgen
+                    {t("plots.filterAvailableHint", {
+                      available: availablePlots.length,
+                      inLease: plotsWithActiveLease.length,
+                    })}
                   </p>
                 </div>
                 <Switch
@@ -748,7 +759,9 @@ export default function NewLeaseWizardPage() {
                       onClick={() => {
                         if (hasActiveLease) {
                           toast.error(
-                            `Dieses Flurstück ist noch in einem aktiven Vertrag mit ${plot.activeLease?.lessorName}`
+                            t("plots.activeLeaseError", {
+                              name: plot.activeLease?.lessorName ?? "",
+                            })
                           );
                           return;
                         }
@@ -788,7 +801,9 @@ export default function NewLeaseWizardPage() {
                       </div>
                       {hasActiveLease && (
                         <Badge variant="outline" className="border-orange-400 text-orange-700 bg-orange-50">
-                          Vertrag mit {plot.activeLease?.lessorName}
+                          {t("plots.activeLeaseBadge", {
+                            name: plot.activeLease?.lessorName ?? "",
+                          })}
                         </Badge>
                       )}
                     </div>
@@ -796,7 +811,7 @@ export default function NewLeaseWizardPage() {
                 })}
                 {displayedPlots.length === 0 && (
                   <p className="text-center text-muted-foreground py-4">
-                    Keine Flurstücke gefunden
+                    {t("plots.noneFound")}
                   </p>
                 )}
               </div>
@@ -809,10 +824,10 @@ export default function NewLeaseWizardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5" />
-              Neue Flurstücke anlegen
+              {t("plots.newCardTitle")}
             </CardTitle>
             <CardDescription>
-              Legen Sie neue Flurstücke an, die noch nicht im System sind
+              {t("plots.newCardDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -841,7 +856,7 @@ export default function NewLeaseWizardPage() {
                               </span>
                             </>
                           )}
-                          <Badge variant="secondary" className="ml-2">Neu</Badge>
+                          <Badge variant="secondary" className="ml-2">{t("plots.badgeNew")}</Badge>
                         </div>
                       </div>
                       <Button
@@ -862,7 +877,7 @@ export default function NewLeaseWizardPage() {
               <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label>Gemarkung *</Label>
+                    <Label>{t("plots.cadastralDistrict")}</Label>
                     <Input
                       value={currentNewPlot.cadastralDistrict}
                       onChange={(e) =>
@@ -871,11 +886,11 @@ export default function NewLeaseWizardPage() {
                           cadastralDistrict: e.target.value,
                         })
                       }
-                      placeholder="z.B. Musterstadt"
+                      placeholder={t("plots.cadastralDistrictPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Flur</Label>
+                    <Label>{t("plots.fieldNumber")}</Label>
                     <Input
                       value={currentNewPlot.fieldNumber}
                       onChange={(e) =>
@@ -884,11 +899,11 @@ export default function NewLeaseWizardPage() {
                           fieldNumber: e.target.value,
                         })
                       }
-                      placeholder="0 wenn nicht vorhanden"
+                      placeholder={t("plots.fieldNumberPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Flurstück *</Label>
+                    <Label>{t("plots.plotNumber")}</Label>
                     <Input
                       value={currentNewPlot.plotNumber}
                       onChange={(e) =>
@@ -897,14 +912,14 @@ export default function NewLeaseWizardPage() {
                           plotNumber: e.target.value,
                         })
                       }
-                      placeholder="z.B. 123/4"
+                      placeholder={t("plots.plotNumberPlaceholder")}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Landkreis</Label>
+                    <Label>{t("plots.county")}</Label>
                     <Input
                       value={currentNewPlot.county}
                       onChange={(e) =>
@@ -913,11 +928,11 @@ export default function NewLeaseWizardPage() {
                           county: e.target.value,
                         })
                       }
-                      placeholder="z.B. Landkreis Beispiel"
+                      placeholder={t("plots.countyPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Gemeinde</Label>
+                    <Label>{t("plots.municipality")}</Label>
                     <Input
                       value={currentNewPlot.municipality}
                       onChange={(e) =>
@@ -926,14 +941,14 @@ export default function NewLeaseWizardPage() {
                           municipality: e.target.value,
                         })
                       }
-                      placeholder="z.B. Gemeinde Muster"
+                      placeholder={t("plots.municipalityPlaceholder")}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Fläche (m²)</Label>
+                    <Label>{t("plots.areaSqm")}</Label>
                     <Input
                       type="number"
                       value={currentNewPlot.areaSqm}
@@ -943,11 +958,11 @@ export default function NewLeaseWizardPage() {
                           areaSqm: e.target.value,
                         })
                       }
-                      placeholder="z.B. 10000"
+                      placeholder={t("plots.areaSqmPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Windpark</Label>
+                    <Label>{t("plots.park")}</Label>
                     <Select
                       value={currentNewPlot.parkId}
                       onValueChange={(v) =>
@@ -955,7 +970,7 @@ export default function NewLeaseWizardPage() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Windpark zuordnen..." />
+                        <SelectValue placeholder={t("plots.parkPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         {parks.map((park) => (
@@ -970,7 +985,7 @@ export default function NewLeaseWizardPage() {
 
 
                 <div className="space-y-2">
-                  <Label>Notizen</Label>
+                  <Label>{t("plots.notes")}</Label>
                   <Textarea
                     value={currentNewPlot.notes}
                     onChange={(e) =>
@@ -979,7 +994,7 @@ export default function NewLeaseWizardPage() {
                         notes: e.target.value,
                       })
                     }
-                    placeholder="Zusätzliche Informationen..."
+                    placeholder={t("plots.notesPlaceholder")}
                     rows={2}
                   />
                 </div>
@@ -987,14 +1002,14 @@ export default function NewLeaseWizardPage() {
                 <div className="flex gap-2">
                   <Button type="button" onClick={addNewPlot}>
                     <Check className="mr-2 h-4 w-4" />
-                    Flurstück hinzufügen
+                    {t("plots.addPlotButton")}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setShowNewPlotForm(false)}
                   >
-                    Abbrechen
+                    {tCommon("cancel")}
                   </Button>
                 </div>
               </div>
@@ -1006,7 +1021,7 @@ export default function NewLeaseWizardPage() {
                 className="w-full"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Neues Flurstück anlegen
+                {t("plots.showFormButton")}
               </Button>
             )}
           </CardContent>
@@ -1016,19 +1031,18 @@ export default function NewLeaseWizardPage() {
         {(selectedPlotIds.length > 0 || newPlots.length > 0) && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Zusammenfassung</CardTitle>
+              <CardTitle className="text-base">{t("plots.summaryTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">
-                  {selectedPlotIds.length + newPlots.length}
-                </span>{" "}
-                Flurstück{selectedPlotIds.length + newPlots.length !== 1 ? "e" : ""}{" "}
-                ausgewählt
+                {selectedPlotIds.length + newPlots.length === 1
+                  ? t("plots.summarySingular", { count: 1 })
+                  : t("plots.summaryPlural", {
+                      count: selectedPlotIds.length + newPlots.length,
+                    })}
                 {newPlots.length > 0 && (
                   <span className="text-green-600">
-                    {" "}
-                    ({newPlots.length} neu)
+                    {t("plots.summaryNewSuffix", { count: newPlots.length })}
                   </span>
                 )}
               </p>
@@ -1044,7 +1058,7 @@ export default function NewLeaseWizardPage() {
     // Helper: Add years to start date for end date
     const setEndDateYears = (years: number) => {
       if (!contractData.startDate) {
-        toast.error("Bitte zuerst Vertragsbeginn wählen");
+        toast.error(t("contract.startDateRequired"));
         return;
       }
       const newEndDate = new Date(contractData.startDate);
@@ -1058,16 +1072,16 @@ export default function NewLeaseWizardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Vertragsdaten
+              {t("contract.cardTitle")}
             </CardTitle>
             <CardDescription>
-              Geben Sie die Laufzeit und Nutzungsart des Pachtvertrags ein
+              {t("contract.cardDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Vertragsabschluss (Unterschrift) */}
             <div className="space-y-2">
-              <Label>Vertragsabschluss (Datum der Unterschrift)</Label>
+              <Label>{t("contract.signedDateLabel")}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -1079,8 +1093,8 @@ export default function NewLeaseWizardPage() {
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {contractData.signedDate
-                      ? format(contractData.signedDate, "dd.MM.yyyy", { locale: de })
-                      : "Noch nicht unterschrieben"}
+                      ? format(contractData.signedDate, "dd.MM.yyyy", { locale: dateLocale })
+                      : t("contract.signedDatePlaceholder")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -1090,7 +1104,7 @@ export default function NewLeaseWizardPage() {
                     onSelect={(date) =>
                       setContractData({ ...contractData, signedDate: date })
                     }
-                    locale={de}
+                    locale={dateLocale}
                     captionLayout="dropdown"
                     startMonth={new Date(2015, 0)}
                     endMonth={new Date(2040, 11)}
@@ -1102,7 +1116,7 @@ export default function NewLeaseWizardPage() {
             {/* Vertragslaufzeit */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Vertragsbeginn (Baubeginn) *</Label>
+                <Label>{t("contract.startDateLabel")}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -1114,8 +1128,8 @@ export default function NewLeaseWizardPage() {
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {contractData.startDate
-                        ? format(contractData.startDate, "dd.MM.yyyy", { locale: de })
-                        : "Datum wählen"}
+                        ? format(contractData.startDate, "dd.MM.yyyy", { locale: dateLocale })
+                        : t("contract.startDatePlaceholder")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -1125,7 +1139,7 @@ export default function NewLeaseWizardPage() {
                       onSelect={(date) =>
                         setContractData({ ...contractData, startDate: date })
                       }
-                      locale={de}
+                      locale={dateLocale}
                       captionLayout="dropdown"
                       startMonth={new Date(2015, 0)}
                       endMonth={new Date(2040, 11)}
@@ -1134,7 +1148,7 @@ export default function NewLeaseWizardPage() {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label>Vertragsende</Label>
+                <Label>{t("contract.endDateLabel")}</Label>
                 <div className="flex gap-2">
                   <Popover>
                     <PopoverTrigger asChild>
@@ -1147,8 +1161,8 @@ export default function NewLeaseWizardPage() {
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {contractData.endDate
-                          ? format(contractData.endDate, "dd.MM.yyyy", { locale: de })
-                          : "Unbefristet"}
+                          ? format(contractData.endDate, "dd.MM.yyyy", { locale: dateLocale })
+                          : t("contract.endDatePlaceholder")}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -1158,7 +1172,7 @@ export default function NewLeaseWizardPage() {
                         onSelect={(date) =>
                           setContractData({ ...contractData, endDate: date })
                         }
-                        locale={de}
+                        locale={dateLocale}
                         captionLayout="dropdown"
                         startMonth={new Date(2020, 0)}
                         endMonth={new Date(2070, 11)}
@@ -1175,7 +1189,7 @@ export default function NewLeaseWizardPage() {
                     className="flex-1"
                     onClick={() => setEndDateYears(20)}
                   >
-                    +20 Jahre
+                    {t("contract.plus20Years")}
                   </Button>
                   <Button
                     type="button"
@@ -1184,7 +1198,7 @@ export default function NewLeaseWizardPage() {
                     className="flex-1"
                     onClick={() => setEndDateYears(25)}
                   >
-                    +25 Jahre
+                    {t("contract.plus25Years")}
                   </Button>
                   {contractData.endDate && (
                     <Button
@@ -1204,9 +1218,9 @@ export default function NewLeaseWizardPage() {
             <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Verlängerungsoption</Label>
+                  <Label>{t("contract.extensionLabel")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Besteht eine Option zur Vertragsverlängerung?
+                    {t("contract.extensionHint")}
                   </p>
                 </div>
                 <Switch
@@ -1218,13 +1232,13 @@ export default function NewLeaseWizardPage() {
               </div>
               {contractData.hasExtensionOption && (
                 <div className="space-y-2">
-                  <Label>Details zur Verlängerung</Label>
+                  <Label>{t("contract.extensionDetailsLabel")}</Label>
                   <Textarea
                     value={contractData.extensionDetails}
                     onChange={(e) =>
                       setContractData({ ...contractData, extensionDetails: e.target.value })
                     }
-                    placeholder="z.B. Automatische Verlängerung um 5 Jahre, wenn nicht 12 Monate vor Ablauf gekündigt wird..."
+                    placeholder={t("contract.extensionDetailsPlaceholder")}
                     rows={2}
                   />
                 </div>
@@ -1237,9 +1251,9 @@ export default function NewLeaseWizardPage() {
             <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Wartegeld</Label>
+                  <Label>{t("contract.waitingMoneyLabel")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Zahlung an Flächeneigentümer vor/während des Baus
+                    {t("contract.waitingMoneyHint")}
                   </p>
                 </div>
                 <Switch
@@ -1252,7 +1266,7 @@ export default function NewLeaseWizardPage() {
               {contractData.hasWaitingMoney && (
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label>Betrag (€)</Label>
+                    <Label>{t("contract.waitingMoneyAmountLabel")}</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -1260,11 +1274,11 @@ export default function NewLeaseWizardPage() {
                       onChange={(e) =>
                         setContractData({ ...contractData, waitingMoneyAmount: e.target.value })
                       }
-                      placeholder="z.B. 500.00"
+                      placeholder={t("contract.waitingMoneyAmountPlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Einheit</Label>
+                    <Label>{t("contract.waitingMoneyUnitLabel")}</Label>
                     <Select
                       value={contractData.waitingMoneyUnit}
                       onValueChange={(v) =>
@@ -1278,13 +1292,13 @@ export default function NewLeaseWizardPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pauschal">Pauschal</SelectItem>
-                        <SelectItem value="ha">€ pro ha</SelectItem>
+                        <SelectItem value="pauschal">{t("contract.waitingMoneyUnitFlat")}</SelectItem>
+                        <SelectItem value="ha">{t("contract.waitingMoneyUnitHa")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Zahlungsrhythmus</Label>
+                    <Label>{t("contract.waitingMoneyScheduleLabel")}</Label>
                     <Select
                       value={contractData.waitingMoneySchedule}
                       onValueChange={(v) =>
@@ -1298,9 +1312,9 @@ export default function NewLeaseWizardPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="once">Einmalig</SelectItem>
-                        <SelectItem value="monthly">Monatlich</SelectItem>
-                        <SelectItem value="yearly">Jährlich</SelectItem>
+                        <SelectItem value="once">{t("contract.waitingMoneyScheduleOnce")}</SelectItem>
+                        <SelectItem value="monthly">{t("contract.waitingMoneyScheduleMonthly")}</SelectItem>
+                        <SelectItem value="yearly">{t("contract.waitingMoneyScheduleYearly")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1313,14 +1327,14 @@ export default function NewLeaseWizardPage() {
             {/* Abrechnungsintervall */}
             <div className="space-y-4">
               <div>
-                <Label className="text-base">Abrechnungsintervall</Label>
+                <Label className="text-base">{t("contract.billingSectionTitle")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  Bestimmt wie oft Mindestpacht-Vorschüsse erstellt werden
+                  {t("contract.billingSectionHint")}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Intervall</Label>
+                  <Label>{t("contract.billingIntervalLabel")}</Label>
                   <Select
                     value={contractData.billingInterval}
                     onValueChange={(v) =>
@@ -1334,14 +1348,14 @@ export default function NewLeaseWizardPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ANNUAL">Jährlich</SelectItem>
-                      <SelectItem value="QUARTERLY">Quartalsweise</SelectItem>
-                      <SelectItem value="MONTHLY">Monatlich</SelectItem>
+                      <SelectItem value="ANNUAL">{t("contract.billingIntervalAnnual")}</SelectItem>
+                      <SelectItem value="QUARTERLY">{t("contract.billingIntervalQuarterly")}</SelectItem>
+                      <SelectItem value="MONTHLY">{t("contract.billingIntervalMonthly")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Verknuepfte WKA (optional)</Label>
+                  <Label>{t("contract.linkedTurbineLabel")}</Label>
                   <Select
                     value={contractData.linkedTurbineId || "none"}
                     onValueChange={(v) =>
@@ -1352,10 +1366,10 @@ export default function NewLeaseWizardPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Keine spezifische WKA" />
+                      <SelectValue placeholder={t("contract.linkedTurbinePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Keine spezifische WKA</SelectItem>
+                      <SelectItem value="none">{t("contract.linkedTurbineNone")}</SelectItem>
                       {(() => {
                         // Finde Parks aus ausgewaehlten Plots
                         const selectedParkIds = new Set<string>();
@@ -1392,7 +1406,7 @@ export default function NewLeaseWizardPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Optional: Mindestpacht an spezifische WKA binden
+                    {t("contract.linkedTurbineHint")}
                   </p>
                 </div>
               </div>
@@ -1404,13 +1418,13 @@ export default function NewLeaseWizardPage() {
 
             {/* Notizen */}
             <div className="space-y-2">
-              <Label>Notizen</Label>
+              <Label>{t("contract.notesLabel")}</Label>
               <Textarea
                 value={contractData.notes}
                 onChange={(e) =>
                   setContractData({ ...contractData, notes: e.target.value })
                 }
-                placeholder="Zusätzliche Vertragsinformationen..."
+                placeholder={t("contract.notesPlaceholder")}
                 rows={3}
               />
             </div>
@@ -1429,16 +1443,16 @@ export default function NewLeaseWizardPage() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Zusammenfassung</CardTitle>
+            <CardTitle>{t("review.summaryTitle")}</CardTitle>
             <CardDescription>
-              Bitte überprüfen Sie die Angaben vor dem Speichern
+              {t("review.summaryDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Lessor */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                Verpächter
+                {t("review.lessorLabel")}
               </h3>
               <div className="p-3 bg-muted rounded-lg">
                 {lessorMode === "select" && lessor ? (
@@ -1458,7 +1472,7 @@ export default function NewLeaseWizardPage() {
                     {newLessor.email && (
                       <p className="text-sm text-muted-foreground">{newLessor.email}</p>
                     )}
-                    <Badge variant="secondary" className="mt-1">Wird neu angelegt</Badge>
+                    <Badge variant="secondary" className="mt-1">{t("review.lessorWillBeCreated")}</Badge>
                   </div>
                 )}
               </div>
@@ -1467,7 +1481,7 @@ export default function NewLeaseWizardPage() {
             {/* Plots */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                Flurstücke ({allPlots.length})
+                {t("review.plotsLabel", { count: allPlots.length })}
               </h3>
               <div className="space-y-2">
                 {allPlots.map((plot) => {
@@ -1480,7 +1494,7 @@ export default function NewLeaseWizardPage() {
                     <div key={isNew ? (plot as NewPlot).tempId : (plot as Plot).id} className="p-3 bg-muted rounded-lg">
                       <div className="flex items-center justify-between">
                         <p className="font-medium">{getPlotLabel(plot)}</p>
-                        {isNew && <Badge variant="secondary">Neu</Badge>}
+                        {isNew && <Badge variant="secondary">{t("review.badgeNew")}</Badge>}
                       </div>
                       {park && (
                         <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
@@ -1497,34 +1511,34 @@ export default function NewLeaseWizardPage() {
             {/* Contract */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                Vertragsdaten
+                {t("review.contractLabel")}
               </h3>
               <div className="p-3 bg-muted rounded-lg space-y-4">
                 {contractData.signedDate && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Vertragsabschluss</p>
+                    <p className="text-xs text-muted-foreground">{t("review.signedDateLabel")}</p>
                     <p className="font-medium">
-                      {format(contractData.signedDate, "dd.MM.yyyy", { locale: de })}
+                      {format(contractData.signedDate, "dd.MM.yyyy", { locale: dateLocale })}
                     </p>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-muted-foreground">Laufzeit (ab Baubeginn)</p>
+                    <p className="text-xs text-muted-foreground">{t("review.termLabel")}</p>
                     <p className="font-medium">
                       {contractData.startDate
-                        ? format(contractData.startDate, "dd.MM.yyyy", { locale: de })
+                        ? format(contractData.startDate, "dd.MM.yyyy", { locale: dateLocale })
                         : "-"}{" "}
                       -{" "}
                       {contractData.endDate
-                        ? format(contractData.endDate, "dd.MM.yyyy", { locale: de })
-                        : "unbefristet"}
+                        ? format(contractData.endDate, "dd.MM.yyyy", { locale: dateLocale })
+                        : t("review.termIndefinite")}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Verlängerungsoption</p>
+                    <p className="text-xs text-muted-foreground">{t("review.extensionLabel")}</p>
                     <p className="font-medium">
-                      {contractData.hasExtensionOption ? "Ja" : "Nein"}
+                      {contractData.hasExtensionOption ? tCommon("yes") : tCommon("no")}
                     </p>
                     {contractData.hasExtensionOption && contractData.extensionDetails && (
                       <p className="text-xs text-muted-foreground mt-1">
@@ -1536,35 +1550,45 @@ export default function NewLeaseWizardPage() {
 
                 {contractData.hasWaitingMoney && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Wartegeld</p>
+                    <p className="text-xs text-muted-foreground">{t("review.waitingMoneyLabel")}</p>
                     <p className="font-medium">
-                      {parseFloat(contractData.waitingMoneyAmount || "0").toLocaleString("de-DE", {
-                        style: "currency",
-                        currency: "EUR",
-                      })}{" "}
-                      {contractData.waitingMoneyUnit === "ha" ? "pro ha" : "pauschal"},{" "}
+                      {parseFloat(contractData.waitingMoneyAmount || "0").toLocaleString(
+                        locale === "en" ? "en-US" : "de-DE",
+                        {
+                          style: "currency",
+                          currency: "EUR",
+                        }
+                      )}{" "}
+                      {contractData.waitingMoneyUnit === "ha"
+                        ? t("review.waitingMoneyPerHa")
+                        : t("review.waitingMoneyFlat")}
+                      ,{" "}
                       {contractData.waitingMoneySchedule === "once"
-                        ? "einmalig"
+                        ? t("review.waitingMoneyOnce")
                         : contractData.waitingMoneySchedule === "monthly"
-                          ? "monatlich"
-                          : "jährlich"}
+                          ? t("review.waitingMoneyMonthly")
+                          : t("review.waitingMoneyYearly")}
                     </p>
                   </div>
                 )}
 
                 <div>
-                  <p className="text-xs text-muted-foreground">Abrechnungsintervall</p>
+                  <p className="text-xs text-muted-foreground">{t("review.billingLabel")}</p>
                   <p className="font-medium">
                     {contractData.billingInterval === "ANNUAL"
-                      ? "Jährlich"
+                      ? t("review.billingAnnual")
                       : contractData.billingInterval === "QUARTERLY"
-                        ? "Quartalsweise"
-                        : "Monatlich"}
+                        ? t("review.billingQuarterly")
+                        : t("review.billingMonthly")}
                   </p>
                   {contractData.linkedTurbineId && (
                     <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                       <Wind className="h-3 w-3" />
-                      Verknuepft mit: {turbines.find((t) => t.id === contractData.linkedTurbineId)?.designation || "WKA"}
+                      {t("review.linkedTurbineLabel", {
+                        value:
+                          turbines.find((tb) => tb.id === contractData.linkedTurbineId)
+                            ?.designation || t("review.linkedTurbineFallback"),
+                      })}
                     </p>
                   )}
                 </div>
@@ -1572,7 +1596,7 @@ export default function NewLeaseWizardPage() {
 
                 {contractData.notes && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Notizen</p>
+                    <p className="text-xs text-muted-foreground">{t("review.notesLabel")}</p>
                     <p className="text-sm">{contractData.notes}</p>
                   </div>
                 )}
@@ -1602,9 +1626,9 @@ export default function NewLeaseWizardPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Neuer Pachtvertrag</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("pageTitle")}</h1>
           <p className="text-muted-foreground">
-            Erstellen Sie einen neuen Pachtvertrag in 4 Schritten
+            {t("pageDescription")}
           </p>
         </div>
       </div>
@@ -1630,7 +1654,7 @@ export default function NewLeaseWizardPage() {
             variant="outline"
             onClick={() => router.back()}
           >
-            Abbrechen
+            {tCommon("cancel")}
           </Button>
           <Button
             variant="outline"
@@ -1638,7 +1662,7 @@ export default function NewLeaseWizardPage() {
             disabled={currentStep === 0}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurück
+            {t("actions.back")}
           </Button>
         </div>
 
@@ -1647,13 +1671,13 @@ export default function NewLeaseWizardPage() {
             onClick={() => setCurrentStep((prev) => prev + 1)}
             disabled={!canProceed()}
           >
-            Weiter
+            {t("actions.next")}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         ) : (
           <Button onClick={handleSubmit} disabled={loading || !canProceed()}>
             <Save className="mr-2 h-4 w-4" />
-            {loading ? "Wird erstellt..." : "Pachtvertrag erstellen"}
+            {loading ? t("actions.creating") : t("actions.create")}
           </Button>
         )}
       </StepActions>

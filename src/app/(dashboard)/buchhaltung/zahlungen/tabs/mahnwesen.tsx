@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,22 +40,29 @@ interface DunningRun {
   _count: { items: number };
 }
 
-const LEVEL_LABELS: Record<number, string> = {
-  1: "Zahlungserinnerung",
-  2: "1. Mahnung",
-  3: "2. Mahnung",
-};
-
 function fmt(n: number): string {
   return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function MahnwesenContent() {
+  const t = useTranslations("buchhaltung.zahlungenMahnwesen");
   const [candidates, setCandidates] = useState<DunningCandidate[]>([]);
   const [runs, setRuns] = useState<DunningRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [executing, setExecuting] = useState(false);
+
+  const levelLabel = useCallback(
+    (level: number): string => {
+      switch (level) {
+        case 1: return t("level1");
+        case 2: return t("level2");
+        case 3: return t("level3");
+        default: return t("levelFallback", { level });
+      }
+    },
+    [t]
+  );
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -73,11 +81,11 @@ export default function MahnwesenContent() {
         setRuns(json.data || []);
       }
     } catch {
-      toast.error("Fehler beim Laden");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -98,10 +106,10 @@ export default function MahnwesenContent() {
       });
       if (!res.ok) throw new Error((await res.json()).error);
       const json = await res.json();
-      toast.success(`Mahnlauf erstellt: ${json.itemCount} Mahnungen`);
+      toast.success(t("toastRunSuccess", { count: json.itemCount }));
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Mahnlauf");
+      toast.error(err instanceof Error ? err.message : t("toastRunError"));
     } finally {
       setExecuting(false);
     }
@@ -110,8 +118,8 @@ export default function MahnwesenContent() {
   return (
     <Tabs defaultValue="candidates">
       <TabsList>
-        <TabsTrigger value="candidates">Mahnkandidaten ({candidates.length})</TabsTrigger>
-        <TabsTrigger value="history">Mahnlaeufe ({runs.length})</TabsTrigger>
+        <TabsTrigger value="candidates">{t("tabCandidates", { count: candidates.length })}</TabsTrigger>
+        <TabsTrigger value="history">{t("tabHistory", { count: runs.length })}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="candidates" className="mt-4">
@@ -120,7 +128,7 @@ export default function MahnwesenContent() {
             {loading ? (
               <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
             ) : candidates.length === 0 ? (
-              <div className="text-center text-muted-foreground py-12">Keine ueberfaelligen Rechnungen gefunden.</div>
+              <div className="text-center text-muted-foreground py-12">{t("emptyCandidates")}</div>
             ) : (
               <>
                 <div className="rounded-md border overflow-auto">
@@ -128,13 +136,13 @@ export default function MahnwesenContent() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[40px]" />
-                        <TableHead>Rechnung</TableHead>
-                        <TableHead>Empfaenger</TableHead>
-                        <TableHead className="text-right">Betrag</TableHead>
-                        <TableHead>Faellig seit</TableHead>
-                        <TableHead className="text-right">Tage</TableHead>
-                        <TableHead>Mahnstufe</TableHead>
-                        <TableHead className="text-right">Gebuehr</TableHead>
+                        <TableHead>{t("colInvoice")}</TableHead>
+                        <TableHead>{t("colRecipient")}</TableHead>
+                        <TableHead className="text-right">{t("colAmount")}</TableHead>
+                        <TableHead>{t("colDueSince")}</TableHead>
+                        <TableHead className="text-right">{t("colDays")}</TableHead>
+                        <TableHead>{t("colLevel")}</TableHead>
+                        <TableHead className="text-right">{t("colFee")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -148,7 +156,7 @@ export default function MahnwesenContent() {
                           <TableCell className="text-right font-mono">{fmt(c.grossAmount)} EUR</TableCell>
                           <TableCell>{formatDate(c.dueDate)}</TableCell>
                           <TableCell className="text-right font-semibold text-red-600 dark:text-red-400">{c.overdueDays}</TableCell>
-                          <TableCell><Badge variant="outline">{LEVEL_LABELS[c.suggestedLevel] || `Stufe ${c.suggestedLevel}`}</Badge></TableCell>
+                          <TableCell><Badge variant="outline">{levelLabel(c.suggestedLevel)}</Badge></TableCell>
                           <TableCell className="text-right font-mono">{fmt(c.feeAmount)} EUR</TableCell>
                         </TableRow>
                       ))}
@@ -156,10 +164,10 @@ export default function MahnwesenContent() {
                   </Table>
                 </div>
                 <div className="mt-4 flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">{selected.size} von {candidates.length} ausgewaehlt</span>
+                  <span className="text-sm text-muted-foreground">{t("selectedSummary", { selected: selected.size, total: candidates.length })}</span>
                   <Button onClick={handleExecute} disabled={executing || selected.size === 0}>
                     {executing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-                    Mahnlauf ausfuehren
+                    {t("executeBtn")}
                   </Button>
                 </div>
               </>
@@ -172,16 +180,16 @@ export default function MahnwesenContent() {
         <Card>
           <CardContent className="pt-6">
             {runs.length === 0 ? (
-              <div className="text-center text-muted-foreground py-12">Noch keine Mahnlaeufe durchgefuehrt.</div>
+              <div className="text-center text-muted-foreground py-12">{t("emptyRuns")}</div>
             ) : (
               <div className="rounded-md border overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Datum</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Mahnungen</TableHead>
-                      <TableHead>Erstellt von</TableHead>
+                      <TableHead>{t("colDate")}</TableHead>
+                      <TableHead>{t("colStatus")}</TableHead>
+                      <TableHead className="text-right">{t("colDunnings")}</TableHead>
+                      <TableHead>{t("colCreatedBy")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

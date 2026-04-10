@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,8 @@ function formatIban(iban: string): string {
 }
 
 export default function BankKontenContent() {
+  const t = useTranslations("buchhaltung.bankingKonten");
+  const tCommon = useTranslations("common");
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -73,11 +76,11 @@ export default function BankKontenContent() {
       const json = await res.json();
       setAccounts(json.data || []);
     } catch {
-      toast.error("Bankkonten konnten nicht geladen werden");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchAccounts();
@@ -104,7 +107,7 @@ export default function BankKontenContent() {
 
   async function saveAccount() {
     if (!name.trim() || !iban.trim()) {
-      toast.error("Name und IBAN sind Pflichtfelder");
+      toast.error(t("toastValidation"));
       return;
     }
 
@@ -130,29 +133,29 @@ export default function BankKontenContent() {
 
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error || "Fehler");
+        throw new Error(json.error || t("toastSaveError"));
       }
 
-      toast.success(editId ? "Konto aktualisiert" : "Konto erstellt");
+      toast.success(editId ? t("toastAccountUpdated") : t("toastAccountCreated"));
       setDialogOpen(false);
       resetForm();
       fetchAccounts();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : t("toastSaveError"));
     } finally {
       setSaving(false);
     }
   }
 
   async function deleteAccount(id: string) {
-    if (!confirm("Bankkonto wirklich deaktivieren?")) return;
+    if (!confirm(t("confirmDeactivate"))) return;
     try {
       const res = await fetch(`/api/buchhaltung/bank/accounts/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      toast.success("Bankkonto deaktiviert");
+      toast.success(t("toastAccountDeactivated"));
       fetchAccounts();
     } catch {
-      toast.error("Fehler beim Deaktivieren");
+      toast.error(t("toastDeactivateError"));
     }
   }
 
@@ -168,13 +171,13 @@ export default function BankKontenContent() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
           <Card>
             <CardContent className="pt-4 pb-4">
-              <div className="text-xs text-muted-foreground">Konten</div>
+              <div className="text-xs text-muted-foreground">{t("summaryAccounts")}</div>
               <div className="text-2xl font-bold">{accounts.length}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 pb-4">
-              <div className="text-xs text-muted-foreground">Gesamtsaldo</div>
+              <div className="text-xs text-muted-foreground">{t("summaryTotal")}</div>
               <div className={`text-2xl font-bold font-mono ${totalBalance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
                 {fmt(totalBalance)} €
               </div>
@@ -182,7 +185,7 @@ export default function BankKontenContent() {
           </Card>
           <Card>
             <CardContent className="pt-4 pb-4">
-              <div className="text-xs text-muted-foreground">Transaktionen</div>
+              <div className="text-xs text-muted-foreground">{t("summaryTransactions")}</div>
               <div className="text-2xl font-bold">
                 {accounts.reduce((sum, a) => sum + a._count.transactions, 0)}
               </div>
@@ -195,49 +198,49 @@ export default function BankKontenContent() {
         <CardContent className="pt-6">
           <div className="flex gap-4 mb-6">
             <Button variant="outline" onClick={fetchAccounts}>
-              <RefreshCw className="h-4 w-4 mr-2" />Aktualisieren
+              <RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}
             </Button>
             <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
               <DialogTrigger asChild>
                 <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />Neues Konto
+                  <Plus className="h-4 w-4 mr-2" />{t("newBtn")}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{editId ? "Konto bearbeiten" : "Neues Bankkonto"}</DialogTitle>
-                  <DialogDescription>Bankkonto-Daten eingeben</DialogDescription>
+                  <DialogTitle>{editId ? t("dialogEditTitle") : t("dialogNewTitle")}</DialogTitle>
+                  <DialogDescription>{t("dialogDescription")}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <Label>Bezeichnung *</Label>
-                    <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="z.B. Geschäftskonto Sparkasse" />
+                    <Label>{t("labelName")}</Label>
+                    <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <Label>IBAN *</Label>
+                      <Label>{t("labelIban")}</Label>
                       <Input value={iban} onChange={(e) => setIban(e.target.value)} placeholder="DE89..." disabled={!!editId} />
                     </div>
                     <div className="space-y-1">
-                      <Label>BIC</Label>
+                      <Label>{t("labelBic")}</Label>
                       <Input value={bic} onChange={(e) => setBic(e.target.value)} placeholder="COBADEFFXXX" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <Label>Bankname</Label>
-                      <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Sparkasse" />
+                      <Label>{t("labelBankName")}</Label>
+                      <Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder={t("bankNamePlaceholder")} />
                     </div>
                     <div className="space-y-1">
-                      <Label>Aktueller Saldo (€)</Label>
-                      <Input type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0,00" />
+                      <Label>{t("labelBalance")}</Label>
+                      <Input type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder={t("balancePlaceholder")} />
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>{tCommon("cancel")}</Button>
                   <Button onClick={saveAccount} disabled={saving}>
-                    {saving ? "Speichere..." : editId ? "Aktualisieren" : "Erstellen"}
+                    {saving ? t("btnSaving") : editId ? t("btnUpdate") : t("btnCreate")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -249,20 +252,20 @@ export default function BankKontenContent() {
           ) : accounts.length === 0 ? (
             <div className="text-center text-muted-foreground py-12">
               <Landmark className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              Noch keine Bankkonten angelegt.
+              {t("emptyState")}
             </div>
           ) : (
             <div className="rounded-md border overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Bezeichnung</TableHead>
-                    <TableHead>IBAN</TableHead>
-                    <TableHead>Bank</TableHead>
-                    <TableHead>Gesellschaft</TableHead>
-                    <TableHead className="text-right">Saldo</TableHead>
-                    <TableHead className="text-right">Buchungen</TableHead>
-                    <TableHead className="text-right">Aktionen</TableHead>
+                    <TableHead>{t("colName")}</TableHead>
+                    <TableHead>{t("colIban")}</TableHead>
+                    <TableHead>{t("colBank")}</TableHead>
+                    <TableHead>{t("colCompany")}</TableHead>
+                    <TableHead className="text-right">{t("colBalance")}</TableHead>
+                    <TableHead className="text-right">{t("colTransactions")}</TableHead>
+                    <TableHead className="text-right">{t("colActions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

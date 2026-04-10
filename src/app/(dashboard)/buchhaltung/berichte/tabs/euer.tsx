@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ function currentYear(): { from: string; to: string } {
 }
 
 export default function EuerContent() {
+  const t = useTranslations("buchhaltung.berichteEuer");
   const [data, setData] = useState<EuerResult | null>(null);
   const [loading, setLoading] = useState(true);
   const defaults = currentYear();
@@ -57,17 +59,17 @@ export default function EuerContent() {
       const json = await res.json();
       setData(json.data || null);
     } catch {
-      toast.error("EÜR konnte nicht geladen werden");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, [from, to]);
+  }, [from, to, t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   function exportCsv() {
     if (!data) return;
-    const header = "Kz;Position;Aktuell;Vorjahr\n";
+    const header = t("csvHeader") + "\n";
     const rows = data.lines.map((l) =>
       [l.kennzahl || "", l.label, fmt(l.currentPeriod), fmt(l.previousPeriod)].join(";")
     );
@@ -85,26 +87,26 @@ export default function EuerContent() {
     <Card>
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
-          <div className="space-y-1"><Label>Von</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-          <div className="space-y-1"><Label>Bis</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-          <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" />Aktualisieren</Button>
-          <Button variant="outline" onClick={exportCsv} disabled={!data}><Download className="h-4 w-4 mr-2" />CSV</Button>
+          <div className="space-y-1"><Label>{t("from")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+          <div className="space-y-1"><Label>{t("to")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}</Button>
+          <Button variant="outline" onClick={exportCsv} disabled={!data}><Download className="h-4 w-4 mr-2" />{t("exportBtn")}</Button>
         </div>
 
         {loading ? (
           <div className="space-y-2">{Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
         ) : !data ? (
-          <div className="text-center text-muted-foreground py-12">Keine Daten vorhanden.</div>
+          <div className="text-center text-muted-foreground py-12">{t("emptyState")}</div>
         ) : (
           <>
             <div className="rounded-md border overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-16">Kz</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead className="text-right">Aktueller Zeitraum</TableHead>
-                    <TableHead className="text-right">Vorjahr</TableHead>
+                    <TableHead className="w-16">{t("colKennzahl")}</TableHead>
+                    <TableHead>{t("colPosition")}</TableHead>
+                    <TableHead className="text-right">{t("colCurrentPeriod")}</TableHead>
+                    <TableHead className="text-right">{t("colPreviousPeriod")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -131,13 +133,13 @@ export default function EuerContent() {
 
             <div className="mt-4 flex justify-end gap-6 text-sm">
               <div>
-                <span className="text-muted-foreground">Ergebnis: </span>
+                <span className="text-muted-foreground">{t("resultLabel")} </span>
                 <span className={`font-bold font-mono ${data.profit < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
                   {fmt(data.profit)} EUR
                 </span>
               </div>
               <div>
-                <span className="text-muted-foreground">Vorjahr: </span>
+                <span className="text-muted-foreground">{t("previousLabel")} </span>
                 <span className="font-mono text-muted-foreground">{fmt(data.previousProfit)} EUR</span>
               </div>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,11 +29,13 @@ interface SepaBatch {
   createdBy: { firstName: string | null; lastName: string | null };
 }
 
-const STATUS_BADGES: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  DRAFT: { label: "Entwurf", variant: "secondary" },
-  APPROVED: { label: "Freigegeben", variant: "outline" },
-  EXPORTED: { label: "Exportiert", variant: "default" },
-  CANCELLED: { label: "Storniert", variant: "destructive" },
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
+const STATUS_VARIANTS: Record<string, BadgeVariant> = {
+  DRAFT: "secondary",
+  APPROVED: "outline",
+  EXPORTED: "default",
+  CANCELLED: "destructive",
 };
 
 function fmt(n: string | number): string {
@@ -40,8 +43,22 @@ function fmt(n: string | number): string {
 }
 
 export default function SepaContent() {
+  const t = useTranslations("buchhaltung.zahlungenSepa");
   const [batches, setBatches] = useState<SepaBatch[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const statusLabel = useCallback(
+    (status: string): string => {
+      switch (status) {
+        case "DRAFT": return t("statusDraft");
+        case "APPROVED": return t("statusApproved");
+        case "EXPORTED": return t("statusExported");
+        case "CANCELLED": return t("statusCancelled");
+        default: return t("statusDraft");
+      }
+    },
+    [t]
+  );
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -51,11 +68,11 @@ export default function SepaContent() {
       const json = await res.json();
       setBatches(json.data || []);
     } catch {
-      toast.error("Fehler beim Laden der SEPA-Batches");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -71,7 +88,7 @@ export default function SepaContent() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error("Download fehlgeschlagen");
+      toast.error(t("toastDownloadError"));
     }
   }
 
@@ -82,36 +99,36 @@ export default function SepaContent() {
           <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
         ) : batches.length === 0 ? (
           <div className="text-center text-muted-foreground py-12">
-            Noch keine SEPA-Batches erstellt. Erstellen Sie einen neuen Batch ueber die API.
+            {t("emptyState")}
           </div>
         ) : (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Batch-Nr.</TableHead>
-                  <TableHead>Ausfuehrung</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Betrag</TableHead>
-                  <TableHead className="text-right">Zahlungen</TableHead>
-                  <TableHead>Erstellt von</TableHead>
-                  <TableHead className="text-right">Aktion</TableHead>
+                  <TableHead>{t("colBatchNumber")}</TableHead>
+                  <TableHead>{t("colExecution")}</TableHead>
+                  <TableHead>{t("colStatus")}</TableHead>
+                  <TableHead className="text-right">{t("colAmount")}</TableHead>
+                  <TableHead className="text-right">{t("colPayments")}</TableHead>
+                  <TableHead>{t("colCreatedBy")}</TableHead>
+                  <TableHead className="text-right">{t("colAction")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {batches.map((b) => {
-                  const badge = STATUS_BADGES[b.status] || STATUS_BADGES.DRAFT;
+                  const variant = STATUS_VARIANTS[b.status] || STATUS_VARIANTS.DRAFT;
                   return (
                     <TableRow key={b.id}>
                       <TableCell className="font-mono">{b.batchNumber}</TableCell>
                       <TableCell>{formatDate(b.executionDate)}</TableCell>
-                      <TableCell><Badge variant={badge.variant}>{badge.label}</Badge></TableCell>
+                      <TableCell><Badge variant={variant}>{statusLabel(b.status)}</Badge></TableCell>
                       <TableCell className="text-right font-mono">{fmt(b.totalAmount)} EUR</TableCell>
                       <TableCell className="text-right">{b.paymentCount}</TableCell>
                       <TableCell>{b.createdBy.firstName} {b.createdBy.lastName}</TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" variant="outline" onClick={() => downloadXml(b.id, b.batchNumber)}>
-                          <Download className="h-4 w-4 mr-1" />XML
+                          <Download className="h-4 w-4 mr-1" />{t("downloadXml")}
                         </Button>
                       </TableCell>
                     </TableRow>

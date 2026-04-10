@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,11 +42,13 @@ interface BankTx {
   } | null;
 }
 
-const STATUS_BADGES: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  MATCHED: { label: "Zugeordnet", variant: "default" },
-  SUGGESTED: { label: "Vorschlag", variant: "outline" },
-  UNMATCHED: { label: "Offen", variant: "destructive" },
-  IGNORED: { label: "Ignoriert", variant: "secondary" },
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
+const STATUS_VARIANTS: Record<string, BadgeVariant> = {
+  MATCHED: "default",
+  SUGGESTED: "outline",
+  UNMATCHED: "destructive",
+  IGNORED: "secondary",
 };
 
 function fmt(n: string | number): string {
@@ -53,12 +56,26 @@ function fmt(n: string | number): string {
 }
 
 export default function BankImportContent() {
+  const t = useTranslations("buchhaltung.bankingImport");
   const [transactions, setTransactions] = useState<BankTx[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [filter, setFilter] = useState("ALL");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const statusLabel = useCallback(
+    (status: string): string => {
+      switch (status) {
+        case "MATCHED": return t("statusMatched");
+        case "SUGGESTED": return t("statusSuggested");
+        case "UNMATCHED": return t("statusUnmatched");
+        case "IGNORED": return t("statusIgnored");
+        default: return t("statusUnmatched");
+      }
+    },
+    [t]
+  );
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -71,11 +88,11 @@ export default function BankImportContent() {
       setTransactions(json.data || []);
       setTotal(json.total || 0);
     } catch {
-      toast.error("Fehler beim Laden der Transaktionen");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -89,10 +106,10 @@ export default function BankImportContent() {
       const res = await fetch("/api/buchhaltung/bank/import", { method: "POST", body: formData });
       if (!res.ok) throw new Error((await res.json()).error);
       const json = await res.json();
-      toast.success(`${json.imported} Transaktionen importiert (${json.matched} zugeordnet, ${json.suggested} Vorschlaege)`);
+      toast.success(t("toastImportSuccess", { imported: json.imported, matched: json.matched, suggested: json.suggested }));
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Import fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("toastImportError"));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -107,10 +124,12 @@ export default function BankImportContent() {
         body: JSON.stringify({ action, invoiceId }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      toast.success(action === "match" ? "Zugeordnet" : action === "ignore" ? "Ignoriert" : "Zuordnung aufgehoben");
+      toast.success(
+        action === "match" ? t("toastMatched") : action === "ignore" ? t("toastIgnored") : t("toastUnmatched")
+      );
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Aktion fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("toastActionError"));
     }
   }
 
@@ -123,43 +142,43 @@ export default function BankImportContent() {
               <input ref={fileRef} type="file" accept=".sta,.mt940,.txt,.xml" className="hidden" onChange={handleUpload} />
               <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
                 {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                Kontoauszug importieren
+                {t("importBtn")}
               </Button>
             </div>
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Alle Status</SelectItem>
-                <SelectItem value="UNMATCHED">Offen</SelectItem>
-                <SelectItem value="SUGGESTED">Vorschlaege</SelectItem>
-                <SelectItem value="MATCHED">Zugeordnet</SelectItem>
-                <SelectItem value="IGNORED">Ignoriert</SelectItem>
+                <SelectItem value="ALL">{t("filterAll")}</SelectItem>
+                <SelectItem value="UNMATCHED">{t("filterUnmatched")}</SelectItem>
+                <SelectItem value="SUGGESTED">{t("filterSuggested")}</SelectItem>
+                <SelectItem value="MATCHED">{t("filterMatched")}</SelectItem>
+                <SelectItem value="IGNORED">{t("filterIgnored")}</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-sm text-muted-foreground">{total} Transaktionen</span>
+            <span className="text-sm text-muted-foreground">{t("txCount", { count: total })}</span>
           </div>
 
           {loading ? (
             <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
           ) : transactions.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12">Keine Transaktionen vorhanden. Importieren Sie einen Kontoauszug.</div>
+            <div className="text-center text-muted-foreground py-12">{t("emptyState")}</div>
           ) : (
             <div className="rounded-md border overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[100px]">Datum</TableHead>
-                    <TableHead className="text-right w-[100px]">Betrag</TableHead>
-                    <TableHead>Auftraggeber</TableHead>
-                    <TableHead>Verwendungszweck</TableHead>
-                    <TableHead className="w-[120px]">Status</TableHead>
-                    <TableHead>Zugeordnet zu</TableHead>
-                    <TableHead className="w-[120px] text-right">Aktionen</TableHead>
+                    <TableHead className="w-[100px]">{t("colDate")}</TableHead>
+                    <TableHead className="text-right w-[100px]">{t("colAmount")}</TableHead>
+                    <TableHead>{t("colCounterpart")}</TableHead>
+                    <TableHead>{t("colReference")}</TableHead>
+                    <TableHead className="w-[120px]">{t("colStatus")}</TableHead>
+                    <TableHead>{t("colMatchedTo")}</TableHead>
+                    <TableHead className="w-[120px] text-right">{t("colActions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {transactions.map((tx) => {
-                    const badge = STATUS_BADGES[tx.matchStatus] || STATUS_BADGES.UNMATCHED;
+                    const variant = STATUS_VARIANTS[tx.matchStatus] || STATUS_VARIANTS.UNMATCHED;
                     return (
                       <TableRow key={tx.id}>
                         <TableCell className="font-mono text-sm">{formatDate(tx.bookingDate)}</TableCell>
@@ -168,24 +187,24 @@ export default function BankImportContent() {
                         </TableCell>
                         <TableCell className="text-sm">{tx.counterpartName || "-"}</TableCell>
                         <TableCell className="text-sm max-w-[200px] truncate">{tx.reference || "-"}</TableCell>
-                        <TableCell><Badge variant={badge.variant}>{badge.label}</Badge></TableCell>
+                        <TableCell><Badge variant={variant}>{statusLabel(tx.matchStatus)}</Badge></TableCell>
                         <TableCell className="text-sm">{tx.matchedInvoice?.invoiceNumber || "-"}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {tx.matchStatus === "SUGGESTED" && tx.matchedInvoice && (
-                              <Button size="icon" variant="ghost" title="Zuordnung bestaetigen"
+                              <Button size="icon" variant="ghost" title={t("actionMatch")}
                                 onClick={() => handleAction(tx.id, "match", tx.matchedInvoice?.id)}>
                                 <Check className="h-4 w-4 text-green-600" />
                               </Button>
                             )}
                             {tx.matchStatus !== "IGNORED" && tx.matchStatus !== "MATCHED" && (
-                              <Button size="icon" variant="ghost" title="Ignorieren"
+                              <Button size="icon" variant="ghost" title={t("actionIgnore")}
                                 onClick={() => handleAction(tx.id, "ignore")}>
                                 <X className="h-4 w-4" />
                               </Button>
                             )}
                             {tx.matchStatus === "MATCHED" && (
-                              <Button size="icon" variant="ghost" title="Zuordnung aufheben"
+                              <Button size="icon" variant="ghost" title={t("actionUnmatch")}
                                 onClick={() => handleAction(tx.id, "unmatch")}>
                                 <HelpCircle className="h-4 w-4" />
                               </Button>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -55,32 +56,32 @@ const COUNTRY_NAMES: Record<string, string> = {
   SI: "Slowenien", SK: "Slowakei",
 };
 
-function buildQuarterOptions() {
-  const options: { value: string; label: string }[] = [];
-  const now = new Date();
-  const year = now.getFullYear();
-
-  for (let y = year; y >= year - 2; y--) {
-    for (let q = 4; q >= 1; q--) {
-      if (y === year && q > Math.ceil((now.getMonth() + 1) / 3)) continue;
-      const from = `${y}-${String((q - 1) * 3 + 1).padStart(2, "0")}-01`;
-      const toMonth = q * 3;
-      const toDay = new Date(y, toMonth, 0).getDate();
-      const to = `${y}-${String(toMonth).padStart(2, "0")}-${toDay}`;
-      options.push({
-        value: `${from}|${to}`,
-        label: `Q${q} ${y}`,
-      });
-    }
-  }
-  return options;
-}
-
 export default function ZmContent() {
+  const t = useTranslations("buchhaltung.steuernZm");
   const [data, setData] = useState<ZmResult | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const quarterOptions = buildQuarterOptions();
+  const quarterOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    const now = new Date();
+    const year = now.getFullYear();
+
+    for (let y = year; y >= year - 2; y--) {
+      for (let q = 4; q >= 1; q--) {
+        if (y === year && q > Math.ceil((now.getMonth() + 1) / 3)) continue;
+        const from = `${y}-${String((q - 1) * 3 + 1).padStart(2, "0")}-01`;
+        const toMonth = q * 3;
+        const toDay = new Date(y, toMonth, 0).getDate();
+        const toStr = `${y}-${String(toMonth).padStart(2, "0")}-${toDay}`;
+        options.push({
+          value: `${from}|${toStr}`,
+          label: t("quarterLabel", { q, y }),
+        });
+      }
+    }
+    return options;
+  }, [t]);
+
   const [selectedQuarter, setSelectedQuarter] = useState(quarterOptions[0]?.value || "");
 
   const fetchData = useCallback(async () => {
@@ -93,11 +94,11 @@ export default function ZmContent() {
       const json = await res.json();
       setData(json.data || null);
     } catch {
-      toast.error("ZM konnte nicht geladen werden");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, [selectedQuarter]);
+  }, [selectedQuarter, t]);
 
   useEffect(() => {
     fetchData();
@@ -114,7 +115,7 @@ export default function ZmContent() {
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
           <div className="space-y-1 min-w-[160px]">
-            <Label>Meldezeitraum</Label>
+            <Label>{t("labelPeriod")}</Label>
             <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -125,10 +126,10 @@ export default function ZmContent() {
             </Select>
           </div>
           <Button variant="outline" onClick={fetchData}>
-            <RefreshCw className="h-4 w-4 mr-2" />Aktualisieren
+            <RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}
           </Button>
           <Button variant="outline" onClick={downloadXml} disabled={!data || data.lines.length === 0}>
-            <Download className="h-4 w-4 mr-2" />XML herunterladen
+            <Download className="h-4 w-4 mr-2" />{t("downloadBtn")}
           </Button>
         </div>
 
@@ -136,9 +137,9 @@ export default function ZmContent() {
           <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
         ) : !data || data.lines.length === 0 ? (
           <div className="text-center text-muted-foreground py-12">
-            Keine innergemeinschaftlichen Umsätze im gewählten Zeitraum.
+            {t("emptyState")}
             <br />
-            <span className="text-xs">Hinweis: Rechnungen benötigen Land und USt-IdNr des Empfängers.</span>
+            <span className="text-xs">{t("emptyHint")}</span>
           </div>
         ) : (
           <>
@@ -146,11 +147,11 @@ export default function ZmContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Land</TableHead>
-                    <TableHead>USt-IdNr</TableHead>
-                    <TableHead>Empfänger</TableHead>
-                    <TableHead>Art</TableHead>
-                    <TableHead className="text-right">Bemessungsgrundlage (€)</TableHead>
+                    <TableHead>{t("colCountry")}</TableHead>
+                    <TableHead>{t("colVatId")}</TableHead>
+                    <TableHead>{t("colRecipient")}</TableHead>
+                    <TableHead>{t("colType")}</TableHead>
+                    <TableHead className="text-right">{t("colBase")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -168,7 +169,7 @@ export default function ZmContent() {
                       <TableCell>{line.recipientName}</TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {line.type === "L" ? "Lieferung" : "Leistung"}
+                          {line.type === "L" ? t("typeDelivery") : t("typeService")}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">{fmt(line.amount)}</TableCell>
@@ -177,7 +178,7 @@ export default function ZmContent() {
 
                   {/* Total */}
                   <TableRow className="font-bold border-t-2 bg-muted/30">
-                    <TableCell colSpan={4}>Gesamt</TableCell>
+                    <TableCell colSpan={4}>{t("totalLabel")}</TableCell>
                     <TableCell className="text-right font-mono">{fmt(data.totalAmount)}</TableCell>
                   </TableRow>
                 </TableBody>
@@ -185,7 +186,7 @@ export default function ZmContent() {
             </div>
 
             <div className="mt-4 text-xs text-muted-foreground">
-              Meldezeitraum: Q{data.quarter}/{data.year} · {data.lines.length} Meldepositionen · Beträge in vollen Euro
+              {t("summaryLine", { quarter: data.quarter, year: data.year, count: data.lines.length })}
             </div>
           </>
         )}

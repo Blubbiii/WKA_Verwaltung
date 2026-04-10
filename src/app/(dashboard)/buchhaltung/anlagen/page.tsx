@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -52,13 +53,8 @@ function fmt(n: string | number): string {
   return Number(n).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "Aktiv",
-  DISPOSED: "Abgegangen",
-  FULLY_DEPRECIATED: "Voll abgeschrieben",
-};
-
 export default function AnlagenPage() {
+  const t = useTranslations("buchhaltung.anlagen");
   const [assets, setAssets] = useState<FixedAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -69,6 +65,18 @@ export default function AnlagenPage() {
     accountNumber: "0310", depAccountNumber: "4831",
   });
 
+  const statusLabel = useCallback(
+    (status: string): string => {
+      switch (status) {
+        case "ACTIVE": return t("statusActive");
+        case "DISPOSED": return t("statusDisposed");
+        case "FULLY_DEPRECIATED": return t("statusFullyDepreciated");
+        default: return status;
+      }
+    },
+    [t]
+  );
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -77,11 +85,11 @@ export default function AnlagenPage() {
       const json = await res.json();
       setAssets(json.data || []);
     } catch {
-      toast.error("Fehler beim Laden der Anlagen");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -99,11 +107,11 @@ export default function AnlagenPage() {
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Anlage erstellt");
+      toast.success(t("toastCreateSuccess"));
       setDialogOpen(false);
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler");
+      toast.error(err instanceof Error ? err.message : t("toastCreateError"));
     } finally {
       setSaving(false);
     }
@@ -123,41 +131,41 @@ export default function AnlagenPage() {
       });
       if (!res.ok) throw new Error((await res.json()).error);
       const json = await res.json();
-      toast.success(`AfA-Lauf: ${json.processedCount} Anlagen, ${fmt(json.totalAmount)} EUR`);
+      toast.success(t("toastDepreciationSuccess", { count: json.processedCount, amount: fmt(json.totalAmount) }));
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "AfA-Lauf fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("toastDepreciationError"));
     }
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Anlagenbuchhaltung" description="Anlagevermoegen und Abschreibungen (AfA) verwalten" />
+      <PageHeader title={t("title")} description={t("description")} />
 
       <Card>
         <CardContent className="pt-6">
           <div className="flex gap-4 mb-6">
-            <Button onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />Neue Anlage</Button>
-            <Button variant="outline" onClick={handleRunDepreciation}><Play className="h-4 w-4 mr-2" />AfA-Lauf (aktueller Monat)</Button>
+            <Button onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />{t("newAsset")}</Button>
+            <Button variant="outline" onClick={handleRunDepreciation}><Play className="h-4 w-4 mr-2" />{t("runDepreciation")}</Button>
           </div>
 
           {loading ? (
             <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
           ) : assets.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12">Keine Anlagen vorhanden.</div>
+            <div className="text-center text-muted-foreground py-12">{t("emptyState")}</div>
           ) : (
             <div className="rounded-md border overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nr.</TableHead>
-                    <TableHead>Bezeichnung</TableHead>
-                    <TableHead>Kategorie</TableHead>
-                    <TableHead>Anschaffung</TableHead>
-                    <TableHead className="text-right">AHK</TableHead>
-                    <TableHead className="text-right">Buchwert</TableHead>
-                    <TableHead>ND (Mon.)</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t("colNumber")}</TableHead>
+                    <TableHead>{t("colName")}</TableHead>
+                    <TableHead>{t("colCategory")}</TableHead>
+                    <TableHead>{t("colAcquisition")}</TableHead>
+                    <TableHead className="text-right">{t("colCost")}</TableHead>
+                    <TableHead className="text-right">{t("colBookValue")}</TableHead>
+                    <TableHead>{t("colUsefulLife")}</TableHead>
+                    <TableHead>{t("colStatus")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -172,7 +180,7 @@ export default function AnlagenPage() {
                         <TableCell className="text-right font-mono">{fmt(a.acquisitionCost)}</TableCell>
                         <TableCell className="text-right font-mono">{fmt(bookValue)}</TableCell>
                         <TableCell>{a.usefulLifeMonths}</TableCell>
-                        <TableCell><Badge variant={a.status === "ACTIVE" ? "default" : "secondary"}>{STATUS_LABELS[a.status] || a.status}</Badge></TableCell>
+                        <TableCell><Badge variant={a.status === "ACTIVE" ? "default" : "secondary"}>{statusLabel(a.status)}</Badge></TableCell>
                       </TableRow>
                     );
                   })}
@@ -185,35 +193,35 @@ export default function AnlagenPage() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Neue Anlage erfassen</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("dialogTitle")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Anlagen-Nr.</Label><Input value={form.assetNumber} onChange={(e) => setForm({ ...form, assetNumber: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Kategorie</Label><Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
+              <div className="space-y-2"><Label>{t("labelAssetNumber")}</Label><Input value={form.assetNumber} onChange={(e) => setForm({ ...form, assetNumber: e.target.value })} /></div>
+              <div className="space-y-2"><Label>{t("labelCategory")}</Label><Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
             </div>
-            <div className="space-y-2"><Label>Bezeichnung</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+            <div className="space-y-2"><Label>{t("labelName")}</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Anschaffungsdatum</Label><Input type="date" value={form.acquisitionDate} onChange={(e) => setForm({ ...form, acquisitionDate: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Anschaffungskosten (EUR)</Label><Input type="number" value={form.acquisitionCost} onChange={(e) => setForm({ ...form, acquisitionCost: e.target.value })} /></div>
+              <div className="space-y-2"><Label>{t("labelAcquisitionDate")}</Label><Input type="date" value={form.acquisitionDate} onChange={(e) => setForm({ ...form, acquisitionDate: e.target.value })} /></div>
+              <div className="space-y-2"><Label>{t("labelAcquisitionCost")}</Label><Input type="number" value={form.acquisitionCost} onChange={(e) => setForm({ ...form, acquisitionCost: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Nutzungsdauer (Monate)</Label><Input type="number" value={form.usefulLifeMonths} onChange={(e) => setForm({ ...form, usefulLifeMonths: e.target.value })} /></div>
+              <div className="space-y-2"><Label>{t("labelUsefulLife")}</Label><Input type="number" value={form.usefulLifeMonths} onChange={(e) => setForm({ ...form, usefulLifeMonths: e.target.value })} /></div>
               <div className="space-y-2">
-                <Label>AfA-Methode</Label>
+                <Label>{t("labelMethod")}</Label>
                 <Select value={form.depreciationMethod} onValueChange={(v) => setForm({ ...form, depreciationMethod: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="LINEAR">Linear</SelectItem>
-                    <SelectItem value="DECLINING_BALANCE">Degressiv</SelectItem>
+                    <SelectItem value="LINEAR">{t("methodLinear")}</SelectItem>
+                    <SelectItem value="DECLINING_BALANCE">{t("methodDeclining")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("btnCancel")}</Button>
             <Button onClick={handleCreate} disabled={saving || !form.assetNumber || !form.name || !form.acquisitionCost || !form.acquisitionDate || !form.usefulLifeMonths}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Erstellen
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}{t("btnCreate")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -82,14 +83,16 @@ interface Quote {
   items: QuoteItem[];
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: "Entwurf", color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300" },
-  SENT: { label: "Versendet", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" },
-  ACCEPTED: { label: "Angenommen", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" },
-  INVOICED: { label: "In Rechnung", color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300" },
-  EXPIRED: { label: "Abgelaufen", color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300" },
-  CANCELLED: { label: "Storniert", color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" },
+const STATUS_COLORS: Record<string, string> = {
+  DRAFT: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+  SENT: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  ACCEPTED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  INVOICED: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
+  EXPIRED: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+  CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
+
+const STATUS_KEYS = ["DRAFT", "SENT", "ACCEPTED", "INVOICED", "EXPIRED", "CANCELLED"] as const;
 
 function fmt(n: number | string): string {
   const num = typeof n === "string" ? parseFloat(n) : n;
@@ -117,6 +120,7 @@ const emptyItem = (): NewItemRow => ({
 });
 
 export default function AngebotePage() {
+  const t = useTranslations("buchhaltung.angebote");
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -130,6 +134,26 @@ export default function AngebotePage() {
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<NewItemRow[]>([emptyItem()]);
 
+  const statusLabel = useCallback(
+    (status: string): string => {
+      switch (status) {
+        case "DRAFT": return t("statusDraft");
+        case "SENT": return t("statusSent");
+        case "ACCEPTED": return t("statusAccepted");
+        case "INVOICED": return t("statusInvoiced");
+        case "EXPIRED": return t("statusExpired");
+        case "CANCELLED": return t("statusCancelled");
+        default: return status;
+      }
+    },
+    [t]
+  );
+
+  const statusOptions = useMemo(
+    () => STATUS_KEYS.map((key) => ({ key, label: statusLabel(key) })),
+    [statusLabel]
+  );
+
   const fetchQuotes = useCallback(async () => {
     setLoading(true);
     try {
@@ -140,11 +164,11 @@ export default function AngebotePage() {
       const json = await res.json();
       setQuotes(json.data || []);
     } catch {
-      toast.error("Angebote konnten nicht geladen werden");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, t]);
 
   useEffect(() => {
     fetchQuotes();
@@ -152,7 +176,7 @@ export default function AngebotePage() {
 
   async function createQuote() {
     if (!recipientName.trim() || items.some((it) => !it.description.trim() || it.unitPrice <= 0)) {
-      toast.error("Bitte füllen Sie alle Pflichtfelder aus");
+      toast.error(t("toastValidation"));
       return;
     }
 
@@ -179,12 +203,12 @@ export default function AngebotePage() {
       });
 
       if (!res.ok) throw new Error();
-      toast.success("Angebot erstellt");
+      toast.success(t("toastCreateSuccess"));
       setDialogOpen(false);
       resetForm();
       fetchQuotes();
     } catch {
-      toast.error("Angebot konnte nicht erstellt werden");
+      toast.error(t("toastCreateError"));
     } finally {
       setSaving(false);
     }
@@ -204,24 +228,24 @@ export default function AngebotePage() {
       const res = await fetch(`/api/buchhaltung/angebote/${quoteId}/${action}`, { method: "POST" });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error || "Fehler");
+        throw new Error(json.error || t("toastActionError"));
       }
-      toast.success("Aktion erfolgreich");
+      toast.success(t("toastActionSuccess"));
       fetchQuotes();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler bei der Aktion");
+      toast.error(err instanceof Error ? err.message : t("toastActionError"));
     }
   }
 
   async function deleteQuote(quoteId: string) {
-    if (!confirm("Angebot wirklich löschen?")) return;
+    if (!confirm(t("confirmDelete"))) return;
     try {
       const res = await fetch(`/api/buchhaltung/angebote/${quoteId}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      toast.success("Angebot gelöscht");
+      toast.success(t("toastDeleteSuccess"));
       fetchQuotes();
     } catch {
-      toast.error("Angebot konnte nicht gelöscht werden");
+      toast.error(t("toastDeleteError"));
     }
   }
 
@@ -241,62 +265,62 @@ export default function AngebotePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Angebote"
-        description="Angebote erstellen, verwalten und in Rechnungen umwandeln"
+        title={t("title")}
+        description={t("description")}
       />
 
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
             <div className="space-y-1 min-w-[160px]">
-              <Label>Status</Label>
+              <Label>{t("labelStatus")}</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Alle</SelectItem>
-                  {Object.entries(STATUS_CONFIG).map(([key, conf]) => (
-                    <SelectItem key={key} value={key}>{conf.label}</SelectItem>
+                  <SelectItem value="all">{t("filterAll")}</SelectItem>
+                  {statusOptions.map((opt) => (
+                    <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <Button variant="outline" onClick={fetchQuotes}>
-              <RefreshCw className="h-4 w-4 mr-2" />Aktualisieren
+              <RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}
             </Button>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />Neues Angebot
+                  <Plus className="h-4 w-4 mr-2" />{t("newBtn")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Neues Angebot</DialogTitle>
-                  <DialogDescription>Erstellen Sie ein neues Angebot</DialogDescription>
+                  <DialogTitle>{t("dialogTitle")}</DialogTitle>
+                  <DialogDescription>{t("dialogDescription")}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <Label>Empfänger *</Label>
-                      <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder="Firmenname" />
+                      <Label>{t("labelRecipient")}</Label>
+                      <Input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} placeholder={t("recipientPlaceholder")} />
                     </div>
                     <div className="space-y-1">
-                      <Label>Gültig bis</Label>
+                      <Label>{t("labelValidUntil")}</Label>
                       <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <Label>Adresse</Label>
-                    <Input value={recipientAddress} onChange={(e) => setRecipientAddress(e.target.value)} placeholder="Straße, PLZ Ort" />
+                    <Label>{t("labelAddress")}</Label>
+                    <Input value={recipientAddress} onChange={(e) => setRecipientAddress(e.target.value)} placeholder={t("addressPlaceholder")} />
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Positionen *</Label>
+                    <Label>{t("labelItems")}</Label>
                     {items.map((item, i) => (
                       <div key={i} className="flex gap-2 items-start">
                         <Input
                           className="flex-1"
-                          placeholder="Beschreibung"
+                          placeholder={t("itemDescriptionPlaceholder")}
                           value={item.description}
                           onChange={(e) => updateItem(i, "description", e.target.value)}
                         />
@@ -310,7 +334,7 @@ export default function AngebotePage() {
                         />
                         <Input
                           className="w-20"
-                          placeholder="Einheit"
+                          placeholder={t("itemUnitPlaceholder")}
                           value={item.unit}
                           onChange={(e) => updateItem(i, "unit", e.target.value)}
                         />
@@ -319,7 +343,7 @@ export default function AngebotePage() {
                           type="number"
                           min={0}
                           step={0.01}
-                          placeholder="Preis"
+                          placeholder={t("itemPricePlaceholder")}
                           value={item.unitPrice || ""}
                           onChange={(e) => updateItem(i, "unitPrice", parseFloat(e.target.value) || 0)}
                         />
@@ -340,19 +364,19 @@ export default function AngebotePage() {
                       </div>
                     ))}
                     <Button variant="outline" size="sm" onClick={addItem}>
-                      <Plus className="h-3 w-3 mr-1" />Position
+                      <Plus className="h-3 w-3 mr-1" />{t("addItemBtn")}
                     </Button>
                   </div>
 
                   <div className="space-y-1">
-                    <Label>Anmerkungen</Label>
-                    <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optionale Anmerkungen" />
+                    <Label>{t("labelNotes")}</Label>
+                    <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notesPlaceholder")} />
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("btnCancel")}</Button>
                   <Button onClick={createQuote} disabled={saving}>
-                    {saving ? "Erstelle..." : "Angebot erstellen"}
+                    {saving ? t("btnCreating") : t("btnCreate")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -363,25 +387,25 @@ export default function AngebotePage() {
             <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
           ) : quotes.length === 0 ? (
             <div className="text-center text-muted-foreground py-12">
-              Keine Angebote vorhanden. Erstellen Sie Ihr erstes Angebot.
+              {t("emptyState")}
             </div>
           ) : (
             <div className="rounded-md border overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nr</TableHead>
-                    <TableHead>Empfänger</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Gültig bis</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Betrag (brutto)</TableHead>
-                    <TableHead className="text-right">Aktionen</TableHead>
+                    <TableHead>{t("colNumber")}</TableHead>
+                    <TableHead>{t("colRecipient")}</TableHead>
+                    <TableHead>{t("colDate")}</TableHead>
+                    <TableHead>{t("colValidUntil")}</TableHead>
+                    <TableHead>{t("colStatus")}</TableHead>
+                    <TableHead className="text-right">{t("colGross")}</TableHead>
+                    <TableHead className="text-right">{t("colActions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {quotes.map((q) => {
-                    const sc = STATUS_CONFIG[q.status] || { label: q.status, color: "" };
+                    const color = STATUS_COLORS[q.status] || "";
                     const isExpired = q.status === "SENT" && new Date(q.validUntil) < new Date();
                     return (
                       <TableRow key={q.id}>
@@ -396,28 +420,28 @@ export default function AngebotePage() {
                           {isExpired && <Clock className="inline h-3 w-3 ml-1" />}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className={sc.color}>{sc.label}</Badge>
+                          <Badge variant="secondary" className={color}>{statusLabel(q.status)}</Badge>
                         </TableCell>
                         <TableCell className="text-right font-mono">{fmt(q.grossAmount)} €</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {q.status === "DRAFT" && (
-                              <Button variant="ghost" size="icon" title="Versenden" onClick={() => performAction(q.id, "send", "Angebot als versendet markieren?")}>
+                              <Button variant="ghost" size="icon" title={t("actionSend")} onClick={() => performAction(q.id, "send", t("confirmSend"))}>
                                 <Send className="h-4 w-4" />
                               </Button>
                             )}
                             {q.status === "SENT" && (
                               <>
-                                <Button variant="ghost" size="icon" title="Annehmen" onClick={() => performAction(q.id, "accept", "Angebot als angenommen markieren?")}>
+                                <Button variant="ghost" size="icon" title={t("actionAccept")} onClick={() => performAction(q.id, "accept", t("confirmAccept"))}>
                                   <Check className="h-4 w-4 text-green-600" />
                                 </Button>
-                                <Button variant="ghost" size="icon" title="Abgelaufen" onClick={() => performAction(q.id, "expire", "Angebot als abgelaufen markieren?")}>
+                                <Button variant="ghost" size="icon" title={t("actionExpire")} onClick={() => performAction(q.id, "expire", t("confirmExpire"))}>
                                   <Clock className="h-4 w-4 text-orange-600" />
                                 </Button>
                               </>
                             )}
                             {q.status === "ACCEPTED" && (
-                              <Button variant="ghost" size="icon" title="In Rechnung umwandeln" onClick={() => performAction(q.id, "convert", "Angebot in Rechnung umwandeln?")}>
+                              <Button variant="ghost" size="icon" title={t("actionConvert")} onClick={() => performAction(q.id, "convert", t("confirmConvert"))}>
                                 <ArrowRight className="h-4 w-4 text-purple-600" />
                               </Button>
                             )}
@@ -427,12 +451,12 @@ export default function AngebotePage() {
                               </span>
                             )}
                             {["DRAFT", "SENT", "ACCEPTED"].includes(q.status) && (
-                              <Button variant="ghost" size="icon" title="Stornieren" onClick={() => performAction(q.id, "cancel", "Angebot wirklich stornieren?")}>
+                              <Button variant="ghost" size="icon" title={t("actionCancel")} onClick={() => performAction(q.id, "cancel", t("confirmCancel"))}>
                                 <X className="h-4 w-4 text-red-600" />
                               </Button>
                             )}
                             {q.status === "DRAFT" && (
-                              <Button variant="ghost" size="icon" title="Löschen" onClick={() => deleteQuote(q.id)}>
+                              <Button variant="ghost" size="icon" title={t("actionDelete")} onClick={() => deleteQuote(q.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             )}

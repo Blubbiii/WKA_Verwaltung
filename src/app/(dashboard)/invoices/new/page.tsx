@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
+import { useTranslations } from "next-intl";
 import { formatCurrency, formatDate } from "@/lib/format";
 import {
   ArrowLeft,
@@ -81,6 +82,8 @@ function NewInvoiceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const type = searchParams.get("type") === "CREDIT_NOTE" ? "CREDIT_NOTE" : "INVOICE";
+  const t = useTranslations("invoices.new");
+  const tCommon = useTranslations("common");
 
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -152,7 +155,7 @@ function NewInvoiceContent() {
 
   function handleRemoveItem(id: string) {
     if (items.length === 1) {
-      toast.error("Mindestens eine Position erforderlich");
+      toast.error(t("toastPositionAtLeastOne"));
       return;
     }
     setItems(items.filter((item) => item.id !== id));
@@ -225,17 +228,17 @@ function NewInvoiceContent() {
 
     // Validierung
     if (!formData.recipientName.trim()) {
-      toast.error("Empfängername erforderlich");
+      toast.error(t("toastRecipientRequired"));
       return;
     }
 
     if (items.some((item) => !item.description.trim())) {
-      toast.error("Alle Positionen benoetigen eine Beschreibung");
+      toast.error(t("toastDescriptionRequired"));
       return;
     }
 
     if (items.some((item) => item.unitPrice <= 0)) {
-      toast.error("Alle Positionen benoetigen einen positiven Preis");
+      toast.error(t("toastPriceRequired"));
       return;
     }
 
@@ -303,21 +306,22 @@ function NewInvoiceContent() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("toastSaveError"));
       }
 
       const invoice = await response.json();
       const { celebrationToast } = await import("@/lib/celebration-toast");
-      celebrationToast(type === "INVOICE" ? "Rechnung erstellt!" : "Gutschrift erstellt!");
+      celebrationToast(type === "INVOICE" ? t("toastCreateSuccessInvoice") : t("toastCreateSuccessCreditNote"));
       router.push(`/invoices/${invoice.id}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("toastSaveError"));
     } finally {
       setSaving(false);
     }
   }
 
-  const typeLabel = type === "INVOICE" ? "Rechnung" : "Gutschrift";
+  const title = type === "INVOICE" ? t("titleInvoice") : t("titleCreditNote");
+  const subtitle = type === "INVOICE" ? t("subtitleInvoice") : t("subtitleCreditNote");
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -330,9 +334,9 @@ function NewInvoiceContent() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Neue {typeLabel}</h1>
+            <h1 className="text-2xl font-bold">{title}</h1>
             <p className="text-muted-foreground">
-              Erstellen Sie eine neue {typeLabel}
+              {subtitle}
             </p>
           </div>
         </div>
@@ -342,7 +346,7 @@ function NewInvoiceContent() {
             variant="outline"
             onClick={() => router.back()}
           >
-            Abbrechen
+            {tCommon("cancel")}
           </Button>
           <Button type="submit" disabled={saving}>
             {saving ? (
@@ -350,7 +354,7 @@ function NewInvoiceContent() {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Speichern
+            {tCommon("save")}
           </Button>
         </div>
       </div>
@@ -361,19 +365,19 @@ function NewInvoiceContent() {
           {/* Empfänger */}
           <Card>
             <CardHeader>
-              <CardTitle>Empfänger</CardTitle>
+              <CardTitle>{t("recipientCardTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-end gap-2">
                 <div className="flex-1 space-y-2">
-                  <Label htmlFor="recipientName">Name *</Label>
+                  <Label htmlFor="recipientName">{t("recipientNameLabel")}</Label>
                   <Input
                     id="recipientName"
                     value={formData.recipientName}
                     onChange={(e) =>
                       setFormData({ ...formData, recipientName: e.target.value })
                     }
-                    placeholder="Name des Empfängers"
+                    placeholder={t("recipientNamePlaceholder")}
                     required
                   />
                 </div>
@@ -383,54 +387,54 @@ function NewInvoiceContent() {
                   onClick={() => setRecipientDialogOpen(true)}
                 >
                   <Search className="mr-2 h-4 w-4" />
-                  Suchen / Anlegen
+                  {t("searchCreate")}
                 </Button>
               </div>
               <div className="grid gap-4 sm:grid-cols-4">
                 <div className="space-y-2 sm:col-span-3">
-                  <Label htmlFor="recipientStreet">Strasse</Label>
+                  <Label htmlFor="recipientStreet">{t("recipientStreetLabel")}</Label>
                   <Input
                     id="recipientStreet"
                     value={formData.recipientStreet}
                     onChange={(e) =>
                       setFormData({ ...formData, recipientStreet: e.target.value })
                     }
-                    placeholder="Musterstrasse"
+                    placeholder={t("recipientStreetPlaceholder")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="recipientHouseNumber">Hausnr.</Label>
+                  <Label htmlFor="recipientHouseNumber">{t("recipientHouseNumberLabel")}</Label>
                   <Input
                     id="recipientHouseNumber"
                     value={formData.recipientHouseNumber}
                     onChange={(e) =>
                       setFormData({ ...formData, recipientHouseNumber: e.target.value })
                     }
-                    placeholder="12a"
+                    placeholder={t("recipientHouseNumberPlaceholder")}
                   />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="recipientPostalCode">PLZ</Label>
+                  <Label htmlFor="recipientPostalCode">{t("recipientPostalCodeLabel")}</Label>
                   <Input
                     id="recipientPostalCode"
                     value={formData.recipientPostalCode}
                     onChange={(e) =>
                       setFormData({ ...formData, recipientPostalCode: e.target.value })
                     }
-                    placeholder="12345"
+                    placeholder={t("recipientPostalCodePlaceholder")}
                   />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="recipientCity">Ort</Label>
+                  <Label htmlFor="recipientCity">{t("recipientCityLabel")}</Label>
                   <Input
                     id="recipientCity"
                     value={formData.recipientCity}
                     onChange={(e) =>
                       setFormData({ ...formData, recipientCity: e.target.value })
                     }
-                    placeholder="Musterstadt"
+                    placeholder={t("recipientCityPlaceholder")}
                   />
                 </div>
               </div>
@@ -442,12 +446,12 @@ function NewInvoiceContent() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Positionen</CardTitle>
-                  <CardDescription>{items.length} Position(en)</CardDescription>
+                  <CardTitle>{t("positionsTitle")}</CardTitle>
+                  <CardDescription>{t("positionsCount", { count: items.length })}</CardDescription>
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Position
+                  {t("addPosition")}
                 </Button>
               </div>
             </CardHeader>
@@ -455,26 +459,26 @@ function NewInvoiceContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[300px]">Beschreibung</TableHead>
-                    <TableHead className="w-20">Menge</TableHead>
-                    <TableHead className="w-24">Einheit</TableHead>
-                    <TableHead className="w-32">Einzelpreis</TableHead>
+                    <TableHead className="w-[300px]">{t("colDescription")}</TableHead>
+                    <TableHead className="w-20">{t("colQuantity")}</TableHead>
+                    <TableHead className="w-24">{t("colUnit")}</TableHead>
+                    <TableHead className="w-32">{t("colUnitPrice")}</TableHead>
                     <TableHead className="w-32">
                       <div className="flex items-center gap-1">
-                        Steuer
+                        {t("colTax")}
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <HelpCircle className="h-3 w-3 text-muted-foreground" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Steuerfrei: Gem. Paragraph 4 Nr.12 UStG</p>
+                              <p>{t("taxTooltip")}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </div>
                     </TableHead>
-                    <TableHead className="text-right">Netto</TableHead>
+                    <TableHead className="text-right">{t("colNet")}</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -490,7 +494,7 @@ function NewInvoiceContent() {
                               onChange={(e) =>
                                 handleItemChange(item.id, "description", e.target.value)
                               }
-                              placeholder="Beschreibung"
+                              placeholder={t("descriptionPlaceholder")}
                               className="pr-10"
                             />
                             <Button
@@ -502,7 +506,7 @@ function NewInvoiceContent() {
                                 setTemplateTargetItemId(item.id);
                                 setTemplateDialogOpen(true);
                               }}
-                              title="Vorlage auswaehlen"
+                              title={t("pickTemplate")}
                             >
                               <Search className="h-4 w-4" />
                             </Button>
@@ -528,14 +532,14 @@ function NewInvoiceContent() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Stueck">Stueck</SelectItem>
-                              <SelectItem value="Stunden">Stunden</SelectItem>
-                              <SelectItem value="Tage">Tage</SelectItem>
-                              <SelectItem value="pauschal">pauschal</SelectItem>
-                              <SelectItem value="kWh">kWh</SelectItem>
-                              <SelectItem value="MWh">MWh</SelectItem>
-                              <SelectItem value="m2">m2</SelectItem>
-                              <SelectItem value="ha">ha</SelectItem>
+                              <SelectItem value="Stueck">{t("unitStueck")}</SelectItem>
+                              <SelectItem value="Stunden">{t("unitStunden")}</SelectItem>
+                              <SelectItem value="Tage">{t("unitTage")}</SelectItem>
+                              <SelectItem value="pauschal">{t("unitPauschal")}</SelectItem>
+                              <SelectItem value="kWh">{t("unitKwh")}</SelectItem>
+                              <SelectItem value="MWh">{t("unitMwh")}</SelectItem>
+                              <SelectItem value="m2">{t("unitM2")}</SelectItem>
+                              <SelectItem value="ha">{t("unitHa")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
@@ -561,9 +565,9 @@ function NewInvoiceContent() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="EXEMPT">0% (steuerfrei)</SelectItem>
-                              <SelectItem value="REDUCED">7% MwSt</SelectItem>
-                              <SelectItem value="STANDARD">19% MwSt</SelectItem>
+                              <SelectItem value="EXEMPT">{t("taxExempt")}</SelectItem>
+                              <SelectItem value="REDUCED">{t("taxReduced")}</SelectItem>
+                              <SelectItem value="STANDARD">{t("taxStandard")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
@@ -587,7 +591,7 @@ function NewInvoiceContent() {
                 <TableFooter>
                   <TableRow>
                     <TableCell colSpan={5} className="text-right">
-                      Netto
+                      {t("totalNet")}
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       {formatCurrency(totals.netAmount)}
@@ -596,7 +600,7 @@ function NewInvoiceContent() {
                   </TableRow>
                   <TableRow>
                     <TableCell colSpan={5} className="text-right">
-                      MwSt
+                      {t("totalTax")}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(totals.taxAmount)}
@@ -605,7 +609,7 @@ function NewInvoiceContent() {
                   </TableRow>
                   <TableRow>
                     <TableCell colSpan={5} className="text-right font-bold">
-                      Brutto
+                      {t("totalGross")}
                     </TableCell>
                     <TableCell className="text-right font-bold text-lg">
                       {formatCurrency(totals.grossAmount)}
@@ -620,13 +624,13 @@ function NewInvoiceContent() {
           {/* Notizen */}
           <Card>
             <CardHeader>
-              <CardTitle>Notizen</CardTitle>
+              <CardTitle>{t("notesCardTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Interne Notizen oder Zahlungshinweise"
+                placeholder={t("notesPlaceholder")}
                 rows={3}
               />
             </CardContent>
@@ -638,11 +642,11 @@ function NewInvoiceContent() {
           {/* Datum */}
           <Card>
             <CardHeader>
-              <CardTitle>Datum</CardTitle>
+              <CardTitle>{t("dateCardTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="invoiceDate">Rechnungsdatum *</Label>
+                <Label htmlFor="invoiceDate">{t("invoiceDateLabel")}</Label>
                 <Input
                   id="invoiceDate"
                   type="date"
@@ -654,7 +658,7 @@ function NewInvoiceContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dueDate">Fälligkeitsdatum</Label>
+                <Label htmlFor="dueDate">{t("dueDateLabel")}</Label>
                 <Input
                   id="dueDate"
                   type="date"
@@ -666,7 +670,7 @@ function NewInvoiceContent() {
               </div>
               <Separator />
               <div className="space-y-2">
-                <Label htmlFor="serviceStartDate">Leistungszeitraum von</Label>
+                <Label htmlFor="serviceStartDate">{t("serviceStartLabel")}</Label>
                 <Input
                   id="serviceStartDate"
                   type="date"
@@ -677,7 +681,7 @@ function NewInvoiceContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="serviceEndDate">Leistungszeitraum bis</Label>
+                <Label htmlFor="serviceEndDate">{t("serviceEndLabel")}</Label>
                 <Input
                   id="serviceEndDate"
                   type="date"
@@ -696,22 +700,22 @@ function NewInvoiceContent() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Percent className="h-4 w-4" />
-                  Skonto
+                  {t("skontoCardTitle")}
                 </CardTitle>
                 <Switch
                   checked={skontoEnabled}
                   onCheckedChange={setSkontoEnabled}
-                  aria-label="Skonto aktivieren"
+                  aria-label={t("skontoSwitchAria")}
                 />
               </div>
               <CardDescription>
-                Rabatt bei fruehzeitiger Zahlung
+                {t("skontoDescription")}
               </CardDescription>
             </CardHeader>
             {skontoEnabled && (
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="skontoPercent">Skonto %</Label>
+                  <Label htmlFor="skontoPercent">{t("skontoPercentLabel")}</Label>
                   <Input
                     id="skontoPercent"
                     type="number"
@@ -723,7 +727,7 @@ function NewInvoiceContent() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="skontoDays">Skonto-Tage</Label>
+                  <Label htmlFor="skontoDays">{t("skontoDaysLabel")}</Label>
                   <Input
                     id="skontoDays"
                     type="number"
@@ -737,17 +741,17 @@ function NewInvoiceContent() {
                 {totals.grossAmount > 0 && skontoPercent > 0 && skontoDays > 0 && (
                   <div className="rounded-md bg-green-50 p-3 text-sm space-y-1">
                     <p className="font-medium text-green-800">
-                      Skonto-Betrag: {formatCurrency(calculateSkontoDiscount(totals.grossAmount, skontoPercent))}
+                      {t("skontoPreviewAmount", { amount: formatCurrency(calculateSkontoDiscount(totals.grossAmount, skontoPercent)) })}
                     </p>
                     <p className="text-green-700">
-                      Zahlbar bis: {
-                        formData.invoiceDate
+                      {t("skontoPayBy", {
+                        date: formData.invoiceDate
                           ? formatDate(calculateSkontoDeadline(new Date(formData.invoiceDate), skontoDays))
-                          : "-"
-                      }
+                          : "-",
+                      })}
                     </p>
                     <p className="text-green-700">
-                      Zahlbetrag bei Skonto: {formatCurrency(totals.grossAmount - calculateSkontoDiscount(totals.grossAmount, skontoPercent))}
+                      {t("skontoPaymentWithDiscount", { amount: formatCurrency(totals.grossAmount - calculateSkontoDiscount(totals.grossAmount, skontoPercent)) })}
                     </p>
                   </div>
                 )}
@@ -758,34 +762,34 @@ function NewInvoiceContent() {
           {/* Referenzen */}
           <Card>
             <CardHeader>
-              <CardTitle>Referenzen</CardTitle>
+              <CardTitle>{t("referencesCardTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="paymentReference">Zahlungsreferenz</Label>
+                <Label htmlFor="paymentReference">{t("paymentReferenceLabel")}</Label>
                 <Input
                   id="paymentReference"
                   value={formData.paymentReference}
                   onChange={(e) =>
                     setFormData({ ...formData, paymentReference: e.target.value })
                   }
-                  placeholder="z.B. Verwendungszweck"
+                  placeholder={t("paymentReferencePlaceholder")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="internalReference">Interne Referenz</Label>
+                <Label htmlFor="internalReference">{t("internalReferenceLabel")}</Label>
                 <Input
                   id="internalReference"
                   value={formData.internalReference}
                   onChange={(e) =>
                     setFormData({ ...formData, internalReference: e.target.value })
                   }
-                  placeholder="z.B. Projektnummer"
+                  placeholder={t("internalReferencePlaceholder")}
                 />
               </div>
               <Separator />
               <div className="space-y-2">
-                <Label htmlFor="parkId">Windpark</Label>
+                <Label htmlFor="parkId">{t("windparkLabel")}</Label>
                 <Select
                   value={formData.parkId || "none"}
                   onValueChange={(value) =>
@@ -793,10 +797,10 @@ function NewInvoiceContent() {
                   }
                 >
                   <SelectTrigger id="parkId">
-                    <SelectValue placeholder="Optional zuordnen" />
+                    <SelectValue placeholder={t("windparkPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Keine Zuordnung</SelectItem>
+                    <SelectItem value="none">{t("noAssignment")}</SelectItem>
                     {parks.map((park) => (
                       <SelectItem key={park.id} value={park.id}>
                         {park.name}
@@ -806,7 +810,7 @@ function NewInvoiceContent() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fundId">Rechnungssteller (Gesellschaft)</Label>
+                <Label htmlFor="fundId">{t("fundLabel")}</Label>
                 <Select
                   value={formData.fundId || "none"}
                   onValueChange={(value) =>
@@ -814,10 +818,10 @@ function NewInvoiceContent() {
                   }
                 >
                   <SelectTrigger id="fundId">
-                    <SelectValue placeholder="Optional zuordnen" />
+                    <SelectValue placeholder={t("fundPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Keine Zuordnung</SelectItem>
+                    <SelectItem value="none">{t("noAssignment")}</SelectItem>
                     {funds.map((fund) => (
                       <SelectItem key={fund.id} value={fund.id}>
                         {fund.name}
@@ -828,7 +832,7 @@ function NewInvoiceContent() {
                 <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
                   <Link href="/funds/new" target="_blank">
                     <Plus className="mr-1 h-3 w-3" />
-                    Neue Gesellschaft anlegen
+                    {t("createNewFund")}
                   </Link>
                 </Button>
               </div>
@@ -850,9 +854,14 @@ function NewInvoiceContent() {
   );
 }
 
+function NewInvoiceFallback() {
+  const t = useTranslations("invoices.new");
+  return <div>{t("loadingFallback")}</div>;
+}
+
 export default function NewInvoicePage() {
   return (
-    <Suspense fallback={<div>Laden...</div>}>
+    <Suspense fallback={<NewInvoiceFallback />}>
       <NewInvoiceContent />
     </Suspense>
   );

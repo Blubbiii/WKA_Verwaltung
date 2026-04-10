@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ function defaultPeriod(): { from: string; to: string } {
 }
 
 export default function DatevContent() {
+  const t = useTranslations("buchhaltung.abschlussDatev");
   const defaults = defaultPeriod();
   const [from, setFrom] = useState(defaults.from);
   const [to, setTo] = useState(defaults.to);
@@ -54,7 +56,7 @@ export default function DatevContent() {
       const json = await res.json();
       setPreview(json.data);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Laden der Vorschau");
+      toast.error(err instanceof Error ? err.message : t("errorPreview"));
     } finally {
       setLoading(false);
     }
@@ -80,10 +82,10 @@ export default function DatevContent() {
       a.click();
       URL.revokeObjectURL(url);
 
-      const count = res.headers.get("X-Export-Count");
-      toast.success(`DATEV-Export heruntergeladen (${count} Eintraege)`);
+      const count = res.headers.get("X-Export-Count") || "0";
+      toast.success(t("successExport", { count }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Export fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("errorExport"));
     } finally {
       setDownloading(false);
     }
@@ -95,34 +97,34 @@ export default function DatevContent() {
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div className="space-y-1">
-              <Label>Von</Label>
+              <Label>{t("from")}</Label>
               <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Bis</Label>
+              <Label>{t("to")}</Label>
               <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Export-Modus</Label>
+              <Label>{t("mode")}</Label>
               <Select value={mode} onValueChange={(v) => setMode(v as typeof mode)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="journal">Journal-Buchungen</SelectItem>
-                  <SelectItem value="invoices">Nur Rechnungen</SelectItem>
-                  <SelectItem value="both">Kombiniert</SelectItem>
+                  <SelectItem value="journal">{t("modeJournal")}</SelectItem>
+                  <SelectItem value="invoices">{t("modeInvoices")}</SelectItem>
+                  <SelectItem value="both">{t("modeBoth")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={loadPreview} disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-                Vorschau
+                {t("preview")}
               </Button>
               <Button onClick={handleDownload} disabled={downloading}>
                 {downloading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                Export
+                {t("exportBtn")}
               </Button>
             </div>
           </div>
@@ -133,28 +135,28 @@ export default function DatevContent() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="text-sm text-muted-foreground">Journal-Buchungen</div>
+              <div className="text-sm text-muted-foreground">{t("cardJournalEntries")}</div>
               <div className="text-2xl font-bold">{preview.journalEntries}</div>
               <Badge variant={preview.journalEntries > 0 ? "default" : "secondary"} className="mt-1">
-                {preview.journalEntries > 0 ? "Verfuegbar" : "Keine"}
+                {preview.journalEntries > 0 ? t("badgeAvailable") : t("badgeNone")}
               </Badge>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-sm text-muted-foreground">Ausgangsrechnungen</div>
+              <div className="text-sm text-muted-foreground">{t("cardOutgoingInvoices")}</div>
               <div className="text-2xl font-bold">{preview.outgoingInvoices}</div>
               <Badge variant={preview.outgoingInvoices > 0 ? "default" : "secondary"} className="mt-1">
-                SENT / PAID
+                {t("badgeSentPaid")}
               </Badge>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-sm text-muted-foreground">Eingangsrechnungen</div>
+              <div className="text-sm text-muted-foreground">{t("cardIncomingInvoices")}</div>
               <div className="text-2xl font-bold">{preview.incomingInvoices}</div>
               <Badge variant={preview.incomingInvoices > 0 ? "default" : "secondary"} className="mt-1">
-                APPROVED / PAID
+                {t("badgeApprovedPaid")}
               </Badge>
             </CardContent>
           </Card>
@@ -163,14 +165,14 @@ export default function DatevContent() {
 
       <Card>
         <CardContent className="pt-6">
-          <h3 className="font-semibold mb-3">Hinweise zum DATEV-Import</h3>
+          <h3 className="font-semibold mb-3">{t("hintsTitle")}</h3>
           <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
-            <li><strong>Format:</strong> EXTF v510, Kategorie 21 (Buchungsstapel), UTF-8 mit BOM</li>
-            <li><strong>Journal-Buchungen</strong> enthalten alle gebuchten Eintraege (Auto-Buchungen bei Rechnungsversand, AfA, manuelle Buchungen)</li>
-            <li><strong>Nur Rechnungen</strong> exportiert Ausgangsrechnungen direkt (ohne JournalEntry-Umweg)</li>
-            <li><strong>Kombiniert</strong> exportiert Journal-Buchungen + Rechnungen die noch nicht gebucht wurden</li>
-            <li>Kontenzuordnung basiert auf dem SKR03-Kontenrahmen (konfigurierbar unter Einstellungen)</li>
-            <li>Die CSV-Datei kann direkt in DATEV Unternehmen Online oder DATEV Kanzlei-Rechnungswesen importiert werden</li>
+            <li><strong>{t("hintFormat")}</strong> {t("hintFormatText")}</li>
+            <li><strong>{t("hintJournalLabel")}</strong> {t("hintJournalText")}</li>
+            <li><strong>{t("hintInvoicesLabel")}</strong> {t("hintInvoicesText")}</li>
+            <li><strong>{t("hintCombinedLabel")}</strong> {t("hintCombinedText")}</li>
+            <li>{t("hintSkr03")}</li>
+            <li>{t("hintImport")}</li>
           </ul>
         </CardContent>
       </Card>

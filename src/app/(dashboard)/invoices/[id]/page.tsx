@@ -4,7 +4,8 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import {
   ArrowLeft,
@@ -209,23 +210,11 @@ interface CorrectionHistory {
   };
 }
 
-const taxTypeLabels: Record<string, string> = {
-  STANDARD: "19% MwSt",
-  REDUCED: "7% MwSt",
-  EXEMPT: "Steuerfrei",
-};
-
 /** Check if name already contains the legal form (normalizing + vs &) */
 function nameIncludesLegalForm(name: string, legalForm: string): boolean {
   const norm = (s: string) => s.replace(/[+&]/g, "").replace(/\s+/g, " ").toLowerCase();
   return norm(name).includes(norm(legalForm));
 }
-
-const correctionTypeLabels: Record<string, string> = {
-  FULL_CANCEL: "Vollstorno",
-  PARTIAL_CANCEL: "Teilstorno",
-  CORRECTION: "Korrektur",
-};
 
 export default function InvoiceDetailPage({
   params,
@@ -234,6 +223,22 @@ export default function InvoiceDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations("invoices.detail");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
+
+  const taxTypeLabels: Record<string, string> = {
+    STANDARD: t("taxStandard"),
+    REDUCED: t("taxReduced"),
+    EXEMPT: t("taxExempt"),
+  };
+  const correctionTypeLabels: Record<string, string> = {
+    FULL_CANCEL: t("typeFullCancel"),
+    PARTIAL_CANCEL: t("typePartialCancel"),
+    CORRECTION: t("typeCorrection"),
+  };
+
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -258,14 +263,14 @@ export default function InvoiceDetailPage({
           router.push("/invoices");
           return;
         }
-        throw new Error("Fehler beim Laden");
+        throw new Error(t("toastLoadError"));
       }
       const data = await response.json();
       setInvoice(data);
       // Also fetch correction history
       fetchCorrectionHistory();
     } catch {
-      toast.error("Fehler beim Laden der Rechnung");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
@@ -291,12 +296,12 @@ export default function InvoiceDetailPage({
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Versenden");
+        throw new Error(error.error || t("toastSendError"));
       }
-      toast.success("Rechnung als versendet markiert");
+      toast.success(t("toastSentSuccess"));
       fetchInvoice();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Versenden");
+      toast.error(error instanceof Error ? error.message : t("toastSendError"));
     } finally {
       setActionLoading(null);
     }
@@ -312,16 +317,16 @@ export default function InvoiceDetailPage({
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler");
+        throw new Error(error.error || t("toastPaidError"));
       }
       toast.success(
         applySkonto
-          ? "Rechnung mit Skonto als bezahlt markiert"
-          : "Rechnung als bezahlt markiert"
+          ? t("toastPaidSuccessWithSkonto")
+          : t("toastPaidSuccess")
       );
       fetchInvoice();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler");
+      toast.error(error instanceof Error ? error.message : t("toastPaidError"));
     } finally {
       setActionLoading(null);
     }
@@ -329,7 +334,7 @@ export default function InvoiceDetailPage({
 
   async function handleCancel() {
     if (!cancelReason.trim()) {
-      toast.error("Bitte geben Sie einen Storno-Grund an");
+      toast.error(t("toastCancelReasonRequired"));
       return;
     }
 
@@ -342,10 +347,10 @@ export default function InvoiceDetailPage({
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Stornieren");
+        throw new Error(error.error || t("toastCancelError"));
       }
       const result = await response.json();
-      toast.success("Rechnung storniert");
+      toast.success(t("toastCancelSuccess"));
       setShowCancelDialog(false);
       setCancelReason("");
       // Zur Storno-Rechnung navigieren
@@ -355,7 +360,7 @@ export default function InvoiceDetailPage({
         fetchInvoice();
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Stornieren");
+      toast.error(error instanceof Error ? error.message : t("toastCancelError"));
     } finally {
       setActionLoading(null);
     }
@@ -371,9 +376,9 @@ export default function InvoiceDetailPage({
           const errorMessages = error.validationErrors
             .map((e: { message: string }) => e.message)
             .join(", ");
-          throw new Error(`Validierungsfehler: ${errorMessages}`);
+          throw new Error(t("toastXrechnungValidationError", { messages: errorMessages }));
         }
-        throw new Error(error.error || "Fehler bei der XRechnung-Generierung");
+        throw new Error(error.error || t("toastXrechnungError"));
       }
       // Download the XML file
       const blob = await response.blob();
@@ -385,11 +390,11 @@ export default function InvoiceDetailPage({
       link.download = filenameMatch?.[1] || `${invoice?.invoiceNumber || "rechnung"}_${format.toUpperCase()}.xml`;
       link.click();
       URL.revokeObjectURL(url);
-      toast.success(format === "zugferd" ? "ZUGFeRD-XML heruntergeladen" : "XRechnung heruntergeladen");
+      toast.success(format === "zugferd" ? t("toastXrechnungDownloadedZF") : t("toastXrechnungDownloadedXR"));
       // Refresh to show updated einvoice status
       fetchInvoice();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler bei der XRechnung-Generierung");
+      toast.error(error instanceof Error ? error.message : t("toastXrechnungError"));
     } finally {
       setActionLoading(null);
     }
@@ -405,12 +410,12 @@ export default function InvoiceDetailPage({
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("toastLeitwegError"));
       }
-      toast.success("Leitweg-ID gespeichert");
+      toast.success(t("toastLeitwegSaved"));
       fetchInvoice();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern der Leitweg-ID");
+      toast.error(error instanceof Error ? error.message : t("toastLeitwegError"));
     } finally {
       setActionLoading(null);
     }
@@ -424,12 +429,12 @@ export default function InvoiceDetailPage({
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Löschen");
+        throw new Error(error.error || t("toastDeleteError"));
       }
-      toast.success("Entwurf gelöscht");
+      toast.success(t("toastDeleteSuccess"));
       router.push("/invoices");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
+      toast.error(error instanceof Error ? error.message : t("toastDeleteError"));
     } finally {
       setActionLoading(null);
     }
@@ -440,8 +445,8 @@ export default function InvoiceDetailPage({
       setActionLoading("print");
       const response = await fetch(`/api/invoices/${id}/print`, { method: "POST" });
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Fehler beim Drucken" }));
-        throw new Error(error.error || "Fehler beim Drucken");
+        const error = await response.json().catch(() => ({ error: t("toastPrintError") }));
+        throw new Error(error.error || t("toastPrintError"));
       }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -454,10 +459,10 @@ export default function InvoiceDetailPage({
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      toast.success("PDF heruntergeladen und als gedruckt markiert");
+      toast.success(t("toastPrintSuccess"));
       fetchInvoice();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Drucken");
+      toast.error(error instanceof Error ? error.message : t("toastPrintError"));
     } finally {
       setActionLoading(null);
     }
@@ -472,14 +477,16 @@ export default function InvoiceDetailPage({
         body: JSON.stringify({}),
       });
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Fehler beim Versenden" }));
-        throw new Error(error.error || "Fehler beim E-Mail-Versand");
+        const error = await response.json().catch(() => ({ error: t("toastEmailSentError") }));
+        throw new Error(error.error || t("toastEmailSentError"));
       }
       const result = await response.json();
-      toast.success(`E-Mail versendet an ${result.emailedTo || "Empfänger"}`);
+      toast.success(
+        t("toastEmailSentSuccess", { recipient: result.emailedTo || t("toastEmailSentFallbackRecipient") })
+      );
       fetchInvoice();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim E-Mail-Versand");
+      toast.error(error instanceof Error ? error.message : t("toastEmailSentError"));
     } finally {
       setActionLoading(null);
     }
@@ -505,13 +512,13 @@ export default function InvoiceDetailPage({
   if (!invoice) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Rechnung nicht gefunden</p>
+        <p className="text-muted-foreground">{t("notFound")}</p>
       </div>
     );
   }
 
   const isInvoice = invoice.invoiceType === "INVOICE";
-  const typeLabel = isInvoice ? "Rechnung" : "Gutschrift";
+  const typeLabel = isInvoice ? t("typeInvoice") : t("typeCreditNote");
 
   return (
     <div className="space-y-6">
@@ -539,7 +546,7 @@ export default function InvoiceDetailPage({
               )}
             </div>
             <p className="text-muted-foreground">
-              Erstellt am {format(new Date(invoice.createdAt), "dd.MM.yyyy HH:mm", { locale: de })}
+              {t("createdAt", { date: format(new Date(invoice.createdAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) })}
             </p>
           </div>
         </div>
@@ -551,18 +558,18 @@ export default function InvoiceDetailPage({
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm">
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Löschen
+                    {t("delete")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Entwurf löschen?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("deleteDialogTitle")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Dieser Entwurf wird unwiderruflich gelöscht. Diese Aktion kann nicht rueckgaengig gemacht werden.
+                      {t("deleteDialogDescription")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDelete}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -572,7 +579,7 @@ export default function InvoiceDetailPage({
                       ) : (
                         <Trash2 className="mr-2 h-4 w-4" />
                       )}
-                      Löschen
+                      {t("delete")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -580,7 +587,7 @@ export default function InvoiceDetailPage({
               <Button variant="outline" asChild>
                 <Link href={`/invoices/${id}/edit`}>
                   <Pencil className="mr-2 h-4 w-4" />
-                  Bearbeiten
+                  {t("edit")}
                 </Link>
               </Button>
               <Button
@@ -592,7 +599,7 @@ export default function InvoiceDetailPage({
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                Versenden
+                {t("send")}
               </Button>
             </>
           )}
@@ -611,17 +618,17 @@ export default function InvoiceDetailPage({
                         ) : (
                           <CheckCircle className="mr-2 h-4 w-4" />
                         )}
-                        Bezahlt
+                        {t("paid")}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleMarkPaid(false)}>
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        Ohne Skonto bezahlt
+                        {t("paidWithoutSkonto")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleMarkPaid(true)}>
                         <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                        Mit Skonto bezahlt ({formatCurrency(invoice.grossAmount - Number(invoice.skontoAmount))})
+                        {t("paidWithSkonto", { amount: formatCurrency(invoice.grossAmount - Number(invoice.skontoAmount)) })}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -636,7 +643,7 @@ export default function InvoiceDetailPage({
                     ) : (
                       <CheckCircle className="mr-2 h-4 w-4" />
                     )}
-                    Bezahlt
+                    {t("paid")}
                   </Button>
                 )
               )}
@@ -645,36 +652,36 @@ export default function InvoiceDetailPage({
                 onClick={() => setShowPartialCancelDialog(true)}
               >
                 <Scissors className="mr-2 h-4 w-4" />
-                Teilstorno
+                {t("partialCancel")}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setShowCorrectionDialog(true)}
               >
                 <Pencil className="mr-2 h-4 w-4" />
-                Korrektur
+                {t("correction")}
               </Button>
               {invoice.status === "SENT" && (
               <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
                 <DialogTrigger asChild>
                   <Button variant="destructive">
                     <XCircle className="mr-2 h-4 w-4" />
-                    Vollstorno
+                    {t("fullCancel")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Rechnung stornieren</DialogTitle>
+                    <DialogTitle>{t("cancelDialogTitle")}</DialogTitle>
                     <DialogDescription>
-                      Es wird eine Storno-Gutschrift für die gesamte Rechnung erstellt. Dieser Vorgang kann nicht rueckgaengig gemacht werden.
+                      {t("cancelDialogDescription")}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="cancelReason">Storno-Grund</Label>
+                      <Label htmlFor="cancelReason">{t("cancelReasonLabel")}</Label>
                       <Input
                         id="cancelReason"
-                        placeholder="z.B. Fehlerhafte Rechnungsstellung"
+                        placeholder={t("cancelReasonPlaceholder")}
                         value={cancelReason}
                         onChange={(e) => setCancelReason(e.target.value)}
                       />
@@ -682,7 +689,7 @@ export default function InvoiceDetailPage({
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
-                      Abbrechen
+                      {tCommon("cancel")}
                     </Button>
                     <Button
                       variant="destructive"
@@ -694,7 +701,7 @@ export default function InvoiceDetailPage({
                       ) : (
                         <XCircle className="mr-2 h-4 w-4" />
                       )}
-                      Vollstorno
+                      {t("fullCancel")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -704,12 +711,12 @@ export default function InvoiceDetailPage({
           )}
           <Button variant="outline" onClick={() => setShowPreviewDialog(true)}>
             <Eye className="mr-2 h-4 w-4" />
-            Vorschau
+            {t("preview")}
           </Button>
           <Button variant="outline" asChild>
             <a href={`/api/invoices/${id}/pdf`} download>
               <Download className="mr-2 h-4 w-4" />
-              PDF
+              {t("pdf")}
             </a>
           </Button>
           {/* XRechnung / ZUGFeRD Download */}
@@ -725,7 +732,7 @@ export default function InvoiceDetailPage({
                   ) : (
                     <FileCode2 className="mr-2 h-4 w-4" />
                   )}
-                  XRechnung
+                  {t("xrechnung")}
                   {invoice.einvoiceFormat && (
                     <Badge variant="secondary" className="ml-2 text-xs">
                       {invoice.einvoiceFormat}
@@ -736,11 +743,11 @@ export default function InvoiceDetailPage({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => handleDownloadXRechnung("xrechnung")}>
                   <FileCode2 className="mr-2 h-4 w-4" />
-                  XRechnung (UBL 2.1) herunterladen
+                  {t("xrechnungDownloadUBL")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleDownloadXRechnung("zugferd")}>
                   <FileText className="mr-2 h-4 w-4" />
-                  ZUGFeRD (CII) herunterladen
+                  {t("zugferdDownloadCII")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -761,7 +768,7 @@ export default function InvoiceDetailPage({
         <Card className="border-orange-200 bg-orange-50">
           <CardContent className="pt-4">
             <p className="text-orange-800">
-              Diese Gutschrift ist eine Stornierung von{" "}
+              {t("stornoIsFor")}{" "}
               <Link href={`/invoices/${invoice.cancelledInvoice.id}`} className="font-medium underline">
                 {invoice.cancelledInvoice.invoiceNumber}
               </Link>
@@ -773,12 +780,12 @@ export default function InvoiceDetailPage({
         <Card className="border-red-200 bg-red-50">
           <CardContent className="pt-4">
             <p className="text-red-800">
-              Diese Rechnung wurde storniert durch{" "}
+              {t("stornoBy")}{" "}
               <Link href={`/invoices/${invoice.cancellingInvoice.id}`} className="font-medium underline">
                 {invoice.cancellingInvoice.invoiceNumber}
               </Link>
               {invoice.cancelReason && (
-                <span className="block mt-1 text-sm">Grund: {invoice.cancelReason}</span>
+                <span className="block mt-1 text-sm">{t("stornoReason", { reason: invoice.cancelReason })}</span>
               )}
             </p>
           </CardContent>
@@ -792,8 +799,8 @@ export default function InvoiceDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Receipt className="h-4 w-4" />
-              {isInvoice ? "Rechnungssteller" : "Gutschrift von"}
-              <InfoTooltip text="Unternehmen oder Person, die die Rechnung bzw. Gutschrift ausstellt." />
+              {isInvoice ? t("issuer") : t("creditFrom")}
+              <InfoTooltip text={t("issuerTooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -815,10 +822,10 @@ export default function InvoiceDetailPage({
                     ].filter(Boolean).join("\n")}
                   </p>
                 ) : (
-                  <p className="text-xs text-amber-600">Keine Adresse hinterlegt</p>
+                  <p className="text-xs text-amber-600">{t("noAddress")}</p>
                 )}
                 {invoice.fund.managingDirector && (
-                  <p className="text-xs text-muted-foreground">GF: {invoice.fund.managingDirector}</p>
+                  <p className="text-xs text-muted-foreground">{t("managingDirectorPrefix", { name: invoice.fund.managingDirector })}</p>
                 )}
               </div>
             ) : invoice.park?.billingEntityFund ? (
@@ -836,10 +843,10 @@ export default function InvoiceDetailPage({
                     {invoice.park.billingEntityFund.address}
                   </p>
                 ) : (
-                  <p className="text-xs text-amber-600">Keine Adresse hinterlegt</p>
+                  <p className="text-xs text-amber-600">{t("noAddress")}</p>
                 )}
                 <p className="text-xs text-muted-foreground pt-1 border-t mt-2">
-                  Abrechnungsgesellschaft von Park{" "}
+                  {t("billingEntityOfPark")}{" "}
                   <Link href={`/parks/${invoice.park.id}`} className="text-primary hover:underline">
                     {invoice.park.name}
                   </Link>
@@ -860,7 +867,7 @@ export default function InvoiceDetailPage({
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Kein Aussteller hinterlegt</p>
+              <p className="text-sm text-muted-foreground">{t("noIssuer")}</p>
             )}
           </CardContent>
         </Card>
@@ -870,8 +877,8 @@ export default function InvoiceDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              {isInvoice ? "Rechnungsempfänger" : "Gutschrift an"}
-              <InfoTooltip text="Unternehmen oder Person, an die die Rechnung gerichtet ist." />
+              {isInvoice ? t("recipientCardTitle") : t("recipientCreditTitle")}
+              <InfoTooltip text={t("recipientTooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -882,11 +889,11 @@ export default function InvoiceDetailPage({
                   {invoice.recipientAddress}
                 </p>
               ) : (
-                <p className="text-xs text-amber-600">Keine Adresse hinterlegt</p>
+                <p className="text-xs text-amber-600">{t("noAddress")}</p>
               )}
               {invoice.fund && (
                 <p className="text-xs text-muted-foreground pt-1 border-t mt-2">
-                  Gesellschaft:{" "}
+                  {t("companyPrefix")}{" "}
                   <Link href={`/funds/${invoice.fund.id}`} className="text-primary hover:underline">
                     {invoice.fund.name}
                   </Link>
@@ -904,26 +911,26 @@ export default function InvoiceDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Datum
+              {t("dateCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">{isInvoice ? "Rechnungsdatum" : "Gutschriftdatum"}</span>
-              <span>{format(new Date(invoice.invoiceDate), "dd.MM.yyyy", { locale: de })}</span>
+              <span className="text-sm text-muted-foreground">{isInvoice ? t("invoiceDate") : t("creditDate")}</span>
+              <span>{format(new Date(invoice.invoiceDate), "dd.MM.yyyy", { locale: dateLocale })}</span>
             </div>
             {invoice.dueDate && (
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Fällig am</span>
-                <span>{format(new Date(invoice.dueDate), "dd.MM.yyyy", { locale: de })}</span>
+                <span className="text-sm text-muted-foreground">{t("dueDate")}</span>
+                <span>{format(new Date(invoice.dueDate), "dd.MM.yyyy", { locale: dateLocale })}</span>
               </div>
             )}
             {invoice.serviceStartDate && invoice.serviceEndDate && (
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Leistungszeitraum</span>
+                <span className="text-sm text-muted-foreground">{t("servicePeriod")}</span>
                 <span>
-                  {format(new Date(invoice.serviceStartDate), "dd.MM.yyyy", { locale: de })} -{" "}
-                  {format(new Date(invoice.serviceEndDate), "dd.MM.yyyy", { locale: de })}
+                  {format(new Date(invoice.serviceStartDate), "dd.MM.yyyy", { locale: dateLocale })} -{" "}
+                  {format(new Date(invoice.serviceEndDate), "dd.MM.yyyy", { locale: dateLocale })}
                 </span>
               </div>
             )}
@@ -935,12 +942,12 @@ export default function InvoiceDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
-              Betrag
+              {t("amountCardTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Netto</span>
+              <span className="text-sm text-muted-foreground">{t("net")}</span>
               <span>{formatCurrency(invoice.netAmount)}</span>
             </div>
             {/* Tax breakdown grouped by rate from items */}
@@ -959,7 +966,7 @@ export default function InvoiceDetailPage({
                 .map(([rate, amount]) => (
                   <div key={rate} className="flex justify-between">
                     <span className="text-sm text-muted-foreground">
-                      MwSt ({rate}%)
+                      {t("taxWithRate", { rate })}
                     </span>
                     <span>{formatCurrency(amount)}</span>
                   </div>
@@ -967,7 +974,7 @@ export default function InvoiceDetailPage({
             })()}
             <Separator className="my-2" />
             <div className="flex justify-between font-medium">
-              <span>Brutto</span>
+              <span>{t("gross")}</span>
               <span className="text-lg">{formatCurrency(invoice.grossAmount)}</span>
             </div>
             {invoice.skontoPercent && invoice.skontoAmount && (
@@ -975,22 +982,22 @@ export default function InvoiceDetailPage({
                 <Separator className="my-2" />
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    Skonto ({Number(invoice.skontoPercent).toFixed(2).replace(".", ",")}%)
+                    {t("skontoLabel", { percent: Number(invoice.skontoPercent).toFixed(2).replace(".", locale === "en" ? "." : ",") })}
                   </span>
                   <span className="text-green-700">
                     -{formatCurrency(Number(invoice.skontoAmount))}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-medium">
-                  <span className="text-muted-foreground">Bei Skonto</span>
+                  <span className="text-muted-foreground">{t("withSkonto")}</span>
                   <span className="text-green-700">
                     {formatCurrency(invoice.grossAmount - Number(invoice.skontoAmount))}
                   </span>
                 </div>
                 {invoice.skontoDeadline && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Skonto-Frist: {format(new Date(invoice.skontoDeadline), "dd.MM.yyyy", { locale: de })}
-                    {invoice.skontoPaid && " (angewandt)"}
+                    {t("skontoDeadline", { date: format(new Date(invoice.skontoDeadline), "dd.MM.yyyy", { locale: dateLocale }) })}
+                    {invoice.skontoPaid && ` (${t("skontoApplied")})`}
                   </p>
                 )}
               </>
@@ -1003,23 +1010,23 @@ export default function InvoiceDetailPage({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <CardTitle>Positionen</CardTitle>
-            <InfoTooltip text="Einzelposten der Rechnung mit Menge, Preis und Steuersatz." />
+            <CardTitle>{t("positionsTitle")}</CardTitle>
+            <InfoTooltip text={t("positionsTooltip")} />
           </div>
-          <CardDescription>{invoice.items.length} Position(en)</CardDescription>
+          <CardDescription>{t("positionsCount", { count: invoice.items.length })}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">Pos.</TableHead>
-                <TableHead>Beschreibung</TableHead>
-                <TableHead className="text-right">Menge</TableHead>
-                <TableHead>Einheit</TableHead>
-                <TableHead className="text-right">Einzelpreis</TableHead>
-                <TableHead className="text-right">Netto</TableHead>
-                <TableHead>Steuer</TableHead>
-                <TableHead className="text-right">Brutto</TableHead>
+                <TableHead className="w-12">{t("colPos")}</TableHead>
+                <TableHead>{t("colDescription")}</TableHead>
+                <TableHead className="text-right">{t("colQuantity")}</TableHead>
+                <TableHead>{t("colUnit")}</TableHead>
+                <TableHead className="text-right">{t("colUnitPrice")}</TableHead>
+                <TableHead className="text-right">{t("colNet")}</TableHead>
+                <TableHead>{t("colTax")}</TableHead>
+                <TableHead className="text-right">{t("colGross")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1064,26 +1071,26 @@ export default function InvoiceDetailPage({
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <CardTitle className="text-sm">Referenzen</CardTitle>
-              <InfoTooltip text="Verknüpfte Verträge, Gesellschaften oder Windparks." />
+              <CardTitle className="text-sm">{t("referencesTitle")}</CardTitle>
+              <InfoTooltip text={t("referencesTooltip")} />
             </div>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {invoice.paymentReference && (
               <div>
-                <span className="text-muted-foreground">Zahlungsreferenz: </span>
+                <span className="text-muted-foreground">{t("paymentReference")} </span>
                 <span className="font-mono">{invoice.paymentReference}</span>
               </div>
             )}
             {invoice.internalReference && (
               <div>
-                <span className="text-muted-foreground">Interne Referenz: </span>
+                <span className="text-muted-foreground">{t("internalReference")} </span>
                 <span>{invoice.internalReference}</span>
               </div>
             )}
             {invoice.park && (
               <div>
-                <span className="text-muted-foreground">Windpark: </span>
+                <span className="text-muted-foreground">{t("windpark")} </span>
                 <Link href={`/parks/${invoice.park.id}`} className="text-primary hover:underline">
                   {invoice.park.name}
                 </Link>
@@ -1097,8 +1104,8 @@ export default function InvoiceDetailPage({
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <CardTitle className="text-sm">Notizen</CardTitle>
-                <InfoTooltip text="Interne Bemerkungen zur Rechnung." />
+                <CardTitle className="text-sm">{t("notesTitle")}</CardTitle>
+                <InfoTooltip text={t("notesTooltip")} />
               </div>
             </CardHeader>
             <CardContent>
@@ -1113,11 +1120,11 @@ export default function InvoiceDetailPage({
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
             <Send className="h-4 w-4" />
-            Zustellung
-            <InfoTooltip text="Status und Verlauf der Rechnungszustellung per E-Mail oder Post." />
+            {t("deliveryTitle")}
+            <InfoTooltip text={t("deliveryTooltip")} />
           </CardTitle>
           <CardDescription>
-            Druck- und E-Mail-Versand dieser {isInvoice ? "Rechnung" : "Gutschrift"}
+            {isInvoice ? t("deliveryDescInvoice") : t("deliveryDescCreditNote")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1128,8 +1135,8 @@ export default function InvoiceDetailPage({
               <div>
                 <p className="text-sm font-medium">
                   {invoice.printedAt
-                    ? `Gedruckt am ${format(new Date(invoice.printedAt), "dd.MM.yyyy HH:mm", { locale: de })}`
-                    : "Noch nicht gedruckt"}
+                    ? t("printedAt", { date: format(new Date(invoice.printedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) })
+                    : t("notPrintedYet")}
                 </p>
               </div>
             </div>
@@ -1139,11 +1146,11 @@ export default function InvoiceDetailPage({
               <div>
                 <p className="text-sm font-medium">
                   {invoice.emailedAt
-                    ? `Per E-Mail versendet am ${format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: de })}`
-                    : "Noch nicht per E-Mail versendet"}
+                    ? t("emailedAt", { date: format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) })
+                    : t("notEmailedYet")}
                 </p>
                 {invoice.emailedTo && (
-                  <p className="text-xs text-muted-foreground">an {invoice.emailedTo}</p>
+                  <p className="text-xs text-muted-foreground">{t("emailedToPrefix", { recipient: invoice.emailedTo })}</p>
                 )}
               </div>
             </div>
@@ -1161,7 +1168,7 @@ export default function InvoiceDetailPage({
               ) : (
                 <Printer className="mr-2 h-4 w-4" />
               )}
-              {invoice.printedAt ? "Erneut drucken" : "Drucken"}
+              {invoice.printedAt ? t("printAgain") : t("print")}
             </Button>
             <Button
               variant="outline"
@@ -1174,7 +1181,7 @@ export default function InvoiceDetailPage({
               ) : (
                 <Mail className="mr-2 h-4 w-4" />
               )}
-              {invoice.emailedAt ? "Erneut per E-Mail senden" : "Per E-Mail senden"}
+              {invoice.emailedAt ? t("emailSendAgain") : t("emailSend")}
             </Button>
           </div>
         </CardContent>
@@ -1186,23 +1193,23 @@ export default function InvoiceDetailPage({
           <CardHeader>
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <History className="h-4 w-4" />
-              Korrekturen / Stornierungen
-              <InfoTooltip text="Storno- und Korrekturbelege zu dieser Rechnung." />
+              {t("correctionsTitle")}
+              <InfoTooltip text={t("correctionsTooltip")} />
             </CardTitle>
             <CardDescription>
-              {correctionHistory.corrections.length} Korrektur(en) zu dieser Rechnung
+              {t("correctionsCount", { count: correctionHistory.corrections.length })}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Typ</TableHead>
-                  <TableHead>Belegnummer</TableHead>
-                  <TableHead>Datum</TableHead>
-                  <TableHead className="text-right">Netto</TableHead>
-                  <TableHead className="text-right">Brutto</TableHead>
-                  <TableHead>Grund</TableHead>
+                  <TableHead>{t("correctionColType")}</TableHead>
+                  <TableHead>{t("correctionColDocNumber")}</TableHead>
+                  <TableHead>{t("correctionColDate")}</TableHead>
+                  <TableHead className="text-right">{t("correctionColNet")}</TableHead>
+                  <TableHead className="text-right">{t("correctionColGross")}</TableHead>
+                  <TableHead>{t("correctionColReason")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1222,7 +1229,7 @@ export default function InvoiceDetailPage({
                       </Link>
                     </TableCell>
                     <TableCell>
-                      {format(new Date(corr.invoiceDate), "dd.MM.yyyy", { locale: de })}
+                      {format(new Date(corr.invoiceDate), "dd.MM.yyyy", { locale: dateLocale })}
                     </TableCell>
                     <TableCell className="text-right text-red-600">
                       {formatCurrency(corr.netAmount)}
@@ -1239,7 +1246,7 @@ export default function InvoiceDetailPage({
               <TableFooter>
                 <TableRow>
                   <TableCell colSpan={3} className="font-medium">
-                    Effektiver Betrag (Original + Korrekturen)
+                    {t("effectiveAmount")}
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(correctionHistory.netEffect.effectiveNet)}
@@ -1266,40 +1273,39 @@ export default function InvoiceDetailPage({
           <CardHeader>
             <CardTitle className="text-sm flex items-center gap-2">
               <FileCode2 className="h-4 w-4" />
-              E-Rechnung (XRechnung / ZUGFeRD)
-              <InfoTooltip text="Elektronisches Rechnungsformat nach EU-Standard für den automatisierten Rechnungsaustausch." />
+              {t("eInvoiceTitle")}
+              <InfoTooltip text={t("eInvoiceTooltip")} />
             </CardTitle>
             <CardDescription>
-              Pflicht seit 2025 für B2B-Rechnungen (EN 16931)
+              {t("eInvoiceDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Status:</span>
+                <span className="text-sm text-muted-foreground">{t("eInvoiceStatusLabel")}</span>
                 {invoice.einvoiceFormat ? (
                   <Badge variant="default" className="bg-green-600">
-                    {invoice.einvoiceFormat} verfügbar
+                    {t("eInvoiceAvailable", { format: invoice.einvoiceFormat })}
                   </Badge>
                 ) : (
-                  <Badge variant="secondary">Noch nicht generiert</Badge>
+                  <Badge variant="secondary">{t("eInvoiceNotGenerated")}</Badge>
                 )}
               </div>
               {invoice.einvoiceGeneratedAt && (
                 <span className="text-xs text-muted-foreground">
-                  Generiert am{" "}
-                  {format(new Date(invoice.einvoiceGeneratedAt), "dd.MM.yyyy HH:mm", { locale: de })}
+                  {t("eInvoiceGeneratedAt", { date: format(new Date(invoice.einvoiceGeneratedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) })}
                 </span>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="leitwegId" className="text-sm">
-                Leitweg-ID (optional, für oeffentliche Auftraggeber)
+                {t("leitwegLabel")}
               </Label>
               <div className="flex items-center gap-2">
                 <Input
                   id="leitwegId"
-                  placeholder="z.B. 04011000-12345-67"
+                  placeholder={t("leitwegPlaceholder")}
                   defaultValue={invoice.leitwegId || ""}
                   className="max-w-xs font-mono"
                   onBlur={(e) => {
@@ -1319,8 +1325,8 @@ export default function InvoiceDetailPage({
                 <p className="text-sm font-mono text-muted-foreground">{invoice.leitwegId}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                Die Leitweg-ID wird als Kaeufer-Referenz (BT-10) in der XRechnung verwendet.
-                {invoice.status !== "DRAFT" && " Änderung nur im Entwurfs-Status moeglich."}
+                {t("leitwegHelp")}
+                {invoice.status !== "DRAFT" && ` ${t("leitwegHelpDraftOnly")}`}
               </p>
             </div>
             <Separator />
@@ -1336,7 +1342,7 @@ export default function InvoiceDetailPage({
                 ) : (
                   <FileCode2 className="mr-2 h-4 w-4" />
                 )}
-                XRechnung (UBL 2.1)
+                {t("xrechnungUBL")}
               </Button>
               <Button
                 variant="outline"
@@ -1349,7 +1355,7 @@ export default function InvoiceDetailPage({
                 ) : (
                   <FileText className="mr-2 h-4 w-4" />
                 )}
-                ZUGFeRD (CII)
+                {t("zugferdCII")}
               </Button>
             </div>
           </CardContent>

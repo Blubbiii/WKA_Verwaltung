@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ function currentQuarter(): { from: string; to: string } {
 }
 
 export default function UstvaContent() {
+  const t = useTranslations("buchhaltung.steuernUstva");
   const [data, setData] = useState<UstvaResult | null>(null);
   const [loading, setLoading] = useState(true);
   const defaults = currentQuarter();
@@ -66,11 +68,11 @@ export default function UstvaContent() {
       const json = await res.json();
       setData(json.data || null);
     } catch {
-      toast.error("UStVA konnte nicht geladen werden");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, [from, to]);
+  }, [from, to, t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -78,25 +80,25 @@ export default function UstvaContent() {
     <Card>
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
-          <div className="space-y-1"><Label>Von</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-          <div className="space-y-1"><Label>Bis</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-          <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" />Aktualisieren</Button>
+          <div className="space-y-1"><Label>{t("from")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+          <div className="space-y-1"><Label>{t("to")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}</Button>
         </div>
 
         {loading ? (
           <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
         ) : !data ? (
-          <div className="text-center text-muted-foreground py-12">Keine Daten vorhanden.</div>
+          <div className="text-center text-muted-foreground py-12">{t("emptyState")}</div>
         ) : (
           <>
             <div className="rounded-md border overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[80px]">KZ</TableHead>
-                    <TableHead>Bezeichnung</TableHead>
-                    <TableHead className="text-right">Bemessungsgrundlage</TableHead>
-                    <TableHead className="text-right">Steuerbetrag</TableHead>
+                    <TableHead className="w-[80px]">{t("colKennzahl")}</TableHead>
+                    <TableHead>{t("colLabel")}</TableHead>
+                    <TableHead className="text-right">{t("colBase")}</TableHead>
+                    <TableHead className="text-right">{t("colTax")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -109,16 +111,16 @@ export default function UstvaContent() {
                     </TableRow>
                   ))}
                   <TableRow className="border-t-2 font-bold">
-                    <TableCell colSpan={3} className="text-right">USt-Zahllast:</TableCell>
+                    <TableCell colSpan={3} className="text-right">{t("totalTaxPayable")}</TableCell>
                     <TableCell className="text-right font-mono">{fmt(data.totalTaxPayable)}</TableCell>
                   </TableRow>
                   <TableRow className="font-bold">
-                    <TableCell colSpan={3} className="text-right">Vorsteuerabzug:</TableCell>
+                    <TableCell colSpan={3} className="text-right">{t("totalInputTax")}</TableCell>
                     <TableCell className="text-right font-mono text-green-600 dark:text-green-400">-{fmt(data.totalInputTax)}</TableCell>
                   </TableRow>
                   <TableRow className="font-bold text-lg border-t-2">
                     <TableCell colSpan={3} className="text-right">
-                      {data.balance >= 0 ? "Zahllast:" : "Erstattung:"}
+                      {data.balance >= 0 ? t("balancePayable") : t("balanceRefund")}
                     </TableCell>
                     <TableCell className={`text-right font-mono ${data.balance < 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                       {fmt(Math.abs(data.balance))} EUR
@@ -128,7 +130,7 @@ export default function UstvaContent() {
               </Table>
             </div>
             <div className="mt-4 text-sm text-muted-foreground">
-              Zeitraum: {formatDate(data.periodStart)} - {formatDate(data.periodEnd)}
+              {t("periodLabel", { from: formatDate(data.periodStart), to: formatDate(data.periodEnd) })}
             </div>
           </>
         )}

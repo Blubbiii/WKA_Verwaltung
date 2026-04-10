@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,14 +49,6 @@ interface SuSaResult {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const CATEGORY_LABELS: Record<string, string> = {
-  ASSET: "Aktiva",
-  LIABILITY: "Passiva",
-  EQUITY: "Eigenkapital",
-  REVENUE: "Ertraege",
-  EXPENSE: "Aufwendungen",
-};
-
 function fmt(n: number): string {
   return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -70,26 +63,41 @@ function currentYear(): { from: string; to: string } {
 // ---------------------------------------------------------------------------
 
 export default function SuSaContent() {
+  const t = useTranslations("buchhaltung.berichteSusa");
   const [data, setData] = useState<SuSaResult | null>(null);
   const [loading, setLoading] = useState(true);
   const defaults = currentYear();
   const [from, setFrom] = useState(defaults.from);
   const [to, setTo] = useState(defaults.to);
 
+  const categoryLabel = useCallback(
+    (cat: string): string => {
+      switch (cat) {
+        case "ASSET": return t("categoryAsset");
+        case "LIABILITY": return t("categoryLiability");
+        case "EQUITY": return t("categoryEquity");
+        case "REVENUE": return t("categoryRevenue");
+        case "EXPENSE": return t("categoryExpense");
+        default: return cat;
+      }
+    },
+    [t]
+  );
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ from, to });
       const res = await fetch(`/api/buchhaltung/susa?${params}`);
-      if (!res.ok) throw new Error("Fehler beim Laden");
+      if (!res.ok) throw new Error("Error loading");
       const json = await res.json();
       setData(json.data || null);
     } catch {
-      toast.error("SuSa konnte nicht geladen werden");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, [from, to]);
+  }, [from, to, t]);
 
   useEffect(() => {
     fetchData();
@@ -97,12 +105,12 @@ export default function SuSaContent() {
 
   function exportCsv() {
     if (!data) return;
-    const header = "Konto;Name;Kategorie;EB Soll;EB Haben;Soll;Haben;Schluss Soll;Schluss Haben;Saldo\n";
+    const header = t("csvHeader") + "\n";
     const rows = data.rows.map((r) =>
       [
         r.accountNumber,
         `"${r.accountName}"`,
-        CATEGORY_LABELS[r.category] || r.category,
+        categoryLabel(r.category),
         fmt(r.openingDebit),
         fmt(r.openingCredit),
         fmt(r.periodDebit),
@@ -127,7 +135,7 @@ export default function SuSaContent() {
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
           <div className="space-y-1">
-            <Label>Von</Label>
+            <Label>{t("from")}</Label>
             <Input
               type="date"
               value={from}
@@ -135,7 +143,7 @@ export default function SuSaContent() {
             />
           </div>
           <div className="space-y-1">
-            <Label>Bis</Label>
+            <Label>{t("to")}</Label>
             <Input
               type="date"
               value={to}
@@ -144,11 +152,11 @@ export default function SuSaContent() {
           </div>
           <Button variant="outline" onClick={fetchData}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Aktualisieren
+            {t("refreshBtn")}
           </Button>
           <Button variant="outline" onClick={exportCsv} disabled={!data || data.rows.length === 0}>
             <Download className="h-4 w-4 mr-2" />
-            CSV-Export
+            {t("exportBtn")}
           </Button>
         </div>
 
@@ -160,7 +168,7 @@ export default function SuSaContent() {
           </div>
         ) : !data || data.rows.length === 0 ? (
           <div className="text-center text-muted-foreground py-12">
-            Keine Buchungsdaten fuer den gewaehlten Zeitraum vorhanden.
+            {t("emptyState")}
           </div>
         ) : (
           <>
@@ -168,16 +176,16 @@ export default function SuSaContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[80px]">Konto</TableHead>
-                    <TableHead>Bezeichnung</TableHead>
-                    <TableHead className="w-[100px]">Kategorie</TableHead>
-                    <TableHead className="text-right w-[100px]">EB Soll</TableHead>
-                    <TableHead className="text-right w-[100px]">EB Haben</TableHead>
-                    <TableHead className="text-right w-[100px]">Soll</TableHead>
-                    <TableHead className="text-right w-[100px]">Haben</TableHead>
-                    <TableHead className="text-right w-[110px]">Schluss Soll</TableHead>
-                    <TableHead className="text-right w-[110px]">Schluss Haben</TableHead>
-                    <TableHead className="text-right w-[100px]">Saldo</TableHead>
+                    <TableHead className="w-[80px]">{t("colAccount")}</TableHead>
+                    <TableHead>{t("colName")}</TableHead>
+                    <TableHead className="w-[100px]">{t("colCategory")}</TableHead>
+                    <TableHead className="text-right w-[100px]">{t("colOpeningDebit")}</TableHead>
+                    <TableHead className="text-right w-[100px]">{t("colOpeningCredit")}</TableHead>
+                    <TableHead className="text-right w-[100px]">{t("colDebit")}</TableHead>
+                    <TableHead className="text-right w-[100px]">{t("colCredit")}</TableHead>
+                    <TableHead className="text-right w-[110px]">{t("colClosingDebit")}</TableHead>
+                    <TableHead className="text-right w-[110px]">{t("colClosingCredit")}</TableHead>
+                    <TableHead className="text-right w-[100px]">{t("colBalance")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -187,7 +195,7 @@ export default function SuSaContent() {
                       <TableCell>{row.accountName}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="text-xs">
-                          {CATEGORY_LABELS[row.category] || row.category}
+                          {categoryLabel(row.category)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">{fmt(row.openingDebit)}</TableCell>
@@ -203,7 +211,7 @@ export default function SuSaContent() {
                   ))}
                   {/* Totals row */}
                   <TableRow className="font-bold border-t-2">
-                    <TableCell colSpan={5} className="text-right">Summe Bewegungen:</TableCell>
+                    <TableCell colSpan={5} className="text-right">{t("sumMovements")}</TableCell>
                     <TableCell className="text-right font-mono">{fmt(data.totalDebit)}</TableCell>
                     <TableCell className="text-right font-mono">{fmt(data.totalCredit)}</TableCell>
                     <TableCell colSpan={3} />
@@ -213,8 +221,8 @@ export default function SuSaContent() {
             </div>
 
             <div className="mt-4 flex gap-4 text-sm text-muted-foreground">
-              <span>Zeitraum: {formatDate(data.periodStart)} - {formatDate(data.periodEnd)}</span>
-              <span>{data.rows.length} Konten</span>
+              <span>{t("periodLabel", { from: formatDate(data.periodStart), to: formatDate(data.periodEnd) })}</span>
+              <span>{t("accountsCount", { count: data.rows.length })}</span>
             </div>
           </>
         )}

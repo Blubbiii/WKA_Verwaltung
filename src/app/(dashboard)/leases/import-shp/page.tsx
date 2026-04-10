@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   Upload,
   Check,
@@ -94,16 +95,33 @@ interface ParksResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Step definitions
+// Step definitions (labels are resolved inside the component via useTranslations)
 // ---------------------------------------------------------------------------
 
-const STEPS = [
-  { id: "upload", label: "Upload" },
-  { id: "mapping", label: "Feld-Mapping" },
-  { id: "preview", label: "Vorschau" },
-  { id: "owners", label: "Eigentümer" },
-  { id: "options", label: "Optionen" },
-  { id: "import", label: "Import" },
+const STEP_IDS = ["upload", "mapping", "preview", "owners", "options", "import"] as const;
+
+// Plot mapping target field keys (labels are resolved via t() inside the component)
+const PLOT_TARGET_FIELD_KEYS: Array<{ key: string; required: boolean }> = [
+  { key: "cadastralDistrict", required: true },
+  { key: "fieldNumber", required: false },
+  { key: "plotNumber", required: false },
+  { key: "plotNumerator", required: false },
+  { key: "plotDenominator", required: false },
+  { key: "areaSqm", required: false },
+  { key: "county", required: false },
+  { key: "municipality", required: false },
+];
+
+// Owner mapping target field keys (labels are resolved via t() inside the component)
+const OWNER_TARGET_FIELD_KEYS: Array<{ key: string; required: boolean }> = [
+  { key: "ownerName", required: false },
+  { key: "ownerFirstName", required: false },
+  { key: "ownerLastName", required: false },
+  { key: "ownerStreet", required: false },
+  { key: "ownerHouseNumber", required: false },
+  { key: "ownerPostalCode", required: false },
+  { key: "ownerCity", required: false },
+  { key: "ownerCount", required: false },
 ];
 
 /** Placeholder names that should be auto-skipped */
@@ -112,36 +130,23 @@ function isPlaceholderName(name: string): boolean {
   return ["-", "--", "---", ".", "..", "?", "??", "n/a", "k.a.", "unbekannt", "unknown", "n.n.", "nn"].includes(n);
 }
 
-// Plot mapping target fields
-const PLOT_TARGET_FIELDS = [
-  { key: "cadastralDistrict", label: "Gemarkung", required: true },
-  { key: "fieldNumber", label: "Flur", required: false },
-  { key: "plotNumber", label: "Flurstück (komplett)", required: false },
-  { key: "plotNumerator", label: "Flurstück Zähler", required: false },
-  { key: "plotDenominator", label: "Flurstück Nenner", required: false },
-  { key: "areaSqm", label: "Fläche (m²)", required: false },
-  { key: "county", label: "Landkreis", required: false },
-  { key: "municipality", label: "Gemeinde", required: false },
-];
-
-// Owner mapping target fields
-const OWNER_TARGET_FIELDS = [
-  { key: "ownerName", label: "Eigentümer (komplett)", required: false },
-  { key: "ownerFirstName", label: "Vorname", required: false },
-  { key: "ownerLastName", label: "Nachname", required: false },
-  { key: "ownerStreet", label: "Straße", required: false },
-  { key: "ownerHouseNumber", label: "Hausnummer", required: false },
-  { key: "ownerPostalCode", label: "PLZ", required: false },
-  { key: "ownerCity", label: "Ort", required: false },
-  { key: "ownerCount", label: "Anzahl Eigentümer", required: false },
-];
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function ImportShpPage() {
   const _router = useRouter();
+  const t = useTranslations("leases.importShp");
+
+  const STEPS = STEP_IDS.map((id) => ({ id, label: t(`steps.${id}`) }));
+  const PLOT_TARGET_FIELDS = PLOT_TARGET_FIELD_KEYS.map((f) => ({
+    ...f,
+    label: t(`plotTargetFields.${f.key}`),
+  }));
+  const OWNER_TARGET_FIELDS = OWNER_TARGET_FIELD_KEYS.map((f) => ({
+    ...f,
+    label: t(`ownerTargetFields.${f.key}`),
+  }));
 
   // Wizard state
   const [step, setStep] = useState(0);
@@ -221,7 +226,7 @@ export default function ImportShpPage() {
         })(),
       areaSqm:
         parseFloat(getMappedValue(feature, plotMapping, "areaSqm")) || null,
-      ownerName: ownerName || "Unbekannt",
+      ownerName: ownerName || t("preview.unknownOwner"),
       isMultiOwner,
     };
   }
@@ -262,7 +267,7 @@ export default function ImportShpPage() {
     for (const row of previewRows) {
       if (!selectedFeatures.has(row.feature.id)) continue;
 
-      const name = row.ownerName || "Unbekannt";
+      const name = row.ownerName || t("preview.unknownOwner");
       const key = name.trim().replace(/\s+/g, " ").toLowerCase();
 
       const existing = rawGroups.get(key);
@@ -323,7 +328,7 @@ export default function ImportShpPage() {
 
     return Array.from(merged.values())
       .sort((a, b) => b.plots.length - a.plots.length);
-  }, [preview, previewRows, selectedFeatures, ownerEdits]);
+  }, [preview, previewRows, selectedFeatures, ownerEdits, t]);
 
   // Unique owner count (non-skipped)
   const uniqueOwnerCount = useMemo(() => {
@@ -395,7 +400,7 @@ export default function ImportShpPage() {
       if (!res.ok) {
         const err = await res
           .json()
-          .catch(() => ({ error: "Analyse fehlgeschlagen" }));
+          .catch(() => ({ error: t("upload.analysisFailed") }));
         throw new Error(err.error);
       }
 
@@ -428,17 +433,20 @@ export default function ImportShpPage() {
       setSelectedFeatures(autoSelected);
 
       toast.success(
-        `${data.features.length} Features gefunden, ${autoSelected.size} vorausgewählt`
+        t("upload.featuresFound", {
+          features: data.features.length,
+          selected: autoSelected.size,
+        })
       );
       setStep(1);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Analyse fehlgeschlagen"
+        error instanceof Error ? error.message : t("upload.analysisFailed")
       );
     } finally {
       setUploading(false);
     }
-     
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** Add files and auto-start upload */
@@ -470,7 +478,7 @@ export default function ImportShpPage() {
       // Build a lookup from feature ID to owner group key
       const featureOwnerKeyMap = new Map<number, string>();
       for (const row of previewRows) {
-        const name = row.ownerName || "Unbekannt";
+        const name = row.ownerName || t("preview.unknownOwner");
         const key = name.trim().replace(/\s+/g, " ").toLowerCase();
         featureOwnerKeyMap.set(row.feature.id, key);
       }
@@ -507,18 +515,21 @@ export default function ImportShpPage() {
       if (!res.ok) {
         const err = await res
           .json()
-          .catch(() => ({ error: "Import fehlgeschlagen" }));
+          .catch(() => ({ error: t("importStep.importFailed") }));
         throw new Error(err.error);
       }
 
       const result: ImportResult = await res.json();
       setImportResult(result);
       toast.success(
-        `Import abgeschlossen: ${result.plotsCreated} Flurstücke, ${result.leasesCreated} Verträge`
+        t("importStep.importSuccess", {
+          plots: result.plotsCreated,
+          leases: result.leasesCreated,
+        })
       );
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Import fehlgeschlagen"
+        error instanceof Error ? error.message : t("importStep.importFailed")
       );
     } finally {
       setImporting(false);
@@ -564,10 +575,10 @@ export default function ImportShpPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Shapefile hochladen
+            {t("upload.cardTitle")}
           </CardTitle>
           <CardDescription>
-            ZIP-Archiv oder einzelne Dateien (.shp, .shx, .dbf) hochladen
+            {t("upload.cardDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -589,21 +600,23 @@ export default function ImportShpPage() {
               {uploading ? (
                 <>
                   <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-                  <p className="text-lg font-medium">Wird analysiert...</p>
+                  <p className="text-lg font-medium">{t("upload.analyzing")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Shapefile wird verarbeitet
+                    {t("upload.analyzingHint")}
                   </p>
                 </>
               ) : files.length > 0 ? (
                 <>
                   <Check className="h-12 w-12 text-green-600 mb-4" />
                   <p className="text-lg font-medium">
-                    {files.length} {files.length === 1 ? "Datei" : "Dateien"} ausgewählt
+                    {files.length === 1
+                      ? t("upload.filesSelectedSingular", { count: 1 })
+                      : t("upload.filesSelectedPlural", { count: files.length })}
                   </p>
                   <div className="mt-2 space-y-1">
                     {files.map((f, i) => (
                       <p key={i} className="text-sm text-muted-foreground">
-                        {f.name} ({(f.size / 1024).toFixed(1)} KB)
+                        {t("upload.fileSize", { name: f.name, size: (f.size / 1024).toFixed(1) })}
                       </p>
                     ))}
                   </div>
@@ -617,17 +630,17 @@ export default function ImportShpPage() {
                       setPreview(null);
                     }}
                   >
-                    Dateien entfernen
+                    {t("upload.removeFiles")}
                   </Button>
                 </>
               ) : (
                 <>
                   <Upload className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-lg font-medium mb-2">
-                    Datei hierher ziehen oder klicken zum Auswählen
+                    {t("upload.dropHint")}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    ZIP-Archiv oder .shp + .shx + .dbf Dateien (max. 50MB)
+                    {t("upload.dropFormats")}
                   </p>
                 </>
               )}
@@ -692,9 +705,9 @@ export default function ImportShpPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[200px]">Zielfeld</TableHead>
-                  <TableHead className="w-[250px]">SHP-Spalte</TableHead>
-                  <TableHead>Beispielwert</TableHead>
+                  <TableHead className="w-[200px]">{t("mapping.targetColumn")}</TableHead>
+                  <TableHead className="w-[250px]">{t("mapping.shpColumn")}</TableHead>
+                  <TableHead>{t("mapping.exampleColumn")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -705,7 +718,7 @@ export default function ImportShpPage() {
                         <span className="font-medium">{field.label}</span>
                         {field.required && (
                           <Badge variant="destructive" className="text-xs">
-                            Pflicht
+                            {t("required")}
                           </Badge>
                         )}
                       </div>
@@ -721,11 +734,11 @@ export default function ImportShpPage() {
                         }
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="- Nicht zuordnen -" />
+                          <SelectValue placeholder={t("mapping.noMapping")} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none__">
-                            - Nicht zuordnen -
+                            {t("mapping.noMapping")}
                           </SelectItem>
                           {fieldOptions.map((f) => (
                             <SelectItem key={f} value={f}>
@@ -754,23 +767,23 @@ export default function ImportShpPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Windpark zuordnen
+              {t("mapping.parkCardTitle")}
             </CardTitle>
             <CardDescription>
-              Alle importierten Flurstücke werden diesem Windpark zugeordnet
+              {t("mapping.parkCardDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <Label>
-                Windpark (optional)
+                {t("mapping.parkLabel")}
               </Label>
               <Select
                 value={selectedParkId}
                 onValueChange={setSelectedParkId}
               >
                 <SelectTrigger className="w-full max-w-md">
-                  <SelectValue placeholder="Windpark auswählen..." />
+                  <SelectValue placeholder={t("mapping.parkPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {parks.map((park) => (
@@ -782,8 +795,7 @@ export default function ImportShpPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Flurstücke werden nur in der Kartenansicht des zugeordneten Windparks angezeigt.
-                Ohne Zuordnung sind sie nur unter Pachtverträge sichtbar.
+                {t("mapping.parkHint")}
               </p>
             </div>
           </CardContent>
@@ -791,8 +803,8 @@ export default function ImportShpPage() {
 
         {/* Plot field mapping */}
         {renderMappingTable(
-          "Flurstück-Felder",
-          "Ordnen Sie die Shapefile-Spalten den Flurstück-Datenfeldern zu",
+          t("mapping.plotCardTitle"),
+          t("mapping.plotCardDescription"),
           <MapPin className="h-5 w-5" />,
           PLOT_TARGET_FIELDS,
           plotMapping,
@@ -801,8 +813,8 @@ export default function ImportShpPage() {
 
         {/* Owner field mapping */}
         {renderMappingTable(
-          "Eigentümer-Felder",
-          "Ordnen Sie die Shapefile-Spalten den Eigentümer-Datenfeldern zu",
+          t("mapping.ownerCardTitle"),
+          t("mapping.ownerCardDescription"),
           <Users className="h-5 w-5" />,
           OWNER_TARGET_FIELDS,
           ownerMapping,
@@ -848,24 +860,26 @@ export default function ImportShpPage() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Vorschau und Auswahl
+                {t("preview.cardTitle")}
               </CardTitle>
               <CardDescription className="mt-1">
-                {selectedCount} von {previewRows.length} Flurstücke
-                ausgewählt
+                {t("preview.cardDescription", {
+                  selected: selectedCount,
+                  total: previewRows.length,
+                })}
                 {multiOwnerCount > 0 && (
                   <span className="text-orange-600">
-                    , {multiOwnerCount} mit mehreren Eigentümern
+                    {t("preview.multiOwnerSuffix", { count: multiOwnerCount })}
                   </span>
                 )}
               </CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={selectAll}>
-                Alle auswählen
+                {t("preview.selectAll")}
               </Button>
               <Button variant="outline" size="sm" onClick={selectNone}>
-                Keine auswählen
+                {t("preview.selectNone")}
               </Button>
             </div>
           </div>
@@ -876,12 +890,12 @@ export default function ImportShpPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[50px]" />
-                  <TableHead>Gemarkung</TableHead>
-                  <TableHead>Flur</TableHead>
-                  <TableHead>Flurstück</TableHead>
-                  <TableHead className="text-right">Fläche (ha)</TableHead>
-                  <TableHead>Eigentümer</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("preview.colCadastralDistrict")}</TableHead>
+                  <TableHead>{t("preview.colFieldNumber")}</TableHead>
+                  <TableHead>{t("preview.colPlotNumber")}</TableHead>
+                  <TableHead className="text-right">{t("preview.colArea")}</TableHead>
+                  <TableHead>{t("preview.colOwner")}</TableHead>
+                  <TableHead>{t("preview.colStatus")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -902,7 +916,7 @@ export default function ImportShpPage() {
                           onCheckedChange={() =>
                             toggleFeature(row.feature.id)
                           }
-                          aria-label={`Flurstück ${row.plotNumber} auswählen`}
+                          aria-label={t("preview.selectFeatureAria", { plotNumber: row.plotNumber })}
                         />
                       </TableCell>
                       <TableCell className="font-medium">
@@ -925,7 +939,7 @@ export default function ImportShpPage() {
                             className="border-orange-400 text-orange-700 bg-orange-50"
                           >
                             <AlertTriangle className="mr-1 h-3 w-3" />
-                            Mehrere Eigentümer
+                            {t("preview.statusMultiOwner")}
                           </Badge>
                         ) : (
                           <Badge
@@ -933,7 +947,7 @@ export default function ImportShpPage() {
                             className="border-green-400 text-green-700 bg-green-50"
                           >
                             <Check className="mr-1 h-3 w-3" />
-                            OK
+                            {t("preview.statusOk")}
                           </Badge>
                         )}
                       </TableCell>
@@ -946,7 +960,7 @@ export default function ImportShpPage() {
                       colSpan={7}
                       className="text-center py-8 text-muted-foreground"
                     >
-                      Keine Flurstücke gefunden
+                      {t("preview.emptyState")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -975,14 +989,16 @@ export default function ImportShpPage() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Eigentümer prüfen
+                  {t("owners.cardTitle")}
                 </CardTitle>
                 <CardDescription className="mt-1">
-                  {activeOwners.length} Eigentümer mit {totalPlots} Flurstücken
-                  werden importiert
+                  {t("owners.cardDescription", {
+                    owners: activeOwners.length,
+                    plots: totalPlots,
+                  })}
                   {skippedOwners.length > 0 && (
                     <span className="text-orange-600">
-                      , {skippedOwners.length} übersprungen
+                      {t("owners.skippedSuffix", { count: skippedOwners.length })}
                     </span>
                   )}
                 </CardDescription>
@@ -994,10 +1010,10 @@ export default function ImportShpPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]">Import</TableHead>
-                    <TableHead className="w-[300px]">Eigentümer</TableHead>
-                    <TableHead className="text-center">Flurstücke</TableHead>
-                    <TableHead>Zugeordnete Flurstücke</TableHead>
+                    <TableHead className="w-[50px]">{t("owners.colImport")}</TableHead>
+                    <TableHead className="w-[300px]">{t("owners.colOwner")}</TableHead>
+                    <TableHead className="text-center">{t("owners.colPlots")}</TableHead>
+                    <TableHead>{t("owners.colAssignedPlots")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1021,7 +1037,7 @@ export default function ImportShpPage() {
                               return next;
                             })
                           }
-                          aria-label={`${group.originalName} importieren`}
+                          aria-label={t("owners.importAria", { name: group.originalName })}
                         />
                       </TableCell>
                       <TableCell>
@@ -1045,12 +1061,12 @@ export default function ImportShpPage() {
                         />
                         {group.keys.length > 1 && (
                           <p className="text-xs text-blue-600 mt-1">
-                            Zusammengeführt aus {group.keys.length} Varianten
+                            {t("owners.mergedFrom", { count: group.keys.length })}
                           </p>
                         )}
                         {group.editedName !== group.originalName && group.keys.length <= 1 && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Original: {group.originalName}
+                            {t("owners.originalLabel", { name: group.originalName })}
                           </p>
                         )}
                       </TableCell>
@@ -1067,7 +1083,7 @@ export default function ImportShpPage() {
                           .join(", ")}
                         {group.plots.length > 4 && (
                           <span className="ml-1">
-                            +{group.plots.length - 4} weitere
+                            {t("owners.plusMore", { count: group.plots.length - 4 })}
                           </span>
                         )}
                       </TableCell>
@@ -1079,7 +1095,7 @@ export default function ImportShpPage() {
                         colSpan={4}
                         className="text-center py-8 text-muted-foreground"
                       >
-                        Keine Eigentümer erkannt
+                        {t("owners.empty")}
                       </TableCell>
                     </TableRow>
                   )}

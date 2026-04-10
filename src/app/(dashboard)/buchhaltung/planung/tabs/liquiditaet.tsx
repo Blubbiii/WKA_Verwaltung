@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +77,7 @@ function fmtShort(n: number): string {
 }
 
 export default function LiquiditaetContent() {
+  const t = useTranslations("buchhaltung.planungLiquiditaet");
   const [data, setData] = useState<ForecastResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [months, setMonths] = useState("12");
@@ -114,11 +116,11 @@ export default function LiquiditaetContent() {
       const json = await res.json();
       setData(json.data || null);
     } catch {
-      toast.error("Liquiditätsplanung konnte nicht geladen werden");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, [months, granularity, startingBalance, budgetId]);
+  }, [months, granularity, startingBalance, budgetId, t]);
 
   useEffect(() => {
     fetchForecast();
@@ -135,7 +137,7 @@ export default function LiquiditaetContent() {
 
   function exportCsv() {
     if (!data) return;
-    const header = "Periode;Einnahmen;Ausgaben;Netto;Kumuliert;Forderungen;Budget-Einnahmen;Verbindlichkeiten;Budget-Kosten;Wiederkehrend\n";
+    const header = t("csvHeader") + "\n";
     const rows = data.periods.map((p) =>
       [p.label, fmt(p.inflows), fmt(p.outflows), fmt(p.netCashFlow), fmt(p.cumulativeBalance),
        fmt(p.details.receivables), fmt(p.details.budgetRevenue), fmt(p.details.payables),
@@ -152,11 +154,15 @@ export default function LiquiditaetContent() {
   }
 
   // Chart data
+  const chartInflowsLabel = t("chartInflows");
+  const chartOutflowsLabel = t("chartOutflows");
+  const chartCumulativeLabel = t("chartCumulative");
+
   const chartData = data?.periods.map((p) => ({
     name: p.label,
-    Einnahmen: p.inflows,
-    Ausgaben: -p.outflows,
-    Kumuliert: p.cumulativeBalance,
+    [chartInflowsLabel]: p.inflows,
+    [chartOutflowsLabel]: -p.outflows,
+    [chartCumulativeLabel]: p.cumulativeBalance,
   })) || [];
 
   return (
@@ -164,37 +170,37 @@ export default function LiquiditaetContent() {
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end flex-wrap">
           <div className="space-y-1 min-w-[120px]">
-            <Label>Horizont</Label>
+            <Label>{t("labelHorizon")}</Label>
             <Select value={months} onValueChange={setMonths}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="3">3 Monate</SelectItem>
-                <SelectItem value="6">6 Monate</SelectItem>
-                <SelectItem value="12">12 Monate</SelectItem>
+                <SelectItem value="3">{t("horizon3")}</SelectItem>
+                <SelectItem value="6">{t("horizon6")}</SelectItem>
+                <SelectItem value="12">{t("horizon12")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1 min-w-[140px]">
-            <Label>Granularität</Label>
+            <Label>{t("labelGranularity")}</Label>
             <Select value={granularity} onValueChange={setGranularity}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="monthly">Monatlich</SelectItem>
-                <SelectItem value="weekly">Wöchentlich</SelectItem>
+                <SelectItem value="monthly">{t("granularityMonthly")}</SelectItem>
+                <SelectItem value="weekly">{t("granularityWeekly")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1 w-[140px]">
-            <Label>Startsaldo (€)</Label>
+            <Label>{t("labelStartingBalance")}</Label>
             <Input type="number" step="0.01" value={startingBalance} onChange={(e) => setStartingBalance(e.target.value)} />
           </div>
           {budgets.length > 0 && (
             <div className="space-y-1 min-w-[180px]">
-              <Label>Budgetplan</Label>
+              <Label>{t("labelBudget")}</Label>
               <Select value={budgetId} onValueChange={setBudgetId}>
-                <SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("budgetPlaceholder")} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Kein Budget</SelectItem>
+                  <SelectItem value="none">{t("budgetNone")}</SelectItem>
                   {budgets.map((b) => (
                     <SelectItem key={b.id} value={b.id}>{b.name} ({b.year})</SelectItem>
                   ))}
@@ -203,10 +209,10 @@ export default function LiquiditaetContent() {
             </div>
           )}
           <Button variant="outline" onClick={fetchForecast}>
-            <RefreshCw className="h-4 w-4 mr-2" />Aktualisieren
+            <RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}
           </Button>
           <Button variant="outline" onClick={exportCsv} disabled={!data}>
-            <Download className="h-4 w-4 mr-2" />CSV
+            <Download className="h-4 w-4 mr-2" />{t("exportBtn")}
           </Button>
         </div>
 
@@ -214,28 +220,28 @@ export default function LiquiditaetContent() {
           <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
         ) : !data || data.periods.length === 0 ? (
           <div className="text-center text-muted-foreground py-12">
-            Keine Daten für die Prognose verfügbar.
+            {t("emptyState")}
           </div>
         ) : (
           <>
             {/* KPI Summary */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">Startsaldo</div>
+                <div className="text-xs text-muted-foreground">{t("kpiStartingBalance")}</div>
                 <div className="text-lg font-bold font-mono">{fmt(data.startingBalance)} €</div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">Progn. Endsaldo</div>
+                <div className="text-xs text-muted-foreground">{t("kpiEndingBalance")}</div>
                 <div className={`text-lg font-bold font-mono ${data.endingBalance < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
                   {fmt(data.endingBalance)} €
                 </div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">Gesamteinnahmen</div>
+                <div className="text-xs text-muted-foreground">{t("kpiTotalInflows")}</div>
                 <div className="text-lg font-bold font-mono text-green-600 dark:text-green-400">{fmt(data.totalInflows)} €</div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">Gesamtausgaben</div>
+                <div className="text-xs text-muted-foreground">{t("kpiTotalOutflows")}</div>
                 <div className="text-lg font-bold font-mono text-red-600 dark:text-red-400">{fmt(data.totalOutflows)} €</div>
               </div>
             </div>
@@ -254,9 +260,9 @@ export default function LiquiditaetContent() {
                     labelStyle={{ fontWeight: "bold" }}
                   />
                   <Legend />
-                  <Bar dataKey="Einnahmen" fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="Ausgaben" fill="hsl(0, 84%, 60%)" radius={[2, 2, 0, 0]} />
-                  <Line type="monotone" dataKey="Kumuliert" stroke="hsl(215, 50%, 40%)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Bar dataKey={chartInflowsLabel} fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey={chartOutflowsLabel} fill="hsl(0, 84%, 60%)" radius={[2, 2, 0, 0]} />
+                  <Line type="monotone" dataKey={chartCumulativeLabel} stroke="hsl(215, 50%, 40%)" strokeWidth={2} dot={{ r: 3 }} />
                 </ComposedChart>
             </div>
 
@@ -265,18 +271,17 @@ export default function LiquiditaetContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Periode</TableHead>
-                    <TableHead className="text-right">Einnahmen</TableHead>
-                    <TableHead className="text-right">Ausgaben</TableHead>
-                    <TableHead className="text-right">Netto</TableHead>
-                    <TableHead className="text-right">Kumuliert</TableHead>
+                    <TableHead>{t("colPeriod")}</TableHead>
+                    <TableHead className="text-right">{t("colInflows")}</TableHead>
+                    <TableHead className="text-right">{t("colOutflows")}</TableHead>
+                    <TableHead className="text-right">{t("colNet")}</TableHead>
+                    <TableHead className="text-right">{t("colCumulative")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.periods.map((p, i) => (
-                    <>
+                    <Fragment key={i}>
                       <TableRow
-                        key={i}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => toggleRow(i)}
                       >
@@ -291,19 +296,19 @@ export default function LiquiditaetContent() {
                         </TableCell>
                       </TableRow>
                       {expandedRows.has(i) && (
-                        <TableRow key={`${i}-details`} className="bg-muted/20">
+                        <TableRow className="bg-muted/20">
                           <TableCell colSpan={5} className="py-2 px-8">
                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
-                              <div><span className="text-muted-foreground">Forderungen:</span> <span className="font-mono">{fmt(p.details.receivables)}</span></div>
-                              <div><span className="text-muted-foreground">Budget-Einnahmen:</span> <span className="font-mono">{fmt(p.details.budgetRevenue)}</span></div>
-                              <div><span className="text-muted-foreground">Verbindlichkeiten:</span> <span className="font-mono">{fmt(p.details.payables)}</span></div>
-                              <div><span className="text-muted-foreground">Budget-Kosten:</span> <span className="font-mono">{fmt(p.details.budgetCosts)}</span></div>
-                              <div><span className="text-muted-foreground">Wiederkehrend:</span> <span className="font-mono">{fmt(p.details.recurringOut)}</span></div>
+                              <div><span className="text-muted-foreground">{t("detailReceivables")}</span> <span className="font-mono">{fmt(p.details.receivables)}</span></div>
+                              <div><span className="text-muted-foreground">{t("detailBudgetRevenue")}</span> <span className="font-mono">{fmt(p.details.budgetRevenue)}</span></div>
+                              <div><span className="text-muted-foreground">{t("detailPayables")}</span> <span className="font-mono">{fmt(p.details.payables)}</span></div>
+                              <div><span className="text-muted-foreground">{t("detailBudgetCosts")}</span> <span className="font-mono">{fmt(p.details.budgetCosts)}</span></div>
+                              <div><span className="text-muted-foreground">{t("detailRecurring")}</span> <span className="font-mono">{fmt(p.details.recurringOut)}</span></div>
                             </div>
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>

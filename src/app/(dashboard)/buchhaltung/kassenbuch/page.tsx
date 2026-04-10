@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -43,6 +44,7 @@ function fmt(n: string | number): string {
 }
 
 export default function KassenbuchPage() {
+  const t = useTranslations("buchhaltung.kassenbuch");
   const [entries, setEntries] = useState<CashBookEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -63,11 +65,11 @@ export default function KassenbuchPage() {
       const json = await res.json();
       setEntries(json.data || []);
     } catch {
-      toast.error("Fehler beim Laden");
+      toast.error(t("toastLoadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -85,12 +87,12 @@ export default function KassenbuchPage() {
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
-      toast.success("Kassenbucheintrag erstellt");
+      toast.success(t("toastCreateSuccess"));
       setDialogOpen(false);
       setForm({ entryDate: new Date().toISOString().slice(0, 10), description: "", amount: "", account: "", receiptNumber: "" });
       fetchData();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler");
+      toast.error(err instanceof Error ? err.message : t("toastCreateError"));
     } finally {
       setSaving(false);
     }
@@ -100,24 +102,24 @@ export default function KassenbuchPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Kassenbuch" description="Bargeldbewegungen erfassen und verwalten" />
+      <PageHeader title={t("title")} description={t("description")} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground">Kassenbestand</div>
+            <div className="text-sm text-muted-foreground">{t("cashBalance")}</div>
             <div className={`text-2xl font-bold font-mono ${lastBalance >= 0 ? "" : "text-red-600"}`}>{fmt(lastBalance)} EUR</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground">Eintraege</div>
+            <div className="text-sm text-muted-foreground">{t("entriesCount")}</div>
             <div className="text-2xl font-bold">{entries.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6 flex items-center justify-center">
-            <Button onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />Neuer Eintrag</Button>
+            <Button onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />{t("newEntry")}</Button>
           </CardContent>
         </Card>
       </div>
@@ -127,19 +129,19 @@ export default function KassenbuchPage() {
           {loading ? (
             <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
           ) : entries.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12">Keine Kassenbucheintraege vorhanden.</div>
+            <div className="text-center text-muted-foreground py-12">{t("emptyState")}</div>
           ) : (
             <div className="rounded-md border overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[60px]">Nr.</TableHead>
-                    <TableHead className="w-[100px]">Datum</TableHead>
-                    <TableHead>Beschreibung</TableHead>
-                    <TableHead>Beleg</TableHead>
-                    <TableHead>Gegenkonto</TableHead>
-                    <TableHead className="text-right">Betrag</TableHead>
-                    <TableHead className="text-right">Saldo</TableHead>
+                    <TableHead className="w-[60px]">{t("colNumber")}</TableHead>
+                    <TableHead className="w-[100px]">{t("colDate")}</TableHead>
+                    <TableHead>{t("colDescription")}</TableHead>
+                    <TableHead>{t("colReceipt")}</TableHead>
+                    <TableHead>{t("colAccount")}</TableHead>
+                    <TableHead className="text-right">{t("colAmount")}</TableHead>
+                    <TableHead className="text-right">{t("colBalance")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -165,22 +167,22 @@ export default function KassenbuchPage() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Neuer Kassenbucheintrag</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("dialogTitle")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Datum</Label><Input type="date" value={form.entryDate} onChange={(e) => setForm({ ...form, entryDate: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Betrag (EUR)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="Positiv = Einnahme, Negativ = Ausgabe" /></div>
+              <div className="space-y-2"><Label>{t("labelDate")}</Label><Input type="date" value={form.entryDate} onChange={(e) => setForm({ ...form, entryDate: e.target.value })} /></div>
+              <div className="space-y-2"><Label>{t("labelAmount")}</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder={t("amountPlaceholder")} /></div>
             </div>
-            <div className="space-y-2"><Label>Beschreibung</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+            <div className="space-y-2"><Label>{t("labelDescription")}</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Belegnummer</Label><Input value={form.receiptNumber} onChange={(e) => setForm({ ...form, receiptNumber: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Gegenkonto (SKR03)</Label><Input value={form.account} onChange={(e) => setForm({ ...form, account: e.target.value })} placeholder="z.B. 4900" /></div>
+              <div className="space-y-2"><Label>{t("labelReceipt")}</Label><Input value={form.receiptNumber} onChange={(e) => setForm({ ...form, receiptNumber: e.target.value })} /></div>
+              <div className="space-y-2"><Label>{t("labelAccount")}</Label><Input value={form.account} onChange={(e) => setForm({ ...form, account: e.target.value })} placeholder={t("accountPlaceholder")} /></div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("btnCancel")}</Button>
             <Button onClick={handleCreate} disabled={saving || !form.description || !form.amount}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Erstellen
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}{t("btnCreate")}
             </Button>
           </DialogFooter>
         </DialogContent>

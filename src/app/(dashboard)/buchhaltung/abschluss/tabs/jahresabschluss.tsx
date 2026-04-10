@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -11,56 +12,59 @@ import Link from "next/link";
 
 interface ChecklistItem {
   id: string;
-  label: string;
-  description: string;
+  labelKey: string;
+  descKey: string;
   link?: string;
-  linkLabel?: string;
+  linkLabelKey?: string;
 }
 
-const CHECKLIST_SECTIONS: Array<{
-  title: string;
+interface ChecklistSection {
+  titleKey: string;
   items: ChecklistItem[];
-}> = [
+}
+
+const CHECKLIST_SECTIONS: ChecklistSection[] = [
   {
-    title: "1. Kontenabstimmung",
+    titleKey: "section1Title",
     items: [
-      { id: "susa", label: "Summen- und Saldenliste (SuSa) pruefen", description: "Alle Konten auf Richtigkeit und Vollstaendigkeit pruefen", link: "/buchhaltung/berichte?tab=susa", linkLabel: "SuSa oeffnen" },
-      { id: "bank", label: "Bankabstimmung durchfuehren", description: "Alle Bankkonten mit Kontoauszuegen abgleichen", link: "/buchhaltung/bank", linkLabel: "Bankimport" },
-      { id: "kasse", label: "Kassenbestand pruefen", description: "Kassenbuch mit physischem Bestand abgleichen", link: "/buchhaltung/kassenbuch", linkLabel: "Kassenbuch" },
-      { id: "debtors", label: "Offene Forderungen abstimmen", description: "OP-Liste Debitoren pruefen und bereinigen" },
-      { id: "creditors", label: "Offene Verbindlichkeiten abstimmen", description: "OP-Liste Kreditoren pruefen" },
+      { id: "susa", labelKey: "susaLabel", descKey: "susaDesc", link: "/buchhaltung/berichte?tab=susa", linkLabelKey: "susaLinkLabel" },
+      { id: "bank", labelKey: "bankLabel", descKey: "bankDesc", link: "/buchhaltung/bank", linkLabelKey: "bankLinkLabel" },
+      { id: "kasse", labelKey: "kasseLabel", descKey: "kasseDesc", link: "/buchhaltung/kassenbuch", linkLabelKey: "kasseLinkLabel" },
+      { id: "debtors", labelKey: "debtorsLabel", descKey: "debtorsDesc" },
+      { id: "creditors", labelKey: "creditorsLabel", descKey: "creditorsDesc" },
     ],
   },
   {
-    title: "2. Abschluss-Buchungen",
+    titleKey: "section2Title",
     items: [
-      { id: "afa", label: "Abschreibungen (AfA) durchfuehren", description: "AfA-Lauf fuer alle aktiven Anlagen starten", link: "/buchhaltung/anlagen", linkLabel: "Anlagen" },
-      { id: "rab", label: "Rechnungsabgrenzung (RAP) buchen", description: "Aktive und passive RAP-Buchungen erstellen" },
-      { id: "rueckstellungen", label: "Rueckstellungen bilden", description: "Pensionen, Gewaehrleistungen, Steuern etc." },
-      { id: "wertberichtigungen", label: "Wertberichtigungen pruefen", description: "EWB/PWB auf Forderungen bilden" },
+      { id: "afa", labelKey: "afaLabel", descKey: "afaDesc", link: "/buchhaltung/anlagen", linkLabelKey: "afaLinkLabel" },
+      { id: "rab", labelKey: "rabLabel", descKey: "rabDesc" },
+      { id: "rueckstellungen", labelKey: "rueckstellungenLabel", descKey: "rueckstellungenDesc" },
+      { id: "wertberichtigungen", labelKey: "wertberichtigungenLabel", descKey: "wertberichtigungenDesc" },
     ],
   },
   {
-    title: "3. Steuer & Compliance",
+    titleKey: "section3Title",
     items: [
-      { id: "ustva", label: "UStVA-Daten pruefen", description: "Umsatzsteuervoranmeldung(en) abstimmen", link: "/buchhaltung/steuern?tab=ustva", linkLabel: "UStVA" },
-      { id: "ust-jahreserkl", label: "USt-Jahreserklaerung vorbereiten", description: "Jahressummen fuer ELSTER zusammenstellen" },
-      { id: "datev", label: "DATEV-Export erstellen", description: "Buchungsstapel fuer Steuerberater exportieren", link: "/buchhaltung/abschluss?tab=datev", linkLabel: "DATEV-Export" },
+      { id: "ustva", labelKey: "ustvaLabel", descKey: "ustvaDesc", link: "/buchhaltung/steuern?tab=ustva", linkLabelKey: "ustvaLinkLabel" },
+      { id: "ust-jahreserkl", labelKey: "ustJahreserklLabel", descKey: "ustJahreserklDesc" },
+      { id: "datev", labelKey: "datevLabel", descKey: "datevDesc", link: "/buchhaltung/abschluss?tab=datev", linkLabelKey: "datevLinkLabel" },
     ],
   },
   {
-    title: "4. Berichte & Dokumentation",
+    titleKey: "section4Title",
     items: [
-      { id: "bwa", label: "BWA Jahresvergleich erstellen", description: "BWA fuer Gesamtjahr generieren und pruefen", link: "/buchhaltung/berichte?tab=bwa", linkLabel: "BWA" },
-      { id: "bilanz", label: "Bilanz aufstellen", description: "Aktiva/Passiva-Gliederung nach HGB" },
-      { id: "guv", label: "GuV fertigstellen", description: "Gewinn- und Verlustrechnung erstellen" },
-      { id: "anhang", label: "Anhang und Lagebericht", description: "Erlaeuterungen zum Jahresabschluss verfassen" },
-      { id: "protokoll", label: "Gesellschafterbeschluss", description: "Gewinnverwendung / Ergebnisverteilung beschliessen" },
+      { id: "bwa", labelKey: "bwaLabel", descKey: "bwaDesc", link: "/buchhaltung/berichte?tab=bwa", linkLabelKey: "bwaLinkLabel" },
+      { id: "bilanz", labelKey: "bilanzLabel", descKey: "bilanzDesc" },
+      { id: "guv", labelKey: "guvLabel", descKey: "guvDesc" },
+      { id: "anhang", labelKey: "anhangLabel", descKey: "anhangDesc" },
+      { id: "protokoll", labelKey: "protokollLabel", descKey: "protokollDesc" },
     ],
   },
 ];
 
 export default function JahresabschlussContent() {
+  const t = useTranslations("buchhaltung.abschlussJahresabschluss");
   const [year, setYear] = useState(String(new Date().getFullYear() - 1));
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
@@ -77,10 +81,10 @@ export default function JahresabschlussContent() {
   return (
     <>
       <div className="flex items-center gap-4">
-        <Label>Geschaeftsjahr:</Label>
+        <Label>{t("fiscalYearLabel")}</Label>
         <Input type="number" value={year} onChange={(e) => setYear(e.target.value)} className="w-[100px]" />
         <Badge variant={progress === 100 ? "default" : "secondary"}>
-          {completedItems}/{totalItems} erledigt ({progress}%)
+          {t("progressDone", { completed: completedItems, total: totalItems, progress })}
         </Badge>
         <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
           <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
@@ -88,9 +92,9 @@ export default function JahresabschlussContent() {
       </div>
 
       {CHECKLIST_SECTIONS.map((section) => (
-        <Card key={section.title}>
+        <Card key={section.titleKey}>
           <CardHeader>
-            <CardTitle className="text-lg">{section.title}</CardTitle>
+            <CardTitle className="text-lg">{t(section.titleKey)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -104,13 +108,13 @@ export default function JahresabschlussContent() {
                   />
                   <div className="flex-1">
                     <label htmlFor={item.id} className={`font-medium cursor-pointer ${checked.has(item.id) ? "line-through text-muted-foreground" : ""}`}>
-                      {item.label}
+                      {t(item.labelKey)}
                     </label>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                    <p className="text-sm text-muted-foreground">{t(item.descKey)}</p>
                   </div>
-                  {item.link && (
+                  {item.link && item.linkLabelKey && (
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={item.link}>{item.linkLabel}</Link>
+                      <Link href={item.link}>{t(item.linkLabelKey)}</Link>
                     </Button>
                   )}
                 </div>

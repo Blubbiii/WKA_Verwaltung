@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -61,36 +62,43 @@ function fmtPct(n: number | null): string {
   return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  REVENUE_ENERGY: "Energieerlöse",
-  REVENUE_OTHER: "Sonstige Erlöse",
-  COST_LEASE: "Pachtkosten",
-  COST_MAINTENANCE: "Wartung & Instandhaltung",
-  COST_INSURANCE: "Versicherungen",
-  COST_ADMIN: "Verwaltungskosten",
-  COST_DEPRECIATION: "Abschreibungen",
-  COST_FINANCING: "Finanzierungskosten",
-  COST_OTHER: "Sonstige Kosten",
-  RESERVE: "Rücklagen",
-};
-
-const MONTH_OPTIONS = [
-  { value: "1-12", label: "Ganzes Jahr" },
-  { value: "1-3", label: "Q1 (Jan-Mär)" },
-  { value: "4-6", label: "Q2 (Apr-Jun)" },
-  { value: "7-9", label: "Q3 (Jul-Sep)" },
-  { value: "10-12", label: "Q4 (Okt-Dez)" },
-  { value: "1-6", label: "H1 (Jan-Jun)" },
-  { value: "7-12", label: "H2 (Jul-Dez)" },
-];
-
 export default function BudgetContent() {
+  const t = useTranslations("buchhaltung.planungBudget");
   const [budgets, setBudgets] = useState<BudgetSummary[]>([]);
   const [selectedBudget, setSelectedBudget] = useState<string>("");
   const [monthRange, setMonthRange] = useState("1-12");
   const [data, setData] = useState<BudgetComparisonResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingBudgets, setLoadingBudgets] = useState(true);
+
+  const categoryLabel = useCallback(
+    (cat: string): string => {
+      switch (cat) {
+        case "REVENUE_ENERGY": return t("categoryRevenueEnergy");
+        case "REVENUE_OTHER": return t("categoryRevenueOther");
+        case "COST_LEASE": return t("categoryCostLease");
+        case "COST_MAINTENANCE": return t("categoryCostMaintenance");
+        case "COST_INSURANCE": return t("categoryCostInsurance");
+        case "COST_ADMIN": return t("categoryCostAdmin");
+        case "COST_DEPRECIATION": return t("categoryCostDepreciation");
+        case "COST_FINANCING": return t("categoryCostFinancing");
+        case "COST_OTHER": return t("categoryCostOther");
+        case "RESERVE": return t("categoryReserve");
+        default: return cat;
+      }
+    },
+    [t]
+  );
+
+  const monthOptions = [
+    { value: "1-12", label: t("periodAll") },
+    { value: "1-3", label: t("periodQ1") },
+    { value: "4-6", label: t("periodQ2") },
+    { value: "7-9", label: t("periodQ3") },
+    { value: "10-12", label: t("periodQ4") },
+    { value: "1-6", label: t("periodH1") },
+    { value: "7-12", label: t("periodH2") },
+  ];
 
   // Load available budgets
   useEffect(() => {
@@ -103,13 +111,13 @@ export default function BudgetContent() {
         setBudgets(items);
         if (items.length > 0) setSelectedBudget(items[0].id);
       } catch {
-        toast.error("Budgetpläne konnten nicht geladen werden");
+        toast.error(t("toastBudgetsError"));
       } finally {
         setLoadingBudgets(false);
       }
     }
     loadBudgets();
-  }, []);
+  }, [t]);
 
   const fetchComparison = useCallback(async () => {
     if (!selectedBudget) return;
@@ -123,11 +131,11 @@ export default function BudgetContent() {
       const json = await res.json();
       setData(json.data || null);
     } catch {
-      toast.error("Budget-Vergleich konnte nicht geladen werden");
+      toast.error(t("toastCompareError"));
     } finally {
       setLoading(false);
     }
-  }, [selectedBudget, monthRange]);
+  }, [selectedBudget, monthRange, t]);
 
   useEffect(() => {
     if (selectedBudget) fetchComparison();
@@ -135,9 +143,9 @@ export default function BudgetContent() {
 
   function exportCsv() {
     if (!data) return;
-    const header = "Kostenstelle;Code;Kategorie;Beschreibung;Soll;Ist;Differenz;Abweichung %\n";
+    const header = t("csvHeader") + "\n";
     const rows = data.rows.map((r) =>
-      [r.costCenterName, r.costCenterCode, CATEGORY_LABELS[r.category] || r.category, r.description, fmt(r.planned), fmt(r.actual), fmt(r.difference), fmtPct(r.deviationPct)].join(";")
+      [r.costCenterName, r.costCenterCode, categoryLabel(r.category), r.description, fmt(r.planned), fmt(r.actual), fmt(r.difference), fmtPct(r.deviationPct)].join(";")
     );
     const csv = header + rows.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
@@ -161,11 +169,11 @@ export default function BudgetContent() {
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
           <div className="space-y-1 min-w-[200px]">
-            <Label>Budgetplan</Label>
+            <Label>{t("labelBudget")}</Label>
             {loadingBudgets ? (
               <Skeleton className="h-10 w-full" />
             ) : budgets.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-2">Keine Budgetpläne vorhanden</p>
+              <p className="text-sm text-muted-foreground py-2">{t("noBudgets")}</p>
             ) : (
               <Select value={selectedBudget} onValueChange={setSelectedBudget}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -180,21 +188,21 @@ export default function BudgetContent() {
             )}
           </div>
           <div className="space-y-1 min-w-[160px]">
-            <Label>Zeitraum</Label>
+            <Label>{t("labelPeriod")}</Label>
             <Select value={monthRange} onValueChange={setMonthRange}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {MONTH_OPTIONS.map((o) => (
+                {monthOptions.map((o) => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <Button variant="outline" onClick={fetchComparison} disabled={!selectedBudget}>
-            <RefreshCw className="h-4 w-4 mr-2" />Aktualisieren
+            <RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}
           </Button>
           <Button variant="outline" onClick={exportCsv} disabled={!data}>
-            <Download className="h-4 w-4 mr-2" />CSV
+            <Download className="h-4 w-4 mr-2" />{t("exportBtn")}
           </Button>
         </div>
 
@@ -202,22 +210,20 @@ export default function BudgetContent() {
           <div className="space-y-2">{Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
         ) : !data || data.rows.length === 0 ? (
           <div className="text-center text-muted-foreground py-12">
-            {budgets.length === 0
-              ? "Erstellen Sie zuerst einen Budgetplan unter Wirtschaftsplan → Budget."
-              : "Keine Budgetzeilen gefunden."}
+            {budgets.length === 0 ? t("emptyNoBudget") : t("emptyNoLines")}
           </div>
         ) : (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Kostenstelle</TableHead>
-                  <TableHead>Kategorie</TableHead>
-                  <TableHead>Beschreibung</TableHead>
-                  <TableHead className="text-right">Soll</TableHead>
-                  <TableHead className="text-right">Ist</TableHead>
-                  <TableHead className="text-right">Differenz</TableHead>
-                  <TableHead className="text-right w-[100px]">Abweichung</TableHead>
+                  <TableHead>{t("colCostCenter")}</TableHead>
+                  <TableHead>{t("colCategory")}</TableHead>
+                  <TableHead>{t("colDescription")}</TableHead>
+                  <TableHead className="text-right">{t("colPlanned")}</TableHead>
+                  <TableHead className="text-right">{t("colActual")}</TableHead>
+                  <TableHead className="text-right">{t("colDifference")}</TableHead>
+                  <TableHead className="text-right w-[100px]">{t("colDeviation")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -229,7 +235,7 @@ export default function BudgetContent() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">
-                        {CATEGORY_LABELS[row.category] || row.category}
+                        {categoryLabel(row.category)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">{row.description}</TableCell>
@@ -255,7 +261,7 @@ export default function BudgetContent() {
 
                 {/* Total row */}
                 <TableRow className="font-bold border-t-2 bg-muted/30">
-                  <TableCell colSpan={3}>Gesamt</TableCell>
+                  <TableCell colSpan={3}>{t("totalLabel")}</TableCell>
                   <TableCell className="text-right font-mono">{fmt(data.totalPlanned)}</TableCell>
                   <TableCell className="text-right font-mono">{fmt(data.totalActual)}</TableCell>
                   <TableCell className={`text-right font-mono ${data.totalDifference > 0 ? "text-red-600 dark:text-red-400" : data.totalDifference < 0 ? "text-green-600 dark:text-green-400" : ""}`}>
