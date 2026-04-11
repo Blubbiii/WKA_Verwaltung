@@ -4,6 +4,7 @@ import { useState, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -37,7 +38,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
 import {
-  ALLOCATION_STATUS_LABELS,
   SETTLEMENT_STATUS_LABELS,
   type ParkCostAllocationStatus,
   type ParkCostAllocationResponse,
@@ -48,9 +48,9 @@ import {
 // CONSTANTS & HELPERS
 // =============================================================================
 
-const fetcher = (url: string) =>
+const makeFetcher = (errMsg: string) => (url: string) =>
   fetch(url).then((res) => {
-    if (!res.ok) throw new Error("Fehler beim Laden");
+    if (!res.ok) throw new Error(errMsg);
     return res.json();
   });
 
@@ -60,11 +60,12 @@ const ALLOCATION_STATUS_COLORS: Record<ParkCostAllocationStatus, string> = {
   CLOSED: "bg-slate-100 text-slate-800 hover:bg-slate-100/80",
 };
 
-function formatPercent(pct: number): string {
-  return new Intl.NumberFormat("de-DE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(pct);
+function makeFormatPercent(locale: string) {
+  return (pct: number): string =>
+    new Intl.NumberFormat(locale === "en" ? "en-US" : "de-DE", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(pct);
 }
 
 // =============================================================================
@@ -79,6 +80,14 @@ export default function CostAllocationDetailPage({
   const { id } = use(params);
   const _router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("leases.costAllocationDetail");
+  const locale = useLocale();
+  const formatPercent = makeFormatPercent(locale);
+  const statusLabels: Record<ParkCostAllocationStatus, string> = {
+    DRAFT: t("statusLabels.DRAFT"),
+    INVOICED: t("statusLabels.INVOICED"),
+    CLOSED: t("statusLabels.CLOSED"),
+  };
   const [actionLoading, setActionLoading] = useState(false);
   const [closeLoading, setCloseLoading] = useState(false);
 
@@ -92,7 +101,7 @@ export default function CostAllocationDetailPage({
     error: isError,
   } = useQuery<ParkCostAllocationResponse>({
     queryKey: [allocationUrl],
-    queryFn: () => fetcher(allocationUrl),
+    queryFn: () => makeFetcher(t("fetchError"))(allocationUrl),
   });
   const mutate = () => queryClient.invalidateQueries({ queryKey: [allocationUrl] });
 
@@ -108,16 +117,16 @@ export default function CostAllocationDetailPage({
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(
-          err.message || "Fehler beim Erstellen der Rechnungen"
+          err.message || t("actions.createInvoicesError")
         );
       }
-      toast.success("Rechnungen wurden erfolgreich erzeugt");
+      toast.success(t("actions.createInvoicesSuccess"));
       mutate();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Erstellen der Rechnungen"
+          : t("actions.createInvoicesError")
       );
     } finally {
       setActionLoading(false);
@@ -132,15 +141,15 @@ export default function CostAllocationDetailPage({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Abschliessen");
+        throw new Error(err.error || t("actions.closeError"));
       }
-      toast.success("Kostenaufteilung wurde abgeschlossen");
+      toast.success(t("actions.closeSuccess"));
       mutate();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Abschliessen"
+          : t("actions.closeError")
       );
     } finally {
       setCloseLoading(false);
@@ -180,12 +189,12 @@ export default function CostAllocationDetailPage({
             </Link>
           </Button>
           <h1 className="text-2xl font-bold">
-            Kostenaufteilung nicht gefunden
+            {t("notFound")}
           </h1>
         </div>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Die angeforderte Kostenaufteilung konnte nicht geladen werden.
+            {t("loadNotFound")}
           </CardContent>
         </Card>
       </div>
@@ -196,9 +205,9 @@ export default function CostAllocationDetailPage({
   // Derived data
   // ---------------------------------------------------------------------------
   const settlement = allocation.leaseRevenueSettlement;
-  const parkName = settlement?.park?.name || "Unbekannt";
-  const year = settlement?.year || "-";
-  const title = `Kostenaufteilung ${parkName} ${year}`;
+  const parkName = settlement?.park?.name || t("unknownPark");
+  const year = settlement?.year ?? "-";
+  const title = t("title", { park: parkName, year });
   const items = allocation.items || [];
 
   // ---------------------------------------------------------------------------
@@ -221,12 +230,12 @@ export default function CostAllocationDetailPage({
                 variant="secondary"
                 className={ALLOCATION_STATUS_COLORS[allocation.status]}
               >
-                {ALLOCATION_STATUS_LABELS[allocation.status]}
+                {statusLabels[allocation.status]}
               </Badge>
             </div>
             {allocation.periodLabel && (
               <p className="text-muted-foreground">
-                Periode: {allocation.periodLabel}
+                {t("periodLabel", { period: allocation.periodLabel })}
               </p>
             )}
           </div>
@@ -244,7 +253,7 @@ export default function CostAllocationDetailPage({
               ) : (
                 <Receipt className="mr-2 h-4 w-4" />
               )}
-              Rechnungen erzeugen
+              {t("actions.createInvoices")}
             </Button>
           )}
           {allocation.status === "INVOICED" && (
@@ -252,7 +261,7 @@ export default function CostAllocationDetailPage({
               <Button variant="outline" asChild>
                 <Link href="/invoices">
                   <FileText className="mr-2 h-4 w-4" />
-                  Rechnungen anzeigen
+                  {t("actions.showInvoices")}
                 </Link>
               </Button>
               <Button
@@ -265,7 +274,7 @@ export default function CostAllocationDetailPage({
                 ) : (
                   <Lock className="mr-2 h-4 w-4" />
                 )}
-                Abschliessen
+                {t("actions.close")}
               </Button>
             </>
           )}
@@ -278,7 +287,7 @@ export default function CostAllocationDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Euro className="h-4 w-4" />
-              Gesamtkosten
+              {t("kpi.total")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -286,7 +295,7 @@ export default function CostAllocationDetailPage({
               {formatCurrency(Number(allocation.totalUsageFeeEur))}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Nutzungsentgelt gesamt
+              {t("kpi.totalHint")}
             </p>
           </CardContent>
         </Card>
@@ -295,7 +304,7 @@ export default function CostAllocationDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              Steuerpflichtig (19%)
+              {t("kpi.taxable")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -303,7 +312,7 @@ export default function CostAllocationDetailPage({
               {formatCurrency(Number(allocation.totalTaxableEur))}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Anteil mit Umsatzsteuer
+              {t("kpi.taxableHint")}
             </p>
           </CardContent>
         </Card>
@@ -312,7 +321,7 @@ export default function CostAllocationDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Steuerfrei (Paragraph 4/12)
+              {t("kpi.exempt")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -320,7 +329,7 @@ export default function CostAllocationDetailPage({
               {formatCurrency(Number(allocation.totalExemptEur))}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Anteil ohne Umsatzsteuer
+              {t("kpi.exemptHint")}
             </p>
           </CardContent>
         </Card>
@@ -331,7 +340,7 @@ export default function CostAllocationDetailPage({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Zugehoerige Abrechnung
+              {t("settlement.linkedTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -339,7 +348,7 @@ export default function CostAllocationDetailPage({
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
-                    Abrechnung:
+                    {t("settlement.settlementLabel")}
                   </span>
                   <span className="font-medium">
                     {parkName} - {year}
@@ -353,7 +362,7 @@ export default function CostAllocationDetailPage({
                 {settlement.actualFeeEur !== undefined && (
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
-                      Nutzungsentgelt (berechnet):
+                      {t("settlement.feeCalcLabel")}
                     </span>
                     <span className="font-mono font-medium">
                       {formatCurrency(Number(settlement.actualFeeEur))}
@@ -366,7 +375,7 @@ export default function CostAllocationDetailPage({
                   href={`/leases/usage-fees/${settlement.id}`}
                 >
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  Zur Abrechnung
+                  {t("settlement.toSettlement")}
                 </Link>
               </Button>
             </div>
@@ -378,9 +387,9 @@ export default function CostAllocationDetailPage({
       {items.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Aufteilung nach Betreiber</CardTitle>
+            <CardTitle>{t("itemsCard.title")}</CardTitle>
             <CardDescription>
-              {items.length} Betreibergesellschaft(en) - Nutzungsentgelt-Verteilung
+              {t("itemsCard.description", { count: items.length })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -388,22 +397,22 @@ export default function CostAllocationDetailPage({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Betreiber</TableHead>
-                    <TableHead className="text-right">Anteil (%)</TableHead>
-                    <TableHead>Schluessel</TableHead>
+                    <TableHead>{t("columns.operator")}</TableHead>
+                    <TableHead className="text-right">{t("columns.share")}</TableHead>
+                    <TableHead>{t("columns.key")}</TableHead>
                     <TableHead className="text-right">
-                      MIT MwSt (19%)
+                      {t("columns.withVat")}
                     </TableHead>
                     <TableHead className="text-right">
-                      OHNE MwSt
+                      {t("columns.withoutVat")}
                     </TableHead>
                     <TableHead className="text-right">
-                      Direktabrechnung
+                      {t("columns.direct")}
                     </TableHead>
                     <TableHead className="text-right">
-                      Netto zahlbar
+                      {t("columns.netPayable")}
                     </TableHead>
-                    <TableHead>Rechnungen</TableHead>
+                    <TableHead>{t("columns.invoices")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -458,14 +467,14 @@ export default function CostAllocationDetailPage({
                                     "_blank"
                                   )
                                 }
-                                title="PDF herunterladen"
+                                title={t("invoices.downloadPdfTitle")}
                               >
                                 <Download className="h-3 w-3" />
                               </Button>
                             </div>
                           ) : item.vatInvoiceId ? (
                             <span className="text-sm text-muted-foreground">
-                              MwSt-Rechnung vorhanden
+                              {t("invoices.vatPresent")}
                             </span>
                           ) : null}
                           {item.exemptInvoice ? (
@@ -486,14 +495,14 @@ export default function CostAllocationDetailPage({
                                     "_blank"
                                   )
                                 }
-                                title="PDF herunterladen"
+                                title={t("invoices.downloadPdfTitle")}
                               >
                                 <Download className="h-3 w-3" />
                               </Button>
                             </div>
                           ) : item.exemptInvoiceId ? (
                             <span className="text-sm text-muted-foreground">
-                              Steuerfreie Rechnung vorhanden
+                              {t("invoices.exemptPresent")}
                             </span>
                           ) : null}
                           {!item.vatInvoiceId && !item.exemptInvoiceId && (
@@ -506,7 +515,7 @@ export default function CostAllocationDetailPage({
                 </TableBody>
                 <TableFooter>
                   <TableRow>
-                    <TableCell className="font-bold">Gesamt</TableCell>
+                    <TableCell className="font-bold">{t("columns.total")}</TableCell>
                     <TableCell />
                     <TableCell />
                     <TableCell className="text-right font-mono font-bold">
@@ -560,10 +569,10 @@ export default function CostAllocationDetailPage({
           <CardContent className="py-12 text-center">
             <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">
-              Noch keine Aufteilungspositionen
+              {t("empty.title")}
             </h3>
             <p className="text-muted-foreground">
-              Die Kostenaufteilung enthaelt noch keine Positionen.
+              {t("empty.description")}
             </p>
           </CardContent>
         </Card>
@@ -573,7 +582,7 @@ export default function CostAllocationDetailPage({
       {allocation.notes && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Notizen</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("notes")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm whitespace-pre-line">{allocation.notes}</p>

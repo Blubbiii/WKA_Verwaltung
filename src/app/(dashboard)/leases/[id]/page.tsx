@@ -6,8 +6,9 @@ import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { format, differenceInDays } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import { formatCurrency } from "@/lib/format";
 import {
   ArrowLeft,
@@ -109,19 +110,6 @@ interface Lease {
   };
 }
 
-const BILLING_INTERVAL_LABELS: Record<string, string> = {
-  MONTHLY: "Monatlich",
-  QUARTERLY: "Quartalsweise",
-  SEMI_ANNUAL: "Halbjährlich",
-  ANNUAL: "Jährlich",
-};
-
-const WAITING_MONEY_SCHEDULE_LABELS: Record<string, string> = {
-  once: "Einmalig",
-  monthly: "Monatlich",
-  yearly: "Jährlich",
-};
-
 export default function LeaseDetailPage({
   params,
 }: {
@@ -130,6 +118,21 @@ export default function LeaseDetailPage({
   const resolvedParams = use(params);
   const router = useRouter();
   const { flags } = useFeatureFlags();
+  const t = useTranslations("leases.detail");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
+  const numberLocale = locale === "en" ? "en-US" : "de-DE";
+  const BILLING_INTERVAL_LABELS: Record<string, string> = {
+    MONTHLY: t("billingIntervals.MONTHLY"),
+    QUARTERLY: t("billingIntervals.QUARTERLY"),
+    SEMI_ANNUAL: t("billingIntervals.SEMI_ANNUAL"),
+    ANNUAL: t("billingIntervals.ANNUAL"),
+  };
+  const WAITING_MONEY_SCHEDULE_LABELS: Record<string, string> = {
+    once: t("waitingMoneySchedules.once"),
+    monthly: t("waitingMoneySchedules.monthly"),
+    yearly: t("waitingMoneySchedules.yearly"),
+  };
   const [lease, setLease] = useState<Lease | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -140,23 +143,23 @@ export default function LeaseDetailPage({
         const response = await fetch(`/api/leases/${resolvedParams.id}`);
         if (!response.ok) {
           if (response.status === 404) {
-            toast.error("Pachtvertrag nicht gefunden");
+            toast.error(t("notFound"));
             router.push("/leases");
             return;
           }
-          throw new Error("Fehler beim Laden");
+          throw new Error(t("loadError"));
         }
         const data = await response.json();
         setLease(data);
       } catch {
-        toast.error("Fehler beim Laden des Pachtvertrags");
+        toast.error(t("loadErrorToast"));
       } finally {
         setLoading(false);
       }
     }
 
     fetchLease();
-  }, [resolvedParams.id, router]);
+  }, [resolvedParams.id, router, t]);
 
   async function handleDelete() {
     setDeleting(true);
@@ -166,13 +169,13 @@ export default function LeaseDetailPage({
       });
 
       if (!response.ok) {
-        throw new Error("Fehler beim Löschen");
+        throw new Error(t("deleteError"));
       }
 
-      toast.success("Pachtvertrag erfolgreich gelöscht");
+      toast.success(t("deleteSuccess"));
       router.push("/leases");
     } catch {
-      toast.error("Fehler beim Löschen des Pachtvertrags");
+      toast.error(t("deleteErrorToast"));
     } finally {
       setDeleting(false);
     }
@@ -190,9 +193,9 @@ export default function LeaseDetailPage({
     const parts = [
       plot.cadastralDistrict,
       plot.fieldNumber && plot.fieldNumber !== "0" ? `Flur ${plot.fieldNumber}` : null,
-      plot.plotNumber ? `Flurstück ${plot.plotNumber}` : null,
+      plot.plotNumber ? `Flurst\u00fcck ${plot.plotNumber}` : null,
     ].filter(Boolean);
-    return parts.length > 0 ? parts.join(", ") : "Unbekannt";
+    return parts.length > 0 ? parts.join(", ") : "-";
   }
 
   function getDaysUntilEnd(): number | null {
@@ -236,7 +239,7 @@ export default function LeaseDetailPage({
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight">
-                Pachtvertrag
+                {t("title")}
               </h1>
               <Badge variant="secondary" className={getStatusBadge(CONTRACT_STATUS, lease.status).className}>
                 {getStatusBadge(CONTRACT_STATUS, lease.status).label}
@@ -244,7 +247,7 @@ export default function LeaseDetailPage({
             </div>
             <p className="text-muted-foreground">
               {getLessorName()}
-              {lease.plots.length > 0 && ` — ${lease.plots.length} Flurstück${lease.plots.length > 1 ? "e" : ""}`}
+              {lease.plots.length > 0 && ` \u2014 ${lease.plots.length === 1 ? t("plotsCount", { count: lease.plots.length }) : t("plotsCountPlural", { count: lease.plots.length })}`}
             </p>
           </div>
         </div>
@@ -253,21 +256,20 @@ export default function LeaseDetailPage({
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={deleting}>
                 <Trash2 className="mr-2 h-4 w-4" />
-                Löschen
+                {t("delete")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Pachtvertrag löschen?</AlertDialogTitle>
+                <AlertDialogTitle>{t("deleteDialogTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Sind Sie sicher, dass Sie diesen Pachtvertrag löschen möchten?
-                  Diese Aktion kann nicht rückgängig gemacht werden.
+                  {t("deleteDialogDescription")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                  Löschen
+                  {t("delete")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -281,7 +283,7 @@ export default function LeaseDetailPage({
           <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
           <div>
             <p className="font-medium text-yellow-800 dark:text-yellow-400">
-              Vertrag läuft in {daysUntilEnd} Tagen aus
+              {t("expiringWarning", { days: daysUntilEnd })}
             </p>
           </div>
         </div>
@@ -293,8 +295,8 @@ export default function LeaseDetailPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Flurstücke ({lease.plots?.length || 0})
-              <InfoTooltip text="Katasterrechtlich erfasste Grundstücke, die Teil dieses Pachtvertrags sind." />
+              {t("plots.title", { count: lease.plots?.length || 0 })}
+              <InfoTooltip text={t("plots.tooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -304,27 +306,27 @@ export default function LeaseDetailPage({
                   {index > 0 && <Separator className="my-4" />}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">Gemarkung</p>
+                      <p className="text-sm text-muted-foreground">{t("plots.district")}</p>
                       <p className="font-medium">{plot.cadastralDistrict || "-"}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Flur / Flurstück</p>
+                      <p className="text-sm text-muted-foreground">{t("plots.fieldAndParcel")}</p>
                       <p className="font-medium">
                         {plot.fieldNumber && plot.fieldNumber !== "0" ? `${plot.fieldNumber} / ` : ""}
                         {plot.plotNumber || "-"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Fläche</p>
+                      <p className="text-sm text-muted-foreground">{t("plots.area")}</p>
                       <p className="font-medium">
                         {plot.areaSqm
-                          ? `${Number(plot.areaSqm).toLocaleString("de-DE")} m² (${(Number(plot.areaSqm) / 10000).toFixed(2)} ha)`
+                          ? `${Number(plot.areaSqm).toLocaleString(numberLocale)} m\u00b2 (${(Number(plot.areaSqm) / 10000).toFixed(2)} ha)`
                           : "-"}
                       </p>
                     </div>
                     {plot.park && (
                       <div>
-                        <p className="text-sm text-muted-foreground">Windpark</p>
+                        <p className="text-sm text-muted-foreground">{t("plots.park")}</p>
                         <p className="font-medium flex items-center gap-1">
                           <Wind className="h-3 w-3" />
                           {plot.park.name}
@@ -338,13 +340,13 @@ export default function LeaseDetailPage({
             ) : (
               <div className="text-center py-4">
                 <MapPin className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-                <p className="text-muted-foreground">Keine Flurstücke zugewiesen</p>
+                <p className="text-muted-foreground">{t("plots.empty")}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Flurstücke können über{" "}
+                  {t("plots.emptyHintPrefix")}{" "}
                   <Link href={`/leases/${lease.id}/edit`} className="text-primary underline underline-offset-4 hover:text-primary/80">
-                    Bearbeiten
+                    {t("plots.emptyHintLink")}
                   </Link>{" "}
-                  zugeordnet werden.
+                  {t("plots.emptyHintSuffix")}
                 </p>
               </div>
             )}
@@ -360,13 +362,13 @@ export default function LeaseDetailPage({
               ) : (
                 <User className="h-5 w-5" />
               )}
-              Verpächter
-              <InfoTooltip text="Eigentümer der Fläche, an den die Pacht gezahlt wird." />
+              {t("lessor.title")}
+              <InfoTooltip text={t("lessor.tooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-sm text-muted-foreground">Name</p>
+              <p className="text-sm text-muted-foreground">{t("lessor.name")}</p>
               <Link
                 href={`/crm/contacts/${lease.lessor.id}`}
                 className="font-medium hover:underline hover:text-primary transition-colors inline-flex items-center gap-1"
@@ -374,24 +376,24 @@ export default function LeaseDetailPage({
                 {getLessorName()}
               </Link>
               <p className="text-xs text-muted-foreground">
-                {lease.lessor.personType === "legal" ? "Juristische Person" : "Natürliche Person"}
+                {lease.lessor.personType === "legal" ? t("lessor.legalPerson") : t("lessor.naturalPerson")}
               </p>
             </div>
             {lease.lessor.email && (
               <div>
-                <p className="text-sm text-muted-foreground">E-Mail</p>
+                <p className="text-sm text-muted-foreground">{t("lessor.email")}</p>
                 <p className="font-medium">{lease.lessor.email}</p>
               </div>
             )}
             {lease.lessor.phone && (
               <div>
-                <p className="text-sm text-muted-foreground">Telefon</p>
+                <p className="text-sm text-muted-foreground">{t("lessor.phone")}</p>
                 <p className="font-medium">{lease.lessor.phone}</p>
               </div>
             )}
             {(lease.lessor.street || lease.lessor.city) && (
               <div>
-                <p className="text-sm text-muted-foreground">Adresse</p>
+                <p className="text-sm text-muted-foreground">{t("lessor.address")}</p>
                 <p className="font-medium">
                   {lease.lessor.street && <span>{lease.lessor.street}<br /></span>}
                   {lease.lessor.postalCode} {lease.lessor.city}
@@ -402,7 +404,7 @@ export default function LeaseDetailPage({
               <>
                 <Separator />
                 <div>
-                  <p className="text-sm text-muted-foreground">Bankverbindung</p>
+                  <p className="text-sm text-muted-foreground">{t("lessor.bank")}</p>
                   <p className="font-medium font-mono text-sm">{lease.lessor.bankIban}</p>
                   {lease.lessor.bankName && (
                     <p className="text-sm text-muted-foreground">{lease.lessor.bankName}</p>
@@ -418,39 +420,39 @@ export default function LeaseDetailPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Vertragslaufzeit
-              <InfoTooltip text="Beginn, Ende und eventuelle Verlängerungsoptionen des Pachtvertrags." />
+              {t("term.title")}
+              <InfoTooltip text={t("term.tooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               {lease.signedDate && (
                 <div className="col-span-2">
-                  <p className="text-sm text-muted-foreground">Vertragsabschluss (Unterschrift)</p>
+                  <p className="text-sm text-muted-foreground">{t("term.signed")}</p>
                   <p className="font-medium">
-                    {format(new Date(lease.signedDate), "dd.MM.yyyy", { locale: de })}
+                    {format(new Date(lease.signedDate), "dd.MM.yyyy", { locale: dateLocale })}
                   </p>
                 </div>
               )}
               <div>
-                <p className="text-sm text-muted-foreground">Vertragsbeginn</p>
+                <p className="text-sm text-muted-foreground">{t("term.start")}</p>
                 <p className="font-medium">
-                  {format(new Date(lease.startDate), "dd.MM.yyyy", { locale: de })}
+                  {format(new Date(lease.startDate), "dd.MM.yyyy", { locale: dateLocale })}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Vertragsende</p>
+                <p className="text-sm text-muted-foreground">{t("term.end")}</p>
                 <p className="font-medium">
                   {lease.endDate
-                    ? format(new Date(lease.endDate), "dd.MM.yyyy", { locale: de })
-                    : "Unbefristet"}
+                    ? format(new Date(lease.endDate), "dd.MM.yyyy", { locale: dateLocale })
+                    : t("term.unlimited")}
                 </p>
               </div>
               {daysUntilEnd !== null && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Restlaufzeit</p>
+                  <p className="text-sm text-muted-foreground">{t("term.remaining")}</p>
                   <p className={`font-medium ${daysUntilEnd <= 90 ? "text-yellow-600" : ""}`}>
-                    {daysUntilEnd > 0 ? `${daysUntilEnd} Tage` : "Abgelaufen"}
+                    {daysUntilEnd > 0 ? t("term.daysRemaining", { days: daysUntilEnd }) : t("term.expired")}
                   </p>
                 </div>
               )}
@@ -463,7 +465,7 @@ export default function LeaseDetailPage({
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <Repeat className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-medium">Verlängerungsoption</p>
+                    <p className="text-sm font-medium">{t("term.extensionOption")}</p>
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
                   {lease.extensionDetails && (
@@ -480,15 +482,15 @@ export default function LeaseDetailPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Receipt className="h-5 w-5" />
-              Abrechnung
-              <InfoTooltip text="Abrechnungsmodell und -details: Mindestpacht, Umsatzbeteiligung, Entschädigung." />
+              {t("billing.title")}
+              <InfoTooltip text={t("billing.tooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-sm text-muted-foreground">Abrechnungsintervall</p>
+              <p className="text-sm text-muted-foreground">{t("billing.interval")}</p>
               <p className="font-medium">
-                {BILLING_INTERVAL_LABELS[lease.billingInterval || "ANNUAL"] || lease.billingInterval || "Jährlich"}
+                {BILLING_INTERVAL_LABELS[lease.billingInterval || "ANNUAL"] || lease.billingInterval || t("billingIntervals.ANNUAL")}
               </p>
             </div>
 
@@ -497,14 +499,14 @@ export default function LeaseDetailPage({
               <>
                 <Separator />
                 <div>
-                  <p className="text-sm text-muted-foreground">Wartegeld</p>
+                  <p className="text-sm text-muted-foreground">{t("billing.waitingMoney")}</p>
                   <div className="flex items-center gap-2">
                     <Euro className="h-4 w-4 text-muted-foreground" />
                     <p className="font-medium">
                       {lease.waitingMoneyAmount
                         ? formatCurrency(Number(lease.waitingMoneyAmount))
                         : "-"}
-                      {lease.waitingMoneyUnit === "ha" && " pro ha"}
+                      {lease.waitingMoneyUnit === "ha" && t("billing.perHa")}
                     </p>
                   </div>
                   {lease.waitingMoneySchedule && (
@@ -524,8 +526,8 @@ export default function LeaseDetailPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Notizen
-                <InfoTooltip text="Interne Bemerkungen und Hinweise zu diesem Pachtvertrag." />
+                {t("notes.title")}
+                <InfoTooltip text={t("notes.tooltip")} />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -539,22 +541,22 @@ export default function LeaseDetailPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Metadaten
-              <InfoTooltip text="Systeminformationen: Erstellungs- und Änderungsdatum." />
+              {t("metadata.title")}
+              <InfoTooltip text={t("metadata.tooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <p className="text-muted-foreground">Erstellt am</p>
-                <p>{format(new Date(lease.createdAt), "dd.MM.yyyy HH:mm", { locale: de })}</p>
+                <p className="text-muted-foreground">{t("metadata.createdAt")}</p>
+                <p>{format(new Date(lease.createdAt), "dd.MM.yyyy HH:mm", { locale: dateLocale })}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Zuletzt geändert</p>
-                <p>{format(new Date(lease.updatedAt), "dd.MM.yyyy HH:mm", { locale: de })}</p>
+                <p className="text-muted-foreground">{t("metadata.updatedAt")}</p>
+                <p>{format(new Date(lease.updatedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale })}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">ID</p>
+                <p className="text-muted-foreground">{t("metadata.id")}</p>
                 <p className="font-mono text-xs">{lease.id}</p>
               </div>
             </div>
@@ -565,7 +567,7 @@ export default function LeaseDetailPage({
         {flags.crm && (
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle className="text-base">Aktivitäten</CardTitle>
+              <CardTitle className="text-base">{t("activities")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ActivityTimeline entityType="lease" entityId={lease.id} />
@@ -576,14 +578,14 @@ export default function LeaseDetailPage({
         {/* File Upload */}
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Dokumente hochladen</CardTitle>
+            <CardTitle className="text-base">{t("upload.title")}</CardTitle>
           </CardHeader>
           <CardContent>
             <FileUploadDropzone
               endpoint="/api/documents"
               additionalFields={{ category: "LEASE" }}
               onUploadComplete={() => router.refresh()}
-              hint="Pachtvertrag, Anlagen oder sonstige Dokumente"
+              hint={t("upload.hint")}
             />
           </CardContent>
         </Card>

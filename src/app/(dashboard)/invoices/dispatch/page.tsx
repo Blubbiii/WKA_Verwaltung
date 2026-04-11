@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import {
   Eye,
   Filter,
@@ -103,11 +104,11 @@ function getRecipientName(invoice: Invoice): string {
   return "-";
 }
 
-function groupInvoices(invoices: Invoice[]): InvoiceGroup[] {
+function groupInvoices(invoices: Invoice[], unassignedLabel: string): InvoiceGroup[] {
   const map = new Map<string, InvoiceGroup>();
 
   for (const inv of invoices) {
-    const parkName = inv.park?.name ?? inv.fund?.name ?? "Ohne Zuordnung";
+    const parkName = inv.park?.name ?? inv.fund?.name ?? unassignedLabel;
     const year = new Date(inv.invoiceDate).getFullYear();
     const key = `${inv.park?.id ?? inv.fund?.id ?? "none"}_${year}`;
 
@@ -141,6 +142,9 @@ function groupInvoices(invoices: Invoice[]): InvoiceGroup[] {
 // ---------------------------------------------------------------------------
 
 export default function InvoiceDispatchPage() {
+  const t = useTranslations("invoices.dispatch");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -196,7 +200,11 @@ export default function InvoiceDispatchPage() {
   }, [invoices, statusFilter, typeFilter, parkFilter, debouncedSearch]);
 
   // Grouped view data
-  const groups = useMemo(() => groupInvoices(filteredInvoices), [filteredInvoices]);
+  const unassignedLabel = t("unassigned");
+  const groups = useMemo(
+    () => groupInvoices(filteredInvoices, unassignedLabel),
+    [filteredInvoices, unassignedLabel]
+  );
 
   // Auto-expand all groups on initial load
   useEffect(() => {
@@ -235,7 +243,7 @@ export default function InvoiceDispatchPage() {
     try {
       const response = await fetch(`/api/invoices/${id}/print`, { method: "POST" });
       if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: "Fehler" }));
+        const err = await response.json().catch(() => ({ error: t("printDefaultError") }));
         throw new Error(err.error);
       }
       // Download PDF
@@ -247,9 +255,9 @@ export default function InvoiceDispatchPage() {
       link.click();
       URL.revokeObjectURL(url);
       invalidate(["invoices-dispatch"]);
-      toast.success("PDF erstellt und als gedruckt markiert");
+      toast.success(t("printSuccess"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Drucken");
+      toast.error(err instanceof Error ? err.message : t("printFailed"));
     }
   }
 
@@ -257,14 +265,14 @@ export default function InvoiceDispatchPage() {
     try {
       const response = await fetch(`/api/invoices/${id}/email`, { method: "POST" });
       if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: "Fehler" }));
+        const err = await response.json().catch(() => ({ error: t("printDefaultError") }));
         throw new Error(err.error);
       }
       const result = await response.json();
       invalidate(["invoices-dispatch"]);
-      toast.success(`E-Mail gesendet an ${result.emailedTo}`);
+      toast.success(t("emailSentTo", { email: result.emailedTo }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim E-Mail-Versand");
+      toast.error(err instanceof Error ? err.message : t("emailFailed"));
     }
   }
 
@@ -304,11 +312,11 @@ export default function InvoiceDispatchPage() {
     clearSelection();
     invalidate(["invoices-dispatch"]);
 
-    const actionLabel = action === "print" ? "gedruckt" : action === "email" ? "gemailt" : "gedruckt + gemailt";
+    const actionLabel = action === "print" ? t("actionPrinted") : action === "email" ? t("actionEmailed") : t("actionPrintEmail");
     if (failCount === 0) {
-      toast.success(`${successCount} Beleg(e) ${actionLabel}`);
+      toast.success(t("batchActionSuccess", { count: successCount, action: actionLabel }));
     } else {
-      toast.warning(`${successCount} erfolgreich, ${failCount} fehlgeschlagen`);
+      toast.warning(t("batchActionPartial", { success: successCount, failed: failCount }));
     }
   }
 
@@ -349,11 +357,11 @@ export default function InvoiceDispatchPage() {
     setIsBatchProcessing(false);
     invalidate(["invoices-dispatch"]);
 
-    const actionLabel = action === "print" ? "gedruckt" : "gemailt";
+    const actionLabel = action === "print" ? t("actionPrinted") : t("actionEmailed");
     if (failCount === 0) {
-      toast.success(`${successCount} Beleg(e) ${actionLabel}`);
+      toast.success(t("batchActionSuccess", { count: successCount, action: actionLabel }));
     } else {
-      toast.warning(`${successCount} erfolgreich, ${failCount} fehlgeschlagen`);
+      toast.warning(t("batchActionPartial", { success: successCount, failed: failCount }));
     }
   }
 
@@ -395,13 +403,21 @@ export default function InvoiceDispatchPage() {
   }
 
   function renderInvoiceRow(invoice: Invoice, showParkColumn: boolean) {
+    const printedTitle = invoice.printedAt
+      ? t("printedOn", { date: format(new Date(invoice.printedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) })
+      : t("notPrinted");
+    const emailedTitle = invoice.emailedAt
+      ? invoice.emailedTo
+        ? t("emailedOnTo", { date: format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }), email: invoice.emailedTo })
+        : t("emailedOn", { date: format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) })
+      : t("notEmailed");
     return (
       <TableRow key={invoice.id} className={`hover:bg-muted/50 ${selectedIds.has(invoice.id) ? "bg-primary/5" : ""}`}>
         <TableCell>
           <Checkbox
             checked={selectedIds.has(invoice.id)}
             onCheckedChange={() => toggleItem(invoice.id)}
-            aria-label={`${invoice.invoiceNumber} auswaehlen`}
+            aria-label={t("selectItemAria", { name: invoice.invoiceNumber })}
           />
         </TableCell>
         <TableCell className="font-mono font-medium text-sm">
@@ -409,7 +425,7 @@ export default function InvoiceDispatchPage() {
         </TableCell>
         <TableCell>
           <Badge variant="outline" className="text-xs">
-            {invoice.invoiceType === "INVOICE" ? "Rechnung" : "Gutschrift"}
+            {invoice.invoiceType === "INVOICE" ? t("typeInvoice") : t("typeCreditNote")}
           </Badge>
         </TableCell>
         <TableCell className="text-sm">{getRecipientName(invoice)}</TableCell>
@@ -428,17 +444,13 @@ export default function InvoiceDispatchPage() {
         </TableCell>
         <TableCell
           className="text-center"
-          title={invoice.printedAt ? `Gedruckt am ${format(new Date(invoice.printedAt), "dd.MM.yyyy HH:mm", { locale: de })}` : "Nicht gedruckt"}
+          title={printedTitle}
         >
           <Printer className={`h-4 w-4 mx-auto ${invoice.printedAt ? "text-green-600" : "text-muted-foreground/30"}`} />
         </TableCell>
         <TableCell
           className="text-center"
-          title={
-            invoice.emailedAt
-              ? `Gemailt am ${format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: de })}${invoice.emailedTo ? ` an ${invoice.emailedTo}` : ""}`
-              : "Nicht gemailt"
-          }
+          title={emailedTitle}
         >
           <Mail className={`h-4 w-4 mx-auto ${invoice.emailedAt ? "text-green-600" : "text-muted-foreground/30"}`} />
         </TableCell>
@@ -448,7 +460,7 @@ export default function InvoiceDispatchPage() {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              title="PDF anzeigen"
+              title={t("viewPdfTitle")}
               onClick={() => window.open(`/api/invoices/${invoice.id}/pdf?inline=true`, "_blank")}
             >
               <Eye className="h-4 w-4" />
@@ -457,7 +469,7 @@ export default function InvoiceDispatchPage() {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              title="Drucken"
+              title={t("printTitle")}
               disabled={isBatchProcessing}
               onClick={() => handlePrint(invoice.id)}
             >
@@ -467,7 +479,7 @@ export default function InvoiceDispatchPage() {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              title="Per E-Mail versenden"
+              title={t("emailTitle")}
               disabled={isBatchProcessing}
               onClick={() => handleEmail(invoice.id)}
             >
@@ -486,9 +498,9 @@ export default function InvoiceDispatchPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-destructive">Fehler beim Laden der Belege</p>
+        <p className="text-destructive">{t("errorLoad")}</p>
         <Button onClick={() => refetch()} variant="outline" className="mt-4">
-          Erneut versuchen
+          {t("retry")}
         </Button>
       </div>
     );
@@ -501,17 +513,17 @@ export default function InvoiceDispatchPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Versandübersicht"
-        description="Belege prüfen und versenden (Drucken, E-Mail oder beides)"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
       />
 
       {/* Stats */}
       <StatsCards
         stats={[
-          { label: "Gesamt", value: totalCount, icon: Receipt, subtitle: "Belege" },
-          { label: "Unversendet", value: draftCount, icon: FileText, subtitle: "Entwuerfe" },
-          { label: "Per E-Mail", value: emailedCount, icon: MailCheck, subtitle: "Versendet" },
-          { label: "Gedruckt", value: printedCount, icon: PrinterCheck, subtitle: "Gedruckt" },
+          { label: t("statsTotal"), value: totalCount, icon: Receipt, subtitle: t("statsTotalSubtitle") },
+          { label: t("statsUnsent"), value: draftCount, icon: FileText, subtitle: t("statsUnsentSubtitle") },
+          { label: t("statsEmail"), value: emailedCount, icon: MailCheck, subtitle: t("statsEmailSubtitle") },
+          { label: t("statsPrinted"), value: printedCount, icon: PrinterCheck, subtitle: t("statsPrintedSubtitle") },
         ]}
       />
 
@@ -519,27 +531,27 @@ export default function InvoiceDispatchPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Belege</CardTitle>
+            <CardTitle>{t("documentsTitle")}</CardTitle>
             <div className="flex items-center gap-1 rounded-md border p-0.5">
               <Button
                 variant={viewMode === "grouped" ? "secondary" : "ghost"}
                 size="sm"
                 className="h-7 px-2"
                 onClick={() => setViewMode("grouped")}
-                title="Gruppierte Ansicht"
+                title={t("viewGroupedTitle")}
               >
                 <LayoutGrid className="h-4 w-4 mr-1" />
-                Gruppiert
+                {t("viewGroupedLabel")}
               </Button>
               <Button
                 variant={viewMode === "list" ? "secondary" : "ghost"}
                 size="sm"
                 className="h-7 px-2"
                 onClick={() => setViewMode("list")}
-                title="Listenansicht"
+                title={t("viewListTitle")}
               >
                 <LayoutList className="h-4 w-4 mr-1" />
-                Liste
+                {t("viewListLabel")}
               </Button>
             </div>
           </div>
@@ -548,31 +560,31 @@ export default function InvoiceDispatchPage() {
           <SearchFilter
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Suchen nach Nummer, Empfänger, Park..."
+            searchPlaceholder={t("searchPlaceholder")}
             filters={[
               {
                 value: typeFilter,
                 onChange: setTypeFilter,
-                placeholder: "Typ",
+                placeholder: t("filterType"),
                 width: "w-[150px]",
                 options: [
-                  { value: "all", label: "Alle Typen" },
-                  { value: "INVOICE", label: "Rechnungen" },
-                  { value: "CREDIT_NOTE", label: "Gutschriften" },
+                  { value: "all", label: t("filterAllTypes") },
+                  { value: "INVOICE", label: t("typeInvoices") },
+                  { value: "CREDIT_NOTE", label: t("typeCreditNotes") },
                 ],
               },
               {
                 value: statusFilter,
                 onChange: setStatusFilter,
-                placeholder: "Status",
+                placeholder: t("filterStatus"),
                 icon: <Filter className="mr-2 h-4 w-4" />,
                 width: "w-[150px]",
                 options: [
-                  { value: "all", label: "Alle Status" },
-                  { value: "DRAFT", label: "Entwurf" },
-                  { value: "SENT", label: "Versendet" },
-                  { value: "PAID", label: "Bezahlt" },
-                  { value: "CANCELLED", label: "Storniert" },
+                  { value: "all", label: t("filterAllStatuses") },
+                  { value: "DRAFT", label: t("statusDraft") },
+                  { value: "SENT", label: t("statusSent") },
+                  { value: "PAID", label: t("statusPaid") },
+                  { value: "CANCELLED", label: t("statusCancelled") },
                 ],
               },
               ...(parkOptions.length > 0
@@ -580,10 +592,10 @@ export default function InvoiceDispatchPage() {
                     {
                       value: parkFilter,
                       onChange: setParkFilter,
-                      placeholder: "Park",
+                      placeholder: t("filterPark"),
                       width: "w-[180px]",
                       options: [
-                        { value: "all", label: "Alle Parks" },
+                        { value: "all", label: t("filterAllParks") },
                         ...parkOptions,
                       ],
                     },
@@ -605,8 +617,8 @@ export default function InvoiceDispatchPage() {
           {!loading && filteredInvoices.length === 0 && (
             <div className="mt-8 text-center text-muted-foreground py-12">
               <Send className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
-              <p className="text-lg font-medium">Keine Belege gefunden</p>
-              <p className="text-sm mt-1">Passen Sie die Filter an oder erstellen Sie neue Belege</p>
+              <p className="text-lg font-medium">{t("emptyTitle")}</p>
+              <p className="text-sm mt-1">{t("emptyHint")}</p>
             </div>
           )}
 
@@ -633,11 +645,11 @@ export default function InvoiceDispatchPage() {
                             <span className="text-muted-foreground ml-2">- {group.year}</span>
                           </div>
                           <Badge variant="outline" className="ml-2">
-                            {group.invoices.length} {group.invoices.length === 1 ? "Beleg" : "Belege"}
+                            {group.invoices.length} {group.invoices.length === 1 ? t("groupDocCountOne") : t("groupDocCountMany")}
                           </Badge>
                           {group.draftCount > 0 && (
                             <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                              {group.draftCount} unversendet
+                              {t("groupUnsent", { count: group.draftCount })}
                             </Badge>
                           )}
                         </div>
@@ -648,7 +660,7 @@ export default function InvoiceDispatchPage() {
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             {(() => {
                               const hasSelection = isGroupSelected(group) !== "none";
-                              const label = hasSelection ? "Auswahl" : "Alle";
+                              const label = hasSelection ? t("labelSelection") : t("labelAll");
                               return (
                                 <>
                                   <Button
@@ -659,7 +671,7 @@ export default function InvoiceDispatchPage() {
                                     onClick={() => handleGroupAction(group, "print")}
                                   >
                                     <Printer className="h-3 w-3 mr-1" />
-                                    {label} drucken
+                                    {t("btnPrint", { label })}
                                   </Button>
                                   <Button
                                     variant="outline"
@@ -669,7 +681,7 @@ export default function InvoiceDispatchPage() {
                                     onClick={() => handleGroupAction(group, "email")}
                                   >
                                     <Mail className="h-3 w-3 mr-1" />
-                                    {label} mailen
+                                    {t("btnEmail", { label })}
                                   </Button>
                                 </>
                               );
@@ -691,18 +703,18 @@ export default function InvoiceDispatchPage() {
                                     }
                                   }}
                                   onCheckedChange={() => toggleGroupSelection(group)}
-                                  aria-label={`Alle in ${group.parkName} auswaehlen`}
+                                  aria-label={t("selectAllInGroupAria", { group: group.parkName })}
                                 />
                               </TableHead>
-                              <TableHead>Nummer</TableHead>
-                              <TableHead>Typ</TableHead>
-                              <TableHead>Empfänger</TableHead>
-                              <TableHead className="text-right">Betrag</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead className="w-10 text-center" title="Gedruckt">
+                              <TableHead>{t("colNumber")}</TableHead>
+                              <TableHead>{t("colType")}</TableHead>
+                              <TableHead>{t("colRecipient")}</TableHead>
+                              <TableHead className="text-right">{t("colAmount")}</TableHead>
+                              <TableHead>{t("colStatus")}</TableHead>
+                              <TableHead className="w-10 text-center" title={t("colPrinted")}>
                                 <Printer className="h-4 w-4 mx-auto text-muted-foreground" />
                               </TableHead>
-                              <TableHead className="w-10 text-center" title="E-Mail">
+                              <TableHead className="w-10 text-center" title={t("colEmail")}>
                                 <Mail className="h-4 w-4 mx-auto text-muted-foreground" />
                               </TableHead>
                               <TableHead className="w-[120px]"></TableHead>
@@ -734,19 +746,19 @@ export default function InvoiceDispatchPage() {
                           }
                         }}
                         onCheckedChange={toggleAll}
-                        aria-label="Alle auswaehlen"
+                        aria-label={t("selectAllAria")}
                       />
                     </TableHead>
-                    <TableHead>Nummer</TableHead>
-                    <TableHead>Typ</TableHead>
-                    <TableHead>Empfänger</TableHead>
-                    <TableHead>Park</TableHead>
-                    <TableHead className="text-right">Betrag</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-10 text-center" title="Gedruckt">
+                    <TableHead>{t("colNumber")}</TableHead>
+                    <TableHead>{t("colType")}</TableHead>
+                    <TableHead>{t("colRecipient")}</TableHead>
+                    <TableHead>{t("colPark")}</TableHead>
+                    <TableHead className="text-right">{t("colAmount")}</TableHead>
+                    <TableHead>{t("colStatus")}</TableHead>
+                    <TableHead className="w-10 text-center" title={t("colPrinted")}>
                       <Printer className="h-4 w-4 mx-auto text-muted-foreground" />
                     </TableHead>
-                    <TableHead className="w-10 text-center" title="E-Mail">
+                    <TableHead className="w-10 text-center" title={t("colEmail")}>
                       <Mail className="h-4 w-4 mx-auto text-muted-foreground" />
                     </TableHead>
                     <TableHead className="w-[120px]"></TableHead>
@@ -767,19 +779,19 @@ export default function InvoiceDispatchPage() {
           onClearSelection={clearSelection}
           actions={[
             {
-              label: "Drucken",
+              label: t("batchPrint"),
               icon: isBatchProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />,
               onClick: () => handleBatchAction("print"),
               disabled: isBatchProcessing,
             },
             {
-              label: "Per E-Mail",
+              label: t("batchEmail"),
               icon: isBatchProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />,
               onClick: () => handleBatchAction("email"),
               disabled: isBatchProcessing,
             },
             {
-              label: "Drucken + Mailen",
+              label: t("batchBoth"),
               icon: isBatchProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />,
               onClick: () => handleBatchAction("both"),
               disabled: isBatchProcessing,

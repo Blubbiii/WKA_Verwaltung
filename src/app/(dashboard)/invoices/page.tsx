@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import {
   Plus,
   Receipt,
@@ -144,6 +145,10 @@ function SortableHeader({
 
 export default function InvoicesPage() {
   const router = useRouter();
+  const t = useTranslations("invoices.list");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -180,8 +185,8 @@ export default function InvoicesPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
-        throw new Error(error.error || "Fehler beim Löschen");
+        const error = await response.json().catch(() => ({ error: t("deleteErrorDefault") }));
+        throw new Error(error.error || t("deleteErrorDefault"));
       }
       return response.json();
     },
@@ -190,7 +195,7 @@ export default function InvoicesPage() {
         invalidate(["invoices"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Löschen der Rechnung");
+        toast.error(error.message || t("deleteErrorToast"));
       },
     }
   );
@@ -283,7 +288,7 @@ export default function InvoicesPage() {
       .map((inv) => inv.id);
 
     if (draftIds.length === 0) {
-      toast.error("Nur Entwuerfe können gelöscht werden.");
+      toast.error(t("batchOnlyDrafts"));
       return;
     }
 
@@ -309,9 +314,9 @@ export default function InvoicesPage() {
     invalidate(["invoices"]);
 
     if (failCount === 0) {
-      toast.success(`${successCount} Beleg(e) erfolgreich gelöscht`);
+      toast.success(t("batchDeleteSuccess", { count: successCount }));
     } else {
-      toast.warning(`${successCount} gelöscht, ${failCount} fehlgeschlagen`);
+      toast.warning(t("batchDeletePartial", { success: successCount, failed: failCount }));
     }
   }
 
@@ -322,7 +327,7 @@ export default function InvoicesPage() {
       .map((inv) => inv.id);
 
     if (sentIds.length === 0) {
-      toast.error("Nur versendete Belege können als bezahlt markiert werden.");
+      toast.error(t("batchOnlySent"));
       return;
     }
 
@@ -352,9 +357,9 @@ export default function InvoicesPage() {
     invalidate(["invoices"]);
 
     if (failCount === 0) {
-      toast.success(`${successCount} Beleg(e) als bezahlt markiert`);
+      toast.success(t("batchPaidSuccess", { count: successCount }));
     } else {
-      toast.warning(`${successCount} aktualisiert, ${failCount} fehlgeschlagen`);
+      toast.warning(t("batchPaidPartial", { success: successCount, failed: failCount }));
     }
   }
 
@@ -363,12 +368,20 @@ export default function InvoicesPage() {
     const selected = sortedInvoices.filter((inv) => selectedIds.has(inv.id));
     if (selected.length === 0) return;
 
-    const header = ["Nummer", "Typ", "Empfänger", "Datum", "Netto", "Brutto", "Status"];
+    const header = [
+      t("csvHeaderNumber"),
+      t("csvHeaderType"),
+      t("csvHeaderRecipient"),
+      t("csvHeaderDate"),
+      t("csvHeaderNet"),
+      t("csvHeaderGross"),
+      t("csvHeaderStatus"),
+    ];
     const rows = selected.map((inv) => [
       inv.invoiceNumber,
-      inv.invoiceType === "INVOICE" ? "Rechnung" : "Gutschrift",
+      inv.invoiceType === "INVOICE" ? t("typeInvoice") : t("typeCreditNote"),
       getRecipientName(inv),
-      format(new Date(inv.invoiceDate), "dd.MM.yyyy", { locale: de }),
+      format(new Date(inv.invoiceDate), "dd.MM.yyyy", { locale: dateLocale }),
       inv.netAmount.toFixed(2).replace(".", ","),
       inv.grossAmount.toFixed(2).replace(".", ","),
       inv.status,
@@ -381,11 +394,11 @@ export default function InvoicesPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `abrechnungen-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.download = `${t("csvFileName")}-${format(new Date(), "yyyy-MM-dd")}.csv`;
     link.click();
     URL.revokeObjectURL(url);
 
-    toast.success(`${selected.length} Beleg(e) exportiert`);
+    toast.success(t("batchExportSuccess", { count: selected.length }));
   }
 
   // Batch: download selected as PDF ZIP
@@ -400,18 +413,18 @@ export default function InvoicesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceIds: ids }),
       });
-      if (!res.ok) throw new Error("Fehler beim PDF-Export");
+      if (!res.ok) throw new Error(t("batchPdfError"));
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Rechnungen-${format(new Date(), "yyyy-MM-dd")}.zip`;
+      link.download = `${t("zipFileName")}-${format(new Date(), "yyyy-MM-dd")}.zip`;
       link.click();
       URL.revokeObjectURL(url);
-      toast.success(`${ids.length} PDF(s) als ZIP exportiert`);
+      toast.success(t("batchPdfSuccess", { count: ids.length }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "PDF-Export fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("batchPdfFailed"));
     } finally {
       setIsBatchProcessing(false);
     }
@@ -424,7 +437,7 @@ export default function InvoicesPage() {
       .map((inv) => inv.id);
 
     if (sentableIds.length === 0) {
-      toast.error("Keine versandfähigen Belege ausgewählt.");
+      toast.error(t("batchNoneSendable"));
       return;
     }
 
@@ -435,13 +448,13 @@ export default function InvoicesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceIds: sentableIds }),
       });
-      if (!res.ok) throw new Error("Fehler beim Versand");
+      if (!res.ok) throw new Error(t("batchSendError"));
       const data = await res.json();
-      toast.success(`${data.sent || sentableIds.length} Beleg(e) per E-Mail versendet`);
+      toast.success(t("batchSendSuccess", { count: data.sent || sentableIds.length }));
       clearSelection();
       invalidate(["invoices"]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "E-Mail-Versand fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("batchEmailFailed"));
     } finally {
       setIsBatchProcessing(false);
     }
@@ -454,7 +467,7 @@ export default function InvoicesPage() {
       .map((inv) => inv.id);
 
     if (draftIds.length === 0) {
-      toast.error("Nur Entwürfe können als versendet markiert werden.");
+      toast.error(t("batchOnlyDraftsSent"));
       return;
     }
 
@@ -465,14 +478,14 @@ export default function InvoicesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceIds: draftIds, status: "SENT" }),
       });
-      if (!res.ok) throw new Error("Fehler beim Statuswechsel");
+      if (!res.ok) throw new Error(t("batchStatusError"));
       const data = await res.json();
-      toast.success(`${data.updated} Beleg(e) als versendet markiert`);
-      if (data.skipped > 0) toast.info(`${data.skipped} übersprungen (nicht im Entwurf)`);
+      toast.success(t("batchMarkedSent", { count: data.updated }));
+      if (data.skipped > 0) toast.info(t("batchSkipped", { count: data.skipped }));
       clearSelection();
       invalidate(["invoices"]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Statuswechsel fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("batchStatusFailed"));
     } finally {
       setIsBatchProcessing(false);
     }
@@ -487,9 +500,9 @@ export default function InvoicesPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-destructive">Fehler beim Laden der Abrechnungen</p>
+        <p className="text-destructive">{t("errorLoad")}</p>
         <Button onClick={() => refetch()} variant="outline" className="mt-4">
-          Erneut versuchen
+          {t("retry")}
         </Button>
       </div>
     );
@@ -499,20 +512,20 @@ export default function InvoicesPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Abrechnungen"
-        description="Verwalten Sie Rechnungen und Gutschriften"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
         createHref="/invoices/new?type=INVOICE"
-        createLabel="Rechnung"
+        createLabel={t("createInvoice")}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => setShowDatevExport(true)}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
-              DATEV-Export
+              {t("datevExport")}
             </Button>
             <Button variant="outline" asChild>
               <Link href="/invoices/new?type=CREDIT_NOTE">
                 <Plus className="mr-2 h-4 w-4" />
-                Gutschrift
+                {t("createCreditNote")}
               </Link>
             </Button>
           </div>
@@ -522,48 +535,48 @@ export default function InvoicesPage() {
       {/* Stats Cards */}
       <StatsCards
         stats={[
-          { label: "Rechnungen", value: invoicesOnly.length, icon: Receipt, subtitle: `${invoicesOnly.filter((i) => i.status === "PAID").length} bezahlt` },
-          { label: "Gutschriften", value: creditNotesOnly.length, icon: FileText, subtitle: "Erstellt" },
-          { label: "Offen", value: openInvoices.length, icon: Send, subtitle: "Versendet, unbezahlt" },
-          { label: "Offener Betrag", value: formatCurrency(totalOpen), icon: Receipt, subtitle: "Ausstehend" },
+          { label: t("statsInvoices"), value: invoicesOnly.length, icon: Receipt, subtitle: t("statsInvoicesSubtitle", { count: invoicesOnly.filter((i) => i.status === "PAID").length }) },
+          { label: t("statsCreditNotes"), value: creditNotesOnly.length, icon: FileText, subtitle: t("statsCreditNotesSubtitle") },
+          { label: t("statsOpen"), value: openInvoices.length, icon: Send, subtitle: t("statsOpenSubtitle") },
+          { label: t("statsOpenAmount"), value: formatCurrency(totalOpen), icon: Receipt, subtitle: t("statsOpenAmountSubtitle") },
         ]}
       />
 
       {/* Filters & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Belege</CardTitle>
-          <CardDescription>Alle Rechnungen und Gutschriften</CardDescription>
+          <CardTitle>{t("documentsTitle")}</CardTitle>
+          <CardDescription>{t("documentsDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <SearchFilter
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Suchen nach Nummer, Empfänger..."
+            searchPlaceholder={t("searchPlaceholder")}
             filters={[
               {
                 value: typeFilter,
                 onChange: setTypeFilter,
-                placeholder: "Typ",
+                placeholder: t("filterType"),
                 width: "w-[150px]",
                 options: [
-                  { value: "all", label: "Alle Typen" },
-                  { value: "INVOICE", label: "Rechnungen" },
-                  { value: "CREDIT_NOTE", label: "Gutschriften" },
+                  { value: "all", label: t("filterAllTypes") },
+                  { value: "INVOICE", label: t("typeInvoices") },
+                  { value: "CREDIT_NOTE", label: t("typeCreditNotes") },
                 ],
               },
               {
                 value: statusFilter,
                 onChange: setStatusFilter,
-                placeholder: "Status",
+                placeholder: t("filterStatus"),
                 icon: <Filter className="mr-2 h-4 w-4" />,
                 width: "w-[150px]",
                 options: [
-                  { value: "all", label: "Alle Status" },
-                  { value: "DRAFT", label: "Entwurf" },
-                  { value: "SENT", label: "Versendet" },
-                  { value: "PAID", label: "Bezahlt" },
-                  { value: "CANCELLED", label: "Storniert" },
+                  { value: "all", label: t("filterAllStatuses") },
+                  { value: "DRAFT", label: t("statusDraft") },
+                  { value: "SENT", label: t("statusSent") },
+                  { value: "PAID", label: t("statusPaid") },
+                  { value: "CANCELLED", label: t("statusCancelled") },
                 ],
               },
             ]}
@@ -583,20 +596,20 @@ export default function InvoicesPage() {
                         }
                       }}
                       onCheckedChange={toggleAll}
-                      aria-label="Alle auswaehlen"
+                      aria-label={t("selectAllAria")}
                       onClick={(e) => e.stopPropagation()}
                     />
                   </TableHead>
-                  <SortableHeader field="invoiceNumber" label="Nummer" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortableHeader field="invoiceType" label="Typ" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortableHeader field="fund" label="Versender" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortableHeader field="recipient" label="Empfänger" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortableHeader field="invoiceDate" label="Datum" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortableHeader field="netAmount" label="Netto" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} className="text-right" />
-                  <SortableHeader field="grossAmount" label="Brutto" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} className="text-right" />
-                  <SortableHeader field="status" label="Status" currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
-                  <TableHead className="w-10 text-center" title="Gedruckt"><Printer className="h-4 w-4 mx-auto text-muted-foreground" /></TableHead>
-                  <TableHead className="w-10 text-center" title="E-Mail"><Mail className="h-4 w-4 mx-auto text-muted-foreground" /></TableHead>
+                  <SortableHeader field="invoiceNumber" label={t("colNumber")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <SortableHeader field="invoiceType" label={t("colType")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <SortableHeader field="fund" label={t("colSender")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <SortableHeader field="recipient" label={t("colRecipient")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <SortableHeader field="invoiceDate" label={t("colDate")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <SortableHeader field="netAmount" label={t("colNet")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} className="text-right" />
+                  <SortableHeader field="grossAmount" label={t("colGross")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} className="text-right" />
+                  <SortableHeader field="status" label={t("colStatus")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  <TableHead className="w-10 text-center" title={t("colPrinted")}><Printer className="h-4 w-4 mx-auto text-muted-foreground" /></TableHead>
+                  <TableHead className="w-10 text-center" title={t("colEmail")}><Mail className="h-4 w-4 mx-auto text-muted-foreground" /></TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -614,7 +627,7 @@ export default function InvoicesPage() {
                 ) : sortedInvoices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={12} className="h-32 text-center text-muted-foreground">
-                      Keine Belege gefunden
+                      {t("emptyState")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -631,7 +644,7 @@ export default function InvoicesPage() {
                           checked={selectedIds.has(invoice.id)}
                           onCheckedChange={() => toggleItem(invoice.id)}
                           onClick={(e) => e.stopPropagation()}
-                          aria-label={`${invoice.invoiceNumber} auswaehlen`}
+                          aria-label={t("selectItemAria", { name: invoice.invoiceNumber })}
                         />
                       </TableCell>
                       <TableCell className="font-mono font-medium">
@@ -639,7 +652,7 @@ export default function InvoicesPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {invoice.invoiceType === "INVOICE" ? "Rechnung" : "Gutschrift"}
+                          {invoice.invoiceType === "INVOICE" ? t("typeInvoice") : t("typeCreditNote")}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -647,7 +660,7 @@ export default function InvoicesPage() {
                       </TableCell>
                       <TableCell>{getRecipientName(invoice)}</TableCell>
                       <TableCell>
-                        {format(new Date(invoice.invoiceDate), "dd.MM.yyyy", { locale: de })}
+                        {format(new Date(invoice.invoiceDate), "dd.MM.yyyy", { locale: dateLocale })}
                       </TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(invoice.netAmount)}
@@ -661,10 +674,10 @@ export default function InvoicesPage() {
                             value={invoice.status}
                             type="select"
                             options={[
-                              { value: "DRAFT", label: "Entwurf" },
-                              { value: "SENT", label: "Versendet" },
-                              { value: "PAID", label: "Bezahlt" },
-                              { value: "CANCELLED", label: "Storniert" },
+                              { value: "DRAFT", label: t("statusDraft") },
+                              { value: "SENT", label: t("statusSent") },
+                              { value: "PAID", label: t("statusPaid") },
+                              { value: "CANCELLED", label: t("statusCancelled") },
                             ]}
                             formatDisplay={() => getStatusBadge(INVOICE_STATUS, invoice.status).label}
                             onSave={async (val) => {
@@ -674,8 +687,8 @@ export default function InvoicesPage() {
                                 body: JSON.stringify({ status: val }),
                               });
                               if (!res.ok) {
-                                const err = await res.json().catch(() => ({ error: "Fehler" }));
-                                throw new Error(err.error ?? "Fehler beim Speichern");
+                                const err = await res.json().catch(() => ({ error: t("deleteErrorDefault") }));
+                                throw new Error(err.error ?? t("deleteErrorDefault"));
                               }
                               refetch();
                             }}
@@ -687,10 +700,10 @@ export default function InvoicesPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center" title={invoice.printedAt ? `Gedruckt am ${format(new Date(invoice.printedAt), "dd.MM.yyyy HH:mm", { locale: de })}` : undefined}>
+                      <TableCell className="text-center" title={invoice.printedAt ? t("printedAt", { date: format(new Date(invoice.printedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) }) : undefined}>
                         <Printer className={`h-4 w-4 mx-auto ${invoice.printedAt ? "text-green-600" : "text-muted-foreground/30"}`} />
                       </TableCell>
-                      <TableCell className="text-center" title={invoice.emailedAt ? `Gemailt am ${format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: de })}${invoice.emailedTo ? ` an ${invoice.emailedTo}` : ""}` : undefined}>
+                      <TableCell className="text-center" title={invoice.emailedAt ? (invoice.emailedTo ? t("emailedAtTo", { date: format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }), email: invoice.emailedTo }) : t("emailedAt", { date: format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) })) : undefined}>
                         <Mail className={`h-4 w-4 mx-auto ${invoice.emailedAt ? "text-green-600" : "text-muted-foreground/30"}`} />
                       </TableCell>
                       <TableCell>
@@ -699,7 +712,7 @@ export default function InvoicesPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label="Details anzeigen"
+                            aria-label={t("viewDetailsAria")}
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/invoices/${invoice.id}`);
@@ -712,7 +725,7 @@ export default function InvoicesPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              aria-label="Bearbeiten"
+                              aria-label={t("editAria")}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 router.push(`/invoices/${invoice.id}/edit`);
@@ -723,7 +736,7 @@ export default function InvoicesPage() {
                           )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Weitere Aktionen">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("moreActionsAria")}>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -734,14 +747,14 @@ export default function InvoicesPage() {
                                 setPreviewNumber(invoice.invoiceNumber);
                               }}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                Vorschau
+                                {t("preview")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
                                 window.open(`/api/invoices/${invoice.id}/pdf`, "_blank");
                               }}>
                                 <Download className="mr-2 h-4 w-4" />
-                                PDF herunterladen
+                                {t("downloadPdf")}
                               </DropdownMenuItem>
                               {invoice.status !== "CANCELLED" && (
                                 <DropdownMenuItem onClick={(e) => {
@@ -749,13 +762,13 @@ export default function InvoicesPage() {
                                   window.open(`/api/invoices/${invoice.id}/xrechnung?format=xrechnung`, "_blank");
                                 }}>
                                   <FileCode2 className="mr-2 h-4 w-4" />
-                                  XRechnung herunterladen
+                                  {t("downloadXRechnung")}
                                 </DropdownMenuItem>
                               )}
                               {invoice.status === "SENT" && (
                                 <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                                   <CheckCircle className="mr-2 h-4 w-4" />
-                                  Als bezahlt markieren
+                                  {t("markPaid")}
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
@@ -767,7 +780,7 @@ export default function InvoicesPage() {
                                 className="text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Löschen
+                                {tCommon("delete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -795,7 +808,7 @@ export default function InvoicesPage() {
             setDeleteId(null);
           }
         }}
-        title="Rechnung löschen"
+        title={t("deleteConfirmTitle")}
       />
 
       {/* PDF Preview Dialog */}
@@ -818,37 +831,37 @@ export default function InvoicesPage() {
         onClearSelection={clearSelection}
         actions={[
           {
-            label: "CSV Export",
+            label: t("batchCsvExport"),
             icon: <FileSpreadsheet className="h-4 w-4" />,
             onClick: handleBatchExport,
             disabled: isBatchProcessing,
           },
           {
-            label: "PDF Export",
+            label: t("batchPdfExport"),
             icon: <FileText className="h-4 w-4" />,
             onClick: handleBatchPdfExport,
             disabled: isBatchProcessing,
           },
           {
-            label: "E-Mail senden",
+            label: t("batchSendEmail"),
             icon: <Mail className="h-4 w-4" />,
             onClick: handleBatchEmail,
             disabled: isBatchProcessing,
           },
           {
-            label: "Als versendet",
+            label: t("batchMarkSent"),
             icon: <Send className="h-4 w-4" />,
             onClick: handleBatchMarkSent,
             disabled: isBatchProcessing,
           },
           {
-            label: "Als bezahlt",
+            label: t("batchMarkPaid"),
             icon: isBatchProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />,
             onClick: handleBatchMarkPaid,
             disabled: isBatchProcessing,
           },
           {
-            label: "Löschen",
+            label: t("batchDelete"),
             icon: isBatchProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />,
             onClick: handleBatchDelete,
             variant: "destructive",

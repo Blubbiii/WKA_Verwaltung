@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import {
   CheckCircle2,
@@ -43,8 +44,8 @@ interface ParseResponse {
 // HELPERS
 // ============================================================================
 
-function formatAmount(amount: number, currency = "EUR"): string {
-  return new Intl.NumberFormat("de-DE", {
+function formatAmount(amount: number, currency = "EUR", locale = "de-DE"): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
   }).format(amount);
@@ -58,8 +59,12 @@ function formatAmount(amount: number, currency = "EUR"): string {
 
 function MatchBadge({
   result,
+  labelAmount,
+  labelNoMatch,
 }: {
   result: MatchResult;
+  labelAmount: string;
+  labelNoMatch: string;
 }) {
   if (result.confidence === "high") {
     return (
@@ -76,7 +81,7 @@ function MatchBadge({
         <CircleAlert className="h-4 w-4 shrink-0" />
         <span>
           {result.matchedInvoiceNumber}{" "}
-          <span className="text-xs text-muted-foreground">(Betrag)</span>
+          <span className="text-xs text-muted-foreground">({labelAmount})</span>
         </span>
       </span>
     );
@@ -85,7 +90,7 @@ function MatchBadge({
   return (
     <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
       <CircleMinus className="h-4 w-4 shrink-0" />
-      <span>Kein Treffer</span>
+      <span>{labelNoMatch}</span>
     </span>
   );
 }
@@ -95,6 +100,9 @@ function MatchBadge({
 // ============================================================================
 
 export default function BankImportPage() {
+  const t = useTranslations("invoices.bankImport");
+  const locale = useLocale();
+  const amountLocale = locale === "en" ? "en-US" : "de-DE";
   const [state, setState] = useState<PageState>("idle");
   const [dragOver, setDragOver] = useState(false);
   const [parseResult, setParseResult] = useState<ParseResponse | null>(null);
@@ -125,7 +133,7 @@ export default function BankImportPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Fehler beim Verarbeiten der Datei");
+        toast.error(data.error || t("parsingError"));
         setState("idle");
         return;
       }
@@ -144,10 +152,10 @@ export default function BankImportPage() {
 
       setState("review");
     } catch {
-      toast.error("Verbindungsfehler beim Hochladen");
+      toast.error(t("uploadConnectionError"));
       setState("idle");
     }
-  }, []);
+  }, [t]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -184,7 +192,7 @@ export default function BankImportPage() {
       }));
 
     if (confirmations.length === 0) {
-      toast.warning("Keine Treffer ausgewählt");
+      toast.warning(t("noMatchesSelected"));
       return;
     }
 
@@ -200,25 +208,21 @@ export default function BankImportPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Fehler beim Bestätigen");
+        toast.error(data.error || t("confirmError"));
         setState("review");
         return;
       }
 
       if (data.confirmed > 0) {
-        toast.success(
-          `${data.confirmed} Rechnung${data.confirmed !== 1 ? "en" : ""} als bezahlt markiert`
-        );
+        toast.success(t("confirmedCount", { count: data.confirmed }));
       }
       if (data.failed > 0) {
-        toast.warning(
-          `${data.failed} Rechnung${data.failed !== 1 ? "en" : ""} konnten nicht aktualisiert werden`
-        );
+        toast.warning(t("failedCount", { count: data.failed }));
       }
 
       setState("done");
     } catch {
-      toast.error("Verbindungsfehler beim Bestätigen");
+      toast.error(t("confirmConnectionError"));
       setState("review");
     }
   };
@@ -245,10 +249,9 @@ export default function BankImportPage() {
           <Landmark className="h-5 w-5 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-semibold">Bank-Import</h1>
+          <h1 className="text-2xl font-semibold">{t("pageTitle")}</h1>
           <p className="text-sm text-muted-foreground">
-            MT940 / CAMT.054 Kontoauszug hochladen und Zahlungseingänge
-            automatisch zuordnen
+            {t("pageDescription")}
           </p>
         </div>
       </div>
@@ -287,7 +290,7 @@ export default function BankImportPage() {
                 <>
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   <p className="text-sm text-muted-foreground">
-                    Datei wird analysiert…
+                    {t("analyzing")}
                   </p>
                 </>
               ) : (
@@ -295,11 +298,10 @@ export default function BankImportPage() {
                   <Upload className="h-10 w-10 text-muted-foreground" />
                   <div>
                     <p className="font-medium">
-                      Datei hierher ziehen oder klicken
+                      {t("dropFilePrompt")}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Akzeptiert: MT940 (.sta, .mt940) und CAMT.054 (.xml) —
-                      max. 5 MB
+                      {t("acceptedFormats")}
                     </p>
                   </div>
                 </>
@@ -314,9 +316,9 @@ export default function BankImportPage() {
         <Card>
           <CardContent className="pt-6 flex flex-col items-center gap-4 py-12">
             <CheckCircle2 className="h-12 w-12 text-green-500" />
-            <p className="text-lg font-medium">Import abgeschlossen</p>
+            <p className="text-lg font-medium">{t("importDone")}</p>
             <Button onClick={handleReset} variant="outline">
-              Weitere Datei importieren
+              {t("importAnother")}
             </Button>
           </CardContent>
         </Card>
@@ -327,24 +329,24 @@ export default function BankImportPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-base font-semibold">
-              {parseResult.count} Transaktionen gefunden
+              {t("transactionsFound", { count: parseResult.count })}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                {parseResult.highMatches} sicher
+                {t("badgeHigh", { count: parseResult.highMatches })}
               </Badge>
               <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                {parseResult.mediumMatches} wahrscheinlich
+                {t("badgeMedium", { count: parseResult.mediumMatches })}
               </Badge>
               <Badge variant="secondary">
-                {parseResult.count - parseResult.highMatches - parseResult.mediumMatches} offen
+                {t("badgeOpen", { count: parseResult.count - parseResult.highMatches - parseResult.mediumMatches })}
               </Badge>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"
                 onClick={handleReset}
-                title="Zurücksetzen"
+                title={t("resetTitle")}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -355,10 +357,10 @@ export default function BankImportPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10 pl-4" />
-                  <TableHead>Datum</TableHead>
-                  <TableHead className="text-right">Betrag</TableHead>
-                  <TableHead>Verwendungszweck</TableHead>
-                  <TableHead>Zugeordnete Rechnung</TableHead>
+                  <TableHead>{t("colDate")}</TableHead>
+                  <TableHead className="text-right">{t("colAmount")}</TableHead>
+                  <TableHead>{t("colReference")}</TableHead>
+                  <TableHead>{t("colMatchedInvoice")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -409,7 +411,8 @@ export default function BankImportPage() {
                         >
                           {formatAmount(
                             match.transaction.amount,
-                            match.transaction.currency
+                            match.transaction.currency,
+                            amountLocale
                           )}
                         </span>
                       </TableCell>
@@ -431,7 +434,11 @@ export default function BankImportPage() {
 
                       {/* Match */}
                       <TableCell>
-                        <MatchBadge result={match} />
+                        <MatchBadge
+                          result={match}
+                          labelAmount={t("matchAmount")}
+                          labelNoMatch={t("noMatch")}
+                        />
                       </TableCell>
                     </TableRow>
                   );
@@ -443,8 +450,10 @@ export default function BankImportPage() {
           {/* Footer action */}
           <div className="flex items-center justify-between border-t px-4 py-3">
             <p className="text-sm text-muted-foreground">
-              {selectedCount} von{" "}
-              {[...selectableMatches(parseResult)].length} Treffern ausgewählt
+              {t("selectedSummary", {
+                selected: selectedCount,
+                total: [...selectableMatches(parseResult)].length,
+              })}
             </p>
             <Button
               onClick={handleConfirm}
@@ -453,10 +462,10 @@ export default function BankImportPage() {
               {state === "confirming" ? (
                 <>
                   <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Wird verarbeitet…
+                  {t("processing")}
                 </>
               ) : (
-                `${selectedCount} Rechnung${selectedCount !== 1 ? "en" : ""} als bezahlt markieren`
+                t("confirmButton", { count: selectedCount })
               )}
             </Button>
           </div>

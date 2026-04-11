@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { format, differenceInDays } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import {
   MapPin,
   Calendar,
@@ -90,6 +91,9 @@ interface LeasesResponse {
 
 export default function LeasesPage() {
   const router = useRouter();
+  const t = useTranslations("leases.list");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -124,8 +128,8 @@ export default function LeasesPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
-        throw new Error(data.error || "Fehler beim Löschen des Pachtvertrags");
+        const data = await response.json().catch(() => ({ error: t("delete.errorFallback") }));
+        throw new Error(data.error || t("delete.errorContract"));
       }
       return response.json();
     },
@@ -134,7 +138,7 @@ export default function LeasesPage() {
         invalidate(["leases"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Löschen des Pachtvertrags");
+        toast.error(error.message || t("delete.errorContract"));
       },
     }
   );
@@ -149,16 +153,16 @@ export default function LeasesPage() {
   function getPlotLabel(plot: Plot): string {
     const parts = [
       plot.cadastralDistrict,
-      plot.fieldNumber ? `Flur ${plot.fieldNumber}` : null,
-      plot.plotNumber ? `Flurstück ${plot.plotNumber}` : null,
+      plot.fieldNumber ? t("table.plotFlur", { flur: plot.fieldNumber }) : null,
+      plot.plotNumber ? t("table.plotFlurstueck", { plot: plot.plotNumber }) : null,
     ].filter(Boolean);
-    return parts.length > 0 ? parts.join(", ") : "Unbekannt";
+    return parts.length > 0 ? parts.join(", ") : t("table.plotUnknown");
   }
 
   function getPlotsLabel(plots: Plot[]): string {
     if (!plots || plots.length === 0) return "-";
     if (plots.length === 1) return getPlotLabel(plots[0]);
-    return `${plots.length} Flurstücke`;
+    return t("table.plotsLabel", { count: plots.length });
   }
 
   function getTotalArea(plots: Plot[]): number {
@@ -171,7 +175,7 @@ export default function LeasesPage() {
     const parks = [...new Set(plots.map(p => p.park?.shortName || p.park?.name).filter(Boolean))];
     if (parks.length === 0) return "-";
     if (parks.length === 1) return parks[0] || "-";
-    return `${parks.length} Parks`;
+    return t("table.parksLabel", { count: parks.length });
   }
 
   function getDaysUntilEnd(endDate: string | null): number | null {
@@ -208,7 +212,7 @@ export default function LeasesPage() {
   // CSV export for selected leases
   function handleCsvExport() {
     const selected = filteredLeases.filter((l) => selectedIds.has(l.id));
-    const header = "Vertrag;Verpächter;Grundstück;Park;Jahrespacht;Status";
+    const header = t("csv.headers");
     const rows = selected.map((l) =>
       [
         l.contractNumber || "-",
@@ -224,10 +228,10 @@ export default function LeasesPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `pachtvertraege_export_${format(new Date(), "yyyyMMdd")}.csv`;
+    a.download = `${t("csv.filePrefix")}_${format(new Date(), "yyyyMMdd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`${selected.length} Pachtverträge exportiert`);
+    toast.success(t("csv.exportedToast", { count: selected.length }));
   }
 
   // Bulk delete for selected leases
@@ -245,9 +249,9 @@ export default function LeasesPage() {
     clearSelection();
     invalidate(["leases"]);
     if (successCount === ids.length) {
-      toast.success(`${successCount} Pachtverträge gelöscht`);
+      toast.success(t("delete.bulkDeleted", { count: successCount }));
     } else {
-      toast.warning(`${successCount} von ${ids.length} Pachtverträgen gelöscht`);
+      toast.warning(t("delete.bulkPartial", { success: successCount, total: ids.length }));
     }
   }
 
@@ -264,9 +268,9 @@ export default function LeasesPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-destructive">Fehler beim Laden der Pachtverträge</p>
+        <p className="text-destructive">{t("loadError")}</p>
         <Button onClick={() => refetch()} variant="outline" className="mt-4">
-          Erneut versuchen
+          {t("retry")}
         </Button>
       </div>
     );
@@ -276,44 +280,44 @@ export default function LeasesPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Pachtverträge"
-        description="Verwalten Sie Pachtverträge mit integrierten Flurstuecken"
+        title={t("title")}
+        description={t("description")}
         createHref="/leases/new"
-        createLabel="Neuer Vertrag"
+        createLabel={t("newContract")}
       />
 
       {/* Stats Cards */}
       <StatsCards
         columns={3}
         stats={[
-          { label: "Pachtverträge", value: leases.length, icon: MapPin, subtitle: `${leases.filter((l) => l.status === "ACTIVE").length} aktiv` },
-          { label: "Jährliche Pacht", value: formatCurrency(totalAnnualRent), icon: Calendar, subtitle: "Aktive Verträge" },
-          { label: "Auslaufend", value: expiringLeases.length, icon: AlertTriangle, iconClassName: expiringLeases.length > 0 ? "text-yellow-500" : undefined, cardClassName: expiringLeases.length > 0 ? "border-yellow-500" : "", subtitle: "In den nächsten 90 Tagen" },
+          { label: t("stats.contracts"), value: leases.length, icon: MapPin, subtitle: t("stats.active", { count: leases.filter((l) => l.status === "ACTIVE").length }) },
+          { label: t("stats.annualRent"), value: formatCurrency(totalAnnualRent), icon: Calendar, subtitle: t("stats.activeContracts") },
+          { label: t("stats.expiring"), value: expiringLeases.length, icon: AlertTriangle, iconClassName: expiringLeases.length > 0 ? "text-yellow-500" : undefined, cardClassName: expiringLeases.length > 0 ? "border-yellow-500" : "", subtitle: t("stats.expiringHint") },
         ]}
       />
 
       {/* Filters & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Pachtverträge</CardTitle>
-          <CardDescription>Übersicht aller Pachtverträge</CardDescription>
+          <CardTitle>{t("card.title")}</CardTitle>
+          <CardDescription>{t("card.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <SearchFilter
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Suchen nach Verpächter, Flurstück..."
+            searchPlaceholder={t("searchPlaceholder")}
             filters={[
               {
                 value: statusFilter,
                 onChange: setStatusFilter,
-                placeholder: "Status",
+                placeholder: t("filters.statusPlaceholder"),
                 icon: <Filter className="mr-2 h-4 w-4" />,
                 options: [
-                  { value: "all", label: "Alle Status" },
-                  { value: "ACTIVE", label: "Aktiv" },
-                  { value: "EXPIRING", label: "Läuft aus" },
-                  { value: "EXPIRED", label: "Abgelaufen" },
+                  { value: "all", label: t("filters.allStatus") },
+                  { value: "ACTIVE", label: t("filters.active") },
+                  { value: "EXPIRING", label: t("filters.expiring") },
+                  { value: "EXPIRED", label: t("filters.expired") },
                 ],
               },
             ]}
@@ -324,16 +328,16 @@ export default function LeasesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
-                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label="Alle auswählen"
+                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label={t("table.selectAllAria")}
                       {...(isSomeSelected ? { "data-state": "indeterminate" } : {})} />
                   </TableHead>
-                  <TableHead>Vertrag</TableHead>
-                  <TableHead>Verpächter</TableHead>
-                  <TableHead>Flurstück</TableHead>
-                  <TableHead>Park</TableHead>
-                  <TableHead>Laufzeit</TableHead>
-                  <TableHead className="text-right">Jahrespacht</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("table.contract")}</TableHead>
+                  <TableHead>{t("table.lessor")}</TableHead>
+                  <TableHead>{t("table.plot")}</TableHead>
+                  <TableHead>{t("table.park")}</TableHead>
+                  <TableHead>{t("table.term")}</TableHead>
+                  <TableHead className="text-right">{t("table.annualRent")}</TableHead>
+                  <TableHead>{t("table.status")}</TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -351,7 +355,7 @@ export default function LeasesPage() {
                 ) : filteredLeases.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
-                      Keine Pachtverträge gefunden
+                      {t("table.emptyText")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -369,7 +373,7 @@ export default function LeasesPage() {
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedLease(lease); setIsDetailOpen(true); } }}
                       >
                         <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
-                          <Checkbox checked={selectedIds.has(lease.id)} onCheckedChange={() => toggleItem(lease.id)} aria-label="Auswählen" />
+                          <Checkbox checked={selectedIds.has(lease.id)} onCheckedChange={() => toggleItem(lease.id)} aria-label={t("table.selectAria")} />
                         </TableCell>
                         <TableCell className="font-medium">
                           {lease.contractNumber || "-"}
@@ -388,15 +392,15 @@ export default function LeasesPage() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            {format(new Date(lease.startDate), "dd.MM.yyyy", { locale: de })}
+                            {format(new Date(lease.startDate), "dd.MM.yyyy", { locale: dateLocale })}
                             {" - "}
                             {lease.endDate
-                              ? format(new Date(lease.endDate), "dd.MM.yyyy", { locale: de })
-                              : "unbefristet"}
+                              ? format(new Date(lease.endDate), "dd.MM.yyyy", { locale: dateLocale })
+                              : t("table.unlimited")}
                           </div>
                           {daysUntilEnd !== null && daysUntilEnd <= 90 && daysUntilEnd > 0 && (
                             <div className="text-xs text-yellow-600">
-                              Noch {daysUntilEnd} Tage
+                              {t("table.daysRemaining", { days: daysUntilEnd })}
                             </div>
                           )}
                         </TableCell>
@@ -414,7 +418,7 @@ export default function LeasesPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              aria-label="Details anzeigen"
+                              aria-label={t("actions.detailsAria")}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedLease(lease);
@@ -427,7 +431,7 @@ export default function LeasesPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              aria-label="Bearbeiten"
+                              aria-label={t("actions.editAria")}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 router.push(`/leases/${lease.id}/edit`);
@@ -437,7 +441,7 @@ export default function LeasesPage() {
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Weitere Aktionen">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("actions.moreAria")}>
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -451,7 +455,7 @@ export default function LeasesPage() {
                                   className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Löschen
+                                  {t("actions.delete")}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -485,8 +489,8 @@ export default function LeasesPage() {
             setLeaseToDelete(null);
           }
         }}
-        title="Pachtvertrag löschen"
-        itemName={leaseToDelete?.contractNumber || (leaseToDelete?.lessor ? `Vertrag mit ${getLessorName(leaseToDelete.lessor)}` : "Pachtvertrag")}
+        title={t("delete.title")}
+        itemName={leaseToDelete?.contractNumber || (leaseToDelete?.lessor ? t("delete.contractWith", { name: getLessorName(leaseToDelete.lessor) }) : t("delete.defaultItemName"))}
       />
 
       {/* Batch Action Bar */}
@@ -495,12 +499,12 @@ export default function LeasesPage() {
         onClearSelection={clearSelection}
         actions={[
           {
-            label: "CSV Export",
+            label: t("actions.csvExport"),
             icon: <Download className="h-4 w-4" />,
             onClick: handleCsvExport,
           },
           {
-            label: "Löschen",
+            label: t("actions.delete"),
             icon: <Trash2 className="h-4 w-4" />,
             onClick: handleBulkDelete,
             variant: "destructive",

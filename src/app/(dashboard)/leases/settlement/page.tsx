@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   Plus,
   FileText,
@@ -98,13 +99,13 @@ interface ApiResponse {
 // SWR FETCHER
 // =============================================================================
 
-const fetcher = async (url: string): Promise<ApiResponse> => {
+const makeFetcher = (unknownErr: string, loadErr: string) => async (url: string): Promise<ApiResponse> => {
   const res = await fetch(url);
   if (!res.ok) {
     const error = await res
       .json()
-      .catch(() => ({ error: "Unbekannter Fehler" }));
-    throw new Error(error.error || "Fehler beim Laden");
+      .catch(() => ({ error: unknownErr }));
+    throw new Error(error.error || loadErr);
   }
   return res.json();
 };
@@ -142,6 +143,7 @@ function getStatusBadgeClasses(status: string): string {
 
 export default function LeaseSettlementOverviewPage() {
   const router = useRouter();
+  const t = useTranslations("leases.settlement");
 
   // ---------------------------------------------------------------------------
   // Filter State
@@ -177,7 +179,7 @@ export default function LeaseSettlementOverviewPage() {
     error: settlementsError,
   } = useQuery<ApiResponse>({
     queryKey: [apiUrl],
-    queryFn: () => fetcher(apiUrl),
+    queryFn: () => makeFetcher(t("unknownError"), t("loadError"))(apiUrl),
     refetchOnWindowFocus: false,
   });
 
@@ -287,10 +289,10 @@ export default function LeaseSettlementOverviewPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Pachtabrechnungen"
-        description="Jahres- und Vorschussabrechnungen für Grundeigentümer"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
         createHref="/leases/settlement/new"
-        createLabel="Neue Abrechnung"
+        createLabel={t("newSettlement")}
       />
 
       {/* KPI Cards */}
@@ -298,7 +300,7 @@ export default function LeaseSettlementOverviewPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Jahreserlöse
+              {t("kpi.yearlyRevenue")}
             </CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -311,7 +313,7 @@ export default function LeaseSettlementOverviewPage() {
                   {formatCurrency(totalRevenueFinal)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Summe aus Endabrechnungen
+                  {t("kpi.yearlyRevenueHint")}
                 </p>
               </>
             )}
@@ -321,7 +323,7 @@ export default function LeaseSettlementOverviewPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Nutzungsentgelt gesamt
+              {t("kpi.totalFee")}
             </CardTitle>
             <Calculator className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -334,7 +336,7 @@ export default function LeaseSettlementOverviewPage() {
                   {formatCurrency(totalActualFeeFinal)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Tatsaechlich abzurechnender Betrag
+                  {t("kpi.totalFeeHint")}
                 </p>
               </>
             )}
@@ -344,7 +346,7 @@ export default function LeaseSettlementOverviewPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Offene Abrechnungen
+              {t("kpi.openSettlements")}
             </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -355,7 +357,7 @@ export default function LeaseSettlementOverviewPage() {
               <>
                 <div className="text-2xl font-bold">{openCount}</div>
                 <p className="text-xs text-muted-foreground">
-                  Offen oder berechnet
+                  {t("kpi.openSettlementsHint")}
                 </p>
               </>
             )}
@@ -365,7 +367,7 @@ export default function LeaseSettlementOverviewPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Abrechnungen gesamt
+              {t("kpi.totalSettlements")}
             </CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -376,10 +378,10 @@ export default function LeaseSettlementOverviewPage() {
               <>
                 <div className="text-2xl font-bold">{totalCount}</div>
                 <p className="text-xs text-muted-foreground">
-                  {selectedYear !== "all" ? selectedYear : "Alle Jahre"} -{" "}
+                  {selectedYear !== "all" ? selectedYear : t("kpi.allYears")} -{" "}
                   {selectedParkId === "all"
-                    ? "Alle Parks"
-                    : "Ausgewaehlter Park"}
+                    ? t("kpi.allParks")
+                    : t("kpi.selectedPark")}
                 </p>
               </>
             )}
@@ -390,9 +392,9 @@ export default function LeaseSettlementOverviewPage() {
       {/* Filters & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Abrechnungen</CardTitle>
+          <CardTitle>{t("tableCard.title")}</CardTitle>
           <CardDescription>
-            Pachtabrechnungen nach Park, Jahr, Typ und Status filtern
+            {t("tableCard.description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -403,10 +405,10 @@ export default function LeaseSettlementOverviewPage() {
                 value: selectedParkId,
                 onChange: (value) =>
                   handleFilterChange(setSelectedParkId, value),
-                placeholder: "Park waehlen",
+                placeholder: t("filters.parkPlaceholder"),
                 width: "w-[200px]",
                 options: [
-                  { value: "all", label: "Alle Parks" },
+                  { value: "all", label: t("filters.allParks") },
                   ...(parks?.map((park) => ({
                     value: park.id,
                     label: park.name,
@@ -417,10 +419,10 @@ export default function LeaseSettlementOverviewPage() {
                 value: selectedYear,
                 onChange: (value) =>
                   handleFilterChange(setSelectedYear, value),
-                placeholder: "Jahr",
+                placeholder: t("filters.yearPlaceholder"),
                 width: "w-[140px]",
                 options: [
-                  { value: "all", label: "Alle Jahre" },
+                  { value: "all", label: t("filters.allYears") },
                   ...years.map((year) => ({
                     value: year.toString(),
                     label: year.toString(),
@@ -431,36 +433,30 @@ export default function LeaseSettlementOverviewPage() {
                 value: selectedPeriodType,
                 onChange: (value) =>
                   handleFilterChange(setSelectedPeriodType, value),
-                placeholder: "Typ",
+                placeholder: t("filters.typePlaceholder"),
                 width: "w-[180px]",
                 options: [
-                  { value: "all", label: "Alle Typen" },
-                  { value: "FINAL", label: "Endabrechnung" },
-                  { value: "ADVANCE", label: "Vorschuss" },
+                  { value: "all", label: t("filters.allTypes") },
+                  { value: "FINAL", label: t("filters.typeFinal") },
+                  { value: "ADVANCE", label: t("filters.typeAdvance") },
                 ],
               },
               {
                 value: statusFilter,
                 onChange: (value) =>
                   handleFilterChange(setStatusFilter, value),
-                placeholder: "Status",
+                placeholder: t("filters.statusPlaceholder"),
                 width: "w-[200px]",
                 options: [
-                  { value: "all", label: "Alle Status" },
-                  { value: "OPEN", label: "Offen" },
-                  { value: "CALCULATED", label: "Berechnet" },
-                  {
-                    value: "ADVANCE_CREATED",
-                    label: "Vorschuss erstellt",
-                  },
-                  { value: "SETTLED", label: "Abgerechnet" },
-                  {
-                    value: "PENDING_REVIEW",
-                    label: "Zur Prüfung",
-                  },
-                  { value: "APPROVED", label: "Freigegeben" },
-                  { value: "CLOSED", label: "Abgeschlossen" },
-                  { value: "CANCELLED", label: "Storniert" },
+                  { value: "all", label: t("filters.allStatus") },
+                  { value: "OPEN", label: t("filters.statusOpen") },
+                  { value: "CALCULATED", label: t("filters.statusCalculated") },
+                  { value: "ADVANCE_CREATED", label: t("filters.statusAdvanceCreated") },
+                  { value: "SETTLED", label: t("filters.statusSettled") },
+                  { value: "PENDING_REVIEW", label: t("filters.statusPendingReview") },
+                  { value: "APPROVED", label: t("filters.statusApproved") },
+                  { value: "CLOSED", label: t("filters.statusClosed") },
+                  { value: "CANCELLED", label: t("filters.statusCancelled") },
                 ],
               },
             ]}
@@ -478,7 +474,7 @@ export default function LeaseSettlementOverviewPage() {
                     onClick={() => handleSort("park")}
                   >
                     <div className="flex items-center gap-1">
-                      Park
+                      {t("table.park")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -487,7 +483,7 @@ export default function LeaseSettlementOverviewPage() {
                     onClick={() => handleSort("year")}
                   >
                     <div className="flex items-center gap-1">
-                      Jahr
+                      {t("table.year")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -496,7 +492,7 @@ export default function LeaseSettlementOverviewPage() {
                     onClick={() => handleSort("type")}
                   >
                     <div className="flex items-center gap-1">
-                      Typ
+                      {t("table.type")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -505,7 +501,7 @@ export default function LeaseSettlementOverviewPage() {
                     onClick={() => handleSort("status")}
                   >
                     <div className="flex items-center gap-1">
-                      Status
+                      {t("table.status")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -514,7 +510,7 @@ export default function LeaseSettlementOverviewPage() {
                     onClick={() => handleSort("revenue")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Erlöse
+                      {t("table.revenue")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -523,12 +519,12 @@ export default function LeaseSettlementOverviewPage() {
                     onClick={() => handleSort("actual")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Betrag
+                      {t("table.amount")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
                   <TableHead className="w-[80px]">
-                    <span className="sr-only">Aktionen</span>
+                    <span className="sr-only">{t("table.actionsSr")}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -565,8 +561,7 @@ export default function LeaseSettlementOverviewPage() {
                   <TableRow>
                     <TableCell colSpan={7} className="h-32 text-center">
                       <div className="text-destructive">
-                        Fehler beim Laden der Pachtabrechnungen. Bitte
-                        versuchen Sie es erneut.
+                        {t("table.loadError")}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -579,13 +574,13 @@ export default function LeaseSettlementOverviewPage() {
                     >
                       <div className="flex flex-col items-center gap-2">
                         <FileText className="h-8 w-8 text-muted-foreground/50" />
-                        <p>Keine Pachtabrechnungen gefunden</p>
+                        <p>{t("table.empty")}</p>
                         {(selectedParkId !== "all" ||
                           selectedYear !== "all" ||
                           selectedPeriodType !== "all" ||
                           statusFilter !== "all") && (
                           <p className="text-sm">
-                            Versuchen Sie, die Filter anzupassen.
+                            {t("table.emptyHint")}
                           </p>
                         )}
                         <Button
@@ -596,7 +591,7 @@ export default function LeaseSettlementOverviewPage() {
                           }
                         >
                           <Plus className="mr-2 h-4 w-4" />
-                          Neue Abrechnung erstellen
+                          {t("table.createCta")}
                         </Button>
                       </div>
                     </TableCell>
@@ -667,7 +662,7 @@ export default function LeaseSettlementOverviewPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          aria-label="Details anzeigen"
+                          aria-label={t("table.detailsAria")}
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(
@@ -675,7 +670,7 @@ export default function LeaseSettlementOverviewPage() {
                             );
                           }}
                         >
-                          Details
+                          {t("table.details")}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -689,16 +684,11 @@ export default function LeaseSettlementOverviewPage() {
           {!isLoading && pagination && pagination.total > 0 && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-sm text-muted-foreground">
-                Zeige{" "}
-                {(currentPage - 1) *
-                  (pagination.limit || ITEMS_PER_PAGE) +
-                  1}{" "}
-                bis{" "}
-                {Math.min(
-                  currentPage * (pagination.limit || ITEMS_PER_PAGE),
-                  pagination.total
-                )}{" "}
-                von {pagination.total} Einträgen
+                {t("pagination.showing", {
+                  from: (currentPage - 1) * (pagination.limit || ITEMS_PER_PAGE) + 1,
+                  to: Math.min(currentPage * (pagination.limit || ITEMS_PER_PAGE), pagination.total),
+                  total: pagination.total,
+                })}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -706,19 +696,19 @@ export default function LeaseSettlementOverviewPage() {
                   size="sm"
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
-                  aria-label="Vorherige Seite"
+                  aria-label={t("pagination.prevAria")}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-sm">
-                  Seite {currentPage} von {totalPages}
+                  {t("pagination.pageOf", { current: currentPage, total: totalPages })}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
-                  aria-label="Nächste Seite"
+                  aria-label={t("pagination.nextAria")}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>

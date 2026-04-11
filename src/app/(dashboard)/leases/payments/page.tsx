@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import { formatCurrency } from "@/lib/format";
 import {
   Search,
@@ -97,6 +98,9 @@ const paymentStatusExtras: Record<string, { borderColor: string; icon: React.Ele
 };
 
 export default function LeasePaymentsPage() {
+  const t = useTranslations("leases.payments");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
   const [payments, setPayments] = useState<Payment[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [parks, setParks] = useState<Park[]>([]);
@@ -122,17 +126,17 @@ export default function LeasePaymentsPage() {
       });
 
       const response = await fetch(`/api/leases/payments?${params}`);
-      if (!response.ok) throw new Error("Fehler beim Laden");
+      if (!response.ok) throw new Error(t("loadError"));
 
       const data = await response.json();
       setPayments(data.data);
       setSummary(data.summary);
     } catch {
-      toast.error("Fehler beim Laden der Zahlungen");
+      toast.error(t("loadErrorToast"));
     } finally {
       setLoading(false);
     }
-  }, [year, parkFilter, statusFilter]);
+  }, [year, parkFilter, statusFilter, t]);
 
   const fetchParks = useCallback(async () => {
     try {
@@ -167,7 +171,7 @@ export default function LeasePaymentsPage() {
 
   async function handleSendReminder(payment: Payment) {
     try {
-      toast.info(`Zahlungserinnerung für ${payment.lessorName} wird gesendet...`);
+      toast.info(t("reminder.sendingToast", { name: payment.lessorName }));
 
       const response = await fetch("/api/leases/payments/remind", {
         method: "POST",
@@ -186,13 +190,13 @@ export default function LeasePaymentsPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Fehler beim Senden der Zahlungserinnerung");
+        toast.error(data.error || t("reminder.errorFallback"));
         return;
       }
 
-      toast.success(data.message || `Zahlungserinnerung an ${payment.lessorName} gesendet`);
+      toast.success(data.message || t("reminder.sentToast", { name: payment.lessorName }));
     } catch {
-      toast.error("Fehler beim Senden der Zahlungserinnerung");
+      toast.error(t("reminder.errorFallback"));
     }
   }
 
@@ -201,15 +205,15 @@ export default function LeasePaymentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pachtzahlungen</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("pageTitle")}</h1>
           <p className="text-muted-foreground">
-            Übersicht aller fälligen und geleisteten Pachtzahlungen
+            {t("pageDescription")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => fetchPayments()}>
             <RefreshCw className="mr-2 h-4 w-4" />
-            Aktualisieren
+            {t("refresh")}
           </Button>
         </div>
       </div>
@@ -242,7 +246,7 @@ export default function LeasePaymentsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gesamt</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("kpi.total")}</CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -254,7 +258,7 @@ export default function LeasePaymentsPage() {
                   {formatCurrency(summary?.total || 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {summary?.count.total || 0} Zahlungen
+                  {t("kpi.paymentsCount", { count: summary?.count.total || 0 })}
                 </p>
               </>
             )}
@@ -263,7 +267,7 @@ export default function LeasePaymentsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bezahlt</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("kpi.paid")}</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -275,7 +279,7 @@ export default function LeasePaymentsPage() {
                   {formatCurrency(summary?.paid || 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {summary?.count.paid || 0} Zahlungen
+                  {t("kpi.paymentsCount", { count: summary?.count.paid || 0 })}
                 </p>
               </>
             )}
@@ -284,7 +288,7 @@ export default function LeasePaymentsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Offen</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("kpi.pending")}</CardTitle>
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
@@ -296,7 +300,7 @@ export default function LeasePaymentsPage() {
                   {formatCurrency(summary?.pending || 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {summary?.count.pending || 0} Zahlungen
+                  {t("kpi.paymentsCount", { count: summary?.count.pending || 0 })}
                 </p>
               </>
             )}
@@ -305,7 +309,7 @@ export default function LeasePaymentsPage() {
 
         <Card className={summary?.overdue && summary.overdue > 0 ? "border-red-300" : ""}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Überfällig</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("kpi.overdue")}</CardTitle>
             <AlertTriangle
               className={`h-4 w-4 ${summary?.overdue && summary.overdue > 0 ? "text-red-600" : "text-muted-foreground"}`}
             />
@@ -319,7 +323,7 @@ export default function LeasePaymentsPage() {
                   {formatCurrency(summary?.overdue || 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {summary?.count.overdue || 0} Zahlungen
+                  {t("kpi.paymentsCount", { count: summary?.count.overdue || 0 })}
                 </p>
               </>
             )}
@@ -330,16 +334,16 @@ export default function LeasePaymentsPage() {
       {/* Tabs: Table / Calendar View */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="table">Tabellenansicht</TabsTrigger>
-          <TabsTrigger value="calendar">Kalenderansicht</TabsTrigger>
+          <TabsTrigger value="table">{t("tabs.table")}</TabsTrigger>
+          <TabsTrigger value="calendar">{t("tabs.calendar")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="table" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Zahlungsübersicht</CardTitle>
+              <CardTitle>{t("tableCard.title")}</CardTitle>
               <CardDescription>
-                Alle Pachtzahlungen für {year}
+                {t("tableCard.description", { year })}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -348,7 +352,7 @@ export default function LeasePaymentsPage() {
                 <div className="relative flex-1">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Suchen nach Verpaechter, Flurstueck..."
+                    placeholder={t("searchPlaceholder")}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-8"
@@ -357,10 +361,10 @@ export default function LeasePaymentsPage() {
                 <Select value={parkFilter} onValueChange={setParkFilter}>
                   <SelectTrigger className="w-[180px]">
                     <Filter className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Park" />
+                    <SelectValue placeholder={t("filters.parkPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Alle Parks</SelectItem>
+                    <SelectItem value="all">{t("filters.allParks")}</SelectItem>
                     {parks.map((park) => (
                       <SelectItem key={park.id} value={park.id}>
                         {park.shortName || park.name}
@@ -371,13 +375,13 @@ export default function LeasePaymentsPage() {
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[180px]">
                     <Filter className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t("filters.statusPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Alle Status</SelectItem>
-                    <SelectItem value="pending">Offen</SelectItem>
-                    <SelectItem value="paid">Bezahlt</SelectItem>
-                    <SelectItem value="overdue">Überfällig</SelectItem>
+                    <SelectItem value="all">{t("filters.allStatus")}</SelectItem>
+                    <SelectItem value="pending">{t("filters.pending")}</SelectItem>
+                    <SelectItem value="paid">{t("filters.paid")}</SelectItem>
+                    <SelectItem value="overdue">{t("filters.overdue")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -387,14 +391,14 @@ export default function LeasePaymentsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Verpaechter</TableHead>
-                      <TableHead>Pachtvertrag</TableHead>
-                      <TableHead>Park</TableHead>
-                      <TableHead>Fälligkeit</TableHead>
-                      <TableHead className="text-right">Betrag</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Rechnung</TableHead>
-                      <TableHead className="w-[100px]">Aktionen</TableHead>
+                      <TableHead>{t("table.lessor")}</TableHead>
+                      <TableHead>{t("table.lease")}</TableHead>
+                      <TableHead>{t("table.park")}</TableHead>
+                      <TableHead>{t("table.due")}</TableHead>
+                      <TableHead className="text-right">{t("table.amount")}</TableHead>
+                      <TableHead>{t("table.status")}</TableHead>
+                      <TableHead>{t("table.invoice")}</TableHead>
+                      <TableHead className="w-[100px]">{t("table.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -411,7 +415,7 @@ export default function LeasePaymentsPage() {
                     ) : filteredPayments.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
-                          Keine Zahlungen gefunden
+                          {t("table.empty")}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -437,7 +441,7 @@ export default function LeasePaymentsPage() {
                               {payment.parkName || "-"}
                             </TableCell>
                             <TableCell>
-                              {format(new Date(payment.dueDate), "dd.MM.yyyy", { locale: de })}
+                              {format(new Date(payment.dueDate), "dd.MM.yyyy", { locale: dateLocale })}
                             </TableCell>
                             <TableCell className="text-right font-medium">
                               {formatCurrency(payment.amount)}
@@ -470,7 +474,7 @@ export default function LeasePaymentsPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleSendReminder(payment)}
-                                  title="Zahlungserinnerung senden"
+                                  title={t("reminder.titleAttr")}
                                 >
                                   <Mail className="h-4 w-4" />
                                 </Button>
@@ -485,7 +489,7 @@ export default function LeasePaymentsPage() {
                     <TableFooter>
                       <TableRow>
                         <TableCell colSpan={4} className="font-medium">
-                          Summe ({filteredPayments.length} Zahlungen)
+                          {t("table.sumLabel", { count: filteredPayments.length })}
                         </TableCell>
                         <TableCell className="text-right font-bold">
                           {formatCurrency(filteredPayments.reduce((sum, p) => sum + p.amount, 0))}
@@ -493,13 +497,13 @@ export default function LeasePaymentsPage() {
                         <TableCell colSpan={3}>
                           <div className="flex gap-2 text-xs">
                             <span className="text-green-600">
-                              {filteredPayments.filter((p) => p.status === "paid").length} bezahlt
+                              {t("table.summaryPaid", { count: filteredPayments.filter((p) => p.status === "paid").length })}
                             </span>
                             <span className="text-yellow-600">
-                              {filteredPayments.filter((p) => p.status === "pending").length} offen
+                              {t("table.summaryPending", { count: filteredPayments.filter((p) => p.status === "pending").length })}
                             </span>
                             <span className="text-red-600">
-                              {filteredPayments.filter((p) => p.status === "overdue").length} überfällig
+                              {t("table.summaryOverdue", { count: filteredPayments.filter((p) => p.status === "overdue").length })}
                             </span>
                           </div>
                         </TableCell>
@@ -515,9 +519,9 @@ export default function LeasePaymentsPage() {
         <TabsContent value="calendar" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Zahlungskalender</CardTitle>
+              <CardTitle>{t("calendarCard.title")}</CardTitle>
               <CardDescription>
-                Monatsansicht der Pachtzahlungen für {year}
+                {t("calendarCard.description", { year })}
               </CardDescription>
             </CardHeader>
             <CardContent>

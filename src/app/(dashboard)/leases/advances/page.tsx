@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import {
   Calendar,
@@ -90,22 +91,22 @@ interface GenerateResult {
   invoices: PreviewInvoice[];
 }
 
-const MONTH_NAMES = [
-  "Januar",
-  "Februar",
-  "Maerz",
-  "April",
-  "Mai",
-  "Juni",
-  "Juli",
-  "August",
-  "September",
-  "Oktober",
-  "November",
-  "Dezember",
-];
-
 export default function LeaseAdvancesPage() {
+  const t = useTranslations("leases.advances");
+  const MONTH_NAMES = [
+    t("months.1"),
+    t("months.2"),
+    t("months.3"),
+    t("months.4"),
+    t("months.5"),
+    t("months.6"),
+    t("months.7"),
+    t("months.8"),
+    t("months.9"),
+    t("months.10"),
+    t("months.11"),
+    t("months.12"),
+  ];
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -166,21 +167,21 @@ export default function LeaseAdvancesPage() {
       const data: GenerateResult = await response.json();
 
       if (!response.ok && response.status !== 422) {
-        toast.error(data.errorMessage || "Fehler bei der Vorschau");
+        toast.error(data.errorMessage || t("previewError"));
         return;
       }
 
       setPreviewResult(data);
 
       if (data.summary.successful === 0) {
-        toast.info("Keine Vorschüsse zu generieren für diesen Zeitraum");
+        toast.info(t("noAdvances"));
       } else {
         toast.success(
-          `Vorschau: ${data.summary.successful} Gutschriften, Gesamt: ${formatCurrency(data.summary.totalAmount)}`
+          t("previewToast", { count: data.summary.successful, total: formatCurrency(data.summary.totalAmount) })
         );
       }
     } catch {
-      toast.error("Fehler bei der Vorschau");
+      toast.error(t("previewError"));
     } finally {
       setLoading(false);
     }
@@ -207,7 +208,7 @@ export default function LeaseAdvancesPage() {
       const data: GenerateResult = await response.json();
 
       if (!response.ok && response.status !== 422) {
-        toast.error(data.errorMessage || "Fehler beim Generieren");
+        toast.error(data.errorMessage || t("generateError"));
         return;
       }
 
@@ -216,13 +217,13 @@ export default function LeaseAdvancesPage() {
 
       if (data.summary.invoicesCreated > 0) {
         toast.success(
-          `${data.summary.invoicesCreated} Vorschuss-Gutschriften erstellt`
+          t("createdToast", { count: data.summary.invoicesCreated })
         );
       } else {
-        toast.info("Keine Gutschriften erstellt");
+        toast.info(t("noneCreated"));
       }
     } catch {
-      toast.error("Fehler beim Generieren der Vorschüsse");
+      toast.error(t("generateErrorAdvances"));
     } finally {
       setGenerating(false);
       setShowConfirmDialog(false);
@@ -243,27 +244,26 @@ export default function LeaseAdvancesPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
-          Pacht-Vorschüsse
+          {t("title")}
         </h1>
         <p className="text-muted-foreground">
-          Monatliche Vorschuss-Gutschriften an Verpaechter generieren
+          {t("description")}
         </p>
       </div>
 
       {/* Configuration Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Zeitraum und Filter</CardTitle>
+          <CardTitle>{t("configCard.title")}</CardTitle>
           <CardDescription>
-            Waehlen Sie den Monat und optionalen Park-Filter für die
-            Vorschussgenerierung
+            {t("configCard.description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             {/* Year Navigation */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Jahr</label>
+              <label className="text-sm font-medium">{t("labels.year")}</label>
               <div className="flex items-center gap-1">
                 <Button
                   variant="outline"
@@ -291,7 +291,7 @@ export default function LeaseAdvancesPage() {
 
             {/* Month Select */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Monat</label>
+              <label className="text-sm font-medium">{t("labels.month")}</label>
               <Select
                 value={month.toString()}
                 onValueChange={(v) => setMonth(parseInt(v, 10))}
@@ -312,14 +312,14 @@ export default function LeaseAdvancesPage() {
 
             {/* Park Filter */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Park</label>
+              <label className="text-sm font-medium">{t("labels.park")}</label>
               <Select value={parkId} onValueChange={setParkId}>
                 <SelectTrigger className="w-[220px]">
                   <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Park waehlen" />
+                  <SelectValue placeholder={t("parkPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Alle Parks</SelectItem>
+                  <SelectItem value="all">{t("allParks")}</SelectItem>
                   {parks.map((park) => (
                     <SelectItem key={park.id} value={park.id}>
                       {park.shortName || park.name}
@@ -341,7 +341,7 @@ export default function LeaseAdvancesPage() {
                 ) : (
                   <Eye className="mr-2 h-4 w-4" />
                 )}
-                Vorschau
+                {t("preview")}
               </Button>
               <Button
                 onClick={() => setShowConfirmDialog(true)}
@@ -357,7 +357,7 @@ export default function LeaseAdvancesPage() {
                 ) : (
                   <FileText className="mr-2 h-4 w-4" />
                 )}
-                Generieren
+                {t("generate")}
               </Button>
             </div>
           </div>
@@ -370,7 +370,7 @@ export default function LeaseAdvancesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Verarbeitet
+                {t("summary.processed")}
               </CardTitle>
               <RefreshCw className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -379,7 +379,7 @@ export default function LeaseAdvancesPage() {
                 {activeResult.summary.totalProcessed}
               </div>
               <p className="text-xs text-muted-foreground">
-                Pachtverträge geprüft
+                {t("summary.processedHint")}
               </p>
             </CardContent>
           </Card>
@@ -387,7 +387,7 @@ export default function LeaseAdvancesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                {isPreview ? "Zu erstellen" : "Erstellt"}
+                {isPreview ? t("summary.toCreate") : t("summary.created")}
               </CardTitle>
               <CheckCircle2 className="h-4 w-4 text-green-600" />
             </CardHeader>
@@ -397,14 +397,14 @@ export default function LeaseAdvancesPage() {
                   ? activeResult.summary.successful
                   : activeResult.summary.invoicesCreated}
               </div>
-              <p className="text-xs text-muted-foreground">Gutschriften</p>
+              <p className="text-xs text-muted-foreground">{t("summary.creditNotes")}</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Gesamtbetrag
+                {t("summary.totalAmount")}
               </CardTitle>
               <Euro className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -413,7 +413,7 @@ export default function LeaseAdvancesPage() {
                 {formatCurrency(activeResult.summary.totalAmount)}
               </div>
               <p className="text-xs text-muted-foreground">
-                {isPreview ? "Vorschau" : "Netto"}
+                {isPreview ? t("summary.previewHint") : t("summary.netHint")}
               </p>
             </CardContent>
           </Card>
@@ -429,7 +429,7 @@ export default function LeaseAdvancesPage() {
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Übersprungen/Fehler
+                {t("summary.skippedErrors")}
               </CardTitle>
               <AlertTriangle className="h-4 w-4 text-yellow-600" />
             </CardHeader>
@@ -439,15 +439,15 @@ export default function LeaseAdvancesPage() {
               </div>
               <p className="text-xs text-muted-foreground">
                 {activeResult.summary.skipped > 0 &&
-                  `${activeResult.summary.skipped} bereits vorhanden`}
+                  t("summary.skippedText", { count: activeResult.summary.skipped })}
                 {activeResult.summary.skipped > 0 &&
                   activeResult.summary.failed > 0 &&
                   ", "}
                 {activeResult.summary.failed > 0 &&
-                  `${activeResult.summary.failed} fehlgeschlagen`}
+                  t("summary.failedText", { count: activeResult.summary.failed })}
                 {activeResult.summary.skipped === 0 &&
                   activeResult.summary.failed === 0 &&
-                  "Keine"}
+                  t("summary.none")}
               </p>
             </CardContent>
           </Card>
@@ -462,19 +462,19 @@ export default function LeaseAdvancesPage() {
               {isPreview ? (
                 <span className="flex items-center gap-2">
                   <Eye className="h-5 w-5" />
-                  Vorschau - {MONTH_NAMES[month - 1]} {year}
+                  {t("table.previewTitle", { month: MONTH_NAMES[month - 1], year })}
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  Ergebnis - {MONTH_NAMES[month - 1]} {year}
+                  {t("table.resultTitle", { month: MONTH_NAMES[month - 1], year })}
                 </span>
               )}
             </CardTitle>
             <CardDescription>
               {isPreview
-                ? "Diese Gutschriften werden bei Generierung erstellt"
-                : `${activeResult.summary.invoicesCreated} Gutschriften erfolgreich erstellt`}
+                ? t("table.previewDesc")
+                : t("table.resultDesc", { count: activeResult.summary.invoicesCreated })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -482,13 +482,13 @@ export default function LeaseAdvancesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Verpaechter</TableHead>
-                    <TableHead className="text-right">Betrag</TableHead>
+                    <TableHead>{t("table.status")}</TableHead>
+                    <TableHead>{t("table.lessor")}</TableHead>
+                    <TableHead className="text-right">{t("table.amount")}</TableHead>
                     {!isPreview && (
-                      <TableHead>Gutschrift-Nr.</TableHead>
+                      <TableHead>{t("table.creditNoteNr")}</TableHead>
                     )}
-                    <TableHead>Hinweis</TableHead>
+                    <TableHead>{t("table.note")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -501,7 +501,7 @@ export default function LeaseAdvancesPage() {
                             className="bg-green-50 text-green-700 border-green-200"
                           >
                             <CheckCircle2 className="mr-1 h-3 w-3" />
-                            OK
+                            {t("table.badgeOk")}
                           </Badge>
                         ) : inv.error?.includes("bereits erstellt") ? (
                           <Badge
@@ -509,7 +509,7 @@ export default function LeaseAdvancesPage() {
                             className="bg-yellow-50 text-yellow-700 border-yellow-200"
                           >
                             <AlertTriangle className="mr-1 h-3 w-3" />
-                            Vorhanden
+                            {t("table.badgePresent")}
                           </Badge>
                         ) : (
                           <Badge
@@ -517,7 +517,7 @@ export default function LeaseAdvancesPage() {
                             className="bg-red-50 text-red-700 border-red-200"
                           >
                             <XCircle className="mr-1 h-3 w-3" />
-                            Fehler
+                            {t("table.badgeError")}
                           </Badge>
                         )}
                       </TableCell>
@@ -539,7 +539,7 @@ export default function LeaseAdvancesPage() {
                         </TableCell>
                       )}
                       <TableCell className="text-sm text-muted-foreground">
-                        {inv.error || (isPreview ? "Wird erstellt" : "Erstellt")}
+                        {inv.error || (isPreview ? t("table.noteWillCreate") : t("table.noteCreated"))}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -550,12 +550,7 @@ export default function LeaseAdvancesPage() {
                       colSpan={2}
                       className="font-medium"
                     >
-                      Summe (
-                      {
-                        activeResult.invoices.filter((i) => i.success)
-                          .length
-                      }{" "}
-                      Gutschriften)
+                      {t("table.sumLabel", { count: activeResult.invoices.filter((i) => i.success).length })}
                     </TableCell>
                     <TableCell className="text-right font-bold">
                       {formatCurrency(
@@ -580,29 +575,22 @@ export default function LeaseAdvancesPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Pacht-Vorschüsse generieren?
+              {t("confirmDialog.title")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Es werden{" "}
-              <strong>{previewResult?.summary.successful || 0}</strong>{" "}
-              Gutschriften für{" "}
-              <strong>
-                {MONTH_NAMES[month - 1]} {year}
-              </strong>{" "}
-              erstellt mit einem Gesamtbetrag von{" "}
-              <strong>
-                {formatCurrency(previewResult?.summary.totalAmount || 0)}
-              </strong>
-              .
-              <br />
-              <br />
-              Die Gutschriften werden im Status &quot;Entwurf&quot; erstellt und
-              können vor dem Versand noch bearbeitet werden.
+              {t("confirmDialog.description1", {
+                count: previewResult?.summary.successful || 0,
+                month: MONTH_NAMES[month - 1],
+                year,
+                total: formatCurrency(previewResult?.summary.totalAmount || 0),
+              })}
+              {" "}
+              {t("confirmDialog.description2")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={generating}>
-              Abbrechen
+              {t("confirmDialog.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleGenerate}
@@ -613,7 +601,7 @@ export default function LeaseAdvancesPage() {
               ) : (
                 <FileText className="mr-2 h-4 w-4" />
               )}
-              Gutschriften erstellen
+              {t("confirmDialog.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

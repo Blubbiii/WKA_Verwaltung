@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Plus,
@@ -72,11 +73,11 @@ const ITEMS_PER_PAGE = 20;
 // SWR FETCHER
 // =============================================================================
 
-const fetcher = async (url: string) => {
+const makeFetcher = (unknownErr: string, loadErr: string) => async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-    throw new Error(error.error || "Fehler beim Laden");
+    const error = await res.json().catch(() => ({ error: unknownErr }));
+    throw new Error(error.error || loadErr);
   }
   return res.json();
 };
@@ -109,6 +110,8 @@ function getStatusColor(status: string): string {
 export default function UsageFeesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("leases.usageFees");
+  const tCommon = useTranslations("common");
 
   // ---------------------------------------------------------------------------
   // Filter State
@@ -162,7 +165,7 @@ export default function UsageFeesPage() {
     error: settlementsError,
   } = useQuery({
     queryKey: [apiUrl],
-    queryFn: () => fetcher(apiUrl),
+    queryFn: () => makeFetcher(t("loaderError"), t("fetchError"))(apiUrl),
     refetchOnWindowFocus: false,
   });
   const mutate = () => queryClient.invalidateQueries({ queryKey: [apiUrl] });
@@ -260,7 +263,7 @@ export default function UsageFeesPage() {
 
   const handleCreate = async () => {
     if (!createParkId || !createYear) {
-      toast.error("Bitte Park und Jahr angeben");
+      toast.error(t("create.validationError"));
       return;
     }
 
@@ -284,12 +287,12 @@ export default function UsageFeesPage() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || err.details || "Fehler beim Erstellen");
+        const err = await res.json().catch(() => ({ error: t("create.unknownError") }));
+        throw new Error(err.error || err.details || t("create.errorFallback"));
       }
 
       const created = await res.json();
-      toast.success("Nutzungsentgelt-Abrechnung erfolgreich erstellt");
+      toast.success(t("create.successToast"));
       setCreateDialogOpen(false);
       resetCreateForm();
       mutate();
@@ -298,7 +301,7 @@ export default function UsageFeesPage() {
       router.push(`/leases/usage-fees/${created.id}`);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen"
+        error instanceof Error ? error.message : t("create.errorFallback")
       );
     } finally {
       setCreating(false);
@@ -314,7 +317,7 @@ export default function UsageFeesPage() {
 
   const handleImport = async () => {
     if (!importParkId || !importYear || !importFee) {
-      toast.error("Bitte alle Pflichtfelder ausfuellen");
+      toast.error(t("import.validationError"));
       return;
     }
 
@@ -336,11 +339,11 @@ export default function UsageFeesPage() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || err.details || "Fehler beim Importieren");
+        const err = await res.json().catch(() => ({ error: t("create.unknownError") }));
+        throw new Error(err.error || err.details || t("import.errorFallback"));
       }
 
-      toast.success("Historische Abrechnung wurde erfolgreich importiert");
+      toast.success(t("import.successToast"));
       setImportDialogOpen(false);
       setImportParkId("");
       setImportYear("");
@@ -350,7 +353,7 @@ export default function UsageFeesPage() {
       mutate();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Importieren"
+        error instanceof Error ? error.message : t("import.errorFallback")
       );
     } finally {
       setImporting(false);
@@ -366,10 +369,10 @@ export default function UsageFeesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Nutzungsentgelt-Abrechnungen
+            {t("pageTitle")}
           </h1>
           <p className="text-muted-foreground">
-            Jahresabrechnungen für Grundeigentümer
+            {t("pageDescription")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -378,7 +381,7 @@ export default function UsageFeesPage() {
             onClick={() => setImportDialogOpen(true)}
           >
             <Upload className="mr-2 h-4 w-4" />
-            Historischer Import
+            {t("historicalImport")}
           </Button>
           <Button
             onClick={() => {
@@ -387,7 +390,7 @@ export default function UsageFeesPage() {
             }}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Neue Abrechnung
+            {t("newSettlement")}
           </Button>
         </div>
       </div>
@@ -396,7 +399,7 @@ export default function UsageFeesPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Jahreserlöse</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("kpi.yearlyRevenue")}</CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -408,8 +411,12 @@ export default function UsageFeesPage() {
                   {formatCurrency(totalRevenue)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {selectedYear !== "all" ? selectedYear : "Alle Jahre"} -{" "}
-                  {selectedParkId === "all" ? "Alle Parks" : "Ausgewaehlter Park"}
+                  {selectedYear !== "all"
+                    ? t("kpi.yearlyRevenueHintScope", {
+                        year: selectedYear,
+                        scope: selectedParkId === "all" ? t("kpi.scopeAllParks") : t("kpi.scopeSelectedPark"),
+                      })
+                    : t("kpi.yearlyRevenueHintAll")}
                 </p>
               </>
             )}
@@ -419,7 +426,7 @@ export default function UsageFeesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Nutzungsentgelt gesamt
+              {t("kpi.totalFee")}
             </CardTitle>
             <Calculator className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -432,7 +439,7 @@ export default function UsageFeesPage() {
                   {formatCurrency(totalActualFee)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Tatsaechlich abzurechnender Betrag
+                  {t("kpi.totalFeeHint")}
                 </p>
               </>
             )}
@@ -442,7 +449,7 @@ export default function UsageFeesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Offene Abrechnungen
+              {t("kpi.openSettlements")}
             </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -453,7 +460,7 @@ export default function UsageFeesPage() {
               <>
                 <div className="text-2xl font-bold">{openCount}</div>
                 <p className="text-xs text-muted-foreground">
-                  Offen oder berechnet
+                  {t("kpi.openSettlementsHint")}
                 </p>
               </>
             )}
@@ -463,7 +470,7 @@ export default function UsageFeesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Abrechnungen gesamt
+              {t("kpi.totalSettlements")}
             </CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -476,7 +483,7 @@ export default function UsageFeesPage() {
                   {pagination?.total || settlements.length}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {selectedYear !== "all" ? selectedYear : "Alle Jahre"}
+                  {selectedYear !== "all" ? selectedYear : t("filters.allYears")}
                 </p>
               </>
             )}
@@ -487,9 +494,9 @@ export default function UsageFeesPage() {
       {/* Filters & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Abrechnungen</CardTitle>
+          <CardTitle>{t("tableCardTitle")}</CardTitle>
           <CardDescription>
-            Nutzungsentgelt-Abrechnungen nach Park, Jahr und Status filtern
+            {t("tableCardDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -500,10 +507,10 @@ export default function UsageFeesPage() {
                 value: selectedParkId,
                 onChange: (value) =>
                   handleFilterChange(setSelectedParkId, value),
-                placeholder: "Park waehlen",
+                placeholder: t("filters.parkPlaceholder"),
                 width: "w-[200px]",
                 options: [
-                  { value: "all", label: "Alle Parks" },
+                  { value: "all", label: t("filters.allParks") },
                   ...(parks?.map((park) => ({
                     value: park.id,
                     label: park.name,
@@ -514,10 +521,10 @@ export default function UsageFeesPage() {
                 value: selectedYear,
                 onChange: (value) =>
                   handleFilterChange(setSelectedYear, value),
-                placeholder: "Jahr",
+                placeholder: t("filters.yearPlaceholder"),
                 width: "w-[140px]",
                 options: [
-                  { value: "all", label: "Alle Jahre" },
+                  { value: "all", label: t("filters.allYears") },
                   ...years.map((year) => ({
                     value: year.toString(),
                     label: year.toString(),
@@ -528,15 +535,15 @@ export default function UsageFeesPage() {
                 value: statusFilter,
                 onChange: (value) =>
                   handleFilterChange(setStatusFilter, value),
-                placeholder: "Status",
+                placeholder: t("filters.statusPlaceholder"),
                 width: "w-[180px]",
                 options: [
-                  { value: "all", label: "Alle Status" },
-                  { value: "OPEN", label: "Offen" },
-                  { value: "CALCULATED", label: "Berechnet" },
-                  { value: "ADVANCE_CREATED", label: "Vorschuss erstellt" },
-                  { value: "SETTLED", label: "Abgerechnet" },
-                  { value: "CLOSED", label: "Abgeschlossen" },
+                  { value: "all", label: t("filters.allStatus") },
+                  { value: "OPEN", label: t("filters.statusOpen") },
+                  { value: "CALCULATED", label: t("filters.statusCalculated") },
+                  { value: "ADVANCE_CREATED", label: t("filters.statusAdvanceCreated") },
+                  { value: "SETTLED", label: t("filters.statusSettled") },
+                  { value: "CLOSED", label: t("filters.statusClosed") },
                 ],
               },
             ]}
@@ -554,7 +561,7 @@ export default function UsageFeesPage() {
                     onClick={() => handleSort("park")}
                   >
                     <div className="flex items-center gap-1">
-                      Park
+                      {t("columns.park")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -563,7 +570,7 @@ export default function UsageFeesPage() {
                     onClick={() => handleSort("year")}
                   >
                     <div className="flex items-center gap-1">
-                      Jahr
+                      {t("columns.year")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -572,7 +579,7 @@ export default function UsageFeesPage() {
                     onClick={() => handleSort("status")}
                   >
                     <div className="flex items-center gap-1">
-                      Status
+                      {t("columns.status")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -581,7 +588,7 @@ export default function UsageFeesPage() {
                     onClick={() => handleSort("revenue")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Erlöse
+                      {t("columns.revenue")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -590,7 +597,7 @@ export default function UsageFeesPage() {
                     onClick={() => handleSort("calculated")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Berechnet
+                      {t("columns.calculated")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -599,7 +606,7 @@ export default function UsageFeesPage() {
                     onClick={() => handleSort("minimum")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Minimum
+                      {t("columns.minimum")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -608,12 +615,12 @@ export default function UsageFeesPage() {
                     onClick={() => handleSort("actual")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Tatsaechlich
+                      {t("columns.actual")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
                   <TableHead className="w-[80px]">
-                    <span className="sr-only">Aktionen</span>
+                    <span className="sr-only">{t("columns.actionsSr")}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -637,8 +644,7 @@ export default function UsageFeesPage() {
                   <TableRow>
                     <TableCell colSpan={8} className="h-32 text-center">
                       <div className="text-destructive">
-                        Fehler beim Laden der Nutzungsentgelt-Abrechnungen. Bitte
-                        versuchen Sie es erneut.
+                        {t("loadError")}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -651,12 +657,12 @@ export default function UsageFeesPage() {
                     >
                       <div className="flex flex-col items-center gap-2">
                         <FileText className="h-8 w-8 text-muted-foreground/50" />
-                        <p>Keine Nutzungsentgelt-Abrechnungen gefunden</p>
+                        <p>{t("emptyTitle")}</p>
                         {(selectedParkId !== "all" ||
                           selectedYear !== "all" ||
                           statusFilter !== "all") && (
                           <p className="text-sm">
-                            Versuchen Sie, die Filter anzupassen.
+                            {t("emptyHintFilters")}
                           </p>
                         )}
                         <Button
@@ -668,7 +674,7 @@ export default function UsageFeesPage() {
                           }}
                         >
                           <Plus className="mr-2 h-4 w-4" />
-                          Neue Abrechnung erstellen
+                          {t("createCtaEmpty")}
                         </Button>
                       </div>
                     </TableCell>
@@ -740,7 +746,7 @@ export default function UsageFeesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          aria-label="Details anzeigen"
+                          aria-label={t("detailsAria")}
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(
@@ -748,7 +754,7 @@ export default function UsageFeesPage() {
                             );
                           }}
                         >
-                          Details
+                          {t("detailsButton")}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -762,14 +768,11 @@ export default function UsageFeesPage() {
           {!isLoading && pagination && pagination.total > 0 && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-sm text-muted-foreground">
-                Zeige{" "}
-                {(currentPage - 1) * (pagination.limit || ITEMS_PER_PAGE) + 1}{" "}
-                bis{" "}
-                {Math.min(
-                  currentPage * (pagination.limit || ITEMS_PER_PAGE),
-                  pagination.total
-                )}{" "}
-                von {pagination.total} Einträgen
+                {t("pagination.showing", {
+                  from: (currentPage - 1) * (pagination.limit || ITEMS_PER_PAGE) + 1,
+                  to: Math.min(currentPage * (pagination.limit || ITEMS_PER_PAGE), pagination.total),
+                  total: pagination.total,
+                })}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -777,19 +780,19 @@ export default function UsageFeesPage() {
                   size="sm"
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
-                  aria-label="Vorherige Seite"
+                  aria-label={t("pagination.prevAria")}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-sm">
-                  Seite {currentPage} von {totalPages}
+                  {t("pagination.pageOf", { current: currentPage, total: totalPages })}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
-                  aria-label="Nächste Seite"
+                  aria-label={t("pagination.nextAria")}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -809,19 +812,19 @@ export default function UsageFeesPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Neue Nutzungsentgelt-Abrechnung</DialogTitle>
+            <DialogTitle>{t("create.dialogTitle")}</DialogTitle>
             <DialogDescription>
-              Erstellen Sie eine neue Jahresabrechnung für einen Windpark.
+              {t("create.dialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             {/* Park Selection */}
             <div className="space-y-2">
-              <Label htmlFor="create-park">Park *</Label>
+              <Label htmlFor="create-park">{t("create.parkLabel")}</Label>
               <Select value={createParkId} onValueChange={setCreateParkId}>
                 <SelectTrigger id="create-park">
-                  <SelectValue placeholder="Park auswaehlen" />
+                  <SelectValue placeholder={t("create.parkPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {parks?.map((park) => (
@@ -835,7 +838,7 @@ export default function UsageFeesPage() {
 
             {/* Year */}
             <div className="space-y-2">
-              <Label htmlFor="create-year">Jahr *</Label>
+              <Label htmlFor="create-year">{t("create.yearLabel")}</Label>
               <Input
                 id="create-year"
                 type="number"
@@ -849,7 +852,7 @@ export default function UsageFeesPage() {
             {/* Advance Due Date */}
             <div className="space-y-2">
               <Label htmlFor="create-advance-due">
-                Vorschuss-Fälligkeitsdatum (optional)
+                {t("create.advanceDueLabel")}
               </Label>
               <Input
                 id="create-advance-due"
@@ -862,7 +865,7 @@ export default function UsageFeesPage() {
             {/* Settlement Due Date */}
             <div className="space-y-2">
               <Label htmlFor="create-settlement-due">
-                Abrechnungs-Fälligkeitsdatum (optional)
+                {t("create.settlementDueLabel")}
               </Label>
               <Input
                 id="create-settlement-due"
@@ -879,7 +882,7 @@ export default function UsageFeesPage() {
               onClick={() => setCreateDialogOpen(false)}
               disabled={creating}
             >
-              Abbrechen
+              {tCommon("cancel")}
             </Button>
             <Button onClick={handleCreate} disabled={creating || !createParkId}>
               {creating ? (
@@ -887,7 +890,7 @@ export default function UsageFeesPage() {
               ) : (
                 <Plus className="mr-2 h-4 w-4" />
               )}
-              Erstellen
+              {t("create.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -897,18 +900,18 @@ export default function UsageFeesPage() {
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Historische Abrechnung importieren</DialogTitle>
+            <DialogTitle>{t("import.dialogTitle")}</DialogTitle>
             <DialogDescription>
-              Importieren Sie eine abgeschlossene Abrechnung aus frueheren Jahren. Die Abrechnung wird mit Status &quot;Abgeschlossen&quot; erstellt.
+              {t("import.dialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="import-park">Park *</Label>
+              <Label htmlFor="import-park">{t("import.parkLabel")}</Label>
               <Select value={importParkId} onValueChange={setImportParkId}>
                 <SelectTrigger id="import-park">
-                  <SelectValue placeholder="Park auswaehlen" />
+                  <SelectValue placeholder={t("import.parkPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {parks?.map((park) => (
@@ -921,7 +924,7 @@ export default function UsageFeesPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="import-year">Jahr *</Label>
+              <Label htmlFor="import-year">{t("import.yearLabel")}</Label>
               <Input
                 id="import-year"
                 type="number"
@@ -929,12 +932,12 @@ export default function UsageFeesPage() {
                 max={2100}
                 value={importYear}
                 onChange={(e) => setImportYear(e.target.value)}
-                placeholder="z.B. 2020"
+                placeholder={t("import.yearPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="import-revenue">Jahreserlöse (EUR) *</Label>
+              <Label htmlFor="import-revenue">{t("import.revenueLabel")}</Label>
               <Input
                 id="import-revenue"
                 type="number"
@@ -942,12 +945,12 @@ export default function UsageFeesPage() {
                 min="0"
                 value={importRevenue}
                 onChange={(e) => setImportRevenue(e.target.value)}
-                placeholder="z.B. 500000.00"
+                placeholder={t("import.revenuePlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="import-fee">Nutzungsentgelt gesamt (EUR) *</Label>
+              <Label htmlFor="import-fee">{t("import.feeLabel")}</Label>
               <Input
                 id="import-fee"
                 type="number"
@@ -955,7 +958,7 @@ export default function UsageFeesPage() {
                 min="0"
                 value={importFee}
                 onChange={(e) => setImportFee(e.target.value)}
-                placeholder="z.B. 25000.00"
+                placeholder={t("import.feePlaceholder")}
               />
             </div>
 
@@ -967,7 +970,7 @@ export default function UsageFeesPage() {
                 onChange={(e) => setImportUsedMinimum(e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              <Label htmlFor="import-minimum">Mindestpacht wurde angewendet</Label>
+              <Label htmlFor="import-minimum">{t("import.minimumAppliedLabel")}</Label>
             </div>
           </div>
 
@@ -977,7 +980,7 @@ export default function UsageFeesPage() {
               onClick={() => setImportDialogOpen(false)}
               disabled={importing}
             >
-              Abbrechen
+              {tCommon("cancel")}
             </Button>
             <Button
               onClick={handleImport}
@@ -988,7 +991,7 @@ export default function UsageFeesPage() {
               ) : (
                 <Upload className="mr-2 h-4 w-4" />
               )}
-              Importieren
+              {t("import.submit")}
             </Button>
           </DialogFooter>
         </DialogContent>

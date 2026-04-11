@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   FileText,
   Eye,
@@ -29,7 +30,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatCurrency } from "@/lib/format";
 import {
-  ALLOCATION_STATUS_LABELS,
   type ParkCostAllocationStatus,
   type ParkCostAllocationResponse,
 } from "@/types/billing";
@@ -38,9 +38,9 @@ import {
 // CONSTANTS & HELPERS
 // =============================================================================
 
-const fetcher = (url: string) =>
+const makeFetcher = (errMsg: string) => (url: string) =>
   fetch(url).then((res) => {
-    if (!res.ok) throw new Error("Fehler beim Laden");
+    if (!res.ok) throw new Error(errMsg);
     return res.json();
   });
 
@@ -70,6 +70,12 @@ type CostAllocationListItem = Omit<ParkCostAllocationResponse, "leaseRevenueSett
 
 export default function CostAllocationPage() {
   const router = useRouter();
+  const t = useTranslations("leases.costAllocation");
+  const statusLabels: Record<ParkCostAllocationStatus, string> = {
+    DRAFT: t("statusLabels.DRAFT"),
+    INVOICED: t("statusLabels.INVOICED"),
+    CLOSED: t("statusLabels.CLOSED"),
+  };
 
   // ---------------------------------------------------------------------------
   // Data Fetching
@@ -80,7 +86,7 @@ export default function CostAllocationPage() {
     error: isError,
   } = useQuery<{ data: CostAllocationListItem[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>({
     queryKey: ["/api/leases/cost-allocation"],
-    queryFn: () => fetcher("/api/leases/cost-allocation"),
+    queryFn: () => makeFetcher(t("fetchError"))("/api/leases/cost-allocation"),
   });
 
   const allocations = response?.data;
@@ -124,8 +130,8 @@ export default function CostAllocationPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Kostenaufteilung"
-        description="Verteilung der Nutzungsentgelte auf Betreibergesellschaften"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
       />
 
       {/* KPI Cards */}
@@ -133,7 +139,7 @@ export default function CostAllocationPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Gesamtkosten
+              {t("kpi.total")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -150,7 +156,7 @@ export default function CostAllocationPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Steuerpflichtig (19%)
+              {t("kpi.taxable")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -167,7 +173,7 @@ export default function CostAllocationPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Steuerfrei (Paragraph 4/12)
+              {t("kpi.exempt")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -184,7 +190,7 @@ export default function CostAllocationPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Offene Entwuerfe
+              {t("kpi.drafts")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -200,9 +206,9 @@ export default function CostAllocationPage() {
       {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Kostenaufteilungen</CardTitle>
+          <CardTitle>{t("table.title")}</CardTitle>
           <CardDescription>
-            Alle Kostenaufteilungen nach Park und Periode
+            {t("table.description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -212,18 +218,18 @@ export default function CostAllocationPage() {
                 <TableRow>
                   <TableHead>
                     <div className="flex items-center gap-1">
-                      Park
+                      {t("table.park")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
-                  <TableHead>Jahr</TableHead>
-                  <TableHead>Periode</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Gesamt</TableHead>
-                  <TableHead className="text-right">Steuerpflichtig</TableHead>
-                  <TableHead className="text-right">Steuerfrei</TableHead>
+                  <TableHead>{t("table.year")}</TableHead>
+                  <TableHead>{t("table.period")}</TableHead>
+                  <TableHead>{t("table.status")}</TableHead>
+                  <TableHead className="text-right">{t("table.total")}</TableHead>
+                  <TableHead className="text-right">{t("table.taxable")}</TableHead>
+                  <TableHead className="text-right">{t("table.exempt")}</TableHead>
                   <TableHead className="w-[80px]">
-                    <span className="sr-only">Aktionen</span>
+                    <span className="sr-only">{t("table.actionsSr")}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -263,8 +269,7 @@ export default function CostAllocationPage() {
                   <TableRow>
                     <TableCell colSpan={8} className="h-32 text-center">
                       <div className="text-destructive">
-                        Fehler beim Laden der Kostenaufteilungen. Bitte
-                        versuchen Sie es erneut.
+                        {t("loadError")}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -277,10 +282,9 @@ export default function CostAllocationPage() {
                     >
                       <div className="flex flex-col items-center gap-2">
                         <FileText className="h-8 w-8 text-muted-foreground/50" />
-                        <p>Keine Kostenaufteilungen vorhanden</p>
+                        <p>{t("emptyTitle")}</p>
                         <p className="text-sm">
-                          Kostenaufteilungen werden automatisch bei der
-                          Abrechnung erstellt.
+                          {t("emptyHint")}
                         </p>
                       </div>
                     </TableCell>
@@ -320,7 +324,7 @@ export default function CostAllocationPage() {
                             ALLOCATION_STATUS_COLORS[allocation.status]
                           }
                         >
-                          {ALLOCATION_STATUS_LABELS[allocation.status]}
+                          {statusLabels[allocation.status]}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">
@@ -337,7 +341,7 @@ export default function CostAllocationPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          aria-label="Details anzeigen"
+                          aria-label={t("showDetailsAria")}
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(

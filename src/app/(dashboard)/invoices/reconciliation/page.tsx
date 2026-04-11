@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useParks } from "@/hooks/useParks";
 import { formatCurrency } from "@/lib/format";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import {
   Banknote,
   Receipt,
@@ -135,6 +136,7 @@ function YearSelector({
   year: number;
   onChange: (y: number) => void;
 }) {
+  const t = useTranslations("invoices.reconciliation");
   return (
     <div className="flex items-center gap-1">
       <Button
@@ -142,7 +144,7 @@ function YearSelector({
         size="icon"
         className="h-8 w-8"
         onClick={() => onChange(year - 1)}
-        aria-label="Vorheriges Jahr"
+        aria-label={t("prevYearAria")}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
@@ -155,7 +157,7 @@ function YearSelector({
         size="icon"
         className="h-8 w-8"
         onClick={() => onChange(year + 1)}
-        aria-label="Nächstes Jahr"
+        aria-label={t("nextYearAria")}
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
@@ -168,6 +170,7 @@ function YearSelector({
 // =============================================================================
 
 function FundTable({ data, isLoading }: { data: FundEntry[]; isLoading: boolean }) {
+  const t = useTranslations("invoices.reconciliation");
   if (isLoading) {
     return (
       <Card>
@@ -198,14 +201,14 @@ function FundTable({ data, isLoading }: { data: FundEntry[]; isLoading: boolean 
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Abgleich nach Gesellschaft</CardTitle>
-          <CardDescription>Vorschüsse und Abrechnungen pro Beteiligungsgesellschaft</CardDescription>
+          <CardTitle className="text-base">{t("fundTableTitle")}</CardTitle>
+          <CardDescription>{t("fundTableDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <EmptyState
             icon={Scale}
-            title="Keine Daten vorhanden"
-            description="Es wurden keine Vorschüsse oder Abrechnungen für diesen Zeitraum gefunden."
+            title={t("fundEmptyTitle")}
+            description={t("fundEmptyDesc")}
           />
         </CardContent>
       </Card>
@@ -215,9 +218,9 @@ function FundTable({ data, isLoading }: { data: FundEntry[]; isLoading: boolean 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Abgleich nach Gesellschaft</CardTitle>
+        <CardTitle className="text-base">{t("fundTableTitle")}</CardTitle>
         <CardDescription>
-          Vorschüsse und Abrechnungen pro Beteiligungsgesellschaft
+          {t("fundTableDescription")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -225,12 +228,12 @@ function FundTable({ data, isLoading }: { data: FundEntry[]; isLoading: boolean 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Gesellschaft</TableHead>
-                <TableHead className="text-right">Vorschüsse</TableHead>
-                <TableHead className="text-right">Abrechnungen</TableHead>
-                <TableHead className="text-right">Differenz</TableHead>
-                <TableHead className="text-right">Differenz %</TableHead>
-                <TableHead className="text-center">Status</TableHead>
+                <TableHead>{t("colFund")}</TableHead>
+                <TableHead className="text-right">{t("colAdvances")}</TableHead>
+                <TableHead className="text-right">{t("colSettlements")}</TableHead>
+                <TableHead className="text-right">{t("colDifference")}</TableHead>
+                <TableHead className="text-right">{t("colDifferencePct")}</TableHead>
+                <TableHead className="text-center">{t("colStatus")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -278,28 +281,28 @@ function FundTable({ data, isLoading }: { data: FundEntry[]; isLoading: boolean 
                           variant="secondary"
                           className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
                         >
-                          Keine Daten
+                          {t("statusNoData")}
                         </Badge>
                       ) : Math.abs(fund.difference) < 0.01 ? (
                         <Badge
                           variant="secondary"
                           className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200"
                         >
-                          Ausgeglichen
+                          {t("statusBalanced")}
                         </Badge>
                       ) : isPositive ? (
                         <Badge
                           variant="secondary"
                           className="bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
                         >
-                          Überschuss
+                          {t("statusSurplus")}
                         </Badge>
                       ) : (
                         <Badge
                           variant="secondary"
                           className="bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-200"
                         >
-                          Nachzahlung
+                          {t("statusShortfall")}
                         </Badge>
                       )}
                     </TableCell>
@@ -309,7 +312,7 @@ function FundTable({ data, isLoading }: { data: FundEntry[]; isLoading: boolean 
               {/* Totals row */}
               {data.length > 1 && (
                 <TableRow className="bg-muted/50 font-semibold">
-                  <TableCell>Gesamt</TableCell>
+                  <TableCell>{t("totalRow")}</TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(
                       data.reduce((s, f) => s + f.advances, 0)
@@ -355,6 +358,9 @@ function TimelineSection({
   data: TimelineEntry[];
   isLoading: boolean;
 }) {
+  const t = useTranslations("invoices.reconciliation");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
   if (isLoading) {
     return (
       <Card>
@@ -382,16 +388,16 @@ function TimelineSection({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Zahlungs-Verlauf</CardTitle>
+          <CardTitle className="text-base">{t("timelineTitle")}</CardTitle>
           <CardDescription>
-            Chronologische Übersicht aller Zahlungen
+            {t("timelineDescShort")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <EmptyState
             icon={Receipt}
-            title="Noch keine Zahlungen"
-            description="Es wurden noch keine Vorschüsse oder Abrechnungen erfasst."
+            title={t("timelineEmptyTitle")}
+            description={t("timelineEmptyDesc")}
           />
         </CardContent>
       </Card>
@@ -403,9 +409,9 @@ function TimelineSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Zahlungs-Verlauf</CardTitle>
+        <CardTitle className="text-base">{t("timelineTitle")}</CardTitle>
         <CardDescription>
-          Chronologische Übersicht aller Zahlungen ({data.length} Einträge)
+          {t("timelineDescCount", { count: data.length })}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -413,7 +419,7 @@ function TimelineSection({
           {Array.from(grouped.entries()).map(([dateStr, entries]) => {
             const dateObj = new Date(dateStr + "T00:00:00");
             const formattedDate = format(dateObj, "dd. MMMM yyyy", {
-              locale: de,
+              locale: dateLocale,
             });
 
             return (
@@ -479,7 +485,7 @@ function TimelineSection({
                             variant="outline"
                             className="text-[10px] px-1.5"
                           >
-                            {isAdvance ? "Vorschuss" : "Abrechnung"}
+                            {isAdvance ? t("badgeAdvance") : t("badgeSettlement")}
                           </Badge>
                         </div>
                       </div>
@@ -500,6 +506,7 @@ function TimelineSection({
 // =============================================================================
 
 export default function ReconciliationPage() {
+  const t = useTranslations("invoices.reconciliation");
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [parkFilter, setParkFilter] = useState<string>("all");
@@ -536,20 +543,20 @@ export default function ReconciliationPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Zahlungs-Abgleich"
-          description="Vorschüsse und Abrechnungen vergleichen"
+          title={t("pageTitle")}
+          description={t("pageDescription")}
         />
         <Card>
           <CardContent className="py-12 text-center">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
             <p className="text-destructive font-medium mb-2">
-              Fehler beim Laden der Abgleichdaten
+              {t("errorLoad")}
             </p>
             <p className="text-muted-foreground text-sm mb-4">
               {error.message}
             </p>
             <Button onClick={() => refetch()} variant="outline">
-              Erneut versuchen
+              {t("retry")}
             </Button>
           </CardContent>
         </Card>
@@ -563,8 +570,8 @@ export default function ReconciliationPage() {
     <div className="space-y-6">
       {/* Page header */}
       <PageHeader
-        title="Zahlungs-Abgleich"
-        description="Vorschüsse und Abrechnungen vergleichen"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
       />
 
       {/* Filter bar */}
@@ -573,10 +580,10 @@ export default function ReconciliationPage() {
 
         <Select value={parkFilter} onValueChange={setParkFilter}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Alle Parks" />
+            <SelectValue placeholder={t("allParks")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Parks</SelectItem>
+            <SelectItem value="all">{t("allParks")}</SelectItem>
             {parks?.map((park) => (
               <SelectItem key={park.id} value={park.id}>
                 {park.name}
@@ -588,10 +595,10 @@ export default function ReconciliationPage() {
         {fundOptions.length > 0 && (
           <Select value={fundFilter} onValueChange={setFundFilter}>
             <SelectTrigger className="w-[220px]">
-              <SelectValue placeholder="Alle Gesellschaften" />
+              <SelectValue placeholder={t("allFunds")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle Gesellschaften</SelectItem>
+              <SelectItem value="all">{t("allFunds")}</SelectItem>
               {fundOptions.map((f) => (
                 <SelectItem key={f.value} value={f.value}>
                   {f.label}
@@ -605,25 +612,25 @@ export default function ReconciliationPage() {
       {/* KPI Cards */}
       <KPICardGrid>
         <KPICard
-          title="Vorschüsse gesamt"
+          title={t("kpiAdvances")}
           value={
             isLoading ? "..." : formatCurrency(summary?.totalAdvances ?? 0)
           }
           icon={Banknote}
           isLoading={isLoading}
-          description={`Gezahlte Vorschüsse ${year}`}
+          description={t("kpiAdvancesDesc", { year })}
         />
         <KPICard
-          title="Abrechnungen gesamt"
+          title={t("kpiSettled")}
           value={
             isLoading ? "..." : formatCurrency(summary?.totalSettled ?? 0)
           }
           icon={Receipt}
           isLoading={isLoading}
-          description={`Abgerechnete Betraege ${year}`}
+          description={t("kpiSettledDesc", { year })}
         />
         <KPICard
-          title="Differenz"
+          title={t("kpiDifference")}
           value={
             isLoading
               ? "..."
@@ -636,7 +643,7 @@ export default function ReconciliationPage() {
           trend={summary?.differencePercent}
           trendLabel={
             summary
-              ? (summary.difference >= 0 ? "Überschuss" : "Nachzahlung")
+              ? (summary.difference >= 0 ? t("trendSurplus") : t("trendShortfall"))
               : undefined
           }
           className={
@@ -648,7 +655,7 @@ export default function ReconciliationPage() {
           }
         />
         <KPICard
-          title="Offene Rechnungen"
+          title={t("kpiOpenInvoices")}
           value={
             isLoading
               ? "..."
@@ -659,7 +666,7 @@ export default function ReconciliationPage() {
           description={
             isLoading
               ? undefined
-              : `${formatCurrency(summary?.totalOpenAmount ?? 0)} offen`
+              : t("kpiOpenDesc", { amount: formatCurrency(summary?.totalOpenAmount ?? 0) })
           }
           isAlert={(summary?.overdueInvoices ?? 0) > 0}
         />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   FileText,
   Search,
@@ -15,7 +16,7 @@ import {
   Clock,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,49 +88,83 @@ type StatusFilter = "ALL" | "DRAFT" | "ACTIVE" | "EXPIRED" | "TERMINATED";
 // Helpers
 // ============================================================================
 
-const STATUS_CONFIG: Record<
+const STATUS_VARIANTS: Record<
   PPA["status"],
-  { label: string; variant: "outline" | "default" | "secondary" | "destructive" }
+  "outline" | "default" | "secondary" | "destructive"
 > = {
-  DRAFT: { label: "Entwurf", variant: "outline" },
-  ACTIVE: { label: "Aktiv", variant: "default" },
-  EXPIRED: { label: "Abgelaufen", variant: "secondary" },
-  TERMINATED: { label: "Beendet", variant: "destructive" },
+  DRAFT: "outline",
+  ACTIVE: "default",
+  EXPIRED: "secondary",
+  TERMINATED: "destructive",
 };
-
-const PRICING_MODE_LABELS: Record<PPA["pricingMode"], string> = {
-  FIXED: "Festpreis",
-  INDEXED: "Indexbasiert",
-  COLLAR: "Collar (Floor/Cap)",
-};
-
-function formatPrice(ppa: PPA): string {
-  switch (ppa.pricingMode) {
-    case "FIXED":
-      return ppa.fixedPriceCentKwh != null
-        ? `${Number(ppa.fixedPriceCentKwh).toFixed(2)} ct/kWh`
-        : "—";
-    case "INDEXED":
-      return ppa.indexMarkupCentKwh != null
-        ? `${ppa.indexBase ?? "Index"} +${Number(ppa.indexMarkupCentKwh).toFixed(2)} ct`
-        : ppa.indexBase ?? "Indexbasiert";
-    case "COLLAR":
-      if (ppa.floorPriceCentKwh != null && ppa.capPriceCentKwh != null) {
-        return `${Number(ppa.floorPriceCentKwh).toFixed(2)}–${Number(ppa.capPriceCentKwh).toFixed(2)} ct/kWh`;
-      }
-      return "—";
-    default:
-      return "—";
-  }
-}
 
 // ============================================================================
 // Main Page
 // ============================================================================
 
 export default function PPAPage() {
+  const t = useTranslations("invoices.ppa");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
+  const numberLocale = locale === "en" ? "en-US" : "de-DE";
   const { isFeatureEnabled, loading: flagsLoading } = useFeatureFlags();
   const [ppas, setPpas] = useState<PPA[]>([]);
+
+  const statusLabel = useCallback(
+    (s: PPA["status"]) => {
+      switch (s) {
+        case "DRAFT":
+          return t("statusDraft");
+        case "ACTIVE":
+          return t("statusActive");
+        case "EXPIRED":
+          return t("statusExpired");
+        case "TERMINATED":
+          return t("statusTerminated");
+      }
+    },
+    [t]
+  );
+
+  const pricingModeLabel = useCallback(
+    (m: PPA["pricingMode"]) => {
+      switch (m) {
+        case "FIXED":
+          return t("pricingFixed");
+        case "INDEXED":
+          return t("pricingIndexed");
+        case "COLLAR":
+          return t("pricingCollar");
+      }
+    },
+    [t]
+  );
+
+  const formatPrice = useCallback(
+    (ppa: PPA): string => {
+      const unit = t("priceUnit");
+      const dash = t("emptyDash");
+      switch (ppa.pricingMode) {
+        case "FIXED":
+          return ppa.fixedPriceCentKwh != null
+            ? `${Number(ppa.fixedPriceCentKwh).toFixed(2)} ${unit}`
+            : dash;
+        case "INDEXED":
+          return ppa.indexMarkupCentKwh != null
+            ? `${ppa.indexBase ?? t("indexFallback")} +${Number(ppa.indexMarkupCentKwh).toFixed(2)} ct`
+            : ppa.indexBase ?? t("pricingIndexed");
+        case "COLLAR":
+          if (ppa.floorPriceCentKwh != null && ppa.capPriceCentKwh != null) {
+            return `${Number(ppa.floorPriceCentKwh).toFixed(2)}–${Number(ppa.capPriceCentKwh).toFixed(2)} ${unit}`;
+          }
+          return dash;
+        default:
+          return dash;
+      }
+    },
+    [t]
+  );
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
@@ -147,11 +182,11 @@ export default function PPAPage() {
         setPpas(data.ppas ?? []);
       }
     } catch {
-      toast.error("Fehler beim Laden der PPAs");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, t]);
 
   useEffect(() => {
     if (!flagsLoading) {
@@ -193,25 +228,25 @@ export default function PPAPage() {
 
     return [
       {
-        label: "Aktive PPAs",
+        label: t("statActive"),
         value: activePpas.length,
         icon: Zap,
       },
       {
-        label: "Ø Vertragspreis",
-        value: avgPrice > 0 ? `${avgPrice.toFixed(2)} ct/kWh` : "—",
+        label: t("statAvgPrice"),
+        value: avgPrice > 0 ? `${avgPrice.toFixed(2)} ${t("priceUnit")}` : t("emptyDash"),
         icon: TrendingUp,
       },
       {
-        label: "Vertragsvolumen",
+        label: t("statVolume"),
         value:
           totalVolume > 0
-            ? `${totalVolume.toLocaleString("de-DE")} MWh/a`
-            : "—",
+            ? `${totalVolume.toLocaleString(numberLocale)} ${t("volumeUnit")}`
+            : t("emptyDash"),
         icon: FileText,
       },
       {
-        label: "Auslaufend (<90 Tage)",
+        label: t("statExpiring"),
         value: expiringCount,
         icon: Clock,
         ...(expiringCount > 0
@@ -219,7 +254,7 @@ export default function PPAPage() {
           : {}),
       },
     ];
-  }, [ppas]);
+  }, [ppas, t, numberLocale]);
 
   const handleDelete = async () => {
     if (!deletePpa) return;
@@ -228,9 +263,9 @@ export default function PPAPage() {
       const res = await fetch(`/api/ppa/${deletePpa.id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Fehler");
+        throw new Error(err.error ?? t("loadError"));
       }
-      toast.success("PPA gelöscht");
+      toast.success(t("deleteSuccess"));
       setDeletePpa(null);
       load();
     } catch (err) {
@@ -248,10 +283,9 @@ export default function PPAPage() {
         <Card className="max-w-lg mx-auto">
           <CardContent className="py-12 text-center">
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-2">PPA-Management nicht aktiviert</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("notEnabledTitle")}</h2>
             <p className="text-muted-foreground">
-              Das PPA-Modul ist für diesen Mandanten nicht aktiviert. Bitte wenden Sie sich
-              an Ihren Administrator.
+              {t("notEnabledHint")}
             </p>
           </CardContent>
         </Card>
@@ -262,12 +296,12 @@ export default function PPAPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Power Purchase Agreements"
-        description="Verwaltung von Stromlieferverträgen"
+        title={t("pageTitle")}
+        description={t("pageDescription")}
         actions={
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Neuer PPA
+            {t("newPpa")}
           </Button>
         }
       />
@@ -281,7 +315,7 @@ export default function PPAPage() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-8"
-            placeholder="Titel, Vertragspartner suchen..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -291,14 +325,14 @@ export default function PPAPage() {
           onValueChange={(v) => setStatusFilter(v as StatusFilter)}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("statusFilterPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Alle Status</SelectItem>
-            <SelectItem value="DRAFT">Entwurf</SelectItem>
-            <SelectItem value="ACTIVE">Aktiv</SelectItem>
-            <SelectItem value="EXPIRED">Abgelaufen</SelectItem>
-            <SelectItem value="TERMINATED">Beendet</SelectItem>
+            <SelectItem value="ALL">{t("statusAll")}</SelectItem>
+            <SelectItem value="DRAFT">{t("statusDraft")}</SelectItem>
+            <SelectItem value="ACTIVE">{t("statusActive")}</SelectItem>
+            <SelectItem value="EXPIRED">{t("statusExpired")}</SelectItem>
+            <SelectItem value="TERMINATED">{t("statusTerminated")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -317,13 +351,13 @@ export default function PPAPage() {
               <FileText className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
               <p className="text-muted-foreground">
                 {ppas.length === 0
-                  ? "Noch keine PPAs vorhanden"
-                  : "Keine PPAs gefunden"}
+                  ? t("emptyNoData")
+                  : t("emptyNotFound")}
               </p>
               {ppas.length === 0 && (
                 <Button variant="outline" className="mt-4">
                   <Plus className="h-4 w-4 mr-2" />
-                  Ersten PPA anlegen
+                  {t("createFirst")}
                 </Button>
               )}
             </div>
@@ -332,19 +366,18 @@ export default function PPAPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Titel</TableHead>
-                    <TableHead>Park</TableHead>
-                    <TableHead>Vertragspartner</TableHead>
-                    <TableHead>Preismodell</TableHead>
-                    <TableHead>Preis</TableHead>
-                    <TableHead>Laufzeit</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t("colTitle")}</TableHead>
+                    <TableHead>{t("colPark")}</TableHead>
+                    <TableHead>{t("colCounterparty")}</TableHead>
+                    <TableHead>{t("colPricingMode")}</TableHead>
+                    <TableHead>{t("colPrice")}</TableHead>
+                    <TableHead>{t("colTerm")}</TableHead>
+                    <TableHead>{t("colStatus")}</TableHead>
                     <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((ppa) => {
-                    const sc = STATUS_CONFIG[ppa.status];
                     return (
                       <TableRow key={ppa.id}>
                         <TableCell className="font-medium">
@@ -355,11 +388,11 @@ export default function PPAPage() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell>{ppa.park?.name ?? "—"}</TableCell>
+                        <TableCell>{ppa.park?.name ?? t("emptyDash")}</TableCell>
                         <TableCell>{ppa.counterparty}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
-                            {PRICING_MODE_LABELS[ppa.pricingMode]}
+                            {pricingModeLabel(ppa.pricingMode)}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-mono text-sm">
@@ -367,15 +400,15 @@ export default function PPAPage() {
                         </TableCell>
                         <TableCell className="text-sm whitespace-nowrap">
                           {format(new Date(ppa.startDate), "dd.MM.yyyy", {
-                            locale: de,
+                            locale: dateLocale,
                           })}{" "}
                           –{" "}
                           {format(new Date(ppa.endDate), "dd.MM.yyyy", {
-                            locale: de,
+                            locale: dateLocale,
                           })}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={sc.variant}>{sc.label}</Badge>
+                          <Badge variant={STATUS_VARIANTS[ppa.status]}>{statusLabel(ppa.status)}</Badge>
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -391,18 +424,18 @@ export default function PPAPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem>
                                 <Eye className="h-4 w-4 mr-2" />
-                                Anzeigen
+                                {t("actionShow")}
                               </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Pencil className="h-4 w-4 mr-2" />
-                                Bearbeiten
+                                {t("actionEdit")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => setDeletePpa(ppa)}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Löschen
+                                {t("actionDelete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -424,15 +457,15 @@ export default function PPAPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>PPA löschen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              &ldquo;{deletePpa?.title}&rdquo; wird unwiderruflich gelöscht.
+              {t("deleteDialogDescription", { title: deletePpa?.title ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleting}>
-              {deleting ? "Lösche..." : "Löschen"}
+              {deleting ? t("deleting") : t("actionDelete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

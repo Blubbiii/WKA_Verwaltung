@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import {
   Bell,
@@ -55,31 +56,12 @@ interface OverdueInvoice {
 // HELPERS
 // ============================================================================
 
-function formatAmount(value: string | number): string {
+function formatAmount(value: string | number, locale = "de-DE"): string {
   const n = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(n);
+  return new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" }).format(n);
 }
 
 // formatDate → uses central formatDate from @/lib/format
-
-function reminderLevelLabel(level: number | null): string {
-  if (!level) return "—";
-  const labels: Record<number, string> = {
-    1: "Erinnerung",
-    2: "1. Mahnung",
-    3: "2. Mahnung",
-  };
-  return labels[level] ?? `Stufe ${level}`;
-}
-
-function nextLevelLabel(level: 1 | 2 | 3): string {
-  const labels: Record<1 | 2 | 3, string> = {
-    1: "1. Erinnerung senden",
-    2: "1. Mahnung senden",
-    3: "2. Mahnung senden",
-  };
-  return labels[level];
-}
 
 function getLevelBadgeClass(level: number | null): string {
   if (!level) return "";
@@ -99,27 +81,59 @@ function getOverdueBadgeClass(days: number): string {
 // ============================================================================
 
 export default function RemindersPage() {
+  const t = useTranslations("invoices.reminders");
+  const locale = useLocale();
+  const amountLocale = locale === "en" ? "en-US" : "de-DE";
   const [invoices, setInvoices] = useState<OverdueInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState<Set<string>>(new Set());
+
+  const reminderLevelLabel = useCallback(
+    (level: number | null): string => {
+      if (!level) return t("levelDash");
+      if (level === 1) return t("level1");
+      if (level === 2) return t("level2");
+      if (level === 3) return t("level3");
+      return t("levelOther", { level });
+    },
+    [t]
+  );
+
+  const nextLevelLabel = useCallback(
+    (level: 1 | 2 | 3): string => {
+      if (level === 1) return t("nextLevel1");
+      if (level === 2) return t("nextLevel2");
+      return t("nextLevel3");
+    },
+    [t]
+  );
+
+  const nextLevelShortLabel = useCallback(
+    (level: 1 | 2 | 3): string => {
+      if (level === 1) return t("level1");
+      if (level === 2) return t("level2");
+      return t("level3");
+    },
+    [t]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/invoices/reminders");
       if (!res.ok) {
-        toast.error("Fehler beim Laden der überfälligen Rechnungen");
+        toast.error(t("loadError"));
         return;
       }
       setInvoices(await res.json());
       setSelected(new Set());
     } catch {
-      toast.error("Verbindungsfehler");
+      toast.error(t("connectionError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -137,15 +151,18 @@ export default function RemindersPage() {
         });
         const data = await res.json();
         if (!res.ok) {
-          toast.error(data.error || "Fehler beim Senden");
+          toast.error(data.error || t("sendError"));
         } else {
           toast.success(
-            `${nextLevelLabel(level).replace(" senden", "")} für ${invoice.invoiceNumber} gesendet`
+            t("sentSuccess", {
+              label: nextLevelShortLabel(level),
+              number: invoice.invoiceNumber,
+            })
           );
           await load();
         }
       } catch {
-        toast.error("Verbindungsfehler");
+        toast.error(t("connectionError"));
       } finally {
         setSending((prev) => {
           const next = new Set(prev);
@@ -154,7 +171,7 @@ export default function RemindersPage() {
         });
       }
     },
-    [load]
+    [load, t, nextLevelShortLabel]
   );
 
   // ---- Batch send ----
@@ -186,11 +203,11 @@ export default function RemindersPage() {
 
     setSending(new Set());
 
-    if (ok > 0) toast.success(`${ok} Mahnung${ok !== 1 ? "en" : ""} versendet`);
-    if (failed > 0) toast.warning(`${failed} Mahnung${failed !== 1 ? "en" : ""} fehlgeschlagen`);
+    if (ok > 0) toast.success(t("batchSent", { count: ok }));
+    if (failed > 0) toast.warning(t("batchFailed", { count: failed }));
 
     await load();
-  }, [invoices, selected, load]);
+  }, [invoices, selected, load, t]);
 
   // ============================================================================
   // COMPUTE KPIs
@@ -238,15 +255,15 @@ export default function RemindersPage() {
             <Bell className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold">Mahnwesen</h1>
+            <h1 className="text-2xl font-semibold">{t("pageTitle")}</h1>
             <p className="text-sm text-muted-foreground">
-              Überfällige versendete Rechnungen
+              {t("pageDescription")}
             </p>
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Aktualisieren
+          {t("refresh")}
         </Button>
       </div>
 
@@ -254,13 +271,13 @@ export default function RemindersPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Gesamt überfällig</p>
+            <p className="text-sm text-muted-foreground">{t("kpiTotal")}</p>
             <p className="text-3xl font-bold mt-1">{loading ? "—" : kpis.total}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Noch keine Mahnung</p>
+            <p className="text-sm text-muted-foreground">{t("kpiNoReminder")}</p>
             <p className="text-3xl font-bold mt-1 text-blue-600 dark:text-blue-400">
               {loading ? "—" : kpis.noReminder}
             </p>
@@ -268,7 +285,7 @@ export default function RemindersPage() {
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">2. Mahnung fällig</p>
+            <p className="text-sm text-muted-foreground">{t("kpiLevel2Due")}</p>
             <p className="text-3xl font-bold mt-1 text-amber-600 dark:text-amber-400">
               {loading ? "—" : kpis.level2Due}
             </p>
@@ -276,7 +293,7 @@ export default function RemindersPage() {
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Kritisch (&gt; 42 Tage)</p>
+            <p className="text-sm text-muted-foreground">{t("kpiCritical")}</p>
             <p className="text-3xl font-bold mt-1 text-red-600 dark:text-red-400">
               {loading ? "—" : kpis.critical}
             </p>
@@ -288,7 +305,7 @@ export default function RemindersPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <CardTitle className="text-base font-semibold">
-            {invoices.length} überfällige Rechnung{invoices.length !== 1 ? "en" : ""}
+            {t("overdueCount", { count: invoices.length })}
           </CardTitle>
           {someSelected && (
             <Button
@@ -301,7 +318,7 @@ export default function RemindersPage() {
               ) : (
                 <MailCheck className="h-4 w-4 mr-2" />
               )}
-              {selected.size} mahnen
+              {t("dunCount", { count: selected.size })}
             </Button>
           )}
         </CardHeader>
@@ -309,12 +326,12 @@ export default function RemindersPage() {
           {loading ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin mr-3" />
-              Wird geladen…
+              {t("loadingIndicator")}
             </div>
           ) : invoices.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
               <CheckCircle2 className="h-10 w-10 text-green-500" />
-              <p className="text-sm font-medium">Keine überfälligen Rechnungen</p>
+              <p className="text-sm font-medium">{t("noOverdue")}</p>
             </div>
           ) : (
             <Table>
@@ -324,15 +341,15 @@ export default function RemindersPage() {
                     <Checkbox
                       checked={allSelected}
                       onCheckedChange={toggleAll}
-                      aria-label="Alle auswählen"
+                      aria-label={t("selectAllAria")}
                     />
                   </TableHead>
-                  <TableHead>Rechnung</TableHead>
-                  <TableHead className="text-right">Betrag</TableHead>
-                  <TableHead>Fällig</TableHead>
-                  <TableHead>Überfällig</TableHead>
-                  <TableHead>Empfänger</TableHead>
-                  <TableHead>Mahnstufe</TableHead>
+                  <TableHead>{t("colInvoice")}</TableHead>
+                  <TableHead className="text-right">{t("colAmount")}</TableHead>
+                  <TableHead>{t("colDue")}</TableHead>
+                  <TableHead>{t("colOverdue")}</TableHead>
+                  <TableHead>{t("colRecipient")}</TableHead>
+                  <TableHead>{t("colReminderLevel")}</TableHead>
                   <TableHead className="w-36" />
                 </TableRow>
               </TableHeader>
@@ -371,7 +388,7 @@ export default function RemindersPage() {
 
                       {/* Amount */}
                       <TableCell className="text-right font-mono text-sm whitespace-nowrap">
-                        {formatAmount(inv.grossAmount)}
+                        {formatAmount(inv.grossAmount, amountLocale)}
                       </TableCell>
 
                       {/* Due date */}
@@ -386,7 +403,7 @@ export default function RemindersPage() {
                           className={getOverdueBadgeClass(inv.daysOverdue)}
                         >
                           <TriangleAlert className="h-3 w-3 mr-1" />
-                          {inv.daysOverdue} Tage
+                          {t("daysOverdue", { count: inv.daysOverdue })}
                         </Badge>
                       </TableCell>
 
@@ -433,12 +450,12 @@ export default function RemindersPage() {
                               {isSending ? (
                                 <>
                                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                                  Sende…
+                                  {t("sending")}
                                 </>
                               ) : (
                                 <>
                                   <MailCheck className="h-3.5 w-3.5 mr-1.5" />
-                                  Mahnen
+                                  {t("dun")}
                                 </>
                               )}
                             </Button>
