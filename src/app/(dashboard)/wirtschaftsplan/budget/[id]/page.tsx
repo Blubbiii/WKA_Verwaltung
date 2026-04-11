@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, use } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   ArrowLeft,
   Plus,
@@ -33,31 +34,30 @@ const fetcher = (url: string) =>
     return r.json();
   });
 
-const MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 const MONTH_KEYS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"] as const;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  REVENUE_ENERGY: "Energieertrag",
-  REVENUE_OTHER: "Sonstige Erträge",
-  COST_LEASE: "Pacht",
-  COST_MAINTENANCE: "Wartung / Reparatur",
-  COST_INSURANCE: "Versicherung",
-  COST_ADMIN: "Verwaltung / BF",
-  COST_DEPRECIATION: "Abschreibung (AfA)",
-  COST_FINANCING: "Zinsen / Finanzierung",
-  COST_OTHER: "Sonstige Kosten",
-  RESERVE: "Rücklage",
-};
+const CATEGORY_KEYS = [
+  "REVENUE_ENERGY",
+  "REVENUE_OTHER",
+  "COST_LEASE",
+  "COST_MAINTENANCE",
+  "COST_INSURANCE",
+  "COST_ADMIN",
+  "COST_DEPRECIATION",
+  "COST_FINANCING",
+  "COST_OTHER",
+  "RESERVE",
+] as const;
 
 const REVENUE_CATS = ["REVENUE_ENERGY", "REVENUE_OTHER"];
 
-const STATUS_MAP = {
-  DRAFT: { label: "Entwurf", icon: Edit3, variant: "secondary" as const },
-  APPROVED: { label: "Genehmigt", icon: CheckCircle, variant: "default" as const },
-  LOCKED: { label: "Gesperrt", icon: Lock, variant: "outline" as const },
-};
+const STATUS_META = {
+  DRAFT: { icon: Edit3, variant: "secondary" as const, key: "statusDraft" },
+  APPROVED: { icon: CheckCircle, variant: "default" as const, key: "statusApproved" },
+  LOCKED: { icon: Lock, variant: "outline" as const, key: "statusLocked" },
+} as const;
 
-type Category = keyof typeof CATEGORY_LABELS;
+type Category = (typeof CATEGORY_KEYS)[number];
 
 interface BudgetLine {
   id?: string;
@@ -103,6 +103,7 @@ interface LineRowProps {
 }
 
 function LineRow({ line, isLocked, costCenters, updateLine, removeLine }: LineRowProps) {
+  const t = useTranslations("wirtschaftsplan.budget");
   const annual = rowSum(line);
   return (
     <tr className="border-b hover:bg-muted/20 group">
@@ -136,8 +137,8 @@ function LineRow({ line, isLocked, costCenters, updateLine, removeLine }: LineRo
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
+            {CATEGORY_KEYS.map((k) => (
+              <SelectItem key={k} value={k}>{t(`category${k}`)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -187,6 +188,8 @@ function LineRow({ line, isLocked, costCenters, updateLine, removeLine }: LineRo
 export default function BudgetDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations("wirtschaftsplan.budget");
+  const tMonths = useTranslations("wirtschaftsplan.months");
   const queryClient = useQueryClient();
   const budgetUrl = `/api/wirtschaftsplan/budgets/${id}`;
   const { data: budget } = useQuery<BudgetDetail>({
@@ -222,7 +225,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
       {
         costCenterId: costCenters[0].id,
         category: "COST_OTHER",
-        description: "Neue Position",
+        description: t("detailDefaultDescription"),
         jan: 0, feb: 0, mar: 0, apr: 0, may: 0, jun: 0,
         jul: 0, aug: 0, sep: 0, oct: 0, nov: 0, dec: 0,
         _localId: Math.random().toString(36).slice(2),
@@ -253,16 +256,16 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Fehler");
+        throw new Error(err.error ?? t("detailSaveError"));
       }
-      toast.success("Budgetplan gespeichert");
+      toast.success(t("detailSaveSuccess"));
       mutate();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler beim Speichern");
+      toast.error(e instanceof Error ? e.message : t("detailSaveError"));
     } finally {
       setSaving(false);
     }
-  }, [budget, id, lines, mutate]);
+  }, [budget, id, lines, mutate, t]);
 
   const handleStatusChange = useCallback(async (newStatus: string) => {
     setStatusSaving(true);
@@ -272,15 +275,16 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (!res.ok) throw new Error("Fehler");
-      toast.success(`Status geändert: ${STATUS_MAP[newStatus as keyof typeof STATUS_MAP]?.label}`);
+      if (!res.ok) throw new Error();
+      const meta = STATUS_META[newStatus as keyof typeof STATUS_META];
+      toast.success(t("detailStatusChanged", { label: meta ? t(meta.key) : newStatus }));
       mutate();
     } catch {
-      toast.error("Fehler beim Statuswechsel");
+      toast.error(t("detailStatusError"));
     } finally {
       setStatusSaving(false);
     }
-  }, [id, mutate]);
+  }, [id, mutate, t]);
 
   // Group lines by revenue / cost category
   const revenueLines = lines.filter((l) => REVENUE_CATS.includes(l.category));
@@ -299,10 +303,8 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
     );
   }
 
-  const status = STATUS_MAP[budget.status];
-  const StatusIcon = status.icon;
-
-
+  const statusMeta = STATUS_META[budget.status];
+  const StatusIcon = statusMeta.icon;
 
   return (
     <div className="space-y-6">
@@ -314,30 +316,30 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">{budget.name}</h1>
-            <Badge variant={status.variant} className="gap-1">
+            <Badge variant={statusMeta.variant} className="gap-1">
               <StatusIcon className="h-3 w-3" />
-              {status.label}
+              {t(statusMeta.key)}
             </Badge>
           </div>
-          <p className="text-muted-foreground">Wirtschaftsjahr {budget.year}</p>
+          <p className="text-muted-foreground">{t("detailFiscalYear", { year: budget.year })}</p>
         </div>
         <div className="flex gap-2">
           {budget.status === "DRAFT" && (
             <Button variant="outline" size="sm" onClick={() => handleStatusChange("APPROVED")} disabled={statusSaving}>
               <CheckCircle className="h-4 w-4 mr-1" />
-              Genehmigen
+              {t("detailApprove")}
             </Button>
           )}
           {budget.status === "APPROVED" && (
             <Button variant="outline" size="sm" onClick={() => handleStatusChange("LOCKED")} disabled={statusSaving}>
               <Lock className="h-4 w-4 mr-1" />
-              Sperren
+              {t("detailLock")}
             </Button>
           )}
           {!isLocked && (
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-              Speichern
+              {t("detailSave")}
             </Button>
           )}
         </div>
@@ -346,14 +348,14 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
       {/* Summary */}
       <div className="grid gap-3 md:grid-cols-3">
         {[
-          { label: "Plan-Einnahmen", val: totalBudgetRevenue, pos: true },
-          { label: "Plan-Kosten", val: totalBudgetCosts, pos: false },
-          { label: "Plan-Ergebnis", val: totalNetPL, pos: totalNetPL >= 0 },
-        ].map(({ label, val, pos }) => (
-          <Card key={label}>
+          { key: "rev", label: t("detailKpiPlanRevenue"), val: totalBudgetRevenue, pos: true },
+          { key: "cost", label: t("detailKpiPlanCosts"), val: totalBudgetCosts, pos: false },
+          { key: "net", label: t("detailKpiPlanResult"), val: totalNetPL, pos: totalNetPL >= 0 },
+        ].map(({ key, label, val, pos }) => (
+          <Card key={key}>
             <CardContent className="pt-4">
               <p className="text-sm text-muted-foreground">{label}</p>
-              <p className={`text-xl font-bold mt-1 ${pos && label !== "Plan-Kosten" ? "text-green-600 dark:text-green-400" : label === "Plan-Ergebnis" && !pos ? "text-destructive" : ""}`}>
+              <p className={`text-xl font-bold mt-1 ${pos && key !== "cost" ? "text-green-600 dark:text-green-400" : key === "net" && !pos ? "text-destructive" : ""}`}>
                 {val.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
               </p>
             </CardContent>
@@ -365,11 +367,11 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Budgetzeilen</CardTitle>
+            <CardTitle>{t("detailLinesTitle")}</CardTitle>
             {!isLocked && (
               <Button size="sm" variant="outline" onClick={addLine} disabled={!costCenters?.length}>
                 <Plus className="h-4 w-4 mr-1" />
-                Zeile hinzufügen
+                {t("detailAddLine")}
               </Button>
             )}
           </div>
@@ -379,11 +381,11 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50 border-b">
-                  <th className="text-left px-2 py-2 text-xs font-medium">Kostenstelle</th>
-                  <th className="text-left px-2 py-2 text-xs font-medium">Kategorie</th>
-                  <th className="text-left px-2 py-2 text-xs font-medium">Beschreibung</th>
-                  {MONTHS.map((m) => <th key={m} className="text-right px-1 py-2 text-xs font-medium">{m}</th>)}
-                  <th className="text-right px-2 py-2 text-xs font-medium">Gesamt</th>
+                  <th className="text-left px-2 py-2 text-xs font-medium">{t("detailColCostCenter")}</th>
+                  <th className="text-left px-2 py-2 text-xs font-medium">{t("detailColCategory")}</th>
+                  <th className="text-left px-2 py-2 text-xs font-medium">{t("detailColDescription")}</th>
+                  {MONTH_KEYS.map((mk) => <th key={mk} className="text-right px-1 py-2 text-xs font-medium">{tMonths(mk)}</th>)}
+                  <th className="text-right px-2 py-2 text-xs font-medium">{t("detailColTotal")}</th>
                   {!isLocked && <th className="w-8" />}
                 </tr>
               </thead>
@@ -392,7 +394,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
                   <>
                     <tr className="bg-green-50/50 dark:bg-green-950/20">
                       <td colSpan={15 + (isLocked ? 0 : 1)} className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        EINNAHMEN
+                        {t("detailSectionRevenue")}
                       </td>
                     </tr>
                     {revenueLines.map((l) => <LineRow key={l._localId} line={l} isLocked={isLocked} costCenters={costCenters} updateLine={updateLine} removeLine={removeLine} />)}
@@ -402,7 +404,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
                   <>
                     <tr className="bg-red-50/50 dark:bg-red-950/20">
                       <td colSpan={15 + (isLocked ? 0 : 1)} className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        AUSGABEN
+                        {t("detailSectionExpenses")}
                       </td>
                     </tr>
                     {costLines.map((l) => <LineRow key={l._localId} line={l} isLocked={isLocked} costCenters={costCenters} updateLine={updateLine} removeLine={removeLine} />)}
@@ -411,7 +413,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
                 {lines.length === 0 && (
                   <tr>
                     <td colSpan={16} className="text-center py-8 text-muted-foreground text-sm">
-                      Noch keine Budgetzeilen. Klicke auf &quot;Zeile hinzufügen&quot;.
+                      {t("detailEmptyHint")}
                     </td>
                   </tr>
                 )}

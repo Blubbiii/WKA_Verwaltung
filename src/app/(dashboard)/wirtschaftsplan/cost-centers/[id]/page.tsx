@@ -3,6 +3,7 @@
 import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Building2, Wind, Briefcase, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,12 +16,12 @@ const fetcher = (url: string) =>
     return r.json();
   });
 
-const TYPE_META: Record<string, { label: string; icon: React.ElementType }> = {
-  PARK: { label: "Park", icon: Building2 },
-  TURBINE: { label: "Turbine", icon: Wind },
-  FUND: { label: "Fonds", icon: Briefcase },
-  OVERHEAD: { label: "Overhead", icon: LayoutGrid },
-  CUSTOM: { label: "Benutzerdefiniert", icon: LayoutGrid },
+const TYPE_META: Record<string, { key: string; icon: React.ElementType }> = {
+  PARK: { key: "typePark", icon: Building2 },
+  TURBINE: { key: "typeTurbine", icon: Wind },
+  FUND: { key: "typeFund", icon: Briefcase },
+  OVERHEAD: { key: "typeOverhead", icon: LayoutGrid },
+  CUSTOM: { key: "typeCustom", icon: LayoutGrid },
 };
 
 interface CostCenterDetail {
@@ -41,6 +42,7 @@ interface CostCenterDetail {
 export default function CostCenterDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations("wirtschaftsplan.costCenters");
   const costCenterUrl = `/api/cost-centers/${id}`;
   const { data: costCenter, isLoading } = useQuery<CostCenterDetail>({
     queryKey: [costCenterUrl],
@@ -61,9 +63,9 @@ export default function CostCenterDetailPage({ params }: { params: Promise<{ id:
       <div className="space-y-4">
         <Button variant="ghost" size="sm" onClick={() => router.push("/wirtschaftsplan/cost-centers")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Zurück
+          {t("detailBack")}
         </Button>
-        <p className="text-muted-foreground">Kostenstelle nicht gefunden.</p>
+        <p className="text-muted-foreground">{t("detailNotFound")}</p>
       </div>
     );
   }
@@ -84,7 +86,7 @@ export default function CostCenterDetailPage({ params }: { params: Promise<{ id:
             <Icon className="h-5 w-5 text-muted-foreground" />
             <h1 className="text-2xl font-bold">{costCenter.name}</h1>
             <Badge variant={costCenter.isActive ? "default" : "secondary"}>
-              {costCenter.isActive ? "Aktiv" : "Inaktiv"}
+              {costCenter.isActive ? t("statusActive") : t("statusInactive")}
             </Badge>
           </div>
           <p className="text-muted-foreground font-mono">{costCenter.code}</p>
@@ -93,17 +95,17 @@ export default function CostCenterDetailPage({ params }: { params: Promise<{ id:
 
       {/* Details */}
       <Card>
-        <CardHeader><CardTitle>Details</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t("detailDetailsTitle")}</CardTitle></CardHeader>
         <CardContent>
           <dl className="grid gap-3 sm:grid-cols-2">
             {[
-              { label: "Typ", val: meta.label },
-              { label: "Code", val: costCenter.code },
-              { label: "Name", val: costCenter.name },
-              { label: "Zuordnung", val: assignment ?? "Keine" },
-              { label: "Übergeordnet", val: costCenter.parent ? `${costCenter.parent.code} – ${costCenter.parent.name}` : "Keine" },
-              { label: "Beschreibung", val: costCenter.description ?? "–" },
-              { label: "Budgetzeilen", val: String(costCenter._count.budgetLines) },
+              { label: t("detailFieldType"), val: t(meta.key) },
+              { label: t("detailFieldCode"), val: costCenter.code },
+              { label: t("detailFieldName"), val: costCenter.name },
+              { label: t("detailFieldAssignment"), val: assignment ?? t("detailNone") },
+              { label: t("detailFieldParent"), val: costCenter.parent ? `${costCenter.parent.code} – ${costCenter.parent.name}` : t("detailNone") },
+              { label: t("detailFieldDescription"), val: costCenter.description ?? "–" },
+              { label: t("detailFieldBudgetLines"), val: String(costCenter._count.budgetLines) },
             ].map(({ label, val }) => (
               <div key={label}>
                 <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -117,7 +119,11 @@ export default function CostCenterDetailPage({ params }: { params: Promise<{ id:
       {/* Child Cost Centers */}
       {costCenter.children.length > 0 && (
         <Card>
-          <CardHeader><CardTitle>Untergeordnete Kostenstellen ({costCenter.children.length})</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>
+              {t("detailChildrenTitle", { count: costCenter.children.length })}
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {costCenter.children.map((child) => {
@@ -133,7 +139,7 @@ export default function CostCenterDetailPage({ params }: { params: Promise<{ id:
                     <span className="font-mono text-sm">{child.code}</span>
                     <span className="text-sm">{child.name}</span>
                     <Badge variant={child.isActive ? "default" : "secondary"} className="ml-auto text-xs">
-                      {child.isActive ? "Aktiv" : "Inaktiv"}
+                      {child.isActive ? t("statusActive") : t("statusInactive")}
                     </Badge>
                   </div>
                 );

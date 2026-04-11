@@ -48,10 +48,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
 import { toast } from "sonner";
-import {
-  getSettlementPeriodLabel,
-  SETTLEMENT_STATUS_LABELS,
-} from "@/types/billing";
+import { getSettlementPeriodLabel } from "@/types/billing";
 
 // ============================================================================
 // Types
@@ -191,8 +188,7 @@ function formatEur(value: number, locale: string): string {
 // Status badge helper
 // ============================================================================
 
-function getStatusBadge(status: string) {
-  const label = SETTLEMENT_STATUS_LABELS[status as keyof typeof SETTLEMENT_STATUS_LABELS] || status;
+function getStatusBadge(status: string, label: string) {
   const variantMap: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
     OPEN: "outline",
     ADVANCE_CREATED: "secondary",
@@ -213,6 +209,7 @@ function getStatusBadge(status: string) {
 
 export default function NewLeaseSettlementPage() {
   const t = useTranslations("leases.settlementNew");
+  const tStatus = useTranslations("billing.settlementStatus");
   const locale = useLocale();
   const intlLocale = locale === "en" ? "en-US" : "de-DE";
 
@@ -319,6 +316,7 @@ export default function NewLeaseSettlementPage() {
       }
     }
     fetchParks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load leases when park changes
@@ -351,6 +349,7 @@ export default function NewLeaseSettlementPage() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedParkId]);
 
   // Load energy settlements when park + year changes and type is FINAL
@@ -1170,7 +1169,7 @@ export default function NewLeaseSettlementPage() {
                                     : t("step1.typeFinalShort")}
                                 </Badge>
                               </TableCell>
-                              <TableCell>{getStatusBadge(settlement.status)}</TableCell>
+                              <TableCell>{getStatusBadge(settlement.status, tStatus(settlement.status))}</TableCell>
                               <TableCell className="text-right">
                                 {settlement.actualFeeEur
                                   ? fmtEur(Number(settlement.actualFeeEur))

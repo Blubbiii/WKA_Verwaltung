@@ -41,21 +41,11 @@ export type LeaseSettlementMode =
   (typeof LeaseSettlementMode)[keyof typeof LeaseSettlementMode];
 
 // ===========================================
-// STATUS LABELS (German UI)
+// PERIOD TYPE / INTERVAL CONSTANTS
 // ===========================================
+// UI labels for these enums live in src/messages/{de,de-personal,en}.json
+// under the `billing.*` namespace and are accessed via useTranslations.
 
-export const SETTLEMENT_STATUS_LABELS: Record<LeaseRevenueSettlementStatus, string> = {
-  OPEN: "Offen",
-  ADVANCE_CREATED: "Vorschuss erstellt",
-  CALCULATED: "Berechnet",
-  SETTLED: "Abgerechnet",
-  PENDING_REVIEW: "Zur Prüfung",
-  APPROVED: "Freigegeben",
-  CLOSED: "Abgeschlossen",
-  CANCELLED: "Storniert",
-};
-
-// Period type constants
 export const SettlementPeriodType = {
   ADVANCE: "ADVANCE",
   FINAL: "FINAL",
@@ -73,17 +63,6 @@ export const AdvanceInterval = {
 export type AdvanceInterval =
   (typeof AdvanceInterval)[keyof typeof AdvanceInterval];
 
-export const PERIOD_TYPE_LABELS: Record<string, string> = {
-  FINAL: "Endabrechnung",
-  ADVANCE: "Vorschuss",
-};
-
-export const ADVANCE_INTERVAL_LABELS: Record<string, string> = {
-  MONTHLY: "Monatlich",
-  QUARTERLY: "Quartalsweise",
-  YEARLY: "Jährlich",
-};
-
 /**
  * Returns divisor for advance interval (how many periods per year)
  */
@@ -97,7 +76,9 @@ export function getIntervalDivisor(interval: string | null): number {
 }
 
 /**
- * Returns display label for a settlement period
+ * Returns display label for a settlement period.
+ * NOTE: Uses German month abbreviations as fallback for backwards compatibility
+ * — UI components should prefer locale-aware formatting via i18n.
  */
 export function getSettlementPeriodLabel(
   periodType: string,
@@ -116,17 +97,6 @@ export function getSettlementPeriodLabel(
   }
   return `Jahresvorschuss ${year}`;
 }
-
-export const ALLOCATION_STATUS_LABELS: Record<ParkCostAllocationStatus, string> = {
-  DRAFT: "Entwurf",
-  INVOICED: "Abgerechnet",
-  CLOSED: "Abgeschlossen",
-};
-
-export const SETTLEMENT_MODE_LABELS: Record<LeaseSettlementMode, string> = {
-  NETWORK_COMPANY: "Netzgesellschaft rechnet ab",
-  OPERATOR_DIRECT: "Betreiber rechnet selbst ab",
-};
 
 // ===========================================
 // ZOD SCHEMAS - API Validation

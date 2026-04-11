@@ -55,10 +55,7 @@ import {
 } from "@/components/ui/select";
 import { useParks } from "@/hooks/useParks";
 import { formatCurrency } from "@/lib/format";
-import {
-  SETTLEMENT_STATUS_LABELS,
-  type LeaseRevenueSettlementResponse,
-} from "@/types/billing";
+import { type LeaseRevenueSettlementResponse } from "@/types/billing";
 
 // =============================================================================
 // CONSTANTS
@@ -111,6 +108,7 @@ export default function UsageFeesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations("leases.usageFees");
+  const tStatus = useTranslations("billing.settlementStatus");
   const tCommon = useTranslations("common");
 
   // ---------------------------------------------------------------------------
@@ -705,8 +703,7 @@ export default function UsageFeesPage() {
                           variant="secondary"
                           className={getStatusColor(settlement.status)}
                         >
-                          {SETTLEMENT_STATUS_LABELS[settlement.status] ||
-                            settlement.status}
+                          {tStatus(settlement.status)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">

@@ -37,7 +37,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { useParks } from "@/hooks/useParks";
 import { formatCurrency } from "@/lib/format";
 import {
-  SETTLEMENT_STATUS_LABELS,
   getSettlementPeriodLabel,
   type LeaseRevenueSettlementStatus,
 } from "@/types/billing";
@@ -144,6 +143,7 @@ function getStatusBadgeClasses(status: string): string {
 export default function LeaseSettlementOverviewPage() {
   const router = useRouter();
   const t = useTranslations("leases.settlement");
+  const tStatus = useTranslations("billing.settlementStatus");
 
   // ---------------------------------------------------------------------------
   // Filter State
@@ -638,8 +638,7 @@ export default function LeaseSettlementOverviewPage() {
                             settlement.status
                           )}
                         >
-                          {SETTLEMENT_STATUS_LABELS[settlement.status] ||
-                            settlement.status}
+                          {tStatus(settlement.status)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">

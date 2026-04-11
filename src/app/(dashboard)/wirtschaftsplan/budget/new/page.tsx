@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,20 +37,21 @@ interface ExistingBudget {
 
 export default function NewBudgetPage() {
   const router = useRouter();
+  const t = useTranslations("wirtschaftsplan.budget");
   const { data: existingBudgets } = useQuery<ExistingBudget[]>({
     queryKey: ["/api/wirtschaftsplan/budgets"],
     queryFn: () => fetcher("/api/wirtschaftsplan/budgets"),
   });
 
   const [year, setYear] = useState(CURRENT_YEAR + 1);
-  const [name, setName] = useState(`Wirtschaftsplan ${CURRENT_YEAR + 1}`);
+  const [name, setName] = useState(t("defaultName", { year: CURRENT_YEAR + 1 }));
   const [notes, setNotes] = useState("");
   const [duplicateFromId, setDuplicateFromId] = useState<string>("none");
   const [saving, setSaving] = useState(false);
 
   async function handleCreate() {
     if (!name.trim()) {
-      toast.error("Bitte einen Namen eingeben");
+      toast.error(t("validationName"));
       return;
     }
     setSaving(true);
@@ -65,14 +67,14 @@ export default function NewBudgetPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Fehler");
+        throw new Error(err.error ?? t("createError"));
       }
 
       const budget = await res.json();
-      toast.success("Budgetplan erstellt");
+      toast.success(t("createSuccess"));
       router.push(`/wirtschaftsplan/budget/${budget.id}`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler beim Erstellen");
+      toast.error(e instanceof Error ? e.message : t("createError"));
     } finally {
       setSaving(false);
     }
@@ -85,25 +87,25 @@ export default function NewBudgetPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Neuer Budgetplan</h1>
-          <p className="text-muted-foreground">Jahres-Wirtschaftsplan anlegen</p>
+          <h1 className="text-2xl font-bold">{t("newTitle")}</h1>
+          <p className="text-muted-foreground">{t("newSubtitle")}</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Plan-Details</CardTitle>
+          <CardTitle>{t("planDetails")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Jahr</Label>
+              <Label>{t("fieldYear")}</Label>
               <Select
                 value={String(year)}
                 onValueChange={(v) => {
                   const y = Number(v);
                   setYear(y);
-                  setName(`Wirtschaftsplan ${y}`);
+                  setName(t("defaultName", { year: y }));
                 }}
               >
                 <SelectTrigger>
@@ -118,24 +120,24 @@ export default function NewBudgetPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>{t("fieldName")}</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="z.B. Wirtschaftsplan 2027"
+                placeholder={t("namePlaceholder", { year: CURRENT_YEAR + 1 })}
               />
             </div>
           </div>
 
           {existingBudgets && existingBudgets.length > 0 && (
             <div className="space-y-2">
-              <Label>Aus Vorjahr kopieren (optional)</Label>
+              <Label>{t("duplicateLabel")}</Label>
               <Select value={duplicateFromId} onValueChange={setDuplicateFromId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Kein Vorjahr" />
+                  <SelectValue placeholder={t("duplicateNone")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Leer beginnen</SelectItem>
+                  <SelectItem value="none">{t("duplicateEmpty")}</SelectItem>
                   {existingBudgets.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.year} — {b.name}
@@ -144,17 +146,17 @@ export default function NewBudgetPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Alle Budgetzeilen des Vorjahresplans werden übernommen.
+                {t("duplicateHint")}
               </p>
             </div>
           )}
 
           <div className="space-y-2">
-            <Label>Notizen (optional)</Label>
+            <Label>{t("fieldNotes")}</Label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Annahmen, Rahmenbedingungen, ..."
+              placeholder={t("notesPlaceholder")}
               rows={3}
             />
           </div>
@@ -164,10 +166,10 @@ export default function NewBudgetPage() {
       <div className="flex gap-3">
         <Button onClick={handleCreate} disabled={saving}>
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Budgetplan erstellen
+          {t("createButton")}
         </Button>
         <Button variant="outline" onClick={() => router.back()}>
-          Abbrechen
+          {t("cancelButton")}
         </Button>
       </div>
     </div>

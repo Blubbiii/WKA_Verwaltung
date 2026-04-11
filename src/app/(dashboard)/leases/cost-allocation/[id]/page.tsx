@@ -38,7 +38,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
 import {
-  SETTLEMENT_STATUS_LABELS,
   type ParkCostAllocationStatus,
   type ParkCostAllocationResponse,
   type ParkCostAllocationItemResponse,
@@ -81,6 +80,7 @@ export default function CostAllocationDetailPage({
   const _router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations("leases.costAllocationDetail");
+  const tStatus = useTranslations("billing.settlementStatus");
   const locale = useLocale();
   const formatPercent = makeFormatPercent(locale);
   const statusLabels: Record<ParkCostAllocationStatus, string> = {
@@ -353,11 +353,7 @@ export default function CostAllocationDetailPage({
                   <span className="font-medium">
                     {parkName} - {year}
                   </span>
-                  <Badge variant="outline">
-                    {SETTLEMENT_STATUS_LABELS[
-                      settlement.status as keyof typeof SETTLEMENT_STATUS_LABELS
-                    ] || settlement.status}
-                  </Badge>
+                  <Badge variant="outline">{tStatus(settlement.status)}</Badge>
                 </div>
                 {settlement.actualFeeEur !== undefined && (
                   <div className="flex items-center gap-2">

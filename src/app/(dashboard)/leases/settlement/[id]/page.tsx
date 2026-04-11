@@ -54,10 +54,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import {
-  SETTLEMENT_STATUS_LABELS,
-  PERIOD_TYPE_LABELS,
-  ADVANCE_INTERVAL_LABELS,
-  ALLOCATION_STATUS_LABELS,
   getSettlementPeriodLabel,
   type LeaseRevenueSettlementResponse,
   type LeaseRevenueSettlementItemResponse,
@@ -179,6 +175,10 @@ export default function SettlementDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const t = useTranslations("leases.settlementDetail");
+  const tStatus = useTranslations("billing.settlementStatus");
+  const tPeriodType = useTranslations("billing.periodType");
+  const tInterval = useTranslations("billing.advanceInterval");
+  const tAllocStatus = useTranslations("billing.allocationStatus");
   const locale = useLocale();
   const intlLocale = locale === "en" ? "en-US" : "de-DE";
 
@@ -536,9 +536,9 @@ export default function SettlementDetailPage({
     ? t("finalSettlementLabel", { year: settlement.year })
     : isAdvance
       ? t("advanceLabel", {
-          interval:
-            ADVANCE_INTERVAL_LABELS[settlement.advanceInterval || ""] ||
-            t("advanceFallback"),
+          interval: settlement.advanceInterval
+            ? tInterval(settlement.advanceInterval)
+            : t("advanceFallback"),
           year: settlement.year,
         })
       : `${settlement.year}`;
@@ -1171,9 +1171,7 @@ export default function SettlementDetailPage({
                         allocation.status
                       )}
                     >
-                      {ALLOCATION_STATUS_LABELS[
-                        allocation.status as ParkCostAllocationStatus
-                      ] || allocation.status}
+                      {tAllocStatus(allocation.status as ParkCostAllocationStatus)}
                     </Badge>
                     <span className="text-sm font-medium">
                       {formatCurrency(allocation.totalUsageFeeEur)}
@@ -1309,16 +1307,16 @@ export default function SettlementDetailPage({
                     )}
                   </TableCell>
                   <TableCell>
-                    {ADVANCE_INTERVAL_LABELS[advance.advanceInterval || ""] ||
-                      "-"}
+                    {advance.advanceInterval
+                      ? tInterval(advance.advanceInterval)
+                      : "-"}
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant="secondary"
                       className={getStatusBadgeClasses(advance.status)}
                     >
-                      {SETTLEMENT_STATUS_LABELS[advance.status] ||
-                        advance.status}
+                      {tStatus(advance.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono">
@@ -1438,18 +1436,12 @@ export default function SettlementDetailPage({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{t("periodType")}</span>
-              <span>
-                {PERIOD_TYPE_LABELS[settlement.periodType] ||
-                  settlement.periodType}
-              </span>
+              <span>{tPeriodType(settlement.periodType)}</span>
             </div>
             {isAdvance && settlement.advanceInterval && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{t("intervalLabel")}</span>
-                <span>
-                  {ADVANCE_INTERVAL_LABELS[settlement.advanceInterval] ||
-                    settlement.advanceInterval}
-                </span>
+                <span>{tInterval(settlement.advanceInterval)}</span>
               </div>
             )}
           </CardContent>
@@ -1538,9 +1530,7 @@ export default function SettlementDetailPage({
                 variant="secondary"
                 className={getStatusBadgeClasses(status)}
               >
-                {SETTLEMENT_STATUS_LABELS[
-                  status as LeaseRevenueSettlementStatus
-                ] || status}
+                {tStatus(status as LeaseRevenueSettlementStatus)}
               </Badge>
             </div>
             <p className="text-muted-foreground mt-1">{periodTypeLabel}</p>

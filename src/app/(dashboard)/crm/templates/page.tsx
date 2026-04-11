@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 /**
  * Legacy route — CRM templates are now managed centrally in the
@@ -10,12 +11,13 @@ import { useRouter } from "next/navigation";
  */
 export default function CrmTemplatesRedirect() {
   const router = useRouter();
+  const t = useTranslations("crm.templates");
   useEffect(() => {
     router.replace("/kommunikation/email");
   }, [router]);
   return (
     <div className="flex items-center justify-center py-24 text-sm text-muted-foreground">
-      Weiterleitung zur E-Mail-Einstellungsseite…
+      {t("redirectMessage")}
     </div>
   );
 }

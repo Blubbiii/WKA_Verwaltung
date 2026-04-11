@@ -46,7 +46,6 @@ import {
 } from "@/components/ui/select";
 import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
 import {
-  SETTLEMENT_MODE_LABELS,
   type LeaseSettlementMode,
   type ParkSetupData,
   type LeaseSetupInfo,
@@ -82,6 +81,7 @@ export default function UsageFeeSetupPage({
   const { parkId } = use(params);
   const router = useRouter();
   const t = useTranslations("leases.usageFeesSetup");
+  const tMode = useTranslations("billing.settlementMode");
   const locale = useLocale();
   const intlLocale = locale === "en" ? "en-US" : "de-DE";
 
@@ -402,7 +402,7 @@ export default function UsageFeeSetupPage({
                       htmlFor="mode-network"
                       className="text-base font-medium cursor-pointer"
                     >
-                      {SETTLEMENT_MODE_LABELS.NETWORK_COMPANY}
+                      {tMode("NETWORK_COMPANY")}
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
                       {t("networkModeDescription")}
@@ -422,7 +422,7 @@ export default function UsageFeeSetupPage({
                       htmlFor="mode-direct"
                       className="text-base font-medium cursor-pointer"
                     >
-                      {SETTLEMENT_MODE_LABELS.OPERATOR_DIRECT}
+                      {tMode("OPERATOR_DIRECT")}
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
                       {t("directModeDescription")}
@@ -572,9 +572,7 @@ export default function UsageFeeSetupPage({
                     <p className="text-sm text-muted-foreground mb-1">
                       {t("settlementModeLabel")}
                     </p>
-                    <p className="font-medium">
-                      {SETTLEMENT_MODE_LABELS[settlementMode]}
-                    </p>
+                    <p className="font-medium">{tMode(settlementMode)}</p>
                   </div>
                   <div className="rounded-lg border p-4">
                     <p className="text-sm text-muted-foreground mb-1">

@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { useTranslations } from "next-intl";
 import { formatCurrency, formatDate } from "@/lib/format";
 import {
   ArrowLeft,
@@ -136,6 +137,7 @@ export default function EditInvoicePage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations("invoices.edit");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -177,18 +179,18 @@ export default function EditInvoicePage({
         const response = await fetch(`/api/invoices/${id}`);
         if (!response.ok) {
           if (response.status === 404) {
-            toast.error("Rechnung nicht gefunden");
+            toast.error(t("loadErrorNotFound"));
             router.push("/invoices");
             return;
           }
-          throw new Error("Fehler beim Laden");
+          throw new Error(t("errorLoad"));
         }
 
         const data: Invoice = await response.json();
 
         // Nur DRAFT-Rechnungen können bearbeitet werden
         if (data.status !== "DRAFT") {
-          toast.error("Nur Entwuerfe können bearbeitet werden");
+          toast.error(t("loadErrorOnlyDraft"));
           router.push(`/invoices/${id}`);
           return;
         }
@@ -230,14 +232,14 @@ export default function EditInvoicePage({
           }))
         );
       } catch {
-        toast.error("Fehler beim Laden der Rechnung");
+        toast.error(t("errorLoad"));
       } finally {
         setLoading(false);
       }
     }
 
     fetchInvoice();
-  }, [id, router]);
+  }, [id, router, t]);
 
   // Lade Parks und Gesellschaften
   useEffect(() => {
@@ -269,7 +271,7 @@ export default function EditInvoicePage({
 
   function handleRemoveItem(itemId: string) {
     if (items.length === 1) {
-      toast.error("Mindestens eine Position erforderlich");
+      toast.error(t("validationItemMin"));
       return;
     }
 
@@ -333,17 +335,17 @@ export default function EditInvoicePage({
     e.preventDefault();
 
     if (!formData.recipientName.trim()) {
-      toast.error("Empfängername erforderlich");
+      toast.error(t("validationRecipient"));
       return;
     }
 
     if (items.some((item) => !item.description.trim())) {
-      toast.error("Alle Positionen benoetigen eine Beschreibung");
+      toast.error(t("validationItemDescription"));
       return;
     }
 
     if (items.some((item) => item.unitPrice <= 0)) {
-      toast.error("Alle Positionen benoetigen einen positiven Preis");
+      toast.error(t("validationItemPrice"));
       return;
     }
 
@@ -395,7 +397,7 @@ export default function EditInvoicePage({
 
       if (!invoiceResponse.ok) {
         const error = await invoiceResponse.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("errorSave"));
       }
 
       // 3. Items aktualisieren/erstellen
@@ -433,10 +435,10 @@ export default function EditInvoicePage({
         }
       }
 
-      toast.success("Rechnung gespeichert");
+      toast.success(t("successSaved"));
       router.push(`/invoices/${id}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("errorSave"));
     } finally {
       setSaving(false);
     }
@@ -469,12 +471,17 @@ export default function EditInvoicePage({
   if (!invoice) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Rechnung nicht gefunden</p>
+        <p className="text-muted-foreground">{t("loadErrorNotFound")}</p>
       </div>
     );
   }
 
-  const typeLabel = invoice.invoiceType === "INVOICE" ? "Rechnung" : "Gutschrift";
+  const typeLabel =
+    invoice.invoiceType === "INVOICE" ? t("typeInvoice") : t("typeCreditNote");
+  const subtitleLabel =
+    invoice.invoiceType === "INVOICE"
+      ? t("headerSubtitleInvoice")
+      : t("headerSubtitleCreditNote");
 
   return (
     <>
@@ -491,11 +498,9 @@ export default function EditInvoicePage({
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{invoice.invoiceNumber}</h1>
               <Badge variant="outline">{typeLabel}</Badge>
-              <Badge variant="secondary">Entwurf</Badge>
+              <Badge variant="secondary">{t("statusDraft")}</Badge>
             </div>
-            <p className="text-muted-foreground">
-              {typeLabel} bearbeiten
-            </p>
+            <p className="text-muted-foreground">{subtitleLabel}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -504,7 +509,7 @@ export default function EditInvoicePage({
             variant="outline"
             onClick={() => router.back()}
           >
-            Abbrechen
+            {t("cancelButton")}
           </Button>
           <Button type="submit" disabled={saving}>
             {saving ? (
@@ -512,7 +517,7 @@ export default function EditInvoicePage({
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Speichern
+            {t("saveButton")}
           </Button>
         </div>
       </div>
@@ -520,9 +525,9 @@ export default function EditInvoicePage({
       {/* Hinweis */}
       <Alert>
         <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Entwurf bearbeiten</AlertTitle>
+        <AlertTitle>{t("headerEditDraft")}</AlertTitle>
         <AlertDescription>
-          Sie bearbeiten einen Entwurf. Die Rechnungsnummer ({invoice.invoiceNumber}) bleibt unveraendert.
+          {t("headerEditNote", { number: invoice.invoiceNumber })}
         </AlertDescription>
       </Alert>
 
@@ -532,12 +537,12 @@ export default function EditInvoicePage({
           {/* Empfänger */}
           <Card>
             <CardHeader>
-              <CardTitle>Empfänger</CardTitle>
+              <CardTitle>{t("cardRecipientTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="recipientType">Typ</Label>
+                  <Label htmlFor="recipientType">{t("fieldRecipientType")}</Label>
                   <Select
                     value={formData.recipientType}
                     onValueChange={(value) =>
@@ -548,13 +553,13 @@ export default function EditInvoicePage({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PERSON">Person</SelectItem>
-                      <SelectItem value="COMPANY">Unternehmen</SelectItem>
+                      <SelectItem value="PERSON">{t("recipientTypePerson")}</SelectItem>
+                      <SelectItem value="COMPANY">{t("recipientTypeCompany")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="recipientName">Name *</Label>
+                  <Label htmlFor="recipientName">{t("fieldRecipientName")}</Label>
                   <div className="relative">
                     <Input
                       id="recipientName"
@@ -562,7 +567,7 @@ export default function EditInvoicePage({
                       onChange={(e) =>
                         setFormData({ ...formData, recipientName: e.target.value })
                       }
-                      placeholder="Name des Empfängers"
+                      placeholder={t("placeholderRecipientName")}
                       required
                       className="pr-10"
                     />
@@ -572,7 +577,7 @@ export default function EditInvoicePage({
                       size="icon"
                       className="absolute right-0 top-0 h-full w-10"
                       onClick={() => setRecipientDialogOpen(true)}
-                      title="Kontakt suchen"
+                      title={t("tooltipFindContact")}
                     >
                       <Search className="h-4 w-4" />
                     </Button>
@@ -580,14 +585,14 @@ export default function EditInvoicePage({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="recipientAddress">Adresse</Label>
+                <Label htmlFor="recipientAddress">{t("fieldRecipientAddress")}</Label>
                 <Textarea
                   id="recipientAddress"
                   value={formData.recipientAddress}
                   onChange={(e) =>
                     setFormData({ ...formData, recipientAddress: e.target.value })
                   }
-                  placeholder="Strasse, PLZ Ort"
+                  placeholder={t("placeholderRecipientAddress")}
                   rows={3}
                 />
               </div>
@@ -599,12 +604,14 @@ export default function EditInvoicePage({
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Positionen</CardTitle>
-                  <CardDescription>{items.length} Position(en)</CardDescription>
+                  <CardTitle>{t("cardItemsTitle")}</CardTitle>
+                  <CardDescription>
+                    {t("cardItemsDescription", { count: items.length })}
+                  </CardDescription>
                 </div>
                 <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Position
+                  {t("addPositionButton")}
                 </Button>
               </div>
             </CardHeader>
@@ -612,26 +619,26 @@ export default function EditInvoicePage({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[300px]">Beschreibung</TableHead>
-                    <TableHead className="w-20">Menge</TableHead>
-                    <TableHead className="w-24">Einheit</TableHead>
-                    <TableHead className="w-32">Einzelpreis</TableHead>
+                    <TableHead className="w-[300px]">{t("tableDescription")}</TableHead>
+                    <TableHead className="w-20">{t("tableQuantity")}</TableHead>
+                    <TableHead className="w-24">{t("tableUnit")}</TableHead>
+                    <TableHead className="w-32">{t("tableUnitPrice")}</TableHead>
                     <TableHead className="w-32">
                       <div className="flex items-center gap-1">
-                        Steuer
+                        {t("tableTax")}
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <HelpCircle className="h-3 w-3 text-muted-foreground" />
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Steuerfrei: Gem. Paragraph 4 Nr.12 UStG</p>
+                              <p>{t("tableTaxTooltip")}</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </div>
                     </TableHead>
-                    <TableHead className="text-right">Netto</TableHead>
+                    <TableHead className="text-right">{t("tableNet")}</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -647,7 +654,7 @@ export default function EditInvoicePage({
                               onChange={(e) =>
                                 handleItemChange(item.id, "description", e.target.value)
                               }
-                              placeholder="Beschreibung"
+                              placeholder={t("placeholderItemDescription")}
                               className="pr-10"
                             />
                             <Button
@@ -659,7 +666,7 @@ export default function EditInvoicePage({
                                 setTemplateTargetItemId(item.id);
                                 setTemplateDialogOpen(true);
                               }}
-                              title="Vorlage auswaehlen"
+                              title={t("tooltipPickTemplate")}
                             >
                               <Search className="h-4 w-4" />
                             </Button>
@@ -685,14 +692,14 @@ export default function EditInvoicePage({
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Stueck">Stueck</SelectItem>
-                              <SelectItem value="Stunden">Stunden</SelectItem>
-                              <SelectItem value="Tage">Tage</SelectItem>
-                              <SelectItem value="pauschal">pauschal</SelectItem>
-                              <SelectItem value="kWh">kWh</SelectItem>
-                              <SelectItem value="MWh">MWh</SelectItem>
-                              <SelectItem value="m2">m2</SelectItem>
-                              <SelectItem value="ha">ha</SelectItem>
+                              <SelectItem value="Stueck">{t("unitPiece")}</SelectItem>
+                              <SelectItem value="Stunden">{t("unitHours")}</SelectItem>
+                              <SelectItem value="Tage">{t("unitDays")}</SelectItem>
+                              <SelectItem value="pauschal">{t("unitFlat")}</SelectItem>
+                              <SelectItem value="kWh">{t("unitKwh")}</SelectItem>
+                              <SelectItem value="MWh">{t("unitMwh")}</SelectItem>
+                              <SelectItem value="m2">{t("unitSqm")}</SelectItem>
+                              <SelectItem value="ha">{t("unitHectare")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
@@ -718,9 +725,9 @@ export default function EditInvoicePage({
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="EXEMPT">0% (steuerfrei)</SelectItem>
-                              <SelectItem value="REDUCED">7% MwSt</SelectItem>
-                              <SelectItem value="STANDARD">19% MwSt</SelectItem>
+                              <SelectItem value="EXEMPT">{t("taxExempt")}</SelectItem>
+                              <SelectItem value="REDUCED">{t("taxReduced")}</SelectItem>
+                              <SelectItem value="STANDARD">{t("taxStandard")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
@@ -744,7 +751,7 @@ export default function EditInvoicePage({
                 <TableFooter>
                   <TableRow>
                     <TableCell colSpan={5} className="text-right">
-                      Netto
+                      {t("footerNet")}
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       {formatCurrency(totals.netAmount)}
@@ -753,7 +760,7 @@ export default function EditInvoicePage({
                   </TableRow>
                   <TableRow>
                     <TableCell colSpan={5} className="text-right">
-                      MwSt
+                      {t("footerTax")}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(totals.taxAmount)}
@@ -762,7 +769,7 @@ export default function EditInvoicePage({
                   </TableRow>
                   <TableRow>
                     <TableCell colSpan={5} className="text-right font-bold">
-                      Brutto
+                      {t("footerGross")}
                     </TableCell>
                     <TableCell className="text-right font-bold text-lg">
                       {formatCurrency(totals.grossAmount)}
@@ -777,13 +784,13 @@ export default function EditInvoicePage({
           {/* Notizen */}
           <Card>
             <CardHeader>
-              <CardTitle>Notizen</CardTitle>
+              <CardTitle>{t("cardNotesTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Interne Notizen oder Zahlungshinweise"
+                placeholder={t("placeholderNotes")}
                 rows={3}
               />
             </CardContent>
@@ -795,11 +802,11 @@ export default function EditInvoicePage({
           {/* Datum */}
           <Card>
             <CardHeader>
-              <CardTitle>Datum</CardTitle>
+              <CardTitle>{t("cardDateTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="invoiceDate">Rechnungsdatum *</Label>
+                <Label htmlFor="invoiceDate">{t("fieldInvoiceDate")}</Label>
                 <Input
                   id="invoiceDate"
                   type="date"
@@ -811,7 +818,7 @@ export default function EditInvoicePage({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dueDate">Fälligkeitsdatum</Label>
+                <Label htmlFor="dueDate">{t("fieldDueDate")}</Label>
                 <Input
                   id="dueDate"
                   type="date"
@@ -823,7 +830,7 @@ export default function EditInvoicePage({
               </div>
               <Separator />
               <div className="space-y-2">
-                <Label htmlFor="serviceStartDate">Leistungszeitraum von</Label>
+                <Label htmlFor="serviceStartDate">{t("fieldServiceStart")}</Label>
                 <Input
                   id="serviceStartDate"
                   type="date"
@@ -834,7 +841,7 @@ export default function EditInvoicePage({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="serviceEndDate">Leistungszeitraum bis</Label>
+                <Label htmlFor="serviceEndDate">{t("fieldServiceEnd")}</Label>
                 <Input
                   id="serviceEndDate"
                   type="date"
@@ -853,22 +860,20 @@ export default function EditInvoicePage({
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Percent className="h-4 w-4" />
-                  Skonto
+                  {t("cardSkontoTitle")}
                 </CardTitle>
                 <Switch
                   checked={skontoEnabled}
                   onCheckedChange={setSkontoEnabled}
-                  aria-label="Skonto aktivieren"
+                  aria-label={t("skontoToggleAria")}
                 />
               </div>
-              <CardDescription>
-                Rabatt bei fruehzeitiger Zahlung
-              </CardDescription>
+              <CardDescription>{t("cardSkontoDescription")}</CardDescription>
             </CardHeader>
             {skontoEnabled && (
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="skontoPercent">Skonto %</Label>
+                  <Label htmlFor="skontoPercent">{t("fieldSkontoPercent")}</Label>
                   <Input
                     id="skontoPercent"
                     type="number"
@@ -880,7 +885,7 @@ export default function EditInvoicePage({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="skontoDays">Skonto-Tage</Label>
+                  <Label htmlFor="skontoDays">{t("fieldSkontoDays")}</Label>
                   <Input
                     id="skontoDays"
                     type="number"
@@ -894,17 +899,31 @@ export default function EditInvoicePage({
                 {totals.grossAmount > 0 && skontoPercent > 0 && skontoDays > 0 && (
                   <div className="rounded-md bg-green-50 p-3 text-sm space-y-1">
                     <p className="font-medium text-green-800">
-                      Skonto-Betrag: {formatCurrency(calculateSkontoDiscount(totals.grossAmount, skontoPercent))}
+                      {t("skontoAmountLabel", {
+                        value: formatCurrency(
+                          calculateSkontoDiscount(totals.grossAmount, skontoPercent),
+                        ),
+                      })}
                     </p>
                     <p className="text-green-700">
-                      Zahlbar bis: {
-                        formData.invoiceDate
-                          ? formatDate(calculateSkontoDeadline(new Date(formData.invoiceDate), skontoDays))
-                          : "-"
-                      }
+                      {t("skontoDeadlineLabel", {
+                        date: formData.invoiceDate
+                          ? formatDate(
+                              calculateSkontoDeadline(
+                                new Date(formData.invoiceDate),
+                                skontoDays,
+                              ),
+                            )
+                          : "-",
+                      })}
                     </p>
                     <p className="text-green-700">
-                      Zahlbetrag bei Skonto: {formatCurrency(totals.grossAmount - calculateSkontoDiscount(totals.grossAmount, skontoPercent))}
+                      {t("skontoNetPayLabel", {
+                        value: formatCurrency(
+                          totals.grossAmount -
+                            calculateSkontoDiscount(totals.grossAmount, skontoPercent),
+                        ),
+                      })}
                     </p>
                   </div>
                 )}
@@ -915,34 +934,34 @@ export default function EditInvoicePage({
           {/* Referenzen */}
           <Card>
             <CardHeader>
-              <CardTitle>Referenzen</CardTitle>
+              <CardTitle>{t("cardReferencesTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="paymentReference">Zahlungsreferenz</Label>
+                <Label htmlFor="paymentReference">{t("fieldPaymentReference")}</Label>
                 <Input
                   id="paymentReference"
                   value={formData.paymentReference}
                   onChange={(e) =>
                     setFormData({ ...formData, paymentReference: e.target.value })
                   }
-                  placeholder="z.B. Verwendungszweck"
+                  placeholder={t("placeholderPaymentReference")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="internalReference">Interne Referenz</Label>
+                <Label htmlFor="internalReference">{t("fieldInternalReference")}</Label>
                 <Input
                   id="internalReference"
                   value={formData.internalReference}
                   onChange={(e) =>
                     setFormData({ ...formData, internalReference: e.target.value })
                   }
-                  placeholder="z.B. Projektnummer"
+                  placeholder={t("placeholderInternalReference")}
                 />
               </div>
               <Separator />
               <div className="space-y-2">
-                <Label htmlFor="parkId">Windpark</Label>
+                <Label htmlFor="parkId">{t("fieldPark")}</Label>
                 <Select
                   value={formData.parkId || "none"}
                   onValueChange={(value) =>
@@ -950,10 +969,10 @@ export default function EditInvoicePage({
                   }
                 >
                   <SelectTrigger id="parkId">
-                    <SelectValue placeholder="Optional zuordnen" />
+                    <SelectValue placeholder={t("selectNoneAssign")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Keine Zuordnung</SelectItem>
+                    <SelectItem value="none">{t("selectNone")}</SelectItem>
                     {parks.map((park) => (
                       <SelectItem key={park.id} value={park.id}>
                         {park.name}
@@ -963,7 +982,7 @@ export default function EditInvoicePage({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fundId">Rechnungssteller (Gesellschaft)</Label>
+                <Label htmlFor="fundId">{t("fieldFund")}</Label>
                 <Select
                   value={formData.fundId || "none"}
                   onValueChange={(value) =>
@@ -971,10 +990,10 @@ export default function EditInvoicePage({
                   }
                 >
                   <SelectTrigger id="fundId">
-                    <SelectValue placeholder="Optional zuordnen" />
+                    <SelectValue placeholder={t("selectNoneAssign")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Keine Zuordnung</SelectItem>
+                    <SelectItem value="none">{t("selectNone")}</SelectItem>
                     {funds.map((fund) => (
                       <SelectItem key={fund.id} value={fund.id}>
                         {fund.name}

@@ -56,8 +56,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/format";
 import {
-  SETTLEMENT_STATUS_LABELS,
-  ALLOCATION_STATUS_LABELS,
   type LeaseRevenueSettlementResponse,
   type LeaseRevenueSettlementItemResponse,
   type ParkCostAllocationResponse,
@@ -133,6 +131,8 @@ export default function UsageFeeDetailPage({
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations("leases.usageFeesDetail");
+  const tStatus = useTranslations("billing.settlementStatus");
+  const tAllocStatus = useTranslations("billing.allocationStatus");
   const locale = useLocale();
   const intlLocale = locale === "en" ? "en-US" : "de-DE";
 
@@ -446,8 +446,7 @@ export default function UsageFeeDetailPage({
                 variant="secondary"
                 className={getStatusColor(settlement.status)}
               >
-                {SETTLEMENT_STATUS_LABELS[settlement.status] ||
-                  settlement.status}
+                {tStatus(settlement.status)}
               </Badge>
             </div>
             <p className="text-muted-foreground">
@@ -719,9 +718,7 @@ export default function UsageFeeDetailPage({
                 <CardDescription>
                   {t("positionsDescription", {
                     count: items.length,
-                    status:
-                      SETTLEMENT_STATUS_LABELS[settlement.status] ||
-                      settlement.status,
+                    status: tStatus(settlement.status),
                   })}
                 </CardDescription>
               </CardHeader>
@@ -964,9 +961,7 @@ export default function UsageFeeDetailPage({
                               allocation.status
                             )}
                           >
-                            {ALLOCATION_STATUS_LABELS[
-                              allocation.status as keyof typeof ALLOCATION_STATUS_LABELS
-                            ] || allocation.status}
+                            {tAllocStatus(allocation.status)}
                           </Badge>
                         </div>
                         <div className="text-sm text-muted-foreground">
