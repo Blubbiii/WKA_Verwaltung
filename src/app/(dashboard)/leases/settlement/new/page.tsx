@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 import { formatDate } from "@/lib/format";
 import {
   ArrowLeft,
@@ -176,37 +177,11 @@ interface ExistingSettlement {
 type CalculationResult = AdvanceCalculation | FinalCalculation;
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-const STEPS = [
-  { id: "park", title: "Park & Zeitraum", description: "Grunddaten" },
-  { id: "revenue", title: "Umsatzdaten", description: "Erlöse" },
-  { id: "calculation", title: "Berechnung & Vorschau", description: "Vorschau" },
-  { id: "summary", title: "Abschluss", description: "Gutschriften" },
-];
-
-const MONTH_NAMES = [
-  "Januar",
-  "Februar",
-  "Maerz",
-  "April",
-  "Mai",
-  "Juni",
-  "Juli",
-  "August",
-  "September",
-  "Oktober",
-  "November",
-  "Dezember",
-];
-
-// ============================================================================
 // Helper: Format EUR currency
 // ============================================================================
 
-function formatEur(value: number): string {
-  return value.toLocaleString("de-DE", {
+function formatEur(value: number, locale: string): string {
+  return value.toLocaleString(locale, {
     style: "currency",
     currency: "EUR",
   });
@@ -237,6 +212,34 @@ function getStatusBadge(status: string) {
 // ============================================================================
 
 export default function NewLeaseSettlementPage() {
+  const t = useTranslations("leases.settlementNew");
+  const locale = useLocale();
+  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+
+  const STEPS = [
+    { id: "park", title: t("steps.parkTitle"), description: t("steps.parkDescription") },
+    { id: "revenue", title: t("steps.revenueTitle"), description: t("steps.revenueDescription") },
+    { id: "calculation", title: t("steps.calcTitle"), description: t("steps.calcDescription") },
+    { id: "summary", title: t("steps.summaryTitle"), description: t("steps.summaryDescription") },
+  ];
+
+  const MONTH_NAMES = [
+    t("monthNames.1"),
+    t("monthNames.2"),
+    t("monthNames.3"),
+    t("monthNames.4"),
+    t("monthNames.5"),
+    t("monthNames.6"),
+    t("monthNames.7"),
+    t("monthNames.8"),
+    t("monthNames.9"),
+    t("monthNames.10"),
+    t("monthNames.11"),
+    t("monthNames.12"),
+  ];
+
+  const fmtEur = (value: number) => formatEur(value, intlLocale);
+
   const [currentStep, setCurrentStep] = useState(0);
 
   // Step 1: Park & Zeitraum
@@ -307,10 +310,10 @@ export default function NewLeaseSettlementPage() {
           const data = await res.json();
           setParks(data.parks || data.data || []);
         } else {
-          toast.error("Fehler beim Laden der Windparks");
+          toast.error(t("toasts.parksLoadError"));
         }
       } catch {
-        toast.error("Netzwerkfehler beim Laden der Windparks");
+        toast.error(t("toasts.parksNetworkError"));
       } finally {
         setLoadingParks(false);
       }
@@ -338,7 +341,7 @@ export default function NewLeaseSettlementPage() {
           setLeases(data.leases || data.data || []);
         }
       } catch {
-        if (!cancelled) toast.error("Fehler beim Laden der Pachtverträge");
+        if (!cancelled) toast.error(t("toasts.leasesLoadError"));
       } finally {
         if (!cancelled) setLoadingLeases(false);
       }
@@ -554,19 +557,19 @@ export default function NewLeaseSettlementPage() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Speicherfehler" }));
-        throw new Error(err.error || "Fehler beim Speichern der Monatsdaten");
+        const err = await res.json().catch(() => ({ error: t("toasts.saveError") }));
+        throw new Error(err.error || t("toasts.saveMonthlyError"));
       }
 
       const data = await res.json();
       if (data.settlements) {
         setEnergySettlements(data.settlements);
       }
-      toast.success(data.message || "Monatsdaten gespeichert");
+      toast.success(data.message || t("toasts.monthlySaved"));
       return true;
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("toasts.saveGeneric")
       );
       return false;
     } finally {
@@ -603,7 +606,7 @@ export default function NewLeaseSettlementPage() {
       });
 
       if (!createRes.ok) {
-        const err = await createRes.json().catch(() => ({ error: "Unbekannter Fehler" }));
+        const err = await createRes.json().catch(() => ({ error: t("toasts.unknownError") }));
         throw new Error(err.error || err.details || `HTTP ${createRes.status}`);
       }
 
@@ -633,13 +636,13 @@ export default function NewLeaseSettlementPage() {
       );
 
       if (!calcRes.ok) {
-        const err = await calcRes.json().catch(() => ({ error: "Berechnungsfehler" }));
+        const err = await calcRes.json().catch(() => ({ error: t("toasts.calcError") }));
         throw new Error(err.error || err.details || `HTTP ${calcRes.status}`);
       }
 
       const calcData = await calcRes.json();
       setCalculationResult(calcData.calculation);
-      toast.success("Berechnung erfolgreich abgeschlossen");
+      toast.success(t("toasts.calcSuccess"));
 
       // Auto-advance to Step 3 (Abschluss) after successful calculation
       setCurrentStep(3);
@@ -648,7 +651,7 @@ export default function NewLeaseSettlementPage() {
       loadExistingSettlements();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler bei der Berechnung"
+        error instanceof Error ? error.message : t("toasts.calcErrorDetail")
       );
     } finally {
       setCalculating(false);
@@ -675,10 +678,10 @@ export default function NewLeaseSettlementPage() {
             const dvKwh = Number(es.dvProductionKwh || 0);
             const dvEur = Number(es.dvRevenueEur || 0);
             if (eegEur > 0) {
-              entries.push({ category: `EEG ${pad(es.month || 0)}/${year}`, productionKwh: eegKwh, revenueEur: eegEur });
+              entries.push({ category: t("categories.eegMonth", { month: pad(es.month || 0), year }), productionKwh: eegKwh, revenueEur: eegEur });
             }
             if (dvEur > 0) {
-              entries.push({ category: `DV ${pad(es.month || 0)}/${year}`, productionKwh: dvKwh, revenueEur: dvEur });
+              entries.push({ category: t("categories.dvMonth", { month: pad(es.month || 0), year }), productionKwh: dvKwh, revenueEur: dvEur });
             }
             return entries;
           });
@@ -688,8 +691,8 @@ export default function NewLeaseSettlementPage() {
         const dvKwh = finalized.reduce((s, es) => s + Number(es.dvProductionKwh || 0), 0);
         const dvEur = finalized.reduce((s, es) => s + Number(es.dvRevenueEur || 0), 0);
         const sources = [];
-        if (eegEur > 0) sources.push({ category: `EEG ${year}`, productionKwh: eegKwh, revenueEur: eegEur });
-        if (dvEur > 0) sources.push({ category: `Direktvermarktung ${year}`, productionKwh: dvKwh, revenueEur: dvEur });
+        if (eegEur > 0) sources.push({ category: t("categories.eegYear", { year }), productionKwh: eegKwh, revenueEur: eegEur });
+        if (dvEur > 0) sources.push({ category: t("categories.dvYear", { year }), productionKwh: dvKwh, revenueEur: dvEur });
         calcPayload.revenueSources = sources;
       }
     } else {
@@ -702,17 +705,17 @@ export default function NewLeaseSettlementPage() {
           const dvKwh = parseFloat(m.dvProductionKwh) || 0;
           const dvEur = parseFloat(m.dvRevenueEur) || 0;
           if (eegEur > 0) {
-            entries.push({ category: `EEG ${pad(i + 1)}/${year}`, productionKwh: eegKwh, revenueEur: eegEur });
+            entries.push({ category: t("categories.eegMonth", { month: pad(i + 1), year }), productionKwh: eegKwh, revenueEur: eegEur });
           }
           if (dvEur > 0) {
-            entries.push({ category: `DV ${pad(i + 1)}/${year}`, productionKwh: dvKwh, revenueEur: dvEur });
+            entries.push({ category: t("categories.dvMonth", { month: pad(i + 1), year }), productionKwh: dvKwh, revenueEur: dvEur });
           }
           return entries;
         });
       } else {
         const sources = [];
-        if (manualTotals.eegEur > 0) sources.push({ category: `EEG ${year}`, productionKwh: manualTotals.eegKwh, revenueEur: manualTotals.eegEur });
-        if (manualTotals.dvEur > 0) sources.push({ category: `Direktvermarktung ${year}`, productionKwh: manualTotals.dvKwh, revenueEur: manualTotals.dvEur });
+        if (manualTotals.eegEur > 0) sources.push({ category: t("categories.eegYear", { year }), productionKwh: manualTotals.eegKwh, revenueEur: manualTotals.eegEur });
+        if (manualTotals.dvEur > 0) sources.push({ category: t("categories.dvYear", { year }), productionKwh: manualTotals.dvKwh, revenueEur: manualTotals.dvEur });
         calcPayload.revenueSources = sources;
       }
     }
@@ -746,16 +749,16 @@ export default function NewLeaseSettlementPage() {
       );
 
       if (!calcRes.ok) {
-        const err = await calcRes.json().catch(() => ({ error: "Berechnungsfehler" }));
+        const err = await calcRes.json().catch(() => ({ error: t("toasts.calcError") }));
         throw new Error(err.error || err.details || `HTTP ${calcRes.status}`);
       }
 
       const calcData = await calcRes.json();
       setCalculationResult(calcData.calculation);
-      toast.success("Neuberechnung erfolgreich");
+      toast.success(t("toasts.recalcSuccess"));
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler bei der Neuberechnung"
+        error instanceof Error ? error.message : t("toasts.recalcError")
       );
     } finally {
       setCalculating(false);
@@ -764,7 +767,7 @@ export default function NewLeaseSettlementPage() {
 
   async function handleCreateInvoices() {
     if (!createdSettlementId) {
-      toast.error("Keine Abrechnungsperiode vorhanden");
+      toast.error(t("toasts.noSettlementPeriod"));
       return;
     }
 
@@ -783,8 +786,8 @@ export default function NewLeaseSettlementPage() {
       );
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || "Fehler beim Erstellen der Gutschriften");
+        const err = await res.json().catch(() => ({ error: t("toasts.unknownError") }));
+        throw new Error(err.error || t("toasts.invoiceCreateError"));
       }
 
       const result = await res.json();
@@ -793,14 +796,14 @@ export default function NewLeaseSettlementPage() {
       const creditCount = result.created ?? result.invoices?.length ?? 0;
       const allocCount = result.allocationInvoices?.length ?? 0;
       const msg = allocCount > 0
-        ? `${creditCount} Gutschrift(en) und ${allocCount} Betreiber-Rechnung(en) erstellt`
-        : `${creditCount} Gutschrift(en) erfolgreich erstellt`;
+        ? t("toasts.invoiceCreateSuccessWithAlloc", { credits: creditCount, alloc: allocCount })
+        : t("toasts.invoiceCreateSuccess", { credits: creditCount });
       toast.success(msg);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Erstellen der Gutschriften"
+          : t("toasts.invoiceCreateError")
       );
     } finally {
       setCreatingInvoices(false);
@@ -846,20 +849,18 @@ export default function NewLeaseSettlementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wind className="h-5 w-5" />
-              Park und Abrechnungszeitraum
+              {t("step1.cardTitle")}
             </CardTitle>
-            <CardDescription>
-              Waehlen Sie den Windpark, das Abrechnungsjahr und den Abrechnungstyp
-            </CardDescription>
+            <CardDescription>{t("step1.cardDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Windpark */}
             <div className="space-y-2">
-              <Label htmlFor="park-select">Windpark *</Label>
+              <Label htmlFor="park-select">{t("step1.parkLabel")}</Label>
               {loadingParks ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Parks werden geladen...
+                  {t("step1.parksLoading")}
                 </div>
               ) : (
                 <Select
@@ -872,7 +873,7 @@ export default function NewLeaseSettlementPage() {
                   }}
                 >
                   <SelectTrigger id="park-select">
-                    <SelectValue placeholder="Windpark auswaehlen..." />
+                    <SelectValue placeholder={t("step1.parkPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {parks.map((park) => (
@@ -888,7 +889,7 @@ export default function NewLeaseSettlementPage() {
 
             {/* Jahr */}
             <div className="space-y-2">
-              <Label htmlFor="year-input">Jahr *</Label>
+              <Label htmlFor="year-input">{t("step1.yearLabel")}</Label>
               <Input
                 id="year-input"
                 type="number"
@@ -904,7 +905,7 @@ export default function NewLeaseSettlementPage() {
                 className="w-32"
               />
               <p className="text-xs text-muted-foreground">
-                Pacht wird nachtraeglich abgerechnet - Standard ist das Vorjahr.
+                {t("step1.yearHint")}
               </p>
             </div>
 
@@ -912,7 +913,7 @@ export default function NewLeaseSettlementPage() {
 
             {/* Abrechnungstyp */}
             <div className="space-y-3">
-              <Label>Abrechnungstyp</Label>
+              <Label>{t("step1.periodTypeLabel")}</Label>
               <RadioGroup
                 value={periodType}
                 onValueChange={(v) => {
@@ -939,10 +940,10 @@ export default function NewLeaseSettlementPage() {
                   <RadioGroupItem value="FINAL" id="type-final" className="mt-0.5" />
                   <div>
                     <Label htmlFor="type-final" className="font-medium cursor-pointer">
-                      Jahresendabrechnung (FINAL)
+                      {t("step1.finalLabel")}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Umsatzbasierte Abrechnung mit Vorschuss-Verrechnung
+                      {t("step1.finalDescription")}
                     </p>
                   </div>
                 </div>
@@ -962,10 +963,10 @@ export default function NewLeaseSettlementPage() {
                   <RadioGroupItem value="ADVANCE" id="type-advance" className="mt-0.5" />
                   <div>
                     <Label htmlFor="type-advance" className="font-medium cursor-pointer">
-                      Vorschuss (ADVANCE)
+                      {t("step1.advanceLabel")}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Regelmaessige Abschlagszahlung auf Basis der Mindestpacht
+                      {t("step1.advanceDescription")}
                     </p>
                   </div>
                 </div>
@@ -976,7 +977,7 @@ export default function NewLeaseSettlementPage() {
             {periodType === "ADVANCE" && (
               <div className="space-y-4 ml-6 pl-4 border-l-2 border-muted">
                 <div className="space-y-3">
-                  <Label>Intervall</Label>
+                  <Label>{t("step1.intervalLabel")}</Label>
                   <RadioGroup
                     value={advanceInterval}
                     onValueChange={(v) => {
@@ -990,19 +991,19 @@ export default function NewLeaseSettlementPage() {
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem value="MONTHLY" id="interval-monthly" />
                       <Label htmlFor="interval-monthly" className="cursor-pointer">
-                        Monatlich (1/12 des Jahresbetrags)
+                        {t("step1.monthlyOption")}
                       </Label>
                     </div>
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem value="QUARTERLY" id="interval-quarterly" />
                       <Label htmlFor="interval-quarterly" className="cursor-pointer">
-                        Quartal (1/4 des Jahresbetrags)
+                        {t("step1.quarterlyOption")}
                       </Label>
                     </div>
                     <div className="flex items-center space-x-3">
                       <RadioGroupItem value="YEARLY" id="interval-yearly" />
                       <Label htmlFor="interval-yearly" className="cursor-pointer">
-                        Jährlich (voller Jahresbetrag)
+                        {t("step1.yearlyOption")}
                       </Label>
                     </div>
                   </RadioGroup>
@@ -1011,7 +1012,7 @@ export default function NewLeaseSettlementPage() {
                 {/* Quarter selector */}
                 {advanceInterval === "QUARTERLY" && (
                   <div className="space-y-2">
-                    <Label htmlFor="quarter-select">Quartal *</Label>
+                    <Label htmlFor="quarter-select">{t("step1.quarterLabel")}</Label>
                     <Select
                       value={String(selectedQuarter)}
                       onValueChange={(v) => {
@@ -1025,10 +1026,10 @@ export default function NewLeaseSettlementPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">Q1 (Jan - Mrz)</SelectItem>
-                        <SelectItem value="2">Q2 (Apr - Jun)</SelectItem>
-                        <SelectItem value="3">Q3 (Jul - Sep)</SelectItem>
-                        <SelectItem value="4">Q4 (Okt - Dez)</SelectItem>
+                        <SelectItem value="1">{t("step1.q1")}</SelectItem>
+                        <SelectItem value="2">{t("step1.q2")}</SelectItem>
+                        <SelectItem value="3">{t("step1.q3")}</SelectItem>
+                        <SelectItem value="4">{t("step1.q4")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1037,7 +1038,7 @@ export default function NewLeaseSettlementPage() {
                 {/* Month selector */}
                 {advanceInterval === "MONTHLY" && (
                   <div className="space-y-2">
-                    <Label htmlFor="month-select">Monat *</Label>
+                    <Label htmlFor="month-select">{t("step1.monthLabel")}</Label>
                     <Select
                       value={String(selectedMonth)}
                       onValueChange={(v) => {
@@ -1069,32 +1070,36 @@ export default function NewLeaseSettlementPage() {
         {selectedParkId && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Aktive Pachtverträge</CardTitle>
+              <CardTitle className="text-base">{t("step1.activeLeasesTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               {loadingLeases ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Pachtverträge werden geladen...
+                  {t("step1.leasesLoading")}
                 </div>
               ) : leaseSummary.leaseCount === 0 ? (
                 <div className="flex items-center gap-2 text-sm text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
-                  Keine aktiven Pachtverträge für diesen Park gefunden. Eine Abrechnung ist nicht moeglich.
+                  {t("step1.noLeases")}
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-sm">
                   <Check className="h-4 w-4 text-green-600" />
                   <span>
-                    <strong>{leaseSummary.leaseCount}</strong> aktive Pachtverträge
+                    {t("step1.leaseCount", { count: leaseSummary.leaseCount })}
                     {leaseSummary.plotCount > 0 && (
                       <>
-                        {" "}mit <strong>{leaseSummary.plotCount}</strong> Fluerstuecken
+                        {" "}
+                        {t("step1.plotCountSuffix", { count: leaseSummary.plotCount })}
                       </>
                     )}
                     {leaseSummary.totalArea > 0 && (
                       <>
-                        {" "}und <strong>{leaseSummary.totalArea.toLocaleString("de-DE")} m&#178;</strong> Gesamtflaeche
+                        {" "}
+                        {t("step1.totalAreaSuffix", {
+                          area: leaseSummary.totalArea.toLocaleString(intlLocale),
+                        })}
                       </>
                     )}
                   </span>
@@ -1117,7 +1122,7 @@ export default function NewLeaseSettlementPage() {
               ) : (
                 <ChevronDown className="h-4 w-4" />
               )}
-              Bisherige Abrechnungen für {year}
+              {t("step1.existingTitle", { year })}
               {existingSettlements.length > 0 && (
                 <Badge variant="secondary">{existingSettlements.length}</Badge>
               )}
@@ -1129,22 +1134,22 @@ export default function NewLeaseSettlementPage() {
                   {loadingExisting ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Abrechnungen werden geladen...
+                      {t("step1.existingLoading")}
                     </div>
                   ) : existingSettlements.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">
-                      Keine bisherigen Abrechnungen für diesen Park und dieses Jahr vorhanden.
+                      {t("step1.existingEmpty")}
                     </p>
                   ) : (
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Periode</TableHead>
-                            <TableHead>Typ</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Betrag</TableHead>
-                            <TableHead>Erstellt am</TableHead>
+                            <TableHead>{t("step1.colPeriod")}</TableHead>
+                            <TableHead>{t("step1.colType")}</TableHead>
+                            <TableHead>{t("step1.colStatus")}</TableHead>
+                            <TableHead className="text-right">{t("step1.colAmount")}</TableHead>
+                            <TableHead>{t("step1.colCreatedAt")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1161,16 +1166,16 @@ export default function NewLeaseSettlementPage() {
                               <TableCell>
                                 <Badge variant="outline">
                                   {settlement.periodType === "ADVANCE"
-                                    ? "Vorschuss"
-                                    : "Endabrechnung"}
+                                    ? t("step1.typeAdvanceShort")
+                                    : t("step1.typeFinalShort")}
                                 </Badge>
                               </TableCell>
                               <TableCell>{getStatusBadge(settlement.status)}</TableCell>
                               <TableCell className="text-right">
                                 {settlement.actualFeeEur
-                                  ? formatEur(Number(settlement.actualFeeEur))
+                                  ? fmtEur(Number(settlement.actualFeeEur))
                                   : settlement.calculatedFeeEur
-                                    ? formatEur(Number(settlement.calculatedFeeEur))
+                                    ? fmtEur(Number(settlement.calculatedFeeEur))
                                     : "-"}
                               </TableCell>
                               <TableCell>
@@ -1204,20 +1209,20 @@ export default function NewLeaseSettlementPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info className="h-5 w-5 text-blue-600" />
-                Vorschussberechnung
+                {t("step2.advanceCardTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
                 <p className="text-sm font-medium text-blue-800">
-                  Vorschüsse basieren auf der Mindestpacht. Kein Umsatz erforderlich.
+                  {t("step2.advanceInfo")}
                 </p>
                 <p className="text-sm text-blue-700">
                   {advanceInterval === "YEARLY"
-                    ? `Der Jahresvorschuss für ${year} wird aus der vollen Jahresmindestpacht berechnet.`
+                    ? t("step2.advanceYearlyDetail", { year })
                     : advanceInterval === "QUARTERLY"
-                      ? `Der Quartalsvorschuss Q${selectedQuarter} ${year} wird als 1/4 der Jahresmindestpacht berechnet.`
-                      : `Der Monatsvorschuss ${MONTH_NAMES[selectedMonth - 1]} ${year} wird als 1/12 der Jahresmindestpacht berechnet.`}
+                      ? t("step2.advanceQuarterlyDetail", { quarter: selectedQuarter, year })
+                      : t("step2.advanceMonthlyDetail", { month: MONTH_NAMES[selectedMonth - 1], year })}
                 </p>
               </div>
             </CardContent>
@@ -1233,16 +1238,16 @@ export default function NewLeaseSettlementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
-              Umsatzdaten für {year}
+              {t("step2.revenueCardTitle", { year })}
             </CardTitle>
             <CardDescription>
-              Waehlen Sie die Datenquelle für den Gesamtumsatz des Parks
+              {t("step2.revenueCardDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Datenquelle */}
             <div className="space-y-3">
-              <Label>Datenquelle</Label>
+              <Label>{t("step2.sourceLabel")}</Label>
               <RadioGroup
                 value={revenueSource}
                 onValueChange={(v) => setRevenueSource(v as "auto" | "manual")}
@@ -1260,10 +1265,10 @@ export default function NewLeaseSettlementPage() {
                   <RadioGroupItem value="auto" id="revenue-auto" className="mt-0.5" />
                   <div className="flex-1">
                     <Label htmlFor="revenue-auto" className="font-medium cursor-pointer">
-                      Automatisch aus Energieabrechnung
+                      {t("step2.sourceAutoLabel")}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      Daten aus abgeschlossenen Energieabrechnungen übernehmen
+                      {t("step2.sourceAutoDescription")}
                     </p>
                   </div>
                 </div>
@@ -1280,10 +1285,10 @@ export default function NewLeaseSettlementPage() {
                   <RadioGroupItem value="manual" id="revenue-manual" className="mt-0.5" />
                   <div className="flex-1">
                     <Label htmlFor="revenue-manual" className="font-medium cursor-pointer">
-                      Manuelle Erfassung (EEG/DV pro Monat)
+                      {t("step2.sourceManualLabel")}
                     </Label>
                     <p className="text-sm text-muted-foreground">
-                      12 Monate mit EEG-Produktion, EEG-Erlös, DV-Produktion, DV-Erlös
+                      {t("step2.sourceManualDescription")}
                     </p>
                   </div>
                 </div>
@@ -1292,7 +1297,7 @@ export default function NewLeaseSettlementPage() {
 
             {/* Ertragsübersicht Anzeigemodus */}
             <div className="space-y-3">
-              <Label>Ertragsübersicht auf Gutschrift</Label>
+              <Label>{t("step2.displayModeLabel")}</Label>
               <RadioGroup
                 value={revenueDisplayMode}
                 onValueChange={(v) => setRevenueDisplayMode(v as "MONTHLY" | "YEARLY")}
@@ -1307,7 +1312,7 @@ export default function NewLeaseSettlementPage() {
                   onClick={() => setRevenueDisplayMode("YEARLY")}
                 >
                   <RadioGroupItem value="YEARLY" id="display-yearly" />
-                  <Label htmlFor="display-yearly" className="cursor-pointer">Jahreswerte</Label>
+                  <Label htmlFor="display-yearly" className="cursor-pointer">{t("step2.displayYearly")}</Label>
                 </div>
                 <div
                   className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 transition-colors cursor-pointer ${
@@ -1318,11 +1323,11 @@ export default function NewLeaseSettlementPage() {
                   onClick={() => setRevenueDisplayMode("MONTHLY")}
                 >
                   <RadioGroupItem value="MONTHLY" id="display-monthly" />
-                  <Label htmlFor="display-monthly" className="cursor-pointer">Monatswerte</Label>
+                  <Label htmlFor="display-monthly" className="cursor-pointer">{t("step2.displayMonthly")}</Label>
                 </div>
               </RadioGroup>
               <p className="text-xs text-muted-foreground">
-                Bestimmt ob die Ertragsübersicht auf der Gutschrift-Anlage Jahres- oder Monatswerte zeigt (immer mit EEG/DV-Aufschlüsselung).
+                {t("step2.displayModeHint")}
               </p>
             </div>
           </CardContent>
@@ -1332,44 +1337,42 @@ export default function NewLeaseSettlementPage() {
         {revenueSource === "auto" && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Jahresübersicht {year}</CardTitle>
+              <CardTitle className="text-base">{t("step2.yearlyOverviewTitle", { year })}</CardTitle>
             </CardHeader>
             <CardContent>
               {loadingEnergySettlements ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Energieabrechnungen werden geladen...
+                  {t("step2.energyLoading")}
                 </div>
               ) : autoRevenueData.count === 0 ? (
                 <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
                   <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm font-medium">
-                      Keine abgeschlossenen Energieabrechnungen vorhanden
+                      {t("step2.noFinalizedTitle")}
                     </p>
                     <p className="text-xs">
-                      Für die automatische Übernahme muessen Energieabrechnungen mit Status
-                      &quot;Fakturiert&quot; oder &quot;Abgeschlossen&quot; vorhanden sein.
-                      Alternativ können Sie die Daten manuell erfassen.
+                      {t("step2.noFinalizedHint")}
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">Gesamterlös</p>
-                    <p className="text-xl font-bold">{formatEur(autoRevenueData.totalRevenue)}</p>
+                    <p className="text-xs text-muted-foreground">{t("step2.totalRevenue")}</p>
+                    <p className="text-xl font-bold">{fmtEur(autoRevenueData.totalRevenue)}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {autoRevenueData.count} Monatsabrechnung(en)
+                      {t("step2.monthlyCount", { count: autoRevenueData.count })}
                     </p>
                   </div>
                   <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">EEG-Anteil</p>
-                    <p className="text-lg font-semibold">{formatEur(autoRevenueData.eegRevenue)}</p>
+                    <p className="text-xs text-muted-foreground">{t("step2.eegShare")}</p>
+                    <p className="text-lg font-semibold">{fmtEur(autoRevenueData.eegRevenue)}</p>
                   </div>
                   <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">DV-Anteil</p>
-                    <p className="text-lg font-semibold">{formatEur(autoRevenueData.dvRevenue)}</p>
+                    <p className="text-xs text-muted-foreground">{t("step2.dvShare")}</p>
+                    <p className="text-lg font-semibold">{fmtEur(autoRevenueData.dvRevenue)}</p>
                   </div>
                 </div>
               )}
@@ -1381,10 +1384,10 @@ export default function NewLeaseSettlementPage() {
         {revenueSource === "manual" && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Monatliche EEG/DV-Erfassung {year}</CardTitle>
+              <CardTitle className="text-base">{t("step2.manualTableTitle", { year })}</CardTitle>
               <CardDescription>
-                Geben Sie für jeden Monat die EEG- und DV-Werte ein.
-                {energySettlements.length > 0 && " Vorhandene Daten wurden vorausgefuellt."}
+                {t("step2.manualTableDescription")}
+                {energySettlements.length > 0 && " " + t("step2.manualPrefillHint")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1392,11 +1395,11 @@ export default function NewLeaseSettlementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-24">Monat</TableHead>
-                      <TableHead className="text-right">EEG kWh</TableHead>
-                      <TableHead className="text-right">EEG EUR</TableHead>
-                      <TableHead className="text-right">DV kWh</TableHead>
-                      <TableHead className="text-right">DV EUR</TableHead>
+                      <TableHead className="w-24">{t("step2.colMonth")}</TableHead>
+                      <TableHead className="text-right">{t("step2.colEegKwh")}</TableHead>
+                      <TableHead className="text-right">{t("step2.colEegEur")}</TableHead>
+                      <TableHead className="text-right">{t("step2.colDvKwh")}</TableHead>
+                      <TableHead className="text-right">{t("step2.colDvEur")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1467,18 +1470,18 @@ export default function NewLeaseSettlementPage() {
                     ))}
                     {/* Totals row */}
                     <TableRow className="border-t-2 font-bold bg-muted/30">
-                      <TableCell>Summe</TableCell>
+                      <TableCell>{t("step2.sumLabel")}</TableCell>
                       <TableCell className="text-right text-sm">
-                        {manualTotals.eegKwh.toLocaleString("de-DE", { maximumFractionDigits: 2 })}
+                        {manualTotals.eegKwh.toLocaleString(intlLocale, { maximumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="text-right text-sm">
-                        {formatEur(manualTotals.eegEur)}
+                        {fmtEur(manualTotals.eegEur)}
                       </TableCell>
                       <TableCell className="text-right text-sm">
-                        {manualTotals.dvKwh.toLocaleString("de-DE", { maximumFractionDigits: 2 })}
+                        {manualTotals.dvKwh.toLocaleString(intlLocale, { maximumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="text-right text-sm">
-                        {formatEur(manualTotals.dvEur)}
+                        {fmtEur(manualTotals.dvEur)}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -1492,18 +1495,18 @@ export default function NewLeaseSettlementPage() {
         {effectiveRevenue > 0 && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Umsatz-Zusammenfassung</CardTitle>
+              <CardTitle className="text-base">{t("step2.revenueSummaryTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="p-4 bg-muted/50 rounded-lg space-y-2 text-sm">
                 <p>
-                  <span className="text-muted-foreground">Gesamtumsatz:</span>{" "}
-                  <span className="font-semibold text-lg">{formatEur(effectiveRevenue)}</span>
+                  <span className="text-muted-foreground">{t("step2.totalRevenueLabel")}</span>{" "}
+                  <span className="font-semibold text-lg">{fmtEur(effectiveRevenue)}</span>
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {revenueSource === "manual"
-                    ? "Die Daten werden beim Fortfahren als Energieabrechnungen gespeichert."
-                    : "Die genaue Aufteilung wird im nächsten Schritt berechnet (MAX-Regel)."}
+                    ? t("step2.revenueManualHint")
+                    : t("step2.revenueAutoHint")}
                 </p>
               </div>
             </CardContent>
@@ -1530,16 +1533,16 @@ export default function NewLeaseSettlementPage() {
                 ) : (
                   <Calculator className="h-5 w-5" />
                 )}
-                {calculating ? "Berechnung läuft..." : "Berechnung"}
+                {calculating ? t("step3.calculating") : t("step3.calculationTitle")}
               </CardTitle>
               <CardDescription>
                 {periodType === "FINAL"
-                  ? `Jahresendabrechnung für ${year} mit ${formatEur(effectiveRevenue)} Umsatz`
+                  ? t("step3.descFinal", { year, revenue: fmtEur(effectiveRevenue) })
                   : advanceInterval === "YEARLY"
-                    ? `Jahresvorschuss für ${year}`
+                    ? t("step3.descAdvanceYearly", { year })
                     : advanceInterval === "QUARTERLY"
-                      ? `Quartalsvorschuss Q${selectedQuarter} ${year}`
-                      : `Monatsvorschuss ${MONTH_NAMES[selectedMonth - 1]} ${year}`}
+                      ? t("step3.descAdvanceQuarterly", { quarter: selectedQuarter, year })
+                      : t("step3.descAdvanceMonthly", { month: MONTH_NAMES[selectedMonth - 1], year })}
               </CardDescription>
             </CardHeader>
             {!calculating && (
@@ -1550,7 +1553,7 @@ export default function NewLeaseSettlementPage() {
                   className="w-full sm:w-auto"
                 >
                   <Calculator className="mr-2 h-4 w-4" />
-                  Berechnung starten
+                  {t("step3.startCalc")}
                 </Button>
               </CardContent>
             )}
@@ -1576,7 +1579,7 @@ export default function NewLeaseSettlementPage() {
               ) : (
                 <RefreshCw className="mr-2 h-4 w-4" />
               )}
-              Neu berechnen
+              {t("step3.recalcBtn")}
             </Button>
           </div>
         )}
@@ -1593,11 +1596,11 @@ export default function NewLeaseSettlementPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Berechnungsergebnis - Jahresendabrechnung {calc.year}</CardTitle>
+          <CardTitle>{t("step3.finalResultsTitle", { year: calc.year })}</CardTitle>
           <CardDescription>
-            {calc.parkName} | Umsatz: {formatEur(calc.totalRevenue)}
+            {t("step3.finalResultsDescription", { parkName: calc.parkName, revenue: fmtEur(calc.totalRevenue) })}
             {calc.revenuePhasePercentage !== null &&
-              ` | Erlösphase: ${calc.revenuePhasePercentage}%`}
+              t("step3.finalResultsRevenuePhase", { pct: calc.revenuePhasePercentage })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1606,11 +1609,10 @@ export default function NewLeaseSettlementPage() {
               <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-medium">
-                  Achtung: Überzahlung bei mindestens einem Verpachter
+                  {t("step3.overpaymentWarningTitle")}
                 </p>
                 <p className="text-xs">
-                  Ein negativer Restbetrag bedeutet, dass mehr Vorschüsse gezahlt
-                  wurden als die tatsaechliche Pacht betraegt.
+                  {t("step3.overpaymentWarningHint")}
                 </p>
               </div>
             </div>
@@ -1620,10 +1622,10 @@ export default function NewLeaseSettlementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Verpachter</TableHead>
-                  <TableHead className="text-right">Gesamt</TableHead>
-                  <TableHead className="text-right">Vorschüsse (gezahlt)</TableHead>
-                  <TableHead className="text-right">Restbetrag</TableHead>
+                  <TableHead>{t("step3.colLessor")}</TableHead>
+                  <TableHead className="text-right">{t("step3.colTotal")}</TableHead>
+                  <TableHead className="text-right">{t("step3.colAdvancesPaid")}</TableHead>
+                  <TableHead className="text-right">{t("step3.colRemainder")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1633,34 +1635,34 @@ export default function NewLeaseSettlementPage() {
                     <TableRow key={lease.leaseId}>
                       <TableCell className="font-medium">{lease.lessorName}</TableCell>
                       <TableCell className="text-right">
-                        {formatEur(grossAmount)}
+                        {fmtEur(grossAmount)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {formatEur(lease.alreadyPaidAdvances)}
+                        {fmtEur(lease.alreadyPaidAdvances)}
                       </TableCell>
                       <TableCell
                         className={`text-right font-medium ${
                           lease.finalPayment < 0 ? "text-red-600" : ""
                         }`}
                       >
-                        {formatEur(lease.finalPayment)}
+                        {fmtEur(lease.finalPayment)}
                       </TableCell>
                     </TableRow>
                   );
                 })}
                 {/* Summary row */}
                 <TableRow className="border-t-2 font-bold">
-                  <TableCell>Gesamt ({calc.totals.leaseCount} Verträge)</TableCell>
+                  <TableCell>{t("step3.totalContracts", { count: calc.totals.leaseCount })}</TableCell>
                   <TableCell className="text-right">
-                    {formatEur(
+                    {fmtEur(
                       Math.max(calc.totals.totalMinimumRent, calc.totals.totalRevenueShare)
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {formatEur(calc.totals.totalAdvancesPaid)}
+                    {fmtEur(calc.totals.totalAdvancesPaid)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {formatEur(calc.totals.totalFinalPayment)}
+                    {fmtEur(calc.totals.totalFinalPayment)}
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -1677,26 +1679,26 @@ export default function NewLeaseSettlementPage() {
 
     const columnLabel =
       advanceInterval === "YEARLY"
-        ? "Jahresvorschuss"
+        ? t("step3.advanceYearly")
         : advanceInterval === "QUARTERLY"
-          ? "Quartalsvorschuss"
-          : "Monatsvorschuss";
+          ? t("step3.advanceQuarterly")
+          : t("step3.advanceMonthly");
+
+    const titleLabel =
+      advanceInterval === "YEARLY"
+        ? t("step3.advanceResultsTitleYearly", { year: calc.year })
+        : advanceInterval === "QUARTERLY"
+          ? t("step3.advanceResultsTitleQuarterly", { quarter: selectedQuarter, year: calc.year })
+          : t("step3.advanceResultsTitleMonthly", { month: MONTH_NAMES[calc.month - 1], year: calc.year });
 
     return (
       <Card>
         <CardHeader>
-          <CardTitle>
-            Berechnungsergebnis - {columnLabel}{" "}
-            {advanceInterval === "YEARLY"
-              ? `${calc.year}`
-              : advanceInterval === "QUARTERLY"
-                ? `Q${selectedQuarter} ${calc.year}`
-                : `${MONTH_NAMES[calc.month - 1]} ${calc.year}`}
-          </CardTitle>
+          <CardTitle>{titleLabel}</CardTitle>
           <CardDescription>
-            {calc.parkName}
+            {t("step3.advanceResultsDescription", { parkName: calc.parkName })}
             {calc.minimumRentPerTurbine !== null &&
-              ` | Mindestpacht/WKA: ${formatEur(calc.minimumRentPerTurbine)}`}
+              t("step3.minRentPerTurbine", { amount: fmtEur(calc.minimumRentPerTurbine) })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1704,8 +1706,8 @@ export default function NewLeaseSettlementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Verpachter</TableHead>
-                  <TableHead className="text-right">Fluerstuecke</TableHead>
+                  <TableHead>{t("step3.colLessor")}</TableHead>
+                  <TableHead className="text-right">{t("step3.colPlots")}</TableHead>
                   <TableHead className="text-right">{columnLabel}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1715,16 +1717,16 @@ export default function NewLeaseSettlementPage() {
                     <TableCell className="font-medium">{lease.lessorName}</TableCell>
                     <TableCell className="text-right">{lease.plotCount}</TableCell>
                     <TableCell className="text-right">
-                      {formatEur(lease.monthlyMinimumRent)}
+                      {fmtEur(lease.monthlyMinimumRent)}
                     </TableCell>
                   </TableRow>
                 ))}
                 {/* Summary row */}
                 <TableRow className="border-t-2 font-bold">
-                  <TableCell>Gesamt ({calc.totals.leaseCount} Verträge)</TableCell>
+                  <TableCell>{t("step3.totalContracts", { count: calc.totals.leaseCount })}</TableCell>
                   <TableCell />
                   <TableCell className="text-right">
-                    {formatEur(calc.totals.totalMonthlyMinimumRent)}
+                    {fmtEur(calc.totals.totalMonthlyMinimumRent)}
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -1749,42 +1751,42 @@ export default function NewLeaseSettlementPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Check className="h-5 w-5 text-green-600" />
-              Zusammenfassung
+              {t("step4.summaryTitle")}
             </CardTitle>
             <CardDescription>
-              Die Pachtabrechnung wurde erfolgreich berechnet und gespeichert.
+              {t("step4.summaryDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Summary grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground">Windpark</p>
+                <p className="text-xs text-muted-foreground">{t("step4.labelPark")}</p>
                 <p className="font-medium">{selectedPark?.name || "-"}</p>
               </div>
               <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground">Zeitraum</p>
+                <p className="text-xs text-muted-foreground">{t("step4.labelPeriod")}</p>
                 <p className="font-medium">
                   {periodType === "FINAL"
-                    ? `Jahresendabrechnung ${year}`
+                    ? t("step4.finalPeriod", { year })
                     : advanceInterval === "YEARLY"
-                      ? `Jahresvorschuss ${year}`
+                      ? t("step4.yearlyPeriod", { year })
                       : advanceInterval === "QUARTERLY"
-                        ? `Quartalsvorschuss Q${selectedQuarter} ${year}`
-                        : `Monatsvorschuss ${MONTH_NAMES[selectedMonth - 1]} ${year}`}
+                        ? t("step4.quarterlyPeriod", { quarter: selectedQuarter, year })
+                        : t("step4.monthlyPeriod", { month: MONTH_NAMES[selectedMonth - 1], year })}
                 </p>
               </div>
               <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground">Typ</p>
+                <p className="text-xs text-muted-foreground">{t("step4.labelType")}</p>
                 <p className="font-medium">
-                  {periodType === "FINAL" ? "Jahresendabrechnung" : "Vorschuss"}
+                  {periodType === "FINAL" ? t("step4.typeFinal") : t("step4.typeAdvance")}
                 </p>
               </div>
               {calculationResult && periodType === "FINAL" && (
                 <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Betrag (Restbetrag)</p>
+                  <p className="text-xs text-muted-foreground">{t("step4.labelAmountRemainder")}</p>
                   <p className="font-medium">
-                    {formatEur(
+                    {fmtEur(
                       (calculationResult as FinalCalculation).totals.totalFinalPayment
                     )}
                   </p>
@@ -1792,16 +1794,16 @@ export default function NewLeaseSettlementPage() {
               )}
               {calculationResult && periodType === "ADVANCE" && (
                 <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Betrag (Vorschuss)</p>
+                  <p className="text-xs text-muted-foreground">{t("step4.labelAmountAdvance")}</p>
                   <p className="font-medium">
-                    {formatEur(
+                    {fmtEur(
                       (calculationResult as AdvanceCalculation).totals.totalMonthlyMinimumRent
                     )}
                   </p>
                 </div>
               )}
               <div className="p-3 bg-muted/50 rounded-lg">
-                <p className="text-xs text-muted-foreground">Verträge</p>
+                <p className="text-xs text-muted-foreground">{t("step4.labelContracts")}</p>
                 <p className="font-medium">
                   {calculationResult
                     ? (calculationResult as FinalCalculation | AdvanceCalculation).totals.leaseCount
@@ -1812,7 +1814,7 @@ export default function NewLeaseSettlementPage() {
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Info className="h-3.5 w-3.5 shrink-0" />
-              Detaillierte Berechnungsvorschau: &quot;Zurück&quot; klicken
+              {t("step4.previewHint")}
             </div>
 
             <Separator />
@@ -1821,7 +1823,7 @@ export default function NewLeaseSettlementPage() {
             {!invoiceResult ? (
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <Label>Gutschrift-Status</Label>
+                  <Label>{t("step4.statusLabel")}</Label>
                   <RadioGroup
                     value={invoiceInitialStatus}
                     onValueChange={(v) => setInvoiceInitialStatus(v as "DRAFT" | "SENT")}
@@ -1836,7 +1838,7 @@ export default function NewLeaseSettlementPage() {
                       onClick={() => setInvoiceInitialStatus("DRAFT")}
                     >
                       <RadioGroupItem value="DRAFT" id="status-draft" />
-                      <Label htmlFor="status-draft" className="cursor-pointer">Entwurf</Label>
+                      <Label htmlFor="status-draft" className="cursor-pointer">{t("step4.statusDraft")}</Label>
                     </div>
                     <div
                       className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border-2 transition-colors cursor-pointer ${
@@ -1847,13 +1849,13 @@ export default function NewLeaseSettlementPage() {
                       onClick={() => setInvoiceInitialStatus("SENT")}
                     >
                       <RadioGroupItem value="SENT" id="status-sent" />
-                      <Label htmlFor="status-sent" className="cursor-pointer">Freigegeben</Label>
+                      <Label htmlFor="status-sent" className="cursor-pointer">{t("step4.statusReleased")}</Label>
                     </div>
                   </RadioGroup>
                   <p className="text-xs text-muted-foreground">
                     {invoiceInitialStatus === "DRAFT"
-                      ? "Gutschriften werden als Entwurf erstellt und können vor dem Versand noch bearbeitet werden."
-                      : "Gutschriften werden direkt als freigegeben markiert und können sofort versendet werden."}
+                      ? t("step4.statusDraftHint")
+                      : t("step4.statusReleasedHint")}
                   </p>
                 </div>
 
@@ -1866,7 +1868,7 @@ export default function NewLeaseSettlementPage() {
                   ) : (
                     <FileText className="mr-2 h-4 w-4" />
                   )}
-                  {creatingInvoices ? "Wird erstellt..." : "Gutschriften erzeugen"}
+                  {creatingInvoices ? t("step4.creating") : t("step4.createInvoicesBtn")}
                 </Button>
               </div>
             ) : (
@@ -1875,29 +1877,33 @@ export default function NewLeaseSettlementPage() {
                   <Check className="h-5 w-5 mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm font-medium">
-                      {invoiceResult.length} Gutschrift(en)
-                      {allocationInvoices.length > 0 && ` und ${allocationInvoices.length} Betreiber-Rechnung(en)`}
-                      {" "}erstellt
+                      {t("step4.successMessage", {
+                        credits: invoiceResult.length,
+                        alloc:
+                          allocationInvoices.length > 0
+                            ? t("step4.successAllocSuffix", { count: allocationInvoices.length })
+                            : "",
+                      })}
                     </p>
                     <p className="text-xs">
                       {invoiceInitialStatus === "DRAFT"
-                        ? "Alle Gutschriften wurden als Entwurf angelegt."
-                        : "Alle Gutschriften wurden als freigegeben markiert."}
-                      {allocationInvoices.length > 0 && " Betreiber-Rechnungen wurden als Entwurf angelegt."}
+                        ? t("step4.successDraftHint")
+                        : t("step4.successReleasedHint")}
+                      {allocationInvoices.length > 0 && t("step4.successAllocHint")}
                     </p>
                   </div>
                 </div>
 
                 {invoiceResult.length > 0 && (
                   <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-muted-foreground">Gutschriften (Verpachter)</h4>
+                    <h4 className="text-sm font-medium text-muted-foreground">{t("step4.creditsTitle")}</h4>
                     <div className="rounded-md border overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Gutschrift-Nr.</TableHead>
-                            <TableHead>Empfänger</TableHead>
-                            <TableHead className="text-right">Betrag</TableHead>
+                            <TableHead>{t("step4.colCreditNo")}</TableHead>
+                            <TableHead>{t("step4.colRecipient")}</TableHead>
+                            <TableHead className="text-right">{t("step4.colAmount")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1913,7 +1919,7 @@ export default function NewLeaseSettlementPage() {
                               </TableCell>
                               <TableCell>{inv.recipientName}</TableCell>
                               <TableCell className="text-right">
-                                {formatEur(Number(inv.grossAmount))}
+                                {fmtEur(Number(inv.grossAmount))}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1926,14 +1932,14 @@ export default function NewLeaseSettlementPage() {
                 {/* Allocation invoices (Betreiber-Rechnungen) */}
                 {allocationInvoices.length > 0 && (
                   <div className="space-y-1">
-                    <h4 className="text-sm font-medium text-muted-foreground">Rechnungen (Betreibergesellschaften)</h4>
+                    <h4 className="text-sm font-medium text-muted-foreground">{t("step4.allocationsTitle")}</h4>
                     <div className="rounded-md border overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Rechnungs-Nr.</TableHead>
-                            <TableHead>Betreiber</TableHead>
-                            <TableHead className="text-right">Betrag</TableHead>
+                            <TableHead>{t("step4.colInvoiceNo")}</TableHead>
+                            <TableHead>{t("step4.colOperator")}</TableHead>
+                            <TableHead className="text-right">{t("step4.colAmount")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1949,7 +1955,7 @@ export default function NewLeaseSettlementPage() {
                               </TableCell>
                               <TableCell>{inv.recipientName}</TableCell>
                               <TableCell className="text-right">
-                                {formatEur(Number(inv.grossAmount))}
+                                {fmtEur(Number(inv.grossAmount))}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1967,19 +1973,19 @@ export default function NewLeaseSettlementPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Button variant="outline" asChild>
                 <Link href="/leases/settlement">
-                  Zur Übersicht
+                  {t("step4.backToList")}
                 </Link>
               </Button>
               {createdSettlementId && (
                 <Button variant="outline" asChild>
                   <Link href={`/leases/settlement/${createdSettlementId}`}>
-                    Detail ansehen
+                    {t("step4.viewDetail")}
                   </Link>
                 </Button>
               )}
               <Button onClick={handleReset}>
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Neue Abrechnung
+                {t("step4.newSettlement")}
               </Button>
             </div>
           </CardContent>
@@ -2016,22 +2022,23 @@ export default function NewLeaseSettlementPage() {
       {/* Header with back navigation */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/leases/settlement" aria-label="Zurück zur Übersicht">
+          <Link href="/leases/settlement" aria-label={t("backAria")}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Neue Pachtabrechnung</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
             {periodType === "FINAL"
-              ? "Jahresendabrechnung in 4 Schritten"
-              : `${
-                  advanceInterval === "YEARLY"
-                    ? "Jahres"
-                    : advanceInterval === "QUARTERLY"
-                      ? "Quartals"
-                      : "Monats"
-                }vorschuss in 4 Schritten`}
+              ? t("subtitleFinal")
+              : t("subtitleAdvance", {
+                  type:
+                    advanceInterval === "YEARLY"
+                      ? t("advanceTypeYearly")
+                      : advanceInterval === "QUARTERLY"
+                        ? t("advanceTypeQuarterly")
+                        : t("advanceTypeMonthly"),
+                })}
           </p>
         </div>
       </div>
@@ -2059,7 +2066,7 @@ export default function NewLeaseSettlementPage() {
           <StepActions>
             <div className="flex gap-2">
               <Button variant="outline" asChild>
-                <Link href="/leases/settlement">Abbrechen</Link>
+                <Link href="/leases/settlement">{t("nav.cancelBtn")}</Link>
               </Button>
               {currentStep > 0 && (
                 <Button
@@ -2067,7 +2074,7 @@ export default function NewLeaseSettlementPage() {
                   onClick={() => setCurrentStep((prev) => prev - 1)}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Zurück
+                  {t("nav.backBtn")}
                 </Button>
               )}
             </div>
@@ -2090,11 +2097,11 @@ export default function NewLeaseSettlementPage() {
               {savingMonthlyData ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Speichert...
+                  {t("nav.saving")}
                 </>
               ) : (
                 <>
-                  Weiter
+                  {t("nav.nextBtn")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}

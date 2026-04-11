@@ -4,6 +4,7 @@ import { useState, use, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -63,19 +64,6 @@ import {
 } from "@/types/billing";
 
 // =============================================================================
-// SWR FETCHER
-// =============================================================================
-
-const fetcher = async (url: string) => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-    throw new Error(error.error || "Fehler beim Laden");
-  }
-  return res.json();
-};
-
-// =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 
@@ -111,20 +99,12 @@ function getAllocationStatusColor(status: string): string {
   }
 }
 
-function formatPercent(pct: number | null | undefined): string {
+function formatPercent(pct: number | null | undefined, locale: string): string {
   if (pct == null) return "-";
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(pct);
-}
-
-function _formatArea(sqm: number | null | undefined): string {
-  if (sqm == null) return "-";
-  return new Intl.NumberFormat("de-DE", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(sqm);
 }
 
 function getLessorName(
@@ -152,6 +132,20 @@ export default function UsageFeeDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("leases.usageFeesDetail");
+  const locale = useLocale();
+  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+
+  const fetcher = async (url: string) => {
+    const res = await fetch(url);
+    if (!res.ok) {
+      const error = await res
+        .json()
+        .catch(() => ({ error: t("unknownError") }));
+      throw new Error(error.error || t("loadError"));
+    }
+    return res.json();
+  };
 
   // ---------------------------------------------------------------------------
   // Data Fetching
@@ -237,14 +231,16 @@ export default function UsageFeeDetailPage({
         method: "POST",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || "Fehler bei der Berechnung");
+        const err = await res
+          .json()
+          .catch(() => ({ error: t("unknownError") }));
+        throw new Error(err.error || t("toastCalcError"));
       }
-      toast.success("Nutzungsentgelt wurde erfolgreich berechnet");
+      toast.success(t("toastCalcSuccess"));
       mutate();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler bei der Berechnung"
+        error instanceof Error ? error.message : t("toastCalcError")
       );
     } finally {
       setActionLoading(null);
@@ -258,16 +254,16 @@ export default function UsageFeeDetailPage({
         method: "POST",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || "Fehler beim Erstellen der Vorschuss-Gutschriften");
+        const err = await res
+          .json()
+          .catch(() => ({ error: t("unknownError") }));
+        throw new Error(err.error || t("toastAdvanceError"));
       }
-      toast.success("Vorschuss-Gutschriften wurden erfolgreich erstellt");
+      toast.success(t("toastAdvanceSuccess"));
       mutate();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Erstellen der Vorschuss-Gutschriften"
+        error instanceof Error ? error.message : t("toastAdvanceError")
       );
     } finally {
       setActionLoading(null);
@@ -281,16 +277,16 @@ export default function UsageFeeDetailPage({
         method: "POST",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || "Fehler beim Erstellen der Endabrechnung");
+        const err = await res
+          .json()
+          .catch(() => ({ error: t("unknownError") }));
+        throw new Error(err.error || t("toastSettleError"));
       }
-      toast.success("Endabrechnung wurde erfolgreich erstellt");
+      toast.success(t("toastSettleSuccess"));
       mutate();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Erstellen der Endabrechnung"
+        error instanceof Error ? error.message : t("toastSettleError")
       );
     } finally {
       setActionLoading(null);
@@ -303,14 +299,16 @@ export default function UsageFeeDetailPage({
         method: "DELETE",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || "Fehler beim Löschen");
+        const err = await res
+          .json()
+          .catch(() => ({ error: t("unknownError") }));
+        throw new Error(err.error || t("toastDeleteError"));
       }
-      toast.success("Abrechnung wurde gelöscht");
+      toast.success(t("toastDeleteSuccess"));
       router.push("/leases/usage-fees");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Löschen"
+        error instanceof Error ? error.message : t("toastDeleteError")
       );
     }
   }
@@ -322,14 +320,16 @@ export default function UsageFeeDetailPage({
         method: "POST",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || "Fehler beim Abschliessen");
+        const err = await res
+          .json()
+          .catch(() => ({ error: t("unknownError") }));
+        throw new Error(err.error || t("toastCloseError"));
       }
-      toast.success("Abrechnung wurde erfolgreich abgeschlossen");
+      toast.success(t("toastCloseSuccess"));
       mutate();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Abschliessen"
+        error instanceof Error ? error.message : t("toastCloseError")
       );
     } finally {
       setActionLoading(null);
@@ -338,7 +338,7 @@ export default function UsageFeeDetailPage({
 
   async function handleCancel() {
     if (!cancelReason.trim()) {
-      toast.error("Bitte geben Sie einen Stornogrund an");
+      toast.error(t("toastCancelReasonRequired"));
       return;
     }
     try {
@@ -349,16 +349,18 @@ export default function UsageFeeDetailPage({
         body: JSON.stringify({ reason: cancelReason.trim() }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(err.error || "Fehler beim Stornieren");
+        const err = await res
+          .json()
+          .catch(() => ({ error: t("unknownError") }));
+        throw new Error(err.error || t("toastCancelError"));
       }
-      toast.success("Abrechnung wurde erfolgreich storniert");
+      toast.success(t("toastCancelSuccess"));
       setShowCancelDialog(false);
       setCancelReason("");
       mutate();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Stornieren"
+        error instanceof Error ? error.message : t("toastCancelError")
       );
     } finally {
       setActionLoading(null);
@@ -402,12 +404,11 @@ export default function UsageFeeDetailPage({
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold">Abrechnung nicht gefunden</h1>
+          <h1 className="text-2xl font-bold">{t("notFoundTitle")}</h1>
         </div>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Die angeforderte Nutzungsentgelt-Abrechnung konnte nicht geladen
-            werden.
+            {t("notFoundDescription")}
           </CardContent>
         </Card>
       </div>
@@ -417,10 +418,13 @@ export default function UsageFeeDetailPage({
   // ---------------------------------------------------------------------------
   // Derived data
   // ---------------------------------------------------------------------------
-  const title = `Nutzungsentgelt WP ${settlement.park?.name || ""} ${settlement.year}`;
+  const title = t("title", {
+    parkName: settlement.park?.name || "",
+    year: settlement.year,
+  });
   const modelLabel = settlement.usedMinimum
-    ? "Mindestpacht"
-    : "Erlösabhaengig";
+    ? t("modelMinimum")
+    : t("modelRevenue");
 
   // ---------------------------------------------------------------------------
   // Render
@@ -447,8 +451,10 @@ export default function UsageFeeDetailPage({
               </Badge>
             </div>
             <p className="text-muted-foreground">
-              {settlement.park?.name || "-"} - Abrechnungsjahr{" "}
-              {settlement.year}
+              {t("subtitle", {
+                parkName: settlement.park?.name || "-",
+                year: settlement.year,
+              })}
             </p>
           </div>
         </div>
@@ -466,7 +472,7 @@ export default function UsageFeeDetailPage({
                 ) : (
                   <Calculator className="mr-2 h-4 w-4" />
                 )}
-                Berechnung starten
+                {t("btnStartCalc")}
               </Button>
               <Button
                 variant="destructive"
@@ -475,7 +481,7 @@ export default function UsageFeeDetailPage({
                 disabled={!!actionLoading}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Löschen
+                {t("btnDelete")}
               </Button>
             </>
           )}
@@ -493,7 +499,7 @@ export default function UsageFeeDetailPage({
                 ) : (
                   <Calculator className="mr-2 h-4 w-4" />
                 )}
-                Neu berechnen
+                {t("btnRecalc")}
               </Button>
               <Button
                 variant="outline"
@@ -505,7 +511,7 @@ export default function UsageFeeDetailPage({
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                Vorschuss-Gutschriften erzeugen
+                {t("btnCreateAdvance")}
               </Button>
               <Button
                 onClick={handleSettle}
@@ -516,7 +522,7 @@ export default function UsageFeeDetailPage({
                 ) : (
                   <FileText className="mr-2 h-4 w-4" />
                 )}
-                Endabrechnung erstellen
+                {t("btnCreateSettlement")}
               </Button>
             </>
           )}
@@ -531,7 +537,7 @@ export default function UsageFeeDetailPage({
               ) : (
                 <FileText className="mr-2 h-4 w-4" />
               )}
-              Endabrechnung erstellen
+              {t("btnCreateSettlement")}
             </Button>
           )}
 
@@ -540,7 +546,7 @@ export default function UsageFeeDetailPage({
               <Button variant="outline" asChild>
                 <Link href={`/leases/usage-fees/${id}/cost-allocation`}>
                   <Layers className="mr-2 h-4 w-4" />
-                  Kostenaufteilung erstellen
+                  {t("btnCreateAllocation")}
                 </Link>
               </Button>
               <Button
@@ -553,7 +559,7 @@ export default function UsageFeeDetailPage({
                 ) : (
                   <Lock className="mr-2 h-4 w-4" />
                 )}
-                Abrechnung abschliessen
+                {t("btnClose")}
               </Button>
             </>
           )}
@@ -571,14 +577,14 @@ export default function UsageFeeDetailPage({
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Stornieren
+              {t("btnCancel")}
             </Button>
           )}
 
           {/* Cancelled info */}
           {settlement.status === "CANCELLED" && (
             <Badge variant="destructive" className="text-sm px-3 py-1">
-              Diese Abrechnung wurde storniert
+              {t("cancelledBadge")}
             </Badge>
           )}
         </div>
@@ -589,7 +595,7 @@ export default function UsageFeeDetailPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Jahreserlöse
+              {t("statAnnualRevenue")}
             </CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -598,7 +604,7 @@ export default function UsageFeeDetailPage({
               {formatCurrency(Number(settlement.totalParkRevenueEur || 0))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Parkerlöse {settlement.year}
+              {t("statAnnualRevenueSub", { year: settlement.year })}
             </p>
           </CardContent>
         </Card>
@@ -606,7 +612,12 @@ export default function UsageFeeDetailPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Berechnet ({formatPercent(Number(settlement.revenueSharePercent || 0))}%)
+              {t("statCalculated", {
+                pct: formatPercent(
+                  Number(settlement.revenueSharePercent || 0),
+                  intlLocale
+                ),
+              })}
             </CardTitle>
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -617,14 +628,16 @@ export default function UsageFeeDetailPage({
                 : formatCurrency(Number(settlement.calculatedFeeEur || 0))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Erlösabhaengiger Anteil
+              {t("statCalculatedSub")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Minimum</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("statMinimum")}
+            </CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -636,7 +649,7 @@ export default function UsageFeeDetailPage({
                   )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Mindestpachtgarantie
+              {t("statMinimumSub")}
             </p>
           </CardContent>
         </Card>
@@ -650,7 +663,7 @@ export default function UsageFeeDetailPage({
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Tatsaechlich
+              {t("statActual")}
             </CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -662,15 +675,17 @@ export default function UsageFeeDetailPage({
             </div>
             <p className="text-xs text-muted-foreground">
               {settlement.status !== "OPEN" && settlement.usedMinimum
-                ? "Mindestpacht greift"
-                : "Auszuzahlender Betrag"}
+                ? t("statMinimumActive")
+                : t("statActualSub")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Modell</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("statModel")}
+            </CardTitle>
             <Scale className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -678,7 +693,7 @@ export default function UsageFeeDetailPage({
               {settlement.status === "OPEN" ? "-" : modelLabel}
             </div>
             <p className="text-xs text-muted-foreground">
-              Verwendetes Berechnungsmodell
+              {t("statModelSub")}
             </p>
           </CardContent>
         </Card>
@@ -688,10 +703,10 @@ export default function UsageFeeDetailPage({
       <Tabs defaultValue="positions">
         <TabsList>
           <TabsTrigger value="positions">
-            Eigentuemer-Positionen ({items.length})
+            {t("tabPositions", { count: items.length })}
           </TabsTrigger>
           <TabsTrigger value="allocations">
-            Kostenaufteilungen ({costAllocations.length})
+            {t("tabAllocations", { count: costAllocations.length })}
           </TabsTrigger>
         </TabsList>
 
@@ -700,11 +715,14 @@ export default function UsageFeeDetailPage({
           {items.length > 0 ? (
             <Card>
               <CardHeader>
-                <CardTitle>Aufstellung nach Eigentuemer</CardTitle>
+                <CardTitle>{t("positionsTitle")}</CardTitle>
                 <CardDescription>
-                  {items.length} Eigentuemer-Position(en) -{" "}
-                  {SETTLEMENT_STATUS_LABELS[settlement.status] ||
-                    settlement.status}
+                  {t("positionsDescription", {
+                    count: items.length,
+                    status:
+                      SETTLEMENT_STATUS_LABELS[settlement.status] ||
+                      settlement.status,
+                  })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -712,23 +730,31 @@ export default function UsageFeeDetailPage({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Eigentuemer</TableHead>
+                        <TableHead>{t("colOwner")}</TableHead>
                         <TableHead className="text-right">
-                          Pool-Anteil (%)
+                          {t("colPoolShare")}
                         </TableHead>
                         <TableHead className="text-right">
-                          Standort
+                          {t("colStandort")}
                         </TableHead>
                         <TableHead className="text-right">
-                          Versiegelt
+                          {t("colSealed")}
                         </TableHead>
-                        <TableHead className="text-right">Wege</TableHead>
-                        <TableHead className="text-right">Kabel</TableHead>
-                        <TableHead className="text-right">Gesamt</TableHead>
                         <TableHead className="text-right">
-                          Vorschuss
+                          {t("colRoads")}
                         </TableHead>
-                        <TableHead className="text-right">Rest</TableHead>
+                        <TableHead className="text-right">
+                          {t("colCable")}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {t("colTotal")}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {t("colAdvance")}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {t("colRemainder")}
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -739,7 +765,8 @@ export default function UsageFeeDetailPage({
                           </TableCell>
                           <TableCell className="text-right font-mono">
                             {formatPercent(
-                              Number(item.poolAreaSharePercent || 0)
+                              Number(item.poolAreaSharePercent || 0),
+                              intlLocale
                             )}
                             %
                           </TableCell>
@@ -775,7 +802,9 @@ export default function UsageFeeDetailPage({
                     </TableBody>
                     <TableFooter>
                       <TableRow>
-                        <TableCell className="font-bold">Summe</TableCell>
+                        <TableCell className="font-bold">
+                          {t("sumLabel")}
+                        </TableCell>
                         <TableCell className="text-right font-mono">
                           -
                         </TableCell>
@@ -813,20 +842,20 @@ export default function UsageFeeDetailPage({
                     <Separator className="my-6" />
                     <div>
                       <h4 className="text-sm font-medium mb-3">
-                        Verknuepfte Rechnungen
+                        {t("linkedInvoicesTitle")}
                       </h4>
                       <div className="space-y-2">
                         {items.map((item) => {
                           const invoices = [];
                           if (item.advanceInvoice) {
                             invoices.push({
-                              type: "Vorschuss",
+                              type: t("invoiceTypeAdvance"),
                               invoice: item.advanceInvoice,
                             });
                           }
                           if (item.settlementInvoice) {
                             invoices.push({
-                              type: "Endabrechnung",
+                              type: t("invoiceTypeSettlement"),
                               invoice: item.settlementInvoice,
                             });
                           }
@@ -858,7 +887,7 @@ export default function UsageFeeDetailPage({
                                         e.preventDefault();
                                         window.open(`/api/invoices/${invoice.id}/pdf`, '_blank');
                                       }}
-                                      title="PDF herunterladen"
+                                      title={t("downloadPdfTitle")}
                                     >
                                       <Download className="h-3 w-3" />
                                     </Button>
@@ -880,12 +909,10 @@ export default function UsageFeeDetailPage({
               <CardContent className="py-12 text-center">
                 <Calculator className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">
-                  Noch keine Abrechnungspositionen
+                  {t("noPositionsTitle")}
                 </h3>
                 <p className="text-muted-foreground mb-4">
-                  Klicken Sie auf &quot;Berechnung starten&quot;, um das
-                  Nutzungsentgelt auf Basis der Parkerlöse und Pachtverträge
-                  zu berechnen.
+                  {t("noPositionsDescription")}
                 </p>
                 <Button
                   onClick={handleCalculate}
@@ -896,14 +923,14 @@ export default function UsageFeeDetailPage({
                   ) : (
                     <Calculator className="mr-2 h-4 w-4" />
                   )}
-                  Jetzt berechnen
+                  {t("btnCalculateNow")}
                 </Button>
               </CardContent>
             </Card>
           ) : (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                Keine Abrechnungspositionen vorhanden.
+                {t("noPositionsEmpty")}
               </CardContent>
             </Card>
           )}
@@ -914,10 +941,9 @@ export default function UsageFeeDetailPage({
           {costAllocations.length > 0 ? (
             <Card>
               <CardHeader>
-                <CardTitle>Kostenaufteilungen</CardTitle>
+                <CardTitle>{t("allocationsTitle")}</CardTitle>
                 <CardDescription>
-                  Aufteilung der Nutzungsentgelte auf die
-                  Betreibergesellschaften
+                  {t("allocationsDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -928,7 +954,9 @@ export default function UsageFeeDetailPage({
                         <div className="flex items-center gap-3">
                           <h4 className="font-medium">
                             {allocation.periodLabel ||
-                              `Kostenaufteilung #${allocation.id.substring(0, 8)}`}
+                              t("allocationFallback", {
+                                id: allocation.id.substring(0, 8),
+                              })}
                           </h4>
                           <Badge
                             variant="secondary"
@@ -953,15 +981,15 @@ export default function UsageFeeDetailPage({
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Gesellschaft</TableHead>
+                                <TableHead>{t("colCompany")}</TableHead>
                                 <TableHead className="text-right">
-                                  Anteil (%)
+                                  {t("colSharePercent")}
                                 </TableHead>
                                 <TableHead className="text-right">
-                                  Betrag
+                                  {t("colAmount")}
                                 </TableHead>
                                 <TableHead className="text-right">
-                                  Netto zahlbar
+                                  {t("colNetPayable")}
                                 </TableHead>
                               </TableRow>
                             </TableHeader>
@@ -980,7 +1008,8 @@ export default function UsageFeeDetailPage({
                                     {formatPercent(
                                       Number(
                                         allocItem.allocationSharePercent || 0
-                                      )
+                                      ),
+                                      intlLocale
                                     )}
                                     %
                                   </TableCell>
@@ -1018,18 +1047,18 @@ export default function UsageFeeDetailPage({
               <CardContent className="py-12 text-center">
                 <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">
-                  Keine Kostenaufteilungen
+                  {t("noAllocationsTitle")}
                 </h3>
                 <p className="text-muted-foreground mb-4">
                   {settlement.status === "SETTLED"
-                    ? "Erstellen Sie eine Kostenaufteilung, um die Nutzungsentgelte auf die Betreibergesellschaften aufzuteilen."
-                    : "Kostenaufteilungen können erstellt werden, sobald die Abrechnung den Status 'Abgerechnet' hat."}
+                    ? t("noAllocationsSettled")
+                    : t("noAllocationsNotReady")}
                 </p>
                 {settlement.status === "SETTLED" && (
                   <Button variant="outline" asChild>
                     <Link href={`/leases/usage-fees/${id}/cost-allocation`}>
                       <Layers className="mr-2 h-4 w-4" />
-                      Kostenaufteilung erstellen
+                      {t("btnCreateAllocation")}
                     </Link>
                   </Button>
                 )}
@@ -1044,7 +1073,7 @@ export default function UsageFeeDetailPage({
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         onConfirm={handleDelete}
-        title="Abrechnung löschen"
+        title={t("deleteDialogTitle")}
         itemName={title}
       />
 
@@ -1055,16 +1084,16 @@ export default function UsageFeeDetailPage({
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Abrechnung stornieren</DialogTitle>
+            <DialogTitle>{t("cancelDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Diese Aktion markiert die Abrechnung als storniert. Die Daten bleiben zur Nachvollziehbarkeit erhalten.
+              {t("cancelDialogDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="cancel-reason">Stornogrund *</Label>
+            <Label htmlFor="cancel-reason">{t("cancelReasonLabel")}</Label>
             <Textarea
               id="cancel-reason"
-              placeholder="Bitte geben Sie den Grund für die Stornierung an..."
+              placeholder={t("cancelReasonPlaceholder")}
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               className="mt-2"
@@ -1080,7 +1109,7 @@ export default function UsageFeeDetailPage({
               }}
               disabled={actionLoading === "cancel"}
             >
-              Abbrechen
+              {t("cancelBack")}
             </Button>
             <Button
               variant="destructive"
@@ -1090,7 +1119,7 @@ export default function UsageFeeDetailPage({
               {actionLoading === "cancel" && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Stornieren
+              {t("btnCancel")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -4,6 +4,7 @@ import { useState, use, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -55,49 +56,19 @@ import {
 // CONSTANTS & HELPERS
 // =============================================================================
 
-const fetcher = (url: string) =>
-  fetch(url).then((res) => {
-    if (!res.ok) throw new Error("Fehler beim Laden");
-    return res.json();
-  });
-
-function formatArea(sqm: number): string {
-  return new Intl.NumberFormat("de-DE", {
+function formatArea(sqm: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(sqm);
 }
 
-function formatPercent(pct: number): string {
-  return new Intl.NumberFormat("de-DE", {
+function formatPercent(pct: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(pct);
 }
-
-function getLessorName(lessor: LeaseSetupInfo["lessor"]): string {
-  if (lessor.companyName) return lessor.companyName;
-  const parts = [lessor.firstName, lessor.lastName].filter(Boolean);
-  return parts.length > 0 ? parts.join(" ") : "Unbekannt";
-}
-
-const WIZARD_STEPS = [
-  {
-    id: "mode",
-    title: "Abrechnungsmodus",
-    description: "Abrechnungsverfahren waehlen",
-  },
-  {
-    id: "owners",
-    title: "Eigentuemer zuordnen",
-    description: "Direktabrechnung konfigurieren",
-  },
-  {
-    id: "review",
-    title: "Übersicht",
-    description: "Konfiguration prüfen",
-  },
-];
 
 // =============================================================================
 // PAGE COMPONENT
@@ -110,6 +81,39 @@ export default function UsageFeeSetupPage({
 }) {
   const { parkId } = use(params);
   const router = useRouter();
+  const t = useTranslations("leases.usageFeesSetup");
+  const locale = useLocale();
+  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+
+  const fetcher = (url: string) =>
+    fetch(url).then((res) => {
+      if (!res.ok) throw new Error(t("loadError"));
+      return res.json();
+    });
+
+  function getLessorName(lessor: LeaseSetupInfo["lessor"]): string {
+    if (lessor.companyName) return lessor.companyName;
+    const parts = [lessor.firstName, lessor.lastName].filter(Boolean);
+    return parts.length > 0 ? parts.join(" ") : t("unknownLessor");
+  }
+
+  const WIZARD_STEPS = [
+    {
+      id: "mode",
+      title: t("stepMode"),
+      description: t("stepModeDescription"),
+    },
+    {
+      id: "owners",
+      title: t("stepOwners"),
+      description: t("stepOwnersDescription"),
+    },
+    {
+      id: "review",
+      title: t("stepReview"),
+      description: t("stepReviewDescription"),
+    },
+  ];
 
   // ---------------------------------------------------------------------------
   // State
@@ -146,7 +150,7 @@ export default function UsageFeeSetupPage({
       assignments[lease.leaseId] = lease.directBillingFundId;
     });
     setDirectBillingAssignments(assignments);
-   
+
   }, [setupData]);
 
   // ---------------------------------------------------------------------------
@@ -160,37 +164,29 @@ export default function UsageFeeSetupPage({
       !setupData.revenuePhases ||
       setupData.revenuePhases.length === 0
     ) {
-      w.push(
-        "Keine Erlösphasen konfiguriert. Bitte legen Sie mindestens eine Erlösphase an."
-      );
+      w.push(t("warningNoPhases"));
     }
 
     if (
       setupData.minimumRentPerTurbine === null ||
       setupData.minimumRentPerTurbine === 0
     ) {
-      w.push(
-        "Keine Mindestpacht pro WEA konfiguriert. Die Mindestgarantie kann nicht berechnet werden."
-      );
+      w.push(t("warningNoMinimumRent"));
     }
 
     if (setupData.leases.length === 0) {
-      w.push(
-        "Keine Pachtverträge für diesen Park gefunden. Bitte legen Sie zuerst Pachtverträge an."
-      );
+      w.push(t("warningNoLeases"));
     }
 
     if (
       settlementMode === "OPERATOR_DIRECT" &&
       setupData.operatorFunds.length === 0
     ) {
-      w.push(
-        "Keine Betreibergesellschaften verfügbar. Für Direktabrechnung werden Gesellschaften benötigt."
-      );
+      w.push(t("warningNoOperators"));
     }
 
     return w;
-  }, [setupData, settlementMode]);
+  }, [setupData, settlementMode, t]);
 
   const totalArea = useMemo(() => {
     if (!setupData) return 0;
@@ -249,19 +245,13 @@ export default function UsageFeeSetupPage({
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(
-          err.message || "Fehler beim Speichern der Konfiguration"
-        );
+        throw new Error(err.message || t("saveErrorDetail"));
       }
 
-      toast.success("Einrichtung erfolgreich gespeichert");
+      toast.success(t("saveSuccess"));
       router.push("/leases");
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Speichern"
-      );
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setSaving(false);
     }
@@ -318,14 +308,11 @@ export default function UsageFeeSetupPage({
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold">
-            Park-Einrichtung nicht gefunden
-          </h1>
+          <h1 className="text-2xl font-bold">{t("notFoundTitle")}</h1>
         </div>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Die Konfigurationsdaten für diesen Park konnten nicht geladen
-            werden.
+            {t("notFoundDescription")}
           </CardContent>
         </Card>
       </div>
@@ -346,10 +333,10 @@ export default function UsageFeeSetupPage({
         </Button>
         <div>
           <h1 className="text-2xl font-bold">
-            Nutzungsentgelt einrichten - {setupData.parkName}
+            {t("titleWithPark", { parkName: setupData.parkName })}
           </h1>
           <p className="text-muted-foreground">
-            Konfiguration der Pachtabrechnung für {setupData.parkName}
+            {t("subtitle", { parkName: setupData.parkName })}
           </p>
         </div>
       </div>
@@ -373,18 +360,15 @@ export default function UsageFeeSetupPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Abrechnungsmodus waehlen
+                {t("modeTitle")}
               </CardTitle>
-              <CardDescription>
-                Bestimmen Sie, wie die Nutzungsentgelte für diesen Park
-                abgerechnet werden sollen.
-              </CardDescription>
+              <CardDescription>{t("modeDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {setupData.billingEntityFund && (
                 <div className="rounded-lg border p-4 bg-muted/50">
                   <p className="text-sm text-muted-foreground mb-1">
-                    Abrechnungsgesellschaft (Netzgesellschaft):
+                    {t("billingEntityLabel")}
                   </p>
                   <p className="font-medium">
                     {setupData.billingEntityFund.name}
@@ -421,10 +405,7 @@ export default function UsageFeeSetupPage({
                       {SETTLEMENT_MODE_LABELS.NETWORK_COMPANY}
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Die Netzgesellschaft erstellt alle Rechnungen zentral
-                      und verteilt die Kosten anschliessend auf die
-                      Betreibergesellschaften. Dies ist der
-                      Standard-Abrechnungsmodus.
+                      {t("networkModeDescription")}
                     </p>
                   </div>
                 </div>
@@ -444,10 +425,7 @@ export default function UsageFeeSetupPage({
                       {SETTLEMENT_MODE_LABELS.OPERATOR_DIRECT}
                     </Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Einzelne Betreibergesellschaften rechnen die
-                      Nutzungsentgelte für bestimmte Eigentuemer direkt ab.
-                      Im nächsten Schritt können Sie die Zuordnung
-                      vornehmen.
+                      {t("directModeDescription")}
                     </p>
                   </div>
                 </div>
@@ -464,27 +442,25 @@ export default function UsageFeeSetupPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Eigentuemer zuordnen
+                {t("ownersTitle")}
               </CardTitle>
-              <CardDescription>
-                Ordnen Sie jedem Pachtvertrag die abrechnende Gesellschaft zu.
-                Waehlen Sie &quot;Netzgesellschaft&quot; oder eine
-                Betreibergesellschaft für die Direktabrechnung.
-              </CardDescription>
+              <CardDescription>{t("ownersDescription")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Eigentuemer</TableHead>
-                      <TableHead>Flurstuecke</TableHead>
+                      <TableHead>{t("colOwner")}</TableHead>
+                      <TableHead>{t("colPlots")}</TableHead>
                       <TableHead className="text-right">
-                        Flaeche (m2)
+                        {t("colArea")}
                       </TableHead>
-                      <TableHead className="text-right">WEA</TableHead>
+                      <TableHead className="text-right">
+                        {t("colTurbines")}
+                      </TableHead>
                       <TableHead className="w-[250px]">
-                        Abrechnung durch
+                        {t("colBillingBy")}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -500,7 +476,7 @@ export default function UsageFeeSetupPage({
                             .join(", ")}
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {formatArea(lease.totalAreaSqm)}
+                          {formatArea(lease.totalAreaSqm, intlLocale)}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {lease.totalTurbineCount}
@@ -519,11 +495,13 @@ export default function UsageFeeSetupPage({
                             }
                           >
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Gesellschaft waehlen" />
+                              <SelectValue
+                                placeholder={t("selectCompanyPlaceholder")}
+                              />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="network">
-                                Netzgesellschaft
+                                {t("networkModeLabel")}
                               </SelectItem>
                               {setupData.operatorFunds.map((fund) => (
                                 <SelectItem
@@ -561,7 +539,7 @@ export default function UsageFeeSetupPage({
                     <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 shrink-0" />
                     <div className="space-y-2">
                       <p className="font-medium text-yellow-800">
-                        Hinweise zur Konfiguration
+                        {t("warningsTitle")}
                       </p>
                       <ul className="list-disc pl-4 space-y-1">
                         {warnings.map((w, i) => (
@@ -584,17 +562,15 @@ export default function UsageFeeSetupPage({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ClipboardCheck className="h-5 w-5" />
-                  Konfigurationsübersicht
+                  {t("overviewTitle")}
                 </CardTitle>
-                <CardDescription>
-                  Prüfen Sie die Einstellungen bevor Sie speichern
-                </CardDescription>
+                <CardDescription>{t("overviewDescription")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-lg border p-4">
                     <p className="text-sm text-muted-foreground mb-1">
-                      Abrechnungsmodus
+                      {t("settlementModeLabel")}
                     </p>
                     <p className="font-medium">
                       {SETTLEMENT_MODE_LABELS[settlementMode]}
@@ -602,7 +578,7 @@ export default function UsageFeeSetupPage({
                   </div>
                   <div className="rounded-lg border p-4">
                     <p className="text-sm text-muted-foreground mb-1">
-                      Netzgesellschaft
+                      {t("networkEntityLabel")}
                     </p>
                     <p className="font-medium">
                       {setupData.billingEntityFund?.name || "-"}
@@ -610,18 +586,22 @@ export default function UsageFeeSetupPage({
                   </div>
                   <div className="rounded-lg border p-4">
                     <p className="text-sm text-muted-foreground mb-1">
-                      Betreibergesellschaften
+                      {t("operatorsLabel")}
                     </p>
                     <p className="font-medium">
-                      {setupData.operatorFunds.length} Gesellschaft(en)
+                      {t("operatorsCount", {
+                        count: setupData.operatorFunds.length,
+                      })}
                     </p>
                   </div>
                   <div className="rounded-lg border p-4">
                     <p className="text-sm text-muted-foreground mb-1">
-                      Erlösphasen
+                      {t("revenuePhasesLabel")}
                     </p>
                     <p className="font-medium">
-                      {setupData.revenuePhases.length} Phase(n)
+                      {t("phasesCount", {
+                        count: setupData.revenuePhases.length,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -631,10 +611,13 @@ export default function UsageFeeSetupPage({
             {/* Summary Table */}
             <Card>
               <CardHeader>
-                <CardTitle>Pachtverträge - Zusammenfassung</CardTitle>
+                <CardTitle>{t("leaseSummaryTitle")}</CardTitle>
                 <CardDescription>
-                  {setupData.leases.length} Pachtvertrag/Pachtverträge mit{" "}
-                  {totalTurbines} WEA auf {formatArea(totalArea)} m2
+                  {t("leaseSummaryDescription", {
+                    count: setupData.leases.length,
+                    turbines: totalTurbines,
+                    area: formatArea(totalArea, intlLocale),
+                  })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -642,17 +625,19 @@ export default function UsageFeeSetupPage({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Eigentuemer</TableHead>
-                        <TableHead>Flurstuecke</TableHead>
+                        <TableHead>{t("colOwner")}</TableHead>
+                        <TableHead>{t("colPlots")}</TableHead>
                         <TableHead className="text-right">
-                          Flaeche (m2)
+                          {t("colArea")}
                         </TableHead>
-                        <TableHead className="text-right">WEA</TableHead>
                         <TableHead className="text-right">
-                          Versiegelt (m2)
+                          {t("colTurbines")}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {t("colSealed")}
                         </TableHead>
                         {settlementMode === "OPERATOR_DIRECT" && (
-                          <TableHead>Abrechnung</TableHead>
+                          <TableHead>{t("colBilling")}</TableHead>
                         )}
                       </TableRow>
                     </TableHeader>
@@ -681,20 +666,20 @@ export default function UsageFeeSetupPage({
                                 .join(", ")}
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                              {formatArea(lease.totalAreaSqm)}
+                              {formatArea(lease.totalAreaSqm, intlLocale)}
                             </TableCell>
                             <TableCell className="text-right font-mono">
                               {lease.totalTurbineCount}
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                              {formatArea(leaseSealedArea)}
+                              {formatArea(leaseSealedArea, intlLocale)}
                             </TableCell>
                             {settlementMode === "OPERATOR_DIRECT" && (
                               <TableCell>
                                 <Badge variant="outline">
                                   {assignedFund
                                     ? assignedFund.name
-                                    : "Netzgesellschaft"}
+                                    : t("networkModeLabel")}
                                 </Badge>
                               </TableCell>
                             )}
@@ -704,22 +689,24 @@ export default function UsageFeeSetupPage({
                     </TableBody>
                     <TableFooter>
                       <TableRow>
-                        <TableCell className="font-bold">Gesamt</TableCell>
+                        <TableCell className="font-bold">
+                          {t("totalLabel")}
+                        </TableCell>
                         <TableCell>
                           {setupData.leases.reduce(
                             (sum, l) => sum + l.plots.length,
                             0
                           )}{" "}
-                          Flurstuecke
+                          {t("plotsCountSuffix")}
                         </TableCell>
                         <TableCell className="text-right font-mono font-bold">
-                          {formatArea(totalArea)}
+                          {formatArea(totalArea, intlLocale)}
                         </TableCell>
                         <TableCell className="text-right font-mono font-bold">
                           {totalTurbines}
                         </TableCell>
                         <TableCell className="text-right font-mono font-bold">
-                          {formatArea(totalSealedArea)}
+                          {formatArea(totalSealedArea, intlLocale)}
                         </TableCell>
                         {settlementMode === "OPERATOR_DIRECT" && (
                           <TableCell />
@@ -735,18 +722,18 @@ export default function UsageFeeSetupPage({
             {setupData.revenuePhases.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Erlösphasen</CardTitle>
+                  <CardTitle>{t("revenuePhasesTitle")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Phase</TableHead>
-                          <TableHead>Von (Jahr)</TableHead>
-                          <TableHead>Bis (Jahr)</TableHead>
+                          <TableHead>{t("colPhase")}</TableHead>
+                          <TableHead>{t("colFromYear")}</TableHead>
+                          <TableHead>{t("colToYear")}</TableHead>
                           <TableHead className="text-right">
-                            Erlösanteil (%)
+                            {t("colRevenueShare")}
                           </TableHead>
                         </TableRow>
                       </TableHeader>
@@ -754,14 +741,18 @@ export default function UsageFeeSetupPage({
                         {setupData.revenuePhases.map((phase) => (
                           <TableRow key={phase.phaseNumber}>
                             <TableCell className="font-medium">
-                              Phase {phase.phaseNumber}
+                              {t("phaseNumber", { n: phase.phaseNumber })}
                             </TableCell>
                             <TableCell>{phase.startYear}</TableCell>
                             <TableCell>
-                              {phase.endYear || "unbegrenzt"}
+                              {phase.endYear || t("unlimited")}
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                              {formatPercent(phase.revenueSharePercentage)}%
+                              {formatPercent(
+                                phase.revenueSharePercentage,
+                                intlLocale
+                              )}
+                              %
                             </TableCell>
                           </TableRow>
                         ))}
@@ -783,12 +774,12 @@ export default function UsageFeeSetupPage({
           disabled={currentStep === 0}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Zurück
+          {t("back")}
         </Button>
 
         {!isLastStep ? (
           <Button onClick={handleNext}>
-            Weiter
+            {t("continueBtn")}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         ) : (
@@ -798,7 +789,7 @@ export default function UsageFeeSetupPage({
             ) : (
               <Check className="mr-2 h-4 w-4" />
             )}
-            Einrichtung speichern
+            {t("saveSetup")}
           </Button>
         )}
       </StepActions>

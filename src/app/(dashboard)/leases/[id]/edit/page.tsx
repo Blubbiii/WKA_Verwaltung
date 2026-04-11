@@ -4,7 +4,8 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useTranslations, useLocale } from "next-intl";
 import {
   ArrowLeft,
   Save,
@@ -141,23 +142,6 @@ interface Lease {
   };
 }
 
-// PlotArea type labels
-const AREA_TYPE_LABELS: Record<string, string> = {
-  WEA_STANDORT: "WEA-Standort",
-  POOL: "Poolfläche",
-  WEG: "Zuwegung",
-  KABEL: "Kabeltrasse",
-  AUSGLEICH: "Ausgleichsfläche",
-};
-
-const AREA_TYPE_OPTIONS = [
-  { id: "WEA_STANDORT", label: "WEA-Standort", unit: "m²" },
-  { id: "POOL", label: "Poolfläche", unit: "m²" },
-  { id: "WEG", label: "Zuwegung", unit: "m²" },
-  { id: "KABEL", label: "Kabeltrasse", unit: "lfm" },
-  { id: "AUSGLEICH", label: "Ausgleichsfläche", unit: "m²" },
-];
-
 export default function EditLeasePage({
   params,
 }: {
@@ -165,6 +149,27 @@ export default function EditLeasePage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const t = useTranslations("leases.edit");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
+  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+
+  // PlotArea type labels (localized)
+  const AREA_TYPE_LABELS: Record<string, string> = {
+    WEA_STANDORT: t("areaTypes.WEA_STANDORT"),
+    POOL: t("areaTypes.POOL"),
+    WEG: t("areaTypes.WEG"),
+    KABEL: t("areaTypes.KABEL"),
+    AUSGLEICH: t("areaTypes.AUSGLEICH"),
+  };
+
+  const AREA_TYPE_OPTIONS = [
+    { id: "WEA_STANDORT", label: t("areaTypes.WEA_STANDORT"), unit: "m²" },
+    { id: "POOL", label: t("areaTypes.POOL"), unit: "m²" },
+    { id: "WEG", label: t("areaTypes.WEG"), unit: "m²" },
+    { id: "KABEL", label: t("areaTypes.KABEL"), unit: "lfm" },
+    { id: "AUSGLEICH", label: t("areaTypes.AUSGLEICH"), unit: "m²" },
+  ];
   const [loading, setLoading] = useState(false);
   const [loadingLease, setLoadingLease] = useState(true);
   const [lease, setLease] = useState<Lease | null>(null);
@@ -222,11 +227,11 @@ export default function EditLeasePage({
         const leaseRes = await fetch(`/api/leases/${resolvedParams.id}`);
         if (!leaseRes.ok) {
           if (leaseRes.status === 404) {
-            toast.error("Pachtvertrag nicht gefunden");
+            toast.error(t("notFoundError"));
             router.push("/leases");
             return;
           }
-          throw new Error("Fehler beim Laden");
+          throw new Error(t("loadError"));
         }
         const leaseData = await leaseRes.json();
         setLease(leaseData);
@@ -306,30 +311,37 @@ export default function EditLeasePage({
           setFunds(fundsData.data || []);
         }
       } catch {
-        toast.error("Fehler beim Laden des Pachtvertrags");
+        toast.error(t("loadErrorDetail"));
       } finally {
         setLoadingLease(false);
       }
     }
 
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedParams.id, router]);
 
   function getPlotLabel(plot: Plot): string {
     const parts = [
       plot.cadastralDistrict,
-      plot.fieldNumber && plot.fieldNumber !== "0" ? `Flur ${plot.fieldNumber}` : null,
-      `Flurstück ${plot.plotNumber}`,
+      plot.fieldNumber && plot.fieldNumber !== "0"
+        ? t("plotLabelField", { n: plot.fieldNumber })
+        : null,
+      t("plotLabelPlot", { n: plot.plotNumber || "" }),
     ].filter(Boolean);
     return parts.join(", ");
   }
 
   function getLessorName(): string {
-    if (!lease) return "-";
+    if (!lease) return t("unknownValue");
     if (lease.lessor.personType === "legal") {
-      return lease.lessor.companyName || "-";
+      return lease.lessor.companyName || t("unknownValue");
     }
-    return [lease.lessor.firstName, lease.lessor.lastName].filter(Boolean).join(" ") || "-";
+    return (
+      [lease.lessor.firstName, lease.lessor.lastName]
+        .filter(Boolean)
+        .join(" ") || t("unknownValue")
+    );
   }
 
   async function handleAddPlotArea(plotId: string) {
@@ -353,7 +365,7 @@ export default function EditLeasePage({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Erstellen");
+        throw new Error(error.error || t("areaCreateError"));
       }
 
       const created = await response.json();
@@ -367,9 +379,11 @@ export default function EditLeasePage({
       );
       setAddingAreaForPlot(null);
       setNewArea({ areaType: "WEA_STANDORT", areaSqm: "", lengthM: "" });
-      toast.success("Teilfläche hinzugefügt");
+      toast.success(t("areaCreateSuccess"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Erstellen");
+      toast.error(
+        error instanceof Error ? error.message : t("areaCreateError")
+      );
     } finally {
       setSavingArea(false);
     }
@@ -380,7 +394,7 @@ export default function EditLeasePage({
       const response = await fetch(`/api/plots/${plotId}/areas/${areaId}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error("Fehler beim Löschen");
+      if (!response.ok) throw new Error(t("areaDeleteError"));
 
       setAvailablePlots((prev) =>
         prev.map((p) =>
@@ -389,9 +403,9 @@ export default function EditLeasePage({
             : p
         )
       );
-      toast.success("Teilfläche gelöscht");
+      toast.success(t("areaDeleteSuccess"));
     } catch {
-      toast.error("Fehler beim Löschen der Teilfläche");
+      toast.error(t("areaDeleteError"));
     }
   }
 
@@ -403,8 +417,8 @@ export default function EditLeasePage({
         body: JSON.stringify({ parkId: newParkId }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Fehler" }));
-        throw new Error(err.error || "Fehler beim Zuordnen");
+        const err = await res.json().catch(() => ({ error: t("parkAssignError") }));
+        throw new Error(err.error || t("parkAssignError"));
       }
       const updated = await res.json();
       setAvailablePlots((prev) =>
@@ -414,15 +428,17 @@ export default function EditLeasePage({
             : p
         )
       );
-      toast.success("Park-Zuordnung aktualisiert");
+      toast.success(t("parkAssignSuccess"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Zuordnen");
+      toast.error(
+        error instanceof Error ? error.message : t("parkAssignError")
+      );
     }
   }
 
   async function handleCreatePlot() {
     if (!newPlot.cadastralDistrict || !newPlot.plotNumber) {
-      toast.error("Gemarkung und Flurstücknummer sind erforderlich");
+      toast.error(t("plotValidationError"));
       return;
     }
     setCreatingPlot(true);
@@ -443,7 +459,7 @@ export default function EditLeasePage({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Erstellen");
+        throw new Error(error.error || t("plotCreateError"));
       }
 
       const created = await response.json();
@@ -456,7 +472,7 @@ export default function EditLeasePage({
       });
       if (!assignRes.ok) {
         const err = await assignRes.json();
-        throw new Error(err.error || "Flurstück erstellt, aber Zuordnung fehlgeschlagen");
+        throw new Error(err.error || t("plotAssignError"));
       }
 
       // Update local state
@@ -464,9 +480,11 @@ export default function EditLeasePage({
       setSelectedPlotIds((prev) => [...prev, created.id]);
       setShowCreatePlot(false);
       setNewPlot({ cadastralDistrict: "", fieldNumber: "", plotNumber: "", parkId: "", areaSqm: "" });
-      toast.success("Flurstück erstellt und zugeordnet");
+      toast.success(t("plotCreateSuccess"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Erstellen");
+      toast.error(
+        error instanceof Error ? error.message : t("plotCreateError")
+      );
     } finally {
       setCreatingPlot(false);
     }
@@ -474,7 +492,7 @@ export default function EditLeasePage({
 
   function setEndDateYears(years: number) {
     if (!formData.startDate) {
-      toast.error("Bitte zuerst Vertragsbeginn wählen");
+      toast.error(t("startDateFirst"));
       return;
     }
     const newEndDate = new Date(formData.startDate);
@@ -492,12 +510,12 @@ export default function EditLeasePage({
 
   async function handleSubmit() {
     if (!formData.startDate) {
-      toast.error("Vertragsbeginn ist erforderlich");
+      toast.error(t("startDateRequired"));
       return;
     }
 
     if (selectedPlotIds.length === 0) {
-      toast.error("Mindestens ein Flurstück ist erforderlich");
+      toast.error(t("plotsRequired"));
       return;
     }
 
@@ -540,13 +558,15 @@ export default function EditLeasePage({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveErrorGeneric"));
       }
 
-      toast.success("Pachtvertrag erfolgreich aktualisiert");
+      toast.success(t("saveSuccess"));
       router.push(`/leases/${resolvedParams.id}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Aktualisieren");
+      toast.error(
+        error instanceof Error ? error.message : t("saveError")
+      );
     } finally {
       setLoading(false);
     }
@@ -586,9 +606,9 @@ export default function EditLeasePage({
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pachtvertrag bearbeiten</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Verpächter: {getLessorName()}
+            {t("lessorLabel", { name: getLessorName() })}
           </p>
         </div>
       </div>
@@ -599,11 +619,9 @@ export default function EditLeasePage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Flurstücke & Teilflächen
+              {t("plotsCardTitle")}
             </CardTitle>
-            <CardDescription>
-              Flurstücke zuordnen und Teilflächen (Standort, Pool, Weg, etc.) verwalten
-            </CardDescription>
+            <CardDescription>{t("plotsCardDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Current plots with areas */}
@@ -624,10 +642,10 @@ export default function EditLeasePage({
                       >
                         <SelectTrigger className="h-7 w-[180px] text-xs border-dashed">
                           <Wind className="h-3 w-3 mr-1 shrink-0" />
-                          <SelectValue placeholder="Kein Park" />
+                          <SelectValue placeholder={t("plotNoParkPlaceholder")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">Kein Park</SelectItem>
+                          <SelectItem value="none">{t("plotNoPark")}</SelectItem>
                           {parks.map((p) => (
                             <SelectItem key={p.id} value={p.id}>
                               {p.shortName || p.name}
@@ -647,7 +665,7 @@ export default function EditLeasePage({
                       }}
                     >
                       <Plus className="h-4 w-4 mr-1" />
-                      Teilfläche
+                      {t("areaAdd")}
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => togglePlot(plot.id)}>
                       <X className="h-4 w-4" />
@@ -668,13 +686,13 @@ export default function EditLeasePage({
                             {AREA_TYPE_LABELS[area.areaType] || area.areaType}
                           </Badge>
                           {area.areaType === "KABEL" ? (
-                            area.lengthM && <span className="text-sm">{Number(area.lengthM).toLocaleString("de-DE")} lfm</span>
+                            area.lengthM && <span className="text-sm">{Number(area.lengthM).toLocaleString(intlLocale)} lfm</span>
                           ) : (
-                            area.areaSqm && <span className="text-sm">{Number(area.areaSqm).toLocaleString("de-DE")} m²</span>
+                            area.areaSqm && <span className="text-sm">{Number(area.areaSqm).toLocaleString(intlLocale)} m²</span>
                           )}
                           {area.compensationFixedAmount && (
                             <span className="text-sm text-muted-foreground">
-                              ({Number(area.compensationFixedAmount).toLocaleString("de-DE", { style: "currency", currency: "EUR" })})
+                              ({Number(area.compensationFixedAmount).toLocaleString(intlLocale, { style: "currency", currency: "EUR" })})
                             </span>
                           )}
                         </div>
@@ -690,17 +708,17 @@ export default function EditLeasePage({
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-2">
-                      Keine Teilflächen — bitte hinzufügen
+                      {t("areaNoAreas")}
                     </p>
                   )}
 
                   {/* Add area form */}
                   {addingAreaForPlot === plot.id && (
                     <div className="p-3 mt-2 border rounded-lg bg-muted/20 space-y-3">
-                      <p className="text-sm font-medium">Neue Teilfläche</p>
+                      <p className="text-sm font-medium">{t("areaNewTitle")}</p>
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs">Typ</Label>
+                          <Label className="text-xs">{t("areaTypeLabel")}</Label>
                           <Select
                             value={newArea.areaType}
                             onValueChange={(v) => setNewArea({ ...newArea, areaType: v, areaSqm: "", lengthM: "" })}
@@ -709,15 +727,15 @@ export default function EditLeasePage({
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {AREA_TYPE_OPTIONS.map((t) => (
-                                <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>
+                              {AREA_TYPE_OPTIONS.map((opt) => (
+                                <SelectItem key={opt.id} value={opt.id}>{opt.label}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">
-                            {newArea.areaType === "KABEL" ? "Länge (lfm)" : "Fläche (m²)"}
+                            {newArea.areaType === "KABEL" ? t("areaLengthLabel") : t("areaSqmLabel")}
                           </Label>
                           <Input
                             type="number"
@@ -744,7 +762,7 @@ export default function EditLeasePage({
                             ) : (
                               <Check className="h-4 w-4 mr-1" />
                             )}
-                            Speichern
+                            {t("areaSaveBtn")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -763,14 +781,14 @@ export default function EditLeasePage({
             ))}
 
             {currentPlots.length === 0 && (
-              <p className="text-sm text-muted-foreground">Keine Flurstücke zugeordnet</p>
+              <p className="text-sm text-muted-foreground">{t("noPlotsAssigned")}</p>
             )}
 
             {/* Add plots */}
             {showAddPlots ? (
               <div className="space-y-2 border rounded-lg p-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Bestehendes Flurstück zuordnen</Label>
+                  <Label className="text-sm font-medium">{t("addPlotExisting")}</Label>
                   <Button variant="ghost" size="sm" onClick={() => setShowAddPlots(false)}>
                     <X className="h-4 w-4" />
                   </Button>
@@ -800,7 +818,11 @@ export default function EditLeasePage({
                             {hasOtherLease && (
                               <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                                 <AlertTriangle className="h-3 w-3" />
-                                Bereits in Vertrag ({plot.activeLease!.lessorName || "unbekannt"})
+                                {t("alreadyInLease", {
+                                  name:
+                                    plot.activeLease!.lessorName ||
+                                    t("alreadyInLeaseUnknown"),
+                                })}
                               </span>
                             )}
                           </div>
@@ -810,57 +832,57 @@ export default function EditLeasePage({
                     );
                   })}
                   {addablePlots.length === 0 && (
-                    <p className="text-sm text-muted-foreground">Keine weiteren Flurstücke verfügbar</p>
+                    <p className="text-sm text-muted-foreground">{t("noMorePlots")}</p>
                   )}
                 </div>
               </div>
             ) : showCreatePlot ? (
               <div className="space-y-3 border rounded-lg p-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Neues Flurstück erstellen</Label>
+                  <Label className="text-sm font-medium">{t("createNewPlot")}</Label>
                   <Button variant="ghost" size="sm" onClick={() => setShowCreatePlot(false)}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">Gemarkung *</Label>
+                    <Label className="text-xs">{t("cadastralDistrictLabel")}</Label>
                     <Input
                       className="h-9"
-                      placeholder="z.B. Musterstadt"
+                      placeholder={t("cadastralDistrictPlaceholder")}
                       value={newPlot.cadastralDistrict}
                       onChange={(e) => setNewPlot({ ...newPlot, cadastralDistrict: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Flur</Label>
+                    <Label className="text-xs">{t("fieldNumberLabel")}</Label>
                     <Input
                       className="h-9"
-                      placeholder="z.B. 3"
+                      placeholder={t("fieldNumberPlaceholder")}
                       value={newPlot.fieldNumber}
                       onChange={(e) => setNewPlot({ ...newPlot, fieldNumber: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Flurstück-Nr. *</Label>
+                    <Label className="text-xs">{t("plotNumberLabel")}</Label>
                     <Input
                       className="h-9"
-                      placeholder="z.B. 123/4"
+                      placeholder={t("plotNumberPlaceholder")}
                       value={newPlot.plotNumber}
                       onChange={(e) => setNewPlot({ ...newPlot, plotNumber: e.target.value })}
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Windpark</Label>
+                    <Label className="text-xs">{t("parkLabel")}</Label>
                     <Select
                       value={newPlot.parkId || "none"}
                       onValueChange={(v) => setNewPlot({ ...newPlot, parkId: v === "none" ? "" : v })}
                     >
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Kein Park" />
+                        <SelectValue placeholder={t("plotNoParkPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Kein Park</SelectItem>
+                        <SelectItem value="none">{t("plotNoPark")}</SelectItem>
                         {parks.map((park) => (
                           <SelectItem key={park.id} value={park.id}>
                             {park.shortName || park.name}
@@ -870,7 +892,7 @@ export default function EditLeasePage({
                     </Select>
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Fläche (m²)</Label>
+                    <Label className="text-xs">{t("areaPlotLabel")}</Label>
                     <Input
                       type="number"
                       className="h-9"
@@ -891,10 +913,10 @@ export default function EditLeasePage({
                     ) : (
                       <Check className="h-4 w-4 mr-1" />
                     )}
-                    Erstellen & zuordnen
+                    {t("createAndAssign")}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => setShowCreatePlot(false)}>
-                    Abbrechen
+                    {t("cancelBtn")}
                   </Button>
                 </div>
               </div>
@@ -902,11 +924,11 @@ export default function EditLeasePage({
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setShowAddPlots(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Bestehendes zuordnen
+                  {t("addExistingPlot")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setShowCreatePlot(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Neues Flurstück erstellen
+                  {t("createNewPlot")}
                 </Button>
               </div>
             )}
@@ -922,11 +944,9 @@ export default function EditLeasePage({
               ) : (
                 <User className="h-5 w-5" />
               )}
-              Verpächter
+              {t("lessorCardTitle")}
             </CardTitle>
-            <CardDescription>
-              Klicken um Name, Adresse oder Bankdaten zu bearbeiten
-            </CardDescription>
+            <CardDescription>{t("lessorCardDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <button
@@ -938,7 +958,7 @@ export default function EditLeasePage({
                 {getLessorName()}
               </p>
               <p className="text-sm text-muted-foreground">
-                {lease.lessor.personType === "legal" ? "Juristische Person" : "Natürliche Person"}
+                {lease.lessor.personType === "legal" ? t("legalPerson") : t("naturalPerson")}
               </p>
               {(lease.lessor.street || lease.lessor.city) && (
                 <p className="text-sm text-muted-foreground mt-1">
@@ -956,11 +976,9 @@ export default function EditLeasePage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Vertragspartner
+              {t("contractPartnerTitle")}
             </CardTitle>
-            <CardDescription>
-              Gesellschaft auf Pächter-Seite
-            </CardDescription>
+            <CardDescription>{t("contractPartnerDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Select
@@ -970,10 +988,10 @@ export default function EditLeasePage({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Keine Gesellschaft zugeordnet" />
+                <SelectValue placeholder={t("fundSelectPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Keine Gesellschaft</SelectItem>
+                <SelectItem value="none">{t("fundNoneOption")}</SelectItem>
                 {funds.map((fund) => (
                   <SelectItem key={fund.id} value={fund.id}>
                     {fund.name}{fund.legalForm ? ` ${fund.legalForm}` : ""}
@@ -984,7 +1002,7 @@ export default function EditLeasePage({
             <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
               <Link href="/funds/new" target="_blank">
                 <Plus className="mr-1 h-3 w-3" />
-                Neue Gesellschaft anlegen
+                {t("fundCreateNew")}
               </Link>
             </Button>
             {formData.contractPartnerFundId && (() => {
@@ -998,7 +1016,7 @@ export default function EditLeasePage({
                     href={`/funds/${selected.id}`}
                     className="text-sm text-primary hover:underline"
                   >
-                    Gesellschaft öffnen →
+                    {t("fundOpen")}
                   </Link>
                 </div>
               ) : null;
@@ -1022,12 +1040,12 @@ export default function EditLeasePage({
         {/* Vertragslaufzeit */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Vertragslaufzeit</CardTitle>
+            <CardTitle>{t("contractTermTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Vertragsabschluss */}
             <div className="space-y-2">
-              <Label>Vertragsabschluss (Datum der Unterschrift)</Label>
+              <Label>{t("signedDateLabel")}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -1039,8 +1057,8 @@ export default function EditLeasePage({
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.signedDate
-                      ? format(formData.signedDate, "dd.MM.yyyy", { locale: de })
-                      : "Noch nicht unterschrieben"}
+                      ? format(formData.signedDate, "dd.MM.yyyy", { locale: dateLocale })
+                      : t("notSignedYet")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -1048,7 +1066,7 @@ export default function EditLeasePage({
                     mode="single"
                     selected={formData.signedDate}
                     onSelect={(date) => setFormData({ ...formData, signedDate: date })}
-                    locale={de}
+                    locale={dateLocale}
                     captionLayout="dropdown"
                     startMonth={new Date(2015, 0)}
                     endMonth={new Date(2040, 11)}
@@ -1060,7 +1078,7 @@ export default function EditLeasePage({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Vertragsbeginn */}
               <div className="space-y-2">
-                <Label>Vertragsbeginn (Baubeginn) *</Label>
+                <Label>{t("startDateLabel")}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -1072,8 +1090,8 @@ export default function EditLeasePage({
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.startDate
-                        ? format(formData.startDate, "dd.MM.yyyy", { locale: de })
-                        : "Datum wählen"}
+                        ? format(formData.startDate, "dd.MM.yyyy", { locale: dateLocale })
+                        : t("chooseDate")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -1081,7 +1099,7 @@ export default function EditLeasePage({
                       mode="single"
                       selected={formData.startDate}
                       onSelect={(date) => setFormData({ ...formData, startDate: date })}
-                      locale={de}
+                      locale={dateLocale}
                       captionLayout="dropdown"
                       startMonth={new Date(2015, 0)}
                       endMonth={new Date(2040, 11)}
@@ -1092,7 +1110,7 @@ export default function EditLeasePage({
 
               {/* Vertragsende */}
               <div className="space-y-2">
-                <Label>Vertragsende</Label>
+                <Label>{t("endDateLabel")}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -1104,8 +1122,8 @@ export default function EditLeasePage({
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.endDate
-                        ? format(formData.endDate, "dd.MM.yyyy", { locale: de })
-                        : "Unbefristet"}
+                        ? format(formData.endDate, "dd.MM.yyyy", { locale: dateLocale })
+                        : t("unlimited")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -1113,7 +1131,7 @@ export default function EditLeasePage({
                       mode="single"
                       selected={formData.endDate}
                       onSelect={(date) => setFormData({ ...formData, endDate: date })}
-                      locale={de}
+                      locale={dateLocale}
                       captionLayout="dropdown"
                       startMonth={new Date(2020, 0)}
                       endMonth={new Date(2070, 11)}
@@ -1122,10 +1140,10 @@ export default function EditLeasePage({
                 </Popover>
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={() => setEndDateYears(20)}>
-                    +20 Jahre
+                    {t("add20Years")}
                   </Button>
                   <Button type="button" variant="outline" size="sm" onClick={() => setEndDateYears(25)}>
-                    +25 Jahre
+                    {t("add25Years")}
                   </Button>
                   {formData.endDate && (
                     <Button
@@ -1142,7 +1160,7 @@ export default function EditLeasePage({
 
               {/* Status */}
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t("statusLabel")}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(v) => setFormData({ ...formData, status: v })}
@@ -1151,11 +1169,11 @@ export default function EditLeasePage({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="DRAFT">Entwurf</SelectItem>
-                    <SelectItem value="ACTIVE">Aktiv</SelectItem>
-                    <SelectItem value="EXPIRING">Läuft aus</SelectItem>
-                    <SelectItem value="EXPIRED">Abgelaufen</SelectItem>
-                    <SelectItem value="TERMINATED">Gekündigt</SelectItem>
+                    <SelectItem value="DRAFT">{t("statusDraft")}</SelectItem>
+                    <SelectItem value="ACTIVE">{t("statusActive")}</SelectItem>
+                    <SelectItem value="EXPIRING">{t("statusExpiring")}</SelectItem>
+                    <SelectItem value="EXPIRED">{t("statusExpired")}</SelectItem>
+                    <SelectItem value="TERMINATED">{t("statusTerminated")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1165,9 +1183,9 @@ export default function EditLeasePage({
             <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Verlängerungsoption</Label>
+                  <Label>{t("extensionOption")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Besteht eine Option zur Vertragsverlängerung?
+                    {t("extensionOptionDescription")}
                   </p>
                 </div>
                 <Switch
@@ -1179,13 +1197,13 @@ export default function EditLeasePage({
               </div>
               {formData.hasExtensionOption && (
                 <div className="space-y-2">
-                  <Label>Details zur Verlängerung</Label>
+                  <Label>{t("extensionDetails")}</Label>
                   <Textarea
                     value={formData.extensionDetails}
                     onChange={(e) =>
                       setFormData({ ...formData, extensionDetails: e.target.value })
                     }
-                    placeholder="z.B. Automatische Verlängerung um 5 Jahre..."
+                    placeholder={t("extensionDetailsPlaceholder")}
                     rows={2}
                   />
                 </div>
@@ -1197,14 +1215,12 @@ export default function EditLeasePage({
         {/* Wartegeld */}
         <Card>
           <CardHeader>
-            <CardTitle>Wartegeld</CardTitle>
-            <CardDescription>
-              Zahlung an Flächeneigentümer vor/während des Baus
-            </CardDescription>
+            <CardTitle>{t("waitingMoneyTitle")}</CardTitle>
+            <CardDescription>{t("waitingMoneyDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Wartegeld vereinbart</Label>
+              <Label>{t("waitingMoneyAgreed")}</Label>
               <Switch
                 checked={formData.hasWaitingMoney}
                 onCheckedChange={(checked) =>
@@ -1215,7 +1231,7 @@ export default function EditLeasePage({
             {formData.hasWaitingMoney && (
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Betrag (€)</Label>
+                  <Label>{t("waitingMoneyAmount")}</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -1223,11 +1239,11 @@ export default function EditLeasePage({
                     onChange={(e) =>
                       setFormData({ ...formData, waitingMoneyAmount: e.target.value })
                     }
-                    placeholder="z.B. 500.00"
+                    placeholder={t("waitingMoneyAmountPlaceholder")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Einheit</Label>
+                  <Label>{t("waitingMoneyUnitLabel")}</Label>
                   <Select
                     value={formData.waitingMoneyUnit}
                     onValueChange={(v) =>
@@ -1238,13 +1254,13 @@ export default function EditLeasePage({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pauschal">Pauschal</SelectItem>
-                      <SelectItem value="ha">€ pro ha</SelectItem>
+                      <SelectItem value="pauschal">{t("waitingMoneyUnitFlat")}</SelectItem>
+                      <SelectItem value="ha">{t("waitingMoneyUnitPerHa")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Zahlungsrhythmus</Label>
+                  <Label>{t("waitingMoneyScheduleLabel")}</Label>
                   <Select
                     value={formData.waitingMoneySchedule}
                     onValueChange={(v) =>
@@ -1255,9 +1271,9 @@ export default function EditLeasePage({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="once">Einmalig</SelectItem>
-                      <SelectItem value="monthly">Monatlich</SelectItem>
-                      <SelectItem value="yearly">Jährlich</SelectItem>
+                      <SelectItem value="once">{t("waitingMoneyScheduleOnce")}</SelectItem>
+                      <SelectItem value="monthly">{t("waitingMoneyScheduleMonthly")}</SelectItem>
+                      <SelectItem value="yearly">{t("waitingMoneyScheduleYearly")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1269,14 +1285,12 @@ export default function EditLeasePage({
         {/* Abrechnungsintervall */}
         <Card>
           <CardHeader>
-            <CardTitle>Abrechnungsintervall</CardTitle>
-            <CardDescription>
-              Bestimmt wie oft Mindestpacht-Vorschüsse erstellt werden
-            </CardDescription>
+            <CardTitle>{t("billingIntervalTitle")}</CardTitle>
+            <CardDescription>{t("billingIntervalDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Intervall</Label>
+              <Label>{t("intervalLabel")}</Label>
               <Select
                 value={formData.billingInterval}
                 onValueChange={(v) =>
@@ -1290,14 +1304,14 @@ export default function EditLeasePage({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ANNUAL">Jährlich</SelectItem>
-                  <SelectItem value="QUARTERLY">Quartalsweise</SelectItem>
-                  <SelectItem value="MONTHLY">Monatlich</SelectItem>
+                  <SelectItem value="ANNUAL">{t("intervalAnnual")}</SelectItem>
+                  <SelectItem value="QUARTERLY">{t("intervalQuarterly")}</SelectItem>
+                  <SelectItem value="MONTHLY">{t("intervalMonthly")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Verknuepfte WKA (optional)</Label>
+              <Label>{t("linkedTurbineLabel")}</Label>
               <Select
                 value={formData.linkedTurbineId || "none"}
                 onValueChange={(v) =>
@@ -1308,10 +1322,10 @@ export default function EditLeasePage({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Keine spezifische WKA" />
+                  <SelectValue placeholder={t("noTurbineSelected")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Keine spezifische WKA</SelectItem>
+                  <SelectItem value="none">{t("noTurbineSelected")}</SelectItem>
                   {(() => {
                     // Finde Parks aus ausgewaehlten Plots
                     const selectedParkIds = new Set<string>();
@@ -1346,23 +1360,23 @@ export default function EditLeasePage({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Optional: Mindestpacht an spezifische WKA binden
+                {t("linkedTurbineHint")}
               </p>
             </div>
             <div className="space-y-2">
-              <Label>Gutschrift-Stichtag (Tag im Monat)</Label>
+              <Label>{t("paymentDayLabel")}</Label>
               <Input
                 type="number"
                 min={1}
                 max={28}
-                placeholder="Park-Standard verwenden"
+                placeholder={t("paymentDayPlaceholder")}
                 value={formData.paymentDay}
                 onChange={(e) =>
                   setFormData({ ...formData, paymentDay: e.target.value })
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Leer lassen = Standard-Stichtag des Parks verwenden
+                {t("paymentDayHint")}
               </p>
             </div>
           </CardContent>
@@ -1371,13 +1385,13 @@ export default function EditLeasePage({
         {/* Notizen */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Notizen</CardTitle>
+            <CardTitle>{t("notesTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Zusätzliche Vertragsinformationen..."
+              placeholder={t("notesPlaceholder")}
               rows={4}
             />
           </CardContent>
@@ -1387,11 +1401,11 @@ export default function EditLeasePage({
       {/* Actions */}
       <div className="flex justify-end gap-4">
         <Button type="button" variant="outline" asChild>
-          <Link href={`/leases/${resolvedParams.id}`}>Abbrechen</Link>
+          <Link href={`/leases/${resolvedParams.id}`}>{t("cancelBtn")}</Link>
         </Button>
         <Button onClick={handleSubmit} disabled={loading}>
           <Save className="mr-2 h-4 w-4" />
-          {loading ? "Wird gespeichert..." : "Änderungen speichern"}
+          {loading ? t("saving") : t("saveBtn")}
         </Button>
       </div>
     </div>

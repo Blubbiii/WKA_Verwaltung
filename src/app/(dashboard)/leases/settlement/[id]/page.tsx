@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
@@ -111,11 +112,14 @@ function getAllocationStatusBadgeClasses(status: string): string {
 // HELPER: Format percentage
 // =============================================================================
 
-function formatPercent(value: number | string | null | undefined): string {
+function formatPercent(
+  value: number | string | null | undefined,
+  locale: string
+): string {
   if (value === null || value === undefined) return "-";
   const num = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(num)) return "-";
-  return num.toLocaleString("de-DE", { minimumFractionDigits: 2 }) + " %";
+  return num.toLocaleString(locale, { minimumFractionDigits: 2 }) + " %";
 }
 
 // =============================================================================
@@ -174,6 +178,9 @@ export default function SettlementDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations("leases.settlementDetail");
+  const locale = useLocale();
+  const intlLocale = locale === "en" ? "en-US" : "de-DE";
 
   // ---------------------------------------------------------------------------
   // State
@@ -213,18 +220,17 @@ export default function SettlementDetailPage({
       if (!res.ok) {
         const err = await res
           .json()
-          .catch(() => ({ error: "Unbekannter Fehler" }));
+          .catch(() => ({ error: t("unknownError") }));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
       const data = await res.json();
       setSettlement(data.settlement);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Fehler beim Laden der Abrechnung"
-      );
+      setError(err instanceof Error ? err.message : t("loadErrorDetail"));
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
@@ -280,16 +286,14 @@ export default function SettlementDetailPage({
       if (!res.ok) {
         const err = await res
           .json()
-          .catch(() => ({ error: "Unbekannter Fehler" }));
+          .catch(() => ({ error: t("unknownError") }));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
 
-      toast.success("Aktion erfolgreich ausgeführt");
+      toast.success(t("actionSuccess"));
       await loadSettlement();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Fehler bei der Aktion"
-      );
+      toast.error(err instanceof Error ? err.message : t("actionError"));
     } finally {
       setActionLoading(null);
     }
@@ -304,15 +308,13 @@ export default function SettlementDetailPage({
       if (!res.ok) {
         const err = await res
           .json()
-          .catch(() => ({ error: "Unbekannter Fehler" }));
+          .catch(() => ({ error: t("unknownError") }));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
-      toast.success("Abrechnung gelöscht");
+      toast.success(t("deleteSuccess"));
       router.push("/leases/settlement");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Fehler beim Löschen"
-      );
+      toast.error(err instanceof Error ? err.message : t("deleteError"));
     } finally {
       setActionLoading(null);
       setDeleteDialogOpen(false);
@@ -330,17 +332,15 @@ export default function SettlementDetailPage({
       if (!res.ok) {
         const err = await res
           .json()
-          .catch(() => ({ error: "Unbekannter Fehler" }));
+          .catch(() => ({ error: t("unknownError") }));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
-      toast.success("Abrechnung storniert");
+      toast.success(t("cancelSuccess"));
       setCancelDialogOpen(false);
       setCancelReason("");
       await loadSettlement();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Fehler beim Stornieren"
-      );
+      toast.error(err instanceof Error ? err.message : t("cancelError"));
     } finally {
       setActionLoading(null);
     }
@@ -358,18 +358,25 @@ export default function SettlementDetailPage({
         body: JSON.stringify({ method }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
+        const err = await res.json().catch(() => ({ error: t("unknownError") }));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
       const result = await res.json();
-      const label = method === "print" ? "gedruckt" : method === "email" ? "gemailt" : "zugestellt";
-      toast.success(`${result.delivered || 0} Gutschrift(en) ${label}`);
+      const count = result.delivered || 0;
+      if (method === "print") toast.success(t("deliveryPrinted", { count }));
+      else if (method === "email") toast.success(t("deliveryEmailed", { count }));
+      else toast.success(t("deliveryDelivered", { count }));
       if (result.errors?.length > 0) {
-        toast.error(`${result.errors.length} Fehler: ${result.errors[0]}`);
+        toast.error(
+          t("deliveryErrorCount", {
+            count: result.errors.length,
+            first: result.errors[0],
+          })
+        );
       }
       await loadSettlement();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler bei der Zustellung");
+      toast.error(err instanceof Error ? err.message : t("deliveryError"));
     } finally {
       setDeliveryLoading(null);
     }
@@ -382,7 +389,7 @@ export default function SettlementDetailPage({
         method: "POST",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Fehler beim Drucken" }));
+        const err = await res.json().catch(() => ({ error: t("printError") }));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
       // Download the PDF
@@ -397,10 +404,10 @@ export default function SettlementDetailPage({
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      toast.success("PDF heruntergeladen");
+      toast.success(t("pdfDownloaded"));
       await loadSettlement();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Drucken");
+      toast.error(err instanceof Error ? err.message : t("printErrorDetail"));
     } finally {
       setDeliveryLoading(null);
     }
@@ -415,14 +422,18 @@ export default function SettlementDetailPage({
         body: JSON.stringify({}),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Fehler beim Versenden" }));
+        const err = await res.json().catch(() => ({ error: t("emailError") }));
         throw new Error(err.error || `HTTP ${res.status}`);
       }
       const result = await res.json();
-      toast.success(`E-Mail versendet an ${result.emailedTo || "Empfänger"}`);
+      toast.success(
+        t("emailSent", {
+          recipient: result.emailedTo || t("emailRecipientFallback"),
+        })
+      );
       await loadSettlement();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim E-Mail-Versand");
+      toast.error(err instanceof Error ? err.message : t("emailErrorDetail"));
     } finally {
       setDeliveryLoading(null);
     }
@@ -480,13 +491,13 @@ export default function SettlementDetailPage({
           <Button variant="ghost" size="icon" asChild>
             <Link
               href="/leases/settlement"
-              aria-label="Zurück zur Übersicht"
+              aria-label={t("backAria")}
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            Pachtabrechnung
+            {t("pageTitle")}
           </h1>
         </div>
         <Card>
@@ -494,14 +505,14 @@ export default function SettlementDetailPage({
             <div className="flex flex-col items-center gap-4 text-center">
               <AlertTriangle className="h-10 w-10 text-destructive" />
               <div>
-                <h3 className="text-lg font-semibold">Fehler beim Laden</h3>
+                <h3 className="text-lg font-semibold">{t("notFoundTitle")}</h3>
                 <p className="text-muted-foreground mt-1">
-                  {error || "Abrechnung nicht gefunden"}
+                  {error || t("notFoundFallback")}
                 </p>
               </div>
               <Button onClick={loadSettlement} variant="outline">
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Erneut versuchen
+                {t("retryBtn")}
               </Button>
             </div>
           </CardContent>
@@ -513,7 +524,7 @@ export default function SettlementDetailPage({
   // ---------------------------------------------------------------------------
   // Computed values
   // ---------------------------------------------------------------------------
-  const parkName = settlement.park?.name || "Unbekannter Park";
+  const parkName = settlement.park?.name || t("unknownPark");
   const isFinal = settlement.periodType === "FINAL";
   const isAdvance = settlement.periodType === "ADVANCE";
   const status = settlement.status;
@@ -522,17 +533,22 @@ export default function SettlementDetailPage({
     settlement.costAllocations || [];
 
   const periodTypeLabel = isFinal
-    ? `Endabrechnung \u2014 Abrechnungsjahr ${settlement.year}`
+    ? t("finalSettlementLabel", { year: settlement.year })
     : isAdvance
-      ? `${ADVANCE_INTERVAL_LABELS[settlement.advanceInterval || ""] || "Vorschuss"} \u2014 ${settlement.year}`
+      ? t("advanceLabel", {
+          interval:
+            ADVANCE_INTERVAL_LABELS[settlement.advanceInterval || ""] ||
+            t("advanceFallback"),
+          year: settlement.year,
+        })
       : `${settlement.year}`;
 
   // Model label
   const modelLabel = isAdvance
-    ? "Vorschuss"
+    ? t("modelAdvance")
     : settlement.usedMinimum
-      ? "Mindestpacht"
-      : "Umsatzbeteiligung";
+      ? t("modelMinimum")
+      : t("modelRevenue");
 
   // Item totals
   const itemTotals = items.reduce(
@@ -593,7 +609,7 @@ export default function SettlementDetailPage({
             ) : (
               <Calculator className="mr-2 h-4 w-4" />
             )}
-            Berechnung starten
+            {t("btnStartCalc")}
           </Button>
         );
         buttons.push(
@@ -604,7 +620,7 @@ export default function SettlementDetailPage({
             disabled={!!actionLoading}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Löschen
+            {t("btnDelete")}
           </Button>
         );
         break;
@@ -627,7 +643,7 @@ export default function SettlementDetailPage({
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" />
             )}
-            Neu berechnen
+            {t("btnRecalc")}
           </Button>
         );
         buttons.push(
@@ -646,7 +662,7 @@ export default function SettlementDetailPage({
             ) : (
               <FileText className="mr-2 h-4 w-4" />
             )}
-            Gutschriften erzeugen
+            {t("btnCreateInvoices")}
           </Button>
         );
         break;
@@ -670,7 +686,7 @@ export default function SettlementDetailPage({
             ) : (
               <Send className="mr-2 h-4 w-4" />
             )}
-            Zur Prüfung vorlegen
+            {t("btnSubmitReview")}
           </Button>
         );
         break;
@@ -694,7 +710,7 @@ export default function SettlementDetailPage({
             ) : (
               <CheckCircle className="mr-2 h-4 w-4" />
             )}
-            Freigeben
+            {t("btnApprove")}
           </Button>
         );
         buttons.push(
@@ -716,7 +732,7 @@ export default function SettlementDetailPage({
             ) : (
               <XCircle className="mr-2 h-4 w-4" />
             )}
-            Zurückweisen
+            {t("btnReject")}
           </Button>
         );
         break;
@@ -738,7 +754,7 @@ export default function SettlementDetailPage({
             ) : (
               <Lock className="mr-2 h-4 w-4" />
             )}
-            Abschliessen
+            {t("btnClose")}
           </Button>
         );
         break;
@@ -767,7 +783,7 @@ export default function SettlementDetailPage({
           disabled={!!actionLoading}
         >
           <XCircle className="mr-2 h-4 w-4" />
-          Stornieren
+          {t("btnCancel")}
         </Button>
       );
     }
@@ -786,11 +802,10 @@ export default function SettlementDetailPage({
             <Calculator className="h-10 w-10 text-primary/60" />
           </div>
           <h3 className="text-lg font-semibold">
-            Noch keine Positionen vorhanden
+            {t("noItemsTitle")}
           </h3>
           <p className="text-muted-foreground mt-2 max-w-sm">
-            Starten Sie die Berechnung, um die Eigentuemer-Positionen zu
-            erzeugen.
+            {t("noItemsDescription")}
           </p>
           <Button
             className="mt-6"
@@ -807,7 +822,7 @@ export default function SettlementDetailPage({
             ) : (
               <Calculator className="mr-2 h-4 w-4" />
             )}
-            Berechnung starten
+            {t("btnStartCalc")}
           </Button>
         </div>
       );
@@ -816,7 +831,7 @@ export default function SettlementDetailPage({
     if (items.length === 0) {
       return (
         <div className="py-8 text-center text-muted-foreground">
-          Keine Positionen vorhanden.
+          {t("noItems")}
         </div>
       );
     }
@@ -826,24 +841,24 @@ export default function SettlementDetailPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Eigentuemer</TableHead>
-              <TableHead className="text-right">Pool-Anteil (%)</TableHead>
-              <TableHead className="text-right">Standort</TableHead>
-              <TableHead className="text-right">Versiegelt</TableHead>
-              <TableHead className="text-right">Wege</TableHead>
-              <TableHead className="text-right">Kabel</TableHead>
+              <TableHead>{t("colOwner")}</TableHead>
+              <TableHead className="text-right">{t("colPoolShare")}</TableHead>
+              <TableHead className="text-right">{t("colStandort")}</TableHead>
+              <TableHead className="text-right">{t("colSealed")}</TableHead>
+              <TableHead className="text-right">{t("colRoads")}</TableHead>
+              <TableHead className="text-right">{t("colCable")}</TableHead>
               <TableHead className="text-right font-semibold">
-                Gesamt
+                {t("colTotal")}
               </TableHead>
               {isFinal && (
                 <>
-                  <TableHead className="text-right">Vorschuss</TableHead>
+                  <TableHead className="text-right">{t("colAdvance")}</TableHead>
                   <TableHead className="text-right font-semibold">
-                    Rest
+                    {t("colRemainder")}
                   </TableHead>
                 </>
               )}
-              <TableHead>Gutschrift</TableHead>
+              <TableHead>{t("colCreditNote")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -853,7 +868,7 @@ export default function SettlementDetailPage({
                   {getLessorName(item.lessorPerson)}
                 </TableCell>
                 <TableCell className="text-right font-mono">
-                  {formatPercent(item.poolAreaSharePercent)}
+                  {formatPercent(item.poolAreaSharePercent, intlLocale)}
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   {formatCurrency(item.standortFeeEur)}
@@ -903,9 +918,9 @@ export default function SettlementDetailPage({
             ))}
             {/* Footer totals row */}
             <TableRow className="border-t-2 font-bold bg-muted/30">
-              <TableCell>Gesamt ({items.length} Positionen)</TableCell>
+              <TableCell>{t("totalLabel", { count: items.length })}</TableCell>
               <TableCell className="text-right font-mono">
-                {formatPercent(itemTotals.poolAreaSharePercent)}
+                {formatPercent(itemTotals.poolAreaSharePercent, intlLocale)}
               </TableCell>
               <TableCell className="text-right font-mono">
                 {formatCurrency(itemTotals.standortFeeEur)}
@@ -981,11 +996,15 @@ export default function SettlementDetailPage({
             <div>
               <CardTitle className="text-base flex items-center gap-2">
                 <Send className="h-4 w-4" />
-                Gutschriften zustellen
-                <InfoTooltip text="Versand der Pachtgutschriften an die Verpächter per E-Mail oder Post." />
+                {t("deliveryTitle")}
+                <InfoTooltip text={t("deliveryTooltip")} />
               </CardTitle>
               <CardDescription>
-                {printedCount} von {invoices.length} gedruckt, {emailedCount} von {invoices.length} per E-Mail versendet
+                {t("deliveryStats", {
+                  printed: printedCount,
+                  emailed: emailedCount,
+                  total: invoices.length,
+                })}
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -1000,7 +1019,7 @@ export default function SettlementDetailPage({
                 ) : (
                   <FileText className="mr-2 h-3 w-3" />
                 )}
-                Alle drucken
+                {t("btnPrintAll")}
               </Button>
               <Button
                 variant="outline"
@@ -1013,7 +1032,7 @@ export default function SettlementDetailPage({
                 ) : (
                   <Send className="mr-2 h-3 w-3" />
                 )}
-                Alle mailen
+                {t("btnEmailAll")}
               </Button>
               <Button
                 size="sm"
@@ -1025,7 +1044,7 @@ export default function SettlementDetailPage({
                 ) : (
                   <Send className="mr-2 h-3 w-3" />
                 )}
-                Alle zustellen
+                {t("btnDeliverAll")}
               </Button>
             </div>
           </div>
@@ -1034,12 +1053,12 @@ export default function SettlementDetailPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Gutschrift-Nr.</TableHead>
-                <TableHead>Empfänger</TableHead>
-                <TableHead className="text-right">Betrag</TableHead>
-                <TableHead className="text-center">Gedruckt</TableHead>
-                <TableHead className="text-center">Gemailt</TableHead>
-                <TableHead>Aktionen</TableHead>
+                <TableHead>{t("colCreditNoteNo")}</TableHead>
+                <TableHead>{t("colRecipient")}</TableHead>
+                <TableHead className="text-right">{t("colAmount")}</TableHead>
+                <TableHead className="text-center">{t("colPrinted")}</TableHead>
+                <TableHead className="text-center">{t("colEmailed")}</TableHead>
+                <TableHead>{t("colActions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1059,7 +1078,7 @@ export default function SettlementDetailPage({
                   </TableCell>
                   <TableCell className="text-center">
                     {inv.printedAt ? (
-                      <span className="text-green-600" title={new Date(inv.printedAt).toLocaleString("de-DE")}>
+                      <span className="text-green-600" title={new Date(inv.printedAt).toLocaleString(intlLocale)}>
                         <CheckCircle className="h-4 w-4 inline" />
                       </span>
                     ) : (
@@ -1068,7 +1087,7 @@ export default function SettlementDetailPage({
                   </TableCell>
                   <TableCell className="text-center">
                     {inv.emailedAt ? (
-                      <span className="text-green-600" title={`${new Date(inv.emailedAt).toLocaleString("de-DE")} an ${inv.emailedTo || "?"}`}>
+                      <span className="text-green-600" title={`${new Date(inv.emailedAt).toLocaleString(intlLocale)} an ${inv.emailedTo || "?"}`}>
                         <CheckCircle className="h-4 w-4 inline" />
                       </span>
                     ) : (
@@ -1123,7 +1142,7 @@ export default function SettlementDetailPage({
         <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
           <Info className="h-5 w-5 text-muted-foreground shrink-0" />
           <p className="text-sm text-muted-foreground">
-            Kostenumlagen sind nur für Endabrechnungen verfügbar.
+            {t("allocationOnlyFinal")}
           </p>
         </div>
       );
@@ -1138,12 +1157,12 @@ export default function SettlementDetailPage({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-base">
-                      Kostenumlage
+                      {t("allocationCardTitle")}
                       {allocation.periodLabel
                         ? ` - ${allocation.periodLabel}`
                         : ""}
                     </CardTitle>
-                    <InfoTooltip text="Verteilung der angefallenen Betriebskosten auf die Pachtverträge." />
+                    <InfoTooltip text={t("allocationTooltip")} />
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge
@@ -1168,13 +1187,13 @@ export default function SettlementDetailPage({
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Gesellschaft</TableHead>
+                          <TableHead>{t("allocationColCompany")}</TableHead>
                           <TableHead className="text-right">
-                            Anteil (%)
+                            {t("allocationColShare")}
                           </TableHead>
-                          <TableHead className="text-right">Betrag</TableHead>
+                          <TableHead className="text-right">{t("allocationColAmount")}</TableHead>
                           <TableHead className="text-right">
-                            Netto zahlbar
+                            {t("allocationColNetPayable")}
                           </TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1188,7 +1207,7 @@ export default function SettlementDetailPage({
                                 : ""}
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                              {formatPercent(item.allocationSharePercent)}
+                              {formatPercent(item.allocationSharePercent, intlLocale)}
                             </TableCell>
                             <TableCell className="text-right font-mono">
                               {formatCurrency(item.totalAllocatedEur)}
@@ -1203,7 +1222,7 @@ export default function SettlementDetailPage({
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    Keine Positionen in dieser Kostenumlage.
+                    {t("allocationNoItems")}
                   </p>
                 )}
               </CardContent>
@@ -1217,7 +1236,7 @@ export default function SettlementDetailPage({
       <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
         <Info className="h-5 w-5 text-muted-foreground shrink-0" />
         <p className="text-sm text-muted-foreground">
-          Die Kostenaufteilung wird automatisch beim Erzeugen der Gutschriften erstellt.
+          {t("allocationAutoCreated")}
         </p>
       </div>
     );
@@ -1233,7 +1252,7 @@ export default function SettlementDetailPage({
         <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
           <Info className="h-5 w-5 text-muted-foreground shrink-0" />
           <p className="text-sm text-muted-foreground">
-            Vorschuss-Übersicht ist nur für Endabrechnungen verfügbar.
+            {t("advancesOnlyFinal")}
           </p>
         </div>
       );
@@ -1254,8 +1273,7 @@ export default function SettlementDetailPage({
         <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
           <Info className="h-5 w-5 text-muted-foreground shrink-0" />
           <p className="text-sm text-muted-foreground">
-            Keine Vorschussabrechnungen für {parkName} im Jahr{" "}
-            {settlement.year} gefunden.
+            {t("advancesEmpty", { parkName, year: settlement.year })}
           </p>
         </div>
       );
@@ -1267,10 +1285,10 @@ export default function SettlementDetailPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Periode</TableHead>
-                <TableHead>Intervall</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Betrag</TableHead>
+                <TableHead>{t("colPeriod")}</TableHead>
+                <TableHead>{t("colInterval")}</TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
+                <TableHead className="text-right">{t("colAmount")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1311,7 +1329,7 @@ export default function SettlementDetailPage({
               {/* Summary row */}
               <TableRow className="border-t-2 font-bold bg-muted/30">
                 <TableCell colSpan={3}>
-                  Gezahlte Vorschüsse gesamt
+                  {t("advancesTotalLabel")}
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   {formatCurrency(advanceTotalPaid)}
@@ -1340,21 +1358,21 @@ export default function SettlementDetailPage({
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base">Allgemein</CardTitle>
-              <InfoTooltip text="Grunddaten der Pachtabrechnung: Park, Zeitraum, Status." />
+              <CardTitle className="text-base">{t("detailsGeneral")}</CardTitle>
+              <InfoTooltip text={t("detailsGeneralTooltip")} />
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Erstellt am</span>
+              <span className="text-muted-foreground">{t("createdAt")}</span>
               <span>{formatDateTime(settlement.createdAt)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Erstellt von</span>
+              <span className="text-muted-foreground">{t("createdBy")}</span>
               <span>{settlement.createdBy?.name || "-"}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Berechnet am</span>
+              <span className="text-muted-foreground">{t("calculatedAt")}</span>
               <span>
                 {calcDetails?.calculatedAt
                   ? formatDateTime(calcDetails.calculatedAt as string)
@@ -1362,7 +1380,7 @@ export default function SettlementDetailPage({
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Zuletzt aktualisiert</span>
+              <span className="text-muted-foreground">{t("lastUpdated")}</span>
               <span>{formatDateTime(settlement.updatedAt)}</span>
             </div>
           </CardContent>
@@ -1372,20 +1390,20 @@ export default function SettlementDetailPage({
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base">Fälligkeiten</CardTitle>
-              <InfoTooltip text="Zahlungstermine und -fristen der Pachtabrechnung." />
+              <CardTitle className="text-base">{t("detailsDueDates")}</CardTitle>
+              <InfoTooltip text={t("detailsDueDatesTooltip")} />
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                Vorschuss-Fälligkeit
+                {t("advanceDueDate")}
               </span>
               <span>{formatDate(settlement.advanceDueDate)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                Abrechnungs-Fälligkeit
+                {t("settlementDueDate")}
               </span>
               <span>{formatDate(settlement.settlementDueDate)}</span>
             </div>
@@ -1396,14 +1414,14 @@ export default function SettlementDetailPage({
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base">Verknuepfungen</CardTitle>
-              <InfoTooltip text="Verknüpfte Stromabrechnungen und Kostenzuordnungen." />
+              <CardTitle className="text-base">{t("detailsLinks")}</CardTitle>
+              <InfoTooltip text={t("detailsLinksTooltip")} />
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                Verknuepfte Energieabrechnung
+                {t("linkedEnergySettlement")}
               </span>
               <span>
                 {settlement.linkedEnergySettlementId ? (
@@ -1411,7 +1429,7 @@ export default function SettlementDetailPage({
                     href={`/energy/settlements/${settlement.linkedEnergySettlementId}`}
                     className="text-primary underline hover:no-underline"
                   >
-                    Anzeigen
+                    {t("viewLink")}
                   </Link>
                 ) : (
                   "-"
@@ -1419,7 +1437,7 @@ export default function SettlementDetailPage({
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Periodentyp</span>
+              <span className="text-muted-foreground">{t("periodType")}</span>
               <span>
                 {PERIOD_TYPE_LABELS[settlement.periodType] ||
                   settlement.periodType}
@@ -1427,7 +1445,7 @@ export default function SettlementDetailPage({
             </div>
             {isAdvance && settlement.advanceInterval && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Intervall</span>
+                <span className="text-muted-foreground">{t("intervalLabel")}</span>
                 <span>
                   {ADVANCE_INTERVAL_LABELS[settlement.advanceInterval] ||
                     settlement.advanceInterval}
@@ -1445,24 +1463,24 @@ export default function SettlementDetailPage({
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base">
-                  Prüfung & Freigabe
+                  {t("detailsReview")}
                 </CardTitle>
-                <InfoTooltip text="Genehmigungsworkflow: Prüfung und Freigabe durch Berechtigte." />
+                <InfoTooltip text={t("detailsReviewTooltip")} />
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Geprüft von</span>
+                <span className="text-muted-foreground">{t("reviewedBy")}</span>
                 <span>{settlement.reviewedBy?.name || "-"}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Geprüft am</span>
+                <span className="text-muted-foreground">{t("reviewedAt")}</span>
                 <span>{formatDateTime(settlement.reviewedAt)}</span>
               </div>
               {settlement.reviewNotes && (
                 <div className="text-sm">
                   <span className="text-muted-foreground block mb-1">
-                    Prüfungsnotizen
+                    {t("reviewNotes")}
                   </span>
                   <p className="p-2 bg-muted/50 rounded text-sm">
                     {settlement.reviewNotes}
@@ -1477,8 +1495,8 @@ export default function SettlementDetailPage({
         <Card className="md:col-span-2">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base">Notizen</CardTitle>
-              <InfoTooltip text="Interne Bemerkungen zur Pachtabrechnung." />
+              <CardTitle className="text-base">{t("notesTitle")}</CardTitle>
+              <InfoTooltip text={t("notesTooltip")} />
             </div>
           </CardHeader>
           <CardContent>
@@ -1486,7 +1504,7 @@ export default function SettlementDetailPage({
               <p className="text-sm whitespace-pre-wrap">{settlement.notes}</p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Keine Notizen vorhanden.
+                {t("notesEmpty")}
               </p>
             )}
           </CardContent>
@@ -1506,7 +1524,7 @@ export default function SettlementDetailPage({
           <Button variant="ghost" size="icon" asChild className="mt-1">
             <Link
               href="/leases/settlement"
-              aria-label="Zurück zur Übersicht"
+              aria-label={t("backAria")}
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -1514,7 +1532,7 @@ export default function SettlementDetailPage({
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Pachtabrechnung {parkName} {settlement.year}
+                {t("headerTitle", { parkName, year: settlement.year })}
               </h1>
               <Badge
                 variant="secondary"
@@ -1535,7 +1553,7 @@ export default function SettlementDetailPage({
             <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-md">
               <AlertTriangle className="h-4 w-4 text-red-600" />
               <span className="text-sm text-red-700">
-                Diese Abrechnung wurde storniert
+                {t("cancelledInfo")}
               </span>
             </div>
           )}
@@ -1549,7 +1567,7 @@ export default function SettlementDetailPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Jahreserlöse
+              {t("kpiAnnualRevenue")}
             </CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -1565,7 +1583,7 @@ export default function SettlementDetailPage({
         {/* 2. Berechnet */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Berechnet</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("kpiCalculated")}</CardTitle>
             <Calculator className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -1576,8 +1594,9 @@ export default function SettlementDetailPage({
             </div>
             {status !== "OPEN" && Number(settlement.revenueSharePercent) > 0 && (
               <p className="text-xs text-muted-foreground">
-                {formatPercent(settlement.revenueSharePercent)}{" "}
-                Umsatzbeteiligung
+                {t("kpiRevenueShareInfo", {
+                  pct: formatPercent(settlement.revenueSharePercent, intlLocale),
+                })}
               </p>
             )}
           </CardContent>
@@ -1586,7 +1605,7 @@ export default function SettlementDetailPage({
         {/* 3. Minimum */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Minimum</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("kpiMinimum")}</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -1608,7 +1627,7 @@ export default function SettlementDetailPage({
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Tatsaechlich
+              {t("kpiActual")}
             </CardTitle>
             <Euro className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -1619,7 +1638,7 @@ export default function SettlementDetailPage({
                 : formatCurrency(settlement.actualFeeEur)}
             </div>
             {settlement.usedMinimum && status !== "OPEN" && (
-              <p className="text-xs text-amber-700">Mindestpacht greift</p>
+              <p className="text-xs text-amber-700">{t("kpiMinimumApplies")}</p>
             )}
           </CardContent>
         </Card>
@@ -1627,7 +1646,7 @@ export default function SettlementDetailPage({
         {/* 5. Modell */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Modell</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("kpiModel")}</CardTitle>
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -1640,7 +1659,7 @@ export default function SettlementDetailPage({
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="positions">
-            Eigentuemer-Positionen
+            {t("tabPositions")}
             {items.length > 0 && (
               <Badge variant="secondary" className="ml-2 text-xs">
                 {items.length}
@@ -1649,7 +1668,7 @@ export default function SettlementDetailPage({
           </TabsTrigger>
           {isFinal && (
             <TabsTrigger value="allocation">
-              Kostenumlage
+              {t("tabAllocation")}
               {costAllocations.length > 0 && (
                 <Badge variant="secondary" className="ml-2 text-xs">
                   {costAllocations.length}
@@ -1658,17 +1677,17 @@ export default function SettlementDetailPage({
             </TabsTrigger>
           )}
           {isFinal && (
-            <TabsTrigger value="advances">Vorschüsse</TabsTrigger>
+            <TabsTrigger value="advances">{t("tabAdvances")}</TabsTrigger>
           )}
-          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="details">{t("tabDetails")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="positions">
           <Card>
             <CardHeader>
-              <CardTitle>Eigentuemer-Positionen</CardTitle>
+              <CardTitle>{t("positionsCardTitle")}</CardTitle>
               <CardDescription>
-                Aufschluesselung der Pachtanteile pro Eigentuemer
+                {t("positionsCardDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>{renderPositionsTab()}</CardContent>
@@ -1679,9 +1698,9 @@ export default function SettlementDetailPage({
           <TabsContent value="allocation">
             <Card>
               <CardHeader>
-                <CardTitle>Kostenumlage</CardTitle>
+                <CardTitle>{t("allocationTabTitle")}</CardTitle>
                 <CardDescription>
-                  Aufteilung der Pachtkosten auf die Betreibergesellschaften
+                  {t("allocationTabDescription")}
                 </CardDescription>
               </CardHeader>
               <CardContent>{renderCostAllocationTab()}</CardContent>
@@ -1693,10 +1712,12 @@ export default function SettlementDetailPage({
           <TabsContent value="advances">
             <Card>
               <CardHeader>
-                <CardTitle>Vorschüsse</CardTitle>
+                <CardTitle>{t("advancesTabTitle")}</CardTitle>
                 <CardDescription>
-                  Vorschussabrechnungen für {parkName} im Jahr{" "}
-                  {settlement.year}
+                  {t("advancesTabDescription", {
+                    parkName,
+                    year: settlement.year,
+                  })}
                 </CardDescription>
               </CardHeader>
               <CardContent>{renderAdvancesTab()}</CardContent>
@@ -1713,14 +1734,13 @@ export default function SettlementDetailPage({
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Abrechnung stornieren</AlertDialogTitle>
+            <AlertDialogTitle>{t("cancelDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie diese Pachtabrechnung stornieren
-              möchten? Bitte geben Sie einen Grund an.
+              {t("cancelDialogDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Textarea
-            placeholder="Stornierungsgrund..."
+            placeholder={t("cancelPlaceholder")}
             value={cancelReason}
             onChange={(e) => setCancelReason(e.target.value)}
             className="mt-2"
@@ -1731,7 +1751,7 @@ export default function SettlementDetailPage({
                 setCancelReason("");
               }}
             >
-              Abbrechen
+              {t("cancelBack")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleCancel}
@@ -1745,7 +1765,7 @@ export default function SettlementDetailPage({
               ) : (
                 <XCircle className="mr-2 h-4 w-4" />
               )}
-              Stornieren
+              {t("btnCancel")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1755,15 +1775,13 @@ export default function SettlementDetailPage({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Abrechnung löschen</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Sind Sie sicher, dass Sie diese Pachtabrechnung unwiderruflich
-              löschen möchten? Alle zugehoerigen Positionen werden ebenfalls
-              gelöscht.
+              {t("deleteDialogDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancelBack")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={actionLoading === "delete"}
@@ -1774,7 +1792,7 @@ export default function SettlementDetailPage({
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Endgültig löschen
+              {t("deleteFinalBtn")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
