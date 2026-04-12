@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -88,19 +89,20 @@ interface ContractDetail {
   updatedAt: string;
 }
 
-const typeConfig: Record<string, { label: string; color: string }> = {
-  LEASE: { label: "Pacht", color: "bg-blue-100 text-blue-800" },
-  SERVICE: { label: "Service", color: "bg-purple-100 text-purple-800" },
-  INSURANCE: { label: "Versicherung", color: "bg-green-100 text-green-800" },
-  GRID_CONNECTION: { label: "Netzanschluss", color: "bg-orange-100 text-orange-800" },
-  MARKETING: { label: "Vermarktung", color: "bg-pink-100 text-pink-800" },
-  OTHER: { label: "Sonstiges", color: "bg-gray-100 text-gray-800" },
+const typeColors: Record<string, string> = {
+  LEASE: "bg-blue-100 text-blue-800",
+  SERVICE: "bg-purple-100 text-purple-800",
+  INSURANCE: "bg-green-100 text-green-800",
+  GRID_CONNECTION: "bg-orange-100 text-orange-800",
+  MARKETING: "bg-pink-100 text-pink-800",
+  OTHER: "bg-gray-100 text-gray-800",
 };
 
 
 export default function ContractDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations("contracts");
   const [contract, setContract] = useState<ContractDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("details");
@@ -109,7 +111,7 @@ export default function ContractDetailPage() {
     async function fetchContract() {
       try {
         const response = await fetch(`/api/contracts/${params.id}`);
-        if (!response.ok) throw new Error("Fehler beim Laden");
+        if (!response.ok) throw new Error("Fetch failed");
         const data = await response.json();
         setContract(data);
       } catch {
@@ -168,19 +170,19 @@ export default function ContractDetailPage() {
         <Button variant="ghost" asChild>
           <Link href="/contracts">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurück
+            {t("detail.back")}
           </Link>
         </Button>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Vertrag nicht gefunden.
+            {t("detail.notFound")}
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const typeConf = typeConfig[contract.contractType];
+  const typeColor = typeColors[contract.contractType];
   const statusConf = getStatusBadge(CONTRACT_STATUS, contract.status);
 
   return (
@@ -196,8 +198,8 @@ export default function ContractDetailPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight">{contract.title}</h1>
-              <Badge variant="secondary" className={typeConf?.color}>
-                {typeConf?.label || contract.contractType}
+              <Badge variant="secondary" className={typeColor}>
+                {t(`types.${contract.contractType}`)}
               </Badge>
               <Badge variant="secondary" className={statusConf.className}>
                 {statusConf.label}
@@ -205,7 +207,7 @@ export default function ContractDetailPage() {
             </div>
             {contract.contractNumber && (
               <p className="text-muted-foreground mt-1">
-                Vertragsnummer: {contract.contractNumber}
+                {t("detail.contractNumber")}: {contract.contractNumber}
               </p>
             )}
           </div>
@@ -214,27 +216,26 @@ export default function ContractDetailPage() {
           <Button variant="outline" asChild>
             <Link href={`/contracts/${contract.id}/edit`}>
               <Pencil className="mr-2 h-4 w-4" />
-              Bearbeiten
+              {t("detail.editButton")}
             </Link>
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
-                Löschen
+                {t("detail.deleteButton")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Vertrag löschen?</AlertDialogTitle>
+                <AlertDialogTitle>{t("detail.deleteTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Möchten Sie den Vertrag &quot;{contract.title}&quot; wirklich löschen? Diese
-                  Aktion kann nicht rueckgaengig gemacht werden.
+                  {t("detail.deleteDescription", { title: contract.title })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction onClick={deleteContract}>Löschen</AlertDialogAction>
+                <AlertDialogCancel>{t("detail.deleteCancel")}</AlertDialogCancel>
+                <AlertDialogAction onClick={deleteContract}>{t("detail.deleteConfirm")}</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -247,10 +248,12 @@ export default function ContractDetailPage() {
           <CardContent className="flex items-center gap-4 py-4">
             <AlertTriangle className="h-8 w-8 text-orange-600" />
             <div>
-              <p className="font-semibold text-orange-800">Kuendigungsfrist beachten!</p>
+              <p className="font-semibold text-orange-800">{t("detail.noticeWarningTitle")}</p>
               <p className="text-sm text-orange-700">
-                Noch {contract.daysUntilNotice} Tage bis zur Kuendigungsfrist am{" "}
-                {format(new Date(contract.noticeDeadline!), "dd.MM.yyyy", { locale: de })}
+                {t("detail.noticeWarningText", {
+                  days: contract.daysUntilNotice,
+                  date: format(new Date(contract.noticeDeadline!), "dd.MM.yyyy", { locale: de }),
+                })}
               </p>
             </div>
           </CardContent>
@@ -262,10 +265,12 @@ export default function ContractDetailPage() {
           <CardContent className="flex items-center gap-4 py-4">
             <Clock className="h-8 w-8 text-red-600" />
             <div>
-              <p className="font-semibold text-red-800">Vertrag läuft bald aus!</p>
+              <p className="font-semibold text-red-800">{t("detail.expiryWarningTitle")}</p>
               <p className="text-sm text-red-700">
-                Noch {contract.daysUntilEnd} Tage bis zum Vertragsende am{" "}
-                {format(new Date(contract.endDate!), "dd.MM.yyyy", { locale: de })}
+                {t("detail.expiryWarningText", {
+                  days: contract.daysUntilEnd,
+                  date: format(new Date(contract.endDate!), "dd.MM.yyyy", { locale: de }),
+                })}
               </p>
             </div>
           </CardContent>
@@ -277,11 +282,11 @@ export default function ContractDetailPage() {
         <TabsList>
           <TabsTrigger value="details" className="flex items-center gap-2">
             <Info className="h-4 w-4" />
-            Details
+            {t("detail.tabDetails")}
           </TabsTrigger>
           <TabsTrigger value="documents" className="flex items-center gap-2">
             <FolderOpen className="h-4 w-4" />
-            Dokumente
+            {t("detail.tabDocuments")}
             {contract.documents.length > 0 && (
               <Badge variant="secondary" className="ml-1 text-xs">
                 {contract.documents.length}
@@ -290,7 +295,7 @@ export default function ContractDetailPage() {
           </TabsTrigger>
           <TabsTrigger value="reminders" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
-            Erinnerungen
+            {t("detail.tabReminders")}
             {contract.reminderDays.length > 0 && (
               <Badge variant="secondary" className="ml-1 text-xs">
                 {contract.reminderDays.length}
@@ -306,8 +311,8 @@ export default function ContractDetailPage() {
             <Card className="md:col-span-2">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Vertragsdetails</CardTitle>
-                  <InfoTooltip text="Kernbedingungen des Vertrags: Typ, Parteien, Laufzeit und Wert." />
+                  <CardTitle>{t("detail.contractDetails")}</CardTitle>
+                  <InfoTooltip text={t("detail.contractDetailsTooltip")} />
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -315,32 +320,32 @@ export default function ContractDetailPage() {
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    Laufzeit
+                    {t("detail.duration")}
                   </h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-sm text-muted-foreground">Beginn</p>
+                      <p className="text-sm text-muted-foreground">{t("detail.startDate")}</p>
                       <p className="font-medium">
                         {format(new Date(contract.startDate), "dd. MMMM yyyy", { locale: de })}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Ende</p>
+                      <p className="text-sm text-muted-foreground">{t("detail.endDate")}</p>
                       <p className="font-medium">
                         {contract.endDate
                           ? format(new Date(contract.endDate), "dd. MMMM yyyy", { locale: de })
-                          : "Unbefristet"}
+                          : t("detail.unlimited")}
                       </p>
                     </div>
                     {contract.noticePeriodMonths && (
                       <div>
-                        <p className="text-sm text-muted-foreground">Kuendigungsfrist</p>
-                        <p className="font-medium">{contract.noticePeriodMonths} Monate</p>
+                        <p className="text-sm text-muted-foreground">{t("detail.noticePeriod")}</p>
+                        <p className="font-medium">{t("detail.noticePeriodMonths", { months: contract.noticePeriodMonths })}</p>
                       </div>
                     )}
                     {contract.noticeDeadline && (
                       <div>
-                        <p className="text-sm text-muted-foreground">Kuendigen bis</p>
+                        <p className="text-sm text-muted-foreground">{t("detail.noticeDeadline")}</p>
                         <p className="font-medium">
                           {format(new Date(contract.noticeDeadline), "dd. MMMM yyyy", {
                             locale: de,
@@ -353,8 +358,7 @@ export default function ContractDetailPage() {
                     <div className="mt-4 flex items-center gap-2 text-blue-600">
                       <RefreshCw className="h-4 w-4" />
                       <span>
-                        Automatische Verlaengerung um{" "}
-                        {contract.renewalPeriodMonths || 12} Monate
+                        {t("detail.autoRenewal", { months: contract.renewalPeriodMonths || 12 })}
                       </span>
                     </div>
                   )}
@@ -366,18 +370,18 @@ export default function ContractDetailPage() {
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2">
                     <Euro className="h-4 w-4" />
-                    Finanzielles
+                    {t("detail.financial")}
                   </h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-sm text-muted-foreground">Jährlicher Wert</p>
+                      <p className="text-sm text-muted-foreground">{t("detail.annualValue")}</p>
                       <p className="font-medium text-lg">
                         {formatCurrency(contract.annualValue)}
                       </p>
                     </div>
                     {contract.paymentTerms && (
                       <div>
-                        <p className="text-sm text-muted-foreground">Zahlungsbedingungen</p>
+                        <p className="text-sm text-muted-foreground">{t("detail.paymentTerms")}</p>
                         <p className="font-medium">{contract.paymentTerms}</p>
                       </div>
                     )}
@@ -388,7 +392,7 @@ export default function ContractDetailPage() {
                   <>
                     <Separator />
                     <div>
-                      <h3 className="font-semibold mb-3">Notizen</h3>
+                      <h3 className="font-semibold mb-3">{t("detail.notes")}</h3>
                       <p className="text-muted-foreground whitespace-pre-wrap">
                         {contract.notes}
                       </p>
@@ -404,8 +408,8 @@ export default function ContractDetailPage() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <CardTitle>Status</CardTitle>
-                    <InfoTooltip text="Aktueller Vertragsstatus und zeitliche Einordnung." />
+                    <CardTitle>{t("detail.statusTitle")}</CardTitle>
+                    <InfoTooltip text={t("detail.statusTooltip")} />
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -420,7 +424,7 @@ export default function ContractDetailPage() {
                         onClick={() => updateStatus("ACTIVE")}
                       >
                         <CheckCircle className="mr-1 h-3 w-3" />
-                        Aktivieren
+                        {t("detail.activate")}
                       </Button>
                     )}
                     {contract.status === "ACTIVE" && (
@@ -429,7 +433,7 @@ export default function ContractDetailPage() {
                         variant="outline"
                         onClick={() => updateStatus("TERMINATED")}
                       >
-                        Kuendigen
+                        {t("detail.terminate")}
                       </Button>
                     )}
                   </div>
@@ -440,8 +444,8 @@ export default function ContractDetailPage() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <CardTitle>Zuordnungen</CardTitle>
-                    <InfoTooltip text="Verknüpfte Gesellschaften, Windparks oder Personen." />
+                    <CardTitle>{t("detail.assignmentsTitle")}</CardTitle>
+                    <InfoTooltip text={t("detail.assignmentsTooltip")} />
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -449,7 +453,7 @@ export default function ContractDetailPage() {
                     <div className="flex items-start gap-3">
                       <Building2 className="h-4 w-4 mt-0.5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Windpark</p>
+                        <p className="text-sm text-muted-foreground">{t("detail.windpark")}</p>
                         <Link
                           href={`/parks/${contract.park.id}`}
                           className="font-medium hover:underline"
@@ -463,7 +467,7 @@ export default function ContractDetailPage() {
                     <div className="flex items-start gap-3">
                       <Euro className="h-4 w-4 mt-0.5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Gesellschaft</p>
+                        <p className="text-sm text-muted-foreground">{t("detail.fund")}</p>
                         <Link
                           href={`/funds/${contract.fund.id}`}
                           className="font-medium hover:underline"
@@ -477,7 +481,7 @@ export default function ContractDetailPage() {
                     <div className="flex items-start gap-3">
                       <User className="h-4 w-4 mt-0.5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Vertragspartner</p>
+                        <p className="text-sm text-muted-foreground">{t("detail.partner")}</p>
                         <p className="font-medium">{contract.partner.name}</p>
                         {contract.partner.email && (
                           <a
@@ -491,7 +495,7 @@ export default function ContractDetailPage() {
                     </div>
                   )}
                   {!contract.park && !contract.fund && !contract.partner && (
-                    <p className="text-sm text-muted-foreground">Keine Zuordnungen</p>
+                    <p className="text-sm text-muted-foreground">{t("detail.noAssignments")}</p>
                   )}
                 </CardContent>
               </Card>
@@ -500,25 +504,25 @@ export default function ContractDetailPage() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center gap-2">
-                    <CardTitle>Info</CardTitle>
-                    <InfoTooltip text="Zusätzliche Vertragsinformationen und Beschreibung." />
+                    <CardTitle>{t("detail.infoTitle")}</CardTitle>
+                    <InfoTooltip text={t("detail.infoTooltip")} />
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Erstellt</span>
+                    <span className="text-muted-foreground">{t("detail.created")}</span>
                     <span>{format(new Date(contract.createdAt), "dd.MM.yyyy", { locale: de })}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Aktualisiert</span>
+                    <span className="text-muted-foreground">{t("detail.updated")}</span>
                     <span>{format(new Date(contract.updatedAt), "dd.MM.yyyy", { locale: de })}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Dokumente</span>
+                    <span className="text-muted-foreground">{t("detail.documents")}</span>
                     <span>{contract.documents.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Erinnerungen</span>
+                    <span className="text-muted-foreground">{t("detail.reminders")}</span>
                     <span>{contract.reminderDays.length}</span>
                   </div>
                 </CardContent>

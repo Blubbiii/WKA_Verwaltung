@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -34,46 +35,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CONTRACT_STATUS } from "@/lib/status-config";
 import { CONTRACT_REMINDER_DAYS_DEFAULT } from "@/lib/config/business-thresholds";
 
-const contractFormSchema = z.object({
-  contractType: z.enum([
-    "LEASE",
-    "SERVICE",
-    "INSURANCE",
-    "GRID_CONNECTION",
-    "MARKETING",
-    "OTHER",
-  ]),
-  contractNumber: z.string().optional(),
-  title: z.string().min(1, "Titel ist erforderlich"),
-  startDate: z.string().min(1, "Startdatum ist erforderlich"),
-  endDate: z.string().optional(),
-  noticePeriodMonths: z.coerce.number().int().positive().optional(),
-  autoRenewal: z.boolean().default(false),
-  renewalPeriodMonths: z.coerce.number().int().positive().optional(),
-  annualValue: z.coerce.number().positive().optional(),
-  paymentTerms: z.string().optional(),
-  status: z.enum(["DRAFT", "ACTIVE", "EXPIRING", "EXPIRED", "TERMINATED"]),
-  notes: z.string().optional(),
-  parkId: z.string().optional(),
-  fundId: z.string().optional(),
-  partnerId: z.string().optional(),
-});
-
-type ContractFormValues = z.infer<typeof contractFormSchema>;
-
 interface SelectOption {
   id: string;
   name: string;
 }
-
-const typeOptions = [
-  { value: "LEASE", label: "Pacht" },
-  { value: "SERVICE", label: "Service" },
-  { value: "INSURANCE", label: "Versicherung" },
-  { value: "GRID_CONNECTION", label: "Netzanschluss" },
-  { value: "MARKETING", label: "Vermarktung" },
-  { value: "OTHER", label: "Sonstiges" },
-];
 
 const statusOptions = Object.entries(CONTRACT_STATUS).map(([value, { label }]) => ({
   value,
@@ -83,6 +48,7 @@ const statusOptions = Object.entries(CONTRACT_STATUS).map(([value, { label }]) =
 export default function EditContractPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations("contracts");
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [parks, setParks] = useState<SelectOption[]>([]);
@@ -90,6 +56,33 @@ export default function EditContractPage() {
   const [partners, setPartners] = useState<SelectOption[]>([]);
   const [reminderDays, setReminderDays] = useState<number[]>([...CONTRACT_REMINDER_DAYS_DEFAULT]);
   const [newReminder, setNewReminder] = useState("");
+
+  const contractFormSchema = z.object({
+    contractType: z.enum([
+      "LEASE",
+      "SERVICE",
+      "INSURANCE",
+      "GRID_CONNECTION",
+      "MARKETING",
+      "OTHER",
+    ]),
+    contractNumber: z.string().optional(),
+    title: z.string().min(1, t("edit.titleRequired")),
+    startDate: z.string().min(1, t("edit.startDateRequired")),
+    endDate: z.string().optional(),
+    noticePeriodMonths: z.coerce.number().int().positive().optional(),
+    autoRenewal: z.boolean().default(false),
+    renewalPeriodMonths: z.coerce.number().int().positive().optional(),
+    annualValue: z.coerce.number().positive().optional(),
+    paymentTerms: z.string().optional(),
+    status: z.enum(["DRAFT", "ACTIVE", "EXPIRING", "EXPIRED", "TERMINATED"]),
+    notes: z.string().optional(),
+    parkId: z.string().optional(),
+    fundId: z.string().optional(),
+    partnerId: z.string().optional(),
+  });
+
+  type ContractFormValues = z.infer<typeof contractFormSchema>;
 
   const form = useForm<ContractFormValues>({
     resolver: zodResolver(contractFormSchema) as Resolver<ContractFormValues>,
@@ -210,13 +203,13 @@ export default function EditContractPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("edit.errorSaving"));
       }
 
       router.push(`/contracts/${params.id}`);
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("edit.errorSaving"));
     } finally {
       setIsSubmitting(false);
     }
@@ -232,6 +225,8 @@ export default function EditContractPage() {
     );
   }
 
+  const typeKeys = ["LEASE", "SERVICE", "INSURANCE", "GRID_CONNECTION", "MARKETING", "OTHER"] as const;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -241,8 +236,8 @@ export default function EditContractPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Vertrag bearbeiten</h1>
-          <p className="text-muted-foreground">Ändern Sie die Vertragsdetails</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("edit.title")}</h1>
+          <p className="text-muted-foreground">{t("edit.description")}</p>
         </div>
       </div>
 
@@ -251,7 +246,7 @@ export default function EditContractPage() {
           {/* Basic Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Basis-Informationen</CardTitle>
+              <CardTitle>{t("edit.basicInfo")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -260,17 +255,17 @@ export default function EditContractPage() {
                   name="contractType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vertragsart *</FormLabel>
+                      <FormLabel>{t("edit.contractType")} *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Vertragsart wählen" />
+                            <SelectValue placeholder={t("edit.contractTypeRequired")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {typeOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
+                          {typeKeys.map((key) => (
+                            <SelectItem key={key} value={key}>
+                              {t(`types.${key}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -285,9 +280,9 @@ export default function EditContractPage() {
                   name="contractNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vertragsnummer</FormLabel>
+                      <FormLabel>{t("edit.contractNumber")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="z.B. V-2024-001" {...field} />
+                        <Input placeholder={t("edit.contractNumberPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -300,9 +295,9 @@ export default function EditContractPage() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Titel *</FormLabel>
+                    <FormLabel>{t("edit.titleField")} *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Bezeichnung des Vertrags" {...field} />
+                      <Input placeholder={t("edit.titlePlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -314,7 +309,7 @@ export default function EditContractPage() {
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>{t("edit.status")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -339,7 +334,7 @@ export default function EditContractPage() {
           {/* Duration */}
           <Card>
             <CardHeader>
-              <CardTitle>Laufzeit</CardTitle>
+              <CardTitle>{t("edit.duration")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -348,7 +343,7 @@ export default function EditContractPage() {
                   name="startDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Startdatum *</FormLabel>
+                      <FormLabel>{t("edit.startDate")} *</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -362,11 +357,11 @@ export default function EditContractPage() {
                   name="endDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Enddatum</FormLabel>
+                      <FormLabel>{t("edit.endDate")}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
-                      <FormDescription>Leer lassen für unbefristete Verträge</FormDescription>
+                      <FormDescription>{t("edit.endDateDescription")}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -378,12 +373,12 @@ export default function EditContractPage() {
                 name="noticePeriodMonths"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Kündigungsfrist (Monate)</FormLabel>
+                    <FormLabel>{t("edit.noticePeriodMonths")}</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         min="1"
-                        placeholder="z.B. 3"
+                        placeholder={t("edit.noticePeriodPlaceholder")}
                         {...field}
                         value={field.value || ""}
                       />
@@ -405,7 +400,7 @@ export default function EditContractPage() {
                           onCheckedChange={field.onChange}
                         />
                       </FormControl>
-                      <FormLabel className="!mt-0">Automatische Verlängerung</FormLabel>
+                      <FormLabel className="!mt-0">{t("edit.autoRenewal")}</FormLabel>
                     </FormItem>
                   )}
                 />
@@ -417,7 +412,7 @@ export default function EditContractPage() {
                   name="renewalPeriodMonths"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Verlängerungszeitraum (Monate)</FormLabel>
+                      <FormLabel>{t("edit.renewalPeriodMonths")}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -438,7 +433,7 @@ export default function EditContractPage() {
           {/* Financial */}
           <Card>
             <CardHeader>
-              <CardTitle>Finanzielles</CardTitle>
+              <CardTitle>{t("edit.financial")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -447,7 +442,7 @@ export default function EditContractPage() {
                   name="annualValue"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Jährlicher Wert (EUR)</FormLabel>
+                      <FormLabel>{t("edit.annualValue")}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -468,9 +463,9 @@ export default function EditContractPage() {
                   name="paymentTerms"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Zahlungsbedingungen</FormLabel>
+                      <FormLabel>{t("edit.paymentTerms")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="z.B. Jährlich im Voraus" {...field} />
+                        <Input placeholder={t("edit.paymentTermsPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -483,7 +478,7 @@ export default function EditContractPage() {
           {/* Associations */}
           <Card>
             <CardHeader>
-              <CardTitle>Zuordnungen</CardTitle>
+              <CardTitle>{t("edit.assignments")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-3">
@@ -492,15 +487,15 @@ export default function EditContractPage() {
                   name="parkId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Windpark</FormLabel>
+                      <FormLabel>{t("edit.windpark")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Kein Windpark" />
+                            <SelectValue placeholder={t("edit.noWindpark")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="_none">Kein Windpark</SelectItem>
+                          <SelectItem value="_none">{t("edit.noWindpark")}</SelectItem>
                           {parks.map((park) => (
                             <SelectItem key={park.id} value={park.id}>
                               {park.name}
@@ -517,15 +512,15 @@ export default function EditContractPage() {
                   name="fundId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Gesellschaft</FormLabel>
+                      <FormLabel>{t("edit.fundLabel")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Keine Gesellschaft" />
+                            <SelectValue placeholder={t("edit.noFund")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="_none">Keine Gesellschaft</SelectItem>
+                          <SelectItem value="_none">{t("edit.noFund")}</SelectItem>
                           {funds.map((fund) => (
                             <SelectItem key={fund.id} value={fund.id}>
                               {fund.name}
@@ -536,7 +531,7 @@ export default function EditContractPage() {
                       <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
                         <Link href="/funds/new" target="_blank">
                           <Plus className="mr-1 h-3 w-3" />
-                          Neue Gesellschaft anlegen
+                          {t("edit.newFund")}
                         </Link>
                       </Button>
                     </FormItem>
@@ -548,15 +543,15 @@ export default function EditContractPage() {
                   name="partnerId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vertragspartner</FormLabel>
+                      <FormLabel>{t("edit.partnerLabel")}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Kein Partner" />
+                            <SelectValue placeholder={t("edit.noPartner")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="_none">Kein Partner</SelectItem>
+                          <SelectItem value="_none">{t("edit.noPartner")}</SelectItem>
                           {partners.map((partner) => (
                             <SelectItem key={partner.id} value={partner.id}>
                               {partner.name}
@@ -574,13 +569,13 @@ export default function EditContractPage() {
           {/* Reminders */}
           <Card>
             <CardHeader>
-              <CardTitle>Erinnerungen</CardTitle>
+              <CardTitle>{t("edit.reminders")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 {reminderDays.map((days) => (
                   <Badge key={days} variant="secondary">
-                    {days} Tage vorher
+                    {t("edit.reminderDaysBefore", { days })}
                     <button
                       type="button"
                       onClick={() => removeReminder(days)}
@@ -595,14 +590,14 @@ export default function EditContractPage() {
                 <Input
                   type="number"
                   min="1"
-                  placeholder="Tage"
+                  placeholder={t("edit.reminderDaysPlaceholder")}
                   value={newReminder}
                   onChange={(e) => setNewReminder(e.target.value)}
                   className="w-32"
                 />
                 <Button type="button" variant="outline" onClick={addReminder}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Hinzufügen
+                  {t("edit.reminderAdd")}
                 </Button>
               </div>
             </CardContent>
@@ -611,7 +606,7 @@ export default function EditContractPage() {
           {/* Notes */}
           <Card>
             <CardHeader>
-              <CardTitle>Notizen</CardTitle>
+              <CardTitle>{t("edit.notesTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               <FormField
@@ -621,7 +616,7 @@ export default function EditContractPage() {
                   <FormItem>
                     <FormControl>
                       <Textarea
-                        placeholder="Interne Notizen zum Vertrag..."
+                        placeholder={t("edit.notesPlaceholder")}
                         rows={4}
                         {...field}
                       />
@@ -640,11 +635,11 @@ export default function EditContractPage() {
               onClick={() => router.back()}
               disabled={isSubmitting}
             >
-              Abbrechen
+              {t("edit.cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Änderungen speichern
+              {t("edit.save")}
             </Button>
           </div>
         </form>

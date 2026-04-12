@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
@@ -86,13 +87,13 @@ interface ContractsResponse {
   };
 }
 
-const typeConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" }> = {
-  LEASE: { label: "Pacht", variant: "default" },
-  SERVICE: { label: "Service", variant: "secondary" },
-  INSURANCE: { label: "Versicherung", variant: "success" },
-  GRID_CONNECTION: { label: "Netzanschluss", variant: "warning" },
-  MARKETING: { label: "Vermarktung", variant: "outline" },
-  OTHER: { label: "Sonstiges", variant: "secondary" },
+const typeVariants: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "warning"> = {
+  LEASE: "default",
+  SERVICE: "secondary",
+  INSURANCE: "success",
+  GRID_CONNECTION: "warning",
+  MARKETING: "outline",
+  OTHER: "secondary",
 };
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -105,6 +106,7 @@ const statusIcons: Record<string, React.ElementType> = {
 
 export default function ContractsPage() {
   const router = useRouter();
+  const t = useTranslations("contracts");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -138,8 +140,8 @@ export default function ContractsPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
-        throw new Error(data.error || "Fehler beim Löschen des Vertrags");
+        const data = await response.json().catch(() => ({ error: t("list.errorDelete") }));
+        throw new Error(data.error || t("list.errorDeleteContract"));
       }
       return response.json();
     },
@@ -148,7 +150,7 @@ export default function ContractsPage() {
         invalidate(["contracts"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Löschen des Vertrags");
+        toast.error(error.message || t("list.errorDeleteContract"));
       },
     }
   );
@@ -179,12 +181,12 @@ export default function ContractsPage() {
   // CSV export for selected contracts
   function handleCsvExport() {
     const selected = filteredContracts.filter((c) => selectedIds.has(c.id));
-    const header = "Titel;Typ;Zuordnung;Jahreswert;Status";
+    const header = [t("list.csvHeaderTitle"), t("list.csvHeaderType"), t("list.csvHeaderAssignment"), t("list.csvHeaderAnnualValue"), t("list.csvHeaderStatus")].join(";");
     const rows = selected.map((c) => {
       const zuordnung = c.park?.shortName || c.park?.name || c.partner?.name || "-";
       return [
         c.title,
-        typeConfig[c.contractType]?.label || c.contractType,
+        t(`types.${c.contractType}`),
         zuordnung,
         c.annualValue != null ? c.annualValue.toString().replace(".", ",") : "-",
         getStatusBadge(CONTRACT_STATUS, c.status).label,
@@ -198,7 +200,7 @@ export default function ContractsPage() {
     a.download = `vertraege_export_${format(new Date(), "yyyyMMdd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`${selected.length} Verträge exportiert`);
+    toast.success(t("list.exportedCount", { count: selected.length }));
   }
 
   // Bulk delete for selected contracts
@@ -216,9 +218,9 @@ export default function ContractsPage() {
     clearSelection();
     invalidate(["contracts"]);
     if (successCount === ids.length) {
-      toast.success(`${successCount} Verträge gelöscht`);
+      toast.success(t("list.deletedCount", { count: successCount }));
     } else {
-      toast.warning(`${successCount} von ${ids.length} Verträgen gelöscht`);
+      toast.warning(t("list.deletedPartial", { success: successCount, total: ids.length }));
     }
   }
 
@@ -233,7 +235,7 @@ export default function ContractsPage() {
     const daysUntilEnd = differenceInDays(end, now);
 
     if (daysUntilEnd < 0) {
-      return <Badge variant="destructive">Abgelaufen</Badge>;
+      return <Badge variant="destructive">{t("list.expired")}</Badge>;
     }
 
     if (noticeDeadline) {
@@ -243,7 +245,7 @@ export default function ContractsPage() {
       if (daysUntilNotice <= 0 && daysUntilEnd > 0) {
         return (
           <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-            Kündigungsfrist verpasst
+            {t("list.noticeMissed")}
           </Badge>
         );
       }
@@ -251,7 +253,7 @@ export default function ContractsPage() {
       if (daysUntilNotice <= CONTRACT_WARNING_DAYS) {
         return (
           <Badge variant="outline" className="text-orange-600 border-orange-600">
-            {daysUntilNotice} Tage bis Kündigung
+            {t("list.daysUntilNotice", { days: daysUntilNotice })}
           </Badge>
         );
       }
@@ -260,7 +262,7 @@ export default function ContractsPage() {
     if (daysUntilEnd <= CONTRACT_WARNING_DAYS) {
       return (
         <Badge variant="outline" className="text-red-600 border-red-600">
-          {daysUntilEnd} Tage bis Ende
+          {t("list.daysUntilEnd", { days: daysUntilEnd })}
         </Badge>
       );
     }
@@ -268,7 +270,7 @@ export default function ContractsPage() {
     if (daysUntilEnd <= CONTRACT_CALENDAR_LOOKAHEAD_DAYS) {
       return (
         <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-          {daysUntilEnd} Tage bis Ende
+          {t("list.daysUntilEnd", { days: daysUntilEnd })}
         </Badge>
       );
     }
@@ -279,9 +281,9 @@ export default function ContractsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-destructive">Fehler beim Laden der Verträge</p>
+        <p className="text-destructive">{t("list.errorLoading")}</p>
         <Button onClick={() => refetch()} variant="outline" className="mt-4">
-          Erneut versuchen
+          {t("list.retry")}
         </Button>
       </div>
     );
@@ -291,15 +293,15 @@ export default function ContractsPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Verträge"
-        description="Verwalten Sie Verträge und überwachen Sie Fristen"
+        title={t("list.title")}
+        description={t("list.description")}
         createHref="/contracts/new"
-        createLabel="Neuer Vertrag"
+        createLabel={t("list.newContract")}
         actions={
           <Button variant="outline" asChild>
             <Link href="/contracts/calendar">
               <Calendar className="mr-2 h-4 w-4" />
-              Kalender
+              {t("list.calendar")}
             </Link>
           </Button>
         }
@@ -308,43 +310,43 @@ export default function ContractsPage() {
       {/* Stats Cards */}
       <StatsCards
         stats={[
-          { label: "Gesamt", value: contracts.length, icon: FileText, subtitle: "Verträge" },
-          { label: "Aktiv", value: totalActive, icon: CheckCircle, iconClassName: "text-green-600", valueClassName: "text-green-600", subtitle: "Laufende Verträge" },
-          { label: "Auslaufend", value: totalExpiring, icon: AlertTriangle, iconClassName: "text-yellow-600", valueClassName: "text-yellow-600", cardClassName: totalExpiring > 0 ? "border-yellow-500" : "", subtitle: "In den nächsten 30 Tagen" },
-          { label: "Auto-Verlängerung", value: contracts.filter((c) => c.autoRenewal).length, icon: RefreshCw, iconClassName: "text-blue-600", subtitle: "Verträge mit Auto-Verlängerung" },
+          { label: t("list.statsTotal"), value: contracts.length, icon: FileText, subtitle: t("list.statsContracts") },
+          { label: t("list.statsActive"), value: totalActive, icon: CheckCircle, iconClassName: "text-green-600", valueClassName: "text-green-600", subtitle: t("list.statsActiveRunning") },
+          { label: t("list.statsExpiring"), value: totalExpiring, icon: AlertTriangle, iconClassName: "text-yellow-600", valueClassName: "text-yellow-600", cardClassName: totalExpiring > 0 ? "border-yellow-500" : "", subtitle: t("list.statsExpiringSubtitle") },
+          { label: t("list.statsAutoRenewal"), value: contracts.filter((c) => c.autoRenewal).length, icon: RefreshCw, iconClassName: "text-blue-600", subtitle: t("list.statsAutoRenewalSubtitle") },
         ]}
       />
 
       {/* Filters & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Alle Verträge</CardTitle>
-          <CardDescription>Übersicht aller Verträge mit Fristenüberwachung</CardDescription>
+          <CardTitle>{t("list.allContracts")}</CardTitle>
+          <CardDescription>{t("list.allContractsDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <SearchFilter
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Suchen nach Titel, Nummer, Park..."
+            searchPlaceholder={t("list.searchPlaceholder")}
             filters={[
               {
                 value: typeFilter,
                 onChange: setTypeFilter,
-                placeholder: "Typ",
+                placeholder: t("list.filterType"),
                 icon: <Filter className="mr-2 h-4 w-4" />,
                 width: "w-[150px]",
                 options: [
-                  { value: "all", label: "Alle Typen" },
-                  ...Object.entries(typeConfig).map(([value, { label }]) => ({ value, label })),
+                  { value: "all", label: t("list.filterAllTypes") },
+                  ...Object.keys(typeVariants).map((value) => ({ value, label: t(`types.${value}`) })),
                 ],
               },
               {
                 value: statusFilter,
                 onChange: setStatusFilter,
-                placeholder: "Status",
+                placeholder: t("list.filterStatus"),
                 width: "w-[150px]",
                 options: [
-                  { value: "all", label: "Alle Status" },
+                  { value: "all", label: t("list.filterAllStatus") },
                   ...Object.entries(CONTRACT_STATUS).map(([value, { label }]) => ({ value, label })),
                 ],
               },
@@ -356,16 +358,16 @@ export default function ContractsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
-                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label="Alle auswählen"
+                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label={t("list.selectAll")}
                       {...(isSomeSelected ? { "data-state": "indeterminate" } : {})} />
                   </TableHead>
-                  <TableHead>Vertrag</TableHead>
-                  <TableHead>Typ</TableHead>
-                  <TableHead>Zuordnung</TableHead>
-                  <TableHead>Laufzeit</TableHead>
-                  <TableHead>Wert p.a.</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Notizen</TableHead>
+                  <TableHead>{t("list.tableContract")}</TableHead>
+                  <TableHead>{t("list.tableType")}</TableHead>
+                  <TableHead>{t("list.tableAssignment")}</TableHead>
+                  <TableHead>{t("list.tableDuration")}</TableHead>
+                  <TableHead>{t("list.tableAnnualValue")}</TableHead>
+                  <TableHead>{t("list.tableStatus")}</TableHead>
+                  <TableHead>{t("list.tableNotes")}</TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -385,14 +387,14 @@ export default function ContractsPage() {
                     <TableCell colSpan={9} className="p-0">
                       <EmptyState
                         icon={FileText}
-                        title="Keine Verträge gefunden"
-                        description="Es wurden keine Verträge gefunden, die Ihren Filterkriterien entsprechen."
+                        title={t("list.emptyTitle")}
+                        description={t("list.emptyDescription")}
                       />
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredContracts.map((contract) => {
-                    const typeConf = typeConfig[contract.contractType];
+                    const typeVariant = typeVariants[contract.contractType];
                     const statusConf = getStatusBadge(CONTRACT_STATUS, contract.status);
                     const StatusIcon = statusIcons[contract.status] || FileText;
                     const daysIndicator = getDaysIndicator(
@@ -409,7 +411,7 @@ export default function ContractsPage() {
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/contracts/${contract.id}`); } }}
                       >
                         <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
-                          <Checkbox checked={selectedIds.has(contract.id)} onCheckedChange={() => toggleItem(contract.id)} aria-label="Auswählen" />
+                          <Checkbox checked={selectedIds.has(contract.id)} onCheckedChange={() => toggleItem(contract.id)} aria-label={t("list.select")} />
                         </TableCell>
                         <TableCell>
                           <div>
@@ -422,8 +424,8 @@ export default function ContractsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={typeConf?.variant || "secondary"}>
-                            {typeConf?.label || contract.contractType}
+                          <Badge variant={typeVariant || "secondary"}>
+                            {t(`types.${contract.contractType}`)}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -450,19 +452,19 @@ export default function ContractsPage() {
                             </p>
                             {contract.endDate ? (
                               <p className="text-muted-foreground">
-                                bis{" "}
+                                {t("list.until")}{" "}
                                 {format(new Date(contract.endDate), "dd.MM.yyyy", {
                                   locale: de,
                                 })}
                               </p>
                             ) : (
-                              <p className="text-muted-foreground">unbefristet</p>
+                              <p className="text-muted-foreground">{t("list.unlimited")}</p>
                             )}
                             {contract.autoRenewal && (
                               <div className="flex items-center gap-1 mt-1">
                                 <RefreshCw className="h-3 w-3 text-blue-600" />
                                 <span className="text-xs text-blue-600">
-                                  Auto-Verlängerung
+                                  {t("list.autoRenewal")}
                                 </span>
                               </div>
                             )}
@@ -489,10 +491,10 @@ export default function ContractsPage() {
                                 body: JSON.stringify({ notes: newValue || null }),
                               });
                               if (!res.ok) {
-                                const data = await res.json().catch(() => ({ error: "Fehler" }));
-                                throw new Error(data.error || "Fehler beim Speichern");
+                                const data = await res.json().catch(() => ({ error: t("list.errorGeneric") }));
+                                throw new Error(data.error || t("list.errorSaving"));
                               }
-                              toast.success("Notiz gespeichert");
+                              toast.success(t("list.noteSaved"));
                               invalidate(["contracts"]);
                             }}
                           />
@@ -503,7 +505,7 @@ export default function ContractsPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              aria-label="Details anzeigen"
+                              aria-label={t("list.viewDetails")}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 router.push(`/contracts/${contract.id}`);
@@ -515,7 +517,7 @@ export default function ContractsPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              aria-label="Bearbeiten"
+                              aria-label={t("list.edit")}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 router.push(`/contracts/${contract.id}/edit`);
@@ -525,7 +527,7 @@ export default function ContractsPage() {
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Weitere Aktionen">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("list.moreActions")}>
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -539,7 +541,7 @@ export default function ContractsPage() {
                                   className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Löschen
+                                  {t("list.deleteAction")}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -565,7 +567,7 @@ export default function ContractsPage() {
             setContractToDelete(null);
           }
         }}
-        title="Vertrag löschen"
+        title={t("list.deleteTitle")}
         itemName={contractToDelete?.title}
       />
 
@@ -575,12 +577,12 @@ export default function ContractsPage() {
         onClearSelection={clearSelection}
         actions={[
           {
-            label: "CSV Export",
+            label: t("list.csvExport"),
             icon: <Download className="h-4 w-4" />,
             onClick: handleCsvExport,
           },
           {
-            label: "Löschen",
+            label: t("list.deleteAction"),
             icon: <Trash2 className="h-4 w-4" />,
             onClick: handleBulkDelete,
             variant: "destructive",

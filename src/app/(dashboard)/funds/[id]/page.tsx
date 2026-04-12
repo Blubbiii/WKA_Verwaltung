@@ -5,6 +5,7 @@ import { ActivityTimeline } from "@/components/crm/activity-timeline";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/format";
 import { de } from "date-fns/locale";
@@ -273,12 +274,6 @@ const statusColors = {
   ARCHIVED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
 };
 
-const statusLabels = {
-  ACTIVE: "Aktiv",
-  INACTIVE: "Inaktiv",
-  ARCHIVED: "Archiviert",
-};
-
 export default function FundDetailsPage({
   params,
 }: {
@@ -286,6 +281,7 @@ export default function FundDetailsPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations("funds");
   const { flags } = useFeatureFlags();
   const [fund, setFund] = useState<Fund | null>(null);
   const [loading, setLoading] = useState(true);
@@ -410,16 +406,16 @@ export default function FundDetailsPage({
       const response = await fetch(`/api/funds/${id}`);
       if (!response.ok) {
         if (response.status === 404) {
-          setError("Gesellschaft nicht gefunden");
+          setError(t("detail.errorNotFound"));
         } else {
-          throw new Error("Fehler beim Laden");
+          throw new Error(t("detail.errorLoadGeneric"));
         }
         return;
       }
       const data = await response.json();
       setFund(data);
     } catch {
-      setError("Fehler beim Laden der Gesellschaft");
+      setError(t("detail.errorLoading"));
     } finally {
       setLoading(false);
     }
@@ -432,12 +428,12 @@ export default function FundDetailsPage({
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error("Fehler bei der Neuberechnung");
+        throw new Error(t("detail.recalcError"));
       }
       // Reload fund data to show updated percentages
       await fetchFund();
     } catch {
-      toast.error("Fehler bei der Neuberechnung der Quoten");
+      toast.error(t("detail.recalculateError"));
     } finally {
       setIsRecalculating(false);
     }
@@ -496,7 +492,7 @@ export default function FundDetailsPage({
     if (!selectedHierarchyFundId) return;
 
     if (selectedHierarchyFundId === id) {
-      toast.error("Eine Gesellschaft kann nicht mit sich selbst verknuepft werden");
+      toast.error(t("detail.selfLinkError"));
       return;
     }
 
@@ -518,17 +514,17 @@ export default function FundDetailsPage({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.details || error.error || "Fehler beim Verknuepfen");
+        throw new Error(error.details || error.error || t("detail.linkError"));
       }
 
       setSelectedHierarchyFundId("");
       setHierarchyOwnership("");
       setHierarchyValidFrom(new Date());
       setIsAddHierarchyDialogOpen(false);
-      toast.success("Gesellschaft erfolgreich verknuepft");
+      toast.success(t("detail.linkSuccess"));
       await fetchFund();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Verknuepfen der Gesellschaft");
+      toast.error(err instanceof Error ? err.message : t("detail.linkError"));
     } finally {
       setIsAddingHierarchy(false);
     }
@@ -550,13 +546,13 @@ export default function FundDetailsPage({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Entfernen");
+        throw new Error(error.error || t("detail.removeError"));
       }
 
-      toast.success("Verknuepfung wurde entfernt");
+      toast.success(t("detail.removeLinkSuccess"));
       await fetchFund();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Entfernen der Verknuepfung");
+      toast.error(err instanceof Error ? err.message : t("detail.removeLinkError"));
     } finally {
       setIsDeletingHierarchy(false);
       setDeleteHierarchyDialogOpen(false);
@@ -584,7 +580,7 @@ export default function FundDetailsPage({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.details || error.error || "Fehler beim Zuordnen");
+        throw new Error(error.details || error.error || t("detail.assignError"));
       }
 
       setSelectedTurbineId("");
@@ -592,10 +588,10 @@ export default function FundDetailsPage({
       setTurbineOwnership("100");
       setTurbineValidFrom(new Date());
       setIsAddTurbineDialogOpen(false);
-      toast.success("Anlage erfolgreich zugeordnet");
+      toast.success(t("detail.assignSuccess"));
       await fetchFund();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Zuordnen der Anlage");
+      toast.error(err instanceof Error ? err.message : t("detail.assignError"));
     } finally {
       setIsAddingTurbine(false);
     }
@@ -613,11 +609,20 @@ export default function FundDetailsPage({
     const selected = shareholders.filter((sh) => selectedShareholderIds.has(sh.id));
     if (selected.length === 0) return;
 
-    const header = ["Nr.", "Name", "Typ", "E-Mail", "Telefon", "Einlage", "Anteil", "Status"];
+    const header = [
+      t("detail.batchExportCsvHeaders.number"),
+      t("detail.batchExportCsvHeaders.name"),
+      t("detail.batchExportCsvHeaders.type"),
+      t("detail.batchExportCsvHeaders.email"),
+      t("detail.batchExportCsvHeaders.phone"),
+      t("detail.batchExportCsvHeaders.contribution"),
+      t("detail.batchExportCsvHeaders.share"),
+      t("detail.batchExportCsvHeaders.status"),
+    ];
     const rows = selected.map((sh) => [
       sh.shareholderNumber || "",
       getPersonName(sh.person),
-      sh.person.personType === "legal" ? "Unternehmen" : "Natuerliche Person",
+      sh.person.personType === "legal" ? t("detail.batchExportTypeLegal") : t("detail.batchExportTypeNatural"),
       sh.person.email || "",
       sh.person.phone || "",
       sh.capitalContribution != null ? sh.capitalContribution.toFixed(2).replace(".", ",") : "",
@@ -636,7 +641,7 @@ export default function FundDetailsPage({
     link.click();
     URL.revokeObjectURL(url);
 
-    toast.success(`${selected.length} Gesellschafter exportiert`);
+    toast.success(t("detail.batchExportSuccess", { count: selected.length }));
   }
 
   // Batch: enable portal access for selected shareholders
@@ -646,7 +651,7 @@ export default function FundDetailsPage({
     );
 
     if (withoutPortal.length === 0) {
-      toast.error("Keine geeigneten Gesellschafter ausgewaehlt (nur solche ohne Portal-Zugang und mit E-Mail-Adresse).");
+      toast.error(t("detail.batchPortalNoSuitable"));
       return;
     }
 
@@ -676,9 +681,9 @@ export default function FundDetailsPage({
     fetchFund();
 
     if (failCount === 0) {
-      toast.success(`Portal-Zugang für ${successCount} Gesellschafter aktiviert`);
+      toast.success(t("detail.batchPortalSuccess", { count: successCount }));
     } else {
-      toast.warning(`${successCount} aktiviert, ${failCount} fehlgeschlagen`);
+      toast.warning(t("detail.batchPortalPartial", { success: successCount, fail: failCount }));
     }
   }
 
@@ -709,7 +714,7 @@ export default function FundDetailsPage({
   async function handleCreateDistribution() {
     const amount = parseFloat(distributionAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast.error("Bitte geben Sie einen gültigen Betrag ein");
+      toast.error(t("detail.invalidAmount"));
       return;
     }
 
@@ -721,14 +726,14 @@ export default function FundDetailsPage({
         distributionDate: format(distributionDate, "yyyy-MM-dd"),
       });
 
-      toast.success("Ausschuettung wurde erstellt");
+      toast.success(t("detail.createDistributionSuccess"));
       setIsDistributionDialogOpen(false);
       setDistributionAmount("");
       setDistributionDescription("");
       setDistributionDate(new Date());
       mutateDistributions();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Erstellen der Ausschuettung");
+      toast.error(err instanceof Error ? err.message : t("detail.createDistributionError"));
     } finally {
       setIsCreatingDistribution(false);
     }
@@ -745,10 +750,10 @@ export default function FundDetailsPage({
     try {
       setIsExecutingDistribution(distToExecute);
       await executeDistribution(id, distToExecute);
-      toast.success("Ausschuettung wurde ausgeführt und Gutschriften erstellt");
+      toast.success(t("detail.executeDistSuccess"));
       mutateDistributions();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Ausfuehren der Ausschuettung");
+      toast.error(err instanceof Error ? err.message : t("detail.executeDistError"));
     } finally {
       setIsExecutingDistribution(null);
       setExecuteDistDialogOpen(false);
@@ -767,10 +772,10 @@ export default function FundDetailsPage({
     try {
       setIsDeletingDistribution(distToDelete);
       await deleteDistribution(id, distToDelete);
-      toast.success("Ausschuettung wurde gelöscht");
+      toast.success(t("detail.deleteDistSuccess"));
       mutateDistributions();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Löschen der Ausschuettung");
+      toast.error(err instanceof Error ? err.message : t("detail.deleteDistError"));
     } finally {
       setIsDeletingDistribution(null);
       setDeleteDistDialogOpen(false);
@@ -798,16 +803,16 @@ export default function FundDetailsPage({
       });
 
       if (response.ok) {
-        toast.success("Gesellschafter wurde gelöscht");
+        toast.success(t("detail.deleteShSuccess"));
         setIsDeleteShareholderDialogOpen(false);
         setShareholderToDelete(null);
         fetchFund();
       } else {
         const error = await response.json();
-        toast.error(error.error || "Fehler beim Löschen");
+        toast.error(error.error || t("detail.deleteShErrorGeneric"));
       }
     } catch {
-      toast.error("Fehler beim Löschen des Gesellschafters");
+      toast.error(t("detail.deleteShError"));
     } finally {
       setIsDeletingShareholder(false);
     }
@@ -838,11 +843,17 @@ export default function FundDetailsPage({
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-lg text-muted-foreground">{error}</p>
         <Button asChild className="mt-4">
-          <Link href="/funds">Zurück zur Übersicht</Link>
+          <Link href="/funds">{t("detail.backToList")}</Link>
         </Button>
       </div>
     );
   }
+
+  const statusLabels = {
+    ACTIVE: t("status.active"),
+    INACTIVE: t("status.inactive"),
+    ARCHIVED: t("status.archived"),
+  };
 
   return (
     <div className="space-y-6">
@@ -869,7 +880,7 @@ export default function FundDetailsPage({
         <Button asChild>
           <Link href={`/funds/${id}/edit`}>
             <Pencil className="mr-2 h-4 w-4" />
-            Bearbeiten
+            {t("detail.edit")}
           </Link>
         </Button>
       </div>
@@ -879,8 +890,8 @@ export default function FundDetailsPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="flex items-center gap-1.5">
-              <CardTitle className="text-sm font-medium">Gesellschafter</CardTitle>
-              <InfoTooltip text="Personen oder Unternehmen, die Kapitaleinlagen an dieser Gesellschaft halten." />
+              <CardTitle className="text-sm font-medium">{t("detail.statsShareholders")}</CardTitle>
+              <InfoTooltip text={t("detail.statsShareholdersTooltip")} />
             </div>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -888,14 +899,14 @@ export default function FundDetailsPage({
             <div className="text-2xl font-bold">
               {fund.stats.activeShareholderCount}
             </div>
-            <p className="text-xs text-muted-foreground">Aktive Beteiligungen</p>
+            <p className="text-xs text-muted-foreground">{t("detail.statsShareholdersSubtitle")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="flex items-center gap-1.5">
-              <CardTitle className="text-sm font-medium">Kapital</CardTitle>
-              <InfoTooltip text="Summe aller Kapitaleinlagen der aktiven Gesellschafter." />
+              <CardTitle className="text-sm font-medium">{t("detail.statsCapital")}</CardTitle>
+              <InfoTooltip text={t("detail.statsCapitalTooltip")} />
             </div>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -905,46 +916,46 @@ export default function FundDetailsPage({
                 ? formatCurrency(fund.stats.totalContributions)
                 : "-"}
             </div>
-            <p className="text-xs text-muted-foreground">Gesamteinlagen</p>
+            <p className="text-xs text-muted-foreground">{t("detail.statsCapitalSubtitle")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="flex items-center gap-1.5">
-              <CardTitle className="text-sm font-medium">Gesellschaften</CardTitle>
-              <InfoTooltip text="Mutter- oder Tochtergesellschaften in der Unternehmensstruktur." />
+              <CardTitle className="text-sm font-medium">{t("detail.statsCompanies")}</CardTitle>
+              <InfoTooltip text={t("detail.statsCompaniesTooltip")} />
             </div>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fund.stats.hierarchyCount}</div>
-            <p className="text-xs text-muted-foreground">In der Konzernstruktur</p>
+            <p className="text-xs text-muted-foreground">{t("detail.statsCompaniesSubtitle")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="flex items-center gap-1.5">
-              <CardTitle className="text-sm font-medium">Anlagen</CardTitle>
-              <InfoTooltip text="Windkraftanlagen, die von dieser Gesellschaft betrieben werden." />
+              <CardTitle className="text-sm font-medium">{t("detail.statsTurbines")}</CardTitle>
+              <InfoTooltip text={t("detail.statsTurbinesTooltip")} />
             </div>
             <Wind className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fund.stats.operatedTurbineCount}</div>
-            <p className="text-xs text-muted-foreground">Betriebene Turbinen</p>
+            <p className="text-xs text-muted-foreground">{t("detail.statsTurbinesSubtitle")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div className="flex items-center gap-1.5">
-              <CardTitle className="text-sm font-medium">Abstimmungen</CardTitle>
-              <InfoTooltip text="Gesellschafterbeschlüsse und Abstimmungen dieser Gesellschaft." />
+              <CardTitle className="text-sm font-medium">{t("detail.statsVotes")}</CardTitle>
+              <InfoTooltip text={t("detail.statsVotesTooltip")} />
             </div>
             <Vote className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fund.stats.voteCount}</div>
-            <p className="text-xs text-muted-foreground">Durchgeführt</p>
+            <p className="text-xs text-muted-foreground">{t("detail.statsVotesSubtitle")}</p>
           </CardContent>
         </Card>
       </div>
@@ -953,23 +964,23 @@ export default function FundDetailsPage({
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="shareholders">
-            Gesellschafter ({fund.stats.activeShareholderCount})
+            {t("detail.tabShareholders")} ({fund.stats.activeShareholderCount})
           </TabsTrigger>
-          <TabsTrigger value="overview">Übersicht</TabsTrigger>
+          <TabsTrigger value="overview">{t("detail.tabOverview")}</TabsTrigger>
           <TabsTrigger value="distributions">
             <Banknote className="mr-2 h-4 w-4" />
-            Ausschuettungen ({distributions?.length || 0})
+            {t("detail.tabDistributions")} ({distributions?.length || 0})
           </TabsTrigger>
           <TabsTrigger value="companies">
-            Konzernstruktur ({fund.stats.hierarchyCount})
+            {t("detail.tabCompanies")} ({fund.stats.hierarchyCount})
           </TabsTrigger>
           <TabsTrigger value="turbines">
-            Anlagen ({fund.stats.operatedTurbineCount})
+            {t("detail.tabTurbines")} ({fund.stats.operatedTurbineCount})
           </TabsTrigger>
           <TabsTrigger value="documents">
-            Dokumente ({fund.stats.documentCount})
+            {t("detail.tabDocuments")} ({fund.stats.documentCount})
           </TabsTrigger>
-          {flags.crm && <TabsTrigger value="activities">Aktivitäten</TabsTrigger>}
+          {flags.crm && <TabsTrigger value="activities">{t("detail.tabActivities")}</TabsTrigger>}
         </TabsList>
 
         {/* Shareholders Tab */}
@@ -978,11 +989,11 @@ export default function FundDetailsPage({
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Gesellschafter</CardTitle>
-                  <InfoTooltip text="Personen oder Unternehmen, die Kapitaleinlagen an dieser Gesellschaft halten und entsprechende Anteile besitzen." />
+                  <CardTitle>{t("detail.shareholdersTitle")}</CardTitle>
+                  <InfoTooltip text={t("detail.shareholdersTooltip")} />
                 </div>
                 <CardDescription>
-                  Alle Beteiligten an dieser Gesellschaft
+                  {t("detail.shareholdersDescription")}
                 </CardDescription>
               </div>
               <div className="flex gap-2">
@@ -996,24 +1007,24 @@ export default function FundDetailsPage({
                   ) : (
                     <RefreshCw className="mr-2 h-4 w-4" />
                   )}
-                  Quoten neu berechnen
+                  {t("detail.recalculateQuotas")}
                 </Button>
                 <Button variant="outline" asChild>
                   <Link href="/funds/onboarding">
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Onboarding-Wizard
+                    {t("detail.onboardingWizard")}
                   </Link>
                 </Button>
                 <Button onClick={() => setIsAddShareholderOpen(true)}>
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Gesellschafter hinzufügen
+                  {t("detail.addShareholder")}
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
               {fund.shareholders.length === 0 ? (
                 <p className="py-8 text-center text-muted-foreground">
-                  Keine Gesellschafter vorhanden
+                  {t("detail.noShareholders")}
                 </p>
               ) : (
                 <Table>
@@ -1028,16 +1039,16 @@ export default function FundDetailsPage({
                             }
                           }}
                           onCheckedChange={toggleAllShareholders}
-                          aria-label="Alle Gesellschafter auswaehlen"
+                          aria-label={t("detail.selectAllShareholders")}
                         />
                       </TableHead>
-                      <TableHead>Nr.</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Kontakt</TableHead>
-                      <TableHead className="text-right">Einlage</TableHead>
-                      <TableHead className="text-right">Anteil</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Portal</TableHead>
+                      <TableHead>{t("detail.colNumber")}</TableHead>
+                      <TableHead>{t("detail.colName")}</TableHead>
+                      <TableHead>{t("detail.colContact")}</TableHead>
+                      <TableHead className="text-right">{t("detail.colContribution")}</TableHead>
+                      <TableHead className="text-right">{t("detail.colShare")}</TableHead>
+                      <TableHead>{t("detail.colStatus")}</TableHead>
+                      <TableHead>{t("detail.colPortal")}</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1051,7 +1062,7 @@ export default function FundDetailsPage({
                           <Checkbox
                             checked={selectedShareholderIds.has(sh.id)}
                             onCheckedChange={() => toggleShareholderItem(sh.id)}
-                            aria-label={`${getPersonName(sh.person)} auswaehlen`}
+                            aria-label={t("detail.selectShareholder", { name: getPersonName(sh.person) })}
                           />
                         </TableCell>
                         <TableCell className="font-mono text-sm">
@@ -1063,8 +1074,8 @@ export default function FundDetailsPage({
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {sh.person.personType === "legal"
-                              ? "Unternehmen"
-                              : "Natürliche Person"}
+                              ? t("detail.personTypeLegal")
+                              : t("detail.personTypeNatural")}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -1102,14 +1113,14 @@ export default function FundDetailsPage({
                               className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                             >
                               <Shield className="mr-1 h-3 w-3" />
-                              Portal aktiv
+                              {t("detail.portalActive")}
                             </Badge>
                           ) : (
                             <Badge
                               variant="secondary"
                               className="bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
                             >
-                              Kein Zugang
+                              {t("detail.portalNone")}
                             </Badge>
                           )}
                         </TableCell>
@@ -1128,7 +1139,7 @@ export default function FundDetailsPage({
                                 }}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
-                                Anzeigen
+                                {t("detail.view")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => {
@@ -1137,7 +1148,7 @@ export default function FundDetailsPage({
                                 }}
                               >
                                 <Pencil className="mr-2 h-4 w-4" />
-                                Bearbeiten
+                                {t("detail.editSh")}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               {sh.userId ? (
@@ -1149,7 +1160,7 @@ export default function FundDetailsPage({
                                   className="text-red-600"
                                 >
                                   <UserMinus className="mr-2 h-4 w-4" />
-                                  Portal-Zugang entfernen
+                                  {t("detail.removePortalAccess")}
                                 </DropdownMenuItem>
                               ) : (
                                 <DropdownMenuItem
@@ -1159,7 +1170,7 @@ export default function FundDetailsPage({
                                   }}
                                 >
                                   <Shield className="mr-2 h-4 w-4" />
-                                  Portal-Zugang erstellen
+                                  {t("detail.createPortalAccess")}
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
@@ -1168,7 +1179,7 @@ export default function FundDetailsPage({
                                 className="text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Löschen
+                                {t("detail.deleteSh")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1213,21 +1224,21 @@ export default function FundDetailsPage({
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Gesellschaftsdaten</CardTitle>
-                  <InfoTooltip text="Stammdaten der Gesellschaft wie Rechtsform, Handelsregistereintrag und Stammkapital." />
+                  <CardTitle>{t("detail.companyDataTitle")}</CardTitle>
+                  <InfoTooltip text={t("detail.companyDataTooltip")} />
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Rechtsform
+                      {t("detail.legalForm")}
                     </p>
                     <p>{fund.legalForm || "-"}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Stammkapital
+                      {t("detail.totalCapital")}
                     </p>
                     <p>
                       {fund.totalCapital
@@ -1237,19 +1248,19 @@ export default function FundDetailsPage({
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Registernummer
+                      {t("detail.registrationNumber")}
                     </p>
                     <p>{fund.registrationNumber || "-"}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Registergericht
+                      {t("detail.registrationCourt")}
                     </p>
                     <p>{fund.registrationCourt || "-"}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Gründungsdatum
+                      {t("detail.foundingDate")}
                     </p>
                     <p>
                       {fund.foundingDate
@@ -1261,7 +1272,7 @@ export default function FundDetailsPage({
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Geschäftsführer
+                      {t("detail.managingDirector")}
                     </p>
                     <p>{fund.managingDirector || "-"}</p>
                   </div>
@@ -1271,7 +1282,7 @@ export default function FundDetailsPage({
                     <Separator />
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">
-                        Adresse
+                        {t("detail.address")}
                       </p>
                       <p>
                         {[fund.street, fund.houseNumber].filter(Boolean).join(" ")}
@@ -1287,27 +1298,27 @@ export default function FundDetailsPage({
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Bankverbindung</CardTitle>
-                  <InfoTooltip text="Bankdaten der Gesellschaft für Zahlungsverkehr und Überweisungen." />
+                  <CardTitle>{t("detail.bankDetailsTitle")}</CardTitle>
+                  <InfoTooltip text={t("detail.bankDetailsTooltip")} />
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      IBAN
+                      {t("detail.iban")}
                     </p>
                     <p className="font-mono">{fund.bankDetails?.iban || "-"}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      BIC
+                      {t("detail.bic")}
                     </p>
                     <p className="font-mono">{fund.bankDetails?.bic || "-"}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Bank
+                      {t("detail.bank")}
                     </p>
                     <p>{fund.bankDetails?.bankName || "-"}</p>
                   </div>
@@ -1323,16 +1334,16 @@ export default function FundDetailsPage({
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Ausschuettungen</CardTitle>
-                  <InfoTooltip text="Gewinnausschuettungen und Entnahmen, die anteilig an die Gesellschafter ausgezahlt werden." />
+                  <CardTitle>{t("detail.distributionsTitle")}</CardTitle>
+                  <InfoTooltip text={t("detail.distributionsTooltip")} />
                 </div>
                 <CardDescription>
-                  Gewinnausschuettungen an Gesellschafter
+                  {t("detail.distributionsDescription")}
                 </CardDescription>
               </div>
               <Button onClick={() => setIsDistributionDialogOpen(true)}>
                 <Banknote className="mr-2 h-4 w-4" />
-                Ausschuetten
+                {t("detail.distribute")}
               </Button>
             </CardHeader>
             <CardContent>
@@ -1346,25 +1357,25 @@ export default function FundDetailsPage({
                 <div className="py-12 text-center">
                   <Banknote className="mx-auto h-12 w-12 text-muted-foreground/50" />
                   <p className="mt-4 text-muted-foreground">
-                    Noch keine Ausschuettungen vorhanden
+                    {t("detail.noDistributions")}
                   </p>
                   <Button
                     className="mt-4"
                     onClick={() => setIsDistributionDialogOpen(true)}
                   >
                     <Banknote className="mr-2 h-4 w-4" />
-                    Erste Ausschuettung erstellen
+                    {t("detail.firstDistribution")}
                   </Button>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nr.</TableHead>
-                      <TableHead>Beschreibung</TableHead>
-                      <TableHead>Datum</TableHead>
-                      <TableHead className="text-right">Betrag</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t("detail.distColNumber")}</TableHead>
+                      <TableHead>{t("detail.distColDescription")}</TableHead>
+                      <TableHead>{t("detail.distColDate")}</TableHead>
+                      <TableHead className="text-right">{t("detail.distColAmount")}</TableHead>
+                      <TableHead>{t("detail.distColStatus")}</TableHead>
                       <TableHead className="w-[100px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1397,7 +1408,7 @@ export default function FundDetailsPage({
                               variant="ghost"
                               size="icon"
                               onClick={() => openDistributionDetail(dist)}
-                              title="Anzeigen"
+                              title={t("detail.view")}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -1408,7 +1419,7 @@ export default function FundDetailsPage({
                                   size="icon"
                                   onClick={() => handleExecuteDistribution(dist.id)}
                                   disabled={isExecutingDistribution === dist.id}
-                                  title="Ausfuehren"
+                                  title={t("detail.distExecute")}
                                 >
                                   {isExecutingDistribution === dist.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1421,7 +1432,7 @@ export default function FundDetailsPage({
                                   size="icon"
                                   onClick={() => handleDeleteDistribution(dist.id)}
                                   disabled={isDeletingDistribution === dist.id}
-                                  title="Löschen"
+                                  title={t("detail.distDelete")}
                                 >
                                   {isDeletingDistribution === dist.id ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -1434,7 +1445,7 @@ export default function FundDetailsPage({
                             {dist.status === "EXECUTED" && (
                               <Badge variant="outline" className="ml-2">
                                 <Check className="mr-1 h-3 w-3" />
-                                Erledigt
+                                {t("detail.distDone")}
                               </Badge>
                             )}
                           </div>
@@ -1454,31 +1465,31 @@ export default function FundDetailsPage({
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Konzernstruktur</CardTitle>
-                  <InfoTooltip text="Mutter- und Tochtergesellschaften, die ebenfalls im System verwaltet werden (z.B. Holding → Betreibergesellschaft). Gesellschafter (Personen/Firmen die Anteile halten) werden im Tab 'Gesellschafter' verwaltet." />
+                  <CardTitle>{t("detail.groupStructureTitle")}</CardTitle>
+                  <InfoTooltip text={t("detail.groupStructureTooltip")} />
                 </div>
                 <CardDescription>
-                  Über- und untergeordnete Gesellschaften in der Unternehmensstruktur
+                  {t("detail.groupStructureDescription")}
                 </CardDescription>
               </div>
               <Button onClick={() => setIsAddHierarchyDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Gesellschaft verknuepfen
+                {t("detail.linkCompany")}
               </Button>
             </CardHeader>
             <CardContent>
               {fund.parentHierarchies.length === 0 && fund.childHierarchies.length === 0 ? (
                 <p className="py-8 text-center text-muted-foreground">
-                  Keine Gesellschaften in der Konzernstruktur verknuepft
+                  {t("detail.noLinkedCompanies")}
                 </p>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Rechtsform</TableHead>
-                      <TableHead>Typ</TableHead>
-                      <TableHead className="text-right">Beteiligung</TableHead>
+                      <TableHead>{t("detail.colCompanyName")}</TableHead>
+                      <TableHead>{t("detail.colLegalForm")}</TableHead>
+                      <TableHead>{t("detail.colType")}</TableHead>
+                      <TableHead className="text-right">{t("detail.colOwnership")}</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1588,34 +1599,34 @@ export default function FundDetailsPage({
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Anlagen</CardTitle>
-                  <InfoTooltip text="Windkraftanlagen (WKA/WEA), die von dieser Gesellschaft betrieben werden. Die Beteiligung gibt den Eigentumsanteil an." />
+                  <CardTitle>{t("detail.turbinesTitle")}</CardTitle>
+                  <InfoTooltip text={t("detail.turbinesTooltip")} />
                 </div>
                 <CardDescription>
-                  Turbinen, die von dieser Gesellschaft betrieben werden
+                  {t("detail.turbinesDescription")}
                 </CardDescription>
               </div>
               <Button onClick={() => setIsAddTurbineDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Anlage zuordnen
+                {t("detail.assignTurbine")}
               </Button>
             </CardHeader>
             <CardContent>
               {fund.operatedTurbines.length === 0 ? (
                 <p className="py-8 text-center text-muted-foreground">
-                  Keine Anlagen zugeordnet
+                  {t("detail.noTurbines")}
                 </p>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Bezeichnung</TableHead>
-                      <TableHead>Park</TableHead>
-                      <TableHead>Hersteller</TableHead>
-                      <TableHead>Modell</TableHead>
-                      <TableHead className="text-right">Leistung (kW)</TableHead>
-                      <TableHead className="text-right">Beteiligung</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t("detail.colDesignation")}</TableHead>
+                      <TableHead>{t("detail.colPark")}</TableHead>
+                      <TableHead>{t("detail.colManufacturer")}</TableHead>
+                      <TableHead>{t("detail.colModel")}</TableHead>
+                      <TableHead className="text-right">{t("detail.colPowerKw")}</TableHead>
+                      <TableHead className="text-right">{t("detail.colTurbineOwnership")}</TableHead>
+                      <TableHead>{t("detail.colTurbineStatus")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1655,7 +1666,7 @@ export default function FundDetailsPage({
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-800"}
                           >
-                            {op.turbine.status === "OPERATING" ? "In Betrieb" : op.turbine.status}
+                            {op.turbine.status === "OPERATING" ? t("detail.turbineOperating") : op.turbine.status}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -1673,31 +1684,31 @@ export default function FundDetailsPage({
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Dokumente</CardTitle>
-                  <InfoTooltip text="Verträge, Beschlüsse, Berichte und sonstige Unterlagen dieser Gesellschaft." />
+                  <CardTitle>{t("detail.documentsTitle")}</CardTitle>
+                  <InfoTooltip text={t("detail.documentsTooltip")} />
                 </div>
-                <CardDescription>Dokumente zu dieser Gesellschaft</CardDescription>
+                <CardDescription>{t("detail.documentsDescription")}</CardDescription>
               </div>
               <Button asChild>
                 <Link href={`/documents/upload?fundId=${id}`}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Hochladen
+                  {t("detail.upload")}
                 </Link>
               </Button>
             </CardHeader>
             <CardContent>
               {fund.documents.length === 0 ? (
                 <p className="py-8 text-center text-muted-foreground">
-                  Keine Dokumente vorhanden
+                  {t("detail.noDocuments")}
                 </p>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Titel</TableHead>
-                      <TableHead>Kategorie</TableHead>
-                      <TableHead>Datei</TableHead>
-                      <TableHead>Hochgeladen</TableHead>
+                      <TableHead>{t("detail.colDocTitle")}</TableHead>
+                      <TableHead>{t("detail.colDocCategory")}</TableHead>
+                      <TableHead>{t("detail.colDocFile")}</TableHead>
+                      <TableHead>{t("detail.colDocUploaded")}</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1732,8 +1743,8 @@ export default function FundDetailsPage({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label="Vorschau"
-                            title="Vorschau"
+                            aria-label={t("detail.preview")}
+                            title={t("detail.preview")}
                             onClick={(e) => {
                               e.stopPropagation();
                               setPreviewDocument(doc);
@@ -1768,22 +1779,22 @@ export default function FundDetailsPage({
       <Dialog open={isAddHierarchyDialogOpen} onOpenChange={setIsAddHierarchyDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Gesellschaft verknuepfen</DialogTitle>
+            <DialogTitle>{t("detail.linkCompanyDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Waehlen Sie eine Gesellschaft aus, die mit dieser Gesellschaft verknuepft werden soll.
+              {t("detail.linkCompanyDialogDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Gesellschaft</Label>
+              <Label>{t("detail.labelCompany")}</Label>
               <Select value={selectedHierarchyFundId} onValueChange={setSelectedHierarchyFundId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Gesellschaft auswaehlen..." />
+                  <SelectValue placeholder={t("detail.selectCompanyPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableFunds.length === 0 ? (
                     <SelectItem value="_none" disabled>
-                      Keine verfügbaren Gesellschaften
+                      {t("detail.noAvailableCompanies")}
                     </SelectItem>
                   ) : (
                     availableFunds.map((f) => (
@@ -1797,12 +1808,12 @@ export default function FundDetailsPage({
               <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
                 <Link href="/funds/new" target="_blank">
                   <Plus className="mr-1 h-3 w-3" />
-                  Neue Gesellschaft anlegen
+                  {t("detail.createNewCompany")}
                 </Link>
               </Button>
             </div>
             <div className="space-y-2">
-              <Label>Beteiligungsanteil (%)</Label>
+              <Label>{t("detail.labelOwnershipPct")}</Label>
               <Input
                 type="number"
                 min="0"
@@ -1814,7 +1825,7 @@ export default function FundDetailsPage({
               />
             </div>
             <div className="space-y-2">
-              <Label>Gültig ab</Label>
+              <Label>{t("detail.labelValidFrom")}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -1827,7 +1838,7 @@ export default function FundDetailsPage({
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {hierarchyValidFrom
                       ? format(hierarchyValidFrom, "dd.MM.yyyy", { locale: de })
-                      : "Datum waehlen"}
+                      : t("detail.selectDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -1853,14 +1864,14 @@ export default function FundDetailsPage({
                 setHierarchyOwnership("");
               }}
             >
-              Abbrechen
+              {t("detail.cancel")}
             </Button>
             <Button
               onClick={handleAddHierarchy}
               disabled={!selectedHierarchyFundId || isAddingHierarchy}
             >
               {isAddingHierarchy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Verknuepfen
+              {t("detail.link")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1870,22 +1881,22 @@ export default function FundDetailsPage({
       <Dialog open={isAddTurbineDialogOpen} onOpenChange={setIsAddTurbineDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Anlage zuordnen</DialogTitle>
+            <DialogTitle>{t("detail.assignTurbineDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Ordnen Sie eine Turbine dieser Gesellschaft als Betreiber zu.
+              {t("detail.assignTurbineDialogDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Park</Label>
+              <Label>{t("detail.labelPark")}</Label>
               <Select value={selectedParkForTurbine} onValueChange={(v) => { setSelectedParkForTurbine(v); setSelectedTurbineId(""); }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Park auswaehlen..." />
+                  <SelectValue placeholder={t("detail.selectParkPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableParksForTurbine.length === 0 ? (
                     <SelectItem value="_none" disabled>
-                      Keine Parks verfügbar
+                      {t("detail.noParksAvailable")}
                     </SelectItem>
                   ) : (
                     availableParksForTurbine.map((p) => (
@@ -1898,21 +1909,21 @@ export default function FundDetailsPage({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Turbine</Label>
+              <Label>{t("detail.labelTurbine")}</Label>
               <Select value={selectedTurbineId} onValueChange={setSelectedTurbineId} disabled={!selectedParkForTurbine}>
                 <SelectTrigger>
-                  <SelectValue placeholder={selectedParkForTurbine ? "Turbine auswaehlen..." : "Zuerst Park waehlen..."} />
+                  <SelectValue placeholder={selectedParkForTurbine ? t("detail.selectTurbinePlaceholder") : t("detail.selectParkFirst")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableTurbines.length === 0 ? (
                     <SelectItem value="_none" disabled>
-                      Keine Turbinen verfügbar
+                      {t("detail.noTurbinesAvailable")}
                     </SelectItem>
                   ) : (
-                    availableTurbines.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.designation}{t.manufacturer ? ` - ${t.manufacturer}` : ""}{t.model ? ` ${t.model}` : ""}
-                        {t.ratedPowerKw ? ` (${t.ratedPowerKw} kW)` : ""}
+                    availableTurbines.map((tb) => (
+                      <SelectItem key={tb.id} value={tb.id}>
+                        {tb.designation}{tb.manufacturer ? ` - ${tb.manufacturer}` : ""}{tb.model ? ` ${tb.model}` : ""}
+                        {tb.ratedPowerKw ? ` (${tb.ratedPowerKw} kW)` : ""}
                       </SelectItem>
                     ))
                   )}
@@ -1920,7 +1931,7 @@ export default function FundDetailsPage({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Beteiligungsanteil (%)</Label>
+              <Label>{t("detail.labelOwnershipPct")}</Label>
               <Input
                 type="number"
                 min="0"
@@ -1932,7 +1943,7 @@ export default function FundDetailsPage({
               />
             </div>
             <div className="space-y-2">
-              <Label>Gültig ab</Label>
+              <Label>{t("detail.labelValidFrom")}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -1945,7 +1956,7 @@ export default function FundDetailsPage({
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {turbineValidFrom
                       ? format(turbineValidFrom, "dd.MM.yyyy", { locale: de })
-                      : "Datum waehlen"}
+                      : t("detail.selectDate")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -1972,14 +1983,14 @@ export default function FundDetailsPage({
                 setTurbineOwnership("100");
               }}
             >
-              Abbrechen
+              {t("detail.cancel")}
             </Button>
             <Button
               onClick={handleAddTurbineOperator}
               disabled={!selectedTurbineId || isAddingTurbine}
             >
               {isAddingTurbine && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Zuordnen
+              {t("detail.assign")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1989,15 +2000,15 @@ export default function FundDetailsPage({
       <Dialog open={isDistributionDialogOpen} onOpenChange={setIsDistributionDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Neue Ausschuettung</DialogTitle>
+            <DialogTitle>{t("detail.newDistributionTitle")}</DialogTitle>
             <DialogDescription>
-              Geben Sie den Gesamtbetrag ein, der auf die Gesellschafter verteilt werden soll.
+              {t("detail.newDistributionDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="distributionAmount">Gesamtbetrag (EUR)</Label>
+                <Label htmlFor="distributionAmount">{t("detail.labelTotalAmount")}</Label>
                 <Input
                   id="distributionAmount"
                   type="number"
@@ -2009,7 +2020,7 @@ export default function FundDetailsPage({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Ausschuettungsdatum</Label>
+                <Label>{t("detail.labelDistributionDate")}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -2022,7 +2033,7 @@ export default function FundDetailsPage({
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {distributionDate
                         ? format(distributionDate, "dd.MM.yyyy", { locale: de })
-                        : "Datum waehlen"}
+                        : t("detail.selectDate")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -2039,10 +2050,10 @@ export default function FundDetailsPage({
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="distributionDescription">Beschreibung</Label>
+                <Label htmlFor="distributionDescription">{t("detail.labelDescription")}</Label>
                 <Input
                   id="distributionDescription"
-                  placeholder="z.B. Gewinnausschuettung 2025"
+                  placeholder={t("detail.descriptionPlaceholder")}
                   value={distributionDescription}
                   onChange={(e) => setDistributionDescription(e.target.value)}
                 />
@@ -2052,14 +2063,14 @@ export default function FundDetailsPage({
             {/* Preview */}
             {distributionAmount && parseFloat(distributionAmount) > 0 && (
               <div className="space-y-3">
-                <Label>Vorschau der Verteilung</Label>
+                <Label>{t("detail.previewTitle")}</Label>
                 <div className="rounded-lg border">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Gesellschafter</TableHead>
-                        <TableHead className="text-right">Anteil</TableHead>
-                        <TableHead className="text-right">Betrag</TableHead>
+                        <TableHead>{t("detail.previewColShareholder")}</TableHead>
+                        <TableHead className="text-right">{t("detail.previewColShare")}</TableHead>
+                        <TableHead className="text-right">{t("detail.previewColAmount")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -2077,7 +2088,7 @@ export default function FundDetailsPage({
                         )
                       )}
                       <TableRow className="bg-muted/50 font-medium">
-                        <TableCell>Gesamt</TableCell>
+                        <TableCell>{t("detail.previewTotal")}</TableCell>
                         <TableCell className="text-right">100%</TableCell>
                         <TableCell className="text-right">
                           {formatCurrency(parseFloat(distributionAmount))}
@@ -2087,8 +2098,7 @@ export default function FundDetailsPage({
                   </Table>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Nach dem Erstellen können Sie die Ausschuettung ausfuehren, um automatisch
-                  Gutschriften für jeden Gesellschafter zu generieren.
+                  {t("detail.previewHint")}
                 </p>
               </div>
             )}
@@ -2103,7 +2113,7 @@ export default function FundDetailsPage({
                 setDistributionDate(new Date());
               }}
             >
-              Abbrechen
+              {t("detail.cancel")}
             </Button>
             <Button
               onClick={handleCreateDistribution}
@@ -2116,7 +2126,7 @@ export default function FundDetailsPage({
               {isCreatingDistribution && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Ausschuettung erstellen
+              {t("detail.createDistribution")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2127,23 +2137,23 @@ export default function FundDetailsPage({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              Ausschuettung {selectedDistribution?.distributionNumber}
+              {t("detail.distDetailTitle", { number: selectedDistribution?.distributionNumber || "" })}
             </DialogTitle>
             <DialogDescription>
-              {selectedDistribution?.description || "Keine Beschreibung"}
+              {selectedDistribution?.description || t("detail.noDescription")}
             </DialogDescription>
           </DialogHeader>
           {selectedDistribution && (
             <div className="space-y-4 py-4">
               <div className="flex items-center justify-between rounded-lg bg-muted p-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Gesamtbetrag</p>
+                  <p className="text-sm text-muted-foreground">{t("detail.distTotalAmount")}</p>
                   <p className="text-2xl font-bold">
                     {formatCurrency(Number(selectedDistribution.totalAmount))}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Status</p>
+                  <p className="text-sm text-muted-foreground">{t("detail.distStatus")}</p>
                   <Badge
                     variant="secondary"
                     className={distributionStatusColors[selectedDistribution.status]}
@@ -2155,7 +2165,7 @@ export default function FundDetailsPage({
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Ausschuettungsdatum</p>
+                  <p className="text-muted-foreground">{t("detail.distDate")}</p>
                   <p className="font-medium">
                     {format(new Date(selectedDistribution.distributionDate), "dd.MM.yyyy", {
                       locale: de,
@@ -2164,7 +2174,7 @@ export default function FundDetailsPage({
                 </div>
                 {selectedDistribution.executedAt && (
                   <div>
-                    <p className="text-muted-foreground">Ausgeführt am</p>
+                    <p className="text-muted-foreground">{t("detail.distExecutedAt")}</p>
                     <p className="font-medium">
                       {format(new Date(selectedDistribution.executedAt), "dd.MM.yyyy HH:mm", {
                         locale: de,
@@ -2176,16 +2186,16 @@ export default function FundDetailsPage({
 
               {selectedDistribution.items && selectedDistribution.items.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Verteilung auf Gesellschafter</Label>
+                  <Label>{t("detail.distShareholderAllocation")}</Label>
                   <div className="rounded-lg border">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Gesellschafter</TableHead>
-                          <TableHead className="text-right">Anteil</TableHead>
-                          <TableHead className="text-right">Betrag</TableHead>
+                          <TableHead>{t("detail.previewColShareholder")}</TableHead>
+                          <TableHead className="text-right">{t("detail.previewColShare")}</TableHead>
+                          <TableHead className="text-right">{t("detail.previewColAmount")}</TableHead>
                           {selectedDistribution.status === "EXECUTED" && (
-                            <TableHead>Gutschrift</TableHead>
+                            <TableHead>{t("detail.distColCreditNote")}</TableHead>
                           )}
                         </TableRow>
                       </TableHeader>
@@ -2231,7 +2241,7 @@ export default function FundDetailsPage({
               variant="outline"
               onClick={() => setIsDistributionDetailOpen(false)}
             >
-              Schliessen
+              {t("detail.close")}
             </Button>
             {selectedDistribution?.status === "DRAFT" && (
               <Button
@@ -2241,7 +2251,7 @@ export default function FundDetailsPage({
                 }}
               >
                 <Play className="mr-2 h-4 w-4" />
-                Ausfuehren
+                {t("detail.execute")}
               </Button>
             )}
           </DialogFooter>
@@ -2276,27 +2286,27 @@ export default function FundDetailsPage({
       <AlertDialog open={isDeleteShareholderDialogOpen} onOpenChange={setIsDeleteShareholderDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Gesellschafter unwiderruflich löschen</AlertDialogTitle>
+            <AlertDialogTitle>{t("detail.deleteShTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Möchten Sie diesen Eintrag wirklich unwiderruflich löschen?
+              {t("detail.deleteShDescription")}
               {shareholderToDelete && (
                 <span className="mt-2 block font-medium text-foreground">
                   {getPersonName(shareholderToDelete.person)}
                 </span>
               )}
               <span className="mt-2 block text-red-600">
-                Diese Aktion kann nicht rückgängig gemacht werden.
+                {t("detail.deleteShWarning")}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingShareholder}>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeletingShareholder}>{t("detail.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteShareholder}
               disabled={isDeletingShareholder}
               className="bg-red-600 hover:bg-red-700"
             >
-              {isDeletingShareholder ? "Wird gelöscht..." : "Unwiderruflich löschen"}
+              {isDeletingShareholder ? t("detail.deleteShDeleting") : t("detail.deleteShConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -2307,28 +2317,28 @@ export default function FundDetailsPage({
         open={deleteHierarchyDialogOpen}
         onOpenChange={setDeleteHierarchyDialogOpen}
         onConfirm={handleConfirmDeleteHierarchy}
-        title="Verknuepfung entfernen"
-        description="Möchten Sie diese Gesellschafts-Verknuepfung wirklich entfernen?"
+        title={t("detail.removeLinkTitle")}
+        description={t("detail.removeLinkDescription")}
       />
 
       {/* Execute Distribution Confirmation Dialog */}
       <AlertDialog open={executeDistDialogOpen} onOpenChange={setExecuteDistDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ausschuettung ausfuehren</AlertDialogTitle>
+            <AlertDialogTitle>{t("detail.executeDistTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Möchten Sie die Ausschuettung ausfuehren? Es werden Gutschriften für alle Gesellschafter erstellt.
+              {t("detail.executeDistDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("detail.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 handleConfirmExecuteDistribution();
               }}
             >
-              Ausfuehren
+              {t("detail.execute")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -2339,8 +2349,8 @@ export default function FundDetailsPage({
         open={deleteDistDialogOpen}
         onOpenChange={setDeleteDistDialogOpen}
         onConfirm={handleConfirmDeleteDistribution}
-        title="Ausschuettung löschen"
-        description="Möchten Sie diese Ausschuettung wirklich löschen?"
+        title={t("detail.deleteDistTitle")}
+        description={t("detail.deleteDistDescription")}
       />
 
       {/* Portal Access Dialogs */}
@@ -2372,13 +2382,13 @@ export default function FundDetailsPage({
         onClearSelection={clearShareholderSelection}
         actions={[
           {
-            label: "Exportieren",
+            label: t("detail.batchExport"),
             icon: <Download className="h-4 w-4" />,
             onClick: handleBatchExportShareholders,
             disabled: isBatchProcessing,
           },
           {
-            label: "Portal-Zugang aktivieren",
+            label: t("detail.batchPortalAccess"),
             icon: isBatchProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />,
             onClick: handleBatchEnablePortalAccess,
             disabled: isBatchProcessing,

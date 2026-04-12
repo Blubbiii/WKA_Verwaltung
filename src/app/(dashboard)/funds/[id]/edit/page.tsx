@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -37,34 +38,6 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-const fundFormSchema = z.object({
-  name: z.string().min(1, "Name ist erforderlich"),
-  legalForm: z.string().optional(),
-  registrationNumber: z.string().optional(),
-  registrationCourt: z.string().optional(),
-  foundingDate: z.date().optional().nullable(),
-  totalCapital: z.coerce.number().min(0).optional().or(z.literal("")),
-  managingDirector: z.string().optional(),
-  street: z.string().optional(),
-  houseNumber: z.string().optional(),
-  postalCode: z.string().optional(),
-  city: z.string().optional(),
-  bankIban: z.string().optional(),
-  bankBic: z.string().optional(),
-  bankName: z.string().optional(),
-  status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
-  // Fund-specific email settings
-  emailFromName: z.string().max(100).optional(),
-  emailFromAddress: z.string().max(200).optional(),
-  emailSmtpHost: z.string().max(200).optional(),
-  emailSmtpPort: z.coerce.number().int().min(1).max(65535).optional().or(z.literal("")),
-  emailSmtpUser: z.string().max(200).optional(),
-  emailSmtpPassword: z.string().max(500).optional(),
-  emailSmtpSecure: z.boolean().optional(),
-});
-
-type FundFormValues = z.infer<typeof fundFormSchema>;
-
 interface Fund {
   id: string;
   name: string;
@@ -93,9 +66,38 @@ export default function EditFundPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations("funds");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fundFormSchema = z.object({
+    name: z.string().min(1, t("form.nameRequired")),
+    legalForm: z.string().optional(),
+    registrationNumber: z.string().optional(),
+    registrationCourt: z.string().optional(),
+    foundingDate: z.date().optional().nullable(),
+    totalCapital: z.coerce.number().min(0).optional().or(z.literal("")),
+    managingDirector: z.string().optional(),
+    street: z.string().optional(),
+    houseNumber: z.string().optional(),
+    postalCode: z.string().optional(),
+    city: z.string().optional(),
+    bankIban: z.string().optional(),
+    bankBic: z.string().optional(),
+    bankName: z.string().optional(),
+    status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
+    // Fund-specific email settings
+    emailFromName: z.string().max(100).optional(),
+    emailFromAddress: z.string().max(200).optional(),
+    emailSmtpHost: z.string().max(200).optional(),
+    emailSmtpPort: z.coerce.number().int().min(1).max(65535).optional().or(z.literal("")),
+    emailSmtpUser: z.string().max(200).optional(),
+    emailSmtpPassword: z.string().max(500).optional(),
+    emailSmtpSecure: z.boolean().optional(),
+  });
+
+  type FundFormValues = z.infer<typeof fundFormSchema>;
 
   const form = useForm<FundFormValues>({
     resolver: zodResolver(fundFormSchema) as Resolver<FundFormValues>,
@@ -129,9 +131,9 @@ export default function EditFundPage({
       const response = await fetch(`/api/funds/${id}`);
       if (!response.ok) {
         if (response.status === 404) {
-          setError("Gesellschaft nicht gefunden");
+          setError(t("form.notFound"));
         } else {
-          throw new Error("Fehler beim Laden");
+          throw new Error(t("form.loadErrorGeneric"));
         }
         return;
       }
@@ -155,7 +157,7 @@ export default function EditFundPage({
         status: fund.status,
       });
     } catch {
-      setError("Fehler beim Laden der Gesellschaft");
+      setError(t("form.loadError"));
     } finally {
       setIsFetching(false);
     }
@@ -184,13 +186,13 @@ export default function EditFundPage({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("form.saveError"));
       }
 
       router.push(`/funds/${id}`);
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("form.saveError"));
     } finally {
       setIsLoading(false);
     }
@@ -216,7 +218,7 @@ export default function EditFundPage({
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-lg text-muted-foreground">{error}</p>
         <Button asChild className="mt-4">
-          <Link href="/funds">Zurück zur Übersicht</Link>
+          <Link href="/funds">{t("form.backToList")}</Link>
         </Button>
       </div>
     );
@@ -231,9 +233,9 @@ export default function EditFundPage({
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gesellschaft bearbeiten</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("form.editTitle")}</h1>
           <p className="text-muted-foreground">
-            Bearbeiten Sie die Gesellschaftsdaten
+            {t("form.editDescription")}
           </p>
         </div>
       </div>
@@ -242,7 +244,7 @@ export default function EditFundPage({
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Basis-Informationen</CardTitle>
+              <CardTitle>{t("form.basicInfo")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -251,9 +253,9 @@ export default function EditFundPage({
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name *</FormLabel>
+                      <FormLabel>{t("form.name")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Windenergie GmbH & Co. KG" {...field} />
+                        <Input placeholder={t("form.namePlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -264,9 +266,9 @@ export default function EditFundPage({
                   name="legalForm"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Rechtsform</FormLabel>
+                      <FormLabel>{t("form.legalForm")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="GmbH & Co. KG" {...field} />
+                        <Input placeholder={t("form.legalFormPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -279,9 +281,9 @@ export default function EditFundPage({
                   name="registrationNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Registernummer</FormLabel>
+                      <FormLabel>{t("form.registrationNumber")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="HRA 12345" {...field} />
+                        <Input placeholder={t("form.registrationNumberPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -292,9 +294,9 @@ export default function EditFundPage({
                   name="registrationCourt"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Registergericht</FormLabel>
+                      <FormLabel>{t("form.registrationCourt")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Amtsgericht Hamburg" {...field} />
+                        <Input placeholder={t("form.registrationCourtPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -305,7 +307,7 @@ export default function EditFundPage({
                   name="foundingDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Gründungsdatum</FormLabel>
+                      <FormLabel>{t("form.foundingDate")}</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -319,7 +321,7 @@ export default function EditFundPage({
                               {field.value ? (
                                 format(field.value, "dd.MM.yyyy")
                               ) : (
-                                <span>Datum wählen</span>
+                                <span>{t("form.selectDate")}</span>
                               )}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
@@ -349,9 +351,9 @@ export default function EditFundPage({
                   name="totalCapital"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Stammkapital (EUR)</FormLabel>
+                      <FormLabel>{t("form.totalCapital")}</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="100000" {...field} />
+                        <Input type="number" placeholder={t("form.totalCapitalPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -362,9 +364,9 @@ export default function EditFundPage({
                   name="managingDirector"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Geschäftsführer</FormLabel>
+                      <FormLabel>{t("form.managingDirector")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Max Mustermann" {...field} />
+                        <Input placeholder={t("form.managingDirectorPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -378,9 +380,9 @@ export default function EditFundPage({
                     name="street"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Stra&#223;e</FormLabel>
+                        <FormLabel>{t("form.street")}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Musterstra&#223;e" {...field} />
+                          <Input placeholder={t("form.streetPlaceholder")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -393,9 +395,9 @@ export default function EditFundPage({
                     name="houseNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hausnummer</FormLabel>
+                        <FormLabel>{t("form.houseNumber")}</FormLabel>
                         <FormControl>
-                          <Input placeholder="1a" {...field} />
+                          <Input placeholder={t("form.houseNumberPlaceholder")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -408,9 +410,9 @@ export default function EditFundPage({
                     name="postalCode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>PLZ</FormLabel>
+                        <FormLabel>{t("form.postalCode")}</FormLabel>
                         <FormControl>
-                          <Input placeholder="12345" {...field} />
+                          <Input placeholder={t("form.postalCodePlaceholder")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -423,9 +425,9 @@ export default function EditFundPage({
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Ort</FormLabel>
+                        <FormLabel>{t("form.city")}</FormLabel>
                         <FormControl>
-                          <Input placeholder="Musterstadt" {...field} />
+                          <Input placeholder={t("form.cityPlaceholder")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -438,17 +440,17 @@ export default function EditFundPage({
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>{t("form.status")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Status wählen" />
+                          <SelectValue placeholder={t("form.statusPlaceholder")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="ACTIVE">Aktiv</SelectItem>
-                        <SelectItem value="INACTIVE">Inaktiv</SelectItem>
-                        <SelectItem value="ARCHIVED">Archiviert</SelectItem>
+                        <SelectItem value="ACTIVE">{t("status.active")}</SelectItem>
+                        <SelectItem value="INACTIVE">{t("status.inactive")}</SelectItem>
+                        <SelectItem value="ARCHIVED">{t("status.archived")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -460,7 +462,7 @@ export default function EditFundPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Bankverbindung</CardTitle>
+              <CardTitle>{t("form.bankDetails")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -468,9 +470,9 @@ export default function EditFundPage({
                 name="bankIban"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>IBAN</FormLabel>
+                    <FormLabel>{t("form.iban")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="DE89 3704 0044 0532 0130 00" {...field} />
+                      <Input placeholder={t("form.ibanPlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -482,9 +484,9 @@ export default function EditFundPage({
                   name="bankBic"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>BIC</FormLabel>
+                      <FormLabel>{t("form.bic")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="COBADEFFXXX" {...field} />
+                        <Input placeholder={t("form.bicPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -495,9 +497,9 @@ export default function EditFundPage({
                   name="bankName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Bank</FormLabel>
+                      <FormLabel>{t("form.bank")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Commerzbank AG" {...field} />
+                        <Input placeholder={t("form.bankPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -512,10 +514,10 @@ export default function EditFundPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
-                E-Mail-Einstellungen
+                {t("form.emailSettings")}
               </CardTitle>
               <CardDescription>
-                Eigener Mailserver für diese Gesellschaft. Wenn nicht konfiguriert, wird der Mandanten-Mailserver verwendet.
+                {t("form.emailSettingsDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -525,9 +527,9 @@ export default function EditFundPage({
                   name="emailFromName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Absendername</FormLabel>
+                      <FormLabel>{t("form.senderName")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Windpark Südercamp GbR" {...field} />
+                        <Input placeholder={t("form.senderNamePlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -538,9 +540,9 @@ export default function EditFundPage({
                   name="emailFromAddress"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Absender E-Mail</FormLabel>
+                      <FormLabel>{t("form.senderEmail")}</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="buchhaltung@suedercamp.de" {...field} />
+                        <Input type="email" placeholder={t("form.senderEmailPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -550,16 +552,16 @@ export default function EditFundPage({
 
               <Separator />
 
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">SMTP-Server (optional)</p>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{t("form.smtpOptional")}</p>
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="emailSmtpHost"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>SMTP-Host</FormLabel>
+                      <FormLabel>{t("form.smtpHost")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="smtp.example.de" {...field} />
+                        <Input placeholder={t("form.smtpHostPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -570,9 +572,9 @@ export default function EditFundPage({
                   name="emailSmtpPort"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Port</FormLabel>
+                      <FormLabel>{t("form.smtpPort")}</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="587" {...field} />
+                        <Input type="number" placeholder={t("form.smtpPortPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -583,9 +585,9 @@ export default function EditFundPage({
                   name="emailSmtpUser"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Benutzername</FormLabel>
+                      <FormLabel>{t("form.smtpUser")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="smtp-user" {...field} />
+                        <Input placeholder={t("form.smtpUserPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -596,9 +598,9 @@ export default function EditFundPage({
                   name="emailSmtpPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Passwort</FormLabel>
+                      <FormLabel>{t("form.smtpPassword")}</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
+                        <Input type="password" placeholder={t("form.smtpPasswordPlaceholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -619,7 +621,7 @@ export default function EditFundPage({
                         className="rounded"
                       />
                     </FormControl>
-                    <FormLabel className="!mt-0">TLS/SSL verwenden</FormLabel>
+                    <FormLabel className="!mt-0">{t("form.smtpTls")}</FormLabel>
                   </FormItem>
                 )}
               />
@@ -634,14 +636,14 @@ export default function EditFundPage({
                   const host = form.getValues("emailSmtpHost");
                   const fromAddr = form.getValues("emailFromAddress");
                   if (!host || !fromAddr) {
-                    toast.error("SMTP-Host und Absender-E-Mail müssen ausgefüllt sein");
+                    toast.error(t("form.testEmailError"));
                     return;
                   }
-                  toast.info("Test-E-Mail wird gesendet...");
+                  toast.info(t("form.testEmailSending"));
                 }}
               >
                 <Send className="h-3.5 w-3.5" />
-                Test-E-Mail senden
+                {t("form.testEmail")}
               </Button>
             </CardContent>
           </Card>
@@ -653,11 +655,11 @@ export default function EditFundPage({
               onClick={() => router.back()}
               disabled={isLoading}
             >
-              Abbrechen
+              {t("form.cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Speichern
+              {t("form.save")}
             </Button>
           </div>
         </form>

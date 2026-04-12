@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   format,
   startOfMonth,
@@ -48,17 +49,18 @@ interface ContractEvent {
   daysRemaining: number;
 }
 
-const typeConfig: Record<string, { label: string; color: string }> = {
-  LEASE: { label: "Pacht", color: "bg-blue-500" },
-  SERVICE: { label: "Service", color: "bg-purple-500" },
-  INSURANCE: { label: "Versicherung", color: "bg-green-500" },
-  GRID_CONNECTION: { label: "Netzanschluss", color: "bg-orange-500" },
-  MARKETING: { label: "Vermarktung", color: "bg-pink-500" },
-  OTHER: { label: "Sonstiges", color: "bg-gray-500" },
+const typeColors: Record<string, string> = {
+  LEASE: "bg-blue-500",
+  SERVICE: "bg-purple-500",
+  INSURANCE: "bg-green-500",
+  GRID_CONNECTION: "bg-orange-500",
+  MARKETING: "bg-pink-500",
+  OTHER: "bg-gray-500",
 };
 
 export default function ContractsCalendarPage() {
   const router = useRouter();
+  const t = useTranslations("contracts");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [events, setEvents] = useState<ContractEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +75,7 @@ export default function ContractsCalendarPage() {
       setLoading(true);
       // Fetch contracts expiring within the next 365 days
       const response = await fetch("/api/contracts?limit=200");
-      if (!response.ok) throw new Error("Fehler beim Laden");
+      if (!response.ok) throw new Error("Fetch failed");
 
       const data = await response.json();
       const contractEvents: ContractEvent[] = [];
@@ -154,6 +156,17 @@ export default function ContractsCalendarPage() {
   const selectedDayEvents = selectedDate ? getEventsForDay(selectedDate) : [];
   const upcomingEvents = getUpcomingEvents();
 
+  // Access weekdays array from translations
+  const weekdays = [
+    t("calendar.weekdays.0"),
+    t("calendar.weekdays.1"),
+    t("calendar.weekdays.2"),
+    t("calendar.weekdays.3"),
+    t("calendar.weekdays.4"),
+    t("calendar.weekdays.5"),
+    t("calendar.weekdays.6"),
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -165,9 +178,9 @@ export default function ContractsCalendarPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Vertragskalender</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t("calendar.title")}</h1>
             <p className="text-muted-foreground">
-              Übersicht aller Vertragsfristen und Termine
+              {t("calendar.description")}
             </p>
           </div>
         </div>
@@ -179,12 +192,12 @@ export default function ContractsCalendarPage() {
             }}
           >
             <Download className="mr-2 h-4 w-4" />
-            Kalender exportieren
+            {t("calendar.exportCalendar")}
           </Button>
           <Button variant="outline" asChild>
             <Link href="/contracts">
               <List className="mr-2 h-4 w-4" />
-              Listenansicht
+              {t("calendar.listView")}
             </Link>
           </Button>
         </div>
@@ -210,7 +223,7 @@ export default function ContractsCalendarPage() {
                 size="sm"
                 onClick={() => setCurrentMonth(new Date())}
               >
-                Heute
+                {t("calendar.today")}
               </Button>
               <Button
                 variant="outline"
@@ -228,7 +241,7 @@ export default function ContractsCalendarPage() {
               <>
                 {/* Weekday Headers */}
                 <div className="grid grid-cols-7 gap-1 mb-2">
-                  {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((day) => (
+                  {weekdays.map((day) => (
                     <div
                       key={day}
                       className="text-center text-sm font-medium text-muted-foreground py-2"
@@ -290,11 +303,11 @@ export default function ContractsCalendarPage() {
                 <div className="flex items-center gap-6 mt-4 pt-4 border-t">
                   <div className="flex items-center gap-2 text-sm">
                     <div className="h-3 w-3 rounded bg-orange-500" />
-                    <span>Kündigungsfrist</span>
+                    <span>{t("calendar.legendNotice")}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <div className="h-3 w-3 rounded bg-red-500" />
-                    <span>Vertragsende</span>
+                    <span>{t("calendar.legendEnd")}</span>
                   </div>
                 </div>
               </>
@@ -313,13 +326,13 @@ export default function ContractsCalendarPage() {
                 </CardTitle>
                 <CardDescription>
                   {selectedDayEvents.length === 0
-                    ? "Keine Termine"
-                    : `${selectedDayEvents.length} Termin(e)`}
+                    ? t("calendar.noEvents")
+                    : t("calendar.eventsCount", { count: selectedDayEvents.length })}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {selectedDayEvents.map((event) => {
-                  const typeConf = typeConfig[event.contractType];
+                  const typeColor = typeColors[event.contractType];
                   return (
                     <div
                       key={`${event.id}-${event.eventType}`}
@@ -336,14 +349,14 @@ export default function ContractsCalendarPage() {
                           <p className="font-medium truncate">{event.title}</p>
                           <p className="text-sm text-muted-foreground">
                             {event.eventType === "notice"
-                              ? "Kündigungsfrist"
-                              : "Vertragsende"}
+                              ? t("calendar.noticeDeadline")
+                              : t("calendar.contractEnd")}
                           </p>
                           <Badge
                             variant="secondary"
-                            className={cn("mt-1", typeConf?.color, "text-white")}
+                            className={cn("mt-1", typeColor, "text-white")}
                           >
-                            {typeConf?.label || event.contractType}
+                            {t(`types.${event.contractType}`)}
                           </Badge>
                         </div>
                       </div>
@@ -359,9 +372,9 @@ export default function ContractsCalendarPage() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4" />
-                Anstehende Fristen
+                {t("calendar.upcomingDeadlines")}
               </CardTitle>
-              <CardDescription>Nächste 90 Tage</CardDescription>
+              <CardDescription>{t("calendar.next90Days")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 max-h-96 overflow-y-auto">
               {loading ? (
@@ -372,7 +385,7 @@ export default function ContractsCalendarPage() {
                 </>
               ) : upcomingEvents.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Keine anstehenden Fristen
+                  {t("calendar.noUpcoming")}
                 </p>
               ) : (
                 upcomingEvents.slice(0, 10).map((event) => {
@@ -395,8 +408,8 @@ export default function ContractsCalendarPage() {
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {event.eventType === "notice"
-                              ? "Kündigungsfrist"
-                              : "Vertragsende"}
+                              ? t("calendar.noticeDeadline")
+                              : t("calendar.contractEnd")}
                           </p>
                         </div>
                         <div className="text-right shrink-0">
@@ -410,10 +423,10 @@ export default function ContractsCalendarPage() {
                             )}
                           >
                             {event.daysRemaining === 0
-                              ? "Heute"
+                              ? t("calendar.todayLabel")
                               : event.daysRemaining === 1
-                              ? "Morgen"
-                              : `${event.daysRemaining} Tage`}
+                              ? t("calendar.tomorrowLabel")
+                              : t("calendar.daysLabel", { days: event.daysRemaining })}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {format(new Date(event.date), "dd.MM.", { locale: de })}
@@ -426,7 +439,7 @@ export default function ContractsCalendarPage() {
               )}
               {upcomingEvents.length > 10 && (
                 <p className="text-sm text-muted-foreground text-center">
-                  + {upcomingEvents.length - 10} weitere
+                  {t("calendar.moreEvents", { count: upcomingEvents.length - 10 })}
                 </p>
               )}
             </CardContent>

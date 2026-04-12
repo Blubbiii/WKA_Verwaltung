@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -95,6 +96,7 @@ interface FundsResponse {
 
 export default function FundsPage() {
   const router = useRouter();
+  const t = useTranslations("funds");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -143,18 +145,18 @@ export default function FundsPage() {
         body: JSON.stringify({ status: "ARCHIVED" }),
       });
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Fehler beim Archivieren" }));
-        throw new Error(error.error || "Fehler beim Archivieren");
+        const error = await response.json().catch(() => ({ error: t("list.archiveError") }));
+        throw new Error(error.error || t("list.archiveError"));
       }
       return response.json();
     },
     {
       onSuccess: () => {
-        toast.success("Gesellschaft wurde archiviert");
+        toast.success(t("list.archiveSuccess"));
         invalidate(["funds"]);
       },
       onError: () => {
-        toast.error("Fehler beim Archivieren");
+        toast.error(t("list.archiveError"));
       },
       onSettled: () => {
         setArchiveDialogOpen(false);
@@ -170,8 +172,8 @@ export default function FundsPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
-        throw new Error(data.error || "Fehler beim Löschen");
+        const data = await response.json().catch(() => ({ error: t("list.deleteError") }));
+        throw new Error(data.error || t("list.deleteError"));
       }
       return response.json();
     },
@@ -180,7 +182,7 @@ export default function FundsPage() {
         invalidate(["funds"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Löschen");
+        toast.error(error.message || t("list.deleteError"));
       },
     }
   );
@@ -203,7 +205,14 @@ export default function FundsPage() {
   // CSV export of selected funds
   function handleCsvExport() {
     const selected = funds.filter((f) => selectedIds.has(f.id));
-    const header = ["Name", "Rechtsform", "Status", "Gesellschafter", "Kapital", "Parks"];
+    const header = [
+      t("list.csvHeaders.name"),
+      t("list.csvHeaders.legalForm"),
+      t("list.csvHeaders.status"),
+      t("list.csvHeaders.shareholders"),
+      t("list.csvHeaders.capital"),
+      t("list.csvHeaders.parks"),
+    ];
     const rows = selected.map((f) => [
       f.name,
       f.legalForm ?? "",
@@ -217,14 +226,14 @@ export default function FundsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "beteiligungen.csv";
+    a.download = t("list.csvFilename");
     a.click();
     URL.revokeObjectURL(url);
   }
 
   // Bulk delete selected funds
   async function handleBulkDelete() {
-    if (!confirm(`${selectedCount} Beteiligungen wirklich löschen?`)) return;
+    if (!confirm(t("list.bulkDeleteConfirm", { count: selectedCount }))) return;
     let deleted = 0;
     for (const id of selectedIds) {
       try {
@@ -232,7 +241,7 @@ export default function FundsPage() {
         if (res.ok) deleted++;
       } catch { /* skip */ }
     }
-    toast.success(`${deleted} Beteiligungen gelöscht`);
+    toast.success(t("list.bulkDeleteSuccess", { count: deleted }));
     clearSelection();
     refetch();
   }
@@ -250,9 +259,9 @@ export default function FundsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-destructive">Fehler beim Laden der Gesellschaften</p>
+        <p className="text-destructive">{t("list.errorLoading")}</p>
         <Button onClick={() => refetch()} variant="outline" className="mt-4">
-          Erneut versuchen
+          {t("list.retry")}
         </Button>
       </div>
     );
@@ -262,15 +271,15 @@ export default function FundsPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Beteiligungen"
-        description="Verwalten Sie Ihre Gesellschaften und Gesellschafter"
+        title={t("list.title")}
+        description={t("list.description")}
         createHref="/funds/new"
-        createLabel="Neue Gesellschaft"
+        createLabel={t("list.newFund")}
         actions={
           <Button variant="outline" asChild>
             <Link href="/funds/onboarding">
               <Users className="mr-2 h-4 w-4" />
-              Gesellschafter-Onboarding
+              {t("list.onboarding")}
             </Link>
           </Button>
         }
@@ -280,34 +289,34 @@ export default function FundsPage() {
       <StatsCards
         columns={3}
         stats={[
-          { label: "Gesellschaften", value: totalStats.funds, icon: Building2, subtitle: `${funds.filter((f) => f.status === "ACTIVE").length} aktiv` },
-          { label: "Gesellschafter", value: totalStats.shareholders, icon: Users, subtitle: "Aktive Beteiligungen" },
-          { label: "Kapital", value: formatCurrency(totalStats.capital), icon: Wallet, subtitle: "Gesamteinlagen" },
+          { label: t("list.statsCompanies"), value: totalStats.funds, icon: Building2, subtitle: t("list.statsCompaniesActive", { count: funds.filter((f) => f.status === "ACTIVE").length }) },
+          { label: t("list.statsShareholders"), value: totalStats.shareholders, icon: Users, subtitle: t("list.statsShareholdersSubtitle") },
+          { label: t("list.statsCapital"), value: formatCurrency(totalStats.capital), icon: Wallet, subtitle: t("list.statsCapitalSubtitle") },
         ]}
       />
 
       {/* Filters & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Gesellschaften</CardTitle>
-          <CardDescription>Übersicht aller Gesellschaften und Beteiligungsgesellschaften</CardDescription>
+          <CardTitle>{t("list.tableTitle")}</CardTitle>
+          <CardDescription>{t("list.tableDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <SearchFilter
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Suchen nach Name..."
+            searchPlaceholder={t("list.searchPlaceholder")}
             filters={[
               {
                 value: statusFilter,
                 onChange: setStatusFilter,
-                placeholder: "Status",
+                placeholder: t("list.filterStatus"),
                 icon: <Filter className="mr-2 h-4 w-4" />,
                 options: [
-                  { value: "all", label: "Alle Status" },
-                  { value: "ACTIVE", label: "Aktiv" },
-                  { value: "INACTIVE", label: "Inaktiv" },
-                  { value: "ARCHIVED", label: "Archiviert" },
+                  { value: "all", label: t("list.filterAll") },
+                  { value: "ACTIVE", label: t("status.active") },
+                  { value: "INACTIVE", label: t("status.inactive") },
+                  { value: "ARCHIVED", label: t("status.archived") },
                 ],
               },
             ]}
@@ -322,16 +331,16 @@ export default function FundsPage() {
                     <Checkbox
                       checked={isAllSelected}
                       onCheckedChange={toggleAll}
-                      aria-label="Alle auswählen"
+                      aria-label={t("list.selectAll")}
                       {...(isSomeSelected ? { "data-state": "indeterminate" } : {})}
                     />
                   </TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Parks</TableHead>
-                  <TableHead className="text-center">Gesellschafter</TableHead>
-                  <TableHead className="text-right">Kapital</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Notizen</TableHead>
+                  <TableHead>{t("list.colName")}</TableHead>
+                  <TableHead>{t("list.colParks")}</TableHead>
+                  <TableHead className="text-center">{t("list.colShareholders")}</TableHead>
+                  <TableHead className="text-right">{t("list.colCapital")}</TableHead>
+                  <TableHead>{t("list.colStatus")}</TableHead>
+                  <TableHead>{t("list.colNotes")}</TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -355,7 +364,7 @@ export default function FundsPage() {
                       colSpan={8}
                       className="h-32 text-center text-muted-foreground"
                     >
-                      Keine Gesellschaften gefunden
+                      {t("list.noResults")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -371,7 +380,7 @@ export default function FundsPage() {
                         <Checkbox
                           checked={selectedIds.has(fund.id)}
                           onCheckedChange={() => toggleItem(fund.id)}
-                          aria-label={`${fund.name} auswählen`}
+                          aria-label={t("list.selectItem", { name: fund.name })}
                         />
                       </TableCell>
                       <TableCell>
@@ -434,7 +443,7 @@ export default function FundsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label="Details anzeigen"
+                            aria-label={t("list.showDetails")}
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/funds/${fund.id}`);
@@ -446,7 +455,7 @@ export default function FundsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label="Bearbeiten"
+                            aria-label={t("list.edit")}
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/funds/${fund.id}/edit`);
@@ -459,7 +468,7 @@ export default function FundsPage() {
                               asChild
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Weitere Aktionen">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("list.moreActions")}>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -471,7 +480,7 @@ export default function FundsPage() {
                                 }}
                               >
                                 <Archive className="mr-2 h-4 w-4" />
-                                Archivieren
+                                {t("list.archive")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => {
@@ -481,7 +490,7 @@ export default function FundsPage() {
                                 className="text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Löschen
+                                {t("list.delete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -498,9 +507,11 @@ export default function FundsPage() {
           {pagination.totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Zeige {(pagination.page - 1) * pagination.limit + 1} bis{" "}
-                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-                von {pagination.total} Gesellschaften
+                {t("list.pagination", {
+                  from: (pagination.page - 1) * pagination.limit + 1,
+                  to: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: pagination.total,
+                })}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -509,7 +520,7 @@ export default function FundsPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Zurück
+                  {t("list.prev")}
                 </Button>
                 <Button
                   variant="outline"
@@ -517,7 +528,7 @@ export default function FundsPage() {
                   disabled={page >= pagination.totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  Weiter
+                  {t("list.next")}
                 </Button>
               </div>
             </div>
@@ -530,8 +541,8 @@ export default function FundsPage() {
         open={archiveDialogOpen}
         onOpenChange={setArchiveDialogOpen}
         onConfirm={handleConfirmArchive}
-        title="Archivieren bestätigen"
-        description="Möchten Sie diese Gesellschaft wirklich archivieren?"
+        title={t("list.archiveTitle")}
+        description={t("list.archiveDescription")}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -544,7 +555,7 @@ export default function FundsPage() {
             setFundToDelete(null);
           }
         }}
-        title="Gesellschaft löschen"
+        title={t("list.deleteTitle")}
         itemName={fundToDelete?.name}
       />
 
@@ -554,12 +565,12 @@ export default function FundsPage() {
         onClearSelection={clearSelection}
         actions={[
           {
-            label: "CSV Export",
+            label: t("list.csvExport"),
             icon: <Download className="h-4 w-4" />,
             onClick: handleCsvExport,
           },
           {
-            label: "Löschen",
+            label: t("list.batchDelete"),
             icon: <Trash2 className="h-4 w-4" />,
             onClick: handleBulkDelete,
             variant: "destructive",
