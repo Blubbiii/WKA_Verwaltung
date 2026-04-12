@@ -16,6 +16,7 @@ import {
   FileText,
   Tag,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { toast } from "sonner";
@@ -112,6 +113,8 @@ interface Metadata {
 // =============================================================================
 
 export default function PaperlessDocumentsPage() {
+  const t = useTranslations("documents.paperless");
+  const tCommon = useTranslations("common");
   const { flags, loading: flagsLoading } = useFeatureFlags();
 
   // State
@@ -177,8 +180,8 @@ export default function PaperlessDocumentsPage() {
 
         const res = await fetch(`/api/integrations/paperless/documents?${params}`);
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: "Fehler" }));
-          throw new Error(err.error || "Fehler beim Laden");
+          const err = await res.json().catch(() => ({ error: t("errorLoading") }));
+          throw new Error(err.error || t("errorLoading"));
         }
 
         const data: PaperlessDocumentList = await res.json();
@@ -186,7 +189,7 @@ export default function PaperlessDocumentsPage() {
         setTotalCount(data.count);
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Fehler beim Laden der Paperless-Dokumente"
+          error instanceof Error ? error.message : t("errorLoading")
         );
         setDocuments([]);
         setTotalCount(0);
@@ -267,10 +270,9 @@ export default function PaperlessDocumentsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <FileArchive className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Paperless-ngx nicht aktiviert</h2>
+        <h2 className="text-xl font-semibold mb-2">{t("notActivatedTitle")}</h2>
         <p className="text-muted-foreground max-w-md">
-          Die Paperless-ngx Integration ist nicht aktiviert. Aktivieren Sie das Feature in den
-          System-Einstellungen unter Admin &rarr; System-Konfiguration &rarr; Features.
+          {t("notActivatedDescription")}
         </p>
       </div>
     );
@@ -287,8 +289,8 @@ export default function PaperlessDocumentsPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Paperless-ngx Dokumente"
-        description="Dokumente aus Paperless-ngx durchsuchen und anzeigen"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button
             variant="outline"
@@ -301,7 +303,7 @@ export default function PaperlessDocumentsPage() {
             }}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
-            Aktualisieren
+            {t("refresh")}
           </Button>
         }
       />
@@ -311,10 +313,10 @@ export default function PaperlessDocumentsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileArchive className="h-5 w-5" />
-            Dokumente durchsuchen
+            {t("searchTitle")}
           </CardTitle>
           <CardDescription>
-            {totalCount} Dokument{totalCount !== 1 ? "e" : ""} in Paperless-ngx
+            {t("documentCount", { count: totalCount })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -323,7 +325,7 @@ export default function PaperlessDocumentsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Volltextsuche in Dokumenten..."
+                placeholder={t("searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8 pr-8"
@@ -342,10 +344,10 @@ export default function PaperlessDocumentsPage() {
             <Select value={tagFilter} onValueChange={setTagFilter}>
               <SelectTrigger className="w-[180px]">
                 <Tag className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Tags" />
+                <SelectValue placeholder={t("tableTags")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Tags</SelectItem>
+                <SelectItem value="all">{t("allTags")}</SelectItem>
                 {metadata?.tags.map((tag) => (
                   <SelectItem key={tag.id} value={tag.id.toString()}>
                     {tag.name} ({tag.document_count})
@@ -358,10 +360,10 @@ export default function PaperlessDocumentsPage() {
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-[180px]">
                 <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Dokumenttyp" />
+                <SelectValue placeholder={t("tableDocType")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Typen</SelectItem>
+                <SelectItem value="all">{t("allTypes")}</SelectItem>
                 {metadata?.documentTypes.map((dt) => (
                   <SelectItem key={dt.id} value={dt.id.toString()}>
                     {dt.name} ({dt.document_count})
@@ -374,10 +376,10 @@ export default function PaperlessDocumentsPage() {
             <Select value={correspondentFilter} onValueChange={setCorrespondentFilter}>
               <SelectTrigger className="w-[200px]">
                 <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Korrespondent" />
+                <SelectValue placeholder={t("tableCorrespondent")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Korrespondenten</SelectItem>
+                <SelectItem value="all">{t("allCorrespondents")}</SelectItem>
                 {metadata?.correspondents.map((c) => (
                   <SelectItem key={c.id} value={c.id.toString()}>
                     {c.name} ({c.document_count})
@@ -392,11 +394,11 @@ export default function PaperlessDocumentsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Titel</TableHead>
-                  <TableHead>Dokumenttyp</TableHead>
-                  <TableHead>Korrespondent</TableHead>
-                  <TableHead>Tags</TableHead>
-                  <TableHead>Erstellt</TableHead>
+                  <TableHead>{t("tableTitle")}</TableHead>
+                  <TableHead>{t("tableDocType")}</TableHead>
+                  <TableHead>{t("tableCorrespondent")}</TableHead>
+                  <TableHead>{t("tableTags")}</TableHead>
+                  <TableHead>{t("tableCreated")}</TableHead>
                   <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -414,7 +416,7 @@ export default function PaperlessDocumentsPage() {
                 ) : documents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                      Keine Dokumente gefunden
+                      {t("noDocuments")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -465,7 +467,7 @@ export default function PaperlessDocumentsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            title="Vorschau"
+                            title={t("preview")}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedDoc(doc);
@@ -478,7 +480,7 @@ export default function PaperlessDocumentsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            title="Herunterladen"
+                            title={t("download")}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDownload(doc.id, doc.original_file_name);
@@ -499,8 +501,11 @@ export default function PaperlessDocumentsPage() {
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Zeige {(page - 1) * pageSize + 1} bis{" "}
-                {Math.min(page * pageSize, totalCount)} von {totalCount} Dokumenten
+                {t("pagination", {
+                  from: (page - 1) * pageSize + 1,
+                  to: Math.min(page * pageSize, totalCount),
+                  total: totalCount,
+                })}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -509,7 +514,7 @@ export default function PaperlessDocumentsPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Zurück
+                  {tCommon("back")}
                 </Button>
                 <Button
                   variant="outline"
@@ -517,7 +522,7 @@ export default function PaperlessDocumentsPage() {
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  Weiter
+                  {tCommon("next")}
                 </Button>
               </div>
             </div>
@@ -541,7 +546,7 @@ export default function PaperlessDocumentsPage() {
               <div className="space-y-6 mt-6">
                 {/* Preview */}
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Vorschau</h4>
+                  <h4 className="text-sm font-medium mb-2">{t("previewTitle")}</h4>
                   <div className="border rounded-lg overflow-hidden bg-muted min-h-[200px] flex items-center justify-center">
                     {previewLoading ? (
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -549,11 +554,11 @@ export default function PaperlessDocumentsPage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={previewUrl}
-                        alt={`Vorschau: ${selectedDoc.title}`}
+                        alt={t("previewAlt", { title: selectedDoc.title })}
                         className="max-w-full h-auto"
                       />
                     ) : (
-                      <p className="text-sm text-muted-foreground">Keine Vorschau verfügbar</p>
+                      <p className="text-sm text-muted-foreground">{t("noPreview")}</p>
                     )}
                   </div>
                 </div>
@@ -563,15 +568,15 @@ export default function PaperlessDocumentsPage() {
                 {/* Metadata */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-muted-foreground">Dokumenttyp</p>
+                    <p className="text-muted-foreground">{t("metaDocType")}</p>
                     <p className="font-medium">{getTypeName(selectedDoc.document_type)}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Korrespondent</p>
+                    <p className="text-muted-foreground">{t("metaCorrespondent")}</p>
                     <p className="font-medium">{getCorrespondentName(selectedDoc.correspondent)}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Erstellt</p>
+                    <p className="text-muted-foreground">{t("metaCreated")}</p>
                     <p className="font-medium">
                       {selectedDoc.created_date
                         ? format(new Date(selectedDoc.created_date), "dd.MM.yyyy", { locale: de })
@@ -579,14 +584,14 @@ export default function PaperlessDocumentsPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Hinzugefügt</p>
+                    <p className="text-muted-foreground">{t("metaAdded")}</p>
                     <p className="font-medium">
                       {format(new Date(selectedDoc.added), "dd.MM.yyyy HH:mm", { locale: de })}
                     </p>
                   </div>
                   {selectedDoc.archive_serial_number && (
                     <div>
-                      <p className="text-muted-foreground">ASN</p>
+                      <p className="text-muted-foreground">{t("metaASN")}</p>
                       <p className="font-medium">#{selectedDoc.archive_serial_number}</p>
                     </div>
                   )}
@@ -595,7 +600,7 @@ export default function PaperlessDocumentsPage() {
                 {/* Tags */}
                 {selectedDoc.tags.length > 0 && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">Tags</p>
+                    <p className="text-sm text-muted-foreground mb-2">{t("tableTags")}</p>
                     <div className="flex flex-wrap gap-1">
                       {selectedDoc.tags.map((tagId) => (
                         <Badge key={tagId} variant="secondary">
@@ -609,7 +614,7 @@ export default function PaperlessDocumentsPage() {
                 {/* Content snippet */}
                 {selectedDoc.content && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">Inhalt (Auszug)</p>
+                    <p className="text-sm text-muted-foreground mb-2">{t("contentExcerpt")}</p>
                     <p className="text-sm bg-muted p-3 rounded-md max-h-[200px] overflow-y-auto whitespace-pre-wrap">
                       {selectedDoc.content.slice(0, 1000)}
                       {selectedDoc.content.length > 1000 && "..."}
@@ -625,7 +630,7 @@ export default function PaperlessDocumentsPage() {
                     onClick={() => handleDownload(selectedDoc.id, selectedDoc.original_file_name)}
                   >
                     <Download className="mr-2 h-4 w-4" />
-                    Herunterladen
+                    {t("download")}
                   </Button>
                   <Button
                     variant="outline"
@@ -638,7 +643,7 @@ export default function PaperlessDocumentsPage() {
                     }}
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    In Paperless öffnen
+                    {t("openInPaperless")}
                   </Button>
                 </div>
               </div>

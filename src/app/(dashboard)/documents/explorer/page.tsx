@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { FolderTree as FolderTreeIcon, Download, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useDocumentExplorer } from "@/hooks/useDocumentExplorer";
@@ -14,6 +15,7 @@ import { TaxExportDialog } from "@/components/documents/explorer/tax-export-dial
 import type { ExplorerFile } from "@/types/document-explorer";
 
 export default function DocumentExplorerPage() {
+  const t = useTranslations("documents.explorer");
   const {
     tree,
     unassigned,
@@ -62,7 +64,7 @@ export default function DocumentExplorerPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Download fehlgeschlagen");
+        throw new Error(err.error || t("downloadFailed"));
       }
 
       const blob = await res.blob();
@@ -72,11 +74,11 @@ export default function DocumentExplorerPage() {
       a.download = `dokumente-${new Date().toISOString().split("T")[0]}.zip`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Download gestartet");
+      toast.success(t("downloadStarted"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Download fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("downloadFailed"));
     }
-  }, [selectedIds, files]);
+  }, [selectedIds, files, t]);
 
   const handleUploadComplete = useCallback(() => {
     refreshTree();
@@ -96,19 +98,19 @@ export default function DocumentExplorerPage() {
           <Link href="/documents">
             <Button variant="ghost" size="sm" className="gap-1.5">
               <ArrowLeft className="h-4 w-4" />
-              Zurück
+              {t("back")}
             </Button>
           </Link>
           <div className="flex items-center gap-2">
             <FolderTreeIcon className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-semibold">Dokumenten-Explorer</h1>
+            <h1 className="text-lg font-semibold">{t("title")}</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {selectedIds.size > 0 && (
             <Button variant="outline" size="sm" className="gap-1.5" onClick={handleBulkDownload}>
               <Download className="h-3.5 w-3.5" />
-              {selectedIds.size} als ZIP
+              {t("downloadAsZip", { count: selectedIds.size })}
             </Button>
           )}
           <TaxExportDialog parks={tree} />
@@ -120,7 +122,7 @@ export default function DocumentExplorerPage() {
         {/* Left: Folder tree */}
         <div className="border rounded-lg bg-background overflow-y-auto">
           <div className="px-3 py-2 border-b">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ordner</h2>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("folders")}</h2>
           </div>
           <FolderTree
             tree={tree}
@@ -162,8 +164,8 @@ export default function DocumentExplorerPage() {
             ) : (
               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <FolderTreeIcon className="h-12 w-12 mb-3 opacity-30" />
-                <p className="text-sm font-medium">Ordner auswählen</p>
-                <p className="text-xs mt-1">Wählen Sie links einen Ordner um Dateien anzuzeigen</p>
+                <p className="text-sm font-medium">{t("selectFolder")}</p>
+                <p className="text-xs mt-1">{t("selectFolderHint")}</p>
               </div>
             )}
           </div>

@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   SendHorizontal,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
@@ -110,22 +111,22 @@ interface Document {
   highlights?: SearchHighlight[];
 }
 
-const categoryConfig: Record<string, { label: string; color: string }> = {
-  CONTRACT: { label: "Vertrag", color: "bg-blue-100 text-blue-800" },
-  PROTOCOL: { label: "Protokoll", color: "bg-purple-100 text-purple-800" },
-  REPORT: { label: "Bericht", color: "bg-green-100 text-green-800" },
-  INVOICE: { label: "Rechnung", color: "bg-orange-100 text-orange-800" },
-  PERMIT: { label: "Genehmigung", color: "bg-red-100 text-red-800" },
-  CORRESPONDENCE: { label: "Korrespondenz", color: "bg-yellow-100 text-yellow-800" },
-  OTHER: { label: "Sonstiges", color: "bg-gray-100 text-gray-800" },
+const categoryColors: Record<string, string> = {
+  CONTRACT: "bg-blue-100 text-blue-800",
+  PROTOCOL: "bg-purple-100 text-purple-800",
+  REPORT: "bg-green-100 text-green-800",
+  INVOICE: "bg-orange-100 text-orange-800",
+  PERMIT: "bg-red-100 text-red-800",
+  CORRESPONDENCE: "bg-yellow-100 text-yellow-800",
+  OTHER: "bg-gray-100 text-gray-800",
 };
 
-const approvalStatusConfig: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: "Entwurf", color: "bg-gray-100 text-gray-800" },
-  PENDING_REVIEW: { label: "In Prüfung", color: "bg-amber-100 text-amber-800" },
-  APPROVED: { label: "Genehmigt", color: "bg-blue-100 text-blue-800" },
-  PUBLISHED: { label: "Veroeffentlicht", color: "bg-green-100 text-green-800" },
-  REJECTED: { label: "Abgelehnt", color: "bg-red-100 text-red-800" },
+const approvalStatusColors: Record<string, string> = {
+  DRAFT: "bg-gray-100 text-gray-800",
+  PENDING_REVIEW: "bg-amber-100 text-amber-800",
+  APPROVED: "bg-blue-100 text-blue-800",
+  PUBLISHED: "bg-green-100 text-green-800",
+  REJECTED: "bg-red-100 text-red-800",
 };
 
 function getFileIcon(mimeType: string | null) {
@@ -159,6 +160,10 @@ interface DocumentsResponse {
 }
 
 export default function DocumentsPage() {
+  const t = useTranslations("documents.list");
+  const tCat = useTranslations("documents.categories");
+  const tStatus = useTranslations("documents.approvalStatuses");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -265,8 +270,8 @@ export default function DocumentsPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
-        throw new Error(data.error || "Fehler beim Löschen des Dokuments");
+        const data = await response.json().catch(() => ({ error: t("deleteError") }));
+        throw new Error(data.error || t("deleteError"));
       }
       return response.json();
     },
@@ -276,7 +281,7 @@ export default function DocumentsPage() {
         invalidate(["documents-search"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Löschen des Dokuments");
+        toast.error(error.message || t("deleteError"));
       },
     }
   );
@@ -317,15 +322,15 @@ export default function DocumentsPage() {
     invalidate(["documents-search"]);
 
     if (failCount === 0) {
-      toast.success(`${successCount} Dokument(e) erfolgreich gelöscht`);
+      toast.success(t("batchDeleteSuccess", { count: successCount }));
     } else {
-      toast.warning(`${successCount} gelöscht, ${failCount} fehlgeschlagen`);
+      toast.warning(t("batchDeletePartial", { success: successCount, failed: failCount }));
     }
   }
 
   // Batch: download selected as ZIP (placeholder)
   function handleBatchDownload() {
-    toast.info("ZIP-Download in Entwicklung");
+    toast.info(t("zipDownloadDev"));
   }
 
   // Batch: change category for selected
@@ -363,9 +368,9 @@ export default function DocumentsPage() {
     invalidate(["documents-search"]);
 
     if (failCount === 0) {
-      toast.success(`${successCount} Dokument(e) aktualisiert`);
+      toast.success(t("batchUpdateSuccess", { count: successCount }));
     } else {
-      toast.warning(`${successCount} aktualisiert, ${failCount} fehlgeschlagen`);
+      toast.warning(t("batchUpdatePartial", { success: successCount, failed: failCount }));
     }
   }
 
@@ -406,15 +411,15 @@ export default function DocumentsPage() {
     invalidate(["documents-search"]);
 
     const actionLabels = {
-      submit: "zur Prüfung eingereicht",
-      approve: "genehmigt",
-      publish: "veroeffentlicht",
+      submit: t("batchSubmitted"),
+      approve: t("batchApproved"),
+      publish: t("batchPublished"),
     };
 
     if (failCount === 0) {
-      toast.success(`${successCount} Dokument(e) ${actionLabels[action]}`);
+      toast.success(t("batchApproveSuccess", { count: successCount, action: actionLabels[action] }));
     } else {
-      toast.warning(`${successCount} ${actionLabels[action]}, ${failCount} fehlgeschlagen`);
+      toast.warning(t("batchApprovePartial", { success: successCount, action: actionLabels[action], failed: failCount }));
     }
   }
 
@@ -423,9 +428,9 @@ export default function DocumentsPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-destructive">Fehler beim Laden der Dokumente</p>
+        <p className="text-destructive">{t("errorLoading")}</p>
         <Button onClick={() => refetchList()} variant="outline" className="mt-4">
-          Erneut versuchen
+          {t("retry")}
         </Button>
       </div>
     );
@@ -435,20 +440,20 @@ export default function DocumentsPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Dokumente"
-        description="Verwalten Sie alle Dokumente mit Versionierung"
+        title={t("title")}
+        description={t("description")}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" asChild>
               <Link href="/documents/explorer">
                 <FolderEdit className="mr-2 h-4 w-4" />
-                Explorer
+                {t("explorer")}
               </Link>
             </Button>
             <Button asChild>
               <Link href="/documents/upload">
                 <Upload className="mr-2 h-4 w-4" />
-                Hochladen
+                {t("upload")}
               </Link>
             </Button>
           </div>
@@ -465,10 +470,10 @@ export default function DocumentsPage() {
         >
           <CardContent className="pt-4 pb-4">
             <div className="text-2xl font-bold">{totalDocs}</div>
-            <p className="text-xs text-muted-foreground">Alle</p>
+            <p className="text-xs text-muted-foreground">{t("all")}</p>
           </CardContent>
         </Card>
-        {Object.entries(categoryConfig).map(([key, config]) => (
+        {Object.keys(categoryColors).map((key) => (
           <Card
             key={key}
             className={`cursor-pointer transition-colors ${
@@ -478,7 +483,7 @@ export default function DocumentsPage() {
           >
             <CardContent className="pt-4 pb-4">
               <div className="text-2xl font-bold">{categoryCounts[key] || 0}</div>
-              <p className="text-xs text-muted-foreground">{config.label}</p>
+              <p className="text-xs text-muted-foreground">{tCat(key)}</p>
             </CardContent>
           </Card>
         ))}
@@ -487,15 +492,15 @@ export default function DocumentsPage() {
       {/* Search & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Dokumentenübersicht</CardTitle>
-          <CardDescription>Alle Dokumente mit Versionsverlauf</CardDescription>
+          <CardTitle>{t("overview")}</CardTitle>
+          <CardDescription>{t("overviewDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Suchen nach Titel, Dateiname, Beschreibung..."
+                placeholder={t("searchPlaceholder")}
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="pl-8 pr-20"
@@ -504,7 +509,7 @@ export default function DocumentsPage() {
                 <button
                   onClick={clearSearch}
                   className="absolute right-12 top-2.5 text-muted-foreground hover:text-foreground"
-                  title="Suche löschen"
+                  title={t("clearSearch")}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -512,7 +517,7 @@ export default function DocumentsPage() {
               <button
                 onClick={() => setSearchDialogOpen(true)}
                 className="absolute right-2.5 top-2 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded border"
-                title="Schnellsuche (Ctrl+K)"
+                title={t("quickSearch")}
               >
                 <span className="flex items-center gap-1">
                   <Command className="h-3 w-3" />K
@@ -522,13 +527,13 @@ export default function DocumentsPage() {
             <Select value={categoryFilter} onValueChange={(val) => { setCategoryFilter(val); setPage(1); }}>
               <SelectTrigger className="w-[180px]">
                 <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Kategorie" />
+                <SelectValue placeholder={t("tableCategory")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Kategorien</SelectItem>
-                {Object.entries(categoryConfig).map(([key, config]) => (
+                <SelectItem value="all">{t("allCategories")}</SelectItem>
+                {Object.keys(categoryColors).map((key) => (
                   <SelectItem key={key} value={key}>
-                    {config.label}
+                    {tCat(key)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -536,14 +541,14 @@ export default function DocumentsPage() {
             <Select value={approvalStatusFilter} onValueChange={(val) => { setApprovalStatusFilter(val); setPage(1); }}>
               <SelectTrigger className="w-[200px]">
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t("tableStatus")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Status</SelectItem>
-                {Object.entries(approvalStatusConfig).map(([key, config]) => (
+                <SelectItem value="all">{t("allStatuses")}</SelectItem>
+                {Object.keys(approvalStatusColors).map((key) => (
                   <SelectItem key={key} value={key}>
                     <span className="flex items-center gap-2">
-                      {config.label}
+                      {tStatus(key)}
                       {approvalStatusCounts[key] ? (
                         <span className="text-xs text-muted-foreground">
                           ({approvalStatusCounts[key]})
@@ -565,16 +570,18 @@ export default function DocumentsPage() {
                 <Search className="h-4 w-4" />
               )}
               <span>
-                {searchResultCount} {searchResultCount === 1 ? "Ergebnis" : "Ergebnisse"} für &quot;{debouncedSearch}&quot;
+                {searchResultCount === 1
+                  ? t("resultsSingular", { count: searchResultCount, query: debouncedSearch })
+                  : t("resultsPlural", { count: searchResultCount, query: debouncedSearch })}
                 {categoryFilter !== "all" && (
-                  <span> in {categoryConfig[categoryFilter]?.label || categoryFilter}</span>
+                  <span> {t("resultsInCategory", { category: tCat(categoryFilter) })}</span>
                 )}
               </span>
               <button
                 onClick={clearSearch}
                 className="text-primary hover:underline ml-2"
               >
-                Suche löschen
+                {t("clearSearch")}
               </button>
             </div>
           )}
@@ -592,17 +599,17 @@ export default function DocumentsPage() {
                         }
                       }}
                       onCheckedChange={toggleAll}
-                      aria-label="Alle auswaehlen"
+                      aria-label={t("selectAll")}
                       onClick={(e) => e.stopPropagation()}
                     />
                   </TableHead>
-                  <TableHead>Dokument</TableHead>
-                  <TableHead>Kategorie</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Zuordnung</TableHead>
-                  <TableHead>Version</TableHead>
-                  <TableHead>Größe</TableHead>
-                  <TableHead>Hochgeladen</TableHead>
+                  <TableHead>{t("tableDocument")}</TableHead>
+                  <TableHead>{t("tableCategory")}</TableHead>
+                  <TableHead>{t("tableStatus")}</TableHead>
+                  <TableHead>{t("tableAssignment")}</TableHead>
+                  <TableHead>{t("tableVersion")}</TableHead>
+                  <TableHead>{t("tableSize")}</TableHead>
+                  <TableHead>{t("tableUploaded")}</TableHead>
                   <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -620,13 +627,12 @@ export default function DocumentsPage() {
                 ) : filteredDocuments.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
-                      Keine Dokumente gefunden
+                      {t("noDocuments")}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredDocuments.map((doc) => {
                     const FileIcon = getFileIcon(doc.mimeType);
-                    const catConfig = categoryConfig[doc.category];
 
                     return (
                       <TableRow
@@ -641,7 +647,7 @@ export default function DocumentsPage() {
                             checked={selectedIds.has(doc.id)}
                             onCheckedChange={() => toggleItem(doc.id)}
                             onClick={(e) => e.stopPropagation()}
-                            aria-label={`${doc.title} auswaehlen`}
+                            aria-label={t("selectItem", { title: doc.title })}
                           />
                         </TableCell>
                         <TableCell>
@@ -656,21 +662,14 @@ export default function DocumentsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className={catConfig?.color}>
-                            {catConfig?.label || doc.category}
+                          <Badge variant="secondary" className={categoryColors[doc.category]}>
+                            {tCat(doc.category)}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {(() => {
-                            const statusConfig = approvalStatusConfig[doc.approvalStatus];
-                            return statusConfig ? (
-                              <Badge variant="secondary" className={statusConfig.color}>
-                                {statusConfig.label}
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary">{doc.approvalStatus}</Badge>
-                            );
-                          })()}
+                          <Badge variant="secondary" className={approvalStatusColors[doc.approvalStatus]}>
+                            {tStatus(doc.approvalStatus)}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           {doc.park && (
@@ -720,8 +719,8 @@ export default function DocumentsPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              aria-label="Vorschau"
-                              title="Vorschau"
+                              aria-label={t("preview")}
+                              title={t("preview")}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setPreviewDocument(doc);
@@ -732,7 +731,7 @@ export default function DocumentsPage() {
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Weitere Aktionen">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("moreActions")}>
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -744,7 +743,7 @@ export default function DocumentsPage() {
                                   }}
                                 >
                                   <FileText className="mr-2 h-4 w-4" />
-                                  Anzeigen
+                                  {t("view")}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={(e) => {
@@ -753,7 +752,7 @@ export default function DocumentsPage() {
                                   }}
                                 >
                                   <Download className="mr-2 h-4 w-4" />
-                                  Herunterladen
+                                  {t("download")}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -765,7 +764,7 @@ export default function DocumentsPage() {
                                   className="text-red-600 focus:text-red-600 focus:bg-red-50"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Löschen
+                                  {t("deleteTitle")}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -783,9 +782,11 @@ export default function DocumentsPage() {
           {pagination.totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Zeige {(pagination.page - 1) * pagination.limit + 1} bis{" "}
-                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-                von {pagination.total} Dokumenten
+                {t("pagination", {
+                  from: (pagination.page - 1) * pagination.limit + 1,
+                  to: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: pagination.total,
+                })}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -794,7 +795,7 @@ export default function DocumentsPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Zurück
+                  {t("back")}
                 </Button>
                 <Button
                   variant="outline"
@@ -802,7 +803,7 @@ export default function DocumentsPage() {
                   disabled={page >= pagination.totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  Weiter
+                  {t("next")}
                 </Button>
               </div>
             </div>
@@ -827,7 +828,7 @@ export default function DocumentsPage() {
             setDocumentToDelete(null);
           }
         }}
-        title="Dokument löschen"
+        title={t("deleteTitle")}
         itemName={documentToDelete?.title}
       />
 
@@ -841,20 +842,20 @@ export default function DocumentsPage() {
       <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Kategorie aendern</DialogTitle>
+            <DialogTitle>{t("changeCategoryTitle")}</DialogTitle>
             <DialogDescription>
-              Waehlen Sie die neue Kategorie für die {selectedCount} ausgewaehlten Dokumente.
+              {t("changeCategoryDescription", { count: selectedCount })}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Select value={selectedNewCategory} onValueChange={setSelectedNewCategory}>
               <SelectTrigger>
-                <SelectValue placeholder="Kategorie auswaehlen..." />
+                <SelectValue placeholder={t("selectCategory")} />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(categoryConfig).map(([key, config]) => (
+                {Object.keys(categoryColors).map((key) => (
                   <SelectItem key={key} value={key}>
-                    {config.label}
+                    {tCat(key)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -868,7 +869,7 @@ export default function DocumentsPage() {
                 setSelectedNewCategory("");
               }}
             >
-              Abbrechen
+              {tCommon("cancel")}
             </Button>
             <Button
               disabled={!selectedNewCategory || isBatchProcessing}
@@ -879,7 +880,7 @@ export default function DocumentsPage() {
               }}
             >
               {isBatchProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Aendern
+              {t("change")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -891,31 +892,31 @@ export default function DocumentsPage() {
         onClearSelection={clearSelection}
         actions={[
           {
-            label: "Zur Prüfung einreichen",
+            label: t("submitForReview"),
             icon: <SendHorizontal className="h-4 w-4" />,
             onClick: () => handleBatchApprove("submit"),
             disabled: isBatchProcessing,
           },
           {
-            label: "Genehmigen",
+            label: t("approve"),
             icon: <CheckCircle2 className="h-4 w-4" />,
             onClick: () => handleBatchApprove("approve"),
             disabled: isBatchProcessing,
           },
           {
-            label: "Herunterladen",
+            label: t("download"),
             icon: <Download className="h-4 w-4" />,
             onClick: handleBatchDownload,
             disabled: isBatchProcessing,
           },
           {
-            label: "Kategorie aendern",
+            label: t("changeCategory"),
             icon: <FolderEdit className="h-4 w-4" />,
             onClick: () => setIsCategoryDialogOpen(true),
             disabled: isBatchProcessing,
           },
           {
-            label: "Löschen",
+            label: t("deleteTitle"),
             icon: isBatchProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />,
             onClick: handleBatchDelete,
             variant: "destructive",

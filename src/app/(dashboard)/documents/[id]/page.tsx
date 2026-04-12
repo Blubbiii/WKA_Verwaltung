@@ -26,6 +26,7 @@ import {
   Loader2,
   RotateCcw,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { DocumentPreviewDialog } from "@/components/documents";
 import { PaperlessSyncButton } from "@/components/documents/paperless-sync-button";
 import { toast } from "sonner";
@@ -102,22 +103,22 @@ interface DocumentDetail {
   updatedAt: string;
 }
 
-const categoryConfig: Record<string, { label: string; color: string }> = {
-  CONTRACT: { label: "Vertrag", color: "bg-blue-100 text-blue-800" },
-  PROTOCOL: { label: "Protokoll", color: "bg-purple-100 text-purple-800" },
-  REPORT: { label: "Bericht", color: "bg-green-100 text-green-800" },
-  INVOICE: { label: "Rechnung", color: "bg-orange-100 text-orange-800" },
-  PERMIT: { label: "Genehmigung", color: "bg-red-100 text-red-800" },
-  CORRESPONDENCE: { label: "Korrespondenz", color: "bg-yellow-100 text-yellow-800" },
-  OTHER: { label: "Sonstiges", color: "bg-gray-100 text-gray-800" },
+const categoryColors: Record<string, string> = {
+  CONTRACT: "bg-blue-100 text-blue-800",
+  PROTOCOL: "bg-purple-100 text-purple-800",
+  REPORT: "bg-green-100 text-green-800",
+  INVOICE: "bg-orange-100 text-orange-800",
+  PERMIT: "bg-red-100 text-red-800",
+  CORRESPONDENCE: "bg-yellow-100 text-yellow-800",
+  OTHER: "bg-gray-100 text-gray-800",
 };
 
-const approvalStatusConfig: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: "Entwurf", color: "bg-gray-100 text-gray-800" },
-  PENDING_REVIEW: { label: "In Prüfung", color: "bg-amber-100 text-amber-800" },
-  APPROVED: { label: "Genehmigt", color: "bg-blue-100 text-blue-800" },
-  PUBLISHED: { label: "Veroeffentlicht", color: "bg-green-100 text-green-800" },
-  REJECTED: { label: "Abgelehnt", color: "bg-red-100 text-red-800" },
+const approvalStatusColors: Record<string, string> = {
+  DRAFT: "bg-gray-100 text-gray-800",
+  PENDING_REVIEW: "bg-amber-100 text-amber-800",
+  APPROVED: "bg-blue-100 text-blue-800",
+  PUBLISHED: "bg-green-100 text-green-800",
+  REJECTED: "bg-red-100 text-red-800",
 };
 
 function getFileIcon(mimeType: string | null) {
@@ -139,6 +140,10 @@ function formatFileSize(bytes: number | null): string {
 }
 
 export default function DocumentDetailPage() {
+  const t = useTranslations("documents.detail");
+  const tCat = useTranslations("documents.categories");
+  const tStatus = useTranslations("documents.approvalStatuses");
+  const tCommon = useTranslations("common");
   const params = useParams();
   const router = useRouter();
   const [document, setDocument] = useState<DocumentDetail | null>(null);
@@ -154,7 +159,7 @@ export default function DocumentDetailPage() {
   const fetchDocument = useCallback(async () => {
     try {
       const response = await fetch(`/api/documents/${params.id}`);
-      if (!response.ok) throw new Error("Fehler beim Laden");
+      if (!response.ok) throw new Error(t("statusChangeError"));
       const data = await response.json();
       setDocument(data);
     } catch {
@@ -203,16 +208,16 @@ export default function DocumentDetailPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Fehler bei der Statusänderung");
+        toast.error(data.error || t("statusChangeError"));
         return;
       }
 
-      toast.success(data.message || "Status erfolgreich geändert");
+      toast.success(data.message || t("statusChangeSuccess"));
 
       // Refresh document data
       await fetchDocument();
     } catch {
-      toast.error("Fehler bei der Statusänderung");
+      toast.error(t("statusChangeError"));
     } finally {
       setApprovalLoading(false);
       setRejectDialogOpen(false);
@@ -241,12 +246,12 @@ export default function DocumentDetailPage() {
         <Button variant="ghost" asChild>
           <Link href="/documents">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurück
+            {t("back")}
           </Link>
         </Button>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Dokument nicht gefunden.
+            {t("notFound")}
           </CardContent>
         </Card>
       </div>
@@ -254,8 +259,8 @@ export default function DocumentDetailPage() {
   }
 
   const FileIcon = getFileIcon(document.mimeType);
-  const catConfig = categoryConfig[document.category];
-  const statusConfig = approvalStatusConfig[document.approvalStatus];
+  const catColor = categoryColors[document.category];
+  const statusColor = approvalStatusColors[document.approvalStatus];
 
   return (
     <div className="space-y-6">
@@ -274,16 +279,16 @@ export default function DocumentDetailPage() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-bold tracking-tight">{document.title}</h1>
-                <Badge variant="secondary" className={catConfig?.color}>
-                  {catConfig?.label || document.category}
+                <Badge variant="secondary" className={catColor}>
+                  {tCat(document.category)}
                 </Badge>
-                {statusConfig && (
-                  <Badge variant="secondary" className={statusConfig.color}>
-                    {statusConfig.label}
+                {statusColor && (
+                  <Badge variant="secondary" className={statusColor}>
+                    {tStatus(document.approvalStatus)}
                   </Badge>
                 )}
                 {document.isArchived && (
-                  <Badge variant="destructive">Archiviert</Badge>
+                  <Badge variant="destructive">{t("archived")}</Badge>
                 )}
               </div>
               <p className="text-muted-foreground">{document.fileName}</p>
@@ -303,7 +308,7 @@ export default function DocumentDetailPage() {
               ) : (
                 <SendHorizontal className="mr-2 h-4 w-4" />
               )}
-              Zur Prüfung einreichen
+              {t("submitForReview")}
             </Button>
           )}
           {document.approvalStatus === "PENDING_REVIEW" && (
@@ -318,7 +323,7 @@ export default function DocumentDetailPage() {
                 ) : (
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                 )}
-                Genehmigen
+                {t("approve")}
               </Button>
               <Button
                 variant="destructive"
@@ -326,7 +331,7 @@ export default function DocumentDetailPage() {
                 disabled={approvalLoading}
               >
                 <XCircle className="mr-2 h-4 w-4" />
-                Ablehnen
+                {t("reject")}
               </Button>
             </>
           )}
@@ -341,7 +346,7 @@ export default function DocumentDetailPage() {
               ) : (
                 <Globe className="mr-2 h-4 w-4" />
               )}
-              Veroeffentlichen
+              {t("publish")}
             </Button>
           )}
           {document.approvalStatus === "REJECTED" && (
@@ -355,7 +360,7 @@ export default function DocumentDetailPage() {
               ) : (
                 <RotateCcw className="mr-2 h-4 w-4" />
               )}
-              Überarbeiten
+              {t("revise")}
             </Button>
           )}
 
@@ -368,24 +373,24 @@ export default function DocumentDetailPage() {
           />
           <Button variant="outline" onClick={() => setPreviewOpen(true)}>
             <Eye className="mr-2 h-4 w-4" />
-            Vorschau
+            {t("preview")}
           </Button>
           <Button variant="outline" asChild>
             <a href={document.fileUrl} target="_blank" rel="noopener noreferrer">
               <Download className="mr-2 h-4 w-4" />
-              Herunterladen
+              {t("download")}
             </a>
           </Button>
           <Button variant="outline" asChild>
             <Link href={`/documents/${document.id}/upload`}>
               <Upload className="mr-2 h-4 w-4" />
-              Neue Version
+              {t("newVersion")}
             </Link>
           </Button>
           {!document.isArchived && (
             <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}>
               <Archive className="mr-2 h-4 w-4" />
-              Archivieren
+              {t("archive")}
             </Button>
           )}
         </div>
@@ -398,13 +403,13 @@ export default function DocumentDetailPage() {
             <div className="flex items-start gap-3">
               <XCircle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
               <div>
-                <p className="font-medium text-red-800">Dokument abgelehnt</p>
+                <p className="font-medium text-red-800">{t("rejectedNotice")}</p>
                 <p className="text-sm text-red-700 mt-1">{document.reviewNotes}</p>
                 {document.reviewedBy && (
                   <p className="text-xs text-red-600 mt-2">
-                    Abgelehnt von {document.reviewedBy.name}
+                    {t("rejectedBy", { name: document.reviewedBy.name })}
                     {document.reviewedAt && (
-                      <> am {format(new Date(document.reviewedAt), "dd.MM.yyyy HH:mm", { locale: de })}</>
+                      <> {t("rejectedAt", { date: format(new Date(document.reviewedAt), "dd.MM.yyyy HH:mm", { locale: de }) })}</>
                     )}
                   </p>
                 )}
@@ -422,8 +427,8 @@ export default function DocumentDetailPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Beschreibung</CardTitle>
-                  <InfoTooltip text="Inhaltliche Beschreibung des Dokuments." />
+                  <CardTitle>{t("descriptionTitle")}</CardTitle>
+                  <InfoTooltip text={t("descriptionTooltip")} />
                 </div>
               </CardHeader>
               <CardContent>
@@ -437,22 +442,22 @@ export default function DocumentDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <History className="h-5 w-5" />
-                Versionshistorie
-                <InfoTooltip text="Frühere Versionen dieses Dokuments mit Änderungsdatum." />
+                {t("versionHistory")}
+                <InfoTooltip text={t("versionHistoryTooltip")} />
               </CardTitle>
               <CardDescription>
-                {document.versions.length} Version(en) verfügbar
+                {t("versionsAvailable", { count: document.versions.length })}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Version</TableHead>
-                    <TableHead>Dateiname</TableHead>
-                    <TableHead>Größe</TableHead>
-                    <TableHead>Hochgeladen</TableHead>
-                    <TableHead>Von</TableHead>
+                    <TableHead>{t("versionLabel")}</TableHead>
+                    <TableHead>{t("fileName")}</TableHead>
+                    <TableHead>{t("size")}</TableHead>
+                    <TableHead>{t("uploaded")}</TableHead>
+                    <TableHead>{t("by")}</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -463,7 +468,7 @@ export default function DocumentDetailPage() {
                         <div className="flex items-center gap-2">
                           <span className="font-mono">v{version.version}</span>
                           {version.isCurrent && (
-                            <Badge variant="secondary">Aktuell</Badge>
+                            <Badge variant="secondary">{t("current")}</Badge>
                           )}
                         </div>
                       </TableCell>
@@ -505,16 +510,16 @@ export default function DocumentDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
-                Freigabestatus
-                <InfoTooltip text="Aktueller Freigabe-/Genehmigungsstatus des Dokuments." />
+                {t("approvalTitle")}
+                <InfoTooltip text={t("approvalTooltip")} />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">Status</p>
-                {statusConfig ? (
-                  <Badge variant="secondary" className={`mt-1 ${statusConfig.color}`}>
-                    {statusConfig.label}
+                <p className="text-sm text-muted-foreground">{t("statusLabel")}</p>
+                {statusColor ? (
+                  <Badge variant="secondary" className={`mt-1 ${statusColor}`}>
+                    {tStatus(document.approvalStatus)}
                   </Badge>
                 ) : (
                   <p className="font-medium">{document.approvalStatus}</p>
@@ -522,13 +527,13 @@ export default function DocumentDetailPage() {
               </div>
               {document.reviewedBy && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Geprüft von</p>
+                  <p className="text-sm text-muted-foreground">{t("reviewedBy")}</p>
                   <p className="font-medium">{document.reviewedBy.name}</p>
                 </div>
               )}
               {document.reviewedAt && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Geprüft am</p>
+                  <p className="text-sm text-muted-foreground">{t("reviewedAt")}</p>
                   <p className="font-medium">
                     {format(new Date(document.reviewedAt), "dd.MM.yyyy HH:mm", {
                       locale: de,
@@ -538,13 +543,13 @@ export default function DocumentDetailPage() {
               )}
               {document.reviewNotes && document.approvalStatus !== "REJECTED" && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Anmerkungen</p>
+                  <p className="text-sm text-muted-foreground">{t("reviewNotes")}</p>
                   <p className="text-sm mt-1">{document.reviewNotes}</p>
                 </div>
               )}
               {document.publishedAt && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Veroeffentlicht am</p>
+                  <p className="text-sm text-muted-foreground">{t("publishedAt")}</p>
                   <p className="font-medium">
                     {format(new Date(document.publishedAt), "dd.MM.yyyy HH:mm", {
                       locale: de,
@@ -559,30 +564,30 @@ export default function DocumentDetailPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <CardTitle>Details</CardTitle>
-                <InfoTooltip text="Dateityp, Größe und Erstellungsinformationen." />
+                <CardTitle>{t("detailsTitle")}</CardTitle>
+                <InfoTooltip text={t("detailsTooltip")} />
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">Dateityp</p>
-                <p className="font-medium">{document.mimeType || "Unbekannt"}</p>
+                <p className="text-sm text-muted-foreground">{t("fileType")}</p>
+                <p className="font-medium">{document.mimeType || t("unknownFileType")}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Dateigröße</p>
+                <p className="text-sm text-muted-foreground">{t("fileSize")}</p>
                 <p className="font-medium">{formatFileSize(document.fileSizeBytes)}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Aktuelle Version</p>
+                <p className="text-sm text-muted-foreground">{t("currentVersion")}</p>
                 <p className="font-medium">v{document.version}</p>
               </div>
               <Separator />
               <div>
-                <p className="text-sm text-muted-foreground">Hochgeladen von</p>
+                <p className="text-sm text-muted-foreground">{t("uploadedBy")}</p>
                 <p className="font-medium">{document.uploadedBy?.name || "-"}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Erstellt am</p>
+                <p className="text-sm text-muted-foreground">{t("createdAt")}</p>
                 <p className="font-medium">
                   {format(new Date(document.createdAt), "dd.MM.yyyy HH:mm", {
                     locale: de,
@@ -590,7 +595,7 @@ export default function DocumentDetailPage() {
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Zuletzt geändert</p>
+                <p className="text-sm text-muted-foreground">{t("lastModified")}</p>
                 <p className="font-medium">
                   {format(new Date(document.updatedAt), "dd.MM.yyyy HH:mm", {
                     locale: de,
@@ -604,14 +609,14 @@ export default function DocumentDetailPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <CardTitle>Zuordnungen</CardTitle>
-                <InfoTooltip text="Verknüpfte Gesellschaften, Windparks oder Verträge." />
+                <CardTitle>{t("assignmentsTitle")}</CardTitle>
+                <InfoTooltip text={t("assignmentsTooltip")} />
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {document.park && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Windpark</span>
+                  <span className="text-sm text-muted-foreground">{t("windpark")}</span>
                   <Link
                     href={`/parks/${document.park.id}`}
                     className="text-sm font-medium hover:underline flex items-center gap-1"
@@ -623,7 +628,7 @@ export default function DocumentDetailPage() {
               )}
               {document.fund && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Gesellschaft</span>
+                  <span className="text-sm text-muted-foreground">{t("fund")}</span>
                   <Link
                     href={`/funds/${document.fund.id}`}
                     className="text-sm font-medium hover:underline flex items-center gap-1"
@@ -635,7 +640,7 @@ export default function DocumentDetailPage() {
               )}
               {document.turbine && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Anlage</span>
+                  <span className="text-sm text-muted-foreground">{t("turbine")}</span>
                   <span className="text-sm font-medium">
                     {document.turbine.designation}
                   </span>
@@ -643,7 +648,7 @@ export default function DocumentDetailPage() {
               )}
               {document.contract && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Vertrag</span>
+                  <span className="text-sm text-muted-foreground">{t("contract")}</span>
                   <Link
                     href={`/contracts/${document.contract.id}`}
                     className="text-sm font-medium hover:underline flex items-center gap-1"
@@ -655,7 +660,7 @@ export default function DocumentDetailPage() {
               )}
               {document.shareholder && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Gesellschafter</span>
+                  <span className="text-sm text-muted-foreground">{t("shareholder")}</span>
                   <span className="text-sm font-medium">{document.shareholder.name}</span>
                 </div>
               )}
@@ -665,7 +670,7 @@ export default function DocumentDetailPage() {
                 !document.contract &&
                 !document.shareholder && (
                   <p className="text-sm text-muted-foreground">
-                    Keine Zuordnungen vorhanden
+                    {t("noAssignments")}
                   </p>
                 )}
             </CardContent>
@@ -677,8 +682,8 @@ export default function DocumentDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Tag className="h-4 w-4" />
-                  Tags
-                  <InfoTooltip text="Schlagwörter zur Kategorisierung und schnellen Suche." />
+                  {t("tagsTitle")}
+                  <InfoTooltip text={t("tagsTooltip")} />
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -713,24 +718,24 @@ export default function DocumentDetailPage() {
         open={archiveDialogOpen}
         onOpenChange={setArchiveDialogOpen}
         onConfirm={handleConfirmArchive}
-        title="Archivieren bestätigen"
-        description="Möchten Sie dieses Dokument wirklich archivieren?"
+        title={t("archiveConfirmTitle")}
+        description={t("archiveConfirmDescription")}
       />
 
       {/* Reject Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Dokument ablehnen</DialogTitle>
+            <DialogTitle>{t("rejectDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Bitte geben Sie einen Grund für die Ablehnung an. Der Ersteller wird benachrichtigt.
+              {t("rejectDialogDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Label htmlFor="reject-notes">Ablehnungsgrund</Label>
+            <Label htmlFor="reject-notes">{t("rejectReason")}</Label>
             <Textarea
               id="reject-notes"
-              placeholder="Grund für die Ablehnung..."
+              placeholder={t("rejectPlaceholder")}
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
               className="mt-2"
@@ -745,7 +750,7 @@ export default function DocumentDetailPage() {
                 setRejectNotes("");
               }}
             >
-              Abbrechen
+              {tCommon("cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -753,7 +758,7 @@ export default function DocumentDetailPage() {
               onClick={() => handleApprovalAction("reject", rejectNotes)}
             >
               {approvalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Ablehnen
+              {t("reject")}
             </Button>
           </DialogFooter>
         </DialogContent>

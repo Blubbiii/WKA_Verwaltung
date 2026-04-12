@@ -8,6 +8,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowLeft, Loader2, Upload, File, X, Info, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const documentFormSchema = z.object({
-  title: z.string().min(1, "Titel ist erforderlich"),
+  title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   category: z.enum([
     "CONTRACT",
@@ -69,29 +70,32 @@ interface ServiceEventOption {
   turbineDesignation: string;
 }
 
-const categoryOptions = [
-  { value: "CONTRACT", label: "Vertrag" },
-  { value: "PROTOCOL", label: "Protokoll" },
-  { value: "REPORT", label: "Bericht" },
-  { value: "INVOICE", label: "Rechnung" },
-  { value: "PERMIT", label: "Genehmigung" },
-  { value: "CORRESPONDENCE", label: "Korrespondenz" },
-  { value: "OTHER", label: "Sonstiges" },
-];
+const categoryKeys = [
+  "CONTRACT",
+  "PROTOCOL",
+  "REPORT",
+  "INVOICE",
+  "PERMIT",
+  "CORRESPONDENCE",
+  "OTHER",
+] as const;
 
-const eventTypeLabels: Record<string, string> = {
-  MAINTENANCE: "Wartung",
-  REPAIR: "Reparatur",
-  INSPECTION: "Inspektion",
-  BLADE_INSPECTION: "Rotorblatt-Inspektion",
-  GEARBOX_SERVICE: "Getriebe-Service",
-  GENERATOR_SERVICE: "Generator-Service",
-  SOFTWARE_UPDATE: "Software-Update",
-  EMERGENCY: "Notfall",
-  OTHER: "Sonstiges",
-};
+const eventTypeKeys = [
+  "MAINTENANCE",
+  "REPAIR",
+  "INSPECTION",
+  "BLADE_INSPECTION",
+  "GEARBOX_SERVICE",
+  "GENERATOR_SERVICE",
+  "SOFTWARE_UPDATE",
+  "EMERGENCY",
+  "OTHER",
+] as const;
 
 function DocumentUploadForm() {
+  const t = useTranslations("documents.upload");
+  const tCat = useTranslations("documents.categories");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -173,9 +177,9 @@ function DocumentUploadForm() {
         if (turbinesRes.ok) {
           const data = await turbinesRes.json();
           setTurbines(
-            data.data.map((t: { id: string; designation: string; park?: { shortName?: string | null } | null }) => ({
-              id: t.id,
-              name: `${t.designation}${t.park?.shortName ? ` (${t.park.shortName})` : ""}`
+            data.data.map((tb: { id: string; designation: string; park?: { shortName?: string | null } | null }) => ({
+              id: tb.id,
+              name: `${tb.designation}${tb.park?.shortName ? ` (${tb.park.shortName})` : ""}`
             }))
           );
         }
@@ -186,7 +190,7 @@ function DocumentUploadForm() {
               id: e.id,
               eventType: e.eventType,
               eventDate: e.eventDate,
-              turbineDesignation: e.turbine?.designation || "Unbekannt",
+              turbineDesignation: e.turbine?.designation || tCommon("unknown"),
             }))
           );
         }
@@ -198,19 +202,19 @@ function DocumentUploadForm() {
             ? (await serviceEventsRes.json()).data?.find((e: { id: string }) => e.id === preselectedServiceEventId)
             : null;
           if (event) {
-            infoParts.push(`Service-Event: ${eventTypeLabels[event.eventType] || event.eventType} (${event.turbine?.designation})`);
+            infoParts.push(`${t("serviceEvent")}: ${t(`eventTypes.${event.eventType}`)} (${event.turbine?.designation})`);
           } else {
             infoParts.push("Service-Event");
           }
         }
-        if (preselectedTurbineId) infoParts.push("Anlage");
-        if (preselectedParkId) infoParts.push("Windpark");
-        if (preselectedFundId) infoParts.push("Gesellschaft");
-        if (preselectedContractId) infoParts.push("Vertrag");
-        if (preselectedShareholderId) infoParts.push("Gesellschafter");
+        if (preselectedTurbineId) infoParts.push(t("turbine"));
+        if (preselectedParkId) infoParts.push(t("windpark"));
+        if (preselectedFundId) infoParts.push(t("fund"));
+        if (preselectedContractId) infoParts.push(t("contract"));
+        if (preselectedShareholderId) infoParts.push(t("shareholderLabel"));
 
         if (infoParts.length > 0) {
-          setPreselectedInfo(`Vorausgewählt: ${infoParts.join(", ")}`);
+          setPreselectedInfo(t("preselected", { items: infoParts.join(", ") }));
         }
       } catch {
       } finally {
@@ -271,7 +275,7 @@ function DocumentUploadForm() {
 
   async function onSubmit(data: DocumentFormValues) {
     if (!selectedFile) {
-      toast.error("Bitte waehlen Sie eine Datei aus");
+      toast.error(t("selectFile"));
       return;
     }
 
@@ -305,7 +309,7 @@ function DocumentUploadForm() {
       }
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("errorSaving"));
     } finally {
       setIsLoading(false);
     }
@@ -320,9 +324,9 @@ function DocumentUploadForm() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dokument hochladen</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Laden Sie ein neues Dokument hoch
+            {t("description")}
           </p>
         </div>
       </div>
@@ -339,7 +343,7 @@ function DocumentUploadForm() {
           {/* File Upload */}
           <Card>
             <CardHeader>
-              <CardTitle>Datei</CardTitle>
+              <CardTitle>{t("fileCard")}</CardTitle>
             </CardHeader>
             <CardContent>
               {selectedFile ? (
@@ -368,7 +372,7 @@ function DocumentUploadForm() {
                     <div className="space-y-2">
                       <Progress value={uploadProgress} className="h-2" />
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>Wird hochgeladen... {uploadProgress}%</span>
+                        <span>{t("uploading", { progress: uploadProgress })}</span>
                         <Button
                           type="button"
                           variant="ghost"
@@ -376,7 +380,7 @@ function DocumentUploadForm() {
                           onClick={cancelUpload}
                           className="h-auto py-0 px-2 text-muted-foreground hover:text-destructive"
                         >
-                          Abbrechen
+                          {t("cancelUpload")}
                         </Button>
                       </div>
                     </div>
@@ -387,11 +391,11 @@ function DocumentUploadForm() {
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <Upload className="h-10 w-10 text-muted-foreground mb-3" />
                     <p className="mb-2 text-sm text-muted-foreground">
-                      <span className="font-semibold">Klicken zum Hochladen</span>{" "}
-                      oder Drag & Drop
+                      <span className="font-semibold">{t("clickToUpload")}</span>{" "}
+                      {t("dragDrop")}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      PDF, DOCX, XLSX, Bilder (max. 50MB)
+                      {t("fileTypes")}
                     </p>
                   </div>
                   <input
@@ -408,7 +412,7 @@ function DocumentUploadForm() {
           {/* Basic Info */}
           <Card>
             <CardHeader>
-              <CardTitle>Basis-Informationen</CardTitle>
+              <CardTitle>{t("basicInfo")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -416,9 +420,9 @@ function DocumentUploadForm() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Titel *</FormLabel>
+                    <FormLabel>{t("titleLabel")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Dokumenttitel" {...field} />
+                      <Input placeholder={t("titlePlaceholder")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -430,10 +434,10 @@ function DocumentUploadForm() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Beschreibung</FormLabel>
+                    <FormLabel>{t("descriptionLabel")}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Optionale Beschreibung des Dokuments..."
+                        placeholder={t("descriptionPlaceholder")}
                         rows={3}
                         {...field}
                       />
@@ -448,17 +452,17 @@ function DocumentUploadForm() {
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Kategorie *</FormLabel>
+                    <FormLabel>{t("categoryLabel")}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Kategorie wählen" />
+                          <SelectValue placeholder={t("categoryPlaceholder")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categoryOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                        {categoryKeys.map((key) => (
+                          <SelectItem key={key} value={key}>
+                            {tCat(key)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -474,7 +478,7 @@ function DocumentUploadForm() {
                 name="tags"
                 render={() => (
                   <FormItem>
-                    <FormLabel>Tags</FormLabel>
+                    <FormLabel>{t("tagsLabel")}</FormLabel>
                     {tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
                         {tags.map((tag, index) => (
@@ -493,7 +497,7 @@ function DocumentUploadForm() {
                     )}
                     <div className="flex gap-2">
                       <Input
-                        placeholder="Neuen Tag hinzufügen"
+                        placeholder={t("tagPlaceholder")}
                         value={newTag}
                         onChange={(e) => setNewTag(e.target.value)}
                         onKeyDown={(e) => {
@@ -504,11 +508,11 @@ function DocumentUploadForm() {
                         }}
                       />
                       <Button type="button" variant="outline" onClick={addTag}>
-                        Hinzufügen
+                        {t("addTag")}
                       </Button>
                     </div>
                     <FormDescription>
-                      Tags helfen beim Organisieren und Finden von Dokumenten
+                      {t("tagsHelp")}
                     </FormDescription>
                   </FormItem>
                 )}
@@ -519,11 +523,11 @@ function DocumentUploadForm() {
           {/* Associations */}
           <Card>
             <CardHeader>
-              <CardTitle>Zuordnungen</CardTitle>
+              <CardTitle>{t("assignmentsTitle")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground mb-4">
-                Verknüpfen Sie das Dokument optional mit Entitäten
+                {t("assignmentsDescription")}
               </p>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -533,7 +537,7 @@ function DocumentUploadForm() {
                   name="serviceEventId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Service-Event</FormLabel>
+                      <FormLabel>{t("serviceEvent")}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
@@ -541,14 +545,14 @@ function DocumentUploadForm() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Kein Service-Event" />
+                            <SelectValue placeholder={t("noServiceEvent")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="_none">Kein Service-Event</SelectItem>
+                          <SelectItem value="_none">{t("noServiceEvent")}</SelectItem>
                           {serviceEvents.map((event) => (
                             <SelectItem key={event.id} value={event.id}>
-                              {eventTypeLabels[event.eventType] || event.eventType} - {event.turbineDesignation} ({formatDate(event.eventDate)})
+                              {t(`eventTypes.${event.eventType}`)} - {event.turbineDesignation} ({formatDate(event.eventDate)})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -563,7 +567,7 @@ function DocumentUploadForm() {
                   name="turbineId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Anlage</FormLabel>
+                      <FormLabel>{t("turbine")}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
@@ -571,11 +575,11 @@ function DocumentUploadForm() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Keine Anlage" />
+                            <SelectValue placeholder={t("noTurbine")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="_none">Keine Anlage</SelectItem>
+                          <SelectItem value="_none">{t("noTurbine")}</SelectItem>
                           {turbines.map((turbine) => (
                             <SelectItem key={turbine.id} value={turbine.id}>
                               {turbine.name}
@@ -593,7 +597,7 @@ function DocumentUploadForm() {
                   name="parkId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Windpark</FormLabel>
+                      <FormLabel>{t("windpark")}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
@@ -601,11 +605,11 @@ function DocumentUploadForm() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Kein Windpark" />
+                            <SelectValue placeholder={t("noWindpark")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="_none">Kein Windpark</SelectItem>
+                          <SelectItem value="_none">{t("noWindpark")}</SelectItem>
                           {parks.map((park) => (
                             <SelectItem key={park.id} value={park.id}>
                               {park.name}
@@ -623,7 +627,7 @@ function DocumentUploadForm() {
                   name="fundId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Gesellschaft</FormLabel>
+                      <FormLabel>{t("fund")}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
@@ -631,11 +635,11 @@ function DocumentUploadForm() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Keine Gesellschaft" />
+                            <SelectValue placeholder={t("noFund")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="_none">Keine Gesellschaft</SelectItem>
+                          <SelectItem value="_none">{t("noFund")}</SelectItem>
                           {funds.map((fund) => (
                             <SelectItem key={fund.id} value={fund.id}>
                               {fund.name}
@@ -646,7 +650,7 @@ function DocumentUploadForm() {
                       <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
                         <Link href="/funds/new" target="_blank">
                           <Plus className="mr-1 h-3 w-3" />
-                          Neue Gesellschaft anlegen
+                          {t("newFund")}
                         </Link>
                       </Button>
                     </FormItem>
@@ -659,7 +663,7 @@ function DocumentUploadForm() {
                   name="contractId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vertrag</FormLabel>
+                      <FormLabel>{t("contract")}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
@@ -667,11 +671,11 @@ function DocumentUploadForm() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Kein Vertrag" />
+                            <SelectValue placeholder={t("noContract")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="_none">Kein Vertrag</SelectItem>
+                          <SelectItem value="_none">{t("noContract")}</SelectItem>
                           {contracts.map((contract) => (
                             <SelectItem key={contract.id} value={contract.id}>
                               {contract.name}
@@ -689,7 +693,7 @@ function DocumentUploadForm() {
                   name="shareholderId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Gesellschafter</FormLabel>
+                      <FormLabel>{t("shareholderLabel")}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
@@ -697,11 +701,11 @@ function DocumentUploadForm() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Kein Gesellschafter" />
+                            <SelectValue placeholder={t("noShareholder")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="_none">Kein Gesellschafter</SelectItem>
+                          <SelectItem value="_none">{t("noShareholder")}</SelectItem>
                           {shareholders.map((sh) => (
                             <SelectItem key={sh.id} value={sh.id}>
                               {sh.name}
@@ -723,11 +727,11 @@ function DocumentUploadForm() {
               onClick={() => router.push(getBackLink())}
               disabled={isLoading}
             >
-              Abbrechen
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isLoading || isFileUploading || !selectedFile}>
               {(isLoading || isFileUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isFileUploading ? `Wird hochgeladen... ${uploadProgress}%` : "Hochladen"}
+              {isFileUploading ? t("uploading", { progress: uploadProgress }) : t("uploadButton")}
             </Button>
           </div>
         </form>

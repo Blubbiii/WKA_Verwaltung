@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Upload, File, X, FileText } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,8 @@ interface DocumentInfo {
 }
 
 export default function UploadNewVersionPage() {
+  const t = useTranslations("documents.newVersion");
+  const tCommon = useTranslations("common");
   const params = useParams();
   const router = useRouter();
   const [document, setDocument] = useState<DocumentInfo | null>(null);
@@ -32,7 +35,7 @@ export default function UploadNewVersionPage() {
     async function fetchDocument() {
       try {
         const response = await fetch(`/api/documents/${params.id}`);
-        if (!response.ok) throw new Error("Fehler beim Laden");
+        if (!response.ok) throw new Error(t("errorLoading"));
         const data = await response.json();
         setDocument(data);
       } catch {
@@ -82,14 +85,14 @@ export default function UploadNewVersionPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Hochladen");
+        throw new Error(error.error || t("errorUploading"));
       }
 
       const newDoc = await response.json();
       router.push(`/documents/${newDoc.id}`);
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Hochladen");
+      toast.error(error instanceof Error ? error.message : t("errorUploading"));
     } finally {
       setIsUploading(false);
     }
@@ -111,12 +114,12 @@ export default function UploadNewVersionPage() {
         <Button variant="ghost" asChild>
           <Link href="/documents">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurück
+            {tCommon("back")}
           </Link>
         </Button>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Dokument nicht gefunden.
+            {t("notFound")}
           </CardContent>
         </Card>
       </div>
@@ -132,9 +135,9 @@ export default function UploadNewVersionPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Neue Version hochladen</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Laden Sie eine neue Version des Dokuments hoch
+            {t("description")}
           </p>
         </div>
       </div>
@@ -142,9 +145,9 @@ export default function UploadNewVersionPage() {
       {/* Current Document Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Aktuelles Dokument</CardTitle>
+          <CardTitle>{t("currentDocument")}</CardTitle>
           <CardDescription>
-            Sie erstellen eine neue Version dieses Dokuments
+            {t("currentDocumentDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -166,9 +169,9 @@ export default function UploadNewVersionPage() {
       {/* File Upload */}
       <Card>
         <CardHeader>
-          <CardTitle>Neue Datei</CardTitle>
+          <CardTitle>{t("newFile")}</CardTitle>
           <CardDescription>
-            Die neue Version wird als v{document.version + 1} gespeichert
+            {t("newFileDescription", { version: document.version + 1 })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -197,11 +200,11 @@ export default function UploadNewVersionPage() {
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
                 <Upload className="h-10 w-10 text-muted-foreground mb-3" />
                 <p className="mb-2 text-sm text-muted-foreground">
-                  <span className="font-semibold">Klicken zum Hochladen</span>{" "}
-                  oder Drag & Drop
+                  <span className="font-semibold">{t("clickToUpload")}</span>{" "}
+                  {t("dragDrop")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  PDF, DOCX, XLSX, Bilder (max. 50MB)
+                  {t("fileTypes")}
                 </p>
               </div>
               <input
@@ -214,9 +217,9 @@ export default function UploadNewVersionPage() {
           )}
 
           <div>
-            <label className="text-sm font-medium">Änderungsnotiz (optional)</label>
+            <label className="text-sm font-medium">{t("changeNotes")}</label>
             <Textarea
-              placeholder="Beschreiben Sie kurz, was sich in dieser Version geändert hat..."
+              placeholder={t("changeNotesPlaceholder")}
               value={changeNotes}
               onChange={(e) => setChangeNotes(e.target.value)}
               rows={3}
@@ -232,14 +235,14 @@ export default function UploadNewVersionPage() {
           onClick={() => router.back()}
           disabled={isUploading}
         >
-          Abbrechen
+          {tCommon("cancel")}
         </Button>
         <Button
           onClick={handleUpload}
           disabled={isUploading || !selectedFile}
         >
           {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Version hochladen
+          {t("uploadButton")}
         </Button>
       </div>
     </div>
