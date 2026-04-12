@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import { Wallet, Clock, CheckCircle } from "lucide-react";
 import {
@@ -47,6 +48,9 @@ interface Summary {
 }
 
 export default function DistributionsPage() {
+  const t = useTranslations("portal.distributions");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
   const [distributions, setDistributions] = useState<Distribution[]>([]);
   const [summary, setSummary] = useState<Summary>({
     totalDistributed: 0,
@@ -89,48 +93,54 @@ export default function DistributionsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Ausschüttungen</h1>
-        <p className="text-muted-foreground">
-          Übersicht über alle Ihre erhaltenen Ausschüttungen
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground">{t("description")}</p>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gesamt erhalten</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("stats.totalReceived")}
+            </CardTitle>
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               {formatCurrency(summary.totalDistributed)}
             </div>
-            <p className="text-xs text-muted-foreground">Ausgezahlt</p>
+            <p className="text-xs text-muted-foreground">{t("stats.paidOut")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ausstehend</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("stats.pending")}
+            </CardTitle>
             <Clock className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
               {formatCurrency(summary.totalPending)}
             </div>
-            <p className="text-xs text-muted-foreground">Noch nicht ausgezahlt</p>
+            <p className="text-xs text-muted-foreground">
+              {t("stats.notPaidYet")}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Anzahl</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("stats.count")}
+            </CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.distributionCount}</div>
-            <p className="text-xs text-muted-foreground">Gutschriften</p>
+            <p className="text-xs text-muted-foreground">{t("stats.credits")}</p>
           </CardContent>
         </Card>
       </div>
@@ -138,28 +148,28 @@ export default function DistributionsPage() {
       {/* Distributions Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Ausschüttungshistorie</CardTitle>
-          <CardDescription>
-            Alle Gutschriften chronologisch sortiert
-          </CardDescription>
+          <CardTitle>{t("history.title")}</CardTitle>
+          <CardDescription>{t("history.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           {distributions.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              Sie haben noch keine Ausschüttungen erhalten.
+              {t("history.empty")}
             </div>
           ) : (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Gutschrift-Nr.</TableHead>
-                    <TableHead>Gesellschaft</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead className="text-right">Netto</TableHead>
-                    <TableHead className="text-right">Steuer</TableHead>
-                    <TableHead className="text-right">Brutto</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t("table.creditNumber")}</TableHead>
+                    <TableHead>{t("table.company")}</TableHead>
+                    <TableHead>{t("table.date")}</TableHead>
+                    <TableHead className="text-right">{t("table.net")}</TableHead>
+                    <TableHead className="text-right">{t("table.tax")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("table.gross")}
+                    </TableHead>
+                    <TableHead>{t("table.status")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -171,7 +181,7 @@ export default function DistributionsPage() {
                       <TableCell>{d.fund?.name || "-"}</TableCell>
                       <TableCell>
                         {format(new Date(d.invoiceDate), "dd.MM.yyyy", {
-                          locale: de,
+                          locale: dateLocale,
                         })}
                       </TableCell>
                       <TableCell className="text-right">
@@ -204,10 +214,8 @@ export default function DistributionsPage() {
       {distributions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Jahresübersicht</CardTitle>
-            <CardDescription>
-              Ausschüttungen nach Jahr zusammengefasst
-            </CardDescription>
+            <CardTitle>{t("yearly.title")}</CardTitle>
+            <CardDescription>{t("yearly.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -236,7 +244,7 @@ export default function DistributionsPage() {
                     <div>
                       <p className="font-medium">{year}</p>
                       <p className="text-sm text-muted-foreground">
-                        {data.count} Ausschüttung(en)
+                        {t("yearly.count", { count: data.count })}
                       </p>
                     </div>
                     <p className="text-lg font-bold text-green-600">

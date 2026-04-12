@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useTranslations, useLocale } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import {
   Briefcase,
@@ -66,15 +67,6 @@ interface OverviewData {
 // CONSTANTS
 // =============================================================================
 
-const billingStatusLabels: Record<string, string> = {
-  DRAFT: "Entwurf",
-  CALCULATED: "Berechnet",
-  APPROVED: "Freigegeben",
-  INVOICED: "Fakturiert",
-  PAID: "Bezahlt",
-  CANCELLED: "Storniert",
-};
-
 const billingStatusColors: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-800",
   CALCULATED: "bg-blue-100 text-blue-800",
@@ -85,23 +77,22 @@ const billingStatusColors: Record<string, string> = {
 };
 
 // =============================================================================
-// HELPERS
-// =============================================================================
-
-function formatPeriod(year: number, month: number | null): string {
-  if (!month) return `${year}`;
-  const date = new Date(year, month - 1, 1);
-  return format(date, "MMMM yyyy", { locale: de });
-}
-
-// =============================================================================
 // PAGE COMPONENT
 // =============================================================================
 
 export default function ManagementBillingOverviewPage() {
+  const t = useTranslations("managementBilling.overview");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
   const [data, setData] = useState<OverviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
+
+  function formatPeriod(year: number, month: number | null): string {
+    if (!month) return `${year}`;
+    const date = new Date(year, month - 1, 1);
+    return format(date, "MMMM yyyy", { locale: dateLocale });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -136,10 +127,7 @@ export default function ManagementBillingOverviewPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <PageHeader
-        title="Betriebsführung - Übersicht"
-        description="Zusammenfassung aller Betriebsführungs-Verträge und Abrechnungen"
-      />
+      <PageHeader title={t("title")} description={t("description")} />
 
       {/* KPI Cards */}
       {isLoading ? (
@@ -147,37 +135,34 @@ export default function ManagementBillingOverviewPage() {
       ) : isError ? (
         <Card>
           <CardContent className="py-8">
-            <p className="text-center text-destructive">
-              Fehler beim Laden der Übersichtsdaten. Bitte versuchen Sie es
-              erneut.
-            </p>
+            <p className="text-center text-destructive">{t("errorLoading")}</p>
           </CardContent>
         </Card>
       ) : (
         <KPICardGrid>
           <KPICard
-            title="Aktive Verträge"
+            title={t("kpi.activeContracts")}
             value={data?.activeContracts ?? 0}
             icon={Briefcase}
-            description="Aktive BF-Verträge"
+            description={t("kpi.activeContractsDesc")}
           />
           <KPICard
-            title="Abrechnungsfaehig"
+            title={t("kpi.billingEnabled")}
             value={data?.billingEnabledCount ?? 0}
             icon={Calculator}
-            description="Verträge mit aktiver Abrechnung"
+            description={t("kpi.billingEnabledDesc")}
           />
           <KPICard
-            title="Gesamtbetrag Netto"
+            title={t("kpi.totalNet")}
             value={formatCurrency(data?.totalNetEur ?? 0)}
             icon={Euro}
-            description="Summe aller Netto-Gebühren"
+            description={t("kpi.totalNetDesc")}
           />
           <KPICard
-            title="Fakturiert"
+            title={t("kpi.invoiced")}
             value={data?.invoicedCount ?? 0}
             icon={FileCheck}
-            description="Bereits fakturierte Abrechnungen"
+            description={t("kpi.invoicedDesc")}
           />
         </KPICardGrid>
       )}
@@ -187,14 +172,12 @@ export default function ManagementBillingOverviewPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Neueste Abrechnungen</CardTitle>
-              <CardDescription>
-                Die letzten Betriebsführungs-Abrechnungen
-              </CardDescription>
+              <CardTitle>{t("recent.title")}</CardTitle>
+              <CardDescription>{t("recent.description")}</CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
               <Link href="/management-billing/billings">
-                Alle anzeigen
+                {t("recent.showAll")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -213,19 +196,19 @@ export default function ManagementBillingOverviewPage() {
             </div>
           ) : isError ? (
             <p className="text-center text-muted-foreground py-8">
-              Daten konnten nicht geladen werden
+              {t("recent.loadError")}
             </p>
           ) : data?.recentBillings && data.recentBillings.length > 0 ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Dienstleister</TableHead>
-                    <TableHead>Park</TableHead>
-                    <TableHead>Zeitraum</TableHead>
-                    <TableHead className="text-right">Netto</TableHead>
-                    <TableHead className="text-right">Brutto</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t("table.serviceProvider")}</TableHead>
+                    <TableHead>{t("table.park")}</TableHead>
+                    <TableHead>{t("table.period")}</TableHead>
+                    <TableHead className="text-right">{t("table.net")}</TableHead>
+                    <TableHead className="text-right">{t("table.gross")}</TableHead>
+                    <TableHead>{t("table.status")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -251,8 +234,7 @@ export default function ManagementBillingOverviewPage() {
                             billingStatusColors[billing.status] ?? ""
                           }
                         >
-                          {billingStatusLabels[billing.status] ??
-                            billing.status}
+                          {t(`billingStatus.${billing.status}` as never)}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -262,7 +244,7 @@ export default function ManagementBillingOverviewPage() {
             </div>
           ) : (
             <div className="py-8 text-center text-muted-foreground">
-              Keine Abrechnungen vorhanden
+              {t("recent.empty")}
             </div>
           )}
         </CardContent>
@@ -274,14 +256,14 @@ export default function ManagementBillingOverviewPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold">BF-Verträge</h3>
+                <h3 className="font-semibold">{t("quickLinks.contractsTitle")}</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Dienstleister und Gebühren verwalten
+                  {t("quickLinks.contractsDesc")}
                 </p>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/management-billing/stakeholders">
-                  Oeffnen
+                  {t("quickLinks.open")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -292,14 +274,14 @@ export default function ManagementBillingOverviewPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold">Abrechnungen</h3>
+                <h3 className="font-semibold">{t("quickLinks.billingsTitle")}</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Betriebsführungs-Abrechnungen erstellen und verwalten
+                  {t("quickLinks.billingsDesc")}
                 </p>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/management-billing/billings">
-                  Oeffnen
+                  {t("quickLinks.open")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

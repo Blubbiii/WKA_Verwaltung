@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { FileWarning, Eye } from "lucide-react";
 import {
   Card,
@@ -46,23 +47,11 @@ interface Claim {
 // CONSTANTS
 // =============================================================================
 
-const statusLabels: Record<string, string> = {
-  REPORTED: "Gemeldet",
-  CLAIM_IN_PROGRESS: "In Bearbeitung",
-  RESOLVED: "Erledigt",
-  REJECTED: "Abgelehnt",
-};
-
 const statusBadgeColors: Record<string, string> = {
   REPORTED: "bg-yellow-100 text-yellow-800",
   CLAIM_IN_PROGRESS: "bg-blue-100 text-blue-800",
   RESOLVED: "bg-green-100 text-green-800",
   REJECTED: "bg-red-100 text-red-800",
-};
-
-const typeLabels: Record<string, string> = {
-  INSURANCE: "Versicherung",
-  SERVICE_PROVIDER: "Dienstleister",
 };
 
 const typeBadgeColors: Record<string, string> = {
@@ -75,6 +64,7 @@ const typeBadgeColors: Record<string, string> = {
 // =============================================================================
 
 export default function ClaimsListPage() {
+  const t = useTranslations("managementBilling.claimsList");
   const router = useRouter();
   const [claims, setClaims] = useState<Claim[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -130,38 +120,38 @@ export default function ClaimsListPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Schadensfaelle"
-        description="Alle Versicherungs- und Dienstleister-Schadensfaelle"
+        title={t("title")}
+        description={t("description")}
         createHref="/management-billing/insurance/claims/new"
-        createLabel="Neuer Schadensfall"
+        createLabel={t("createLabel")}
       />
 
       {/* Filter Bar */}
       <SearchFilter
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Aktenzeichen, Titel, Park oder Dienstleister suchen..."
+        searchPlaceholder={t("searchPlaceholder")}
         filters={[
           {
             value: statusFilter,
             onChange: setStatusFilter,
-            placeholder: "Alle Status",
+            placeholder: t("filter.allStatus"),
             options: [
-              { value: "all", label: "Alle Status" },
-              { value: "REPORTED", label: "Gemeldet" },
-              { value: "CLAIM_IN_PROGRESS", label: "In Bearbeitung" },
-              { value: "RESOLVED", label: "Erledigt" },
-              { value: "REJECTED", label: "Abgelehnt" },
+              { value: "all", label: t("filter.allStatus") },
+              { value: "REPORTED", label: t("status.REPORTED") },
+              { value: "CLAIM_IN_PROGRESS", label: t("status.CLAIM_IN_PROGRESS") },
+              { value: "RESOLVED", label: t("status.RESOLVED") },
+              { value: "REJECTED", label: t("status.REJECTED") },
             ],
           },
           {
             value: typeFilter,
             onChange: setTypeFilter,
-            placeholder: "Alle Typen",
+            placeholder: t("filter.allTypes"),
             options: [
-              { value: "all", label: "Alle Typen" },
-              { value: "INSURANCE", label: "Versicherung" },
-              { value: "SERVICE_PROVIDER", label: "Dienstleister" },
+              { value: "all", label: t("filter.allTypes") },
+              { value: "INSURANCE", label: t("type.INSURANCE") },
+              { value: "SERVICE_PROVIDER", label: t("type.SERVICE_PROVIDER") },
             ],
             width: "w-[180px]",
           },
@@ -191,7 +181,7 @@ export default function ClaimsListPage() {
         <Card>
           <CardContent className="py-8">
             <p className="text-center text-destructive">
-              Fehler beim Laden der Schadensfaelle. Bitte versuchen Sie es erneut.
+              {t("errorLoading")}
             </p>
           </CardContent>
         </Card>
@@ -200,17 +190,17 @@ export default function ClaimsListPage() {
           <CardContent>
             <EmptyState
               icon={FileWarning}
-              title={claims.length === 0 ? "Keine Schadensfaelle" : "Keine Ergebnisse"}
+              title={claims.length === 0 ? t("empty.none.title") : t("empty.noResults.title")}
               description={
                 claims.length === 0
-                  ? "Erstellen Sie den ersten Schadensfall, um Versicherungsfaelle zu verfolgen."
-                  : "Passen Sie Ihre Suchkriterien an, um Ergebnisse zu finden."
+                  ? t("empty.none.description")
+                  : t("empty.noResults.description")
               }
               action={
                 claims.length === 0 ? (
                   <Button asChild>
                     <Link href="/management-billing/insurance/claims/new">
-                      Schadensfall erstellen
+                      {t("empty.action")}
                     </Link>
                   </Button>
                 ) : undefined
@@ -225,15 +215,15 @@ export default function ClaimsListPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Aktenzeichen</TableHead>
-                    <TableHead>Titel</TableHead>
-                    <TableHead>Typ</TableHead>
-                    <TableHead>Schadenstag</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Gesch. Kosten</TableHead>
-                    <TableHead className="text-right">Erstattung</TableHead>
-                    <TableHead>Versicherung / DL</TableHead>
-                    <TableHead className="text-right">Aktionen</TableHead>
+                    <TableHead>{t("table.claimNumber")}</TableHead>
+                    <TableHead>{t("table.title")}</TableHead>
+                    <TableHead>{t("table.type")}</TableHead>
+                    <TableHead>{t("table.incidentDate")}</TableHead>
+                    <TableHead>{t("table.status")}</TableHead>
+                    <TableHead className="text-right">{t("table.estimatedCost")}</TableHead>
+                    <TableHead className="text-right">{t("table.reimbursed")}</TableHead>
+                    <TableHead>{t("table.insuranceOrVendor")}</TableHead>
+                    <TableHead className="text-right">{t("table.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -254,7 +244,7 @@ export default function ClaimsListPage() {
                           variant="secondary"
                           className={typeBadgeColors[claim.claimType] ?? ""}
                         >
-                          {typeLabels[claim.claimType] ?? claim.claimType}
+                          {t(`type.${claim.claimType}` as never)}
                         </Badge>
                       </TableCell>
                       <TableCell>{formatDate(claim.incidentDate)}</TableCell>
@@ -263,7 +253,7 @@ export default function ClaimsListPage() {
                           variant="secondary"
                           className={statusBadgeColors[claim.status] ?? ""}
                         >
-                          {statusLabels[claim.status] ?? claim.status}
+                          {t(`status.${claim.status}` as never)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">
@@ -280,7 +270,7 @@ export default function ClaimsListPage() {
                           variant="ghost"
                           size="icon"
                           asChild
-                          title="Details anzeigen"
+                          title={t("actionShowDetails")}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Link href={`/management-billing/insurance/claims/${claim.id}`}>

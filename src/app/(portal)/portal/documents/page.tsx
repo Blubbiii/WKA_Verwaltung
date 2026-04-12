@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   FolderOpen,
@@ -58,15 +59,6 @@ interface Document {
   createdAt: string;
 }
 
-const categoryLabels: Record<string, string> = {
-  REPORT: "Bericht",
-  CONTRACT: "Vertrag",
-  PROTOCOL: "Protokoll",
-  CORRESPONDENCE: "Korrespondenz",
-  TAX: "Steuer",
-  OTHER: "Sonstiges",
-};
-
 function getFileIcon(mimeType: string | null) {
   if (!mimeType) return File;
   if (mimeType.includes("pdf")) return FileText;
@@ -85,6 +77,9 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function DocumentsPage() {
+  const t = useTranslations("portal.documents");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
   const [documents, setDocuments] = useState<Document[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,6 +123,15 @@ export default function DocumentsPage() {
     );
   });
 
+  function categoryLabel(cat: string) {
+    try {
+      const labels = t.raw("categoryLabels") as Record<string, string>;
+      return labels?.[cat] ?? cat;
+    } catch {
+      return cat;
+    }
+  }
+
   async function handleDownload(doc: Document) {
     try {
       setDownloadingId(doc.id);
@@ -136,7 +140,7 @@ export default function DocumentsPage() {
       const response = await fetch(`/api/documents/${doc.id}/download`);
 
       if (!response.ok) {
-        throw new Error("Download fehlgeschlagen");
+        throw new Error(t("downloadFailed"));
       }
 
       const data = await response.json();
@@ -154,7 +158,7 @@ export default function DocumentsPage() {
         document.body.removeChild(link);
       }
     } catch {
-      toast.error("Fehler beim Herunterladen des Dokuments");
+      toast.error(t("downloadError"));
     } finally {
       setDownloadingId(null);
     }
@@ -173,10 +177,8 @@ export default function DocumentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dokumente</h1>
-        <p className="text-muted-foreground">
-          Berichte, Protokolle und weitere Dokumente zu Ihren Beteiligungen
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground">{t("description")}</p>
       </div>
 
       {/* Filters */}
@@ -186,7 +188,7 @@ export default function DocumentsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Suchen nach Titel, Dateiname..."
+                placeholder={t("searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8"
@@ -195,13 +197,13 @@ export default function DocumentsPage() {
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-[180px]">
                 <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Kategorie" />
+                <SelectValue placeholder={t("categoryPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Kategorien</SelectItem>
+                <SelectItem value="all">{t("allCategories")}</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
-                    {categoryLabels[cat] || cat}
+                    {categoryLabel(cat)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -215,29 +217,27 @@ export default function DocumentsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FolderOpen className="h-5 w-5" />
-            Verfügbare Dokumente
+            {t("available")}
           </CardTitle>
           <CardDescription>
-            {filteredDocuments.length} Dokument(e) gefunden
+            {t("foundCount", { count: filteredDocuments.length })}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {filteredDocuments.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              {documents.length === 0
-                ? "Keine Dokumente verfügbar."
-                : "Keine Dokumente gefunden."}
+              {documents.length === 0 ? t("emptyAll") : t("emptyFiltered")}
             </div>
           ) : (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Dokument</TableHead>
-                    <TableHead>Gesellschaft</TableHead>
-                    <TableHead>Kategorie</TableHead>
-                    <TableHead>Datum</TableHead>
-                    <TableHead className="text-right">Größe</TableHead>
+                    <TableHead>{t("table.document")}</TableHead>
+                    <TableHead>{t("table.company")}</TableHead>
+                    <TableHead>{t("table.category")}</TableHead>
+                    <TableHead>{t("table.date")}</TableHead>
+                    <TableHead className="text-right">{t("table.size")}</TableHead>
                     <TableHead className="w-[80px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -261,13 +261,13 @@ export default function DocumentsPage() {
                         <TableCell>
                           {doc.category && (
                             <Badge variant="outline">
-                              {categoryLabels[doc.category] || doc.category}
+                              {categoryLabel(doc.category)}
                             </Badge>
                           )}
                         </TableCell>
                         <TableCell>
                           {format(new Date(doc.createdAt), "dd.MM.yyyy", {
-                            locale: de,
+                            locale: dateLocale,
                           })}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
@@ -277,7 +277,7 @@ export default function DocumentsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Herunterladen"
+                            title={t("download")}
                             onClick={() => handleDownload(doc)}
                             disabled={downloadingId === doc.id}
                           >

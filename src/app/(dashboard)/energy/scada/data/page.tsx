@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Activity,
   Wind,
@@ -70,22 +71,23 @@ interface ScadaRecord {
 }
 
 // =============================================================================
-// HELPERS
-// =============================================================================
-
-function formatDecimal(value: number | null, decimals = 2): string {
-  if (value == null) return "-";
-  return new Intl.NumberFormat("de-DE", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value);
-}
-
-// =============================================================================
 // PAGE COMPONENT
 // =============================================================================
 
 export default function ScadaDataPage() {
+  const t = useTranslations("energy.scadaData");
+  const locale = useLocale();
+  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+  const dateFnsLocale = locale === "en" ? enUS : de;
+
+  const formatDecimal = (value: number | null, decimals = 2): string => {
+    if (value == null) return "-";
+    return new Intl.NumberFormat(intlLocale, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
+  };
+
   const [parks, setParks] = useState<Park[]>([]);
   const [turbines, setTurbines] = useState<Turbine[]>([]);
   const [measurements, setMeasurements] = useState<ScadaRecord[]>([]);
@@ -181,24 +183,25 @@ export default function ScadaDataPage() {
   }, [turbineId, dateFrom, dateTo, page]);
 
   const totalPages = Math.ceil(total / limit);
+  const dateFormat = locale === "en" ? "MM/dd/yyyy HH:mm" : "dd.MM.yyyy HH:mm";
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="SCADA-Messdaten"
-        description="10-Minuten-Messdaten der Windenergieanlagen"
+        title={t("title")}
+        description={t("subtitle")}
       />
 
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Filter</CardTitle>
+          <CardTitle className="text-base">{t("filter")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Park */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Park</label>
+              <label className="text-sm font-medium">{t("park")}</label>
               <Select
                 value={parkId}
                 onValueChange={(v) => {
@@ -208,12 +211,12 @@ export default function ScadaDataPage() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Park waehlen..." />
+                  <SelectValue placeholder={t("parkPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {isParksLoading ? (
                     <SelectItem value="__loading" disabled>
-                      Laden...
+                      {t("loading")}
                     </SelectItem>
                   ) : (
                     parks.map((p) => (
@@ -228,7 +231,7 @@ export default function ScadaDataPage() {
 
             {/* Turbine */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Anlage</label>
+              <label className="text-sm font-medium">{t("turbine")}</label>
               <Select
                 value={turbineId}
                 onValueChange={(v) => {
@@ -240,14 +243,14 @@ export default function ScadaDataPage() {
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      !parkId ? "Erst Park waehlen" : "Anlage waehlen..."
+                      !parkId ? t("parkFirst") : t("turbinePlaceholder")
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {turbines.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.designation}
+                  {turbines.map((tu) => (
+                    <SelectItem key={tu.id} value={tu.id}>
+                      {tu.designation}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -256,7 +259,7 @@ export default function ScadaDataPage() {
 
             {/* Date From */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Von</label>
+              <label className="text-sm font-medium">{t("from")}</label>
               <input
                 type="date"
                 value={dateFrom}
@@ -270,7 +273,7 @@ export default function ScadaDataPage() {
 
             {/* Date To */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Bis</label>
+              <label className="text-sm font-medium">{t("to")}</label>
               <input
                 type="date"
                 value={dateTo}
@@ -290,22 +293,22 @@ export default function ScadaDataPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            Messdaten
+            {t("measurements")}
           </CardTitle>
           <CardDescription>
             {total > 0
-              ? `${total.toLocaleString("de-DE")} Messwerte gefunden`
+              ? t("countFound", { count: total.toLocaleString(intlLocale) })
               : turbineId
-                ? "Keine Messdaten im gewaehlten Zeitraum"
-                : "Bitte waehlen Sie eine Anlage aus"}
+                ? t("noDataInRange")
+                : t("selectTurbine")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {!turbineId ? (
             <div className="py-12 text-center text-muted-foreground">
               <Activity className="mx-auto mb-3 h-10 w-10 opacity-30" />
-              <p>Waehlen Sie einen Park und eine Anlage aus,</p>
-              <p>um die SCADA-Messdaten anzuzeigen.</p>
+              <p>{t("emptyLine1")}</p>
+              <p>{t("emptyLine2")}</p>
             </div>
           ) : isLoading ? (
             <div className="space-y-3">
@@ -321,7 +324,7 @@ export default function ScadaDataPage() {
             </div>
           ) : measurements.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
-              Keine Messdaten im gewaehlten Zeitraum vorhanden
+              {t("noDataInRangeFull")}
             </div>
           ) : (
             <>
@@ -332,26 +335,26 @@ export default function ScadaDataPage() {
                       <TableHead>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5" />
-                          Zeitstempel
+                          {t("colTimestamp")}
                         </div>
                       </TableHead>
                       <TableHead className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Wind className="h-3.5 w-3.5" />
-                          Wind (m/s)
+                          {t("colWind")}
                         </div>
                       </TableHead>
                       <TableHead className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Zap className="h-3.5 w-3.5" />
-                          Leistung (kW)
+                          {t("colPower")}
                         </div>
                       </TableHead>
                       <TableHead className="text-right">
-                        Rotor (U/min)
+                        {t("colRotor")}
                       </TableHead>
                       <TableHead className="text-right">
-                        Gondel (Grad)
+                        {t("colNacelle")}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -361,8 +364,8 @@ export default function ScadaDataPage() {
                         <TableCell className="font-mono text-sm">
                           {format(
                             new Date(m.timestamp),
-                            "dd.MM.yyyy HH:mm",
-                            { locale: de }
+                            dateFormat,
+                            { locale: dateFnsLocale }
                           )}
                         </TableCell>
                         <TableCell className="text-right font-mono">
@@ -387,7 +390,11 @@ export default function ScadaDataPage() {
               {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Seite {page} von {totalPages} ({total.toLocaleString("de-DE")} Einträge)
+                    {t("pageStatus", {
+                      page,
+                      total: totalPages,
+                      count: total.toLocaleString(intlLocale),
+                    })}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -397,7 +404,7 @@ export default function ScadaDataPage() {
                       disabled={page <= 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      Zurück
+                      {t("prev")}
                     </Button>
                     <Button
                       variant="outline"
@@ -407,7 +414,7 @@ export default function ScadaDataPage() {
                       }
                       disabled={page >= totalPages}
                     >
-                      Weiter
+                      {t("next")}
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import { Building2, TrendingUp, Percent } from "lucide-react";
 import {
@@ -49,6 +50,9 @@ interface Summary {
 }
 
 export default function ParticipationsPage() {
+  const t = useTranslations("portal.participations");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
   const [participations, setParticipations] = useState<Participation[]>([]);
   const [summary, setSummary] = useState<Summary>({
     totalParticipations: 0,
@@ -91,48 +95,58 @@ export default function ParticipationsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Meine Beteiligungen</h1>
-        <p className="text-muted-foreground">
-          Übersicht über alle Ihre Gesellschaftsbeteiligungen
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground">{t("description")}</p>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Beteiligungen</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("stats.participations")}
+            </CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.totalParticipations}</div>
-            <p className="text-xs text-muted-foreground">Aktive Gesellschaften</p>
+            <p className="text-xs text-muted-foreground">
+              {t("stats.activeCompanies")}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gesamtinvestition</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("stats.totalInvestment")}
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(summary.totalInvestment)}
             </div>
-            <p className="text-xs text-muted-foreground">Kapitaleinlage</p>
+            <p className="text-xs text-muted-foreground">
+              {t("stats.capitalContribution")}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gesamtanteil</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("stats.totalShare")}
+            </CardTitle>
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {summary.totalShares.toFixed(2)}%
             </div>
-            <p className="text-xs text-muted-foreground">Durchschnittlich</p>
+            <p className="text-xs text-muted-foreground">
+              {t("stats.averaged")}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -140,27 +154,29 @@ export default function ParticipationsPage() {
       {/* Participations Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Beteiligungsübersicht</CardTitle>
-          <CardDescription>
-            Details zu allen Ihren Gesellschaftsbeteiligungen
-          </CardDescription>
+          <CardTitle>{t("overview.title")}</CardTitle>
+          <CardDescription>{t("overview.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           {participations.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              Sie haben noch keine Beteiligungen.
+              {t("overview.empty")}
             </div>
           ) : (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Gesellschaft</TableHead>
-                    <TableHead>Gesellschafter-Nr.</TableHead>
-                    <TableHead>Beitritt</TableHead>
-                    <TableHead className="text-right">Einlage</TableHead>
-                    <TableHead className="text-right">Anteil</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t("table.company")}</TableHead>
+                    <TableHead>{t("table.shareholderNumber")}</TableHead>
+                    <TableHead>{t("table.joinDate")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("table.contribution")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("table.share")}
+                    </TableHead>
+                    <TableHead>{t("table.status")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -186,7 +202,7 @@ export default function ParticipationsPage() {
                       </TableCell>
                       <TableCell>
                         {p.joinDate
-                          ? format(new Date(p.joinDate), "dd.MM.yyyy", { locale: de })
+                          ? format(new Date(p.joinDate), "dd.MM.yyyy", { locale: dateLocale })
                           : "-"}
                       </TableCell>
                       <TableCell className="text-right font-medium">
@@ -220,24 +236,30 @@ export default function ParticipationsPage() {
               <CardHeader>
                 <CardTitle className="text-lg">{p.fund.name}</CardTitle>
                 <CardDescription>
-                  {p.fund.legalForm || "Keine Rechtsform angegeben"}
+                  {p.fund.legalForm || t("details.noLegalForm")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-muted-foreground">Ihre Einlage</p>
+                    <p className="text-muted-foreground">
+                      {t("details.yourContribution")}
+                    </p>
                     <p className="font-medium">
                       {formatCurrency(p.capitalContribution)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Ihr Anteil</p>
+                    <p className="text-muted-foreground">
+                      {t("details.yourShare")}
+                    </p>
                     <p className="font-medium">{p.sharePercentage.toFixed(2)}%</p>
                   </div>
                   {p.fund.totalCapital && (
                     <div>
-                      <p className="text-muted-foreground">Stammkapital</p>
+                      <p className="text-muted-foreground">
+                        {t("details.totalCapital")}
+                      </p>
                       <p className="font-medium">
                         {formatCurrency(p.fund.totalCapital)}
                       </p>
@@ -245,7 +267,9 @@ export default function ParticipationsPage() {
                   )}
                   {p.fund.managingDirector && (
                     <div>
-                      <p className="text-muted-foreground">Geschäftsführer</p>
+                      <p className="text-muted-foreground">
+                        {t("details.managingDirector")}
+                      </p>
                       <p className="font-medium">{p.fund.managingDirector}</p>
                     </div>
                   )}
@@ -253,7 +277,7 @@ export default function ParticipationsPage() {
                 {p.fund.parks.length > 0 && (
                   <div>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Zugehörige Windparks
+                      {t("details.relatedParks")}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {p.fund.parks.map((park) => (

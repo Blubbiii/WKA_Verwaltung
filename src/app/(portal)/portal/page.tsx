@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import {
   Building2,
@@ -58,6 +59,9 @@ interface VoteItem {
 }
 
 export default function PortalDashboardPage() {
+  const t = useTranslations("portal.dashboard");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? enUS : de;
   const [participations, setParticipations] = useState<Participation[]>([]);
   const [distributions, setDistributions] = useState<Distribution[]>([]);
   const [votes, setVotes] = useState<VoteItem[]>([]);
@@ -134,23 +138,25 @@ export default function PortalDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Mein Dashboard</h1>
-        <p className="text-muted-foreground">
-          Übersicht über Ihre Beteiligungen und Aktivitäten
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground">{t("description")}</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Beteiligungen</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t("stats.participations")}
+            </CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{participations.length}</div>
             <p className="text-xs text-muted-foreground">
-              Gesamtinvestition: {formatCurrency(summary.totalInvestment)}
+              {t("stats.totalInvestment", {
+                amount: formatCurrency(summary.totalInvestment),
+              })}
             </p>
           </CardContent>
         </Card>
@@ -158,7 +164,7 @@ export default function PortalDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Ausschüttungen
+              {t("stats.distributions")}
             </CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -167,7 +173,7 @@ export default function PortalDashboardPage() {
               {formatCurrency(summary.totalDistributed)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Gesamt erhalten
+              {t("stats.totalReceived")}
             </p>
           </CardContent>
         </Card>
@@ -175,14 +181,14 @@ export default function PortalDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Offene Abstimmungen
+              {t("stats.pendingVotes")}
             </CardTitle>
             <Vote className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.pendingVotes}</div>
             <p className="text-xs text-muted-foreground">
-              Ihre Stimme wird erwartet
+              {t("stats.yourVoteExpected")}
             </p>
           </CardContent>
         </Card>
@@ -194,16 +200,14 @@ export default function PortalDashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Meine Beteiligungen
+              {t("participations.title")}
             </CardTitle>
-            <CardDescription>
-              Ihre aktiven Gesellschaftsbeteiligungen
-            </CardDescription>
+            <CardDescription>{t("participations.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             {participations.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Keine Beteiligungen vorhanden
+                {t("participations.empty")}
               </p>
             ) : (
               <div className="space-y-4">
@@ -215,7 +219,7 @@ export default function PortalDashboardPage() {
                     <div>
                       <p className="font-medium">{p.fund.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {p.shareholderNumber || "Keine Nr."}
+                        {p.shareholderNumber || t("participations.noNumber")}
                       </p>
                     </div>
                     <div className="text-right">
@@ -232,7 +236,7 @@ export default function PortalDashboardPage() {
             )}
             <Button variant="ghost" className="w-full mt-4" asChild>
               <Link href="/portal/participations">
-                Alle anzeigen
+                {t("participations.showAll")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -244,16 +248,14 @@ export default function PortalDashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5" />
-              Letzte Ausschüttungen
+              {t("distributions.title")}
             </CardTitle>
-            <CardDescription>
-              Ihre letzten erhaltenen Gutschriften
-            </CardDescription>
+            <CardDescription>{t("distributions.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             {distributions.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Keine Ausschüttungen vorhanden
+                {t("distributions.empty")}
               </p>
             ) : (
               <div className="space-y-4">
@@ -274,7 +276,7 @@ export default function PortalDashboardPage() {
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {format(new Date(d.invoiceDate), "dd.MM.yyyy", {
-                          locale: de,
+                          locale: dateLocale,
                         })}
                       </p>
                     </div>
@@ -284,7 +286,7 @@ export default function PortalDashboardPage() {
             )}
             <Button variant="ghost" className="w-full mt-4" asChild>
               <Link href="/portal/distributions">
-                Alle anzeigen
+                {t("distributions.showAll")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -298,11 +300,9 @@ export default function PortalDashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-800">
               <AlertCircle className="h-5 w-5" />
-              Offene Abstimmungen
+              {t("votes.title")}
             </CardTitle>
-            <CardDescription>
-              Bitte stimmen Sie bis zum Ablaufdatum ab
-            </CardDescription>
+            <CardDescription>{t("votes.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -322,13 +322,13 @@ export default function PortalDashboardPage() {
                       <div className="flex items-center gap-1 text-sm text-orange-600">
                         <Clock className="h-3 w-3" />
                         {format(new Date(vote.deadline), "dd.MM.yyyy", {
-                          locale: de,
+                          locale: dateLocale,
                         })}
                       </div>
                     </div>
                     <Button size="sm" asChild>
                       <Link href={`/portal/votes/${vote.id}`}>
-                        Abstimmen
+                        {t("votes.vote")}
                       </Link>
                     </Button>
                   </div>
@@ -337,7 +337,7 @@ export default function PortalDashboardPage() {
             </div>
             <Button variant="ghost" className="w-full mt-4" asChild>
               <Link href="/portal/votes">
-                Alle Abstimmungen
+                {t("votes.showAll")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>

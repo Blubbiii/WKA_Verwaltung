@@ -8,6 +8,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RuleForm } from "@/components/admin/billing-rules";
@@ -24,6 +25,7 @@ interface Park {
 }
 
 export default function NewBillingRulePage() {
+  const t = useTranslations("admin.billingRules");
   const [funds, setFunds] = useState<Fund[]>([]);
   const [parks, setParks] = useState<Park[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,14 +49,14 @@ export default function NewBillingRulePage() {
           setParks(parksData.data || []);
         }
       } catch {
-        toast.error("Fehler beim Laden der Daten");
+        toast.error(t("loadError"));
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [t]);
 
   if (isLoading) {
     return (
@@ -75,10 +77,8 @@ export default function NewBillingRulePage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Neue Abrechnungsregel</h1>
-          <p className="text-muted-foreground">
-            Erstellen Sie eine neue automatische Abrechnungsregel
-          </p>
+          <h1 className="text-3xl font-bold">{t("newTitle")}</h1>
+          <p className="text-muted-foreground">{t("newDescription")}</p>
         </div>
       </div>
 

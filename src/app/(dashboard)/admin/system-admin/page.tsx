@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +28,7 @@ function LoadingSkeleton() {
 }
 
 function SystemAdminPageInner() {
+  const t = useTranslations("admin.systemAdmin");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") || "health";
@@ -38,35 +40,35 @@ function SystemAdminPageInner() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="System"
-        description="Server, Konfiguration, Feature-Flags und Backups"
+        title={t("title")}
+        description={t("description")}
       />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="health" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
-            Server & Health
+            {t("tabHealth")}
           </TabsTrigger>
           <TabsTrigger value="config" className="flex items-center gap-2">
             <Cog className="h-4 w-4" />
-            Konfiguration
+            {t("tabConfig")}
           </TabsTrigger>
           <TabsTrigger value="flags" className="flex items-center gap-2">
             <ToggleLeft className="h-4 w-4" />
-            Feature-Flags & Limits
+            {t("tabFlags")}
           </TabsTrigger>
           <TabsTrigger value="backup" className="flex items-center gap-2">
             <HardDrive className="h-4 w-4" />
-            Backup & Speicher
+            {t("tabBackup")}
           </TabsTrigger>
           <TabsTrigger value="translations" className="flex items-center gap-2">
             <Languages className="h-4 w-4" />
-            Übersetzungen
+            {t("tabTranslations")}
           </TabsTrigger>
           <TabsTrigger value="widgets" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            Widget-Rollen
+            {t("tabWidgets")}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="health">

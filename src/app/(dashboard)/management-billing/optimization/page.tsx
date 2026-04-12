@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { TrendingUp, Eye } from "lucide-react";
 import {
   Card,
@@ -44,27 +45,12 @@ interface OptimizationMeasure {
 // CONSTANTS
 // =============================================================================
 
-const statusLabels: Record<string, string> = {
-  OPEN: "Offen",
-  IN_PROGRESS: "In Bearbeitung",
-  COMPLETED: "Abgeschlossen",
-  CANCELLED: "Abgebrochen",
-  ON_HOLD: "Pausiert",
-};
-
 const statusBadgeColors: Record<string, string> = {
   OPEN: "bg-yellow-100 text-yellow-800",
   IN_PROGRESS: "bg-blue-100 text-blue-800",
   COMPLETED: "bg-green-100 text-green-800",
   CANCELLED: "bg-gray-100 text-gray-800",
   ON_HOLD: "bg-orange-100 text-orange-800",
-};
-
-const priorityLabels: Record<string, string> = {
-  LOW: "Niedrig",
-  MEDIUM: "Mittel",
-  HIGH: "Hoch",
-  CRITICAL: "Kritisch",
 };
 
 const priorityBadgeColors: Record<string, string> = {
@@ -87,6 +73,7 @@ const CATEGORY_OPTIONS = [
 // =============================================================================
 
 export default function OptimizationListPage() {
+  const t = useTranslations("managementBilling.optList");
   const router = useRouter();
   const [measures, setMeasures] = useState<OptimizationMeasure[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,37 +127,37 @@ export default function OptimizationListPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Optimierungsmassnahmen"
-        description="Verbesserungsmassnahmen fuer Windparks planen und verfolgen"
+        title={t("title")}
+        description={t("description")}
         createHref="/management-billing/optimization/new"
-        createLabel="Neue Massnahme"
+        createLabel={t("createLabel")}
       />
 
       {/* Filter Bar */}
       <SearchFilter
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Titel, Kategorie oder Park suchen..."
+        searchPlaceholder={t("searchPlaceholder")}
         filters={[
           {
             value: statusFilter,
             onChange: setStatusFilter,
-            placeholder: "Alle Status",
+            placeholder: t("filter.allStatus"),
             options: [
-              { value: "all", label: "Alle Status" },
-              { value: "OPEN", label: "Offen" },
-              { value: "IN_PROGRESS", label: "In Bearbeitung" },
-              { value: "COMPLETED", label: "Abgeschlossen" },
-              { value: "CANCELLED", label: "Abgebrochen" },
-              { value: "ON_HOLD", label: "Pausiert" },
+              { value: "all", label: t("filter.allStatus") },
+              { value: "OPEN", label: t("status.OPEN") },
+              { value: "IN_PROGRESS", label: t("status.IN_PROGRESS") },
+              { value: "COMPLETED", label: t("status.COMPLETED") },
+              { value: "CANCELLED", label: t("status.CANCELLED") },
+              { value: "ON_HOLD", label: t("status.ON_HOLD") },
             ],
           },
           {
             value: categoryFilter,
             onChange: setCategoryFilter,
-            placeholder: "Alle Kategorien",
+            placeholder: t("filter.allCategories"),
             options: [
-              { value: "all", label: "Alle Kategorien" },
+              { value: "all", label: t("filter.allCategories") },
               ...CATEGORY_OPTIONS.map((c) => ({ value: c, label: c })),
             ],
             width: "w-[200px]",
@@ -201,7 +188,7 @@ export default function OptimizationListPage() {
         <Card>
           <CardContent className="py-8">
             <p className="text-center text-destructive">
-              Fehler beim Laden der Massnahmen. Bitte versuchen Sie es erneut.
+              {t("errorLoading")}
             </p>
           </CardContent>
         </Card>
@@ -210,17 +197,17 @@ export default function OptimizationListPage() {
           <CardContent>
             <EmptyState
               icon={TrendingUp}
-              title={measures.length === 0 ? "Keine Massnahmen" : "Keine Ergebnisse"}
+              title={measures.length === 0 ? t("empty.none.title") : t("empty.noResults.title")}
               description={
                 measures.length === 0
-                  ? "Erstellen Sie die erste Optimierungsmassnahme, um Verbesserungen zu planen."
-                  : "Passen Sie Ihre Suchkriterien an, um Ergebnisse zu finden."
+                  ? t("empty.none.description")
+                  : t("empty.noResults.description")
               }
               action={
                 measures.length === 0 ? (
                   <Button asChild>
                     <Link href="/management-billing/optimization/new">
-                      Massnahme erstellen
+                      {t("empty.action")}
                     </Link>
                   </Button>
                 ) : undefined
@@ -235,15 +222,15 @@ export default function OptimizationListPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Titel</TableHead>
-                    <TableHead>Kategorie</TableHead>
-                    <TableHead>Prioritaet</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Park</TableHead>
-                    <TableHead className="text-right">Gesch. Kosten</TableHead>
-                    <TableHead className="text-right">Tats. Kosten</TableHead>
-                    <TableHead>Faellig am</TableHead>
-                    <TableHead className="text-right">Aktionen</TableHead>
+                    <TableHead>{t("table.title")}</TableHead>
+                    <TableHead>{t("table.category")}</TableHead>
+                    <TableHead>{t("table.priority")}</TableHead>
+                    <TableHead>{t("table.status")}</TableHead>
+                    <TableHead>{t("table.park")}</TableHead>
+                    <TableHead className="text-right">{t("table.estimatedCost")}</TableHead>
+                    <TableHead className="text-right">{t("table.actualCost")}</TableHead>
+                    <TableHead>{t("table.dueDate")}</TableHead>
+                    <TableHead className="text-right">{t("table.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -268,7 +255,7 @@ export default function OptimizationListPage() {
                           variant="secondary"
                           className={priorityBadgeColors[measure.priority] ?? ""}
                         >
-                          {priorityLabels[measure.priority] ?? measure.priority}
+                          {t(`priority.${measure.priority}` as never)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -276,7 +263,7 @@ export default function OptimizationListPage() {
                           variant="secondary"
                           className={statusBadgeColors[measure.status] ?? ""}
                         >
-                          {statusLabels[measure.status] ?? measure.status}
+                          {t(`status.${measure.status}` as never)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -294,7 +281,7 @@ export default function OptimizationListPage() {
                           variant="ghost"
                           size="icon"
                           asChild
-                          title="Details anzeigen"
+                          title={t("actionShowDetails")}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Link href={`/management-billing/optimization/${measure.id}`}>

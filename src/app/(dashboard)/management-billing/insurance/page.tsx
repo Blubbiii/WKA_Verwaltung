@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Shield, FileWarning, AlertTriangle, Clock } from "lucide-react";
 import {
   Card,
@@ -55,18 +56,12 @@ const statusBadgeColors: Record<string, string> = {
   DRAFT: "bg-yellow-100 text-yellow-800",
 };
 
-const statusLabels: Record<string, string> = {
-  ACTIVE: "Aktiv",
-  EXPIRED: "Abgelaufen",
-  CANCELLED: "Gekuendigt",
-  DRAFT: "Entwurf",
-};
-
 // =============================================================================
 // PAGE COMPONENT
 // =============================================================================
 
 export default function InsuranceOverviewPage() {
+  const t = useTranslations("managementBilling.insurance");
   const [policies, setPolicies] = useState<InsurancePolicy[]>([]);
   const [claimSummary, setClaimSummary] = useState<ClaimSummary | null>(null);
   const [policiesLoading, setPoliciesLoading] = useState(true);
@@ -119,10 +114,10 @@ export default function InsuranceOverviewPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Versicherungen"
-        description="Versicherungsvertraege und Schadensfaelle verwalten"
+        title={t("title")}
+        description={t("description")}
         createHref="/management-billing/insurance/claims/new"
-        createLabel="Neuer Schadensfall"
+        createLabel={t("createLabel")}
       />
 
       {/* ================================================================= */}
@@ -132,11 +127,9 @@ export default function InsuranceOverviewPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Versicherungsvertraege
+            {t("policies.title")}
           </CardTitle>
-          <CardDescription>
-            Uebersicht aller aktiven und abgelaufenen Versicherungsvertraege
-          </CardDescription>
+          <CardDescription>{t("policies.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           {policiesLoading ? (
@@ -152,13 +145,13 @@ export default function InsuranceOverviewPage() {
             </div>
           ) : policiesError ? (
             <p className="text-center text-destructive py-4">
-              Fehler beim Laden der Versicherungsvertraege.
+              {t("policies.error")}
             </p>
           ) : policies.length === 0 ? (
             <EmptyState
               icon={Shield}
-              title="Keine Versicherungsvertraege"
-              description="Es wurden noch keine Versicherungsvertraege angelegt."
+              title={t("policies.empty.title")}
+              description={t("policies.empty.description")}
             />
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -177,7 +170,7 @@ export default function InsuranceOverviewPage() {
                         variant="secondary"
                         className={statusBadgeColors[policy.status] ?? "bg-gray-100 text-gray-800"}
                       >
-                        {statusLabels[policy.status] ?? policy.status}
+                        {t(`status.${policy.status}` as never)}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -190,7 +183,7 @@ export default function InsuranceOverviewPage() {
                     )}
                     <div className="text-xs text-muted-foreground">
                       {formatDate(policy.startDate)}
-                      {policy.endDate ? ` – ${formatDate(policy.endDate)}` : " – unbefristet"}
+                      {policy.endDate ? ` – ${formatDate(policy.endDate)}` : ` – ${t("policies.openEnded")}`}
                     </div>
                   </div>
                 </Link>
@@ -209,15 +202,13 @@ export default function InsuranceOverviewPage() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <FileWarning className="h-5 w-5 text-primary" />
-                Offene Schadensfaelle
+                {t("claims.title")}
               </CardTitle>
-              <CardDescription>
-                Zusammenfassung aller gemeldeten Schadensfaelle
-              </CardDescription>
+              <CardDescription>{t("claims.description")}</CardDescription>
             </div>
             <Button variant="outline" asChild>
               <Link href="/management-billing/insurance/claims">
-                Alle anzeigen
+                {t("claims.showAll")}
               </Link>
             </Button>
           </div>
@@ -234,17 +225,17 @@ export default function InsuranceOverviewPage() {
             </div>
           ) : claimsError ? (
             <p className="text-center text-destructive py-4">
-              Fehler beim Laden der Schadensfaelle.
+              {t("claims.error")}
             </p>
           ) : !claimSummary || claimSummary.total === 0 ? (
             <EmptyState
               icon={FileWarning}
-              title="Keine Schadensfaelle"
-              description="Es wurden noch keine Schadensfaelle gemeldet."
+              title={t("claims.empty.title")}
+              description={t("claims.empty.description")}
               action={
                 <Button asChild>
                   <Link href="/management-billing/insurance/claims/new">
-                    Schadensfall melden
+                    {t("claims.empty.action")}
                   </Link>
                 </Button>
               }
@@ -254,26 +245,26 @@ export default function InsuranceOverviewPage() {
               columns={4}
               stats={[
                 {
-                  label: "Gesamt",
+                  label: t("stats.total"),
                   value: claimSummary.total,
                   icon: FileWarning,
                 },
                 {
-                  label: "Gemeldet",
+                  label: t("stats.reported"),
                   value: claimSummary.byStatus.REPORTED ?? 0,
                   icon: AlertTriangle,
                   iconClassName: "text-yellow-600",
                   cardClassName: "border-l-yellow-400",
                 },
                 {
-                  label: "In Bearbeitung",
+                  label: t("stats.inProgress"),
                   value: claimSummary.byStatus.CLAIM_IN_PROGRESS ?? 0,
                   icon: Clock,
                   iconClassName: "text-blue-600",
                   cardClassName: "border-l-blue-400",
                 },
                 {
-                  label: "Geschaetzte Kosten",
+                  label: t("stats.estimatedCost"),
                   value: formatCurrency(claimSummary.totalEstimatedCost),
                   icon: Shield,
                   valueClassName: "text-lg",

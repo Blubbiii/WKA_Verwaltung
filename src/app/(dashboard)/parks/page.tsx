@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
@@ -91,6 +92,7 @@ interface ParksResponse {
 
 export default function ParksPage() {
   const router = useRouter();
+  const t = useTranslations("parks.list");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -137,7 +139,7 @@ export default function ParksPage() {
 
   function handleBulkCsvExport() {
     const selected = parks.filter(p => selectedIds.has(p.id));
-    const header = "Name;Standort;Leistung (MW);Anlagen;Status";
+    const header = t("csvHeader");
     const rows = selected.map(p => `"${p.name}";"${p.city || ''}";"${(p.stats?.totalCapacityKw ?? 0) / 1000}";"${p.stats?.turbineCount ?? 0}";"${p.status}"`);
     const csv = "\uFEFF" + [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -150,7 +152,7 @@ export default function ParksPage() {
   }
 
   async function handleBulkDelete() {
-    if (!confirm(`${selectedCount} Parks wirklich löschen?`)) return;
+    if (!confirm(t("bulkDeleteConfirm", { count: selectedCount }))) return;
     let deleted = 0;
     for (const id of selectedIds) {
       try {
@@ -158,7 +160,7 @@ export default function ParksPage() {
         if (res.ok) deleted++;
       } catch { /* skip */ }
     }
-    toast.success(`${deleted} Parks gelöscht`);
+    toast.success(t("bulkDeleted", { count: deleted }));
     clearSelection();
     refetch();
   }
@@ -172,18 +174,18 @@ export default function ParksPage() {
         body: JSON.stringify({ status: "ARCHIVED" }),
       });
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Fehler beim Archivieren" }));
-        throw new Error(error.error || "Fehler beim Archivieren");
+        const error = await response.json().catch(() => ({ error: t("archiveError") }));
+        throw new Error(error.error || t("archiveError"));
       }
       return response.json();
     },
     {
       onSuccess: () => {
-        toast.success("Park wurde archiviert");
+        toast.success(t("archiveSuccess"));
         invalidate(["parks"]);
       },
       onError: () => {
-        toast.error("Fehler beim Archivieren");
+        toast.error(t("archiveError"));
       },
       onSettled: () => {
         setArchiveDialogOpen(false);
@@ -199,18 +201,18 @@ export default function ParksPage() {
         method: "DELETE",
       });
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: "Fehler beim Löschen" }));
-        throw new Error(error.error || "Fehler beim Löschen");
+        const error = await response.json().catch(() => ({ error: t("deleteError") }));
+        throw new Error(error.error || t("deleteError"));
       }
       return response.json();
     },
     {
       onSuccess: () => {
-        toast.success("Park wurde unwiderruflich gelöscht");
+        toast.success(t("deleteSuccess"));
         invalidate(["parks"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Löschen");
+        toast.error(error.message || t("deleteError"));
       },
     }
   );
@@ -245,9 +247,9 @@ export default function ParksPage() {
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-destructive">Fehler beim Laden der Windparks</p>
+        <p className="text-destructive">{t("loadError")}</p>
         <Button onClick={() => refetch()} variant="outline" className="mt-4">
-          Erneut versuchen
+          {t("retry")}
         </Button>
       </div>
     );
@@ -257,10 +259,10 @@ export default function ParksPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Windparks"
-        description="Verwalten Sie Ihre Windparks und Anlagen"
+        title={t("title")}
+        description={t("subtitle")}
         createHref="/parks/new"
-        createLabel="Neuer Park"
+        createLabel={t("newPark")}
       />
 
       {/* Stats Cards */}
@@ -268,22 +270,22 @@ export default function ParksPage() {
         columns={3}
         stats={[
           {
-            label: "Windparks",
+            label: t("statCardParks"),
             value: totalStats.parks,
             icon: Wind,
-            subtitle: `${parks.filter((p) => p.status === "ACTIVE").length} aktiv`,
+            subtitle: t("statActiveCount", { count: parks.filter((p) => p.status === "ACTIVE").length }),
           },
           {
-            label: "Anlagen",
+            label: t("statCardTurbines"),
             value: totalStats.turbines,
             icon: Zap,
-            subtitle: "Windkraftanlagen gesamt",
+            subtitle: t("statTurbinesSubtitle"),
           },
           {
-            label: "Gesamtleistung",
+            label: t("statCardTotalPower"),
             value: formatCapacity(totalStats.capacity),
             icon: Zap,
-            subtitle: "Installierte Kapazität",
+            subtitle: t("statInstalledCapacity"),
           },
         ]}
       />
@@ -291,27 +293,27 @@ export default function ParksPage() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Parks</CardTitle>
+          <CardTitle>{t("parksHeader")}</CardTitle>
           <CardDescription>
-            Übersicht aller Windparks in Ihrem Portfolio
+            {t("portfolioSubtitle")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <SearchFilter
             search={search}
             onSearchChange={setSearch}
-            searchPlaceholder="Suchen nach Name, Ort..."
+            searchPlaceholder={t("searchPlaceholder")}
             filters={[
               {
                 value: statusFilter,
                 onChange: (val) => { setStatusFilter(val); setPage(1); },
-                placeholder: "Status",
+                placeholder: t("statusFilter"),
                 icon: <Filter className="mr-2 h-4 w-4" />,
                 options: [
-                  { value: "all", label: "Alle Status" },
-                  { value: "ACTIVE", label: "Aktiv" },
-                  { value: "INACTIVE", label: "Inaktiv" },
-                  { value: "ARCHIVED", label: "Archiviert" },
+                  { value: "all", label: t("statusAll") },
+                  { value: "ACTIVE", label: t("statusActive") },
+                  { value: "INACTIVE", label: t("statusInactive") },
+                  { value: "ARCHIVED", label: t("statusArchived") },
                 ],
               },
             ]}
@@ -323,7 +325,7 @@ export default function ParksPage() {
                 onClick={() => setViewMode("table")}
               >
                 <List className="mr-2 h-4 w-4" />
-                Liste
+                {t("listView")}
               </Button>
               <Button
                 variant={viewMode === "map" ? "default" : "ghost"}
@@ -331,7 +333,7 @@ export default function ParksPage() {
                 onClick={() => setViewMode("map")}
               >
                 <Map className="mr-2 h-4 w-4" />
-                Karte
+                {t("mapView")}
               </Button>
             </div>
           </SearchFilter>
@@ -346,16 +348,16 @@ export default function ParksPage() {
                     <Checkbox
                       checked={isAllSelected}
                       onCheckedChange={toggleAll}
-                      aria-label="Alle auswählen"
+                      aria-label={t("selectAll")}
                       {...(isSomeSelected ? { "data-state": "indeterminate" } : {})}
                     />
                   </TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Standort</TableHead>
-                  <TableHead className="text-center">Anlagen</TableHead>
-                  <TableHead className="text-right">Leistung</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Notizen</TableHead>
+                  <TableHead>{t("name")}</TableHead>
+                  <TableHead>{t("location")}</TableHead>
+                  <TableHead className="text-center">{t("turbines")}</TableHead>
+                  <TableHead className="text-right">{t("capacity")}</TableHead>
+                  <TableHead>{t("status")}</TableHead>
+                  <TableHead>{t("notes")}</TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -394,8 +396,8 @@ export default function ParksPage() {
                     <TableCell colSpan={8} className="p-0">
                       <EmptyState
                         icon={Wind}
-                        title="Keine Parks gefunden"
-                        description="Es wurden keine Windparks gefunden, die Ihren Filterkriterien entsprechen."
+                        title={t("empty")}
+                        description={t("emptyDesc")}
                       />
                     </TableCell>
                   </TableRow>
@@ -412,7 +414,7 @@ export default function ParksPage() {
                         <Checkbox
                           checked={selectedIds.has(park.id)}
                           onCheckedChange={() => toggleItem(park.id)}
-                          aria-label={`${park.name} auswählen`}
+                          aria-label={t("selectPark", { name: park.name })}
                         />
                       </TableCell>
                       <TableCell>
@@ -477,7 +479,7 @@ export default function ParksPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label="Details anzeigen"
+                            aria-label={t("viewDetails")}
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/parks/${park.id}`);
@@ -489,7 +491,7 @@ export default function ParksPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label="Bearbeiten"
+                            aria-label={t("edit")}
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/parks/${park.id}/edit`);
@@ -502,7 +504,7 @@ export default function ParksPage() {
                               asChild
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Weitere Aktionen">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("moreActions")}>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -514,7 +516,7 @@ export default function ParksPage() {
                                 }}
                               >
                                 <Archive className="mr-2 h-4 w-4" />
-                                Archivieren
+                                {t("archive")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => {
@@ -525,7 +527,7 @@ export default function ParksPage() {
                                 className="text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Löschen
+                                {t("delete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -559,9 +561,11 @@ export default function ParksPage() {
           {viewMode === "table" && pagination.totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Zeige {(pagination.page - 1) * pagination.limit + 1} bis{" "}
-                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-                von {pagination.total} Parks
+                {t("paginationInfo", {
+                  from: (pagination.page - 1) * pagination.limit + 1,
+                  to: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: pagination.total,
+                })}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -570,7 +574,7 @@ export default function ParksPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Zurück
+                  {t("prev")}
                 </Button>
                 <Button
                   variant="outline"
@@ -578,7 +582,7 @@ export default function ParksPage() {
                   disabled={page >= pagination.totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  Weiter
+                  {t("next")}
                 </Button>
               </div>
             </div>
@@ -591,8 +595,8 @@ export default function ParksPage() {
         open={archiveDialogOpen}
         onOpenChange={setArchiveDialogOpen}
         onConfirm={handleConfirmArchive}
-        title="Archivieren bestätigen"
-        description="Möchten Sie diesen Park wirklich archivieren?"
+        title={t("archiveTitle")}
+        description={t("archiveDesc")}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -605,7 +609,7 @@ export default function ParksPage() {
             setParkToDelete(null);
           }
         }}
-        title="Park löschen"
+        title={t("deleteTitle")}
         itemName={parkToDelete?.name}
       />
 
@@ -613,8 +617,8 @@ export default function ParksPage() {
         selectedCount={selectedCount}
         onClearSelection={clearSelection}
         actions={[
-          { label: "CSV Export", icon: <Download className="h-4 w-4" />, onClick: handleBulkCsvExport },
-          { label: "Löschen", icon: <Trash2 className="h-4 w-4" />, onClick: handleBulkDelete, variant: "destructive" as const },
+          { label: t("csvExport"), icon: <Download className="h-4 w-4" />, onClick: handleBulkCsvExport },
+          { label: t("delete"), icon: <Trash2 className="h-4 w-4" />, onClick: handleBulkDelete, variant: "destructive" as const },
         ]}
       />
     </div>

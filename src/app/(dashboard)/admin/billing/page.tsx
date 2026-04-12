@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +25,7 @@ function LoadingSkeleton() {
 }
 
 function BillingPageInner() {
+  const t = useTranslations("admin.billing");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") || "nummernkreise";
@@ -35,23 +37,23 @@ function BillingPageInner() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Abrechnung"
-        description="Nummernkreise, Abrechnungsregeln und Perioden verwalten"
+        title={t("title")}
+        description={t("description")}
       />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="nummernkreise" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Nummernkreise & Vorlagen
+            {t("tabSequences")}
           </TabsTrigger>
           <TabsTrigger value="regeln" className="flex items-center gap-2">
             <Receipt className="h-4 w-4" />
-            Abrechnungsregeln
+            {t("tabRules")}
           </TabsTrigger>
           <TabsTrigger value="perioden" className="flex items-center gap-2">
             <CalendarClock className="h-4 w-4" />
-            Perioden
+            {t("tabPeriods")}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="nummernkreise">

@@ -268,7 +268,67 @@
     "status": "Status",
     "active": "Aktiv",
     "inactive": "Inaktiv",
-    "maintenance": "Wartung"
+    "maintenance": "Wartung",
+    "edit": {
+      "parkNotFound": "Park nicht gefunden",
+      "loadError": "Fehler beim Laden",
+      "loadErrorPark": "Fehler beim Laden des Parks",
+      "backToList": "Zurück zur Übersicht",
+      "editTitle": "{name} bearbeiten",
+      "editSubtitle": "Ändern Sie die Daten des Windparks"
+    },
+    "list": {
+      "title": "Windparks",
+      "subtitle": "Verwalten Sie Ihre Windparks und Anlagen",
+      "newPark": "Neuer Park",
+      "parksHeader": "Parks",
+      "portfolioSubtitle": "Übersicht aller Windparks in Ihrem Portfolio",
+      "searchPlaceholder": "Suchen nach Name, Ort...",
+      "statusFilter": "Status",
+      "statusAll": "Alle Status",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "statusArchived": "Archiviert",
+      "listView": "Liste",
+      "mapView": "Karte",
+      "selectAll": "Alle auswählen",
+      "name": "Name",
+      "location": "Standort",
+      "turbines": "Anlagen",
+      "capacity": "Leistung",
+      "status": "Status",
+      "notes": "Notizen",
+      "empty": "Keine Parks gefunden",
+      "emptyDesc": "Es wurden keine Windparks gefunden, die Ihren Filterkriterien entsprechen.",
+      "selectPark": "{name} auswählen",
+      "viewDetails": "Details anzeigen",
+      "edit": "Bearbeiten",
+      "moreActions": "Weitere Aktionen",
+      "archive": "Archivieren",
+      "delete": "Löschen",
+      "bulkDeleteConfirm": "{count} Parks wirklich löschen?",
+      "bulkDeleted": "{count} Parks gelöscht",
+      "csvHeader": "Name;Standort;Leistung (MW);Anlagen;Status",
+      "csvExport": "CSV Export",
+      "loadError": "Fehler beim Laden der Windparks",
+      "retry": "Erneut versuchen",
+      "statCardParks": "Windparks",
+      "statActiveCount": "{count} aktiv",
+      "statCardTurbines": "Anlagen",
+      "statTurbinesSubtitle": "Windkraftanlagen gesamt",
+      "statCardTotalPower": "Gesamtleistung",
+      "statInstalledCapacity": "Installierte Kapazität",
+      "archiveError": "Fehler beim Archivieren",
+      "archiveSuccess": "Park wurde archiviert",
+      "deleteError": "Fehler beim Löschen",
+      "deleteSuccess": "Park wurde unwiderruflich gelöscht",
+      "archiveTitle": "Archivieren bestätigen",
+      "archiveDesc": "Möchten Sie diesen Park wirklich archivieren?",
+      "deleteTitle": "Park löschen",
+      "paginationInfo": "Zeige {from} bis {to} von {total} Parks",
+      "prev": "Zurück",
+      "next": "Weiter"
+    }
   },
   "invoices": {
     "title": "Rechnungen",
@@ -936,12 +996,86 @@
     "title": "Energiedaten",
     "production": "Produktion",
     "settlements": "Abrechnungen",
-    "scada": "Ertragsdaten",
+    "scada": {
+      "title": "SCADA-Import & Verwaltung",
+      "subtitle": "Import und Zuordnung der Enercon SCADA-Messdaten (DBF/WSD/UID)",
+      "tabs": {
+        "mappings": "Zuordnungen",
+        "import": "Import",
+        "autoImport": "Auto-Import",
+        "logs": "Protokolle"
+      }
+    },
     "analytics": "Analytics",
     "reports": "Berichte",
     "availability": "Verfügbarkeit",
     "windSpeed": "Windgeschwindigkeit",
-    "powerOutput": "Leistung"
+    "powerOutput": "Leistung",
+    "settlementsWizard": {
+      "metaTitle": "Abrechnung erstellen"
+    },
+    "productionEdit": {
+      "notFound": "Nicht gefunden",
+      "dataNotFound": "Netzbetreiber-Daten nicht gefunden",
+      "validProductionRequired": "Bitte geben Sie eine gültige Produktionsmenge ein",
+      "saveError": "Fehler beim Speichern",
+      "dataUpdated": "Netzbetreiber-Daten aktualisiert",
+      "noticeBanner": "Die Bearbeitung ist auch direkt über die Produktionsdaten-Seite erreichbar.",
+      "toOverview": "Zur Übersicht",
+      "title": "Produktionsdaten bearbeiten",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "invoicedLocked": "Abgerechnete Datensätze können nicht bearbeitet werden. Stornieren Sie zuerst die zugehörige Gutschrift.",
+      "productionRevenue": "Produktion & Erlös",
+      "productionRevenueDesc": "Produktionswerte und Erlöse anpassen",
+      "productionKwh": "Produktion (kWh) *",
+      "productionPlaceholder": "0,000",
+      "revenueEur": "Erlös (EUR)",
+      "revenueOptional": "optional",
+      "notes": "Bemerkungen",
+      "notesPlaceholder": "Optionale Bemerkungen",
+      "details": "Details",
+      "detailsDesc": "Diese Felder können nicht geändert werden",
+      "park": "Park",
+      "turbine": "Anlage",
+      "period": "Zeitraum",
+      "revenueType": "Vergütungsart",
+      "source": "Quelle",
+      "sourceLabels": {
+        "MANUAL": "Manuell",
+        "CSV_IMPORT": "CSV Import",
+        "EXCEL_IMPORT": "Excel Import",
+        "SCADA": "SCADA"
+      }
+    },
+    "scadaData": {
+      "title": "SCADA-Messdaten",
+      "subtitle": "10-Minuten-Messdaten der Windenergieanlagen",
+      "filter": "Filter",
+      "park": "Park",
+      "parkPlaceholder": "Park wählen...",
+      "loading": "Laden...",
+      "turbine": "Anlage",
+      "parkFirst": "Erst Park wählen",
+      "turbinePlaceholder": "Anlage wählen...",
+      "from": "Von",
+      "to": "Bis",
+      "measurements": "Messdaten",
+      "countFound": "{count} Messwerte gefunden",
+      "noDataInRange": "Keine Messdaten im gewählten Zeitraum",
+      "selectTurbine": "Bitte wählen Sie eine Anlage aus",
+      "emptyLine1": "Wählen Sie einen Park und eine Anlage aus,",
+      "emptyLine2": "um die SCADA-Messdaten anzuzeigen.",
+      "noDataInRangeFull": "Keine Messdaten im gewählten Zeitraum vorhanden",
+      "colTimestamp": "Zeitstempel",
+      "colWind": "Wind (m/s)",
+      "colPower": "Leistung (kW)",
+      "colRotor": "Rotor (U/min)",
+      "colNacelle": "Gondel (Grad)",
+      "pageStatus": "Seite {page} von {total} ({count} Einträge)",
+      "prev": "Zurück",
+      "next": "Weiter"
+    }
   },
   "settlement": {
     "title": "Pachtabrechnungen",
@@ -2805,8 +2939,8 @@
         "unlimited": "unbefristet",
         "daysRemaining": "Noch {days} Tage"
       },
-      "actions": {
-        "detailsAria": "Details anzeigen",
+      "actions""amount": "Betrag",
+        "status": "Status,
         "editAria": "Bearbeiten",
         "moreAria": "Weitere Aktionen",
         "delete": "Löschen",
@@ -3809,6 +3943,527 @@
     "settlementMode": {
       "NETWORK_COMPANY": "Netzgesellschaft rechnet ab",
       "OPERATOR_DIRECT": "Betreiber rechnet selbst ab"
+    }
+  },
+  "managementBilling": {
+    "overview": {
+      "title": "Betriebsführung - Übersicht",
+      "description": "Zusammenfassung aller Betriebsführungs-Verträge und Abrechnungen",
+      "errorLoading": "Fehler beim Laden der Übersichtsdaten. Bitte versuchen Sie es erneut.",
+      "kpi": {
+        "activeContracts": "Aktive Verträge",
+        "activeContractsDesc": "Aktive BF-Verträge",
+        "billingEnabled": "Abrechnungsfähig",
+        "billingEnabledDesc": "Verträge mit aktiver Abrechnung",
+        "totalNet": "Gesamtbetrag Netto",
+        "totalNetDesc": "Summe aller Netto-Gebühren",
+        "invoiced": "Fakturiert",
+        "invoicedDesc": "Bereits fakturierte Abrechnungen"
+      },
+      "recent": {
+        "title": "Neueste Abrechnungen",
+        "description": "Die letzten Betriebsführungs-Abrechnungen",
+        "showAll": "Alle anzeigen",
+        "loadError": "Daten konnten nicht geladen werden",
+        "empty": "Keine Abrechnungen vorhanden"
+      },
+      "table": {
+        "serviceProvider": "Dienstleister",
+        "park": "Park",
+        "period": "Zeitraum",
+        "net": "Netto",
+        "gross": "Brutto",
+        "status": "Status"
+      },
+      "quickLinks": {
+        "contractsTitle": "BF-Verträge",
+        "contractsDesc": "Dienstleister und Gebühren verwalten",
+        "billingsTitle": "Abrechnungen",
+        "billingsDesc": "Betriebsführungs-Abrechnungen erstellen und verwalten",
+        "open": "Öffnen"
+      },
+      "billingStatus": {
+        "DRAFT": "Entwurf",
+        "CALCULATED": "Berechnet",
+        "APPROVED": "Freigegeben",
+        "INVOICED": "Fakturiert",
+        "PAID": "Bezahlt",
+        "CANCELLED": "Storniert"
+      }
+    },
+    "checklistsList": {
+      "title": "Checklisten",
+      "description": "Checklisten-Vorlagen für wiederkehrende Aufgaben verwalten",
+      "createLabel": "Neue Checkliste",
+      "errorLoading": "Fehler beim Laden der Checklisten. Bitte versuchen Sie es erneut.",
+      "empty": {
+        "title": "Keine Checklisten vorhanden",
+        "description": "Erstellen Sie die erste Checklisten-Vorlage, um wiederkehrende Prüfungen zu strukturieren.",
+        "action": "Neue Checkliste erstellen"
+      },
+      "card": {
+        "items": "Punkte",
+        "tasksOne": "Aufgabe",
+        "tasksOther": "Aufgaben"
+      },
+      "recurrence": {
+        "DAILY": "Täglich",
+        "WEEKLY": "Wöchentlich",
+        "MONTHLY": "Monatlich",
+        "ONCE": "Einmalig"
+      }
+    },
+    "insurance": {
+      "title": "Versicherungen",
+      "description": "Versicherungsverträge und Schadensfälle verwalten",
+      "createLabel": "Neuer Schadensfall",
+      "policies": {
+        "title": "Versicherungsverträge",
+        "description": "Übersicht aller aktiven und abgelaufenen Versicherungsverträge",
+        "error": "Fehler beim Laden der Versicherungsverträge.",
+        "empty": {
+          "title": "Keine Versicherungsverträge",
+          "description": "Es wurden noch keine Versicherungsverträge angelegt."
+        },
+        "openEnded": "unbefristet"
+      },
+      "claims": {
+        "title": "Offene Schadensfälle",
+        "description": "Zusammenfassung aller gemeldeten Schadensfälle",
+        "showAll": "Alle anzeigen",
+        "error": "Fehler beim Laden der Schadensfälle.",
+        "empty": {
+          "title": "Keine Schadensfälle",
+          "description": "Es wurden noch keine Schadensfälle gemeldet.",
+          "action": "Schadensfall melden"
+        }
+      },
+      "stats": {
+        "total": "Gesamt",
+        "reported": "Gemeldet",
+        "inProgress": "In Bearbeitung",
+        "estimatedCost": "Geschätzte Kosten"
+      },
+      "status": {
+        "ACTIVE": "Aktiv",
+        "EXPIRED": "Abgelaufen",
+        "CANCELLED": "Gekündigt",
+        "DRAFT": "Entwurf"
+      }
+    },
+    "planNew": {
+      "title": "Neuen Prüfplan anlegen",
+      "subtitle": "Wiederkehrende Begehung oder Kontrolle planen",
+      "submit": "Erstellen",
+      "validation": {
+        "title": "Bitte geben Sie einen Titel ein",
+        "recurrence": "Bitte wählen Sie einen Turnus",
+        "nextDueDate": "Bitte geben Sie den nächsten Termin ein"
+      },
+      "error": {
+        "default": "Fehler beim Erstellen"
+      },
+      "success": "Prüfplan erstellt",
+      "details": {
+        "title": "Prüfplan-Details",
+        "description": "Grunddaten und Turnus der wiederkehrenden Begehung"
+      },
+      "fields": {
+        "title": "Titel *",
+        "titlePlaceholder": "z.B. Jahresbegehung WEA 1-5",
+        "description": "Beschreibung",
+        "descriptionPlaceholder": "Optionale Beschreibung der Begehung...",
+        "recurrence": "Turnus *",
+        "recurrencePlaceholder": "Turnus wählen...",
+        "nextDueDate": "Nächster Termin *"
+      },
+      "assignment": {
+        "title": "Zuordnung",
+        "description": "Windpark und Anlage zuordnen",
+        "park": "Windpark",
+        "parkPlaceholder": "Park wählen...",
+        "noPark": "Kein Park"
+      },
+      "hint": "Nach dem Erstellen können Sie dem Prüfplan Begehungsberichte zuordnen und den Status verfolgen.",
+      "recurrence": {
+        "MONTHLY": "Monatlich",
+        "QUARTERLY": "Quartalsweise",
+        "SEMI_ANNUAL": "Halbjährlich",
+        "ANNUAL": "Jährlich"
+      }
+    },
+    "claimsList": {
+      "title": "Schadensfälle",
+      "description": "Alle Versicherungs- und Dienstleister-Schadensfälle",
+      "createLabel": "Neuer Schadensfall",
+      "searchPlaceholder": "Aktenzeichen, Titel, Park oder Dienstleister suchen...",
+      "filter": {
+        "allStatus": "Alle Status",
+        "allTypes": "Alle Typen"
+      },
+      "errorLoading": "Fehler beim Laden der Schadensfälle. Bitte versuchen Sie es erneut.",
+      "empty": {
+        "none": {
+          "title": "Keine Schadensfälle",
+          "description": "Erstellen Sie den ersten Schadensfall, um Versicherungsfälle zu verfolgen."
+        },
+        "noResults": {
+          "title": "Keine Ergebnisse",
+          "description": "Passen Sie Ihre Suchkriterien an, um Ergebnisse zu finden."
+        },
+        "action": "Schadensfall erstellen"
+      },
+      "table": {
+        "claimNumber": "Aktenzeichen",
+        "title": "Titel",
+        "type": "Typ",
+        "incidentDate": "Schadenstag",
+        "status": "Status",
+        "estimatedCost": "Gesch. Kosten",
+        "reimbursed": "Erstattung",
+        "insuranceOrVendor": "Versicherung / DL",
+        "actions": "Aktionen"
+      },
+      "actionShowDetails": "Details anzeigen",
+      "status": {
+        "REPORTED": "Gemeldet",
+        "CLAIM_IN_PROGRESS": "In Bearbeitung",
+        "RESOLVED": "Erledigt",
+        "REJECTED": "Abgelehnt"
+      },
+      "type": {
+        "INSURANCE": "Versicherung",
+        "SERVICE_PROVIDER": "Dienstleister"
+      }
+    }
+  },
+  "admin": {
+    "billing": {
+      "title": "Abrechnung",
+      "description": "Nummernkreise, Abrechnungsregeln und Perioden verwalten",
+      "tabSequences": "Nummernkreise & Vorlagen",
+      "tabRules": "Abrechnungsregeln",
+      "tabPeriods": "Perioden"
+    },
+    "documentsAdmin": {
+      "title": "Dokumente & Vorlagen",
+      "description": "Dokumentvorlagen, Briefpapier und GoBD-Archiv",
+      "tabTemplates": "Vorlagen & Briefpapier",
+      "tabArchive": "GoBD-Archiv"
+    },
+    "monitoringAdmin": {
+      "title": "Monitoring & Audit",
+      "description": "System-Monitoring, Analytics und Audit-Trail",
+      "tabMonitoring": "Monitoring",
+      "tabAnalytics": "Analytics",
+      "tabAudit": "Audit-Logs"
+    },
+    "systemAdmin": {
+      "title": "System",
+      "description": "Server, Konfiguration, Feature-Flags und Backups",
+      "tabHealth": "Server & Health",
+      "tabConfig": "Konfiguration",
+      "tabFlags": "Feature-Flags & Limits",
+      "tabBackup": "Backup & Speicher",
+      "tabTranslations": "Übersetzungen",
+      "tabWidgets": "Widget-Rollen"
+    },
+    "masterData": {
+      "title": "Stammdaten",
+      "description": "Vergütungsarten, Steuersätze, Gesellschaftstypen und weitere Konfiguration",
+      "tabRevenueTypes": "Vergütungsarten",
+      "tabFundCategories": "Gesellschaftstypen",
+      "tabTaxRates": "Steuersätze",
+      "tabWebhooks": "Webhooks",
+      "tabScadaCodes": "SCADA-Codes",
+      "tabSidebarLinks": "Sidebar-Links"
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "description": "Allgemeine Systemeinstellungen verwalten",
+      "tabGeneral": "Allgemein",
+      "tabPortal": "Portal",
+      "tabEmail": "E-Mail",
+      "tabThresholds": "Schwellenwerte"
+    },
+    "tenants": {
+      "title": "Mandantenverwaltung",
+      "description": "Mandanten, Benutzer, Rollen und Feature-Konfiguration",
+      "accessDenied": "Nur SuperAdmins können Mandanten verwalten.",
+      "tabTenants": "Mandanten",
+      "tabUsers": "Benutzer",
+      "tabRoles": "Rollen & Rechte",
+      "tabFeatures": "Feature-Flags",
+      "tabLimits": "Limits"
+    },
+    "marketing": {
+      "title": "Marketing-Einstellungen",
+      "description": "Landingpage-Inhalte, Preiskalkulator und rechtliche Texte verwalten",
+      "accessDenied": "Nur SuperAdmins können Marketing-Einstellungen verwalten."
+    },
+    "billingRules": {
+      "newTitle": "Neue Abrechnungsregel",
+      "newDescription": "Erstellen Sie eine neue automatische Abrechnungsregel",
+      "editTitle": "Regel bearbeiten",
+      "loadError": "Fehler beim Laden der Daten",
+      "notFound": "Regel nicht gefunden",
+      "loadRuleError": "Fehler beim Laden der Regel",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "preview": "Vorschau",
+      "runNow": "Jetzt ausführen",
+      "previewResult": "Vorschau-Ergebnis",
+      "executionResult": "Ausführungsergebnis",
+      "processed": "Verarbeitet",
+      "successful": "Erfolgreich",
+      "failed": "Fehlgeschlagen",
+      "totalAmount": "Gesamtbetrag",
+      "details": "Details:",
+      "unknown": "Unbekannt",
+      "moreItems": "+ {count} weitere…",
+      "tabOverview": "Übersicht",
+      "tabHistory": "Ausführungshistorie",
+      "type": "Typ",
+      "frequency": "Frequenz",
+      "lastRun": "Letzte Ausführung",
+      "nextRun": "Nächste Ausführung",
+      "parameters": "Parameter",
+      "parametersFor": "Konfiguration für {type}",
+      "scheduling": "Zeitplanung",
+      "dayOfMonth": "Tag im Monat",
+      "cronPattern": "Cron-Pattern",
+      "totalExecutions": "Ausführungen gesamt",
+      "actions": "Aktionen",
+      "editBtn": "Bearbeiten",
+      "deactivate": "Deaktivieren",
+      "deactivateTitle": "Regel deaktivieren?",
+      "deactivateDesc": "Die Regel wird deaktiviert und nicht mehr automatisch ausgeführt. Die Ausführungshistorie bleibt erhalten.",
+      "deactivated": "Regel deaktiviert",
+      "deactivateError": "Fehler beim Deaktivieren",
+      "executeError": "Fehler bei der Ausführung",
+      "execFailed": "Ausführung fehlgeschlagen",
+      "previewToast": "Vorschau: {count} Rechnungen würden erstellt",
+      "createdToast": "{count} Rechnungen erstellt",
+      "paramLabelParkId": "Park ID",
+      "paramLabelFundId": "Gesellschaft ID",
+      "paramLabelTotalAmount": "Gesamtbetrag",
+      "paramLabelDescription": "Beschreibung",
+      "paramLabelTaxType": "Steuerart",
+      "paramLabelUseMinimumRent": "Mindestpacht verwenden",
+      "paramLabelCalculationType": "Berechnungsart",
+      "paramLabelAmount": "Betrag",
+      "paramLabelPercentage": "Prozentsatz",
+      "paramLabelBaseValue": "Basiswert",
+      "paramLabelRecipientName": "Empfänger",
+      "paramLabelRecipientAddress": "Adresse",
+      "paramLabelInvoiceType": "Rechnungstyp",
+      "paramLabelItems": "Positionen",
+      "ruleType_LEASE_PAYMENT": "Pachtzahlung",
+      "ruleType_DISTRIBUTION": "Ausschüttung",
+      "ruleType_MANAGEMENT_FEE": "Verwaltungsgebühr",
+      "ruleType_CUSTOM": "Benutzerdefiniert",
+      "freq_MONTHLY": "Monatlich",
+      "freq_QUARTERLY": "Vierteljährlich",
+      "freq_SEMI_ANNUAL": "Halbjährlich",
+      "freq_ANNUAL": "Jährlich",
+      "freq_CUSTOM_CRON": "Benutzerdefiniert",
+      "valueYes": "Ja",
+      "valueNo": "Nein"
+    },
+    "version": {
+      "title": "Versionsverwaltung",
+      "description": "App-Version und Build-Informationen verwalten",
+      "accessDenied": "Nur Superadmins können die Versionsverwaltung einsehen.",
+      "loadError": "Versionsinformationen konnten nicht geladen werden",
+      "currentVersion": "Aktuelle Version",
+      "currentVersionDesc": "Die angezeigte Version in der App",
+      "displayedVersion": "Angezeigte Version",
+      "versionFormatHint": "Format: X.Y.Z (z.B. 0.4.0, 1.0.0-beta.1)",
+      "versionMismatch": "Angezeigte Version weicht von package.json (v{version}) ab",
+      "buildInfo": "Build-Informationen",
+      "buildInfoDesc": "Technische Details zum aktuellen Build",
+      "packageJson": "package.json",
+      "nodeJs": "Node.js",
+      "environment": "Environment",
+      "buildTime": "Build-Zeit",
+      "invalidFormat": "Ungültiges Format. Beispiel: 0.4.0 oder 1.0.0-beta.1",
+      "savedToast": "Version auf v{version} aktualisiert",
+      "saveError": "Fehler beim Speichern",
+      "placeholder": "z.B. 0.4.0"
+    },
+    "emailRoutes": {
+      "title": "E-Mail-Routen",
+      "description": "Eingehende E-Mails an *@{domain} automatisch verarbeiten",
+      "newRoute": "Neue Route",
+      "colAddress": "E-Mail-Adresse",
+      "colTarget": "Zuordnung",
+      "colAction": "Aktion",
+      "colStatus": "Status",
+      "colDescription": "Beschreibung",
+      "colActions": "Aktionen",
+      "empty": "Keine E-Mail-Routen konfiguriert",
+      "createFirst": "Erste Route erstellen",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "dialogEdit": "Route bearbeiten",
+      "dialogNew": "Neue E-Mail-Route",
+      "fieldAddress": "E-Mail-Adresse (Prefix)",
+      "fieldAddressHint": "Kryptische Adressen schützen vor Spam. Klicke das Würfel-Icon für eine neue.",
+      "addressTitle": "Neue Adresse generieren",
+      "fieldTarget": "Zuordnung",
+      "fieldAction": "Aktion bei Eingang",
+      "fieldDescription": "Beschreibung (optional)",
+      "fieldActive": "Aktiv",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "create": "Erstellen",
+      "target_PARK": "Windpark",
+      "target_FUND": "Gesellschaft",
+      "target_TENANT": "Mandant",
+      "target_INBOX": "Allgemeine Inbox",
+      "action_INBOX": "Eingangsrechnungen",
+      "action_INBOX_full": "Eingangsrechnungen (mit OCR)",
+      "action_DOCUMENT": "Dokumentenablage",
+      "action_IGNORE": "Ignorieren",
+      "loadError": "Fehler beim Laden der E-Mail-Routen",
+      "saveError": "Fehler beim Speichern",
+      "routeUpdated": "Route aktualisiert",
+      "routeCreated": "Route erstellt",
+      "routeDeleted": "Route gelöscht",
+      "deleteConfirm": "Route wirklich löschen?",
+      "deleteError": "Fehler beim Löschen",
+      "placeholderAddress": "wp-a7f3x9k2",
+      "placeholderDescription": "Posteingang Windpark Nord"
+    }
+  },
+  "portal": {
+    "energyAnalytics": {
+      "title": "Anlagen-Performance",
+      "description": "Übersicht über die Leistung Ihrer Windenergieanlagen"
+    },
+    "dashboard": {
+      "title": "Mein Dashboard",
+      "description": "Übersicht über Ihre Beteiligungen und Aktivitäten",
+      "stats": {
+        "participations": "Beteiligungen",
+        "totalInvestment": "Gesamtinvestition: {amount}",
+        "distributions": "Ausschüttungen",
+        "totalReceived": "Gesamt erhalten",
+        "pendingVotes": "Offene Abstimmungen",
+        "yourVoteExpected": "Ihre Stimme wird erwartet"
+      },
+      "participations": {
+        "title": "Meine Beteiligungen",
+        "description": "Ihre aktiven Gesellschaftsbeteiligungen",
+        "empty": "Keine Beteiligungen vorhanden",
+        "noNumber": "Keine Nr.",
+        "showAll": "Alle anzeigen"
+      },
+      "distributions": {
+        "title": "Letzte Ausschüttungen",
+        "description": "Ihre letzten erhaltenen Gutschriften",
+        "empty": "Keine Ausschüttungen vorhanden",
+        "showAll": "Alle anzeigen"
+      },
+      "votes": {
+        "title": "Offene Abstimmungen",
+        "description": "Bitte stimmen Sie bis zum Ablaufdatum ab",
+        "vote": "Abstimmen",
+        "showAll": "Alle Abstimmungen"
+      }
+    },
+    "participations": {
+      "title": "Meine Beteiligungen",
+      "description": "Übersicht über alle Ihre Gesellschaftsbeteiligungen",
+      "stats": {
+        "participations": "Beteiligungen",
+        "activeCompanies": "Aktive Gesellschaften",
+        "totalInvestment": "Gesamtinvestition",
+        "capitalContribution": "Kapitaleinlage",
+        "totalShare": "Gesamtanteil",
+        "averaged": "Durchschnittlich"
+      },
+      "overview": {
+        "title": "Beteiligungsübersicht",
+        "description": "Details zu allen Ihren Gesellschaftsbeteiligungen",
+        "empty": "Sie haben noch keine Beteiligungen."
+      },
+      "table": {
+        "company": "Gesellschaft",
+        "shareholderNumber": "Gesellschafter-Nr.",
+        "joinDate": "Beitritt",
+        "contribution": "Einlage",
+        "share": "Anteil",
+        "status": "Status"
+      },
+      "details": {
+        "noLegalForm": "Keine Rechtsform angegeben",
+        "yourContribution": "Ihre Einlage",
+        "yourShare": "Ihr Anteil",
+        "totalCapital": "Stammkapital",
+        "managingDirector": "Geschäftsführer",
+        "relatedParks": "Zugehörige Windparks"
+      }
+    },
+    "documents": {
+      "title": "Dokumente",
+      "description": "Berichte, Protokolle und weitere Dokumente zu Ihren Beteiligungen",
+      "searchPlaceholder": "Suchen nach Titel, Dateiname...",
+      "categoryPlaceholder": "Kategorie",
+      "allCategories": "Alle Kategorien",
+      "available": "Verfügbare Dokumente",
+      "foundCount": "{count} Dokument(e) gefunden",
+      "emptyAll": "Keine Dokumente verfügbar.",
+      "emptyFiltered": "Keine Dokumente gefunden.",
+      "table": {
+        "document": "Dokument",
+        "company": "Gesellschaft",
+        "category": "Kategorie",
+        "date": "Datum",
+        "size": "Größe"
+      },
+      "download": "Herunterladen",
+      "downloadError": "Fehler beim Herunterladen des Dokuments",
+      "downloadFailed": "Download fehlgeschlagen",
+      "categoryLabels": {
+        "REPORT": "Bericht",
+        "CONTRACT": "Vertrag",
+        "PROTOCOL": "Protokoll",
+        "CORRESPONDENCE": "Korrespondenz",
+        "TAX": "Steuer",
+        "OTHER": "Sonstiges"
+      }
+    },
+    "distributions": {
+      "title": "Ausschüttungen",
+      "description": "Übersicht über alle Ihre erhaltenen Ausschüttungen",
+      "stats": {
+        "totalReceived": "Gesamt erhalten",
+        "paidOut": "Ausgezahlt",
+        "pending": "Ausstehend",
+        "notPaidYet": "Noch nicht ausgezahlt",
+        "count": "Anzahl",
+        "credits": "Gutschriften"
+      },
+      "history": {
+        "title": "Ausschüttungshistorie",
+        "description": "Alle Gutschriften chronologisch sortiert",
+        "empty": "Sie haben noch keine Ausschüttungen erhalten."
+      },
+      "table": {
+        "creditNumber": "Gutschrift-Nr.",
+        "company": "Gesellschaft",
+        "date": "Datum",
+        "net": "Netto",
+        "tax": "Steuer",
+        "gross": "Brutto",
+        "status": "Status"
+      },
+      "yearly": {
+        "title": "Jahresübersicht",
+        "description": "Ausschüttungen nach Jahr zusammengefasst",
+        "count": "{count} Ausschüttung(en)"
+      }
     }
   }
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ParkForm } from "@/components/parks/park-form";
@@ -32,6 +33,7 @@ export default function EditParkPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslations("parks.edit");
   const [park, setPark] = useState<Park | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,22 +44,22 @@ export default function EditParkPage({
         const response = await fetch(`/api/parks/${id}`);
         if (!response.ok) {
           if (response.status === 404) {
-            setError("Park nicht gefunden");
+            setError(t("parkNotFound"));
           } else {
-            throw new Error("Fehler beim Laden");
+            throw new Error(t("loadError"));
           }
           return;
         }
         const data = await response.json();
         setPark(data);
       } catch {
-        setError("Fehler beim Laden des Parks");
+        setError(t("loadErrorPark"));
       } finally {
         setLoading(false);
       }
     }
     fetchPark();
-  }, [id]);
+  }, [id, t]);
 
   if (loading) {
     return (
@@ -79,7 +81,7 @@ export default function EditParkPage({
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-lg text-muted-foreground">{error}</p>
         <Button asChild className="mt-4">
-          <Link href="/parks">Zurück zur Übersicht</Link>
+          <Link href="/parks">{t("backToList")}</Link>
         </Button>
       </div>
     );
@@ -96,10 +98,10 @@ export default function EditParkPage({
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {park.name} bearbeiten
+            {t("editTitle", { name: park.name })}
           </h1>
           <p className="text-muted-foreground">
-            Ändern Sie die Daten des Windparks
+            {t("editSubtitle")}
           </p>
         </div>
       </div>

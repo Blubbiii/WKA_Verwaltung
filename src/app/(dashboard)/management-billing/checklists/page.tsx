@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ClipboardCheck, ListChecks, Repeat, Wind } from "lucide-react";
 import {
   Card,
@@ -42,13 +43,6 @@ interface Checklist {
 // CONSTANTS
 // =============================================================================
 
-const recurrenceLabels: Record<string, string> = {
-  DAILY: "Taeglich",
-  WEEKLY: "Woechentlich",
-  MONTHLY: "Monatlich",
-  ONCE: "Einmalig",
-};
-
 const recurrenceColors: Record<string, string> = {
   DAILY: "bg-orange-100 text-orange-800",
   WEEKLY: "bg-blue-100 text-blue-800",
@@ -61,6 +55,7 @@ const recurrenceColors: Record<string, string> = {
 // =============================================================================
 
 export default function ChecklistsListPage() {
+  const t = useTranslations("managementBilling.checklistsList");
   const router = useRouter();
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,10 +91,10 @@ export default function ChecklistsListPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Checklisten"
-        description="Checklisten-Vorlagen fuer wiederkehrende Aufgaben verwalten"
+        title={t("title")}
+        description={t("description")}
         createHref="/management-billing/checklists/new"
-        createLabel="Neue Checkliste"
+        createLabel={t("createLabel")}
       />
 
       {/* Content */}
@@ -121,9 +116,7 @@ export default function ChecklistsListPage() {
       ) : isError ? (
         <Card>
           <CardContent className="py-8">
-            <p className="text-center text-destructive">
-              Fehler beim Laden der Checklisten. Bitte versuchen Sie es erneut.
-            </p>
+            <p className="text-center text-destructive">{t("errorLoading")}</p>
           </CardContent>
         </Card>
       ) : checklists.length === 0 ? (
@@ -131,12 +124,12 @@ export default function ChecklistsListPage() {
           <CardContent>
             <EmptyState
               icon={ClipboardCheck}
-              title="Keine Checklisten vorhanden"
-              description="Erstellen Sie die erste Checklisten-Vorlage, um wiederkehrende Pruefungen zu strukturieren."
+              title={t("empty.title")}
+              description={t("empty.description")}
               action={
                 <Button asChild>
                   <Link href="/management-billing/checklists/new">
-                    Neue Checkliste erstellen
+                    {t("empty.action")}
                   </Link>
                 </Button>
               }
@@ -164,8 +157,7 @@ export default function ChecklistsListPage() {
                       }
                     >
                       <Repeat className="mr-1 h-3 w-3" />
-                      {recurrenceLabels[checklist.recurrence] ??
-                        checklist.recurrence}
+                      {t(`recurrence.${checklist.recurrence}` as never)}
                     </Badge>
                   )}
                 </div>
@@ -182,7 +174,7 @@ export default function ChecklistsListPage() {
                     {Array.isArray(checklist.items)
                       ? checklist.items.length
                       : 0}{" "}
-                    Punkte
+                    {t("card.items")}
                   </span>
                   {checklist.park && (
                     <span className="flex items-center gap-1">
@@ -191,8 +183,10 @@ export default function ChecklistsListPage() {
                     </span>
                   )}
                   <span className="ml-auto">
-                    {checklist._count.tasks} Aufgabe
-                    {checklist._count.tasks !== 1 ? "n" : ""}
+                    {checklist._count.tasks}{" "}
+                    {checklist._count.tasks === 1
+                      ? t("card.tasksOne")
+                      : t("card.tasksOther")}
                   </span>
                 </div>
               </CardContent>

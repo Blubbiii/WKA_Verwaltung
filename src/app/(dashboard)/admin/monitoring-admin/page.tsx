@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +25,7 @@ function LoadingSkeleton() {
 }
 
 function MonitoringAdminPageInner() {
+  const t = useTranslations("admin.monitoringAdmin");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") || "monitoring";
@@ -35,23 +37,23 @@ function MonitoringAdminPageInner() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Monitoring & Audit"
-        description="System-Monitoring, Analytics und Audit-Trail"
+        title={t("title")}
+        description={t("description")}
       />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="monitoring" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
-            Monitoring
+            {t("tabMonitoring")}
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart2 className="h-4 w-4" />
-            Analytics
+            {t("tabAnalytics")}
           </TabsTrigger>
           <TabsTrigger value="audit" className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
-            Audit-Logs
+            {t("tabAudit")}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="monitoring">

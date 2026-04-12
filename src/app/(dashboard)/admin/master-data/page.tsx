@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +28,7 @@ function LoadingSkeleton() {
 }
 
 function MasterDataPageInner() {
+  const t = useTranslations("admin.masterData");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tab = searchParams.get("tab") || "verguetung";
@@ -38,35 +40,35 @@ function MasterDataPageInner() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Stammdaten"
-        description="Vergütungsarten, Steuersätze, Gesellschaftstypen und weitere Konfiguration"
+        title={t("title")}
+        description={t("description")}
       />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="verguetung" className="flex items-center gap-2">
             <Coins className="h-4 w-4" />
-            Vergütungsarten
+            {t("tabRevenueTypes")}
           </TabsTrigger>
           <TabsTrigger value="gesellschaftstypen" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            Gesellschaftstypen
+            {t("tabFundCategories")}
           </TabsTrigger>
           <TabsTrigger value="steuersaetze" className="flex items-center gap-2">
             <Percent className="h-4 w-4" />
-            Steuersätze
+            {t("tabTaxRates")}
           </TabsTrigger>
           <TabsTrigger value="webhooks" className="flex items-center gap-2">
             <Radio className="h-4 w-4" />
-            Webhooks
+            {t("tabWebhooks")}
           </TabsTrigger>
           <TabsTrigger value="scada-codes" className="flex items-center gap-2">
             <Code2 className="h-4 w-4" />
-            SCADA-Codes
+            {t("tabScadaCodes")}
           </TabsTrigger>
           <TabsTrigger value="sidebar-links" className="flex items-center gap-2">
             <Link2 className="h-4 w-4" />
-            Sidebar-Links
+            {t("tabSidebarLinks")}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="verguetung">

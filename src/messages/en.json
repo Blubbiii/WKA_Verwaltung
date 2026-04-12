@@ -268,7 +268,67 @@
     "status": "Status",
     "active": "Active",
     "inactive": "Inactive",
-    "maintenance": "Maintenance"
+    "maintenance": "Maintenance",
+    "edit": {
+      "parkNotFound": "Wind farm not found",
+      "loadError": "Failed to load",
+      "loadErrorPark": "Failed to load wind farm",
+      "backToList": "Back to list",
+      "editTitle": "Edit {name}",
+      "editSubtitle": "Modify the wind farm details"
+    },
+    "list": {
+      "title": "Wind farms",
+      "subtitle": "Manage your wind farms and turbines",
+      "newPark": "New wind farm",
+      "parksHeader": "Wind farms",
+      "portfolioSubtitle": "Overview of all wind farms in your portfolio",
+      "searchPlaceholder": "Search by name, city...",
+      "statusFilter": "Status",
+      "statusAll": "All statuses",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "statusArchived": "Archived",
+      "listView": "List",
+      "mapView": "Map",
+      "selectAll": "Select all",
+      "name": "Name",
+      "location": "Location",
+      "turbines": "Turbines",
+      "capacity": "Capacity",
+      "status": "Status",
+      "notes": "Notes",
+      "empty": "No wind farms found",
+      "emptyDesc": "No wind farms match your filter criteria.",
+      "selectPark": "Select {name}",
+      "viewDetails": "View details",
+      "edit": "Edit",
+      "moreActions": "More actions",
+      "archive": "Archive",
+      "delete": "Delete",
+      "bulkDeleteConfirm": "Really delete {count} wind farms?",
+      "bulkDeleted": "{count} wind farms deleted",
+      "csvHeader": "Name;Location;Capacity (MW);Turbines;Status",
+      "csvExport": "CSV export",
+      "loadError": "Failed to load wind farms",
+      "retry": "Retry",
+      "statCardParks": "Wind farms",
+      "statActiveCount": "{count} active",
+      "statCardTurbines": "Turbines",
+      "statTurbinesSubtitle": "Total wind turbines",
+      "statCardTotalPower": "Total capacity",
+      "statInstalledCapacity": "Installed capacity",
+      "archiveError": "Failed to archive",
+      "archiveSuccess": "Wind farm archived",
+      "deleteError": "Failed to delete",
+      "deleteSuccess": "Wind farm deleted permanently",
+      "archiveTitle": "Confirm archive",
+      "archiveDesc": "Really archive this wind farm?",
+      "deleteTitle": "Delete wind farm",
+      "paginationInfo": "Showing {from} to {to} of {total} wind farms",
+      "prev": "Previous",
+      "next": "Next"
+    }
   },
   "invoices": {
     "title": "Invoices",
@@ -936,12 +996,86 @@
     "title": "Energy Data",
     "production": "Production",
     "settlements": "Settlements",
-    "scada": "SCADA Data",
+    "scada": {
+      "title": "SCADA Import & Management",
+      "subtitle": "Import and mapping of Enercon SCADA measurement data (DBF/WSD/UID)",
+      "tabs": {
+        "mappings": "Mappings",
+        "import": "Import",
+        "autoImport": "Auto Import",
+        "logs": "Logs"
+      }
+    },
     "analytics": "Analytics",
     "reports": "Reports",
     "availability": "Availability",
     "windSpeed": "Wind Speed",
-    "powerOutput": "Power Output"
+    "powerOutput": "Power Output",
+    "settlementsWizard": {
+      "metaTitle": "Create settlement"
+    },
+    "productionEdit": {
+      "notFound": "Not found",
+      "dataNotFound": "Grid operator data not found",
+      "validProductionRequired": "Please enter a valid production amount",
+      "saveError": "Failed to save",
+      "dataUpdated": "Grid operator data updated",
+      "noticeBanner": "Editing is also available directly on the production data page.",
+      "toOverview": "Go to overview",
+      "title": "Edit production data",
+      "cancel": "Cancel",
+      "save": "Save",
+      "invoicedLocked": "Invoiced records cannot be edited. Cancel the related credit note first.",
+      "productionRevenue": "Production & revenue",
+      "productionRevenueDesc": "Adjust production values and revenue",
+      "productionKwh": "Production (kWh) *",
+      "productionPlaceholder": "0.000",
+      "revenueEur": "Revenue (EUR)",
+      "revenueOptional": "optional",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes",
+      "details": "Details",
+      "detailsDesc": "These fields cannot be changed",
+      "park": "Wind farm",
+      "turbine": "Turbine",
+      "period": "Period",
+      "revenueType": "Revenue type",
+      "source": "Source",
+      "sourceLabels": {
+        "MANUAL": "Manual",
+        "CSV_IMPORT": "CSV import",
+        "EXCEL_IMPORT": "Excel import",
+        "SCADA": "SCADA"
+      }
+    },
+    "scadaData": {
+      "title": "SCADA Measurements",
+      "subtitle": "10-minute measurement data from wind turbines",
+      "filter": "Filter",
+      "park": "Wind farm",
+      "parkPlaceholder": "Select wind farm...",
+      "loading": "Loading...",
+      "turbine": "Turbine",
+      "parkFirst": "Select wind farm first",
+      "turbinePlaceholder": "Select turbine...",
+      "from": "From",
+      "to": "To",
+      "measurements": "Measurements",
+      "countFound": "{count} measurements found",
+      "noDataInRange": "No measurements in selected range",
+      "selectTurbine": "Please select a turbine",
+      "emptyLine1": "Select a wind farm and a turbine",
+      "emptyLine2": "to view the SCADA measurements.",
+      "noDataInRangeFull": "No measurements available in the selected range",
+      "colTimestamp": "Timestamp",
+      "colWind": "Wind (m/s)",
+      "colPower": "Power (kW)",
+      "colRotor": "Rotor (rpm)",
+      "colNacelle": "Nacelle (deg)",
+      "pageStatus": "Page {page} of {total} ({count} entries)",
+      "prev": "Previous",
+      "next": "Next"
+    }
   },
   "settlement": {
     "title": "Lease Settlements",
@@ -3809,6 +3943,527 @@
     "settlementMode": {
       "NETWORK_COMPANY": "Network company settles",
       "OPERATOR_DIRECT": "Operator settles directly"
+    }
+  },
+  "managementBilling": {
+    "overview": {
+      "title": "Management - Overview",
+      "description": "Summary of all management contracts and billings",
+      "errorLoading": "Failed to load overview data. Please try again.",
+      "kpi": {
+        "activeContracts": "Active Contracts",
+        "activeContractsDesc": "Active management contracts",
+        "billingEnabled": "Billing Enabled",
+        "billingEnabledDesc": "Contracts with active billing",
+        "totalNet": "Total Net",
+        "totalNetDesc": "Sum of all net fees",
+        "invoiced": "Invoiced",
+        "invoicedDesc": "Already invoiced billings"
+      },
+      "recent": {
+        "title": "Recent Billings",
+        "description": "The most recent management billings",
+        "showAll": "Show all",
+        "loadError": "Data could not be loaded",
+        "empty": "No billings available"
+      },
+      "table": {
+        "serviceProvider": "Service Provider",
+        "park": "Park",
+        "period": "Period",
+        "net": "Net",
+        "gross": "Gross",
+        "status": "Status"
+      },
+      "quickLinks": {
+        "contractsTitle": "Management Contracts",
+        "contractsDesc": "Manage service providers and fees",
+        "billingsTitle": "Billings",
+        "billingsDesc": "Create and manage management billings",
+        "open": "Open"
+      },
+      "billingStatus": {
+        "DRAFT": "Draft",
+        "CALCULATED": "Calculated",
+        "APPROVED": "Approved",
+        "INVOICED": "Invoiced",
+        "PAID": "Paid",
+        "CANCELLED": "Cancelled"
+      }
+    },
+    "checklistsList": {
+      "title": "Checklists",
+      "description": "Manage checklist templates for recurring tasks",
+      "createLabel": "New checklist",
+      "errorLoading": "Failed to load checklists. Please try again.",
+      "empty": {
+        "title": "No checklists available",
+        "description": "Create the first checklist template to structure recurring inspections.",
+        "action": "Create new checklist"
+      },
+      "card": {
+        "items": "items",
+        "tasksOne": "task",
+        "tasksOther": "tasks"
+      },
+      "recurrence": {
+        "DAILY": "Daily",
+        "WEEKLY": "Weekly",
+        "MONTHLY": "Monthly",
+        "ONCE": "Once"
+      }
+    },
+    "insurance": {
+      "title": "Insurance",
+      "description": "Manage insurance contracts and claims",
+      "createLabel": "New claim",
+      "policies": {
+        "title": "Insurance Contracts",
+        "description": "Overview of all active and expired insurance contracts",
+        "error": "Failed to load insurance contracts.",
+        "empty": {
+          "title": "No insurance contracts",
+          "description": "No insurance contracts have been created yet."
+        },
+        "openEnded": "open-ended"
+      },
+      "claims": {
+        "title": "Open Claims",
+        "description": "Summary of all reported claims",
+        "showAll": "Show all",
+        "error": "Failed to load claims.",
+        "empty": {
+          "title": "No claims",
+          "description": "No claims have been reported yet.",
+          "action": "Report claim"
+        }
+      },
+      "stats": {
+        "total": "Total",
+        "reported": "Reported",
+        "inProgress": "In progress",
+        "estimatedCost": "Estimated cost"
+      },
+      "status": {
+        "ACTIVE": "Active",
+        "EXPIRED": "Expired",
+        "CANCELLED": "Cancelled",
+        "DRAFT": "Draft"
+      }
+    },
+    "planNew": {
+      "title": "Create new inspection plan",
+      "subtitle": "Plan recurring inspection or check",
+      "submit": "Create",
+      "validation": {
+        "title": "Please enter a title",
+        "recurrence": "Please select a recurrence",
+        "nextDueDate": "Please enter the next due date"
+      },
+      "error": {
+        "default": "Failed to create"
+      },
+      "success": "Inspection plan created",
+      "details": {
+        "title": "Inspection plan details",
+        "description": "Basic data and recurrence of the inspection"
+      },
+      "fields": {
+        "title": "Title *",
+        "titlePlaceholder": "e.g. Annual inspection WTG 1-5",
+        "description": "Description",
+        "descriptionPlaceholder": "Optional description of the inspection...",
+        "recurrence": "Recurrence *",
+        "recurrencePlaceholder": "Select recurrence...",
+        "nextDueDate": "Next due date *"
+      },
+      "assignment": {
+        "title": "Assignment",
+        "description": "Assign wind park and turbine",
+        "park": "Wind park",
+        "parkPlaceholder": "Select park...",
+        "noPark": "No park"
+      },
+      "hint": "After creation you can assign inspection reports to the plan and track its status.",
+      "recurrence": {
+        "MONTHLY": "Monthly",
+        "QUARTERLY": "Quarterly",
+        "SEMI_ANNUAL": "Semi-annual",
+        "ANNUAL": "Annual"
+      }
+    },
+    "claimsList": {
+      "title": "Claims",
+      "description": "All insurance and service provider claims",
+      "createLabel": "New claim",
+      "searchPlaceholder": "Search by reference, title, park or provider...",
+      "filter": {
+        "allStatus": "All statuses",
+        "allTypes": "All types"
+      },
+      "errorLoading": "Failed to load claims. Please try again.",
+      "empty": {
+        "none": {
+          "title": "No claims",
+          "description": "Create the first claim to track insurance cases."
+        },
+        "noResults": {
+          "title": "No results",
+          "description": "Adjust your search criteria to find results."
+        },
+        "action": "Create claim"
+      },
+      "table": {
+        "claimNumber": "Reference",
+        "title": "Title",
+        "type": "Type",
+        "incidentDate": "Incident date",
+        "status": "Status",
+        "estimatedCost": "Est. cost",
+        "reimbursed": "Reimbursed",
+        "insuranceOrVendor": "Insurance / provider",
+        "actions": "Actions"
+      },
+      "actionShowDetails": "Show details",
+      "status": {
+        "REPORTED": "Reported",
+        "CLAIM_IN_PROGRESS": "In progress",
+        "RESOLVED": "Resolved",
+        "REJECTED": "Rejected"
+      },
+      "type": {
+        "INSURANCE": "Insurance",
+        "SERVICE_PROVIDER": "Service provider"
+      }
+    }
+  },
+  "admin": {
+    "billing": {
+      "title": "Billing",
+      "description": "Manage number ranges, billing rules and periods",
+      "tabSequences": "Number ranges & templates",
+      "tabRules": "Billing rules",
+      "tabPeriods": "Periods"
+    },
+    "documentsAdmin": {
+      "title": "Documents & Templates",
+      "description": "Document templates, letterhead and GoBD archive",
+      "tabTemplates": "Templates & letterhead",
+      "tabArchive": "GoBD archive"
+    },
+    "monitoringAdmin": {
+      "title": "Monitoring & Audit",
+      "description": "System monitoring, analytics and audit trail",
+      "tabMonitoring": "Monitoring",
+      "tabAnalytics": "Analytics",
+      "tabAudit": "Audit logs"
+    },
+    "systemAdmin": {
+      "title": "System",
+      "description": "Server, configuration, feature flags and backups",
+      "tabHealth": "Server & health",
+      "tabConfig": "Configuration",
+      "tabFlags": "Feature flags & limits",
+      "tabBackup": "Backup & storage",
+      "tabTranslations": "Translations",
+      "tabWidgets": "Widget roles"
+    },
+    "masterData": {
+      "title": "Master data",
+      "description": "Revenue types, tax rates, company types and other configuration",
+      "tabRevenueTypes": "Revenue types",
+      "tabFundCategories": "Fund categories",
+      "tabTaxRates": "Tax rates",
+      "tabWebhooks": "Webhooks",
+      "tabScadaCodes": "SCADA codes",
+      "tabSidebarLinks": "Sidebar links"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage general system settings",
+      "tabGeneral": "General",
+      "tabPortal": "Portal",
+      "tabEmail": "Email",
+      "tabThresholds": "Thresholds"
+    },
+    "tenants": {
+      "title": "Tenant management",
+      "description": "Tenants, users, roles and feature configuration",
+      "accessDenied": "Only SuperAdmins can manage tenants.",
+      "tabTenants": "Tenants",
+      "tabUsers": "Users",
+      "tabRoles": "Roles & permissions",
+      "tabFeatures": "Feature flags",
+      "tabLimits": "Limits"
+    },
+    "marketing": {
+      "title": "Marketing settings",
+      "description": "Manage landing page content, pricing calculator and legal text",
+      "accessDenied": "Only SuperAdmins can manage marketing settings."
+    },
+    "billingRules": {
+      "newTitle": "New billing rule",
+      "newDescription": "Create a new automatic billing rule",
+      "editTitle": "Edit rule",
+      "loadError": "Error loading data",
+      "notFound": "Rule not found",
+      "loadRuleError": "Error loading rule",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "preview": "Preview",
+      "runNow": "Run now",
+      "previewResult": "Preview result",
+      "executionResult": "Execution result",
+      "processed": "Processed",
+      "successful": "Successful",
+      "failed": "Failed",
+      "totalAmount": "Total amount",
+      "details": "Details:",
+      "unknown": "Unknown",
+      "moreItems": "+ {count} more…",
+      "tabOverview": "Overview",
+      "tabHistory": "Execution history",
+      "type": "Type",
+      "frequency": "Frequency",
+      "lastRun": "Last run",
+      "nextRun": "Next run",
+      "parameters": "Parameters",
+      "parametersFor": "Configuration for {type}",
+      "scheduling": "Scheduling",
+      "dayOfMonth": "Day of month",
+      "cronPattern": "Cron pattern",
+      "totalExecutions": "Total executions",
+      "actions": "Actions",
+      "editBtn": "Edit",
+      "deactivate": "Deactivate",
+      "deactivateTitle": "Deactivate rule?",
+      "deactivateDesc": "The rule will be deactivated and no longer executed automatically. The execution history will be preserved.",
+      "deactivated": "Rule deactivated",
+      "deactivateError": "Error deactivating",
+      "executeError": "Execution error",
+      "execFailed": "Execution failed",
+      "previewToast": "Preview: {count} invoices would be created",
+      "createdToast": "{count} invoices created",
+      "paramLabelParkId": "Park ID",
+      "paramLabelFundId": "Fund ID",
+      "paramLabelTotalAmount": "Total amount",
+      "paramLabelDescription": "Description",
+      "paramLabelTaxType": "Tax type",
+      "paramLabelUseMinimumRent": "Use minimum rent",
+      "paramLabelCalculationType": "Calculation type",
+      "paramLabelAmount": "Amount",
+      "paramLabelPercentage": "Percentage",
+      "paramLabelBaseValue": "Base value",
+      "paramLabelRecipientName": "Recipient",
+      "paramLabelRecipientAddress": "Address",
+      "paramLabelInvoiceType": "Invoice type",
+      "paramLabelItems": "Line items",
+      "ruleType_LEASE_PAYMENT": "Lease payment",
+      "ruleType_DISTRIBUTION": "Distribution",
+      "ruleType_MANAGEMENT_FEE": "Management fee",
+      "ruleType_CUSTOM": "Custom",
+      "freq_MONTHLY": "Monthly",
+      "freq_QUARTERLY": "Quarterly",
+      "freq_SEMI_ANNUAL": "Semi-annual",
+      "freq_ANNUAL": "Annual",
+      "freq_CUSTOM_CRON": "Custom",
+      "valueYes": "Yes",
+      "valueNo": "No"
+    },
+    "version": {
+      "title": "Version management",
+      "description": "Manage app version and build information",
+      "accessDenied": "Only SuperAdmins can view version management.",
+      "loadError": "Could not load version information",
+      "currentVersion": "Current version",
+      "currentVersionDesc": "The version displayed in the app",
+      "displayedVersion": "Displayed version",
+      "versionFormatHint": "Format: X.Y.Z (e.g. 0.4.0, 1.0.0-beta.1)",
+      "versionMismatch": "Displayed version differs from package.json (v{version})",
+      "buildInfo": "Build information",
+      "buildInfoDesc": "Technical details about the current build",
+      "packageJson": "package.json",
+      "nodeJs": "Node.js",
+      "environment": "Environment",
+      "buildTime": "Build time",
+      "invalidFormat": "Invalid format. Example: 0.4.0 or 1.0.0-beta.1",
+      "savedToast": "Version updated to v{version}",
+      "saveError": "Error saving",
+      "placeholder": "e.g. 0.4.0"
+    },
+    "emailRoutes": {
+      "title": "Email routes",
+      "description": "Automatically process incoming emails to *@{domain}",
+      "newRoute": "New route",
+      "colAddress": "Email address",
+      "colTarget": "Target",
+      "colAction": "Action",
+      "colStatus": "Status",
+      "colDescription": "Description",
+      "colActions": "Actions",
+      "empty": "No email routes configured",
+      "createFirst": "Create first route",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "dialogEdit": "Edit route",
+      "dialogNew": "New email route",
+      "fieldAddress": "Email address (prefix)",
+      "fieldAddressHint": "Cryptic addresses protect against spam. Click the dice icon for a new one.",
+      "addressTitle": "Generate new address",
+      "fieldTarget": "Target",
+      "fieldAction": "Action on receipt",
+      "fieldDescription": "Description (optional)",
+      "fieldActive": "Active",
+      "cancel": "Cancel",
+      "save": "Save",
+      "create": "Create",
+      "target_PARK": "Wind farm",
+      "target_FUND": "Fund",
+      "target_TENANT": "Tenant",
+      "target_INBOX": "General inbox",
+      "action_INBOX": "Incoming invoices",
+      "action_INBOX_full": "Incoming invoices (with OCR)",
+      "action_DOCUMENT": "Document storage",
+      "action_IGNORE": "Ignore",
+      "loadError": "Error loading email routes",
+      "saveError": "Error saving",
+      "routeUpdated": "Route updated",
+      "routeCreated": "Route created",
+      "routeDeleted": "Route deleted",
+      "deleteConfirm": "Really delete route?",
+      "deleteError": "Error deleting",
+      "placeholderAddress": "wp-a7f3x9k2",
+      "placeholderDescription": "Inbox Wind Farm North"
+    }
+  },
+  "portal": {
+    "energyAnalytics": {
+      "title": "Plant performance",
+      "description": "Overview of the performance of your wind turbines"
+    },
+    "dashboard": {
+      "title": "My dashboard",
+      "description": "Overview of your participations and activities",
+      "stats": {
+        "participations": "Participations",
+        "totalInvestment": "Total investment: {amount}",
+        "distributions": "Distributions",
+        "totalReceived": "Total received",
+        "pendingVotes": "Open votes",
+        "yourVoteExpected": "Your vote is expected"
+      },
+      "participations": {
+        "title": "My participations",
+        "description": "Your active shareholdings",
+        "empty": "No participations available",
+        "noNumber": "No number",
+        "showAll": "Show all"
+      },
+      "distributions": {
+        "title": "Recent distributions",
+        "description": "Your most recent credits",
+        "empty": "No distributions available",
+        "showAll": "Show all"
+      },
+      "votes": {
+        "title": "Open votes",
+        "description": "Please vote before the deadline",
+        "vote": "Vote",
+        "showAll": "All votes"
+      }
+    },
+    "participations": {
+      "title": "My participations",
+      "description": "Overview of all your shareholdings",
+      "stats": {
+        "participations": "Participations",
+        "activeCompanies": "Active companies",
+        "totalInvestment": "Total investment",
+        "capitalContribution": "Capital contribution",
+        "totalShare": "Total share",
+        "averaged": "Averaged"
+      },
+      "overview": {
+        "title": "Participation overview",
+        "description": "Details on all your shareholdings",
+        "empty": "You have no participations yet."
+      },
+      "table": {
+        "company": "Company",
+        "shareholderNumber": "Shareholder no.",
+        "joinDate": "Join date",
+        "contribution": "Contribution",
+        "share": "Share",
+        "status": "Status"
+      },
+      "details": {
+        "noLegalForm": "No legal form specified",
+        "yourContribution": "Your contribution",
+        "yourShare": "Your share",
+        "totalCapital": "Share capital",
+        "managingDirector": "Managing director",
+        "relatedParks": "Related wind farms"
+      }
+    },
+    "documents": {
+      "title": "Documents",
+      "description": "Reports, protocols and further documents related to your participations",
+      "searchPlaceholder": "Search by title, file name...",
+      "categoryPlaceholder": "Category",
+      "allCategories": "All categories",
+      "available": "Available documents",
+      "foundCount": "{count} document(s) found",
+      "emptyAll": "No documents available.",
+      "emptyFiltered": "No documents found.",
+      "table": {
+        "document": "Document",
+        "company": "Company",
+        "category": "Category",
+        "date": "Date",
+        "size": "Size"
+      },
+      "download": "Download",
+      "downloadError": "Error downloading the document",
+      "downloadFailed": "Download failed",
+      "categoryLabels": {
+        "REPORT": "Report",
+        "CONTRACT": "Contract",
+        "PROTOCOL": "Protocol",
+        "CORRESPONDENCE": "Correspondence",
+        "TAX": "Tax",
+        "OTHER": "Other"
+      }
+    },
+    "distributions": {
+      "title": "Distributions",
+      "description": "Overview of all distributions you received",
+      "stats": {
+        "totalReceived": "Total received",
+        "paidOut": "Paid out",
+        "pending": "Pending",
+        "notPaidYet": "Not paid out yet",
+        "count": "Count",
+        "credits": "Credit notes"
+      },
+      "history": {
+        "title": "Distribution history",
+        "description": "All credit notes sorted chronologically",
+        "empty": "You have not received any distributions yet."
+      },
+      "table": {
+        "creditNumber": "Credit no.",
+        "company": "Company",
+        "date": "Date",
+        "net": "Net",
+        "tax": "Tax",
+        "gross": "Gross",
+        "status": "Status"
+      },
+      "yearly": {
+        "title": "Yearly overview",
+        "description": "Distributions aggregated by year",
+        "count": "{count} distribution(s)"
+      }
     }
   }
 }

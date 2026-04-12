@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Tag,
@@ -35,6 +36,7 @@ interface VersionInfo {
 }
 
 export default function VersionPage() {
+  const t = useTranslations("admin.version");
   const { data: session } = useSession();
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,16 +46,16 @@ export default function VersionPage() {
   const fetchVersion = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/version");
-      if (!res.ok) throw new Error("Fehler");
+      if (!res.ok) throw new Error("load-error");
       const data = await res.json();
       setVersionInfo(data);
       setNewVersion(data.displayVersion);
     } catch {
-      toast.error("Versionsinformationen konnten nicht geladen werden");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchVersion();
@@ -63,14 +65,14 @@ export default function VersionPage() {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground gap-2">
         <AlertTriangle className="h-8 w-8" />
-        <p>Nur Superadmins können die Versionsverwaltung einsehen.</p>
+        <p>{t("accessDenied")}</p>
       </div>
     );
   }
 
   const handleSave = async () => {
     if (!newVersion.match(/^\d+\.\d+\.\d+(-[\w.]+)?$/)) {
-      toast.error("Ungültiges Format. Beispiel: 0.4.0 oder 1.0.0-beta.1");
+      toast.error(t("invalidFormat"));
       return;
     }
 
@@ -83,13 +85,13 @@ export default function VersionPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Fehler");
+        throw new Error(err.error || t("saveError"));
       }
-      toast.success(`Version auf v${newVersion} aktualisiert`);
+      toast.success(t("savedToast", { version: newVersion }));
       fetchVersion();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("saveError")
       );
     } finally {
       setSaving(false);
@@ -102,8 +104,8 @@ export default function VersionPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Versionsverwaltung"
-        description="App-Version und Build-Informationen verwalten"
+        title={t("title")}
+        description={t("description")}
       />
 
       {loading ? (
@@ -117,20 +119,20 @@ export default function VersionPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Tag className="h-5 w-5" />
-                Aktuelle Version
+                {t("currentVersion")}
               </CardTitle>
               <CardDescription>
-                Die angezeigte Version in der App
+                {t("currentVersionDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Angezeigte Version</Label>
+                <Label>{t("displayedVersion")}</Label>
                 <div className="flex gap-2">
                   <Input
                     value={newVersion}
                     onChange={(e) => setNewVersion(e.target.value)}
-                    placeholder="z.B. 0.4.0"
+                    placeholder={t("placeholder")}
                     className="font-mono"
                   />
                   <Button
@@ -145,7 +147,7 @@ export default function VersionPage() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Format: X.Y.Z (z.B. 0.4.0, 1.0.0-beta.1)
+                  {t("versionFormatHint")}
                 </p>
               </div>
 
@@ -155,8 +157,7 @@ export default function VersionPage() {
                   <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
                     <Info className="h-4 w-4" />
                     <span>
-                      Angezeigte Version weicht von package.json (v
-                      {versionInfo.packageVersion}) ab
+                      {t("versionMismatch", { version: versionInfo.packageVersion })}
                     </span>
                   </div>
                 )}
@@ -168,17 +169,17 @@ export default function VersionPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Server className="h-5 w-5" />
-                Build-Informationen
+                {t("buildInfo")}
               </CardTitle>
               <CardDescription>
-                Technische Details zum aktuellen Build
+                {t("buildInfoDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    package.json
+                    {t("packageJson")}
                   </span>
                   <Badge variant="outline" className="font-mono">
                     <Package className="h-3 w-3 mr-1" />v
@@ -187,7 +188,7 @@ export default function VersionPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Node.js
+                    {t("nodeJs")}
                   </span>
                   <Badge variant="outline" className="font-mono">
                     {versionInfo?.nodeVersion}
@@ -195,7 +196,7 @@ export default function VersionPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Environment
+                    {t("environment")}
                   </span>
                   <Badge
                     variant={
@@ -210,7 +211,7 @@ export default function VersionPage() {
                 {versionInfo?.buildTime && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      Build-Zeit
+                      {t("buildTime")}
                     </span>
                     <Badge variant="outline" className="font-mono">
                       {versionInfo.buildTime}

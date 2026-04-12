@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import {
   Card,
@@ -35,25 +36,23 @@ interface ParkOption {
 }
 
 // =============================================================================
-// CONSTANTS
-// =============================================================================
-
-const RECURRENCE_OPTIONS = [
-  { value: "MONTHLY", label: "Monatlich" },
-  { value: "QUARTERLY", label: "Quartalsweise" },
-  { value: "SEMI_ANNUAL", label: "Halbjährlich" },
-  { value: "ANNUAL", label: "Jährlich" },
-];
-
-// =============================================================================
 // PAGE COMPONENT
 // =============================================================================
 
 export default function NewInspectionPlanPage() {
+  const t = useTranslations("managementBilling.planNew");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [parks, setParks] = useState<ParkOption[]>([]);
   const [parksLoading, setParksLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const RECURRENCE_OPTIONS = [
+    { value: "MONTHLY", label: t("recurrence.MONTHLY") },
+    { value: "QUARTERLY", label: t("recurrence.QUARTERLY") },
+    { value: "SEMI_ANNUAL", label: t("recurrence.SEMI_ANNUAL") },
+    { value: "ANNUAL", label: t("recurrence.ANNUAL") },
+  ];
 
   const [formData, setFormData] = useState({
     title: "",
@@ -96,15 +95,15 @@ export default function NewInspectionPlanPage() {
     e.preventDefault();
 
     if (!formData.title) {
-      toast.error("Bitte geben Sie einen Titel ein");
+      toast.error(t("validation.title"));
       return;
     }
     if (!formData.recurrence) {
-      toast.error("Bitte wählen Sie einen Turnus");
+      toast.error(t("validation.recurrence"));
       return;
     }
     if (!formData.nextDueDate) {
-      toast.error("Bitte geben Sie den nächsten Termin ein");
+      toast.error(t("validation.nextDueDate"));
       return;
     }
 
@@ -125,14 +124,14 @@ export default function NewInspectionPlanPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => null);
-        throw new Error(err?.error ?? "Fehler beim Erstellen");
+        throw new Error(err?.error ?? t("error.default"));
       }
 
-      toast.success("Prüfplan erstellt");
+      toast.success(t("success"));
       router.push("/management-billing/inspections/plans");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen"
+        error instanceof Error ? error.message : t("error.default")
       );
     } finally {
       setSaving(false);
@@ -150,10 +149,8 @@ export default function NewInspectionPlanPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Neuen Prüfplan anlegen</h1>
-            <p className="text-muted-foreground">
-              Wiederkehrende Begehung oder Kontrolle planen
-            </p>
+            <h1 className="text-2xl font-bold">{t("title")}</h1>
+            <p className="text-muted-foreground">{t("subtitle")}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -162,7 +159,7 @@ export default function NewInspectionPlanPage() {
             variant="outline"
             onClick={() => router.back()}
           >
-            Abbrechen
+            {tCommon("cancel")}
           </Button>
           <Button type="submit" disabled={saving}>
             {saving ? (
@@ -170,7 +167,7 @@ export default function NewInspectionPlanPage() {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Erstellen
+            {t("submit")}
           </Button>
         </div>
       </div>
@@ -179,37 +176,35 @@ export default function NewInspectionPlanPage() {
         <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Prüfplan-Details</CardTitle>
-              <CardDescription>
-                Grunddaten und Turnus der wiederkehrenden Begehung
-              </CardDescription>
+              <CardTitle>{t("details.title")}</CardTitle>
+              <CardDescription>{t("details.description")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Titel *</Label>
+                <Label htmlFor="title">{t("fields.title")}</Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => handleChange("title", e.target.value)}
-                  placeholder="z.B. Jahresbegehung WEA 1-5"
+                  placeholder={t("fields.titlePlaceholder")}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Beschreibung</Label>
+                <Label htmlFor="description">{t("fields.description")}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleChange("description", e.target.value)}
-                  placeholder="Optionale Beschreibung der Begehung..."
+                  placeholder={t("fields.descriptionPlaceholder")}
                   rows={3}
                 />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="recurrence">Turnus *</Label>
+                  <Label htmlFor="recurrence">{t("fields.recurrence")}</Label>
                   <Select
                     value={formData.recurrence || "none"}
                     onValueChange={(v) =>
@@ -217,11 +212,11 @@ export default function NewInspectionPlanPage() {
                     }
                   >
                     <SelectTrigger id="recurrence">
-                      <SelectValue placeholder="Turnus wählen..." />
+                      <SelectValue placeholder={t("fields.recurrencePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none" disabled>
-                        Turnus wählen...
+                        {t("fields.recurrencePlaceholder")}
                       </SelectItem>
                       {RECURRENCE_OPTIONS.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
@@ -233,7 +228,7 @@ export default function NewInspectionPlanPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="nextDueDate">Nächster Termin *</Label>
+                  <Label htmlFor="nextDueDate">{t("fields.nextDueDate")}</Label>
                   <Input
                     id="nextDueDate"
                     type="date"
@@ -252,14 +247,12 @@ export default function NewInspectionPlanPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Zuordnung</CardTitle>
-              <CardDescription>
-                Windpark und Anlage zuordnen
-              </CardDescription>
+              <CardTitle>{t("assignment.title")}</CardTitle>
+              <CardDescription>{t("assignment.description")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="parkId">Windpark</Label>
+                <Label htmlFor="parkId">{t("assignment.park")}</Label>
                 {parksLoading ? (
                   <Skeleton className="h-10 w-full" />
                 ) : (
@@ -270,10 +263,10 @@ export default function NewInspectionPlanPage() {
                     }
                   >
                     <SelectTrigger id="parkId">
-                      <SelectValue placeholder="Park wählen..." />
+                      <SelectValue placeholder={t("assignment.parkPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Kein Park</SelectItem>
+                      <SelectItem value="none">{t("assignment.noPark")}</SelectItem>
                       {parks.map((park) => (
                         <SelectItem key={park.id} value={park.id}>
                           {park.name}
@@ -289,8 +282,7 @@ export default function NewInspectionPlanPage() {
           <Card className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30">
             <CardContent className="pt-6">
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                Nach dem Erstellen können Sie dem Prüfplan Begehungsberichte
-                zuordnen und den Status verfolgen.
+                {t("hint")}
               </p>
             </CardContent>
           </Card>

@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,13 +49,6 @@ interface ProductionData {
   } | null;
 }
 
-const sourceLabels: Record<string, string> = {
-  MANUAL: "Manuell",
-  CSV_IMPORT: "CSV Import",
-  EXCEL_IMPORT: "Excel Import",
-  SCADA: "SCADA",
-};
-
 // =============================================================================
 // PAGE COMPONENT
 // =============================================================================
@@ -66,6 +60,7 @@ export default function EditProductionPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations("energy.productionEdit");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [production, setProduction] = useState<ProductionData | null>(null);
@@ -80,7 +75,7 @@ export default function EditProductionPage({
   useEffect(() => {
     fetch(`/api/energy/productions/${id}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Nicht gefunden");
+        if (!res.ok) throw new Error(t("notFound"));
         return res.json();
       })
       .then((data) => {
@@ -92,11 +87,11 @@ export default function EditProductionPage({
         });
       })
       .catch(() => {
-        toast.error("Netzbetreiber-Daten nicht gefunden");
+        toast.error(t("dataNotFound"));
         router.push("/energy/productions");
       })
       .finally(() => setLoading(false));
-  }, [id, router]);
+  }, [id, router, t]);
 
   function handleChange(field: string, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -106,7 +101,7 @@ export default function EditProductionPage({
     e.preventDefault();
 
     if (!formData.productionKwh || parseFloat(formData.productionKwh) < 0) {
-      toast.error("Bitte geben Sie eine gültige Produktionsmenge ein");
+      toast.error(t("validProductionRequired"));
       return;
     }
 
@@ -129,14 +124,14 @@ export default function EditProductionPage({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
-      toast.success("Netzbetreiber-Daten aktualisiert");
+      toast.success(t("dataUpdated"));
       router.push(`/energy/productions?year=${production?.year || new Date().getFullYear()}`);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("saveError")
       );
     } finally {
       setSaving(false);
@@ -167,15 +162,19 @@ export default function EditProductionPage({
   if (!production) return null;
 
   const isInvoiced = production.status === "INVOICED";
+  const knownSources = ["MANUAL", "CSV_IMPORT", "EXCEL_IMPORT", "SCADA"];
+  const sourceLabel = knownSources.includes(production.source)
+    ? t(`sourceLabels.${production.source as "MANUAL" | "CSV_IMPORT" | "EXCEL_IMPORT" | "SCADA"}`)
+    : production.source;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Notice banner */}
       <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
         <p className="text-sm text-blue-800">
-          Die Bearbeitung ist auch direkt über die Produktionsdaten-Seite erreichbar.
+          {t("noticeBanner")}
           <Link href="/energy/productions" className="underline ml-1 font-medium">
-            Zur Übersicht
+            {t("toOverview")}
           </Link>
         </p>
       </div>
@@ -189,7 +188,7 @@ export default function EditProductionPage({
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Produktionsdaten bearbeiten</h1>
+            <h1 className="text-2xl font-bold">{t("title")}</h1>
             <p className="text-muted-foreground">
               {production.turbine.designation} -{" "}
               {monthNames[production.month]} {production.year}
@@ -202,7 +201,7 @@ export default function EditProductionPage({
             variant="outline"
             onClick={() => router.back()}
           >
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button type="submit" disabled={saving || isInvoiced}>
             {saving ? (
@@ -210,7 +209,7 @@ export default function EditProductionPage({
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Speichern
+            {t("save")}
           </Button>
         </div>
       </div>
@@ -219,8 +218,7 @@ export default function EditProductionPage({
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="pt-6">
             <p className="text-sm text-amber-800">
-              Abgerechnete Datensaetze können nicht bearbeitet werden.
-              Stornieren Sie zuerst die zugehoerige Gutschrift.
+              {t("invoicedLocked")}
             </p>
           </CardContent>
         </Card>
@@ -232,16 +230,16 @@ export default function EditProductionPage({
           {/* Production & Revenue */}
           <Card>
             <CardHeader>
-              <CardTitle>Produktion & Erlös</CardTitle>
+              <CardTitle>{t("productionRevenue")}</CardTitle>
               <CardDescription>
-                Produktionswerte und Erlöse anpassen
+                {t("productionRevenueDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Production */}
                 <div className="space-y-2">
-                  <Label htmlFor="productionKwh">Produktion (kWh) *</Label>
+                  <Label htmlFor="productionKwh">{t("productionKwh")}</Label>
                   <Input
                     id="productionKwh"
                     type="number"
@@ -251,7 +249,7 @@ export default function EditProductionPage({
                     onChange={(e) =>
                       handleChange("productionKwh", e.target.value)
                     }
-                    placeholder="0,000"
+                    placeholder={t("productionPlaceholder")}
                     required
                     disabled={isInvoiced}
                   />
@@ -259,7 +257,7 @@ export default function EditProductionPage({
 
                 {/* Revenue */}
                 <div className="space-y-2">
-                  <Label htmlFor="revenueEur">Erlös (EUR)</Label>
+                  <Label htmlFor="revenueEur">{t("revenueEur")}</Label>
                   <Input
                     id="revenueEur"
                     type="number"
@@ -269,7 +267,7 @@ export default function EditProductionPage({
                     onChange={(e) =>
                       handleChange("revenueEur", e.target.value)
                     }
-                    placeholder="optional"
+                    placeholder={t("revenueOptional")}
                     disabled={isInvoiced}
                   />
                 </div>
@@ -280,13 +278,13 @@ export default function EditProductionPage({
           {/* Notes */}
           <Card>
             <CardHeader>
-              <CardTitle>Bemerkungen</CardTitle>
+              <CardTitle>{t("notes")}</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
-                placeholder="Optionale Bemerkungen"
+                placeholder={t("notesPlaceholder")}
                 rows={3}
                 maxLength={1000}
                 disabled={isInvoiced}
@@ -299,28 +297,28 @@ export default function EditProductionPage({
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Details</CardTitle>
+              <CardTitle>{t("details")}</CardTitle>
               <CardDescription>
-                Diese Felder können nicht geändert werden
+                {t("detailsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Park</p>
+                <p className="text-sm text-muted-foreground">{t("park")}</p>
                 <p className="font-medium">{production.turbine.park.name}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Anlage</p>
+                <p className="text-sm text-muted-foreground">{t("turbine")}</p>
                 <p className="font-medium">{production.turbine.designation}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Zeitraum</p>
+                <p className="text-sm text-muted-foreground">{t("period")}</p>
                 <p className="font-medium">
                   {monthNames[production.month]} {production.year}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Vergütungsart</p>
+                <p className="text-sm text-muted-foreground">{t("revenueType")}</p>
                 <p className="font-medium">
                   {production.revenueType
                     ? `${production.revenueType.name} (${production.revenueType.code})`
@@ -328,9 +326,9 @@ export default function EditProductionPage({
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Quelle</p>
+                <p className="text-sm text-muted-foreground">{t("source")}</p>
                 <Badge variant="outline">
-                  {sourceLabels[production.source] || production.source}
+                  {sourceLabel}
                 </Badge>
               </div>
             </CardContent>

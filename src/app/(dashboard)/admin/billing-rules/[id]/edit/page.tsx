@@ -8,6 +8,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RuleForm } from "@/components/admin/billing-rules";
@@ -41,6 +42,7 @@ export default function EditBillingRulePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = useTranslations("admin.billingRules");
   const { id } = use(params);
   const router = useRouter();
   const [rule, setRule] = useState<BillingRule | null>(null);
@@ -60,11 +62,11 @@ export default function EditBillingRulePage({
 
         if (!ruleRes.ok) {
           if (ruleRes.status === 404) {
-            toast.error("Regel nicht gefunden");
+            toast.error(t("notFound"));
             router.push("/admin/billing-rules");
             return;
           }
-          throw new Error("Fehler beim Laden");
+          throw new Error("load-error");
         }
 
         const ruleData = await ruleRes.json();
@@ -80,14 +82,14 @@ export default function EditBillingRulePage({
           setParks(parksData.data || []);
         }
       } catch {
-        toast.error("Fehler beim Laden der Daten");
+        toast.error(t("loadError"));
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [id, router]);
+  }, [id, router, t]);
 
   if (isLoading) {
     return (
@@ -112,7 +114,7 @@ export default function EditBillingRulePage({
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">Regel bearbeiten</h1>
+          <h1 className="text-3xl font-bold">{t("editTitle")}</h1>
           <p className="text-muted-foreground">{rule.name}</p>
         </div>
       </div>
