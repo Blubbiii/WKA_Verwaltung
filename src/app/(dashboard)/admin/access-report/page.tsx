@@ -32,6 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslations } from "next-intl";
 
 // Types for the access report
 interface RoleData {
@@ -91,26 +92,10 @@ function groupPermissionsByModule(
 }
 
 // Module display names
-const MODULE_LABELS: Record<string, string> = {
-  parks: "Windparks",
-  turbines: "Turbinen",
-  funds: "Beteiligungen",
-  shareholders: "Gesellschafter",
-  plots: "Flaechen",
-  leases: "Pacht",
-  contracts: "Verträge",
-  documents: "Dokumente",
-  invoices: "Abrechnungen",
-  votes: "Abstimmungen",
-  "service-events": "Wartungen",
-  reports: "Berichte",
-  settings: "Einstellungen",
-  users: "Benutzer",
-  roles: "Rollen",
-  admin: "Administration",
-};
+// Module labels moved to i18n
 
 export default function AccessReportPage() {
+  const t = useTranslations("admin.accessReport");
   const [reportData, setReportData] = useState<AccessReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +118,7 @@ export default function AccessReportPage() {
         );
       }
     } catch {
-      toast.error("Fehler beim Laden der Rollen");
+      toast.error(t("loadRolesError"));
     }
   }, []);
 
@@ -153,13 +138,13 @@ export default function AccessReportPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Fehler beim Laden des Reports");
+        throw new Error(errorData.error || t("loadReportError"));
       }
 
       const data: AccessReportResponse = await response.json();
       setReportData(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unbekannter Fehler");
+      setError(err instanceof Error ? err.message : t("unknownError"));
     } finally {
       setLoading(false);
     }
@@ -228,7 +213,7 @@ export default function AccessReportPage() {
       const response = await fetch(`/api/admin/access-report?${params}`);
 
       if (!response.ok) {
-        throw new Error("Export fehlgeschlagen");
+        throw new Error(t("exportFailed"));
       }
 
       // Download the file
@@ -242,7 +227,7 @@ export default function AccessReportPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch {
-      toast.error("Export fehlgeschlagen");
+      toast.error(t("exportFailed"));
     }
   };
 
@@ -253,24 +238,24 @@ export default function AccessReportPage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Shield className="h-6 w-6" />
-            Zugriffsreport
+            {t("title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Übersicht aller Benutzer und ihrer effektiven Berechtigungen
+            {t("description")}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => fetchReport()}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Aktualisieren
+            {t("refresh")}
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
-                Exportieren
+                {t("export")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -300,7 +285,7 @@ export default function AccessReportPage() {
                 <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Benutzer</p>
+                <p className="text-sm text-muted-foreground">{t("users")}</p>
                 <p className="text-2xl font-bold">{reportData.totalUsers}</p>
               </div>
             </div>
@@ -312,7 +297,7 @@ export default function AccessReportPage() {
                 <Shield className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Aktive Rollen</p>
+                <p className="text-sm text-muted-foreground">{t("activeRoles")}</p>
                 <p className="text-2xl font-bold">{reportData.totalRoles}</p>
               </div>
             </div>
@@ -324,7 +309,7 @@ export default function AccessReportPage() {
                 <Key className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Berechtigungen (gesamt)</p>
+                <p className="text-sm text-muted-foreground">{t("permissionsTotal")}</p>
                 <p className="text-2xl font-bold">{reportData.totalPermissions}</p>
               </div>
             </div>
@@ -337,7 +322,7 @@ export default function AccessReportPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Benutzer oder Rolle suchen..."
+            placeholder={t("searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -350,10 +335,10 @@ export default function AccessReportPage() {
         >
           <SelectTrigger className="w-full sm:w-[250px]">
             <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Nach Rolle filtern" />
+            <SelectValue placeholder={t("filterByRole")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Rollen</SelectItem>
+            <SelectItem value="all">{t("allRoles")}</SelectItem>
             {availableRoles.map((role) => (
               <SelectItem key={role.id} value={role.id}>
                 {role.name}
@@ -393,7 +378,7 @@ export default function AccessReportPage() {
       {/* Error State */}
       {error && (
         <div className="bg-destructive/10 text-destructive rounded-lg p-4">
-          <p className="font-medium">Fehler</p>
+          <p className="font-medium">{t("error")}</p>
           <p className="text-sm">{error}</p>
           <Button
             variant="outline"
@@ -410,11 +395,11 @@ export default function AccessReportPage() {
       {!loading && !error && filteredUsers.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p className="text-lg font-medium">Keine Benutzer gefunden</p>
+          <p className="text-lg font-medium">{t("noUsers")}</p>
           <p className="text-sm">
             {searchQuery
-              ? "Versuchen Sie eine andere Suchanfrage."
-              : "Es gibt keine aktiven Benutzer im System."}
+              ? t("noUsersSearchHint")
+              : t("noUsersHint")}
           </p>
         </div>
       )}
@@ -476,7 +461,7 @@ export default function AccessReportPage() {
 
                   {/* Permission Count */}
                   <Badge variant="outline" className="shrink-0">
-                    {user.permissionCount} Berechtigungen
+                    {user.permissionCount} {t("permissions")}
                   </Badge>
                 </button>
 
@@ -487,7 +472,7 @@ export default function AccessReportPage() {
                     <div>
                       <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
                         <Shield className="h-4 w-4" />
-                        Rollen ({user.roles.length})
+                        {t("rolesCount", { count: user.roles.length })}
                       </h4>
                       <div className="flex flex-wrap gap-2">
                         {user.roles.map((role) => (
@@ -514,15 +499,12 @@ export default function AccessReportPage() {
                             </div>
                             {role.resourceType !== "__global__" && (
                               <p className="text-xs text-muted-foreground">
-                                Eingeschraenkt auf {role.resourceType}:{" "}
-                                {role.resourceNames.length > 0
-                                  ? role.resourceNames.join(", ")
-                                  : role.resourceIds.join(", ")}
+                                {t("restrictedTo", { type: role.resourceType, names: role.resourceNames.length > 0 ? role.resourceNames.join(", ") : role.resourceIds.join(", ") })}
                               </p>
                             )}
                             {role.resourceType === "__global__" && (
                               <p className="text-xs text-muted-foreground">
-                                Global (alle Ressourcen)
+                                {t("globalAll")}
                               </p>
                             )}
                           </div>
@@ -534,14 +516,14 @@ export default function AccessReportPage() {
                     <div>
                       <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
                         <Key className="h-4 w-4" />
-                        Effektive Berechtigungen ({user.permissionCount})
+                        {t("effectivePermissions", { count: user.permissionCount })}
                       </h4>
                       <div className="space-y-3">
                         {Array.from(groupedPermissions.entries()).map(
                           ([module, permissions]) => (
                             <div key={module} className="bg-background rounded-lg border p-3">
                               <p className="text-sm font-medium mb-2">
-                                {MODULE_LABELS[module] || module}
+                                {t(`module${module.charAt(0).toUpperCase()}${module.slice(1).replace("-events", "ServiceEvents")}`) || module}
                               </p>
                               <div className="flex flex-wrap gap-1">
                                 {permissions.map((perm) => (
@@ -571,9 +553,7 @@ export default function AccessReportPage() {
       {/* Generated At Footer */}
       {reportData && (
         <p className="text-xs text-muted-foreground text-center">
-          Report generiert am{" "}
-          {new Date(reportData.generatedAt).toLocaleString("de-DE")} für{" "}
-          {reportData.tenantName}
+          {t("reportGeneratedAt", { date: new Date(reportData.generatedAt).toLocaleString("de-DE"), tenant: reportData.tenantName })}
         </p>
       )}
     </div>

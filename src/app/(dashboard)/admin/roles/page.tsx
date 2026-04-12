@@ -77,6 +77,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { PermissionMatrix } from "@/components/admin/PermissionMatrix";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 // Schema
 const roleFormSchema = z.object({
@@ -134,6 +135,7 @@ const presetColors = [
 ];
 
 export default function RolesPage() {
+  const t = useTranslations("admin.roles");
   const [roles, setRoles] = useState<Role[]>([]);
   const [groupedPermissions, setGroupedPermissions] = useState<ModuleGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -189,7 +191,7 @@ export default function RolesPage() {
         );
       }
     } catch {
-      toast.error("Fehler beim Laden der Daten");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
@@ -225,7 +227,7 @@ export default function RolesPage() {
         });
       }
     } catch {
-      toast.error("Fehler beim Laden der Rolle");
+      toast.error(t("loadRoleError"));
       return;
     }
 
@@ -269,14 +271,14 @@ export default function RolesPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
       await fetchData();
       setShowRoleDialog(false);
-      toast.success(selectedRole ? "Rolle aktualisiert" : "Rolle erstellt");
+      toast.success(selectedRole ? t("roleUpdated") : t("roleCreated"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -293,14 +295,14 @@ export default function RolesPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Löschen");
+        throw new Error(error.error || t("deleteError"));
       }
 
       await fetchData();
       setShowDeleteDialog(false);
-      toast.success("Rolle gelöscht");
+      toast.success(t("roleDeleted"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
+      toast.error(error instanceof Error ? error.message : t("deleteError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -319,7 +321,7 @@ export default function RolesPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Export fehlgeschlagen");
+        throw new Error(error.error || t("exportFailed"));
       }
 
       // Create blob and download
@@ -333,9 +335,9 @@ export default function RolesPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success(`Matrix als ${format.toUpperCase()} exportiert`);
+      toast.success(t("exportedAs", { format: format.toUpperCase() }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Export fehlgeschlagen");
+      toast.error(error instanceof Error ? error.message : t("exportFailed"));
     } finally {
       setIsExporting(false);
     }
@@ -351,9 +353,9 @@ export default function RolesPage() {
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight">Rollen & Rechte</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Verwalten Sie Benutzerrollen und deren Berechtigungen
+            {t("description")}
           </p>
         </div>
       </div>
@@ -362,19 +364,19 @@ export default function RolesPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rollen gesamt</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("totalRoles")}</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{roles.length}</div>
             <p className="text-xs text-muted-foreground">
-              {roles.filter(r => r.isSystem).length} System-Rollen
+              {t("systemRoles", { count: roles.filter(r => r.isSystem).length })}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Berechtigungen</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("permissionsLabel")}</CardTitle>
             <Lock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -382,20 +384,20 @@ export default function RolesPage() {
               {groupedPermissions.reduce((acc, g) => acc + g.permissions.length, 0)}
             </div>
             <p className="text-xs text-muted-foreground">
-              in {groupedPermissions.length} Modulen
+              {t("inModules", { count: groupedPermissions.length })}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Zuweisungen</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("assignments")}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {roles.reduce((acc, r) => acc + r._count.userAssignments, 0)}
             </div>
-            <p className="text-xs text-muted-foreground">Benutzer-Rollen-Zuweisungen</p>
+            <p className="text-xs text-muted-foreground">{t("userRoleAssignments")}</p>
           </CardContent>
         </Card>
       </div>
@@ -404,16 +406,16 @@ export default function RolesPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Rollen</CardTitle>
+            <CardTitle>{t("rolesTitle")}</CardTitle>
             <CardDescription>
-              Übersicht aller System- und benutzerdefinierten Rollen
+              {t("rolesDescription")}
             </CardDescription>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative w-64">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Suchen..."
+                placeholder={t("search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8"
@@ -427,23 +429,23 @@ export default function RolesPage() {
                   ) : (
                     <Download className="mr-2 h-4 w-4" />
                   )}
-                  Matrix exportieren
+                  {t("exportMatrix")}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => handleExport("pdf")}>
                   <FileText className="mr-2 h-4 w-4" />
-                  Als PDF exportieren
+                  {t("exportPdf")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleExport("xlsx")}>
                   <FileSpreadsheet className="mr-2 h-4 w-4" />
-                  Als Excel exportieren
+                  {t("exportExcel")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button onClick={openNewRoleDialog}>
               <Plus className="mr-2 h-4 w-4" />
-              Neue Rolle
+              {t("newRole")}
             </Button>
           </div>
         </CardHeader>
@@ -451,11 +453,11 @@ export default function RolesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Rolle</TableHead>
-                <TableHead>Beschreibung</TableHead>
-                <TableHead className="text-center">Berechtigungen</TableHead>
-                <TableHead className="text-center">Benutzer</TableHead>
-                <TableHead>Typ</TableHead>
+                <TableHead>{t("colRole")}</TableHead>
+                <TableHead>{t("colDescription")}</TableHead>
+                <TableHead className="text-center">{t("colPermissions")}</TableHead>
+                <TableHead className="text-center">{t("colUsers")}</TableHead>
+                <TableHead>{t("colType")}</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -476,7 +478,7 @@ export default function RolesPage() {
                     colSpan={6}
                     className="h-32 text-center text-muted-foreground"
                   >
-                    Keine Rollen gefunden
+                    {t("noRoles")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -502,9 +504,9 @@ export default function RolesPage() {
                     </TableCell>
                     <TableCell>
                       {role.isSystem ? (
-                        <Badge>System</Badge>
+                        <Badge>{t("systemBadge")}</Badge>
                       ) : (
-                        <Badge variant="outline">Benutzerdefiniert</Badge>
+                        <Badge variant="outline">{t("customBadge")}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -517,7 +519,7 @@ export default function RolesPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openEditRoleDialog(role)}>
                             <Pencil className="mr-2 h-4 w-4" />
-                            {role.isSystem && !isSuperAdmin ? "Anzeigen" : "Bearbeiten"}
+                            {role.isSystem && !isSuperAdmin ? t("view") : t("edit")}
                           </DropdownMenuItem>
                           {!role.isSystem && (
                             <>
@@ -527,7 +529,7 @@ export default function RolesPage() {
                                 onClick={() => openDeleteDialog(role)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Löschen
+                                {t("delete")}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -549,21 +551,21 @@ export default function RolesPage() {
             <DialogTitle>
               {selectedRole
                 ? selectedRole.isSystem
-                  ? `Rolle: ${selectedRole.name}`
-                  : "Rolle bearbeiten"
-                : "Neue Rolle erstellen"}
+                  ? t("viewRoleTitle", { name: selectedRole.name })
+                  : t("editRoleTitle")
+                : t("newRoleTitle")}
             </DialogTitle>
             <DialogDescription>
               {selectedRole?.isSystem && !isSuperAdmin
-                ? "System-Rollen können nur von Superadmins bearbeitet werden"
+                ? t("systemReadonly")
                 : selectedRole?.isSystem
-                  ? "System-Rolle bearbeiten - Änderungen wirken sich auf alle Mandanten aus"
-                  : "Definieren Sie Namen, Beschreibung und Berechtigungen der Rolle"}
+                  ? t("systemEditWarning")
+                  : t("defineRoleDesc")}
             </DialogDescription>
             {selectedRole?.isSystem && isSuperAdmin && (
               <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-2 text-sm text-amber-800 dark:text-amber-200">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>Achtung: Änderungen an System-Rollen wirken sich auf alle Mandanten aus.</span>
+                <span>{t("systemWarnBanner")}</span>
               </div>
             )}
           </DialogHeader>
@@ -577,10 +579,10 @@ export default function RolesPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name *</FormLabel>
+                      <FormLabel>{t("nameLabel")}</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="z.B. Park-Manager"
+                          placeholder={t("namePlaceholder")}
                           {...field}
                           disabled={selectedRole?.isSystem && !isSuperAdmin}
                         />
@@ -594,7 +596,7 @@ export default function RolesPage() {
                   name="color"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Farbe</FormLabel>
+                      <FormLabel>{t("colorLabel")}</FormLabel>
                       <div className="flex items-center gap-2">
                         <FormControl>
                           <Input
@@ -630,10 +632,10 @@ export default function RolesPage() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Beschreibung</FormLabel>
+                    <FormLabel>{t("descriptionLabel")}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Beschreiben Sie die Rolle..."
+                        placeholder={t("descriptionPlaceholder")}
                         {...field}
                         disabled={selectedRole?.isSystem && !isSuperAdmin}
                         rows={2}
@@ -646,9 +648,9 @@ export default function RolesPage() {
 
               {/* Permission Matrix */}
               <div>
-                <Label className="text-base font-medium">Berechtigungen</Label>
+                <Label className="text-base font-medium">{t("permissionsSection")}</Label>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Wählen Sie die Berechtigungen für diese Rolle aus
+                  {t("permissionsHint")}
                 </p>
                 <PermissionMatrix
                   groupedPermissions={groupedPermissions}
@@ -665,12 +667,12 @@ export default function RolesPage() {
                   variant="outline"
                   onClick={() => setShowRoleDialog(false)}
                 >
-                  {selectedRole?.isSystem && !isSuperAdmin ? "Schließen" : "Abbrechen"}
+                  {selectedRole?.isSystem && !isSuperAdmin ? t("close") : t("cancel")}
                 </Button>
                 {!(selectedRole?.isSystem && !isSuperAdmin) && (
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {selectedRole ? "Speichern" : "Erstellen"}
+                    {selectedRole ? t("save") : t("create")}
                   </Button>
                 )}
               </DialogFooter>
@@ -683,7 +685,7 @@ export default function RolesPage() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Rolle löschen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
               Möchten Sie die Rolle &quot;{selectedRole?.name}&quot; wirklich löschen?
               Diese Aktion kann nicht rückgängig gemacht werden.
@@ -695,14 +697,14 @@ export default function RolesPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={selectedRole?._count.userAssignments ? selectedRole._count.userAssignments > 0 : false}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Löschen
+              {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

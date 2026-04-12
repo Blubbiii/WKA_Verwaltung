@@ -66,6 +66,7 @@ import {
   type AuditAction,
   type AuditEntityType,
 } from "@/lib/audit-types";
+import { useTranslations } from "next-intl";
 
 // Types
 interface AuditLogUser {
@@ -108,21 +109,21 @@ interface UserOption {
 
 // Action types for filtering
 const ACTION_OPTIONS: { value: string; label: string }[] = [
-  { value: "ALL", label: "Alle Aktionen" },
-  { value: "CREATE", label: "Erstellt" },
-  { value: "UPDATE", label: "Bearbeitet" },
-  { value: "DELETE", label: "Gelöscht" },
-  { value: "VIEW", label: "Angesehen" },
-  { value: "EXPORT", label: "Exportiert" },
-  { value: "DOCUMENT_DOWNLOAD", label: "Heruntergeladen" },
-  { value: "LOGIN", label: "Angemeldet" },
-  { value: "LOGOUT", label: "Abgemeldet" },
-  { value: "IMPERSONATE", label: "Impersoniert" },
+  { value: "ALL", label: "allActions" },
+  { value: "CREATE", label: "actionCreate" },
+  { value: "UPDATE", label: "actionUpdate" },
+  { value: "DELETE", label: "actionDelete" },
+  { value: "VIEW", label: "actionView" },
+  { value: "EXPORT", label: "actionExport" },
+  { value: "DOCUMENT_DOWNLOAD", label: "actionDownload" },
+  { value: "LOGIN", label: "actionLogin" },
+  { value: "LOGOUT", label: "actionLogout" },
+  { value: "IMPERSONATE", label: "actionImpersonate" },
 ];
 
 // Entity types for filtering - complete list from audit-types.ts
 const ENTITY_OPTIONS: { value: string; label: string }[] = [
-  { value: "ALL", label: "Alle Entitaeten" },
+  { value: "ALL", label: "allEntities" },
   { value: "Park", label: "Windpark" },
   { value: "Turbine", label: "Anlage" },
   { value: "TurbineProduction", label: "Netzbetreiber-Daten" },
@@ -219,26 +220,20 @@ function getFilterLabel(
 }
 
 function getFilterIcon(filterKey: string) {
-  switch (filterKey) {
-    case "action":
-      return "Aktion";
-    case "entityType":
-      return "Entitaet";
-    case "userId":
-      return "Benutzer";
-    case "startDate":
-      return "Von";
-    case "endDate":
-      return "Bis";
-    case "search":
-      return "Suche";
-    default:
-      return filterKey;
-  }
+  const labels: Record<string, string> = {
+    action: "filterAction",
+    entityType: "filterEntity",
+    userId: "filterUser",
+    startDate: "filterFrom",
+    endDate: "filterTo",
+    search: "filterSearch",
+  };
+  return labels[filterKey] || filterKey;
 }
 
 // Inner component that uses useSearchParams (must be inside Suspense)
 function AuditLogsContent() {
+  const t = useTranslations("admin.auditLogs");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -304,7 +299,7 @@ function AuditLogsContent() {
           );
         }
       } catch {
-        toast.error("Fehler beim Laden der Benutzer");
+        toast.error(t("loadUsersError"));
       } finally {
         setUsersLoading(false);
       }
@@ -374,7 +369,7 @@ function AuditLogsContent() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Fehler beim Laden der Audit-Logs");
+        throw new Error(errorData.error || t("loadLogsError"));
       }
 
       const data = await response.json();
@@ -466,9 +461,9 @@ function AuditLogsContent() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Audit-Logs</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Protokoll aller Loesch- und wichtigen Aktionen
+            {t("description")}
           </p>
         </div>
         <Button variant="outline" onClick={fetchAuditLogs} disabled={loading}>
@@ -488,7 +483,7 @@ function AuditLogsContent() {
                   className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
                   <Filter className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle className="text-lg">Filter</CardTitle>
+                  <CardTitle className="text-lg">{t("filter")}</CardTitle>
                   {hasActiveFilters && (
                     <Badge variant="secondary" className="ml-2">
                       {activeFilterEntries.length}
@@ -504,7 +499,7 @@ function AuditLogsContent() {
               {hasActiveFilters && (
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
                   <X className="mr-2 h-4 w-4" />
-                  Filter zurücksetzen
+                  {t("clearFilters")}
                 </Button>
               )}
             </div>
@@ -551,7 +546,7 @@ function AuditLogsContent() {
                   <Input
                     id="search-field"
                     type="text"
-                    placeholder="Suche in Entity-ID, Benutzer, IP-Adresse..."
+                    placeholder={t("searchPlaceholder")}
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                     className="pl-10"
@@ -573,20 +568,20 @@ function AuditLogsContent() {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 {/* User Filter */}
                 <div className="space-y-2">
-                  <Label htmlFor="user-filter">Benutzer</Label>
+                  <Label htmlFor="user-filter">{t("userLabel")}</Label>
                   <Select value={userFilter} onValueChange={setUserFilter}>
                     <SelectTrigger id="user-filter">
                       <div className="flex items-center gap-2 truncate">
                         <Users className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <SelectValue placeholder="Benutzer waehlen" />
+                        <SelectValue placeholder={t("userLabel")} />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ALL">Alle Benutzer</SelectItem>
+                      <SelectItem value="ALL">{t("allUsers")}</SelectItem>
                       {usersLoading && (
                         <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          Lade Benutzer...
+                          {t("loadingUsers")}
                         </div>
                       )}
                       {users.map((user) => (
@@ -604,10 +599,10 @@ function AuditLogsContent() {
 
                 {/* Action Filter */}
                 <div className="space-y-2">
-                  <Label htmlFor="action-filter">Aktion</Label>
+                  <Label htmlFor="action-filter">{t("actionLabel")}</Label>
                   <Select value={actionFilter} onValueChange={setActionFilter}>
                     <SelectTrigger id="action-filter">
-                      <SelectValue placeholder="Aktion waehlen" />
+                      <SelectValue placeholder={t("actionLabel")} />
                     </SelectTrigger>
                     <SelectContent>
                       {ACTION_OPTIONS.map((option) => (
@@ -621,10 +616,10 @@ function AuditLogsContent() {
 
                 {/* Entity Type Filter */}
                 <div className="space-y-2">
-                  <Label htmlFor="entity-filter">Entitaet</Label>
+                  <Label htmlFor="entity-filter">{t("entityLabel")}</Label>
                   <Select value={entityTypeFilter} onValueChange={setEntityTypeFilter}>
                     <SelectTrigger id="entity-filter">
-                      <SelectValue placeholder="Entitaet waehlen" />
+                      <SelectValue placeholder={t("entityLabel")} />
                     </SelectTrigger>
                     <SelectContent>
                       {ENTITY_OPTIONS.map((option) => (
@@ -638,7 +633,7 @@ function AuditLogsContent() {
 
                 {/* Start Date */}
                 <div className="space-y-2">
-                  <Label htmlFor="start-date">Von</Label>
+                  <Label htmlFor="start-date">{t("fromLabel")}</Label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -653,7 +648,7 @@ function AuditLogsContent() {
 
                 {/* End Date */}
                 <div className="space-y-2">
-                  <Label htmlFor="end-date">Bis</Label>
+                  <Label htmlFor="end-date">{t("toLabel")}</Label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -671,7 +666,7 @@ function AuditLogsContent() {
               {hasActiveFilters && (
                 <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
                   <span className="text-sm text-muted-foreground self-center mr-1">
-                    Aktive Filter:
+                    {t("activeFilters")}
                   </span>
                   {activeFilterEntries.map((entry) => (
                     <Badge
@@ -707,11 +702,11 @@ function AuditLogsContent() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Protokolleinträge</CardTitle>
+              <CardTitle>{t("logEntries")}</CardTitle>
               <CardDescription>
                 {pagination
-                  ? `${pagination.totalCount} Einträge gefunden`
-                  : "Lade Einträge..."}
+                  ? t("entriesFound", { count: pagination.totalCount })
+                  : t("loadingEntries")}
               </CardDescription>
             </div>
           </div>
@@ -720,7 +715,7 @@ function AuditLogsContent() {
           {/* Error State */}
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
-              <p className="font-medium">Fehler beim Laden</p>
+              <p className="font-medium">{t("loadError")}</p>
               <p className="text-sm">{error}</p>
               <Button
                 variant="outline"
@@ -728,7 +723,7 @@ function AuditLogsContent() {
                 className="mt-2"
                 onClick={fetchAuditLogs}
               >
-                Erneut versuchen
+                {t("retryBtn")}
               </Button>
             </div>
           )}
@@ -738,11 +733,11 @@ function AuditLogsContent() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px]">Datum/Zeit</TableHead>
-                  <TableHead>Benutzer</TableHead>
-                  <TableHead className="w-[120px]">Aktion</TableHead>
-                  <TableHead>Entitaet</TableHead>
-                  <TableHead className="w-[100px] text-right">Details</TableHead>
+                  <TableHead className="w-[180px]">{t("dateTime")}</TableHead>
+                  <TableHead>{t("userLabel")}</TableHead>
+                  <TableHead className="w-[120px]">{t("action")}</TableHead>
+                  <TableHead>{t("entity")}</TableHead>
+                  <TableHead className="w-[100px] text-right">{t("details")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -782,7 +777,7 @@ function AuditLogsContent() {
                       className="h-32 text-center text-muted-foreground"
                     >
                       <FileText className="mx-auto h-8 w-8 mb-2 opacity-50" />
-                      <p>Keine Audit-Logs gefunden</p>
+                      <p>{t("noLogs")}</p>
                       {hasActiveFilters && (
                         <Button
                           variant="link"
@@ -875,7 +870,7 @@ function AuditLogsContent() {
                   disabled={!pagination.hasPrevPage || loading}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Zurück
+                  {t("prev")}
                 </Button>
                 <Button
                   variant="outline"
@@ -883,7 +878,7 @@ function AuditLogsContent() {
                   onClick={() => handlePageChange(pagination.page + 1)}
                   disabled={!pagination.hasNextPage || loading}
                 >
-                  Weiter
+                  {t("next")}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
@@ -898,10 +893,10 @@ function AuditLogsContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Audit-Log Details
+              {t("detailTitle")}
             </DialogTitle>
             <DialogDescription>
-              Detaillierte Informationen zum Protokolleintrag
+              {t("detailDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -910,7 +905,7 @@ function AuditLogsContent() {
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Zeitpunkt</Label>
+                  <Label className="text-xs text-muted-foreground">{t("timestamp")}</Label>
                   <p className="font-medium">
                     {format(new Date(selectedLog.createdAt), "dd.MM.yyyy HH:mm:ss", {
                       locale: de,
@@ -918,7 +913,7 @@ function AuditLogsContent() {
                   </p>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Aktion</Label>
+                  <Label className="text-xs text-muted-foreground">{t("action")}</Label>
                   <div className="mt-1">
                     <Badge
                       variant={getActionBadgeProps(selectedLog.action).variant}
@@ -929,14 +924,14 @@ function AuditLogsContent() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Benutzer</Label>
+                  <Label className="text-xs text-muted-foreground">{t("user")}</Label>
                   <p className="font-medium">{formatUserName(selectedLog.user)}</p>
                   <p className="text-xs text-muted-foreground">
                     {selectedLog.user?.email}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Entitaet</Label>
+                  <Label className="text-xs text-muted-foreground">{t("entity")}</Label>
                   <p className="font-medium">
                     {getEntityDisplayName(selectedLog.entityType)}
                   </p>
@@ -951,7 +946,7 @@ function AuditLogsContent() {
               {/* Impersonation Info */}
               {selectedLog.impersonatedBy && (
                 <div className="rounded-lg border border-orange-200 bg-orange-50 p-3">
-                  <Label className="text-xs text-orange-700">Impersoniert durch</Label>
+                  <Label className="text-xs text-orange-700">{t("impersonatedBy")}</Label>
                   <p className="font-medium text-orange-900">
                     {formatUserName(selectedLog.impersonatedBy)}
                   </p>
@@ -963,19 +958,17 @@ function AuditLogsContent() {
 
               {/* Technical Info */}
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">
-                  Technische Details
-                </Label>
+                <Label className="text-xs text-muted-foreground">{t("technicalDetails")}</Label>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-muted-foreground">IP-Adresse:</span>{" "}
+                    <span className="text-muted-foreground">{t("ipAddress")}</span>{" "}
                     <span className="font-mono">
-                      {selectedLog.ipAddress || "Nicht verfügbar"}
+                      {selectedLog.ipAddress || t("ipNotAvailable")}
                     </span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Mandant:</span>{" "}
-                    {selectedLog.tenant?.name || "Global"}
+                    <span className="text-muted-foreground">{t("tenant")}</span>{" "}
+                    {selectedLog.tenant?.name || t("tenantGlobal")}
                   </div>
                 </div>
                 {selectedLog.userAgent && (
@@ -988,9 +981,7 @@ function AuditLogsContent() {
               {/* Old Values */}
               {selectedLog.oldValues && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">
-                    Vorherige Werte
-                  </Label>
+                  <Label className="text-xs text-muted-foreground">{t("previousValues")}</Label>
                   <pre className="rounded-lg bg-muted p-4 text-xs overflow-x-auto max-h-48">
                     {JSON.stringify(selectedLog.oldValues, null, 2)}
                   </pre>
@@ -1000,7 +991,7 @@ function AuditLogsContent() {
               {/* New Values */}
               {selectedLog.newValues && (
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Neue Werte</Label>
+                  <Label className="text-xs text-muted-foreground">{t("newValues")}</Label>
                   <pre className="rounded-lg bg-muted p-4 text-xs overflow-x-auto max-h-48">
                     {JSON.stringify(selectedLog.newValues, null, 2)}
                   </pre>
@@ -1010,7 +1001,7 @@ function AuditLogsContent() {
               {/* No data message */}
               {!selectedLog.oldValues && !selectedLog.newValues && (
                 <div className="text-center text-muted-foreground py-4">
-                  <p>Keine Änderungsdaten verfügbar</p>
+                  <p>{t("noChangeData")}</p>
                 </div>
               )}
             </div>
@@ -1023,15 +1014,16 @@ function AuditLogsContent() {
 
 // Page wrapper with Suspense for useSearchParams
 export default function AuditLogsPage() {
+  const t = useTranslations("admin.auditLogs");
   return (
     <Suspense
       fallback={
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Audit-Logs</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
               <p className="text-muted-foreground">
-                Protokoll aller Loesch- und wichtigen Aktionen
+                {t("description")}
               </p>
             </div>
           </div>
@@ -1039,7 +1031,7 @@ export default function AuditLogsPage() {
             <CardContent className="py-12">
               <div className="flex items-center justify-center gap-2 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Lade Audit-Logs...</span>
+                <span>{t("loadingAuditLogs")}</span>
               </div>
             </CardContent>
           </Card>

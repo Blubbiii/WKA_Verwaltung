@@ -42,6 +42,7 @@ import {
   History,
   Loader2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // Types
 interface BillingRuleDetail {
@@ -75,20 +76,9 @@ interface ExecutionsResponse {
 }
 
 // Labels
-const RULE_TYPE_LABELS: Record<string, string> = {
-  LEASE_PAYMENT: "Pachtzahlung",
-  DISTRIBUTION: "Ausschuettung",
-  MANAGEMENT_FEE: "Verwaltungsgebühr",
-  CUSTOM: "Benutzerdefiniert",
-};
+// Rule type labels moved to i18n
 
-const FREQUENCY_LABELS: Record<string, string> = {
-  MONTHLY: "Monatlich",
-  QUARTERLY: "Vierteljährlich",
-  SEMI_ANNUAL: "Halbjährlich",
-  ANNUAL: "Jährlich",
-  CUSTOM_CRON: "Benutzerdefiniert",
-};
+// Frequency labels moved to i18n
 
 // formatDate with datetime → use central formatDateTime from @/lib/format
 const formatDate = formatDateTime;
@@ -96,28 +86,23 @@ const formatDate = formatDateTime;
 function ParameterDisplay({ parameters }: { parameters: Record<string, unknown>; ruleType?: string }) {
   const renderValue = (key: string, value: unknown): string => {
     if (value === null || value === undefined) return "-";
-    if (typeof value === "boolean") return value ? "Ja" : "Nein";
+    if (typeof value === "boolean") return value ? "Yes" : "No";
     if (typeof value === "number") return value.toLocaleString("de-DE");
     if (Array.isArray(value)) return JSON.stringify(value);
     return String(value);
   };
 
-  const labelMap: Record<string, string> = {
-    parkId: "Park ID",
-    fundId: "Gesellschaft ID",
-    totalAmount: "Gesamtbetrag",
-    description: "Beschreibung",
-    taxType: "Steuerart",
-    useMinimumRent: "Mindestpacht verwenden",
-    calculationType: "Berechnungsart",
-    amount: "Betrag",
-    percentage: "Prozentsatz",
-    baseValue: "Basiswert",
-    recipientName: "Empfänger",
-    recipientAddress: "Adresse",
-    invoiceType: "Rechnungstyp",
-    items: "Positionen",
+  // Parameter labels from i18n - note: t is from parent scope
+  const paramLabelKeys: Record<string, string> = {
+    parkId: "paramParkId", fundId: "paramFundId", totalAmount: "paramTotalAmount",
+    description: "paramDescription", taxType: "paramTaxType", useMinimumRent: "paramUseMinimumRent",
+    calculationType: "paramCalculationType", amount: "paramAmount", percentage: "paramPercentage",
+    baseValue: "paramBaseValue", recipientName: "paramRecipientName", recipientAddress: "paramRecipientAddress",
+    invoiceType: "paramInvoiceType", items: "paramItems",
   };
+  const labelMap: Record<string, string> = Object.fromEntries(
+    Object.entries(paramLabelKeys).map(([k, v]) => [k, v])
+  );
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -141,6 +126,7 @@ export default function BillingRuleDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslations("admin.billingRuleDetail");
   const router = useRouter();
   const [rule, setRule] = useState<BillingRuleDetail | null>(null);
   const [executions, setExecutions] = useState<ExecutionData[]>([]);
@@ -173,18 +159,18 @@ export default function BillingRuleDetailPage({
       const response = await fetch(`/api/admin/billing-rules/${id}`);
       if (!response.ok) {
         if (response.status === 404) {
-          toast.error("Regel nicht gefunden");
+          toast.error(t("notFound"));
           router.push("/admin/billing-rules");
           return;
         }
-        throw new Error("Fehler beim Laden");
+        throw new Error(t("loadError"));
       }
 
       const data = await response.json();
       setRule(data);
       setExecutions(data.recentExecutions || []);
     } catch {
-      toast.error("Fehler beim Laden der Regel");
+      toast.error(t("loadRuleError"));
     } finally {
       setIsLoading(false);
     }
@@ -231,18 +217,18 @@ export default function BillingRuleDetailPage({
       if (result.success) {
         toast.success(
           dryRun
-            ? `Vorschau: ${result.summary.totalProcessed} Rechnungen wuerden erstellt`
-            : `${result.summary.invoicesCreated} Rechnungen erstellt`
+            ? t("previewToast", { count: result.summary.totalProcessed })
+            : t("createdToast", { count: result.summary.invoicesCreated })
         );
         if (!dryRun) {
           fetchRule();
           fetchExecutions();
         }
       } else {
-        toast.error(result.errorMessage || "Ausführung fehlgeschlagen");
+        toast.error(result.errorMessage || t("execFailed"));
       }
     } catch {
-      toast.error("Fehler bei der Ausführung");
+      toast.error(t("executeError"));
     } finally {
       setIsExecuting(false);
     }
@@ -256,13 +242,13 @@ export default function BillingRuleDetailPage({
       });
 
       if (response.ok) {
-        toast.success("Regel deaktiviert");
+        toast.success(t("deactivated"));
         router.push("/admin/billing-rules");
       } else {
         throw new Error();
       }
     } catch {
-      toast.error("Fehler beim Deaktivieren");
+      toast.error(t("deactivateError"));
     }
   };
 
@@ -294,9 +280,9 @@ export default function BillingRuleDetailPage({
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold">{rule.name}</h1>
               {rule.isActive ? (
-                <Badge className="bg-green-100 text-green-800">Aktiv</Badge>
+                <Badge className="bg-green-100 text-green-800">{t("active")}</Badge>
               ) : (
-                <Badge variant="secondary">Inaktiv</Badge>
+                <Badge variant="secondary">{t("inactive")}</Badge>
               )}
             </div>
             {rule.description && (
@@ -311,7 +297,7 @@ export default function BillingRuleDetailPage({
             ) : (
               <Eye className="h-4 w-4 mr-2" />
             )}
-            Vorschau
+            {t("preview")}
           </Button>
           <Button onClick={() => executeRule(false)} disabled={isExecuting || !rule.isActive}>
             {isExecuting ? (
@@ -319,7 +305,7 @@ export default function BillingRuleDetailPage({
             ) : (
               <Play className="h-4 w-4 mr-2" />
             )}
-            Jetzt ausfuehren
+            {t("runNow")}
           </Button>
         </div>
       </div>
@@ -334,29 +320,29 @@ export default function BillingRuleDetailPage({
               ) : (
                 <XCircle className="h-5 w-5 text-red-600" />
               )}
-              {executionResult.dryRun ? "Vorschau-Ergebnis" : "Ausführungsergebnis"}
+              {executionResult.dryRun ? t("previewResult") : t("executionResult")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div>
-                <p className="text-sm text-muted-foreground">Verarbeitet</p>
+                <p className="text-sm text-muted-foreground">{t("processed")}</p>
                 <p className="text-2xl font-bold">{executionResult.summary.totalProcessed}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Erfolgreich</p>
+                <p className="text-sm text-muted-foreground">{t("successful")}</p>
                 <p className="text-2xl font-bold text-green-600">
                   {executionResult.summary.successful}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Fehlgeschlagen</p>
+                <p className="text-sm text-muted-foreground">{t("failed")}</p>
                 <p className="text-2xl font-bold text-red-600">
                   {executionResult.summary.failed}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Gesamtbetrag</p>
+                <p className="text-sm text-muted-foreground">{t("totalAmount")}</p>
                 <p className="text-2xl font-bold">
                   {formatCurrency(executionResult.summary.totalAmount)}
                 </p>
@@ -364,7 +350,7 @@ export default function BillingRuleDetailPage({
             </div>
             {executionResult.invoices.length > 0 && (
               <div className="space-y-2">
-                <p className="font-medium text-sm">Details:</p>
+                <p className="font-medium text-sm">{t("detailsLabel")}</p>
                 <div className="max-h-48 overflow-auto">
                   {executionResult.invoices.slice(0, 10).map((inv, idx) => (
                     <div
@@ -377,7 +363,7 @@ export default function BillingRuleDetailPage({
                         ) : (
                           <XCircle className="h-3 w-3 text-red-600" />
                         )}
-                        <span>{inv.recipientName || "Unbekannt"}</span>
+                        <span>{inv.recipientName || t("unknown")}</span>
                         {inv.error && (
                           <span className="text-red-600 text-xs">({inv.error})</span>
                         )}
@@ -387,7 +373,7 @@ export default function BillingRuleDetailPage({
                   ))}
                   {executionResult.invoices.length > 10 && (
                     <p className="text-xs text-muted-foreground py-2">
-                      + {executionResult.invoices.length - 10} weitere...
+                      {t("moreItems", { count: executionResult.invoices.length - 10 })}
                     </p>
                   )}
                 </div>
@@ -402,11 +388,11 @@ export default function BillingRuleDetailPage({
         <TabsList>
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Übersicht
+            {t("tabOverview")}
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <History className="h-4 w-4" />
-            Ausführungshistorie
+            {t("tabHistory")}
           </TabsTrigger>
         </TabsList>
 
@@ -417,10 +403,10 @@ export default function BillingRuleDetailPage({
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <Receipt className="h-4 w-4" />
-                  <span className="text-sm">Typ</span>
+                  <span className="text-sm">{t("type")}</span>
                 </div>
                 <p className="text-lg font-semibold">
-                  {RULE_TYPE_LABELS[rule.ruleType] || rule.ruleType}
+                  {t(`ruleType_${rule.ruleType}`) || rule.ruleType}
                 </p>
               </CardContent>
             </Card>
@@ -429,10 +415,10 @@ export default function BillingRuleDetailPage({
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <Calendar className="h-4 w-4" />
-                  <span className="text-sm">Frequenz</span>
+                  <span className="text-sm">{t("frequency")}</span>
                 </div>
                 <p className="text-lg font-semibold">
-                  {FREQUENCY_LABELS[rule.frequency] || rule.frequency}
+                  {t(`freq_${rule.frequency}`) || rule.frequency}
                 </p>
               </CardContent>
             </Card>
@@ -441,7 +427,7 @@ export default function BillingRuleDetailPage({
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <Clock className="h-4 w-4" />
-                  <span className="text-sm">Letzte Ausführung</span>
+                  <span className="text-sm">{t("lastRun")}</span>
                 </div>
                 <p className="text-lg font-semibold">{formatDate(rule.lastRunAt)}</p>
               </CardContent>
@@ -451,7 +437,7 @@ export default function BillingRuleDetailPage({
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2 text-muted-foreground mb-1">
                   <Clock className="h-4 w-4" />
-                  <span className="text-sm">Nächste Ausführung</span>
+                  <span className="text-sm">{t("nextRun")}</span>
                 </div>
                 <p className="text-lg font-semibold">{formatDate(rule.nextRunAt)}</p>
               </CardContent>
@@ -461,9 +447,9 @@ export default function BillingRuleDetailPage({
           {/* Parameters */}
           <Card>
             <CardHeader>
-              <CardTitle>Parameter</CardTitle>
+              <CardTitle>{t("parameters")}</CardTitle>
               <CardDescription>
-                Konfiguration für {RULE_TYPE_LABELS[rule.ruleType]}
+                {t("parametersFor", { type: t(`ruleType_${rule.ruleType}`) || rule.ruleType })}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -474,22 +460,22 @@ export default function BillingRuleDetailPage({
           {/* Scheduling Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Zeitplanung</CardTitle>
+              <CardTitle>{t("scheduling")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Tag im Monat</p>
+                  <p className="text-sm text-muted-foreground">{t("dayOfMonth")}</p>
                   <p className="font-medium">{rule.dayOfMonth || "1"}.</p>
                 </div>
                 {rule.cronPattern && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Cron-Pattern</p>
+                    <p className="text-sm text-muted-foreground">{t("cronPattern")}</p>
                     <p className="font-mono text-sm">{rule.cronPattern}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-sm text-muted-foreground">Ausführungen gesamt</p>
+                  <p className="text-sm text-muted-foreground">{t("totalExecutions")}</p>
                   <p className="font-medium">{rule.executionCount}</p>
                 </div>
               </div>
@@ -499,13 +485,13 @@ export default function BillingRuleDetailPage({
           {/* Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Aktionen</CardTitle>
+              <CardTitle>{t("actions")}</CardTitle>
             </CardHeader>
             <CardContent className="flex gap-4">
               <Button variant="outline" asChild>
                 <Link href={`/admin/billing-rules/${id}/edit`}>
                   <Pencil className="h-4 w-4 mr-2" />
-                  Bearbeiten
+                  {t("edit")}
                 </Link>
               </Button>
 
@@ -513,20 +499,19 @@ export default function BillingRuleDetailPage({
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive">
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Deaktivieren
+                    {t("deactivate")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Regel deaktivieren?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("deactivateTitle")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Die Regel wird deaktiviert und nicht mehr automatisch ausgeführt.
-                      Die Ausführungshistorie bleibt erhalten.
+                      {t("deactivateDescription")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                    <AlertDialogAction onClick={deleteRule}>Deaktivieren</AlertDialogAction>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                    <AlertDialogAction onClick={deleteRule}>{t("deactivate")}</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>

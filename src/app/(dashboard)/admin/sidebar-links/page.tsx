@@ -41,6 +41,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Plus, Pencil, Trash2, ExternalLink, Globe, Monitor, BarChart3, FileText, Calculator, Zap, Code2, Briefcase, Mail, Calendar, Database, Settings, Link2, Server, Cloud } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 // ── Icon registry ──────────────────────────────────────────────────────────
 const ICON_OPTIONS = [
@@ -99,6 +100,7 @@ const EMPTY_FORM = {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function SidebarLinksPage() {
+  const t = useTranslations("admin.sidebarLinks");
   const [links, setLinks] = useState<SidebarLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -139,8 +141,8 @@ export default function SidebarLinksPage() {
   };
 
   const handleSave = async () => {
-    if (!form.label.trim()) { toast.error("Bezeichnung ist erforderlich"); return; }
-    if (!form.url.trim()) { toast.error("URL ist erforderlich"); return; }
+    if (!form.label.trim()) { toast.error(t("labelRequiredError")); return; }
+    if (!form.url.trim()) { toast.error(t("urlRequiredError")); return; }
 
     // Normalize URL: auto-prepend https:// if no protocol given
     const normalizedUrl = /^https?:\/\//i.test(form.url.trim())
@@ -167,15 +169,15 @@ export default function SidebarLinksPage() {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         // err.error is always a string now (API returns first field error as string)
-        throw new Error(typeof err.error === "string" ? err.error : "Fehler beim Speichern");
+        throw new Error(typeof err.error === "string" ? err.error : t("saveError"));
       }
 
-      toast.success(editingLink ? "Link aktualisiert" : "Link erstellt");
+      toast.success(editingLink ? t("linkUpdated") : t("linkCreated"));
       setForm((f) => ({ ...f, url: normalizedUrl }));
       setDialogOpen(false);
       load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler");
+      toast.error(err instanceof Error ? err.message : t("saveError"));
     } finally {
       setSaving(false);
     }
@@ -185,12 +187,12 @@ export default function SidebarLinksPage() {
     if (!deleteTarget) return;
     try {
       const res = await fetch(`/api/admin/sidebar-links/${deleteTarget.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Fehler beim Löschen");
-      toast.success("Link gelöscht");
+      if (!res.ok) throw new Error(t("deleteError"));
+      toast.success(t("linkDeleted"));
       setDeleteTarget(null);
       load();
     } catch {
-      toast.error("Fehler beim Löschen");
+      toast.error(t("deleteError"));
     }
   };
 
@@ -213,14 +215,14 @@ export default function SidebarLinksPage() {
     <div className="container mx-auto py-8 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Sidebar-Links</h1>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Externe Programme und Webseiten in der Sidebar verknüpfen
+            {t("description")}
           </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" />
-          Link hinzufügen
+          {t("addLink")}
         </Button>
       </div>
 
@@ -231,20 +233,20 @@ export default function SidebarLinksPage() {
       ) : links.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <Link2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p>Noch keine Links angelegt.</p>
+          <p>{t("noLinks")}</p>
           <Button variant="outline" className="mt-4" onClick={openCreate}>
-            Ersten Link erstellen
+            {t("createFirst")}
           </Button>
         </div>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Symbol</TableHead>
-              <TableHead>Bezeichnung</TableHead>
-              <TableHead>URL</TableHead>
-              <TableHead>Sichtbar für</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("colIcon")}</TableHead>
+              <TableHead>{t("colLabel")}</TableHead>
+              <TableHead>{t("colUrl")}</TableHead>
+              <TableHead>{t("colVisibility")}</TableHead>
+              <TableHead>{t("colStatus")}</TableHead>
               <TableHead className="w-24" />
             </TableRow>
           </TableHeader>
@@ -303,31 +305,31 @@ export default function SidebarLinksPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingLink ? "Link bearbeiten" : "Link hinzufügen"}</DialogTitle>
+            <DialogTitle>{editingLink ? t("editDialog") : t("newDialog")}</DialogTitle>
             <DialogDescription>
-              {editingLink ? "Eigenschaften des Links anpassen." : "Externen Link zur Sidebar hinzufügen."}
+              {editingLink ? t("editDescription") : t("newDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Bezeichnung *</Label>
+              <Label>{t("labelRequired")}</Label>
               <Input
-                placeholder="z.B. SCADA Windpark Nord"
+                placeholder={t("labelPlaceholder")}
                 value={form.label}
                 onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
-              <Label>URL *</Label>
+              <Label>{t("urlRequired")}</Label>
               <Input
-                placeholder="https://..."
+                placeholder={t("urlPlaceholder")}
                 value={form.url}
                 onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Symbol</Label>
+                <Label>{t("iconLabel")}</Label>
                 <Select value={form.icon} onValueChange={(v) => setForm((f) => ({ ...f, icon: v }))}>
                   <SelectTrigger>
                     <SelectValue />
@@ -345,7 +347,7 @@ export default function SidebarLinksPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Sichtbar für</Label>
+                <Label>{t("visibilityLabel")}</Label>
                 <Select
                   value={String(form.minHierarchy)}
                   onValueChange={(v) => setForm((f) => ({ ...f, minHierarchy: Number(v) }))}
@@ -364,16 +366,16 @@ export default function SidebarLinksPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Beschreibung (optional)</Label>
+              <Label>{t("descriptionLabel")}</Label>
               <Input
-                placeholder="Kurze Beschreibung..."
+                placeholder={t("descriptionPlaceholder")}
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Reihenfolge</Label>
+                <Label>{t("sortOrder")}</Label>
                 <Input
                   type="number"
                   value={form.sortOrder}
@@ -386,15 +388,15 @@ export default function SidebarLinksPage() {
                   checked={form.openInNewTab}
                   onCheckedChange={(v) => setForm((f) => ({ ...f, openInNewTab: v }))}
                 />
-                <Label htmlFor="new-tab">In neuem Tab öffnen</Label>
+                <Label htmlFor="new-tab">{t("openInNewTab")}</Label>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("cancel")}</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingLink ? "Aktualisieren" : "Erstellen"}
+              {editingLink ? t("update") : t("create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -404,13 +406,13 @@ export default function SidebarLinksPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Link löschen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
               &bdquo;{deleteTarget?.label}&ldquo; wird unwiderruflich gelöscht.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Löschen
             </AlertDialogAction>

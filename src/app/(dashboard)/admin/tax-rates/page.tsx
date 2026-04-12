@@ -36,6 +36,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, Percent, Save, Link2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,6 +133,7 @@ function getRateStatus(
 // ---------------------------------------------------------------------------
 
 export default function AdminTaxRatesPage() {
+  const t = useTranslations("admin.taxRates");
   const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
   const [positionMappings, setPositionMappings] = useState<PositionTaxMapping[]>([]);
   const [editedMappings, setEditedMappings] = useState<Record<string, TaxType>>({});
@@ -234,11 +236,11 @@ export default function AdminTaxRatesPage() {
   async function handleSave() {
     // Validation
     if (!formData.rate || isNaN(Number(formData.rate))) {
-      toast.error("Bitte geben Sie einen gültigen Steuersatz ein");
+      toast.error(t("invalidRate"));
       return;
     }
     if (!formData.validFrom) {
-      toast.error("Bitte geben Sie ein Startdatum ein");
+      toast.error(t("dateRequired"));
       return;
     }
 
@@ -266,7 +268,7 @@ export default function AdminTaxRatesPage() {
             err.error || "Fehler beim Aktualisieren des Steuersatzes"
           );
         }
-        toast.success("Steuersatz aktualisiert");
+        toast.success(t("rateUpdated"));
       } else {
         // POST (create)
         const res = await fetch("/api/admin/tax-rates", {
@@ -280,7 +282,7 @@ export default function AdminTaxRatesPage() {
             err.error || "Fehler beim Erstellen des Steuersatzes"
           );
         }
-        toast.success("Steuersatz erstellt");
+        toast.success(t("rateCreated"));
       }
 
       setDialogOpen(false);
@@ -316,7 +318,7 @@ export default function AdminTaxRatesPage() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Fehler beim Löschen des Steuersatzes");
       }
-      toast.success("Steuersatz gelöscht");
+      toast.success(t("rateDeleted"));
       setDeletingRate(null);
       await fetchTaxRates();
     } catch (err) {
@@ -376,7 +378,7 @@ export default function AdminTaxRatesPage() {
         throw new Error(err.error || "Fehler beim Speichern");
       }
 
-      toast.success("Zuordnungen gespeichert");
+      toast.success(t("mappingsSaved"));
       await fetchTaxRates();
     } catch (err) {
       toast.error(
@@ -395,11 +397,11 @@ export default function AdminTaxRatesPage() {
     const status = getRateStatus(rate);
     switch (status) {
       case "active":
-        return <Badge variant="success">Aktuell</Badge>;
+        return <Badge variant="success">{t("statusActive")}</Badge>;
       case "future":
         return (
           <Badge className="border-transparent bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-            Geplant
+            {t("statusFuture")}
           </Badge>
         );
       case "past":
@@ -423,7 +425,7 @@ export default function AdminTaxRatesPage() {
           {formatDate(rate.validFrom)}
         </TableCell>
         <TableCell className={isPast ? "text-muted-foreground" : ""}>
-          {rate.validTo ? formatDate(rate.validTo) : "unbegrenzt"}
+          {rate.validTo ? formatDate(rate.validTo) : t("unlimited")}
         </TableCell>
         <TableCell className={isPast ? "text-muted-foreground" : ""}>
           {rate.label || "\u2014"}
@@ -461,8 +463,8 @@ export default function AdminTaxRatesPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Steuersätze"
-          description="Verwalten Sie hier die gesetzlichen Steuersätze mit Gültigkeitszeitraum."
+          title={t("title")}
+          description={t("description")}
         />
         <Card>
           <CardContent className="pt-6">
@@ -486,8 +488,8 @@ export default function AdminTaxRatesPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Steuersätze"
-          description="Verwalten Sie hier die gesetzlichen Steuersätze mit Gültigkeitszeitraum."
+          title={t("title")}
+          description={t("description")}
         />
         <div className="p-4 text-red-600 bg-red-50 dark:bg-red-950/20 dark:text-red-400 rounded-md">
           {error}
@@ -505,12 +507,12 @@ export default function AdminTaxRatesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Steuersätze"
-        description="Verwalten Sie hier die gesetzlichen Steuersätze mit Gültigkeitszeitraum."
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button onClick={openCreate}>
             <Plus className="mr-2 h-4 w-4" />
-            Neuer Steuersatz
+            {t("newRate")}
           </Button>
         }
       />
@@ -521,14 +523,14 @@ export default function AdminTaxRatesPage() {
             <div className="text-center py-12 text-muted-foreground">
               <Percent className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium">
-                Keine Steuersätze vorhanden
+                {t("noRates")}
               </p>
               <p className="text-sm mt-2">
-                Erstellen Sie den ersten Steuersatz, um loszulegen.
+                {t("createFirst")}
               </p>
               <Button onClick={openCreate} className="mt-4">
                 <Plus className="mr-2 h-4 w-4" />
-                Neuer Steuersatz
+                {t("newRate")}
               </Button>
             </div>
           </CardContent>
@@ -548,11 +550,11 @@ export default function AdminTaxRatesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Satz (%)</TableHead>
-                        <TableHead>Gültig ab</TableHead>
-                        <TableHead>Gültig bis</TableHead>
-                        <TableHead>Bezeichnung</TableHead>
-                        <TableHead className="w-[100px]">Aktionen</TableHead>
+                        <TableHead>{t("colRate")}</TableHead>
+                        <TableHead>{t("colValidFrom")}</TableHead>
+                        <TableHead>{t("colValidTo")}</TableHead>
+                        <TableHead>{t("colLabel")}</TableHead>
+                        <TableHead className="w-[100px]">{t("colActions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -576,10 +578,10 @@ export default function AdminTaxRatesPage() {
                 <div>
                   <h2 className="text-lg font-semibold flex items-center gap-2">
                     <Link2 className="h-5 w-5" />
-                    Zuordnung Positionskategorien
+                    {t("mappingsTitle")}
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Legen Sie fest, welcher Steuersatz für welche Abrechnungsposition gilt.
+                    {t("mappingsDescription")}
                   </p>
                 </div>
                 {hasMappingChanges && (
@@ -589,7 +591,7 @@ export default function AdminTaxRatesPage() {
                     ) : (
                       <Save className="mr-2 h-4 w-4" />
                     )}
-                    Zuordnungen speichern
+                    {t("saveMappings")}
                   </Button>
                 )}
               </div>
@@ -597,9 +599,9 @@ export default function AdminTaxRatesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Positionskategorie</TableHead>
-                      <TableHead>Modul</TableHead>
-                      <TableHead className="w-[260px]">Steuersatz</TableHead>
+                      <TableHead>{t("colPosition")}</TableHead>
+                      <TableHead>{t("colModule")}</TableHead>
+                      <TableHead className="w-[260px]">{t("colTaxRate")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -664,12 +666,12 @@ export default function AdminTaxRatesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingRate ? "Steuersatz bearbeiten" : "Neuer Steuersatz"}
+              {editingRate ? t("editRate") : t("newRateDialog")}
             </DialogTitle>
             <DialogDescription>
               {editingRate
-                ? "Bearbeiten Sie die Daten des Steuersatzes."
-                : "Erstellen Sie einen neuen Steuersatz mit Gültigkeitszeitraum."}
+                ? t("editDescription")
+                : t("newDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -677,7 +679,7 @@ export default function AdminTaxRatesPage() {
             {/* Tax Type - only on create */}
             {!editingRate && (
               <div className="space-y-2">
-                <Label htmlFor="taxType">Steuerart *</Label>
+                <Label htmlFor="taxType">{t("taxType")}</Label>
                 <Select
                   value={formData.taxType}
                   onValueChange={(value: string) =>
@@ -685,7 +687,7 @@ export default function AdminTaxRatesPage() {
                   }
                 >
                   <SelectTrigger id="taxType">
-                    <SelectValue placeholder="Steuerart waehlen" />
+                    <SelectValue placeholder={t("selectTaxType")} />
                   </SelectTrigger>
                   <SelectContent>
                     {TAX_TYPE_ORDER.map((type) => (
@@ -700,7 +702,7 @@ export default function AdminTaxRatesPage() {
 
             {/* Rate */}
             <div className="space-y-2">
-              <Label htmlFor="rate">Steuersatz (%) *</Label>
+              <Label htmlFor="rate">{t("ratePercent")}</Label>
               <Input
                 id="rate"
                 type="number"
@@ -711,13 +713,13 @@ export default function AdminTaxRatesPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, rate: e.target.value })
                 }
-                placeholder="z.B. 19"
+                placeholder={t("ratePlaceholder")}
               />
             </div>
 
             {/* Valid From */}
             <div className="space-y-2">
-              <Label htmlFor="validFrom">Gültig ab *</Label>
+              <Label htmlFor="validFrom">{t("validFrom")}</Label>
               <Input
                 id="validFrom"
                 type="date"
@@ -760,7 +762,7 @@ export default function AdminTaxRatesPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, label: e.target.value })
                 }
-                placeholder="z.B. MwSt Deutschland"
+                placeholder={t("labelPlaceholder")}
               />
             </div>
           </div>
@@ -771,11 +773,11 @@ export default function AdminTaxRatesPage() {
               onClick={() => setDialogOpen(false)}
               disabled={isSaving}
             >
-              Abbrechen
+              {t("cancel")}
             </Button>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingRate ? "Speichern" : "Erstellen"}
+              {editingRate ? t("save") : t("create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -786,8 +788,8 @@ export default function AdminTaxRatesPage() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         onConfirm={handleDelete}
-        title="Steuersatz löschen"
-        description="Möchten Sie diesen Steuersatz wirklich löschen?"
+        title={t("deleteTitle")}
+        description={t("deleteDescription")}
         itemName={
           deletingRate
             ? `${deletingRate.rate}% (${TAX_TYPE_SELECT_LABELS[deletingRate.taxType]})`

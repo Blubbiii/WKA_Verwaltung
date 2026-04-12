@@ -85,6 +85,7 @@ import {
   settlementStatusLabels,
   settlementStatusColors,
 } from "@/hooks/useSettlementPeriods";
+import { useTranslations } from "next-intl";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -125,16 +126,14 @@ interface CalculationResult {
   };
 }
 
-const periodTypeLabels: Record<string, string> = {
-  ADVANCE: "Vorschuss",
-  FINAL: "Endabrechnung",
-};
+// Period type labels moved to i18n
 
 const periodTypeColors: Record<string, string> = {
   ADVANCE: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   FINAL: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
 };
 
+// Month names kept in code for index access
 const months = [
   "", "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
   "Juli", "August", "September", "Oktober", "November", "Dezember"
@@ -142,6 +141,7 @@ const months = [
 
 export default function SettlementPeriodDetailPage({ params }: PageProps) {
   const { id } = use(params);
+  const t = useTranslations("admin.settlementDetail");
   const router = useRouter();
   const { period, isLoading, isError, mutate } = useSettlementPeriod(id);
 
@@ -241,10 +241,10 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
 
       const data = await response.json();
       setCalculationResult(data.calculation);
-      toast.success("Berechnung abgeschlossen");
+      toast.success(t("calculated"));
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler bei der Berechnung");
+      toast.error(error instanceof Error ? error.message : t("calculationError"));
     } finally {
       setIsCalculating(false);
     }
@@ -259,7 +259,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
       mutate();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen der Rechnungen"
+        error instanceof Error ? error.message : t("createInvoicesError")
       );
     } finally {
       setIsCreatingInvoices(false);
@@ -270,11 +270,11 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
     try {
       setIsSubmittingForReview(true);
       await updateSettlementPeriod(id, { status: "PENDING_REVIEW" });
-      toast.success("Zur Prüfung eingereicht");
+      toast.success(t("submitted"));
       setShowSubmitForReviewDialog(false);
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Einreichen");
+      toast.error(error instanceof Error ? error.message : t("submitError"));
     } finally {
       setIsSubmittingForReview(false);
     }
@@ -284,11 +284,11 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
     try {
       setIsApproving(true);
       await approveSettlementPeriod(id, { action: "approve" });
-      toast.success("Abrechnungsperiode genehmigt");
+      toast.success(t("approvedMsg"));
       setShowApproveDialog(false);
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler bei der Genehmigung");
+      toast.error(error instanceof Error ? error.message : t("approveError"));
     } finally {
       setIsApproving(false);
     }
@@ -296,7 +296,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
 
   async function handleReject() {
     if (!rejectionNotes.trim()) {
-      toast.error("Bitte geben Sie eine Begruendung für die Ablehnung an");
+      toast.error(t("rejectionReasonRequired"));
       return;
     }
     try {
@@ -305,12 +305,12 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
         action: "reject",
         notes: rejectionNotes.trim(),
       });
-      toast.success("Abrechnungsperiode zurückgewiesen");
+      toast.success(t("rejectedMsg"));
       setShowRejectDialog(false);
       setRejectionNotes("");
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler bei der Ablehnung");
+      toast.error(error instanceof Error ? error.message : t("rejectError"));
     } finally {
       setIsRejecting(false);
     }
@@ -320,11 +320,11 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
     try {
       setIsClosing(true);
       await updateSettlementPeriod(id, { status: "CLOSED" });
-      toast.success("Abrechnungsperiode abgeschlossen");
+      toast.success(t("closedMsg"));
       setShowCloseDialog(false);
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Abschliessen");
+      toast.error(error instanceof Error ? error.message : t("closeError"));
     } finally {
       setIsClosing(false);
     }
@@ -334,10 +334,10 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
     try {
       setIsDeleting(true);
       await deleteSettlementPeriod(id);
-      toast.success("Abrechnungsperiode gelöscht");
+      toast.success(t("deletedMsg"));
       router.push("/admin/settlement-periods");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
+      toast.error(error instanceof Error ? error.message : t("deleteError"));
     } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
@@ -362,7 +362,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
   if (isError || !period) {
     return (
       <div className="p-4 text-red-600 bg-red-50 rounded-md">
-        Abrechnungsperiode nicht gefunden
+        {t("notFound")}
       </div>
     );
   }
@@ -392,7 +392,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           </div>
           <div className="flex items-center gap-2 ml-10">
             <Badge className={periodTypeColors[period.periodType] || ""}>
-              {periodTypeLabels[period.periodType] || period.periodType}
+              {period.periodType === "ADVANCE" ? t("advance") : period.periodType === "FINAL" ? t("final") : period.periodType}
             </Badge>
             <Badge className={settlementStatusColors[period.status] || ""}>
               {settlementStatusLabels[period.status] || period.status}
@@ -411,7 +411,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               ) : (
                 <Calculator className="mr-2 h-4 w-4" />
               )}
-              Berechnen
+              {t("calculate")}
             </Button>
           )}
           {canSubmitForReview && (
@@ -420,7 +420,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               onClick={() => setShowSubmitForReviewDialog(true)}
             >
               <Send className="mr-2 h-4 w-4" />
-              Zur Prüfung einreichen
+              {t("submitForReview")}
             </Button>
           )}
           {canApproveOrReject && (
@@ -431,7 +431,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
                 <ThumbsUp className="mr-2 h-4 w-4" />
-                Genehmigen
+                {t("approve")}
               </Button>
               <Button
                 variant="outline"
@@ -439,7 +439,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                 className="text-destructive border-destructive hover:bg-destructive/10"
               >
                 <ThumbsDown className="mr-2 h-4 w-4" />
-                Ablehnen
+                {t("reject")}
               </Button>
             </>
           )}
@@ -449,7 +449,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               onClick={() => setShowInvoiceDialog(true)}
             >
               <FileText className="mr-2 h-4 w-4" />
-              Rechnungen erstellen
+              {t("createInvoices")}
             </Button>
           )}
           {canClose && (
@@ -458,7 +458,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               onClick={() => setShowCloseDialog(true)}
             >
               <Lock className="mr-2 h-4 w-4" />
-              Abschliessen
+              {t("closePeriod")}
             </Button>
           )}
           {canDelete && (
@@ -468,7 +468,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               className="text-destructive hover:text-destructive"
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Löschen
+              {t("deletePeriod")}
             </Button>
           )}
         </div>
@@ -480,10 +480,10 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400 shrink-0" />
           <div>
             <p className="font-medium text-yellow-800 dark:text-yellow-200">
-              Wartet auf Genehmigung
+              {t("pendingApproval")}
             </p>
             <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              Diese Abrechnungsperiode wurde zur Prüfung eingereicht und wartet auf die Genehmigung eines Administrators.
+              {t("pendingApprovalDesc")}
             </p>
           </div>
         </div>
@@ -494,7 +494,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <div>
             <p className="font-medium text-emerald-800 dark:text-emerald-200">
-              Genehmigt
+              {t("stepApproved")}
               {period.reviewedBy && (
                 <span className="font-normal">
                   {" "}von {formatReviewerName()}
@@ -546,12 +546,12 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Info className="h-4 w-4" />
-              Periode-Typ
+              {t("periodType")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-lg font-bold">
-              {period.periodType === "ADVANCE" ? "Monatlicher Vorschuss" : "Jahresendabrechnung"}
+              {period.periodType === "ADVANCE" ? t("monthlyAdvance") : t("yearEndSettlement")}
             </div>
             <p className="text-sm text-muted-foreground">
               {period.periodType === "ADVANCE"
@@ -566,7 +566,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Zap className="h-4 w-4" />
-                Gesamtertrag
+                {t("totalRevenue")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -584,7 +584,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Euro className="h-4 w-4" />
-              Mindestpacht
+              {t("minimumRent")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -592,7 +592,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               {formatCurrency(period.totalMinimumRent)}
             </div>
             <p className="text-sm text-muted-foreground">
-              {period.periodType === "ADVANCE" ? "Monatlich" : "Jährlich"}
+              {period.periodType === "ADVANCE" ? t("monthly") : t("yearly")}
             </p>
           </CardContent>
         </Card>
@@ -601,7 +601,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Tatsaechliche Pacht
+              {t("actualRent")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -609,7 +609,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               {formatCurrency(period.totalActualRent)}
             </div>
             <p className="text-sm text-muted-foreground">
-              Inkl. Erlösanteil
+              {t("inclRevShare")}
             </p>
           </CardContent>
         </Card>
@@ -618,13 +618,13 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Rechnungen
+              {t("invoicesTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{period._count?.invoices || period.invoices?.length || 0}</div>
             <p className="text-sm text-muted-foreground">
-              Erstellt
+              {t("invoicesCreated")}
             </p>
           </CardContent>
         </Card>
@@ -635,10 +635,10 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5" />
-            Genehmigungsworkflow
+            {t("approvalWorkflow")}
           </CardTitle>
           <CardDescription>
-            Status des Prüfungs- und Genehmigungsprozesses
+            {t("approvalWorkflowDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -654,7 +654,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               ) : (
                 <CheckCircle2 className="h-3.5 w-3.5" />
               )}
-              Offen
+              {t("stepOpen")}
             </div>
             <Separator className="w-6" />
             {/* IN_PROGRESS step */}
@@ -672,7 +672,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               ) : (
                 <Clock className="h-3.5 w-3.5" />
               )}
-              Bearbeitung
+              {t("stepProcessing")}
             </div>
             <Separator className="w-6" />
             {/* PENDING_REVIEW step */}
@@ -690,7 +690,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               ) : (
                 <Clock className="h-3.5 w-3.5" />
               )}
-              Prüfung
+              {t("stepReview")}
             </div>
             <Separator className="w-6" />
             {/* APPROVED step */}
@@ -722,7 +722,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               ) : (
                 <Clock className="h-3.5 w-3.5" />
               )}
-              Abgeschlossen
+              {t("stepClosed")}
             </div>
           </div>
 
@@ -731,19 +731,19 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
             <div className="mt-4 pt-4 border-t">
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
-                  <Label className="text-muted-foreground">Pruefer</Label>
+                  <Label className="text-muted-foreground">{t("reviewer")}</Label>
                   <p className="font-medium flex items-center gap-1.5">
                     <UserCheck className="h-4 w-4 text-muted-foreground" />
                     {formatReviewerName()}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Datum</Label>
+                  <Label className="text-muted-foreground">{t("reviewDate")}</Label>
                   <p className="font-medium">{formatDateTime(period.reviewedAt)}</p>
                 </div>
                 {period.reviewNotes && (
                   <div>
-                    <Label className="text-muted-foreground">Anmerkung</Label>
+                    <Label className="text-muted-foreground">{t("reviewNote")}</Label>
                     <p className="font-medium">{period.reviewNotes}</p>
                   </div>
                 )}
@@ -759,12 +759,12 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
-              Berechnungsergebnis
+              {t("calculationResult")}
             </CardTitle>
             <CardDescription>
               {calculationResult?.calculatedAt
                 ? `Berechnet am ${formatDate(calculationResult.calculatedAt)}`
-                : "Berechnung wird geladen..."}
+                : t("calculationLoading")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -779,12 +779,12 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                 {/* Summary */}
                 <div className="grid gap-4 md:grid-cols-3 p-4 bg-muted rounded-lg">
                   <div>
-                    <div className="text-sm text-muted-foreground">Verpaechter</div>
+                    <div className="text-sm text-muted-foreground">{t("lessors")}</div>
                     <div className="text-lg font-semibold">{calculationResult.totals.leaseCount}</div>
                   </div>
                   {calculationResult.periodType === "ADVANCE" ? (
                     <div>
-                      <div className="text-sm text-muted-foreground">Monatliche Mindestpacht gesamt</div>
+                      <div className="text-sm text-muted-foreground">{t("monthlyMinRentTotal")}</div>
                       <div className="text-lg font-semibold">
                         {formatCurrency(calculationResult.totals.totalMonthlyMinimumRent)}
                       </div>
@@ -792,7 +792,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                   ) : (
                     <>
                       <div>
-                        <div className="text-sm text-muted-foreground">Gezahlte Vorschüsse</div>
+                        <div className="text-sm text-muted-foreground">{t("advancesPaid")}</div>
                         <div className="text-lg font-semibold">
                           {formatCurrency(calculationResult.totals.totalAdvancesPaid)}
                         </div>

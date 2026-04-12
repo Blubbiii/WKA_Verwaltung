@@ -36,6 +36,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -68,11 +69,7 @@ interface CodeGroupDetail {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const MESSAGE_TYPE_LABELS: Record<string, string> = {
-  S: "Status",
-  W: "Warnung",
-  I: "Information",
-};
+// Message type labels moved to i18n
 
 const MESSAGE_TYPE_COLORS: Record<string, string> = {
   S: "default",
@@ -94,6 +91,7 @@ function formatDate(dateStr: string | null): string {
 // ---------------------------------------------------------------------------
 
 export default function ScadaCodesPage() {
+  const t = useTranslations("admin.scadaCodes");
   // --- Overview state ---
   const [groups, setGroups] = useState<CodeGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,11 +119,11 @@ export default function ScadaCodesPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/admin/scada-codes");
-      if (!res.ok) throw new Error("Fehler beim Laden");
+      if (!res.ok) throw new Error(t("loadError"));
       const json = await res.json();
       setGroups(json.data || []);
     } catch {
-      toast.error("Code-Listen konnten nicht geladen werden");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
@@ -145,7 +143,7 @@ export default function ScadaCodesPage() {
         const res = await fetch(
           `/api/admin/scada-codes/${encodeURIComponent(controllerType)}?${params}`
         );
-        if (!res.ok) throw new Error("Fehler beim Laden");
+        if (!res.ok) throw new Error(t("loadError"));
         const json = await res.json();
         setDetailGroups(json.groups || []);
         setDetailTotal(json.totalCodes || 0);
@@ -155,7 +153,7 @@ export default function ScadaCodesPage() {
         );
         setExpandedGroups(allMains);
       } catch {
-        toast.error("Codes konnten nicht geladen werden");
+        toast.error(t("loadDetailError"));
       } finally {
         setDetailLoading(false);
       }
@@ -196,9 +194,7 @@ export default function ScadaCodesPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Import fehlgeschlagen");
 
-      toast.success(
-        `${json.imported} Codes für ${json.controllerType} importiert`
-      );
+      toast.success(t("importSuccess", { count: json.imported, type: json.controllerType }));
       setImportOpen(false);
       setImportFile(null);
       setImportControllerType("");
@@ -210,7 +206,7 @@ export default function ScadaCodesPage() {
       }
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Import fehlgeschlagen"
+        err instanceof Error ? err.message : t("importFailed")
       );
     } finally {
       setImporting(false);
@@ -226,9 +222,7 @@ export default function ScadaCodesPage() {
       );
       if (!res.ok) throw new Error("Löschen fehlgeschlagen");
       const json = await res.json();
-      toast.success(
-        `${json.deleted} Codes für ${deleteType} gelöscht`
-      );
+      toast.success(t("deleteSuccess", { count: json.deleted, type: deleteType }));
       setDeleteType(null);
       loadGroups();
       if (selectedType === deleteType) {
@@ -236,7 +230,7 @@ export default function ScadaCodesPage() {
         setDetailGroups([]);
       }
     } catch {
-      toast.error("Code-Liste konnte nicht gelöscht werden");
+      toast.error(t("deleteError"));
     }
   };
 
@@ -257,12 +251,12 @@ export default function ScadaCodesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="SCADA Statuscodes"
-        description="Verwaltung der Enercon Status- und Warnungscode-Listen pro Steuerungstyp"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button onClick={() => setImportOpen(true)}>
             <Upload className="mr-2 h-4 w-4" />
-            Code-Liste importieren
+            {t("importBtn")}
           </Button>
         }
       />
@@ -280,20 +274,20 @@ export default function ScadaCodesPage() {
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Database className="h-12 w-12 mb-4 opacity-50" />
               <p className="text-lg font-medium">
-                Keine Code-Listen vorhanden
+                {t("noGroups")}
               </p>
               <p className="text-sm mt-1">
-                Importieren Sie eine ServiceOrderDocuments.XLSX Datei
+                {t("importHint")}
               </p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Steuerungstyp</TableHead>
-                  <TableHead className="text-right">Codes</TableHead>
-                  <TableHead>Aktualisiert</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
+                  <TableHead>{t("colControllerType")}</TableHead>
+                  <TableHead className="text-right">{t("colCodes")}</TableHead>
+                  <TableHead>{t("colUpdated")}</TableHead>
+                  <TableHead className="text-right">{t("colActions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -355,7 +349,7 @@ export default function ScadaCodesPage() {
             {/* Search */}
             <div className="flex gap-2 mb-4">
               <Input
-                placeholder="Beschreibung suchen..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -374,7 +368,7 @@ export default function ScadaCodesPage() {
               </div>
             ) : detailGroups.length === 0 ? (
               <p className="text-muted-foreground text-sm py-4">
-                Keine Codes gefunden
+                {t("noCodes")}
               </p>
             ) : (
               <div className="space-y-2">
@@ -398,7 +392,7 @@ export default function ScadaCodesPage() {
                       </span>
                       <span>{group.parentLabel || "—"}</span>
                       <span className="text-muted-foreground ml-auto">
-                        {group.codes.length} Einträge
+                        {t("entries", { count: group.codes.length })}
                       </span>
                     </button>
 
@@ -407,10 +401,10 @@ export default function ScadaCodesPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-20">Code</TableHead>
-                            <TableHead>Beschreibung</TableHead>
-                            <TableHead className="w-16">Zeit</TableHead>
-                            <TableHead className="w-28">Typ</TableHead>
+                            <TableHead className="w-20">{t("colCode")}</TableHead>
+                            <TableHead>{t("colDesc")}</TableHead>
+                            <TableHead className="w-16">{t("colTime")}</TableHead>
+                            <TableHead className="w-28">{t("colType")}</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -435,8 +429,7 @@ export default function ScadaCodesPage() {
                                       | "outline"
                                   }
                                 >
-                                  {MESSAGE_TYPE_LABELS[code.messageType] ||
-                                    code.messageType}
+                                  {code.messageType === "S" ? t("msgStatus") : code.messageType === "W" ? t("msgWarning") : code.messageType === "I" ? t("msgInfo") : code.messageType}
                                 </Badge>
                               </TableCell>
                             </TableRow>
@@ -456,16 +449,15 @@ export default function ScadaCodesPage() {
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Code-Liste importieren</DialogTitle>
+            <DialogTitle>{t("importTitle")}</DialogTitle>
             <DialogDescription>
-              Laden Sie eine Enercon ServiceOrderDocuments.XLSX Datei hoch.
-              Bestehende Codes für den gleichen Steuerungstyp werden ersetzt.
+              {t("importDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="xlsx-file">XLSX-Datei</Label>
+              <Label htmlFor="xlsx-file">{t("xlsxFile")}</Label>
               <Input
                 id="xlsx-file"
                 ref={fileInputRef}
@@ -476,18 +468,15 @@ export default function ScadaCodesPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="controller-type">
-                Steuerungstyp (optional)
-              </Label>
+              <Label htmlFor="controller-type">{t("controllerType")}</Label>
               <Input
                 id="controller-type"
-                placeholder="z.B. CS82 — wird aus Datei erkannt wenn leer"
+                placeholder={t("controllerTypePlaceholder")}
                 value={importControllerType}
                 onChange={(e) => setImportControllerType(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Wird automatisch aus der Datei erkannt. Nur angeben, wenn die
-                Erkennung fehlschlägt oder ein anderer Typ gewünscht ist.
+                {t("controllerTypeHint")}
               </p>
             </div>
           </div>
@@ -509,8 +498,8 @@ export default function ScadaCodesPage() {
         open={!!deleteType}
         onOpenChange={(open) => !open && setDeleteType(null)}
         onConfirm={handleDelete}
-        title="Code-Liste löschen"
-        description={`Alle Statuscodes für "${deleteType}" werden unwiderruflich gelöscht.`}
+        title={t("deleteTitle")}
+        description={t("deleteDescription", { type: deleteType || "" })}
       />
     </div>
   );

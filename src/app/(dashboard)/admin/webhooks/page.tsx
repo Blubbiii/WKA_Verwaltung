@@ -66,6 +66,7 @@ import {
 } from "@/lib/webhooks/events";
 import type { WebhookEventType } from "@/lib/webhooks/events";
 import { AlertTriangle } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -126,6 +127,7 @@ function emptyFormData(): WebhookFormData {
 // ---------------------------------------------------------------------------
 
 export default function AdminWebhooksPage() {
+  const t = useTranslations("admin.webhooks");
   const { data: session } = useSession();
 
   // -- State ----------------------------------------------------------------
@@ -164,12 +166,12 @@ export default function AdminWebhooksPage() {
       setLoading(true);
       setError(null);
       const res = await fetch("/api/admin/webhooks");
-      if (!res.ok) throw new Error("Fehler beim Laden der Webhooks");
+      if (!res.ok) throw new Error(t("loadError"));
       const data = await res.json();
       setWebhooks(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Fehler beim Laden der Webhooks"
+        err instanceof Error ? err.message : t("loadError")
       );
     } finally {
       setLoading(false);
@@ -188,7 +190,7 @@ export default function AdminWebhooksPage() {
       const data = await res.json();
       setDeliveries(data);
     } catch {
-      toast.error("Zustellungen konnten nicht geladen werden");
+      toast.error(t("loadDeliveriesError"));
       setDeliveries([]);
     } finally {
       setDeliveriesLoading(false);
@@ -220,17 +222,17 @@ export default function AdminWebhooksPage() {
   const handleSave = async () => {
     // Validation
     if (!formData.url.trim()) {
-      toast.error("Bitte eine URL eingeben");
+      toast.error(t("urlRequired"));
       return;
     }
     try {
       new URL(formData.url);
     } catch {
-      toast.error("Bitte eine gueltige URL eingeben");
+      toast.error(t("urlInvalid"));
       return;
     }
     if (formData.events.length === 0) {
-      toast.error("Bitte mindestens ein Event auswaehlen");
+      toast.error(t("eventsRequired"));
       return;
     }
 
@@ -258,12 +260,12 @@ export default function AdminWebhooksPage() {
         throw new Error(body.error ?? "Fehler beim Speichern");
       }
 
-      toast.success(isEdit ? "Webhook aktualisiert" : "Webhook erstellt");
+      toast.success(isEdit ? t("webhookUpdated") : t("webhookCreated"));
       setDialogOpen(false);
       fetchWebhooks();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Speichern"
+        err instanceof Error ? err.message : t("saveError")
       );
     } finally {
       setSaving(false);
@@ -278,13 +280,13 @@ export default function AdminWebhooksPage() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Fehler beim Loeschen");
-      toast.success("Webhook geloescht");
+      toast.success(t("webhookDeleted"));
       setDeleteDialogOpen(false);
       setDeletingWebhook(null);
       fetchWebhooks();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Loeschen"
+        err instanceof Error ? err.message : t("deleteError")
       );
     } finally {
       setDeleting(false);
@@ -301,10 +303,10 @@ export default function AdminWebhooksPage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Test fehlgeschlagen");
       }
-      toast.success("Test-Webhook erfolgreich gesendet");
+      toast.success(t("testSuccess"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Test fehlgeschlagen"
+        err instanceof Error ? err.message : t("testFailed")
       );
     } finally {
       setTestingId(null);
@@ -322,9 +324,9 @@ export default function AdminWebhooksPage() {
       await navigator.clipboard.writeText(formData.secret);
       setCopiedSecret(true);
       setTimeout(() => setCopiedSecret(false), 2000);
-      toast.success("Secret in Zwischenablage kopiert");
+      toast.success(t("secretCopied"));
     } catch {
-      toast.error("Kopieren fehlgeschlagen");
+      toast.error(t("copyFailed"));
     }
   };
 
@@ -353,7 +355,7 @@ export default function AdminWebhooksPage() {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground gap-2">
         <AlertTriangle className="h-8 w-8" />
-        <p>Nur SuperAdmins koennen Webhooks verwalten.</p>
+        <p>{t("accessDenied")}</p>
       </div>
     );
   }
@@ -363,12 +365,12 @@ export default function AdminWebhooksPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Webhooks"
-        description="HTTP-Callbacks bei Business-Events an externe URLs senden"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button onClick={handleOpenCreate}>
             <Plus className="mr-2 h-4 w-4" />
-            Webhook erstellen
+            {t("createBtn")}
           </Button>
         }
       />
@@ -384,27 +386,27 @@ export default function AdminWebhooksPage() {
               <AlertTriangle className="h-6 w-6 text-destructive" />
               <p>{error}</p>
               <Button variant="outline" size="sm" onClick={fetchWebhooks}>
-                Erneut versuchen
+                {t("retry")}
               </Button>
             </div>
           ) : webhooks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
               <Radio className="h-8 w-8" />
-              <p>Keine Webhooks konfiguriert</p>
+              <p>{t("noWebhooks")}</p>
               <Button variant="outline" size="sm" onClick={handleOpenCreate}>
                 <Plus className="mr-2 h-4 w-4" />
-                Ersten Webhook erstellen
+                {t("createFirst")}
               </Button>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>URL</TableHead>
-                  <TableHead>Events</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Letzte Zustellung</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
+                  <TableHead>{t("colUrl")}</TableHead>
+                  <TableHead>{t("colEvents")}</TableHead>
+                  <TableHead>{t("colStatus")}</TableHead>
+                  <TableHead>{t("colLastDelivery")}</TableHead>
+                  <TableHead className="text-right">{t("colActions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -423,7 +425,7 @@ export default function AdminWebhooksPage() {
                     <TableCell>
                       <Badge variant="secondary">
                         {webhook.events.length}{" "}
-                        {webhook.events.length === 1 ? "Event" : "Events"}
+                        {webhook.events.length === 1 ? t("event") : t("events")}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -435,7 +437,7 @@ export default function AdminWebhooksPage() {
                             : ""
                         }
                       >
-                        {webhook.active ? "Aktiv" : "Inaktiv"}
+                        {webhook.active ? t("active") : t("inactive")}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -505,19 +507,19 @@ export default function AdminWebhooksPage() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingWebhook ? "Webhook bearbeiten" : "Webhook erstellen"}
+              {editingWebhook ? t("editDialog") : t("newDialog")}
             </DialogTitle>
             <DialogDescription>
               {editingWebhook
-                ? "Einstellungen des Webhooks anpassen."
-                : "Neuen Webhook fuer Event-Benachrichtigungen einrichten."}
+                ? t("editDescription")
+                : t("newDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
             {/* URL */}
             <div className="space-y-2">
-              <Label htmlFor="webhook-url">URL *</Label>
+              <Label htmlFor="webhook-url">{t("urlLabel")}</Label>
               <Input
                 id="webhook-url"
                 type="url"
@@ -532,7 +534,7 @@ export default function AdminWebhooksPage() {
             {/* Secret */}
             {editingWebhook && (
               <div className="space-y-2">
-                <Label>Secret</Label>
+                <Label>{t("secretLabel")}</Label>
                 <div className="flex gap-2">
                   <Input
                     readOnly
@@ -554,17 +556,16 @@ export default function AdminWebhooksPage() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Wird zur HMAC-SHA256-Signaturpruefung der Payloads verwendet.
+                  {t("secretHint")}
                 </p>
               </div>
             )}
 
             {/* Events */}
             <div className="space-y-3">
-              <Label>Events *</Label>
+              <Label>{t("eventsLabel")}</Label>
               <p className="text-xs text-muted-foreground">
-                Waehlen Sie die Events, bei denen der Webhook ausgeloest werden
-                soll.
+                {t("eventsHint")}
               </p>
               <div className="space-y-2">
                 {Object.entries(WEBHOOK_EVENT_CATEGORIES).map(
@@ -584,12 +585,10 @@ export default function AdminWebhooksPage() {
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="webhook-description">
-                Beschreibung (optional)
-              </Label>
+              <Label htmlFor="webhook-description">{t("descriptionLabel")}</Label>
               <Textarea
                 id="webhook-description"
-                placeholder="z.B. Benachrichtigung an Buchhaltungssystem"
+                placeholder={t("descriptionPlaceholder")}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -604,11 +603,9 @@ export default function AdminWebhooksPage() {
             {/* Active toggle */}
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div>
-                <Label htmlFor="webhook-active" className="text-sm font-medium">
-                  Aktiv
-                </Label>
+                <Label htmlFor="webhook-active" className="text-sm font-medium">{t("activeLabel")}</Label>
                 <p className="text-xs text-muted-foreground">
-                  Inaktive Webhooks empfangen keine Zustellungen.
+                  {t("inactiveHint")}
                 </p>
               </div>
               <Switch
@@ -627,11 +624,11 @@ export default function AdminWebhooksPage() {
               onClick={() => setDialogOpen(false)}
               disabled={saving}
             >
-              Abbrechen
+              {t("cancel")}
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingWebhook ? "Speichern" : "Erstellen"}
+              {editingWebhook ? t("save") : t("create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -643,7 +640,7 @@ export default function AdminWebhooksPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Webhook loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
               Der Webhook{" "}
               <span className="font-mono text-sm">
@@ -654,7 +651,7 @@ export default function AdminWebhooksPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
@@ -673,7 +670,7 @@ export default function AdminWebhooksPage() {
       <Dialog open={deliveryDialogOpen} onOpenChange={setDeliveryDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Zustellungsprotokoll</DialogTitle>
+            <DialogTitle>{t("deliveryLog")}</DialogTitle>
             <DialogDescription>
               Letzte Zustellungen fuer{" "}
               <span className="font-mono text-sm">
@@ -691,17 +688,17 @@ export default function AdminWebhooksPage() {
           ) : deliveries.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
               <Radio className="h-6 w-6" />
-              <p>Noch keine Zustellungen vorhanden</p>
+              <p>{t("noDeliveries")}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Event</TableHead>
+                  <TableHead>{t("colEvent")}</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>HTTP-Code</TableHead>
-                  <TableHead>Dauer</TableHead>
-                  <TableHead>Zeitpunkt</TableHead>
+                  <TableHead>{t("colHttpCode")}</TableHead>
+                  <TableHead>{t("colDuration")}</TableHead>
+                  <TableHead>{t("colTimestamp")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

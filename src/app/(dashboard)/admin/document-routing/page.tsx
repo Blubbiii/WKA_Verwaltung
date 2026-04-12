@@ -52,6 +52,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTranslations } from "next-intl";
 
 interface Fund {
   id: string;
@@ -91,6 +92,7 @@ const emptyForm: FormData = {
 };
 
 export default function DocumentRoutingPage() {
+  const t = useTranslations("admin.documentRouting");
   const { data: session } = useSession();
   const [rules, setRules] = useState<RoutingRule[]>([]);
   const [funds, setFunds] = useState<Fund[]>([]);
@@ -107,11 +109,11 @@ export default function DocumentRoutingPage() {
   const fetchRules = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/document-routing");
-      if (!res.ok) throw new Error("Fehler beim Laden");
+      if (!res.ok) throw new Error(t("loadError"));
       const json = await res.json();
       setRules(json.data);
     } catch {
-      toast.error("Routing-Regeln konnten nicht geladen werden");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
@@ -137,7 +139,7 @@ export default function DocumentRoutingPage() {
     return (
       <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground gap-2">
         <AlertTriangle className="h-8 w-8" />
-        <p>Nur Administratoren können Dokument-Routing verwalten.</p>
+        <p>{t("accessDenied")}</p>
       </div>
     );
   }
@@ -163,7 +165,7 @@ export default function DocumentRoutingPage() {
 
   const handleSave = async () => {
     if (!formData.targetPath.trim()) {
-      toast.error("Bitte einen Zielpfad angeben");
+      toast.error(t("targetPathRequired"));
       return;
     }
 
@@ -187,17 +189,17 @@ export default function DocumentRoutingPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Fehler beim Speichern");
+        throw new Error(err.error || t("saveError"));
       }
 
       toast.success(
-        editingRule ? "Regel aktualisiert" : "Regel erstellt"
+        editingRule ? t("ruleUpdated") : t("ruleCreated")
       );
       setDialogOpen(false);
       fetchRules();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("saveError")
       );
     } finally {
       setSaving(false);
@@ -211,13 +213,13 @@ export default function DocumentRoutingPage() {
         `/api/admin/document-routing/${deletingRule.id}`,
         { method: "DELETE" }
       );
-      if (!res.ok) throw new Error("Fehler beim Löschen");
-      toast.success("Regel gelöscht");
+      if (!res.ok) throw new Error(t("deleteError"));
+      toast.success(t("ruleDeleted"));
       setDeleteDialogOpen(false);
       setDeletingRule(null);
       fetchRules();
     } catch {
-      toast.error("Fehler beim Löschen der Regel");
+      toast.error(t("deleteError"));
     }
   };
 
@@ -231,28 +233,26 @@ export default function DocumentRoutingPage() {
       if (!res.ok) throw new Error("Fehler");
       fetchRules();
     } catch {
-      toast.error("Fehler beim Aktualisieren");
+      toast.error(t("updateError"));
     }
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dokument-Routing"
-        description="Automatische Zuordnung von Rechnungen und Gutschriften zu OneDrive/DATEV-Ordnern"
+        title={t("title")}
+        description={t("description")}
       />
 
       <Card>
         <CardContent className="pt-6">
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
-              Definieren Sie Regeln, wie Dokumente automatisch in die richtigen
-              Ordner sortiert werden. n8n verwendet diese Regeln für den
-              automatischen Upload.
+              {t("rulesDescription")}
             </p>
             <Button onClick={openCreate}>
               <Plus className="mr-2 h-4 w-4" />
-              Neue Regel
+              {t("newRule")}
             </Button>
           </div>
 
@@ -263,21 +263,21 @@ export default function DocumentRoutingPage() {
           ) : rules.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <FolderSync className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p>Noch keine Routing-Regeln angelegt.</p>
+              <p>{t("noRules")}</p>
               <p className="text-sm mt-1">
-                Erstellen Sie Regeln, um Dokumente automatisch zuzuordnen.
+                {t("createRulesHint")}
               </p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Gesellschaft</TableHead>
-                  <TableHead>Belegtyp</TableHead>
-                  <TableHead>Zielpfad</TableHead>
-                  <TableHead>Ziel</TableHead>
-                  <TableHead>Aktiv</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
+                  <TableHead>{t("colFund")}</TableHead>
+                  <TableHead>{t("colDocType")}</TableHead>
+                  <TableHead>{t("colTargetPath")}</TableHead>
+                  <TableHead>{t("colTarget")}</TableHead>
+                  <TableHead>{t("colActive")}</TableHead>
+                  <TableHead className="text-right">{t("colActions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -298,7 +298,7 @@ export default function DocumentRoutingPage() {
                         </span>
                       ) : (
                         <span className="text-muted-foreground italic">
-                          Alle (Fallback)
+                          {t("allFallback")}
                         </span>
                       )}
                     </TableCell>
@@ -311,8 +311,8 @@ export default function DocumentRoutingPage() {
                         }
                       >
                         {rule.invoiceType === "INVOICE"
-                          ? "Rechnungseingang"
-                          : "Gutschrifteneingang"}
+                          ? t("invoiceType")
+                          : t("creditNoteType")}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -368,18 +368,17 @@ export default function DocumentRoutingPage() {
           <DialogHeader>
             <DialogTitle>
               {editingRule
-                ? "Routing-Regel bearbeiten"
-                : "Neue Routing-Regel"}
+                ? t("editDialog")
+                : t("newDialog")}
             </DialogTitle>
             <DialogDescription>
-              Legen Sie fest, in welchen Ordner Dokumente einer Gesellschaft
-              automatisch sortiert werden.
+              {t("dialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Gesellschaft</Label>
+              <Label>{t("labelFund")}</Label>
               <Select
                 value={formData.fundId || "__none__"}
                 onValueChange={(v) =>
@@ -390,11 +389,11 @@ export default function DocumentRoutingPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Gesellschaft wählen..." />
+                  <SelectValue placeholder={t("selectFund")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">
-                    Alle (Fallback-Regel)
+                    {t("allFallbackRule")}
                   </SelectItem>
                   {funds.map((fund) => (
                     <SelectItem key={fund.id} value={fund.id}>
@@ -407,7 +406,7 @@ export default function DocumentRoutingPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Belegtyp</Label>
+              <Label>{t("labelDocType")}</Label>
               <Select
                 value={formData.invoiceType}
                 onValueChange={(v) =>
@@ -421,31 +420,30 @@ export default function DocumentRoutingPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="INVOICE">Rechnungseingang</SelectItem>
+                  <SelectItem value="INVOICE">{t("invoiceType")}</SelectItem>
                   <SelectItem value="CREDIT_NOTE">
-                    Gutschrifteneingang
+                    {t("creditNoteType")}
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Zielpfad</Label>
+              <Label>{t("labelTargetPath")}</Label>
               <Input
-                placeholder="z.B. 41068-BIH GmbH -> Rechnungseingang"
+                placeholder={t("targetPathPlaceholder")}
                 value={formData.targetPath}
                 onChange={(e) =>
                   setFormData({ ...formData, targetPath: e.target.value })
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Der Ordnerpfad in OneDrive, z.B. &quot;41068-BIH GmbH -&gt;
-                Rechnungseingang&quot;
+                {t("targetPathHint")}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label>Zieltyp</Label>
+              <Label>{t("labelTargetType")}</Label>
               <Select
                 value={formData.targetType}
                 onValueChange={(v) =>
@@ -456,17 +454,17 @@ export default function DocumentRoutingPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="onedrive">OneDrive</SelectItem>
-                  <SelectItem value="smb">Netzwerkfreigabe (SMB)</SelectItem>
-                  <SelectItem value="dropbox">Dropbox</SelectItem>
+                  <SelectItem value="onedrive">{t("targetOnedrive")}</SelectItem>
+                  <SelectItem value="smb">{t("targetSmb")}</SelectItem>
+                  <SelectItem value="dropbox">{t("targetDropbox")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Beschreibung (optional)</Label>
+              <Label>{t("labelDescription")}</Label>
               <Input
-                placeholder="z.B. DATEV Mandant 41068"
+                placeholder={t("descriptionPlaceholder")}
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
@@ -481,7 +479,7 @@ export default function DocumentRoutingPage() {
                   setFormData({ ...formData, isActive: v })
                 }
               />
-              <Label>Regel aktiv</Label>
+              <Label>{t("ruleActive")}</Label>
             </div>
           </div>
 
@@ -495,7 +493,7 @@ export default function DocumentRoutingPage() {
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {editingRule ? "Speichern" : "Erstellen"}
+              {editingRule ? t("save") : t("create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -505,15 +503,13 @@ export default function DocumentRoutingPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Regel löschen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Die Routing-Regel &quot;{deletingRule?.targetPath}&quot; wird
-              unwiderruflich gelöscht. Bereits sortierte Dokumente sind nicht
-              betroffen.
+              {t("deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Mail, Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslations } from "next-intl";
 
 interface EmailRoute {
   id: string;
@@ -30,20 +31,8 @@ interface EmailRoute {
   autoAction: string;
 }
 
-const TARGET_LABELS: Record<string, string> = {
-  PARK: "Windpark",
-  FUND: "Gesellschaft",
-  TENANT: "Mandant",
-  INBOX: "Allgemeine Inbox",
-};
-
-const ACTION_LABELS: Record<string, string> = {
-  INBOX: "Eingangsrechnungen",
-  DOCUMENT: "Dokumentenablage",
-  IGNORE: "Ignorieren",
-};
-
 export default function EmailRoutesPage() {
+  const t = useTranslations("admin.emailRoutes");
   const [routes, setRoutes] = useState<EmailRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -68,7 +57,7 @@ export default function EmailRoutesPage() {
         setRoutes(data.routes || []);
       }
     } catch {
-      toast.error("Fehler beim Laden der E-Mail-Routen");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
@@ -117,40 +106,40 @@ export default function EmailRoutesPage() {
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
 
       if (res.ok) {
-        toast.success(editingRoute ? "Route aktualisiert" : "Route erstellt");
+        toast.success(editingRoute ? t("routeUpdated") : t("routeCreated"));
         setDialogOpen(false);
         load();
       } else {
         const err = await res.json();
-        toast.error(err.error || "Fehler beim Speichern");
+        toast.error(err.error || t("saveError"));
       }
     } catch {
-      toast.error("Fehler beim Speichern");
+      toast.error(t("saveError"));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Route wirklich löschen?")) return;
+    if (!confirm(t("deleteConfirm"))) return;
     try {
       const res = await fetch(`/api/admin/email-routes/${id}`, { method: "DELETE" });
       if (res.ok) {
-        toast.success("Route gelöscht");
+        toast.success(t("routeDeleted"));
         load();
       }
     } catch {
-      toast.error("Fehler beim Löschen");
+      toast.error(t("deleteError"));
     }
   };
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="E-Mail-Routen"
-        description={`Eingehende E-Mails an *@${domain} automatisch verarbeiten`}
+        title={t("title")}
+        description={t("description", { domain })}
         actions={
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
-            Neue Route
+            {t("newRoute")}
           </Button>
         }
       />
@@ -159,12 +148,12 @@ export default function EmailRoutesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>E-Mail-Adresse</TableHead>
-              <TableHead>Zuordnung</TableHead>
-              <TableHead>Aktion</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Beschreibung</TableHead>
-              <TableHead className="w-20">Aktionen</TableHead>
+              <TableHead>{t("colAddress")}</TableHead>
+              <TableHead>{t("colTarget")}</TableHead>
+              <TableHead>{t("colAction")}</TableHead>
+              <TableHead>{t("colStatus")}</TableHead>
+              <TableHead>{t("colDescription")}</TableHead>
+              <TableHead className="w-20">{t("colActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -180,9 +169,9 @@ export default function EmailRoutesPage() {
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   <Mail className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>Keine E-Mail-Routen konfiguriert</p>
+                  <p>{t("empty")}</p>
                   <Button variant="outline" size="sm" className="mt-2" onClick={openCreate}>
-                    Erste Route erstellen
+                    {t("createFirst")}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -191,14 +180,14 @@ export default function EmailRoutesPage() {
                 <TableRow key={route.id}>
                   <TableCell className="font-mono text-sm">{route.address}@{domain}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{TARGET_LABELS[route.targetType] || route.targetType}</Badge>
+                    <Badge variant="secondary">{t(`target_${route.targetType}`)}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{ACTION_LABELS[route.autoAction] || route.autoAction}</Badge>
+                    <Badge variant="outline">{t(`action_${route.autoAction}`)}</Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={route.isActive ? "success" : "secondary"}>
-                      {route.isActive ? "Aktiv" : "Inaktiv"}
+                      {route.isActive ? t("statusActive") : t("statusInactive")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">{route.description || "—"}</TableCell>
@@ -223,11 +212,11 @@ export default function EmailRoutesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingRoute ? "Route bearbeiten" : "Neue E-Mail-Route"}</DialogTitle>
+            <DialogTitle>{editingRoute ? t("dialogEdit") : t("dialogNew")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>E-Mail-Adresse (Prefix)</Label>
+              <Label>{t("fieldAddress")}</Label>
               <div className="flex items-center gap-2 mt-1">
                 <Input
                   value={address}
@@ -247,49 +236,49 @@ export default function EmailRoutesPage() {
                 <span className="text-muted-foreground text-sm whitespace-nowrap">@{domain}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Kryptische Adressen schuetzen vor Spam. Klicke das Wuerfel-Icon fuer eine neue.
+                {t("fieldAddressHint")}
               </p>
             </div>
             <div>
-              <Label>Zuordnung</Label>
+              <Label>{t("fieldTarget")}</Label>
               <Select value={targetType} onValueChange={setTargetType}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PARK">Windpark</SelectItem>
-                  <SelectItem value="FUND">Gesellschaft</SelectItem>
-                  <SelectItem value="TENANT">Mandant</SelectItem>
-                  <SelectItem value="INBOX">Allgemeine Inbox</SelectItem>
+                  <SelectItem value="PARK">{t("target_PARK")}</SelectItem>
+                  <SelectItem value="FUND">{t("target_FUND")}</SelectItem>
+                  <SelectItem value="TENANT">{t("target_TENANT")}</SelectItem>
+                  <SelectItem value="INBOX">{t("target_INBOX")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Aktion bei Eingang</Label>
+              <Label>{t("fieldAction")}</Label>
               <Select value={autoAction} onValueChange={setAutoAction}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="INBOX">Eingangsrechnungen (mit OCR)</SelectItem>
-                  <SelectItem value="DOCUMENT">Dokumentenablage</SelectItem>
-                  <SelectItem value="IGNORE">Ignorieren</SelectItem>
+                  <SelectItem value="INBOX">{t("action_INBOX_full")}</SelectItem>
+                  <SelectItem value="DOCUMENT">{t("action_DOCUMENT")}</SelectItem>
+                  <SelectItem value="IGNORE">{t("action_IGNORE")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Beschreibung (optional)</Label>
+              <Label>{t("fieldDescription")}</Label>
               <Input
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Posteingang Windpark Nord"
+                placeholder={t("placeholderDescription")}
                 className="mt-1"
               />
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={isActive} onCheckedChange={setIsActive} />
-              <Label>Aktiv</Label>
+              <Label>{t("fieldActive")}</Label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Abbrechen</Button>
-            <Button onClick={handleSave}>{editingRoute ? "Speichern" : "Erstellen"}</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{t("cancel")}</Button>
+            <Button onClick={handleSave}>{editingRoute ? t("save") : t("create")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
