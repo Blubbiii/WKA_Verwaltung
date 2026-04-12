@@ -8,6 +8,7 @@ import { generateAuditLogPdf, type AuditLogPdfData } from "@/lib/pdf/generators/
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -280,13 +281,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!parseResult.success) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Parameter",
-          details: parseResult.error.issues,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Parameter", details: parseResult.error.issues });
     }
 
     const params = parseResult.data;
@@ -435,10 +430,7 @@ export async function GET(request: NextRequest) {
       }
 
       default:
-        return NextResponse.json(
-          { error: "Ungültiges Export-Format" },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Export-Format" });
     }
 
     // Create response with appropriate headers

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const featureFlagsSchema = z.object({
   votingEnabled: z.boolean(),
@@ -32,20 +33,14 @@ export async function PUT(
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     const body = await request.json();
     const parsed = featureFlagsSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Feature-Flag-Daten", details: parsed.error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Feature-Flag-Daten", details: parsed.error.issues });
     }
 
     // Get current settings and merge with new feature flags
@@ -68,9 +63,6 @@ export async function PUT(
     });
   } catch (error) {
     logger.error({ err: error }, "Error updating feature flags");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Feature-Flags" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren der Feature-Flags" });
   }
 }

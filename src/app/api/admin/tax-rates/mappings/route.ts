@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const mappingSchema = z.object({
   mappings: z.array(
@@ -23,10 +24,7 @@ export async function PUT(request: NextRequest) {
     const parsed = mappingSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message || "Ungültige Eingabe" });
     }
 
     const tenantId = check.tenantId!;
@@ -50,9 +48,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ data: updated });
   } catch (error) {
     logger.error({ err: error }, "Error updating position tax mappings");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Zuordnungen" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der Zuordnungen" });
   }
 }

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { apiError } from "@/lib/api-errors";
 
 const markPaidSchema = z.object({
   paidAt: z.string().optional(), // ISO date string, defaults to now
@@ -53,38 +54,23 @@ export async function POST(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     if (invoice.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     if (invoice.status === "CANCELLED") {
-      return NextResponse.json(
-        { error: "Stornierte Rechnungen können nicht als bezahlt markiert werden" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Stornierte Rechnungen können nicht als bezahlt markiert werden" });
     }
 
     if (invoice.status === "PAID") {
-      return NextResponse.json(
-        { error: "Rechnung ist bereits als bezahlt markiert" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Rechnung ist bereits als bezahlt markiert" });
     }
 
     if (invoice.status === "DRAFT") {
-      return NextResponse.json(
-        { error: "Entwuerfe können nicht als bezahlt markiert werden. Bitte erst versenden." },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Entwuerfe können nicht als bezahlt markiert werden. Bitte erst versenden." });
     }
 
     // Handle Skonto: auto-apply if eligible and not explicitly set
@@ -92,17 +78,11 @@ export async function POST(
     if (applySkonto) {
       // Explicit request to apply Skonto
       if (!invoice.skontoPercent || !invoice.skontoDeadline) {
-        return NextResponse.json(
-          { error: "Kein Skonto für diese Rechnung konfiguriert" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Kein Skonto für diese Rechnung konfiguriert" });
       }
 
       if (!isSkontoValid(invoice.skontoDeadline, paidAt)) {
-        return NextResponse.json(
-          { error: "Skonto-Frist ist abgelaufen. Zahlung nach dem Stichtag." },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Skonto-Frist ist abgelaufen. Zahlung nach dem Stichtag." });
       }
 
       skontoPaid = true;
@@ -147,9 +127,6 @@ export async function POST(
     return NextResponse.json(updated);
   } catch (error) {
     logger.error({ err: error }, "Error marking invoice as paid");
-    return NextResponse.json(
-      { error: "Fehler beim Markieren als bezahlt" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Markieren als bezahlt" });
   }
 }

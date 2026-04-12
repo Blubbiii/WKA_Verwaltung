@@ -5,6 +5,7 @@ import { invalidateUser } from "@/lib/auth/permissionCache";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const roleAssignSchema = z.object({
   roleId: z.string().uuid("Ungültige Rollen-ID"),
@@ -30,20 +31,14 @@ export async function GET(
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
     // Check tenant access
     if (user.tenantId !== check.tenantId!) {
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
-        return NextResponse.json(
-          { error: "Keine Berechtigung für diesen Benutzer" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Benutzer" });
       }
     }
 
@@ -63,10 +58,7 @@ export async function GET(
     return NextResponse.json(roleAssignments);
   } catch (error) {
     logger.error({ err: error }, "Error fetching user roles");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Benutzer-Rollen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Benutzer-Rollen" });
   }
 }
 
@@ -90,20 +82,14 @@ export async function POST(
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
     // Check tenant access
     if (user.tenantId !== check.tenantId!) {
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
-        return NextResponse.json(
-          { error: "Keine Berechtigung für diesen Benutzer" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Benutzer" });
       }
     }
 
@@ -113,20 +99,14 @@ export async function POST(
     });
 
     if (!role) {
-      return NextResponse.json(
-        { error: "Rolle nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rolle nicht gefunden" });
     }
 
     // Non-system roles must belong to same tenant
     if (!role.isSystem && role.tenantId !== check.tenantId!) {
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
-        return NextResponse.json(
-          { error: "Keine Berechtigung für diese Rolle" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diese Rolle" });
       }
     }
 
@@ -140,10 +120,7 @@ export async function POST(
     });
 
     if (existingAssignment) {
-      return NextResponse.json(
-        { error: "Diese Rolle ist dem Benutzer bereits zugewiesen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Diese Rolle ist dem Benutzer bereits zugewiesen" });
     }
 
     // Create assignment
@@ -190,10 +167,7 @@ export async function DELETE(
     const resourceType = searchParams.get("resourceType") || "__global__";
 
     if (!roleId) {
-      return NextResponse.json(
-        { error: "roleId ist erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "roleId ist erforderlich" });
     }
 
     // Check if user exists and belongs to same tenant
@@ -203,20 +177,14 @@ export async function DELETE(
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
     // Check tenant access
     if (user.tenantId !== check.tenantId!) {
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
-        return NextResponse.json(
-          { error: "Keine Berechtigung für diesen Benutzer" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Benutzer" });
       }
     }
 
@@ -230,10 +198,7 @@ export async function DELETE(
     });
 
     if (!assignment) {
-      return NextResponse.json(
-        { error: "Rollenzuweisung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rollenzuweisung nicht gefunden" });
     }
 
     await prisma.userRoleAssignment.delete({
@@ -246,9 +211,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error removing role");
-    return NextResponse.json(
-      { error: "Fehler beim Entfernen der Rolle" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Entfernen der Rolle" });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { uploadFile, getSignedUrl, ensureBucket } from "@/lib/storage";
@@ -50,28 +51,19 @@ export async function POST(request: NextRequest) {
     const category = (formData.get("category") as string) || "document";
 
     if (!file) {
-      return NextResponse.json(
-        { error: "Keine Datei hochgeladen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Keine Datei hochgeladen" });
     }
 
     // Validate file type
     const allowedTypes = ALLOWED_TYPES[category] || ALLOWED_TYPES.document;
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: `Ungültiger Dateityp. Erlaubt: ${allowedTypes.join(", ")}` },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: `Ungültiger Dateityp. Erlaubt: ${allowedTypes.join(", ")}` });
     }
 
     // Validate file size
     const maxSize = MAX_FILE_SIZE[category] || MAX_FILE_SIZE.document;
     if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: `Datei zu gross. Maximum: ${maxSize / 1024 / 1024}MB` },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: `Datei zu gross. Maximum: ${maxSize / 1024 / 1024}MB` });
     }
 
     // Check tenant storage limit
@@ -81,14 +73,7 @@ export async function POST(request: NextRequest) {
         file.size
       );
       if (!allowed) {
-        return NextResponse.json(
-          {
-            error: `Speicherlimit erreicht. Verwendet: ${info.usedFormatted} von ${info.limitFormatted}. Die Datei (${(file.size / 1024 / 1024).toFixed(1)} MB) überschreitet das Limit.`,
-            code: "STORAGE_LIMIT_EXCEEDED",
-            storageInfo: info,
-          },
-          { status: 413 }
-        );
+        return apiError("INTERNAL_ERROR", 413, { message: `Speicherlimit erreicht. Verwendet: ${info.usedFormatted} von ${info.limitFormatted}. Die Datei (${(file.size / 1024 / 1024).toFixed(1)} MB) überschreitet das Limit.` });
       }
     }
 
@@ -97,10 +82,7 @@ export async function POST(request: NextRequest) {
       await ensureBucket();
     } catch (bucketError) {
       logger.error({ err: bucketError }, "S3 bucket error");
-      return NextResponse.json(
-        { error: "Storage-Service nicht verfügbar. Bitte später erneut versuchen." },
-        { status: 503 }
-      );
+      return apiError("STORAGE_FAILED", 503, { message: "Storage-Service nicht verfügbar. Bitte später erneut versuchen." });
     }
 
     // Convert file to buffer
@@ -110,14 +92,7 @@ export async function POST(request: NextRequest) {
     // Validate file content (magic number check)
     const contentValidation = validateFileContent(buffer, file.type);
     if (!contentValidation.valid) {
-      return NextResponse.json(
-        {
-          error: "Dateiinhalt-Validierung fehlgeschlagen",
-          reason: contentValidation.reason,
-          detectedType: contentValidation.detectedType,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Dateiinhalt-Validierung fehlgeschlagen" });
     }
 
     // Upload to S3/MinIO
@@ -145,9 +120,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error uploading file");
-    return NextResponse.json(
-      { error: "Fehler beim Hochladen der Datei" },
-      { status: 500 }
-    );
+    return apiError("STORAGE_FAILED", 500, { message: "Fehler beim Hochladen der Datei" });
   }
 }

@@ -16,6 +16,7 @@ import {
   type SupportedTemplateName,
 } from "@/lib/email/renderer";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // CONSTANTS
@@ -185,10 +186,7 @@ export async function GET(
 
     // Validate template key
     if (!VALID_TEMPLATE_KEYS.includes(key as SupportedTemplateName)) {
-      return NextResponse.json(
-        { error: "Unbekannte Vorlage" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Unbekannte Vorlage" });
     }
 
     const templateKey = key as SupportedTemplateName;
@@ -229,10 +227,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "[Email Templates API] GET [key] error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vorlage" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Vorlage" });
   }
 }
 
@@ -252,20 +247,14 @@ export async function PUT(
 
     // Validate template key
     if (!VALID_TEMPLATE_KEYS.includes(key as SupportedTemplateName)) {
-      return NextResponse.json(
-        { error: "Unbekannte Vorlage" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Unbekannte Vorlage" });
     }
 
     const body = await request.json();
     const parsed = updateTemplateSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { subject, htmlContent, isActive } = parsed.data;
@@ -309,10 +298,7 @@ export async function PUT(
     });
   } catch (error) {
     logger.error({ err: error }, "[Email Templates API] PUT [key] error");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Vorlage" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der Vorlage" });
   }
 }
 
@@ -332,10 +318,7 @@ export async function DELETE(
 
     // Validate template key
     if (!VALID_TEMPLATE_KEYS.includes(key as SupportedTemplateName)) {
-      return NextResponse.json(
-        { error: "Unbekannte Vorlage" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Unbekannte Vorlage" });
     }
 
     // Delete the custom template - built-in will be used as fallback
@@ -349,9 +332,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "[Email Templates API] DELETE [key] error");
-    return NextResponse.json(
-      { error: "Fehler beim Zurücksetzen der Vorlage" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Zurücksetzen der Vorlage" });
   }
 }

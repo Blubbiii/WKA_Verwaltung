@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const updatePeriodSchema = z.object({
   status: z.enum(["OPEN", "IN_PROGRESS", "PENDING_REVIEW", "APPROVED", "CLOSED", "CANCELLED"]).optional(),
@@ -73,26 +74,17 @@ export async function GET(
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Abrechnungsperiode nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsperiode nicht gefunden" });
     }
 
     if (period.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     return NextResponse.json(period);
   } catch (error) {
     logger.error({ err: error }, "Error fetching settlement period");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Abrechnungsperiode" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Abrechnungsperiode" });
   }
 }
 
@@ -115,29 +107,18 @@ export async function PATCH(
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Abrechnungsperiode nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsperiode nicht gefunden" });
     }
 
     if (period.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Validate status transitions using the approval workflow
     if (data.status && data.status !== period.status) {
       const allowedTransitions = VALID_STATUS_TRANSITIONS[period.status] || [];
       if (!allowedTransitions.includes(data.status)) {
-        return NextResponse.json(
-          {
-            error: `Ungültiger Statusübergang: ${period.status} -> ${data.status}. Erlaubte Übergaenge: ${allowedTransitions.join(", ") || "keine"}`,
-          },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: `Ungültiger Statusübergang: ${period.status} -> ${data.status}. Erlaubte Übergaenge: ${allowedTransitions.join(", ") || "keine"}` });
       }
     }
 
@@ -206,24 +187,15 @@ export async function DELETE(
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Abrechnungsperiode nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsperiode nicht gefunden" });
     }
 
     if (period.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     if (period.status !== "OPEN") {
-      return NextResponse.json(
-        { error: "Nur offene Perioden können gelöscht werden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Nur offene Perioden können gelöscht werden" });
     }
 
     await prisma.leaseSettlementPeriod.delete({
@@ -233,9 +205,6 @@ export async function DELETE(
     return NextResponse.json({ message: "Abrechnungsperiode gelöscht" });
   } catch (error) {
     logger.error({ err: error }, "Error deleting settlement period");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Abrechnungsperiode" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Abrechnungsperiode" });
   }
 }

@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/leases/settlement/[id]/close - Close/complete a settlement
@@ -28,21 +29,12 @@ export async function POST(
     });
 
     if (!settlement) {
-      return NextResponse.json(
-        { error: "Abrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnung nicht gefunden" });
     }
 
     // Only SETTLED or APPROVED settlements can be closed
     if (settlement.status !== "SETTLED" && settlement.status !== "APPROVED") {
-      return NextResponse.json(
-        {
-          error: "Abschliessen nicht moeglich",
-          details: `Nur abgerechnete oder freigegebene Abrechnungen können abgeschlossen werden. Aktueller Status: ${settlement.status}`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Abschliessen nicht moeglich", details: `Nur abgerechnete oder freigegebene Abrechnungen können abgeschlossen werden. Aktueller Status: ${settlement.status}` });
     }
 
     // Update status to CLOSED
@@ -98,9 +90,6 @@ export async function POST(
       { err: error },
       "Error closing lease revenue settlement"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Abschliessen der Nutzungsentgelt-Abrechnung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Abschliessen der Nutzungsentgelt-Abrechnung" });
   }
 }

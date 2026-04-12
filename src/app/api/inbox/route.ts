@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
@@ -11,7 +12,7 @@ import { enqueueInboxOcrJob } from "@/lib/queue/queues/inbox-ocr.queue";
 
 async function checkInbox(tenantId: string) {
   if (!await getConfigBoolean("inbox.enabled", tenantId, false)) {
-    return NextResponse.json({ error: "Inbox nicht aktiviert" }, { status: 404 });
+    return apiError("FEATURE_DISABLED", 404, { message: "Inbox nicht aktiviert" });
   }
   return null;
 }
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: serializePrisma(invoices), total, page, limit });
   } catch (error) {
     logger.error({ err: error }, "Error listing inbox invoices");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden" });
   }
 }
 
@@ -82,18 +83,15 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     if (!file) {
-      return NextResponse.json({ error: "Keine Datei im Request" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Keine Datei im Request" });
     }
 
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Nur PDF und Bilddateien (JPEG, PNG, TIFF) erlaubt" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Nur PDF und Bilddateien (JPEG, PNG, TIFF) erlaubt" });
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      return NextResponse.json({ error: "Datei zu groß (max. 50 MB)" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Datei zu groß (max. 50 MB)" });
     }
 
     // Optional metadata from form
@@ -136,6 +134,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(serializePrisma(invoice), { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error uploading inbox invoice");
-    return NextResponse.json({ error: "Fehler beim Hochladen" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Hochladen" });
   }
 }

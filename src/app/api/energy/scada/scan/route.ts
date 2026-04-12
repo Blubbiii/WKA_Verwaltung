@@ -4,6 +4,7 @@ import { scanAllLocations } from "@/lib/scada/dbf-reader";
 import { scanAllFileTypes } from "@/lib/scada/import-service";
 import { apiLogger as logger } from "@/lib/logger";
 import * as path from "path";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/energy/scada/scan - SCADA-Quellordner scannen
@@ -43,18 +44,12 @@ export async function POST(request: NextRequest) {
     // --- Validierung ---
 
     if (!basePath || typeof basePath !== "string") {
-      return NextResponse.json(
-        { error: "basePath ist erforderlich (z.B. '/data/scada') oder SCADA_BASE_PATH muss gesetzt sein" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "basePath ist erforderlich (z.B. '/data/scada') oder SCADA_BASE_PATH muss gesetzt sein" });
     }
 
     // Minimale Sicherheitsprüfung: Pfad darf keine gefaehrlichen Zeichen enthalten
     if (basePath.includes("..") || basePath.includes("\0")) {
-      return NextResponse.json(
-        { error: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
-        { status: 400 }
-      );
+      return apiError("FORBIDDEN", 400, { message: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" });
     }
 
     // Security: Restrict scanning to SCADA_BASE_PATH if configured
@@ -63,20 +58,14 @@ export async function POST(request: NextRequest) {
       const allowedBase = path.resolve(scadaBasePath);
       const normalizedInput = path.resolve(basePath);
       if (!normalizedInput.startsWith(allowedBase + path.sep) && normalizedInput !== allowedBase) {
-        return NextResponse.json(
-          { error: "Zugriff verweigert: Pfad liegt ausserhalb des erlaubten Verzeichnisses" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "Zugriff verweigert: Pfad liegt ausserhalb des erlaubten Verzeichnisses" });
       }
     }
 
     // Detail-Scan für einen spezifischen Standort (alle Dateitypen)
     if (locationCode && typeof locationCode === "string") {
       if (!locationCode.startsWith("Loc_")) {
-        return NextResponse.json(
-          { error: "locationCode muss mit 'Loc_' beginnen (z.B. 'Loc_5842')" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "locationCode muss mit 'Loc_' beginnen (z.B. 'Loc_5842')" });
       }
 
       const fileTypes = await scanAllFileTypes(basePath, locationCode);
@@ -123,22 +112,13 @@ export async function POST(request: NextRequest) {
 
     // Spezifische Fehlerbehandlung für Dateisystem-Fehler
     if (error instanceof Error && error.message.includes("ENOENT")) {
-      return NextResponse.json(
-        { error: `Verzeichnis nicht gefunden: Der angegebene Pfad existiert nicht` },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: `Verzeichnis nicht gefunden: Der angegebene Pfad existiert nicht` });
     }
 
     if (error instanceof Error && error.message.includes("EACCES")) {
-      return NextResponse.json(
-        { error: "Zugriff verweigert: Keine Leseberechtigung für das Verzeichnis" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Zugriff verweigert: Keine Leseberechtigung für das Verzeichnis" });
     }
 
-    return NextResponse.json(
-      { error: "Fehler beim Scannen des SCADA-Ordners" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Scannen des SCADA-Ordners" });
   }
 }

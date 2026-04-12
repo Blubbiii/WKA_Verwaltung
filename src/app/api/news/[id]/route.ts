@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requireAuth, requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -55,19 +56,13 @@ const check = await requireAuth();
     });
 
     if (!news) {
-      return NextResponse.json(
-        { error: "Meldung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Meldung nicht gefunden" });
     }
 
     return NextResponse.json(news);
   } catch (error) {
     logger.error({ err: error }, "Error fetching news");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Meldung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Meldung" });
   }
 }
 
@@ -90,10 +85,7 @@ const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
     });
 
     if (!existingNews) {
-      return NextResponse.json(
-        { error: "Meldung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Meldung nicht gefunden" });
     }
 
     const body = await request.json();
@@ -109,10 +101,7 @@ const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
       });
 
       if (!fund) {
-        return NextResponse.json(
-          { error: "Gesellschaft nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", 404, { message: "Gesellschaft nicht gefunden" });
       }
     }
 
@@ -180,10 +169,7 @@ const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
     });
 
     if (!existingNews) {
-      return NextResponse.json(
-        { error: "Meldung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Meldung nicht gefunden" });
     }
 
     // Hard-delete: Meldung unwiderruflich löschen
@@ -198,9 +184,6 @@ const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting news");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Meldung" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen der Meldung" });
   }
 }

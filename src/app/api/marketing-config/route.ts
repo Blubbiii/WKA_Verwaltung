@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { DEFAULT_MARKETING_CONFIG, DEFAULT_LEGAL_PAGES } from "@/lib/marketing/defaults";
@@ -77,9 +78,6 @@ export async function GET() {
     return NextResponse.json({ marketing, legalPages });
   } catch (error) {
     logger.error({ err: error }, "Error fetching public marketing config");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Marketing-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Marketing-Konfiguration" });
   }
 }

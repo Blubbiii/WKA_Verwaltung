@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const leaseCreateSchema = z.object({
   plotIds: z.array(z.string().uuid("Ungültige Flurstück-ID")).min(1, "Mindestens ein Flurstück erforderlich"),
@@ -120,10 +121,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching leases");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Pachtverträge" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Pachtverträge" });
   }
 }
 
@@ -145,10 +143,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (plots.length !== validatedData.plotIds.length) {
-      return NextResponse.json(
-        { error: "Ein oder mehrere Flurstücke nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Ein oder mehrere Flurstücke nicht gefunden" });
     }
 
     // Prüfe ob Lessor zum Tenant gehört
@@ -160,7 +155,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!lessor) {
-      return NextResponse.json({ error: "Verpächter nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Verpächter nicht gefunden" });
     }
 
     // Create lease with plots in a transaction

@@ -6,6 +6,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import {
@@ -62,10 +63,7 @@ export async function GET() {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     logger.error({ err: error, detail }, "[Settings/Paperless] GET error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Konfiguration", detail },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Konfiguration" });
   }
 }
 
@@ -81,10 +79,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = paperlessConfigSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { configs } = parsed.data;
 
@@ -109,9 +104,6 @@ export async function POST(request: Request) {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     logger.error({ err: error, detail }, "[Settings/Paperless] POST error");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Konfiguration", detail },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", 500, { message: "Fehler beim Speichern der Konfiguration" });
   }
 }

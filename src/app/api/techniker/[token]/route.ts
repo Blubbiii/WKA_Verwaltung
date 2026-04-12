@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import {
@@ -38,10 +39,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     });
 
     if (!turbine) {
-      return NextResponse.json(
-        { error: "Ungültiger QR-Code" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Ungültiger QR-Code" });
     }
 
     // Check for any active session from this IP
@@ -63,9 +61,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ turbine, activeSession });
   } catch (error) {
     logger.error({ err: error }, "[Techniker Lookup] Failed");
-    return NextResponse.json(
-      { error: "Ein Fehler ist aufgetreten" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Ein Fehler ist aufgetreten" });
   }
 }

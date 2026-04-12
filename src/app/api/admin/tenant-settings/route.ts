@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // TYPES & DEFAULTS
@@ -362,10 +363,7 @@ export async function GET(_request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 400 }
-      );
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const tenant = await prisma.tenant.findUnique({
@@ -381,10 +379,7 @@ export async function GET(_request: NextRequest) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     // Extract tenant-settings sub-key from settings JSON
@@ -411,10 +406,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(merged);
   } catch (error) {
     logger.error({ err: error }, "Error fetching tenant settings");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Mandanten-Einstellungen" },
-      { status: 500 }
-    );
+    return apiError("TENANT_MISMATCH", 500, { message: "Fehler beim Laden der Mandanten-Einstellungen" });
   }
 }
 
@@ -428,10 +420,7 @@ export async function PUT(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 400 }
-      );
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const body = await request.json();
@@ -440,16 +429,10 @@ export async function PUT(request: NextRequest) {
     const parsed = tenantSettingsSchema.safeParse(body);
     if (!parsed.success) {
       const firstError = parsed.error.issues[0];
-      return NextResponse.json(
-        {
-          error: firstError?.message || "Ungültige Eingabedaten",
-          details: parsed.error.issues.map((e) => ({
+      return apiError("BAD_REQUEST", undefined, { message: firstError?.message || "Ungültige Eingabedaten", details: parsed.error.issues.map((e) => ({
             field: e.path.join("."),
             message: e.message,
-          })),
-        },
-        { status: 400 }
-      );
+          })) });
     }
 
     // Get current tenant settings
@@ -459,10 +442,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     const currentSettings =
@@ -500,9 +480,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(fullSettings);
   } catch (error) {
     logger.error({ err: error }, "Error saving tenant settings");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Mandanten-Einstellungen" },
-      { status: 500 }
-    );
+    return apiError("TENANT_MISMATCH", 500, { message: "Fehler beim Speichern der Mandanten-Einstellungen" });
   }
 }

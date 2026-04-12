@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
@@ -37,10 +38,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy KPIs");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Energie-KPIs" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Energie-KPIs" });
   }
 }
 

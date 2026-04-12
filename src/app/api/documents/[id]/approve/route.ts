@@ -10,6 +10,7 @@ import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { apiError } from "@/lib/api-errors";
 
 // Valid state transitions for the document approval workflow
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -45,10 +46,7 @@ export async function POST(
     if (!check.authorized) return check.error;
 
     if (!check.tenantId || !check.userId) {
-      return NextResponse.json(
-        { error: "Kein Mandant oder Benutzer zugeordnet" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant oder Benutzer zugeordnet" });
     }
 
     const { id } = await params;
@@ -69,10 +67,7 @@ export async function POST(
     });
 
     if (!document) {
-      return NextResponse.json(
-        { error: "Dokument nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Dokument nicht gefunden" });
     }
 
     const currentStatus = document.approvalStatus;
@@ -88,10 +83,7 @@ export async function POST(
       targetStatus = "APPROVED";
     } else if (action.reject) {
       if (!action.notes) {
-        return NextResponse.json(
-          { error: "Ablehnungsgrund ist erforderlich" },
-          { status: 400 }
-        );
+        return apiError("MISSING_FIELD", undefined, { message: "Ablehnungsgrund ist erforderlich" });
       }
       targetStatus = "REJECTED";
     } else if (action.publish) {
@@ -99,21 +91,13 @@ export async function POST(
     } else if (action.revise) {
       targetStatus = "DRAFT";
     } else {
-      return NextResponse.json(
-        { error: "Keine gültige Aktion angegeben. Verwenden Sie: submit, approve, reject, publish oder revise." },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine gültige Aktion angegeben. Verwenden Sie: submit, approve, reject, publish oder revise." });
     }
 
     // Validate state transition
     const allowedTransitions = VALID_TRANSITIONS[currentStatus] || [];
     if (!allowedTransitions.includes(targetStatus)) {
-      return NextResponse.json(
-        {
-          error: `Ungültiger Statuswechsel: ${currentStatus} -> ${targetStatus}. Erlaubt: ${allowedTransitions.join(", ") || "keine"}`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Ungültiger Statuswechsel: ${currentStatus} -> ${targetStatus}. Erlaubt: ${allowedTransitions.join(", ") || "keine"}` });
     }
 
     // Permission checks for specific actions
@@ -122,10 +106,7 @@ export async function POST(
       (action.approve || action.reject || action.publish) &&
       !isAdmin
     ) {
-      return NextResponse.json(
-        { error: "Nur Administratoren können Dokumente genehmigen, ablehnen oder veroeffentlichen." },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Nur Administratoren können Dokumente genehmigen, ablehnen oder veroeffentlichen." });
     }
 
     // Build update data

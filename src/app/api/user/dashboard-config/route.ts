@@ -5,6 +5,7 @@
 // ===========================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
@@ -58,10 +59,7 @@ export async function GET() {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Benutzer nicht gefunden" });
     }
 
     const hierarchy = await getUserHighestHierarchy(userId!);
@@ -92,10 +90,7 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching dashboard config");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Dashboard-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Dashboard-Konfiguration" });
   }
 }
 
@@ -115,13 +110,7 @@ export async function PUT(request: NextRequest) {
     const validationResult = updateDashboardConfigSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          error: "Validierungsfehler",
-          details: validationResult.error.issues,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: validationResult.error.issues });
     }
 
     const { widgets, showQuickStats, gridCols, rowHeight } = validationResult.data;
@@ -136,10 +125,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Benutzer nicht gefunden" });
     }
 
     const hierarchy = await getUserHighestHierarchy(userId!);
@@ -154,13 +140,7 @@ export async function PUT(request: NextRequest) {
     const invalidIds = validateWidgetIds(widgetIds);
 
     if (invalidIds.length > 0) {
-      return NextResponse.json(
-        {
-          error: "Unbekannte Widget-IDs",
-          details: invalidIds,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Unbekannte Widget-IDs", details: invalidIds });
     }
 
     // Filter widgets to only those available for user's role

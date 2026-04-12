@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/energy/productions/sample-csv
 // Generates a sample CSV with actual turbines for the current tenant (production data only)
@@ -19,10 +20,7 @@ export async function GET() {
     });
 
     if (turbines.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Anlagen gefunden. Bitte legen Sie zuerst Anlagen an." },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Keine Anlagen gefunden. Bitte legen Sie zuerst Anlagen an." });
     }
 
     // Realistic monthly production pattern (relative factors, winter=high, summer=low)
@@ -73,9 +71,6 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating sample CSV");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Beispiel-CSV" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Beispiel-CSV" });
   }
 }

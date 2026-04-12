@@ -6,6 +6,7 @@ import { dashboardCache } from "@/lib/cache/dashboard";
 import type { DashboardStats } from "@/lib/cache/types";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 /**
  * Fetch fresh system statistics from database
@@ -225,10 +226,7 @@ export async function GET(request: Request) {
     return response;
   } catch (error) {
     logger.error({ err: error }, "Error fetching system stats");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der System-Statistiken" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der System-Statistiken" });
   }
 }
 

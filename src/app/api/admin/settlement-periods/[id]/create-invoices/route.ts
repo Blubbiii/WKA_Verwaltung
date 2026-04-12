@@ -15,6 +15,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { formatDate } from "@/lib/format";
+import { apiError } from "@/lib/api-errors";
 
 const revenueSourceSchema = z.object({
   category: z.string(),
@@ -207,24 +208,15 @@ export async function POST(
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Abrechnungsperiode nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsperiode nicht gefunden" });
     }
 
     if (period.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     if (period.status === "CLOSED") {
-      return NextResponse.json(
-        { error: "Für geschlossene Perioden können keine Gutschriften mehr erstellt werden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Für geschlossene Perioden können keine Gutschriften mehr erstellt werden" });
     }
 
     const articles = getArticles(period.park);
@@ -348,10 +340,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
 
   // Validate: QUARTERLY and MONTHLY need a month/quarter number
   if (interval !== "YEARLY" && !period.month) {
-    return NextResponse.json(
-      { error: "Quartals-/Monatsvorschuss benötigt eine Periodenangabe" },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: "Quartals-/Monatsvorschuss benötigt eine Periodenangabe" });
   }
 
   const periodLabel = getIntervalPeriodLabel(interval, period.year, period.month);
@@ -367,10 +356,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
   });
 
   if (calcResult.leases.length === 0) {
-    return NextResponse.json(
-      { error: "Keine abrechenbaren Verträge gefunden" },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: "Keine abrechenbaren Verträge gefunden" });
   }
 
   // Load paymentDay per lease
@@ -404,10 +390,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
   // Filter out leases with negligible total
   const validLeases = calcResult.leases.filter((l) => l.totalPayment > 0.01);
   if (validLeases.length === 0) {
-    return NextResponse.json(
-      { error: "Keine abrechenbaren Betraege gefunden" },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: "Keine abrechenbaren Betraege gefunden" });
   }
 
   const invoiceDateValue = invoiceDate ? new Date(invoiceDate) : new Date();
@@ -608,10 +591,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
   const { period, articles, defaultPaymentDay, invoiceDate, tenantId, userId, revenueSources } = options;
 
   if (!period.totalActualRent) {
-    return NextResponse.json(
-      { error: "Bitte fuehren Sie zuerst die Berechnung durch" },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: "Bitte fuehren Sie zuerst die Berechnung durch" });
   }
 
   // Re-run the calculation to get per-lease + per-PlotArea results
@@ -625,10 +605,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
   });
 
   if (calcResult.leases.length === 0) {
-    return NextResponse.json(
-      { error: "Keine abrechenbaren Verträge gefunden" },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: "Keine abrechenbaren Verträge gefunden" });
   }
 
   // Artikelkonten
@@ -977,10 +954,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
   }
 
   if (prepared.length === 0) {
-    return NextResponse.json(
-      { error: "Keine offenen Betraege nach Verrechnung der Vorschüsse" },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: "Keine offenen Betraege nach Verrechnung der Vorschüsse" });
   }
 
   // Batch-generate credit note numbers

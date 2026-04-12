@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { executeRule } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const executeSchema = z.object({
   overrideParameters: z.record(z.string(), z.unknown()).optional(),
@@ -43,10 +44,7 @@ export async function POST(
     });
 
     if (!rule) {
-      return NextResponse.json(
-        { error: "Abrechnungsregel nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsregel nicht gefunden" });
     }
 
     // Optional: Body mit Override-Parametern
@@ -55,10 +53,7 @@ export async function POST(
       const body = await request.json();
       const result = executeSchema.safeParse(body);
       if (!result.success) {
-        return NextResponse.json(
-          { error: "Ungültige Eingabe", details: result.error.flatten().fieldErrors },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: result.error.flatten().fieldErrors });
       }
       if (result.data?.overrideParameters) {
         overrideParameters = result.data.overrideParameters;

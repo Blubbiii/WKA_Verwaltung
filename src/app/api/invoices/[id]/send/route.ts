@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { createAutoPosting } from "@/lib/accounting/auto-posting";
+import { apiError } from "@/lib/api-errors";
 
 // POST /api/invoices/[id]/send - Rechnung als versendet markieren
 export async function POST(
@@ -22,17 +23,11 @@ export async function POST(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     if (invoice.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: `Rechnung kann nicht versendet werden (Status: ${invoice.status})` },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Rechnung kann nicht versendet werden (Status: ${invoice.status})` });
     }
 
     // Prüfe ob Positionen vorhanden
@@ -41,10 +36,7 @@ export async function POST(
     });
 
     if (itemCount === 0) {
-      return NextResponse.json(
-        { error: "Rechnung hat keine Positionen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Rechnung hat keine Positionen" });
     }
 
     const updated = await prisma.invoice.update({
@@ -73,9 +65,6 @@ export async function POST(
     return NextResponse.json(updated);
   } catch (error) {
     logger.error({ err: error }, "Error sending invoice");
-    return NextResponse.json(
-      { error: "Fehler beim Versenden der Rechnung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Versenden der Rechnung" });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateBudgetComparison } from "@/lib/accounting/reports/budget-comparison";
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const budgetId = searchParams.get("budgetId");
 
     if (!budgetId) {
-      return NextResponse.json({ error: "budgetId ist erforderlich" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "budgetId ist erforderlich" });
     }
 
     const fromMonth = searchParams.get("fromMonth") ? parseInt(searchParams.get("fromMonth")!) : undefined;
@@ -22,12 +23,12 @@ export async function GET(request: NextRequest) {
     const result = await generateBudgetComparison(check.tenantId!, budgetId, fromMonth, toMonth);
 
     if (!result) {
-      return NextResponse.json({ error: "Budget nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Budget nicht gefunden" });
     }
 
     return NextResponse.json({ data: result });
   } catch (error) {
     logger.error({ err: error }, "Error generating Budget-Vergleich");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

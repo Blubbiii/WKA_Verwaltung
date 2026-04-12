@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -32,10 +33,7 @@ export async function POST(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 400 }
-      );
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const body = await request.json();
@@ -43,16 +41,10 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       const firstError = parsed.error.issues[0];
-      return NextResponse.json(
-        {
-          error: firstError?.message || "Ungültige Eingabedaten",
-          details: parsed.error.issues.map((e) => ({
+      return apiError("BAD_REQUEST", undefined, { message: firstError?.message || "Ungültige Eingabedaten", details: parsed.error.issues.map((e) => ({
             field: e.path.join("."),
             message: e.message,
-          })),
-        },
-        { status: 400 }
-      );
+          })) });
     }
 
     const { confirmations } = parsed.data;
@@ -140,9 +132,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error confirming bank import");
-    return NextResponse.json(
-      { error: "Fehler beim Bestätigen der Zahlungen" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Bestätigen der Zahlungen" });
   }
 }

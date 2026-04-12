@@ -9,6 +9,7 @@ import { randomUUID } from "crypto";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
 import { Prisma } from "@prisma/client";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
+import { apiError } from "@/lib/api-errors";
 
 const adminUserSchema = z
   .object({
@@ -103,10 +104,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: serializedTenants });
   } catch (error) {
     logger.error({ err: error }, "Error fetching tenants");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Mandanten" },
-      { status: 500 }
-    );
+    return apiError("TENANT_MISMATCH", 500, { message: "Fehler beim Laden der Mandanten" });
   }
 }
 
@@ -125,10 +123,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingTenant) {
-      return NextResponse.json(
-        { error: "Ein Mandant mit diesem Slug existiert bereits" },
-        { status: 400 }
-      );
+      return apiError("ALREADY_EXISTS", 400, { message: "Ein Mandant mit diesem Slug existiert bereits" });
     }
 
     // Default fund categories to seed for every new tenant
@@ -320,13 +315,7 @@ export async function POST(request: NextRequest) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "Ein Benutzer mit dieser E-Mail-Adresse existiert bereits",
-        },
-        { status: 400 }
-      );
+      return apiError("ALREADY_EXISTS", 400, { message: "Ein Benutzer mit dieser E-Mail-Adresse existiert bereits" });
     }
     return handleApiError(error, "Fehler beim Erstellen des Mandanten");
   }

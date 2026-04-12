@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -73,6 +74,6 @@ export async function GET() {
     return NextResponse.json(activities);
   } catch (error) {
     logger.error({ error }, "[activities] Error");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

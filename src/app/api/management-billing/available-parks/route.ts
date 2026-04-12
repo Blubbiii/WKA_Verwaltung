@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const enabled = await getConfigBoolean("management-billing.enabled", check.tenantId, false);
     if (!enabled) {
-      return NextResponse.json({ error: "Feature nicht aktiviert" }, { status: 404 });
+      return apiError("FEATURE_DISABLED", 404, { message: "Feature nicht aktiviert" });
     }
 
     const { searchParams } = new URL(request.url);
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
           },
         });
         if (!hasAccess) {
-          return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 });
+          return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
         }
       }
       effectiveTenantId = tenantId;
@@ -76,9 +77,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ parks: mapped });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] GET available-parks error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Parks" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Parks" });
   }
 }

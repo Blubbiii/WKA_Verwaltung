@@ -6,6 +6,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { apiError } from "@/lib/api-errors";
 
 const mergeSchema = z.object({
   plotIds: z.array(z.string().uuid()).min(2, "Mindestens 2 Flurstücke zum Zusammenlegen"),
@@ -36,19 +37,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (sourcePlots.length !== data.plotIds.length) {
-      return NextResponse.json(
-        { error: "Nicht alle Flurstücke gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Nicht alle Flurstücke gefunden" });
     }
 
     // Validate all plots are in the same park
     const parkIds = [...new Set(sourcePlots.map((p) => p.parkId).filter(Boolean))];
     if (parkIds.length > 1) {
-      return NextResponse.json(
-        { error: "Alle Flurstücke müssen im selben Park liegen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Alle Flurstücke müssen im selben Park liegen" });
     }
     const parkId = parkIds[0] ?? sourcePlots[0].parkId;
 

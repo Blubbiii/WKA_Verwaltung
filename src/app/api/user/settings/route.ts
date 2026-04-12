@@ -8,6 +8,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
@@ -68,10 +69,7 @@ export async function GET() {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Benutzer nicht gefunden" });
     }
 
     // Parse the settings JSON to extract preferences
@@ -116,10 +114,7 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "[User Settings API] GET error");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -138,10 +133,7 @@ export async function PUT(request: Request) {
     const parsed = updateSettingsSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { firstName, lastName, phone, preferences } = parsed.data;
@@ -153,10 +145,7 @@ export async function PUT(request: Request) {
     });
 
     if (!currentUser) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Benutzer nicht gefunden" });
     }
 
     // Build update data for profile fields
@@ -244,9 +233,6 @@ export async function PUT(request: Request) {
     });
   } catch (error) {
     logger.error({ err: error }, "[User Settings API] PUT error");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

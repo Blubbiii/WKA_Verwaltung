@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -49,22 +50,12 @@ export async function GET(
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden" });
     }
 
     // Check if park has coordinates
     if (!park.latitude || !park.longitude) {
-      return NextResponse.json(
-        {
-          error: "Park hat keine Koordinaten hinterlegt",
-          parkId: park.id,
-          parkName: park.name,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Park hat keine Koordinaten hinterlegt" });
     }
 
     // isWeatherApiConfigured() is always true for Open-Meteo (no key required)
@@ -97,19 +88,10 @@ export async function GET(
     logger.error({ err: error }, "[Weather API] Error");
 
     if (error instanceof WeatherApiError) {
-      return NextResponse.json(
-        {
-          error: error.message,
-          code: (error.apiResponse as { code?: string })?.code,
-        },
-        { status: error.statusCode || 500 }
-      );
+      return apiError("INTERNAL_ERROR", 500, { message: error.message });
     }
 
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Wetterdaten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Wetterdaten" });
   }
 }
 
@@ -142,22 +124,12 @@ export async function POST(
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden" });
     }
 
     // Check if park has coordinates
     if (!park.latitude || !park.longitude) {
-      return NextResponse.json(
-        {
-          error: "Park hat keine Koordinaten hinterlegt",
-          parkId: park.id,
-          parkName: park.name,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Park hat keine Koordinaten hinterlegt" });
     }
 
     // Force refresh weather data
@@ -175,18 +147,9 @@ export async function POST(
     logger.error({ err: error }, "[Weather API] Refresh error");
 
     if (error instanceof WeatherApiError) {
-      return NextResponse.json(
-        {
-          error: error.message,
-          code: (error.apiResponse as { code?: string })?.code,
-        },
-        { status: error.statusCode || 500 }
-      );
+      return apiError("INTERNAL_ERROR", 500, { message: error.message });
     }
 
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Wetterdaten" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren der Wetterdaten" });
   }
 }

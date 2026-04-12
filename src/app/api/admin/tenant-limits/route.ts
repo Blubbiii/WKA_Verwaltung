@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { DEFAULT_TENANT_LIMITS } from "@/lib/config/auth-config";
+import { apiError } from "@/lib/api-errors";
 
 export interface TenantLimits {
   maxUsers: number;
@@ -64,9 +65,6 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ data: tenantsWithLimits });
   } catch (error) {
     logger.error({ err: error }, "Error fetching tenant limits");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Mandanten-Limits" },
-      { status: 500 }
-    );
+    return apiError("TENANT_MISMATCH", 500, { message: "Fehler beim Laden der Mandanten-Limits" });
   }
 }

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { startImport, isValidFileType } from "@/lib/scada/import-service";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/scada/import - Liste der Import-Logs
@@ -26,10 +27,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ data: logs });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der Import-Logs");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Import-Logs" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Import-Logs" });
   }
 }
 
@@ -49,39 +47,24 @@ export async function POST(request: NextRequest) {
     // --- Validierung ---
 
     if (!locationCode || typeof locationCode !== "string") {
-      return NextResponse.json(
-        { error: "locationCode ist erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "locationCode ist erforderlich" });
     }
 
     if (!locationCode.startsWith("Loc_")) {
-      return NextResponse.json(
-        { error: "locationCode muss mit 'Loc_' beginnen (z.B. 'Loc_5842')" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "locationCode muss mit 'Loc_' beginnen (z.B. 'Loc_5842')" });
     }
 
     if (!fileType || !isValidFileType(fileType)) {
-      return NextResponse.json(
-        { error: "fileType ungültig. Erlaubt: WSD, UID, AVR, AVW, AVM, AVY, SSM, SWM, PES, PEW, PET, WSR, WSW, WSM, WSY" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "fileType ungültig. Erlaubt: WSD, UID, AVR, AVW, AVM, AVY, SSM, SWM, PES, PEW, PET, WSR, WSW, WSM, WSY" });
     }
 
     if (!basePath || typeof basePath !== "string") {
-      return NextResponse.json(
-        { error: "basePath ist erforderlich (z.B. 'C:\\Enercon')" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "basePath ist erforderlich (z.B. 'C:\\Enercon')" });
     }
 
     // Sicherheitsprüfung
     if (basePath.includes("..") || basePath.includes("\0")) {
-      return NextResponse.json(
-        { error: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
-        { status: 400 }
-      );
+      return apiError("FORBIDDEN", 400, { message: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" });
     }
 
     // Prüfung: Läuft bereits ein Import für diesen Standort?
@@ -95,13 +78,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (runningImport) {
-      return NextResponse.json(
-        {
-          error: "Import läuft bereits",
-          details: `Für ${locationCode} (${fileType}) läuft bereits ein Import (ID: ${runningImport.id})`,
-        },
-        { status: 409 }
-      );
+      return apiError("CONFLICT", undefined, { message: "Import läuft bereits", details: `Für ${locationCode} (${fileType}) läuft bereits ein Import (ID: ${runningImport.id})` });
     }
 
     // Import-Log Eintrag erstellen
@@ -139,9 +116,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Starten des SCADA-Imports");
-    return NextResponse.json(
-      { error: "Fehler beim Starten des SCADA-Imports" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Starten des SCADA-Imports" });
   }
 }

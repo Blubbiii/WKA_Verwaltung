@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 /**
  * GET /api/documents/search
@@ -28,10 +29,7 @@ export async function GET(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Kein Mandant zugeordnet" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
     }
 
     const { searchParams } = new URL(request.url);
@@ -56,10 +54,7 @@ export async function GET(request: NextRequest) {
 
     // Validiere Suchbegriff
     if (query.length < 2) {
-      return NextResponse.json(
-        { error: "Suchbegriff muss mindestens 2 Zeichen haben" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Suchbegriff muss mindestens 2 Zeichen haben" });
     }
 
     // Escape special characters for LIKE query
@@ -238,10 +233,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error searching documents");
-    return NextResponse.json(
-      { error: "Fehler bei der Dokumentensuche" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Dokumentensuche" });
   }
 }
 

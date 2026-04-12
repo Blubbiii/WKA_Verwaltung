@@ -18,6 +18,7 @@ import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/withPermission';
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
 import {
   getAllQueues,
@@ -80,13 +81,10 @@ export async function GET(request: NextRequest) {
 
     // Validate queue name if provided
     if (params.queue && !availableQueues.includes(params.queue)) {
-      return NextResponse.json(
-        {
-          error: `Queue "${params.queue}" nicht gefunden`,
-          availableQueues,
-        },
-        { status: 400 }
-      );
+      return apiError("NOT_FOUND", 400, {
+        message: `Queue "${params.queue}" nicht gefunden`,
+        details: { availableQueues },
+      });
     }
 
     // If a specific queue is requested, get jobs from that queue

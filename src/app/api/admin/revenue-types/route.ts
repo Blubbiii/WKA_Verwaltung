@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const createSchema = z.object({
   name: z.string().min(1, "Name erforderlich").max(100),
@@ -29,10 +30,7 @@ export async function GET() {
     return NextResponse.json({ data: revenueTypes });
   } catch (error) {
     logger.error({ err: error }, "Error fetching revenue types");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vergütungsarten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Vergütungsarten" });
   }
 }
 
@@ -46,10 +44,7 @@ export async function POST(request: NextRequest) {
     const parsed = createSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message || "Ungültige Eingabe" });
     }
 
     // Check duplicate code
@@ -58,10 +53,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: `Code "${parsed.data.code}" existiert bereits` },
-        { status: 409 }
-      );
+      return apiError("CONFLICT", undefined, { message: `Code "${parsed.data.code}" existiert bereits` });
     }
 
     const revenueType = await prisma.energyRevenueType.create({
@@ -74,9 +66,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(revenueType, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating revenue type");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Vergütungsart" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Vergütungsart" });
   }
 }

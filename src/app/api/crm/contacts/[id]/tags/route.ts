@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { apiError } from "@/lib/api-errors";
 
 const bodySchema = z.object({
   tagId: z.uuid(),
@@ -19,19 +20,13 @@ export async function POST(
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { id } = await params;
     const raw = await request.json();
     const parsed = bodySchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 },
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     // Verify both person and tag belong to tenant
@@ -46,10 +41,7 @@ export async function POST(
       }),
     ]);
     if (!person || !tag) {
-      return NextResponse.json(
-        { error: "Kontakt oder Tag nicht gefunden" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Kontakt oder Tag nicht gefunden" });
     }
 
     const updated = await prisma.person.update({
@@ -60,10 +52,7 @@ export async function POST(
     return NextResponse.json(serializePrisma(updated.tags));
   } catch (error) {
     logger.error({ err: error }, "Error attaching tag");
-    return NextResponse.json(
-      { error: "Fehler beim Zuweisen des Tags" },
-      { status: 500 },
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Zuweisen des Tags" });
   }
 }
 
@@ -76,19 +65,13 @@ export async function DELETE(
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const tagId = searchParams.get("tagId");
     if (!tagId) {
-      return NextResponse.json(
-        { error: "tagId required" },
-        { status: 400 },
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "tagId required" });
     }
 
     const person = await prisma.person.findFirst({
@@ -96,10 +79,7 @@ export async function DELETE(
       select: { id: true },
     });
     if (!person) {
-      return NextResponse.json(
-        { error: "Kontakt nicht gefunden" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Kontakt nicht gefunden" });
     }
 
     await prisma.person.update({
@@ -109,9 +89,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error detaching tag");
-    return NextResponse.json(
-      { error: "Fehler beim Entfernen des Tags" },
-      { status: 500 },
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Entfernen des Tags" });
   }
 }

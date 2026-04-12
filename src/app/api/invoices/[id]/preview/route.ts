@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { generateInvoicePdfBase64 } from "@/lib/pdf";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/invoices/[id]/preview - PDF als Base64 für Vorschau
 export async function GET(
@@ -26,17 +27,11 @@ export async function GET(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     if (invoice.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // PDF als Base64 generieren
@@ -49,12 +44,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating PDF preview");
-    return NextResponse.json(
-      {
-        error: "Fehler bei der PDF-Vorschau",
-        details: error instanceof Error ? error.message : "Unbekannter Fehler",
-      },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der PDF-Vorschau", details: error instanceof Error ? error.message : "Unbekannter Fehler" });
   }
 }

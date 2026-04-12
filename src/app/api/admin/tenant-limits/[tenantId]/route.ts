@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const tenantLimitsSchema = z.object({
   maxUsers: z.number().int().min(1).max(10000),
@@ -28,20 +29,14 @@ export async function PUT(
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     const body = await request.json();
     const parsed = tenantLimitsSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Limit-Daten", details: parsed.error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Limit-Daten", details: parsed.error.issues });
     }
 
     // Get current settings and merge with new limits
@@ -70,9 +65,6 @@ export async function PUT(
     });
   } catch (error) {
     logger.error({ err: error }, "Error updating tenant limits");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Mandanten-Limits" },
-      { status: 500 }
-    );
+    return apiError("TENANT_MISMATCH", 500, { message: "Fehler beim Aktualisieren der Mandanten-Limits" });
   }
 }

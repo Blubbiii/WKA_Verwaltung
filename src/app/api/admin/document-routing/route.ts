@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const createRuleSchema = z.object({
   fundId: z.uuid().optional().nullable(),
@@ -37,10 +38,7 @@ export async function GET() {
     return NextResponse.json({ data: rules });
   } catch (error) {
     logger.error({ err: error }, "Error fetching document routing rules");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Routing-Regeln" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Routing-Regeln" });
   }
 }
 

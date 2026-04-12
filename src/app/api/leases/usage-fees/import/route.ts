@@ -6,6 +6,7 @@ import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import { importHistoricalSettlementSchema } from "@/types/billing";
 import { Decimal } from "@prisma/client-runtime-utils";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/leases/usage-fees/import - Import historical settlement (CLOSED)
@@ -21,10 +22,7 @@ export async function POST(request: NextRequest) {
     // Validate request body
     const parsed = importHistoricalSettlementSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.issues });
     }
 
     const { parkId, year, totalParkRevenueEur, actualFeeEur, usedMinimum, items } =
@@ -43,10 +41,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     // Check no existing settlement for same park+year
@@ -59,12 +54,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        {
-          error: "Für diesen Park und dieses Jahr existiert bereits eine Abrechnung",
-        },
-        { status: 409 }
-      );
+      return apiError("ALREADY_EXISTS", undefined, { message: "Für diesen Park und dieses Jahr existiert bereits eine Abrechnung" });
     }
 
     // Create settlement + items in a transaction
@@ -163,9 +153,6 @@ export async function POST(request: NextRequest) {
       { err: error },
       "Error importing historical lease revenue settlement"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Importieren der historischen Abrechnung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Importieren der historischen Abrechnung" });
   }
 }

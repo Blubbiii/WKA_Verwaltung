@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const createSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").max(100),
@@ -49,10 +50,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: templates });
   } catch (error) {
     logger.error({ err: error }, "Error fetching position templates");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Positionsvorlagen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Positionsvorlagen" });
   }
 }
 
@@ -66,10 +64,7 @@ export async function POST(request: NextRequest) {
     const parsed = createSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message || "Ungültige Eingabe" });
     }
 
     const template = await prisma.invoiceItemTemplate.create({
@@ -83,9 +78,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(template, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating position template");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Positionsvorlage" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Positionsvorlage" });
   }
 }

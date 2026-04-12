@@ -15,6 +15,7 @@ import {
   type InvestorQuarterlyData,
 } from "@/lib/pdf/templates/InvestorQuarterlyTemplate";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const MONTH_NAMES = [
   "Januar", "Februar", "März", "April", "Mai", "Juni",
@@ -50,10 +51,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = RequestSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Anfrage", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Anfrage", details: parsed.error.flatten() });
     }
     const { parkId, fundId, year, quarter } = parsed.data;
     const months = QUARTER_MONTHS[quarter];
@@ -70,7 +68,7 @@ export async function POST(req: NextRequest) {
       },
     });
     if (!park) {
-      return NextResponse.json({ error: "Park nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
     }
 
     const fund = await prisma.fund.findUnique({
@@ -78,7 +76,7 @@ export async function POST(req: NextRequest) {
       select: { name: true },
     });
     if (!fund) {
-      return NextResponse.json({ error: "Gesellschaft nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     const turbineIds = park.turbines.map((t) => t.id);
@@ -266,9 +264,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Investor quarterly report generation failed");
-    return NextResponse.json(
-      { error: "Fehler bei der Berichterstellung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Berichterstellung" });
   }
 }

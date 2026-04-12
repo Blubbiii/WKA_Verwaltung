@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/admin/scada-codes — List all controller types with code counts
 export async function GET() {
@@ -24,10 +25,7 @@ export async function GET() {
     return NextResponse.json({ data });
   } catch (error) {
     logger.error({ err: error }, "Error listing SCADA code groups");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Code-Listen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Code-Listen" });
   }
 }
 
@@ -41,10 +39,7 @@ export async function DELETE(request: NextRequest) {
     const controllerType = searchParams.get("controllerType");
 
     if (!controllerType) {
-      return NextResponse.json(
-        { error: "controllerType Parameter erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "controllerType Parameter erforderlich" });
     }
 
     const deleted = await prisma.scadaStatusCode.deleteMany({
@@ -62,9 +57,6 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting SCADA status codes");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Code-Liste" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Code-Liste" });
   }
 }

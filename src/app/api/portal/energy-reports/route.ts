@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/portal/energy-reports
@@ -14,19 +15,13 @@ export async function GET() {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Nicht autorisiert" },
-        { status: 401 }
-      );
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     const tenantId = session.user.tenantId;
 
     if (!tenantId) {
-      return NextResponse.json(
-        { error: "Kein Mandant zugeordnet" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Kein Mandant zugeordnet" });
     }
 
     // Fetch tenant settings to check if energyReports section is enabled
@@ -36,10 +31,7 @@ export async function GET() {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     // Check if energyReports is in portalVisibleSections
@@ -89,9 +81,6 @@ export async function GET() {
     return NextResponse.json({ data });
   } catch (error) {
     logger.error({ err: error }, "Error fetching portal energy report configs");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }

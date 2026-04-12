@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getForecastForPark } from "@/lib/weather/forecast";
@@ -31,17 +32,14 @@ export async function GET(
     });
 
     if (!park) {
-      return NextResponse.json({ error: "Park nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden" });
     }
 
     const lat = Number(park.latitude);
     const lng = Number(park.longitude);
 
     if (!lat || !lng || lat === 0 || lng === 0) {
-      return NextResponse.json(
-        { error: "Keine Koordinaten für diesen Park hinterlegt" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Keine Koordinaten für diesen Park hinterlegt" });
     }
 
     const forecast = await getForecastForPark(
@@ -56,9 +54,6 @@ export async function GET(
     return NextResponse.json(forecast);
   } catch (error) {
     logger.error({ err: error }, "Fehler bei Wetterprognose");
-    return NextResponse.json(
-      { error: "Fehler bei Wetterprognose" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler bei Wetterprognose" });
   }
 }

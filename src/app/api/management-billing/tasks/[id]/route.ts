@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -36,7 +37,7 @@ const taskUpdateSchema = z.object({
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
   if (!enabled) {
-    return NextResponse.json({ error: "Feature nicht aktiviert" }, { status: 404 });
+    return apiError("FEATURE_DISABLED", 404, { message: "Feature nicht aktiviert" });
   }
   return null;
 }
@@ -70,15 +71,12 @@ export async function GET(
     });
 
     if (!task) {
-      return NextResponse.json(
-        { error: "Aufgabe nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Aufgabe nicht gefunden" });
     }
 
     // Tenant access control
     if (check.tenantId && task.tenantId !== check.tenantId) {
-      return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 });
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     return NextResponse.json({
@@ -90,10 +88,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] GET task detail error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Aufgabe" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Aufgabe" });
   }
 }
 
@@ -121,23 +116,17 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Aufgabe nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Aufgabe nicht gefunden" });
     }
 
     if (check.tenantId && existing.tenantId !== check.tenantId) {
-      return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 });
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     const body = await request.json();
     const parsed = taskUpdateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { title, description, status, priority, taskType, category, dueDate, notes, checklistData, parkId, turbineId, checklistId, assignedToId, costEstimateEur, actualCostEur, benefitNotes } = parsed.data;
 
@@ -197,10 +186,7 @@ export async function PUT(
     });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] PUT task error");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Aufgabe" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren der Aufgabe" });
   }
 }
 
@@ -228,14 +214,11 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Aufgabe nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Aufgabe nicht gefunden" });
     }
 
     if (check.tenantId && existing.tenantId !== check.tenantId) {
-      return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 });
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     await prisma.operationalTask.delete({ where: { id } });
@@ -248,9 +231,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] DELETE task error");
-    return NextResponse.json(
-      { error: "Fehler beim Loeschen der Aufgabe" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Loeschen der Aufgabe" });
   }
 }

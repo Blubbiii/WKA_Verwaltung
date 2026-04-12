@@ -6,6 +6,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
 import { CATEGORY_LABELS } from "@/types/document-explorer";
 import type { ExplorerFile, FolderPath } from "@/types/document-explorer";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/documents/explorer/folder?parkId=x&year=2026&category=CONTRACT&page=1&limit=20
 export async function GET(request: NextRequest) {
@@ -20,15 +21,12 @@ export async function GET(request: NextRequest) {
     const { page, limit, skip } = parsePaginationParams(searchParams);
 
     if (!yearStr || !category) {
-      return NextResponse.json(
-        { error: "year und category sind erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "year und category sind erforderlich" });
     }
 
     const year = parseInt(yearStr, 10);
     if (isNaN(year) || year < 1970 || year > 2100) {
-      return NextResponse.json({ error: "Ungültiges Jahr" }, { status: 400 });
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Jahr" });
     }
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year + 1, 0, 1);
@@ -160,9 +158,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error loading folder contents");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Ordnerinhalts" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Ordnerinhalts" });
   }
 }

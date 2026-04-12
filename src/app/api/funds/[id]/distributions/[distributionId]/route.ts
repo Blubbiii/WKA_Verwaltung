@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/funds/[id]/distributions/[distributionId] - Einzelne Ausschuettung laden
 export async function GET(
@@ -65,19 +66,13 @@ export async function GET(
     });
 
     if (!distribution) {
-      return NextResponse.json(
-        { error: "Ausschuettung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Ausschuettung nicht gefunden" });
     }
 
     return NextResponse.json(distribution);
   } catch (error) {
     logger.error({ err: error }, "Error fetching distribution");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Ausschuettung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Ausschuettung" });
   }
 }
 
@@ -101,17 +96,11 @@ export async function DELETE(
     });
 
     if (!distribution) {
-      return NextResponse.json(
-        { error: "Ausschuettung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Ausschuettung nicht gefunden" });
     }
 
     if (distribution.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Nur Entwuerfe können gelöscht werden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Nur Entwuerfe können gelöscht werden" });
     }
 
     await prisma.distribution.delete({
@@ -121,9 +110,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting distribution");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Ausschuettung" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Ausschuettung" });
   }
 }

@@ -7,6 +7,7 @@ import { logDeletion } from "@/lib/audit";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const plotUpdateSchema = z.object({
   parkId: z.uuid().optional().nullable(),
@@ -76,10 +77,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     });
 
     if (!plot) {
-      return NextResponse.json(
-        { error: "Flurstück nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
     // Transform to include leases array for easier frontend consumption
@@ -91,10 +89,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     return NextResponse.json(transformedPlot);
   } catch (error) {
     logger.error({ err: error }, "Error fetching plot");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Flurstücks" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Flurstücks" });
   }
 }
 
@@ -118,10 +113,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     });
 
     if (!existingPlot) {
-      return NextResponse.json(
-        { error: "Flurstück nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
     const body = await request.json();
@@ -137,10 +129,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
       });
 
       if (!park) {
-        return NextResponse.json(
-          { error: "Park nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
       }
     }
 
@@ -161,10 +150,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
       });
 
       if (duplicate) {
-        return NextResponse.json(
-          { error: "Ein Flurstück mit dieser Kombination (Gemarkung, Flur, Flurstück) existiert bereits" },
-          { status: 409 }
-        );
+        return apiError("ALREADY_EXISTS", undefined, { message: "Ein Flurstück mit dieser Kombination (Gemarkung, Flur, Flurstück) existiert bereits" });
       }
     }
 
@@ -218,17 +204,11 @@ const check = await requirePermission(PERMISSIONS.PLOTS_DELETE);
     });
 
     if (!plotToDelete) {
-      return NextResponse.json(
-        { error: "Flurstück nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
     if (plotToDelete._count.leasePlots > 0) {
-      return NextResponse.json(
-        { error: "Flurstück hat noch aktive Pachtverträge" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Flurstück hat noch aktive Pachtverträge" });
     }
 
     // Perform the deletion
@@ -245,9 +225,6 @@ const check = await requirePermission(PERMISSIONS.PLOTS_DELETE);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting plot");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Flurstücks" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des Flurstücks" });
   }
 }

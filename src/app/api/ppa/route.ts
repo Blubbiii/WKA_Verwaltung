@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ppas });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der PPAs");
-    return NextResponse.json({ error: "Fehler beim Laden der PPAs" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der PPAs" });
   }
 }
 
@@ -62,10 +63,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const result = ppaCreateSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: result.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: result.error.flatten().fieldErrors });
     }
     const data = result.data;
 
@@ -74,7 +72,7 @@ export async function POST(request: NextRequest) {
       where: { id: data.parkId, tenantId, deletedAt: null },
     });
     if (!park) {
-      return NextResponse.json({ error: "Park nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden" });
     }
 
     const ppa = await prisma.powerPurchaseAgreement.create({
@@ -106,6 +104,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ppa }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Erstellen des PPA");
-    return NextResponse.json({ error: "Fehler beim Erstellen des PPA" }, { status: 500 });
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen des PPA" });
   }
 }

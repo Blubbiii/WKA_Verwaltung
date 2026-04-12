@@ -9,6 +9,7 @@ import {
 } from "@/lib/einvoice";
 import { apiLogger as logger } from "@/lib/logger";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { apiError } from "@/lib/api-errors";
 
 /**
  * GET /api/invoices/[id]/xrechnung
@@ -40,10 +41,7 @@ export async function GET(
 
     // Validate format parameter
     if (!["xrechnung", "zugferd"].includes(format)) {
-      return NextResponse.json(
-        { error: "Ungültiges Format. Erlaubt: xrechnung, zugferd" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Format. Erlaubt: xrechnung, zugferd" });
     }
 
     // Load invoice with all relations needed for XML generation
@@ -73,41 +71,26 @@ export async function GET(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     // Tenant check
     if (invoice.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Check invoice status - only generate for non-draft invoices (or allow drafts with warning)
     if (invoice.status === "CANCELLED") {
-      return NextResponse.json(
-        { error: "Für stornierte Rechnungen kann keine XRechnung erstellt werden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Für stornierte Rechnungen kann keine XRechnung erstellt werden" });
     }
 
     // Check if we have required data
     if (!invoice.items || invoice.items.length === 0) {
-      return NextResponse.json(
-        { error: "Rechnung hat keine Positionen. Mindestens eine Position ist erforderlich." },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Rechnung hat keine Positionen. Mindestens eine Position ist erforderlich." });
     }
 
     if (!invoice.recipientName) {
-      return NextResponse.json(
-        { error: "Empfängername ist erforderlich für XRechnung-Generierung" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Empfängername ist erforderlich für XRechnung-Generierung" });
     }
 
     // Determine the expected format tag for cache comparison
@@ -152,14 +135,13 @@ export async function GET(
           { invoiceId: id, errors: validation.errors },
           "XRechnung validation failed"
         );
-        return NextResponse.json(
-          {
-            error: "XRechnung-Validierung fehlgeschlagen",
+        return apiError("VALIDATION_FAILED", 422, {
+          message: "XRechnung-Validierung fehlgeschlagen",
+          details: {
             validationErrors: validation.errors,
             validationWarnings: validation.warnings,
           },
-          { status: 422 }
-        );
+        });
       }
 
       // Log warnings but still proceed
@@ -201,12 +183,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating XRechnung XML");
-    return NextResponse.json(
-      {
-        error: "Fehler bei der XRechnung-Generierung",
-        details: error instanceof Error ? error.message : "Unbekannter Fehler",
-      },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der XRechnung-Generierung", details: error instanceof Error ? error.message : "Unbekannter Fehler" });
   }
 }

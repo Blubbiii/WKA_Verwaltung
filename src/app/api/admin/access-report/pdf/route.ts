@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { generateAccessReportPdf } from "@/lib/pdf/generators/accessReportPdf";
 import type { AccessReportPdfData } from "@/lib/pdf/templates/AccessReportTemplate";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 /**
  * GET /api/admin/access-report/pdf
@@ -28,10 +29,7 @@ export async function GET(request: NextRequest) {
   const { tenantId } = check;
 
   if (!tenantId) {
-    return NextResponse.json(
-      { error: "Kein Mandant zugeordnet" },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
   }
 
   try {
@@ -47,10 +45,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     // Build user filter
@@ -261,15 +256,9 @@ export async function GET(request: NextRequest) {
     logger.error({ err: error }, "Access report PDF error");
 
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: `Fehler beim Erstellen des PDF: ${error.message}` },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: `Fehler beim Erstellen des PDF: ${error.message}` });
     }
 
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des PDF" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen des PDF" });
   }
 }

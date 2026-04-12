@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // DELETE /api/plots/[id]/areas/[areaId] - Delete a single plot area
 export async function DELETE(
@@ -26,10 +27,7 @@ export async function DELETE(
     });
 
     if (!plot) {
-      return NextResponse.json(
-        { error: "Flurstück nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
     // Verify area belongs to this plot
@@ -41,10 +39,7 @@ export async function DELETE(
     });
 
     if (!area) {
-      return NextResponse.json(
-        { error: "Teilfläche nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Teilfläche nicht gefunden" });
     }
 
     await prisma.plotArea.delete({
@@ -54,9 +49,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting plot area");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Teilfläche" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Teilfläche" });
   }
 }

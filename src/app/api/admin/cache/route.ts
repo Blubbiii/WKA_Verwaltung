@@ -3,6 +3,7 @@ import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { cache } from "@/lib/cache";
 import { dashboardCache } from "@/lib/cache/dashboard";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 /**
  * GET /api/admin/cache
@@ -43,10 +44,7 @@ const check = await requireSuperadmin();
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching cache status");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Cache-Status" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Cache-Status" });
   }
 }
 
@@ -87,10 +85,7 @@ const check = await requireSuperadmin();
           await cache.clearTenant(tenantId);
           message = `Alle Caches für Mandant ${tenantId} wurden gelöscht`;
         } else {
-          return NextResponse.json(
-            { error: "tenantId erforderlich für type=tenant" },
-            { status: 400 }
-          );
+          return apiError("MISSING_FIELD", undefined, { message: "tenantId erforderlich für type=tenant" });
         }
         break;
 
@@ -107,9 +102,6 @@ const check = await requireSuperadmin();
     });
   } catch (error) {
     logger.error({ err: error }, "Error clearing cache");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Caches" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des Caches" });
   }
 }

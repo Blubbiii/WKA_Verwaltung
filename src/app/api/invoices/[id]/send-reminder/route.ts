@@ -9,6 +9,7 @@ import { renderEmail, getBaseTemplateProps } from "@/lib/email/renderer";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { formatDate } from "@/lib/format";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION
@@ -45,10 +46,7 @@ export async function POST(
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 400 }
-      );
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const { id } = await params;
@@ -59,14 +57,11 @@ export async function POST(
       const raw = await request.json();
       const parsed = bodySchema.safeParse(raw);
       if (!parsed.success) {
-        return NextResponse.json(
-          { error: parsed.error.issues[0]?.message || "Ungültige Eingabe" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message || "Ungültige Eingabe" });
       }
       body = parsed.data;
     } catch {
-      return NextResponse.json({ error: "Ungültiger Request-Body" }, { status: 400 });
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger Request-Body" });
     }
 
     const { reminderLevel, overrideEmail } = body;
@@ -89,26 +84,16 @@ export async function POST(
     });
 
     if (!invoice) {
-      return NextResponse.json({ error: "Rechnung nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     if (invoice.status !== "SENT") {
-      return NextResponse.json(
-        {
-          error: `Mahnungen können nur für versendete Rechnungen erstellt werden (Status: ${invoice.status})`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Mahnungen können nur für versendete Rechnungen erstellt werden (Status: ${invoice.status})` });
     }
 
     // Guard: reminderLevel must not go backwards
     if (invoice.reminderLevel && reminderLevel < invoice.reminderLevel) {
-      return NextResponse.json(
-        {
-          error: `Mahnstufe kann nicht zurückgesetzt werden (aktuell: ${invoice.reminderLevel}, neu: ${reminderLevel})`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Mahnstufe kann nicht zurückgesetzt werden (aktuell: ${invoice.reminderLevel}, neu: ${reminderLevel})` });
     }
 
     // Determine lateFee: explicit override > TenantSettings
@@ -127,10 +112,7 @@ export async function POST(
       null;
 
     if (!emailAddress) {
-      return NextResponse.json(
-        { error: "Keine E-Mail-Adresse für diese Rechnung hinterlegt" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine E-Mail-Adresse für diese Rechnung hinterlegt" });
     }
 
     // Resolve recipient name
@@ -202,10 +184,7 @@ export async function POST(
         { invoiceId: id, to: emailAddress, error: emailResult.error },
         "Failed to send reminder email"
       );
-      return NextResponse.json(
-        { error: `E-Mail-Versand fehlgeschlagen: ${emailResult.error}` },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: `E-Mail-Versand fehlgeschlagen: ${emailResult.error}` });
     }
 
     // Update invoice
@@ -242,12 +221,6 @@ export async function POST(
     });
   } catch (error) {
     logger.error({ err: error }, "Error sending invoice reminder");
-    return NextResponse.json(
-      {
-        error: "Fehler beim Versenden der Mahnung",
-        details: error instanceof Error ? error.message : "Unbekannter Fehler",
-      },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Versenden der Mahnung", details: error instanceof Error ? error.message : "Unbekannter Fehler" });
   }
 }

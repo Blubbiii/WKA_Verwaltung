@@ -6,6 +6,7 @@ import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { apiError } from "@/lib/api-errors";
 
 const voteCreateSchema = z.object({
   fundId: z.string().min(1, "Gesellschaft ist erforderlich"),
@@ -130,10 +131,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching votes");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Abstimmungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Abstimmungen" });
   }
 }
 
@@ -155,10 +153,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_CREATE);
     });
 
     if (!fund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     const vote = await prisma.vote.create({

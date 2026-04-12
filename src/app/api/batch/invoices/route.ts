@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -15,10 +16,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = batchInvoiceSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Anfrage", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Anfrage", details: parsed.error.flatten() });
     }
 
     const { action, invoiceIds } = parsed.data;
@@ -41,10 +39,7 @@ export async function POST(request: NextRequest) {
     const foundIds = new Set(invoices.map((i) => i.id));
     const missingIds = invoiceIds.filter((id) => !foundIds.has(id));
     if (missingIds.length > 0) {
-      return NextResponse.json(
-        { error: `Rechnungen nicht gefunden: ${missingIds.join(", ")}` },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: `Rechnungen nicht gefunden: ${missingIds.join(", ")}` });
     }
 
     const result = await processBatch(invoiceIds, async (id) => {
@@ -106,12 +101,6 @@ export async function POST(request: NextRequest) {
       message: `${result.success.length} von ${result.totalProcessed} Rechnungen erfolgreich verarbeitet`,
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Interner Serverfehler",
-      },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: error instanceof Error ? error.message : "Interner Serverfehler" });
   }
 }

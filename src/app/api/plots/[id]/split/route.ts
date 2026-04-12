@@ -6,6 +6,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { apiError } from "@/lib/api-errors";
 
 const splitSchema = z.object({
   geometries: z.array(z.object({
@@ -30,10 +31,7 @@ export async function POST(
     const data = splitSchema.parse(body);
 
     if (data.plotNumbers.length !== data.geometries.length) {
-      return NextResponse.json(
-        { error: "Anzahl Flurstücknummern muss mit Anzahl Geometrien übereinstimmen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Anzahl Flurstücknummern muss mit Anzahl Geometrien übereinstimmen" });
     }
 
     // Get original plot with areas
@@ -42,7 +40,7 @@ export async function POST(
       include: { plotAreas: true },
     });
     if (!original) {
-      return NextResponse.json({ error: "Flurstück nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
     // Calculate proportional areas

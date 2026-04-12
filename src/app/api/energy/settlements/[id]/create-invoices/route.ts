@@ -8,6 +8,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { getTaxRate } from "@/lib/tax/tax-rates";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import type { SettlementPdfDetails, EnergyDistributionSummary, RevenueTableEntry, TurbineProductionEntry } from "@/types/pdf";
+import { apiError } from "@/lib/api-errors";
 
 // Matches the CalculationDetails stored by the calculate route
 interface StoredCalculationDetails {
@@ -89,53 +90,29 @@ export async function POST(
     });
 
     if (!settlement) {
-      return NextResponse.json(
-        { error: "Stromabrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Stromabrechnung nicht gefunden" });
     }
 
     // Tenant-Check
     if (settlement.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Status-Check: Nur CALCULATED kann zu INVOICED werden
     if (settlement.status !== "CALCULATED") {
-      return NextResponse.json(
-        {
-          error: "Gutschriften können nur aus berechneten Abrechnungen erstellt werden",
-          details: `Aktuelle Status: ${settlement.status}. Fuehre zuerst die Berechnung durch.`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Gutschriften können nur aus berechneten Abrechnungen erstellt werden", details: `Aktuelle Status: ${settlement.status}. Fuehre zuerst die Berechnung durch.` });
     }
 
     // Pruefe ob bereits Gutschriften existieren
     const existingInvoices = settlement.items.filter((item) => item.invoice !== null);
     if (existingInvoices.length > 0) {
-      return NextResponse.json(
-        {
-          error: "Es existieren bereits Gutschriften für diese Abrechnung",
-          details: `${existingInvoices.length} von ${settlement.items.length} Items haben bereits Gutschriften.`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Es existieren bereits Gutschriften für diese Abrechnung", details: `${existingInvoices.length} von ${settlement.items.length} Items haben bereits Gutschriften.` });
     }
 
     // Items ohne Empfänger-Fund prüfen
     const itemsWithoutFund = settlement.items.filter((item) => !item.recipientFundId);
     if (itemsWithoutFund.length > 0) {
-      return NextResponse.json(
-        {
-          error: "Nicht alle Items haben einen Empfänger",
-          details: `${itemsWithoutFund.length} Items ohne Empfänger-Gesellschaft.`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Nicht alle Items haben einen Empfänger", details: `${itemsWithoutFund.length} Items ohne Empfänger-Gesellschaft.` });
     }
 
     // Periodenbezeichnung für Gutschriften
@@ -523,10 +500,7 @@ export async function POST(
     });
   } catch (error) {
     logger.error({ err: error }, "Error creating invoices from settlement");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Gutschriften" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Gutschriften" });
   }
 }
 

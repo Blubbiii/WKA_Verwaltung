@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -34,13 +35,13 @@ export async function GET(
     });
 
     if (!asset) {
-      return NextResponse.json({ error: "Anlage nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
     }
 
     return NextResponse.json({ data: asset });
   } catch (error) {
     logger.error({ err: error }, "Error fetching fixed asset");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -57,10 +58,7 @@ export async function PUT(
     const body = await request.json();
     const parsed = putAssetSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const data = parsed.data;
 
@@ -69,7 +67,7 @@ export async function PUT(
     });
 
     if (!asset) {
-      return NextResponse.json({ error: "Anlage nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
     }
 
     const updated = await prisma.fixedAsset.update({
@@ -92,6 +90,6 @@ export async function PUT(
     return NextResponse.json({ data: updated });
   } catch (error) {
     logger.error({ err: error }, "Error updating fixed asset");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

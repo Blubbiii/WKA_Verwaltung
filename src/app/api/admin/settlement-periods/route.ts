@@ -6,6 +6,7 @@ import { Prisma, SettlementPeriodStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { apiError } from "@/lib/api-errors";
 
 const createPeriodSchema = z.object({
   year: z.number().int().min(2000).max(2100),
@@ -59,10 +60,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(periods);
   } catch (error) {
     logger.error({ err: error }, "Error fetching settlement periods");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Abrechnungsperioden" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Abrechnungsperioden" });
   }
 }
 
@@ -84,19 +82,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Windpark nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Windpark nicht gefunden" });
     }
 
     // Validiere periodType/month Kombination
     const interval = periodType === "ADVANCE" ? (advanceInterval ?? "MONTHLY") : null;
     if (periodType === "ADVANCE" && interval !== "YEARLY" && !month) {
-      return NextResponse.json(
-        { error: "ADVANCE Perioden (Quartals-/Monatsvorschuss) benoetigen einen Monat/Quartal" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "ADVANCE Perioden (Quartals-/Monatsvorschuss) benoetigen einen Monat/Quartal" });
     }
 
     // Prüfe auf Duplikat (mit month + periodType für unique constraint)
@@ -129,10 +121,7 @@ export async function POST(request: NextRequest) {
         const periodDesc = month
           ? `${month}/${year} (${periodType})`
           : `${year} (${periodType})`;
-        return NextResponse.json(
-          { error: `Abrechnungsperiode ${periodDesc} für diesen Park existiert bereits (Status: ${existing.status})` },
-          { status: 409 }
-        );
+        return apiError("CONFLICT", undefined, { message: `Abrechnungsperiode ${periodDesc} für diesen Park existiert bereits (Status: ${existing.status})` });
       }
     }
 
@@ -146,10 +135,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!energySettlement) {
-        return NextResponse.json(
-          { error: "Verknuepfte Stromabrechnung nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Verknuepfte Stromabrechnung nicht gefunden" });
       }
     }
 

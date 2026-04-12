@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const updateSchema = z.object({
   taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]).optional(),
@@ -28,20 +29,14 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Steuersatz nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Steuersatz nicht gefunden" });
     }
 
     const body = await request.json();
     const parsed = updateSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message || "Ungültige Eingabe" });
     }
 
     // Build update data, converting date strings to Date objects
@@ -60,10 +55,7 @@ export async function PATCH(
     return NextResponse.json(taxRate);
   } catch (error) {
     logger.error({ err: error }, "Error updating tax rate");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Steuersatzes" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren des Steuersatzes" });
   }
 }
 
@@ -83,10 +75,7 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Steuersatz nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Steuersatz nicht gefunden" });
     }
 
     await prisma.taxRateConfig.delete({ where: { id, tenantId: check.tenantId! } });
@@ -97,9 +86,6 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting tax rate");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Steuersatzes" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des Steuersatzes" });
   }
 }

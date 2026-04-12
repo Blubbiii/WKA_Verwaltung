@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -25,21 +26,15 @@ export async function POST(
     });
 
     if (!entry) {
-      return NextResponse.json({ error: "Buchung nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Buchung nicht gefunden" });
     }
 
     if (entry.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Nur Entwürfe können gebucht werden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Nur Entwürfe können gebucht werden" });
     }
 
     if (entry.lines.length < 2) {
-      return NextResponse.json(
-        { error: "Mindestens 2 Buchungszeilen erforderlich" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Mindestens 2 Buchungszeilen erforderlich" });
     }
 
     // Validate debit = credit
@@ -52,12 +47,7 @@ export async function POST(
     }
 
     if (Math.abs(totalDebit - totalCredit) >= 0.005) {
-      return NextResponse.json(
-        {
-          error: `Buchung nicht ausgeglichen: Soll ${totalDebit.toFixed(2)} € ≠ Haben ${totalCredit.toFixed(2)} €`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: `Buchung nicht ausgeglichen: Soll ${totalDebit.toFixed(2)} € ≠ Haben ${totalCredit.toFixed(2)} €` });
     }
 
     const updated = await prisma.journalEntry.update({
@@ -80,9 +70,6 @@ export async function POST(
     return NextResponse.json(serializePrisma(updated));
   } catch (error) {
     logger.error({ err: error }, "Error posting journal entry");
-    return NextResponse.json(
-      { error: "Fehler beim Buchen" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Buchen" });
   }
 }

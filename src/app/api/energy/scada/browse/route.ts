@@ -4,6 +4,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const browseSchema = z.object({
   currentPath: z.string().optional(),
@@ -22,10 +23,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = browseSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { currentPath } = parsed.data;
 
@@ -33,10 +31,7 @@ export async function POST(request: NextRequest) {
     const scadaBasePath = process.env.SCADA_BASE_PATH;
     if (!scadaBasePath && process.env.NODE_ENV === "production") {
       logger.error("SCADA_BASE_PATH is not configured — filesystem browsing disabled for security");
-      return NextResponse.json(
-        { error: "SCADA-Verzeichnis nicht konfiguriert. Bitte SCADA_BASE_PATH in der Umgebung setzen." },
-        { status: 503 }
-      );
+      return apiError("INTERNAL_ERROR", 503, { message: "SCADA-Verzeichnis nicht konfiguriert. Bitte SCADA_BASE_PATH in der Umgebung setzen." });
     }
 
     // Ohne Pfad: Laufwerke/Root-Verzeichnisse zurückgeben
@@ -56,10 +51,7 @@ export async function POST(request: NextRequest) {
 
     // Sicherheitsprüfung
     if (currentPath.includes("..") || currentPath.includes("\0")) {
-      return NextResponse.json(
-        { error: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
-        { status: 400 }
-      );
+      return apiError("FORBIDDEN", 400, { message: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" });
     }
 
     // Absoluten Pfad normalisieren
@@ -69,26 +61,17 @@ export async function POST(request: NextRequest) {
     if (scadaBasePath) {
       const allowedBase = path.resolve(scadaBasePath);
       if (!normalizedPath.startsWith(allowedBase + path.sep) && normalizedPath !== allowedBase) {
-        return NextResponse.json(
-          { error: "Zugriff verweigert: Pfad liegt ausserhalb des erlaubten Verzeichnisses" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "Zugriff verweigert: Pfad liegt ausserhalb des erlaubten Verzeichnisses" });
       }
     }
 
     try {
       const stats = await fs.stat(normalizedPath);
       if (!stats.isDirectory()) {
-        return NextResponse.json(
-          { error: "Der angegebene Pfad ist kein Verzeichnis" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Der angegebene Pfad ist kein Verzeichnis" });
       }
     } catch {
-      return NextResponse.json(
-        { error: "Verzeichnis nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Verzeichnis nicht gefunden" });
     }
 
     // Unterverzeichnisse lesen
@@ -119,15 +102,9 @@ export async function POST(request: NextRequest) {
     logger.error({ err: error }, "Fehler beim Durchsuchen des Verzeichnisses");
 
     if (error instanceof Error && error.message.includes("EACCES")) {
-      return NextResponse.json(
-        { error: "Zugriff verweigert: Keine Leseberechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Zugriff verweigert: Keine Leseberechtigung" });
     }
 
-    return NextResponse.json(
-      { error: "Fehler beim Durchsuchen des Verzeichnisses" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Durchsuchen des Verzeichnisses" });
   }
 }

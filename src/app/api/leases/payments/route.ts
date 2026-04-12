@@ -13,6 +13,7 @@ import {
   format,
   startOfMonth,
 } from "date-fns";
+import { apiError } from "@/lib/api-errors";
 
 // Payment schedule enum mapping
 type PaymentSchedule = "MONTHLY" | "QUARTERLY" | "SEMI_ANNUAL" | "ANNUAL";
@@ -333,9 +334,6 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching lease payments");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Pachtzahlungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Pachtzahlungen" });
   }
 }

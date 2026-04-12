@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const bulkSchema = z.discriminatedUnion("action", [
   z.object({
@@ -42,10 +43,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (plotCount !== parsed.plotIds.length) {
-      return NextResponse.json(
-        { error: "Nicht alle Flurstücke gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Nicht alle Flurstücke gefunden" });
     }
 
     if (parsed.action === "assignLease") {
@@ -54,7 +52,7 @@ export async function POST(request: NextRequest) {
         where: { id: parsed.data.leaseId, tenantId: check.tenantId },
       });
       if (!lease) {
-        return NextResponse.json({ error: "Pachtvertrag nicht gefunden" }, { status: 404 });
+        return apiError("NOT_FOUND", undefined, { message: "Pachtvertrag nicht gefunden" });
       }
 
       // Batch: fetch existing relations, create only missing ones
@@ -123,7 +121,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ error: "Unbekannte Aktion" }, { status: 400 });
+    return apiError("BAD_REQUEST", undefined, { message: "Unbekannte Aktion" });
   } catch (error) {
     return handleApiError(error, "Fehler bei der Massenoperation");
   }

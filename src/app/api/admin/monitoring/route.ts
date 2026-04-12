@@ -3,6 +3,7 @@ import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { getMetrics } from "@/lib/monitoring";
 import { registry } from "@/lib/metrics/prometheus";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const PROMETHEUS_URL = process.env.PROMETHEUS_URL || "http://prometheus:9090";
 
@@ -135,9 +136,6 @@ export async function GET() {
     });
   } catch (err) {
     logger.error({ err }, "Failed to collect monitoring data");
-    return NextResponse.json(
-      { error: "Monitoring data collection failed" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Monitoring data collection failed" });
   }
 }

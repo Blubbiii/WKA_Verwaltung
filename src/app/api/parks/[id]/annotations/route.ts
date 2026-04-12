@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const annotationCreateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
@@ -43,10 +44,7 @@ export async function GET(
     return NextResponse.json({ data: annotations });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der Annotationen");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Annotationen" },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Annotationen" });
   }
 }
 
@@ -69,10 +67,7 @@ export async function POST(
     const body = await request.json();
     const parsed = annotationCreateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { name, type, geometry, style, description } = parsed.data;
 
@@ -97,9 +92,6 @@ export async function POST(
     return NextResponse.json({ data: annotation }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Erstellen der Annotation");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Annotation" },
-      { status: 500 },
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Annotation" });
   }
 }

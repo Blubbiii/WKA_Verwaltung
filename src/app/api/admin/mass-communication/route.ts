@@ -20,6 +20,7 @@ import { createAuditLog } from "@/lib/audit";
 import { sendEmailSync } from "@/lib/email";
 import { getFilteredRecipients } from "@/lib/mass-communication/recipient-filter";
 import { wrapEmailBody, stripHtml } from "@/lib/mailings/email-wrapper";
+import { apiError } from "@/lib/api-errors";
 
 // Type-safe accessor for the MassCommunication model
 const massCommunicationModel = getPrismaModel("massCommunication");
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     const enabled = await getConfigBoolean("communication.enabled", check.tenantId, false);
-    if (!enabled) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
+    if (!enabled) return apiError("NOT_FOUND", undefined, { message: "Communication module is not enabled" });
 
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePaginationParams(searchParams);
@@ -117,10 +118,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "[Mass Communication] GET Error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Kommunikations-Historie" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Kommunikations-Historie" });
   }
 }
 
@@ -134,16 +132,13 @@ export async function POST(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     const enabledPost = await getConfigBoolean("communication.enabled", check.tenantId, false);
-    if (!enabledPost) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
+    if (!enabledPost) return apiError("NOT_FOUND", undefined, { message: "Communication module is not enabled" });
 
     const body = await request.json();
     const parsed = sendSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { subject, body: emailBody, recipientFilter, fundIds, parkIds, sendTest } = parsed.data;
@@ -163,10 +158,7 @@ export async function POST(request: NextRequest) {
       const userEmail = session?.user?.email;
 
       if (!userEmail) {
-        return NextResponse.json(
-          { error: "Keine E-Mail-Adresse für den aktuellen Benutzer gefunden" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Keine E-Mail-Adresse für den aktuellen Benutzer gefunden" });
       }
 
       const result = await sendEmailSync({
@@ -184,10 +176,7 @@ export async function POST(request: NextRequest) {
           message: `Test-E-Mail wurde an ${userEmail} gesendet.`,
         });
       } else {
-        return NextResponse.json(
-          { error: result.error || "Test-E-Mail konnte nicht gesendet werden" },
-          { status: 500 }
-        );
+        return apiError("INTERNAL_ERROR", undefined, { message: result.error || "Test-E-Mail konnte nicht gesendet werden" });
       }
     }
 
@@ -200,10 +189,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (recipients.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Empfänger gefunden für die gewaehlten Filter-Kriterien" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Empfänger gefunden für die gewaehlten Filter-Kriterien" });
     }
 
     // Create the mass communication record
@@ -293,10 +279,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "[Mass Communication] POST Error");
-    return NextResponse.json(
-      { error: "Fehler beim Senden der Massen-Kommunikation" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Senden der Massen-Kommunikation" });
   }
 }
 

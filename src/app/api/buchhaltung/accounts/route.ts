@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { apiError } from "@/lib/api-errors";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: accounts });
   } catch (error) {
     logger.error({ err: error }, "Error fetching ledger accounts");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -60,10 +61,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = createAccountSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungueltige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, {
+        message: "Ungueltige Eingabe",
+        details: parsed.error.flatten().fieldErrors,
+      });
     }
 
     // Check for duplicate account number
@@ -77,10 +78,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: `Kontonummer ${parsed.data.accountNumber} existiert bereits` },
-        { status: 409 }
-      );
+      return apiError("ALREADY_EXISTS", 409, {
+        message: `Kontonummer ${parsed.data.accountNumber} existiert bereits`,
+      });
     }
 
     const account = await prisma.ledgerAccount.create({
@@ -93,6 +93,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: account }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating ledger account");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("CREATE_FAILED", 500, { message: "Interner Serverfehler" });
   }
 }

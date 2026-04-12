@@ -7,6 +7,7 @@
  */
 
 import { NextResponse, after } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
 import bcrypt from "bcryptjs";
@@ -61,10 +62,7 @@ export async function POST(request: Request) {
         }
       }
 
-      return NextResponse.json(
-        { error: "Validierungsfehler", fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler" });
     }
 
     const { currentPassword, newPassword } = parsed.data;
@@ -76,10 +74,7 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Benutzer nicht gefunden" });
     }
 
     // Verify current password
@@ -89,15 +84,7 @@ export async function POST(request: Request) {
     );
 
     if (!isCurrentPasswordValid) {
-      return NextResponse.json(
-        {
-          error: "Validierungsfehler",
-          fieldErrors: {
-            currentPassword: "Das aktuelle Passwort ist falsch",
-          },
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler" });
     }
 
     // Hash new password
@@ -132,9 +119,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     logger.error({ err: error }, "[User Password API] POST error");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/portal/my-distributions - Get all distributions for the current user
 export async function GET(_request: NextRequest) {
@@ -9,7 +10,7 @@ export async function GET(_request: NextRequest) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     // Find the shareholder linked to this user
@@ -100,9 +101,6 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching distributions");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }

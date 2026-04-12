@@ -11,6 +11,7 @@ import { z } from "zod";
 import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { testEmailConfiguration, verifyEmailProvider } from "@/lib/email";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // Validation Schema
@@ -33,10 +34,7 @@ export async function POST(request: Request) {
     const parsed = testEmailSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { to } = parsed.data;
@@ -77,10 +75,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     logger.error({ err: error }, "[Admin Email Test API] Error");
-    return NextResponse.json(
-      { error: "Interner Serverfehler beim Senden der Test-E-Mail" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Interner Serverfehler beim Senden der Test-E-Mail" });
   }
 }
 

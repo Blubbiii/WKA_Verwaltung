@@ -11,6 +11,7 @@ import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const packageVersion = process.env.NEXT_PUBLIC_APP_VERSION || "0.0.0";
 
@@ -40,10 +41,7 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching version info");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Versionsinformationen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Versionsinformationen" });
   }
 }
 
@@ -56,10 +54,7 @@ export async function PATCH(request: NextRequest) {
     const hierarchy = await getUserHighestHierarchy(check.userId!);
 
     if (hierarchy < 100) {
-      return NextResponse.json(
-        { error: "Nur Superadmins können die Version ändern" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Nur Superadmins können die Version ändern" });
     }
 
     const body = await request.json();

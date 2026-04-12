@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { rateLimit, getClientIp, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
@@ -17,18 +18,12 @@ export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
     const rl = await rateLimit(`demo-request:${ip}`, AUTH_RATE_LIMIT);
     if (!rl.success) {
-      return NextResponse.json(
-        { error: "Zu viele Anfragen. Bitte versuchen Sie es später erneut." },
-        { status: 429 }
-      );
+      return apiError("RATE_LIMITED", 429, { message: "Zu viele Anfragen. Bitte versuchen Sie es später erneut." });
     }
 
     const parsed = DemoRequestSchema.safeParse(await req.json());
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabedaten." },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabedaten." });
     }
 
     const { name, company, email, phone, message: _message } = parsed.data;
@@ -40,9 +35,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

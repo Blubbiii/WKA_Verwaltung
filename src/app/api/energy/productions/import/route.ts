@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { ProductionDataSource, ProductionStatus, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -422,10 +423,16 @@ export async function POST(request: NextRequest) {
 
       // action === "import"
       if (resolved.length === 0) {
-        return NextResponse.json(
-          { success: false, error: "Keine gültigen Zeilen zum Importieren", imported: 0, skipped: 0, errors: rawRows.length, details: ["Alle Zeilen enthalten Fehler"] },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, {
+          message: "Keine gültigen Zeilen zum Importieren",
+          details: {
+            success: false,
+            imported: 0,
+            skipped: 0,
+            errors: rawRows.length,
+            rowErrors: ["Alle Zeilen enthalten Fehler"],
+          },
+        });
       }
 
       const importResult = await executeImport(resolved, check.tenantId!, {

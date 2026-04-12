@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -56,9 +57,6 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching fund categories");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Gesellschaftstypen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Gesellschaftstypen" });
   }
 }

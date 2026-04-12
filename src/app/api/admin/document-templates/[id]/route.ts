@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const updateTemplateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -36,26 +37,17 @@ export async function GET(
     });
 
     if (!template) {
-      return NextResponse.json(
-        { error: "Vorlage nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vorlage nicht gefunden" });
     }
 
     if (template.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     return NextResponse.json(template);
   } catch (error) {
     logger.error({ err: error }, "Error fetching document template");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vorlage" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Vorlage" });
   }
 }
 
@@ -78,17 +70,11 @@ export async function PATCH(
     });
 
     if (!template) {
-      return NextResponse.json(
-        { error: "Vorlage nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vorlage nicht gefunden" });
     }
 
     if (template.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Wenn isDefault auf true gesetzt, andere Defaults zurücksetzen
@@ -146,17 +132,11 @@ export async function DELETE(
     });
 
     if (!template) {
-      return NextResponse.json(
-        { error: "Vorlage nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vorlage nicht gefunden" });
     }
 
     if (template.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Soft-delete: nur isActive auf false setzen
@@ -168,9 +148,6 @@ export async function DELETE(
     return NextResponse.json({ message: "Vorlage gelöscht" });
   } catch (error) {
     logger.error({ err: error }, "Error deleting document template");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Vorlage" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Vorlage" });
   }
 }

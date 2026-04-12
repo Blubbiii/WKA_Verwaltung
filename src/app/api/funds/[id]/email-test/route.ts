@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { SmtpProvider } from "@/lib/email/provider";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const emailTestSchema = z.object({
   to: z.string().email("Ungültige E-Mail-Adresse"),
@@ -23,10 +24,7 @@ export async function POST(
     const body = await request.json();
     const parsed = emailTestSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const testTo = parsed.data.to;
 
@@ -46,14 +44,11 @@ export async function POST(
     });
 
     if (!fund) {
-      return NextResponse.json({ error: "Gesellschaft nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     if (!fund.emailSmtpHost || !fund.emailFromAddress) {
-      return NextResponse.json(
-        { error: "SMTP-Host und Absender-E-Mail müssen konfiguriert sein" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "SMTP-Host und Absender-E-Mail müssen konfiguriert sein" });
     }
 
     // Create provider and send test
@@ -89,16 +84,10 @@ export async function POST(
       return NextResponse.json({ success: true, message: "Test-E-Mail gesendet" });
     } else {
       logger.warn({ fundId: id, to: testTo, error: result.error }, "Fund test email failed");
-      return NextResponse.json(
-        { error: `Versand fehlgeschlagen: ${result.error}` },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: `Versand fehlgeschlagen: ${result.error}` });
     }
   } catch (error) {
     logger.error({ err: error }, "Error sending fund test email");
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Fehler beim Senden" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: error instanceof Error ? error.message : "Fehler beim Senden" });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -18,11 +19,11 @@ export async function POST(
     });
 
     if (!quote) {
-      return NextResponse.json({ error: "Angebot nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Angebot nicht gefunden" });
     }
 
     if (quote.status !== "DRAFT") {
-      return NextResponse.json({ error: "Nur Entwürfe können versendet werden" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Nur Entwürfe können versendet werden" });
     }
 
     const updated = await prisma.quote.update({
@@ -33,6 +34,6 @@ export async function POST(
     return NextResponse.json({ data: updated });
   } catch (error) {
     logger.error({ err: error }, "Error sending quote");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

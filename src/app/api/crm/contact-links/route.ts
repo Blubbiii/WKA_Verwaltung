@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { apiError } from "@/lib/api-errors";
 
 const ENTITY_TYPES = ["PARK", "FUND", "LEASE", "CONTRACT"] as const;
 
@@ -37,10 +38,7 @@ export async function GET(request: NextRequest) {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { searchParams } = new URL(request.url);
     const personId = searchParams.get("personId");
@@ -71,10 +69,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(serializePrisma(links));
   } catch (error) {
     logger.error({ err: error }, "Error fetching contact links");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Verknüpfungen" },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Verknüpfungen" });
   }
 }
 
@@ -84,18 +79,12 @@ export async function POST(request: NextRequest) {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const raw = await request.json();
     const parsed = contactLinkSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 },
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
     const d = parsed.data;
 
@@ -105,10 +94,7 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     });
     if (!person) {
-      return NextResponse.json(
-        { error: "Person nicht gefunden" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Person nicht gefunden" });
     }
 
     // Verify target entity belongs to tenant (tenant-scoping for ContactLinks
@@ -119,10 +105,7 @@ export async function POST(request: NextRequest) {
       check.tenantId!,
     );
     if (!entityExists) {
-      return NextResponse.json(
-        { error: `${d.entityType} nicht gefunden` },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", undefined, { message: `${d.entityType} nicht gefunden` });
     }
 
     try {
@@ -149,19 +132,13 @@ export async function POST(request: NextRequest) {
         err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === "P2002"
       ) {
-        return NextResponse.json(
-          { error: "Diese Verknüpfung existiert bereits" },
-          { status: 409 },
-        );
+        return apiError("ALREADY_EXISTS", undefined, { message: "Diese Verknüpfung existiert bereits" });
       }
       throw err;
     }
   } catch (error) {
     logger.error({ err: error }, "Error creating contact link");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Verknüpfung" },
-      { status: 500 },
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Verknüpfung" });
   }
 }
 

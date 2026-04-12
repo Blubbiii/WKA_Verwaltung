@@ -12,6 +12,7 @@ import {
   type EmailProviderType,
 } from "@/lib/email";
 import { EMAIL_REGEX } from "@/lib/validation/patterns";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // EMAIL CONFIGURATION API
@@ -128,10 +129,7 @@ export async function GET() {
     }) as TenantWithEmailFields | null;
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     const settings = (tenant.settings as Record<string, unknown>) || {};
@@ -211,10 +209,7 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching email config");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der E-Mail-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der E-Mail-Konfiguration" });
   }
 }
 
@@ -228,7 +223,7 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
     if (!body || typeof body !== "object") {
-      return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Anfrage" });
     }
     const { smtp, notifications } = body;
 
@@ -239,10 +234,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     const currentSettings = (tenant.settings as Record<string, unknown>) || {};
@@ -282,10 +274,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error saving email config");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der E-Mail-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der E-Mail-Konfiguration" });
   }
 }
 
@@ -301,10 +290,7 @@ export async function PATCH(request: NextRequest) {
     const parsed = updateProviderSettingsSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { provider, config, fromAddress, fromName } = parsed.data;
@@ -313,10 +299,7 @@ export async function PATCH(request: NextRequest) {
     if (provider && config) {
       const configValid = validateConfigForProvider(provider as EmailProviderType, config);
       if (!configValid.valid) {
-        return NextResponse.json(
-          { error: configValid.error },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: configValid.error });
       }
     }
 
@@ -378,10 +361,7 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "[Admin Email API] PATCH error");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }
 
@@ -487,25 +467,16 @@ export async function POST(request: NextRequest) {
     const { action, recipient } = body;
 
     if (action !== "test") {
-      return NextResponse.json(
-        { error: "Unbekannte Aktion" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Unbekannte Aktion" });
     }
 
     if (!recipient) {
-      return NextResponse.json(
-        { error: "Empfänger-Adresse fehlt" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Empfänger-Adresse fehlt" });
     }
 
     // Validate email format
     if (!EMAIL_REGEX.test(recipient)) {
-      return NextResponse.json(
-        { error: "Ungültige E-Mail-Adresse" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige E-Mail-Adresse" });
     }
 
     // Import the email testing function
@@ -531,10 +502,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     logger.error({ err: error }, "Error sending test email");
-    return NextResponse.json(
-      { error: "Fehler beim Senden der Test-E-Mail" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Senden der Test-E-Mail" });
   }
 }
 

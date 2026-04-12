@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { generateVoteResultPdf } from "@/lib/pdf/generators/voteResultPdf";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/votes/[id]/export - PDF-Export für Abstimmungsergebnis
 export async function GET(
@@ -30,18 +31,12 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     });
 
     if (!vote) {
-      return NextResponse.json(
-        { error: "Abstimmung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abstimmung nicht gefunden" });
     }
 
     // Nur CLOSED Abstimmungen können exportiert werden
     if (vote.status !== "CLOSED") {
-      return NextResponse.json(
-        { error: "PDF-Export ist nur für beendete Abstimmungen verfügbar" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "PDF-Export ist nur für beendete Abstimmungen verfügbar" });
     }
 
     // Optional: showSignatureLine aus Query-Parameter
@@ -77,22 +72,13 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     // Spezifische Fehlermeldungen
     if (error instanceof Error) {
       if (error.message.includes("nicht gefunden")) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: error.message });
       }
       if (error.message.includes("nur für abgeschlossene")) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: error.message });
       }
     }
 
-    return NextResponse.json(
-      { error: "Fehler beim Generieren des PDFs" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Generieren des PDFs" });
   }
 }

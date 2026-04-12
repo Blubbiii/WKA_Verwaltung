@@ -6,6 +6,7 @@ import { createAuditLog } from "@/lib/audit";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -139,10 +140,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching turbine operators");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Betreiber-Zuordnungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Betreiber-Zuordnungen" });
   }
 }
 
@@ -175,10 +173,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!turbine) {
-      return NextResponse.json(
-        { error: "Turbine nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Turbine nicht gefunden oder keine Berechtigung" });
     }
 
     // Validierung: Operator Fund existiert und gehoert zum Tenant
@@ -195,10 +190,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!operatorFund) {
-      return NextResponse.json(
-        { error: "Betreiber-Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Betreiber-Gesellschaft nicht gefunden" });
     }
 
     // Prüfung: Gibt es bereits einen AKTIVEN Betreiber für diese WKA?
@@ -223,13 +215,7 @@ export async function POST(request: NextRequest) {
       const existingValidFrom = new Date(existingActiveOperator.validFrom);
 
       if (newValidFrom < existingValidFrom) {
-        return NextResponse.json(
-          {
-            error: "Ungültige Datumsangabe",
-            details: `Das Startdatum (${newValidFrom.toISOString().split("T")[0]}) darf nicht vor dem Startdatum des aktuellen Betreibers (${existingValidFrom.toISOString().split("T")[0]}) liegen`,
-          },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Datumsangabe", details: `Das Startdatum (${newValidFrom.toISOString().split("T")[0]}) darf nicht vor dem Startdatum des aktuellen Betreibers (${existingValidFrom.toISOString().split("T")[0]}) liegen` });
       }
     }
 

@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
+import { apiError } from "@/lib/api-errors";
 
 const userUpdateSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse").optional(),
@@ -79,19 +80,13 @@ export async function GET(
       : await prisma.user.findFirst({ where: { id, tenantId: check.tenantId! }, select: userSelect });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
     return NextResponse.json(user);
   } catch (error) {
     logger.error({ err: error }, "Error fetching user");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Benutzers" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Benutzers" });
   }
 }
 
@@ -113,10 +108,7 @@ export async function PATCH(
       : await prisma.user.findFirst({ where: { id, tenantId: check.tenantId! }, omit: { passwordHash: true } });
 
     if (!existingUser) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
     const body = await request.json();
@@ -130,10 +122,7 @@ export async function PATCH(
       });
 
       if (emailExists) {
-        return NextResponse.json(
-          { error: "Ein Benutzer mit dieser E-Mail existiert bereits" },
-          { status: 400 }
-        );
+        return apiError("ALREADY_EXISTS", 400, { message: "Ein Benutzer mit dieser E-Mail existiert bereits" });
       }
     }
 
@@ -144,10 +133,7 @@ export async function PATCH(
       });
 
       if (!tenant) {
-        return NextResponse.json(
-          { error: "Mandant nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
       }
     }
 
@@ -233,10 +219,7 @@ export async function DELETE(
 
     // Verhindern, dass man sich selbst deaktiviert
     if (id === check.userId) {
-      return NextResponse.json(
-        { error: "Sie können sich nicht selbst deaktivieren" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Sie können sich nicht selbst deaktivieren" });
     }
 
     const isSA = (await requireSuperadmin()).authorized;
@@ -246,10 +229,7 @@ export async function DELETE(
       : await prisma.user.findFirst({ where: { id, tenantId: check.tenantId! }, select: { id: true, tenantId: true } });
 
     if (!existingUser) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
     // Benutzer deaktivieren statt löschen
@@ -261,9 +241,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting user");
-    return NextResponse.json(
-      { error: "Fehler beim Deaktivieren des Benutzers" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Deaktivieren des Benutzers" });
   }
 }

@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -36,24 +37,18 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     });
 
     if (!mailing) {
-      return NextResponse.json({ error: "Mailing nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Mailing nicht gefunden" });
     }
 
     if (mailing.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Nur Entwürfe können gesendet werden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Nur Entwürfe können gesendet werden" });
     }
 
     const isTemplate = mailing.contentSource === "TEMPLATE" && mailing.template;
     const isFreeform = mailing.contentSource === "FREEFORM";
 
     if (!isTemplate && !isFreeform) {
-      return NextResponse.json(
-        { error: "Mailing hat keinen gültigen Inhalt" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Mailing hat keinen gültigen Inhalt" });
     }
 
     // Get tenant name for email wrapper
@@ -85,10 +80,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     }
 
     if (shareholders.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Empfänger gefunden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Keine Empfänger gefunden" });
     }
 
     // Update mailing status to SENDING
@@ -226,7 +218,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
       // Ignore
     }
 
-    return NextResponse.json({ error: "Fehler beim Versand" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Versand" });
   }
 }
 

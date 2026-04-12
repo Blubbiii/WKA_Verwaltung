@@ -6,6 +6,7 @@ import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { apiError } from "@/lib/api-errors";
 
 const fundCreateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
@@ -127,10 +128,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching funds");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Gesellschaften" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Gesellschaften" });
   }
 }
 

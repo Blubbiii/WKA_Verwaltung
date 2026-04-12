@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const updateTemplateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -34,19 +35,13 @@ export async function GET(
     });
 
     if (!template) {
-      return NextResponse.json(
-        { error: "Rechnungsvorlage nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnungsvorlage nicht gefunden" });
     }
 
     return NextResponse.json(template);
   } catch (error) {
     logger.error({ err: error }, "Error fetching invoice template");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Rechnungsvorlage" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Rechnungsvorlage" });
   }
 }
 
@@ -72,10 +67,7 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Rechnungsvorlage nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnungsvorlage nicht gefunden" });
     }
 
     // If setting as default, unset other defaults
@@ -129,18 +121,12 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Rechnungsvorlage nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnungsvorlage nicht gefunden" });
     }
 
     // Prevent deleting the default template
     if (existing.isDefault) {
-      return NextResponse.json(
-        { error: "Die Standard-Vorlage kann nicht gelöscht werden. Setzen Sie zuerst eine andere Vorlage als Standard." },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Die Standard-Vorlage kann nicht gelöscht werden. Setzen Sie zuerst eine andere Vorlage als Standard." });
     }
 
     await prisma.invoiceTemplate.delete({
@@ -150,9 +136,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting invoice template");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Rechnungsvorlage" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Rechnungsvorlage" });
   }
 }

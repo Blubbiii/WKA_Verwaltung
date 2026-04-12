@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { getInvoiceCorrectionHistory } from "@/lib/invoices/invoice-correction";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/invoices/[id]/corrections - List all corrections for an invoice
 export async function GET(
@@ -20,23 +21,14 @@ export async function GET(
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes("nicht gefunden")) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: error.message });
       }
       if (error.message.includes("Keine Berechtigung")) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: error.message });
       }
     }
 
     logger.error({ err: error }, "Error fetching correction history");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Korrekturhistorie" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Korrekturhistorie" });
   }
 }

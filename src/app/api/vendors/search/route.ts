@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const check = await requirePermission("vendors:read");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("inbox.enabled", check.tenantId!, false)) {
-      return NextResponse.json({ error: "Inbox nicht aktiviert" }, { status: 404 });
+      return apiError("FEATURE_DISABLED", 404, { message: "Inbox nicht aktiviert" });
     }
 
     const q = new URL(request.url).searchParams.get("q") ?? "";
@@ -77,6 +78,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(serializePrisma({ vendors: vendorResults, persons: personResults }));
   } catch (error) {
     logger.error({ err: error }, "Error searching vendors");
-    return NextResponse.json({ error: "Fehler bei der Suche" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler bei der Suche" });
   }
 }

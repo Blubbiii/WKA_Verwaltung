@@ -6,6 +6,7 @@ import { DEFAULT_DOCUMENT_LAYOUT } from "@/types/pdf";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const createTemplateSchema = z.object({
   name: z.string().min(1, "Name erforderlich"),
@@ -52,10 +53,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(templates);
   } catch (error) {
     logger.error({ err: error }, "Error fetching document templates");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Dokumentvorlagen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Dokumentvorlagen" });
   }
 }
 
@@ -78,10 +76,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!park) {
-        return NextResponse.json(
-          { error: "Windpark nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Windpark nicht gefunden" });
       }
     }
 

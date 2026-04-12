@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const shareholderUpdateSchema = z.object({
   shareholderNumber: z.string().optional().nullable(),
@@ -116,19 +117,13 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Gesellschafter nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschafter nicht gefunden" });
     }
 
     return NextResponse.json(shareholder);
   } catch (error) {
     logger.error({ err: error }, "Error fetching shareholder");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Gesellschafters" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Gesellschafters" });
   }
 }
 
@@ -153,10 +148,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_UPDATE);
     });
 
     if (!existingShareholder) {
-      return NextResponse.json(
-        { error: "Gesellschafter nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschafter nicht gefunden" });
     }
 
     const body = await request.json();
@@ -218,10 +210,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_DELETE);
     });
 
     if (!existingShareholder) {
-      return NextResponse.json(
-        { error: "Gesellschafter nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschafter nicht gefunden" });
     }
 
     // Hard-Delete + audit log + recalculate atomar in einer Transaktion
@@ -256,9 +245,6 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_DELETE);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting shareholder");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Gesellschafters" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des Gesellschafters" });
   }
 }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { CATEGORY_LABELS } from "@/types/document-explorer";
 import type { FolderNode, YearNode, CategoryNode } from "@/types/document-explorer";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/documents/explorer/tree
 export async function GET() {
@@ -106,9 +107,6 @@ export async function GET() {
     return NextResponse.json({ tree, unassigned });
   } catch (error) {
     logger.error({ err: error }, "Error building document explorer tree");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Ordnerstruktur" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Ordnerstruktur" });
   }
 }

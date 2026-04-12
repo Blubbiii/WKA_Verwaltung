@@ -16,6 +16,7 @@ import { generateExcel } from "@/lib/export/excel";
 import type { PermissionMatrixPdfData } from "@/lib/pdf/templates/PermissionMatrixTemplate";
 import type { ColumnDef } from "@/lib/export/types";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // Module labels for display
 const moduleLabels: Record<string, string> = {
@@ -71,10 +72,7 @@ export async function GET(request: NextRequest) {
   const { tenantId } = check;
 
   if (!tenantId) {
-    return NextResponse.json(
-      { error: "Kein Mandant zugeordnet" },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
   }
 
   try {
@@ -83,10 +81,7 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get("format")?.toLowerCase();
 
     if (!format || !["pdf", "xlsx"].includes(format)) {
-      return NextResponse.json(
-        { error: "Ungültiges Format. Erlaubt: pdf, xlsx" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Format. Erlaubt: pdf, xlsx" });
     }
 
     // Get tenant info
@@ -96,10 +91,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     // Fetch all roles (system roles + tenant-specific)
@@ -293,16 +285,10 @@ export async function GET(request: NextRequest) {
     logger.error({ err: error }, "Permission matrix export error");
 
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: `Fehler beim Export: ${error.message}` },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: `Fehler beim Export: ${error.message}` });
     }
 
-    return NextResponse.json(
-      { error: "Fehler beim Export der Berechtigungs-Matrix" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Export der Berechtigungs-Matrix" });
   }
 }
 

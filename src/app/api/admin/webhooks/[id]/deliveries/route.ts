@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/admin/webhooks/[id]/deliveries - Paginated delivery log
@@ -38,10 +39,7 @@ export async function GET(
     });
 
     if (!webhook) {
-      return NextResponse.json(
-        { error: "Webhook nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Webhook nicht gefunden" });
     }
 
     // Fetch deliveries and total count in parallel
@@ -95,9 +93,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching webhook deliveries");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Webhook-Zustellungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Webhook-Zustellungen" });
   }
 }

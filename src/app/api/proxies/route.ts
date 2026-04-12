@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -117,10 +118,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching proxies");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vollmachten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Vollmachten" });
   }
 }
 
@@ -142,10 +140,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     });
 
     if (!grantor) {
-      return NextResponse.json(
-        { error: "Vollmachtgeber nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Vollmachtgeber nicht gefunden" });
     }
 
     const grantee = await prisma.shareholder.findFirst({
@@ -156,17 +151,11 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     });
 
     if (!grantee) {
-      return NextResponse.json(
-        { error: "Vollmachtnehmer nicht gefunden oder nicht in derselben Gesellschaft" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Vollmachtnehmer nicht gefunden oder nicht in derselben Gesellschaft" });
     }
 
     if (validatedData.grantorId === validatedData.granteeId) {
-      return NextResponse.json(
-        { error: "Vollmachtgeber und -nehmer dürfen nicht identisch sein" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Vollmachtgeber und -nehmer dürfen nicht identisch sein" });
     }
 
     // If vote-specific, verify vote exists
@@ -180,10 +169,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
       });
 
       if (!vote) {
-        return NextResponse.json(
-          { error: "Abstimmung nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", 404, { message: "Abstimmung nicht gefunden" });
       }
     }
 
@@ -199,14 +185,9 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     });
 
     if (existingProxy) {
-      return NextResponse.json(
-        {
-          error: validatedData.voteId
+      return apiError("BAD_REQUEST", 400, { message: validatedData.voteId
             ? "Es existiert bereits eine aktive Vollmacht für diese Abstimmung"
-            : "Es existiert bereits eine aktive Generalvollmacht",
-        },
-        { status: 400 }
-      );
+            : "Es existiert bereits eine aktive Generalvollmacht" });
     }
 
     const proxy = await prisma.voteProxy.create({
@@ -238,15 +219,9 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     return NextResponse.json(proxy, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
     }
     logger.error({ err: error }, "Error creating proxy");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Vollmacht" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen der Vollmacht" });
   }
 }

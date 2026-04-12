@@ -6,6 +6,7 @@ import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import { executeSettlementCalculation } from "@/lib/lease-revenue/calculator";
 import { getIntervalDivisor } from "@/types/billing";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/leases/settlement/[id]/calculate - Execute settlement calculation
@@ -81,17 +82,14 @@ export async function POST(
       message.includes("konfiguriert") ||
       message.includes("Status")
     ) {
-      return NextResponse.json({ error: message }, { status: 400 });
+      return apiError("BAD_REQUEST", undefined, { message: message });
     }
 
     logger.error(
       { err: error },
       "Error calculating lease revenue settlement"
     );
-    return NextResponse.json(
-      { error: "Fehler bei der Berechnung des Nutzungsentgelts" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Berechnung des Nutzungsentgelts" });
   }
 }
 

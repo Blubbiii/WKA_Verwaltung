@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
@@ -28,7 +29,7 @@ export async function PATCH(
     });
 
     if (!tx) {
-      return NextResponse.json({ error: "Transaktion nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Transaktion nicht gefunden" });
     }
 
     let updateData: Record<string, unknown>;
@@ -36,14 +37,14 @@ export async function PATCH(
     switch (action) {
       case "match":
         if (!invoiceId) {
-          return NextResponse.json({ error: "invoiceId erforderlich" }, { status: 400 });
+          return apiError("BAD_REQUEST", 400, { message: "invoiceId erforderlich" });
         }
         // Verify invoice belongs to the same tenant
         const invoice = await prisma.invoice.findFirst({
           where: { id: invoiceId, tenantId: check.tenantId! },
         });
         if (!invoice) {
-          return NextResponse.json({ error: "Rechnung nicht gefunden" }, { status: 404 });
+          return apiError("NOT_FOUND", 404, { message: "Rechnung nicht gefunden" });
         }
         updateData = {
           matchStatus: "MATCHED",

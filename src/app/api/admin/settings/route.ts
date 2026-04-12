@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { EMAIL_REGEX } from "@/lib/validation/patterns";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const putSettingsSchema = z.object({
   applicationName: z.string().min(1, "Anwendungsname ist erforderlich"),
@@ -105,10 +106,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(DEFAULT_SETTINGS);
   } catch (error) {
     logger.error({ err: error }, "Error fetching general settings");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Einstellungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Einstellungen" });
   }
 }
 
@@ -121,20 +119,14 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const parsed = putSettingsSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const data = parsed.data;
 
     // Validate email if notifications are enabled
     if (data.emailNotificationsEnabled && data.adminEmail) {
       if (!EMAIL_REGEX.test(data.adminEmail)) {
-        return NextResponse.json(
-          { error: "Ungültige E-Mail-Adresse" },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige E-Mail-Adresse" });
       }
     }
 
@@ -184,15 +176,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // If no tenant ID (should not happen with proper auth)
-    return NextResponse.json(
-      { error: "Mandant nicht gefunden" },
-      { status: 400 }
-    );
+    return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
   } catch (error) {
     logger.error({ err: error }, "Error saving general settings");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Einstellungen" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der Einstellungen" });
   }
 }

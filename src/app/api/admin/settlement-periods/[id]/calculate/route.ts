@@ -9,6 +9,7 @@ import {
   calculateSettlement,
   calculateMonthlyAdvance,
 } from "@/lib/settlement";
+import { apiError } from "@/lib/api-errors";
 
 const calculateSchema = z.object({
   totalRevenue: z.number().optional(), // Optional: Überschreibt Period.totalRevenue
@@ -90,24 +91,15 @@ export async function POST(
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Abrechnungsperiode nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsperiode nicht gefunden" });
     }
 
     if (period.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     if (period.status === "CLOSED") {
-      return NextResponse.json(
-        { error: "Geschlossene Perioden können nicht neu berechnet werden" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Geschlossene Perioden können nicht neu berechnet werden" });
     }
 
     // Unterscheide zwischen ADVANCE und FINAL
@@ -330,17 +322,11 @@ export async function GET(
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Abrechnungsperiode nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsperiode nicht gefunden" });
     }
 
     if (period.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Berechnung erneut ausfuehren (ohne zu speichern) für aktuelle Daten
@@ -365,9 +351,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching calculation");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Berechnung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Berechnung" });
   }
 }

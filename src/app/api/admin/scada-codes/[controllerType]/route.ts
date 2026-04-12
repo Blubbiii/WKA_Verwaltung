@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/admin/scada-codes/[controllerType] — Get all codes for a controller type
 export async function GET(
@@ -56,9 +57,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching SCADA codes for type");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Statuscodes" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Statuscodes" });
   }
 }

@@ -21,6 +21,7 @@ import {
 } from "@/lib/config";
 import { maskSensitive } from "@/lib/email/encryption";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -63,10 +64,7 @@ export async function GET(
     const metadata = getConfigKeyMetadata(decodedKey);
 
     if (value === null && !metadata) {
-      return NextResponse.json(
-        { error: "Konfiguration nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Konfiguration nicht gefunden" });
     }
 
     // Mask sensitive values
@@ -86,10 +84,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "[System Config API] GET [key] error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Konfiguration" });
   }
 }
 
@@ -112,10 +107,7 @@ export async function PATCH(
     const parsed = updateConfigSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { value, category, encrypted, label, tenantId } = parsed.data;
@@ -143,10 +135,7 @@ export async function PATCH(
     });
   } catch (error) {
     logger.error({ err: error }, "[System Config API] PATCH [key] error");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren der Konfiguration" });
   }
 }
 
@@ -172,10 +161,7 @@ export async function DELETE(
     const deleted = await deleteConfig(decodedKey, tenantId);
 
     if (!deleted) {
-      return NextResponse.json(
-        { error: "Konfiguration nicht gefunden oder konnte nicht gelöscht werden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Konfiguration nicht gefunden oder konnte nicht gelöscht werden" });
     }
 
     return NextResponse.json({
@@ -184,9 +170,6 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "[System Config API] DELETE [key] error");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Konfiguration" });
   }
 }

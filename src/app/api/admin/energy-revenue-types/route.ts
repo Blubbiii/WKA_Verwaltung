@@ -13,6 +13,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -117,10 +118,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy revenue types");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vergütungsarten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Vergütungsarten" });
   }
 }
 
@@ -154,10 +152,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingType) {
-      return NextResponse.json(
-        { error: `Eine Vergütungsart mit dem Code "${validatedData.code}" existiert bereits` },
-        { status: 409 } // Conflict
-      );
+      return apiError("ALREADY_EXISTS", 409, { message: `Eine Vergütungsart mit dem Code "${validatedData.code}" existiert bereits` });
     }
 
     // Neue Vergütungsart erstellen

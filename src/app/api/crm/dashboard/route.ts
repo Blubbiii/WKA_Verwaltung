@@ -5,13 +5,14 @@ import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
+import { apiError } from "@/lib/api-errors";
 // GET /api/crm/dashboard — KPIs + recent activities + open tasks + inactive contacts
 export async function GET(_req: NextRequest) {
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
-      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
+      return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
 
     const tenantId = check.tenantId!;
     const now = new Date();
@@ -103,6 +104,6 @@ export async function GET(_req: NextRequest) {
     );
   } catch (error) {
     logger.error({ err: error }, "Error fetching CRM dashboard");
-    return NextResponse.json({ error: "Fehler beim Laden des Dashboards" }, { status: 500 });
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Dashboards" });
   }
 }

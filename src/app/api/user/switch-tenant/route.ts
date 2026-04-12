@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { apiError } from "@/lib/api-errors";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { requireAuth } from "@/lib/auth/withPermission";
@@ -76,10 +77,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const parsed = switchTenantSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-      { status: 400 }
-    );
+    return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
   }
   const { tenantId } = parsed.data;
 
@@ -90,10 +88,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (!membership || membership.status !== "ACTIVE") {
-    return NextResponse.json(
-      { error: "Kein Zugriff auf diesen Mandanten" },
-      { status: 403 }
-    );
+    return apiError("FORBIDDEN", 403, { message: "Kein Zugriff auf diesen Mandanten" });
   }
 
   const roleHierarchy = await getRoleHierarchyForTenant(userId, tenantId);

@@ -8,6 +8,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
@@ -46,7 +47,7 @@ export async function GET() {
     }) as { emailPreferences?: unknown } | null;
 
     if (!user) {
-      return NextResponse.json({ error: "Benutzer nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Benutzer nicht gefunden" });
     }
 
     // Parse preferences, using defaults if invalid or not set
@@ -72,10 +73,7 @@ export async function GET() {
     return NextResponse.json({ preferences });
   } catch (error) {
     logger.error({ err: error }, "[User Email Preferences API] GET error");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -92,10 +90,7 @@ export async function PUT(request: Request) {
     const parsed = updatePreferencesSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { preferences } = parsed.data;
@@ -113,9 +108,6 @@ export async function PUT(request: Request) {
     });
   } catch (error) {
     logger.error({ err: error }, "[User Email Preferences API] PUT error");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const plotCreateSchema = z.object({
   parkId: z.string().uuid("Ungültige Park-ID").optional(),
@@ -218,10 +219,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching plots");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Flurstücke" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Flurstücke" });
   }
 }
 
@@ -244,10 +242,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_CREATE);
       });
 
       if (!park) {
-        return NextResponse.json(
-          { error: "Park nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
       }
     }
 
@@ -262,10 +257,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_CREATE);
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: "Ein Flurstück mit dieser Kombination (Gemarkung, Flur, Flurstück) existiert bereits" },
-        { status: 409 }
-      );
+      return apiError("ALREADY_EXISTS", undefined, { message: "Ein Flurstück mit dieser Kombination (Gemarkung, Flur, Flurstück) existiert bereits" });
     }
 
     // Extract plotAreas before spreading into Prisma data (not a direct field)

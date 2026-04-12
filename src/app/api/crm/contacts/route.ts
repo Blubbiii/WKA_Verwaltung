@@ -15,6 +15,7 @@ import {
   findMatchingPerson,
   type PersonDedupInput,
 } from "@/lib/crm/person-dedup";
+import { apiError } from "@/lib/api-errors";
 
 const createSchema = z
   .object({
@@ -45,10 +46,7 @@ export async function GET(request: NextRequest) {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") ?? "";
@@ -143,10 +141,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     logger.error({ err: error }, "Error fetching CRM contacts");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Kontakte" },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Kontakte" });
   }
 }
 
@@ -156,18 +151,12 @@ export async function POST(request: NextRequest) {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const raw = await request.json();
     const parsed = createSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 },
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     const d = parsed.data;
@@ -185,13 +174,10 @@ export async function POST(request: NextRequest) {
       };
       const existing = await findMatchingPerson(check.tenantId!, dedupInput);
       if (existing) {
-        return NextResponse.json(
-          {
-            error: "Ein Kontakt mit identischem Namen und Adresse existiert bereits",
-            existing,
-          },
-          { status: 409 },
-        );
+        return apiError("ALREADY_EXISTS", 409, {
+          message: "Ein Kontakt mit identischem Namen und Adresse existiert bereits",
+          details: { existing },
+        });
       }
     }
 
@@ -222,9 +208,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(serializePrisma(person), { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating CRM contact");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Kontakts" },
-      { status: 500 },
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen des Kontakts" });
   }
 }

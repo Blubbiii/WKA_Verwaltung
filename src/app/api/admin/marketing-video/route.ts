@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { uploadFile, deleteFile, getSignedUrl } from "@/lib/storage";
+import { apiError } from "@/lib/api-errors";
 
 interface TenantSettings {
   marketingVideoUrl?: string;
@@ -29,21 +30,15 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: "Keine Datei hochgeladen" }, { status: 400 });
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Datei hochgeladen" });
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: `Ungültiger Dateityp. Erlaubt: ${ALLOWED_TYPES.join(", ")}` },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Ungültiger Dateityp. Erlaubt: ${ALLOWED_TYPES.join(", ")}` });
     }
 
     if (file.size > MAX_VIDEO_SIZE) {
-      return NextResponse.json(
-        { error: `Datei zu groß. Maximum: ${MAX_VIDEO_SIZE / 1024 / 1024} MB` },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Datei zu groß. Maximum: ${MAX_VIDEO_SIZE / 1024 / 1024} MB` });
     }
 
     // Upload to S3
@@ -84,7 +79,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error uploading marketing video");
-    return NextResponse.json({ error: "Fehler beim Hochladen" }, { status: 500 });
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Hochladen" });
   }
 }
 
@@ -131,6 +126,6 @@ export async function DELETE(_request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error removing marketing video");
-    return NextResponse.json({ error: "Fehler beim Entfernen" }, { status: 500 });
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Entfernen" });
   }
 }

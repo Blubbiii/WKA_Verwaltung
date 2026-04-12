@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const createDistributionSchema = z.object({
   totalAmount: z.number().positive("Betrag muss positiv sein"),
@@ -30,10 +31,7 @@ export async function GET(
     });
 
     if (!fund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     const distributions = await prisma.distribution.findMany({
@@ -76,10 +74,7 @@ export async function GET(
     return NextResponse.json(distributions);
   } catch (error) {
     logger.error({ err: error }, "Error fetching distributions");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Ausschuettungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Ausschuettungen" });
   }
 }
 
@@ -118,17 +113,11 @@ export async function POST(
     });
 
     if (!fund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     if (fund.shareholders.length === 0) {
-      return NextResponse.json(
-        { error: "Keine aktiven Gesellschafter vorhanden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine aktiven Gesellschafter vorhanden" });
     }
 
     // Prüfen ob alle Gesellschafter eine gültige Beteiligungsquote haben
@@ -138,10 +127,7 @@ export async function POST(
     );
 
     if (totalPercentage === 0) {
-      return NextResponse.json(
-        { error: "Keine Beteiligungsquoten definiert" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Beteiligungsquoten definiert" });
     }
 
     // Eindeutige Ausschuettungsnummer generieren

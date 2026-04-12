@@ -19,6 +19,7 @@ import {
   type ResolvedLetterhead,
 } from "@/lib/pdf/utils/templateResolver";
 import type { DocumentTemplateLayout } from "@/types/pdf";
+import { apiError } from "@/lib/api-errors";
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -421,17 +422,11 @@ export async function GET(
     });
 
     if (!letterhead) {
-      return NextResponse.json(
-        { error: "Briefpapier nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Briefpapier nicht gefunden" });
     }
 
     if (letterhead.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     const resolved = mapLetterhead(letterhead);
@@ -453,9 +448,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating letterhead preview PDF");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Briefpapier-Vorschau" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Briefpapier-Vorschau" });
   }
 }

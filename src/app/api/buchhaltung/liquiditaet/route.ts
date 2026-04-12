@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateLiquidityForecast } from "@/lib/accounting/reports/liquidity";
@@ -36,6 +37,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: result });
   } catch (error) {
     logger.error({ err: error }, "Error generating liquidity forecast");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
+import { apiError } from "@/lib/api-errors";
 
 const createSchema = z.object({
   label: z.string().min(1).max(100),
@@ -24,7 +25,7 @@ export async function GET() {
     });
     return NextResponse.json(links);
   } catch {
-    return NextResponse.json({ error: "Datenbankfehler beim Laden der Links" }, { status: 500 });
+    return apiError("FETCH_FAILED", undefined, { message: "Datenbankfehler beim Laden der Links" });
   }
 }
 
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
       Object.values(fieldErrors).flat()[0] ??
       parsed.error.flatten().formErrors[0] ??
       "Ungültige Eingabe";
-    return NextResponse.json({ error: firstError }, { status: 400 });
+    return apiError("BAD_REQUEST", undefined, { message: firstError });
   }
 
   try {
@@ -53,6 +54,6 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(link, { status: 201 });
   } catch {
-    return NextResponse.json({ error: "Datenbankfehler beim Erstellen" }, { status: 500 });
+    return apiError("CREATE_FAILED", undefined, { message: "Datenbankfehler beim Erstellen" });
   }
 }

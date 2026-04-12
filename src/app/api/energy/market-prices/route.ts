@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/energy/market-prices?year=2026
 export async function GET(request: NextRequest) {
@@ -33,6 +34,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching market prices");
-    return NextResponse.json({ error: "Fehler beim Laden der Marktdaten" }, { status: 500 });
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Marktdaten" });
   }
 }

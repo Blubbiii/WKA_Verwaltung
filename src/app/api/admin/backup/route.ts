@@ -12,6 +12,7 @@ import {
   checkPgDumpAvailable,
 } from "@/lib/backup";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const backupActionSchema = z.object({
   action: z.enum(["create", "applyRetention", "searchOrphans", "clearCache", "deleteTemp", "export"]),
@@ -108,10 +109,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     logger.error({ err: error }, "Error fetching backup data");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Backup-Daten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Backup-Daten" });
   }
 }
 
@@ -127,10 +125,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = backupActionSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { action } = parsed.data;
 
@@ -142,13 +137,7 @@ export async function POST(request: NextRequest) {
         // Check if pg_dump is available
         const pgDumpAvailable = await checkPgDumpAvailable();
         if (!pgDumpAvailable) {
-          return NextResponse.json(
-            {
-              error:
-                "pg_dump ist nicht verfügbar. Backups können nur in der Docker-Umgebung erstellt werden.",
-            },
-            { status: 503 }
-          );
+          return apiError("INTERNAL_ERROR", 503, { message: "pg_dump ist nicht verfügbar. Backups können nur in der Docker-Umgebung erstellt werden." });
         }
 
         const result = await createBackup(type);
@@ -277,10 +266,7 @@ export async function POST(request: NextRequest) {
         const { format, tables } = parsed.data;
 
         if (!tables || tables.length === 0) {
-          return NextResponse.json(
-            { error: "Keine Tabellen ausgewaehlt" },
-            { status: 400 }
-          );
+          return apiError("BAD_REQUEST", undefined, { message: "Keine Tabellen ausgewaehlt" });
         }
 
         logger.info(
@@ -304,17 +290,11 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        return NextResponse.json(
-          { error: "Unbekannte Aktion" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Unbekannte Aktion" });
     }
   } catch (error) {
     logger.error({ err: error }, "Error processing backup action");
-    return NextResponse.json(
-      { error: "Fehler bei der Verarbeitung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Verarbeitung" });
   }
 }
 
@@ -331,19 +311,13 @@ export async function DELETE(request: NextRequest) {
     const backupId = searchParams.get("id");
 
     if (!backupId) {
-      return NextResponse.json(
-        { error: "Backup-ID fehlt" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Backup-ID fehlt" });
     }
 
     const result = await deleteBackup(backupId);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || "Backup konnte nicht gelöscht werden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: result.error || "Backup konnte nicht gelöscht werden" });
     }
 
     logger.info({ backupId }, "[BACKUP] Backup deleted via API");
@@ -354,9 +328,6 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting backup");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Backups" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des Backups" });
   }
 }

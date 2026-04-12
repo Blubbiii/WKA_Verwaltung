@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getConfigBoolean } from "@/lib/config";
@@ -20,12 +21,12 @@ export async function GET(
 
     const enabled = await getConfigBoolean("paperless.enabled", check.tenantId, false);
     if (!enabled) {
-      return NextResponse.json({ error: "Paperless integration not enabled" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Paperless integration not enabled" });
     }
 
     const client = await getPaperlessClient(check.tenantId);
     if (!client) {
-      return NextResponse.json({ error: "Paperless not configured" }, { status: 503 });
+      return apiError("INTERNAL_ERROR", 503, { message: "Paperless not configured" });
     }
 
     const { id } = await params;
@@ -34,6 +35,6 @@ export async function GET(
     return NextResponse.json(doc);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message });
   }
 }

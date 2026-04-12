@@ -7,6 +7,7 @@ import { deleteFile } from "@/lib/storage";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const documentUpdateSchema = z.object({
   title: z.string().min(1).optional(),
@@ -84,10 +85,7 @@ export async function GET(
     });
 
     if (!document) {
-      return NextResponse.json(
-        { error: "Dokument nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Dokument nicht gefunden" });
     }
 
     // Build version history
@@ -177,10 +175,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching document");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Dokuments" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Dokuments" });
   }
 }
 
@@ -203,10 +198,7 @@ export async function PUT(
     });
 
     if (!existingDocument) {
-      return NextResponse.json(
-        { error: "Dokument nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Dokument nicht gefunden" });
     }
 
     const body = await request.json();
@@ -245,10 +237,7 @@ export async function DELETE(
     // Additional check: Only Admin or higher (hierarchy >= 80) can hard-delete
     const hierarchy = await getUserHighestHierarchy(check.userId!);
     if (hierarchy < ROLE_HIERARCHY.ADMIN) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung. Nur Administratoren können Dokumente löschen." },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung. Nur Administratoren können Dokumente löschen." });
     }
 
     const { id } = await params;
@@ -262,10 +251,7 @@ export async function DELETE(
     });
 
     if (!documentToDelete) {
-      return NextResponse.json(
-        { error: "Dokument nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Dokument nicht gefunden" });
     }
 
     // Loesche Datei aus S3/MinIO (wenn vorhanden)
@@ -325,9 +311,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting document");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Dokuments" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des Dokuments" });
   }
 }

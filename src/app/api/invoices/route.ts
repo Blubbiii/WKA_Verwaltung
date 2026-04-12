@@ -10,6 +10,7 @@ import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { apiError } from "@/lib/api-errors";
 
 // Schema für Invoice-Items
 const invoiceItemSchema = z.object({
@@ -119,10 +120,7 @@ async function getHandler(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching invoices");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Rechnungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Rechnungen" });
   }
 }
 

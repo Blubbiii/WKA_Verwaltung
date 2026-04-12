@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
   if (!check.authorized) return check.error!;
 
   const enabled = await getConfigBoolean("communication.enabled", check.tenantId, false);
-  if (!enabled) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
+  if (!enabled) return apiError("NOT_FOUND", 404, { message: "Communication module is not enabled" });
 
   try {
     const { searchParams } = new URL(req.url);
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "[Mailings] GET failed");
-    return NextResponse.json({ error: "Fehler beim Laden der Mailings" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Mailings" });
   }
 }
 
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
   if (!check.authorized) return check.error!;
 
   const enabledPost = await getConfigBoolean("communication.enabled", check.tenantId, false);
-  if (!enabledPost) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
+  if (!enabledPost) return apiError("NOT_FOUND", 404, { message: "Communication module is not enabled" });
 
   try {
     const body = await req.json();
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
         where: { id: data.templateId, tenantId: check.tenantId! },
       });
       if (!template) {
-        return NextResponse.json({ error: "Vorlage nicht gefunden" }, { status: 404 });
+        return apiError("NOT_FOUND", 404, { message: "Vorlage nicht gefunden" });
       }
 
       const mailing = await prisma.mailing.create({
@@ -164,7 +165,7 @@ export async function POST(req: NextRequest) {
         where: { id: data.templateId, tenantId: check.tenantId! },
       });
       if (!template) {
-        return NextResponse.json({ error: "Vorlage nicht gefunden" }, { status: 404 });
+        return apiError("NOT_FOUND", 404, { message: "Vorlage nicht gefunden" });
       }
 
       if (data.fundId) {
@@ -172,7 +173,7 @@ export async function POST(req: NextRequest) {
           where: { id: data.fundId, tenantId: check.tenantId! },
         });
         if (!fund) {
-          return NextResponse.json({ error: "Gesellschaft nicht gefunden" }, { status: 404 });
+          return apiError("NOT_FOUND", 404, { message: "Gesellschaft nicht gefunden" });
         }
       }
 
@@ -195,12 +196,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ mailing }, { status: 201 });
     }
 
-    return NextResponse.json({ error: "Ungültige Eingabe" }, { status: 400 });
+    return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe" });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Ungültige Eingabe", details: error.issues }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: error.issues });
     }
     logger.error({ err: error }, "[Mailings] POST failed");
-    return NextResponse.json({ error: "Fehler beim Erstellen" }, { status: 500 });
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen" });
   }
 }

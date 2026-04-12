@@ -8,6 +8,7 @@ import { serializePrisma } from "@/lib/serialize";
 import { loadContact360 } from "@/lib/crm/contact-360";
 import { loadLabelsForPersons } from "@/lib/crm/derived-labels";
 
+import { apiError } from "@/lib/api-errors";
 const updateSchema = z.object({
   salutation: z.string().max(20).optional().nullable(),
   firstName: z.string().max(100).optional().nullable(),
@@ -34,7 +35,7 @@ export async function GET(
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
-      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
+      return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
     const { id } = await params;
 
     const person = await prisma.person.findFirst({
@@ -56,7 +57,7 @@ export async function GET(
     });
 
     if (!person) {
-      return NextResponse.json({ error: "Kontakt nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Kontakt nicht gefunden" });
     }
 
     const [contact360, labelBundleMap] = await Promise.all([
@@ -74,7 +75,7 @@ export async function GET(
     );
   } catch (error) {
     logger.error({ err: error }, "Error fetching CRM contact");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden" });
   }
 }
 
@@ -87,23 +88,20 @@ export async function PUT(
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
-      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
+      return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
     const { id } = await params;
 
     const existing = await prisma.person.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Kontakt nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Kontakt nicht gefunden" });
     }
 
     const raw = await request.json();
     const parsed = updateSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     // Build update data from all provided fields
@@ -123,6 +121,6 @@ export async function PUT(
     return NextResponse.json(serializePrisma(updated));
   } catch (error) {
     logger.error({ err: error }, "Error updating CRM contact");
-    return NextResponse.json({ error: "Fehler beim Aktualisieren" }, { status: 500 });
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren" });
   }
 }

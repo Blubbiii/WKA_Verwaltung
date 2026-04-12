@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { fetchMonthlyPricesForYear } from "@/lib/market-data/smard-client";
+import { apiError } from "@/lib/api-errors";
 
 // POST /api/energy/market-prices/sync
 export async function POST(request: NextRequest) {
@@ -103,6 +104,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error syncing market prices");
-    return NextResponse.json({ error: "Fehler beim Synchronisieren der Marktdaten" }, { status: 500 });
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Synchronisieren der Marktdaten" });
   }
 }

@@ -17,6 +17,7 @@ import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
+import { apiError } from "@/lib/api-errors";
 
 // ---------------------------------------------------------------------------
 // GET - Search / list archived documents
@@ -102,10 +103,7 @@ export async function POST(request: NextRequest) {
     const parsed = archiveBodySchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabedaten", details: parsed.error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabedaten", details: parsed.error.issues });
     }
 
     const { documentType, referenceId } = parsed.data;
@@ -123,24 +121,14 @@ export async function POST(request: NextRequest) {
         break;
       }
       default: {
-        return NextResponse.json(
-          {
-            error: `Manuelles Archivieren für Typ '${documentType}' wird noch nicht unterstuetzt. ` +
-              "Verwenden Sie die API mit Content-Upload.",
-          },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: `Manuelles Archivieren für Typ '${documentType}' wird noch nicht unterstuetzt. ` +
+              "Verwenden Sie die API mit Content-Upload." });
       }
     }
 
     if (!archiveId) {
-      return NextResponse.json(
-        {
-          error: "Dokument konnte nicht archiviert werden. " +
-            "Moeglicherweise existiert kein PDF oder das Dokument wurde bereits archiviert.",
-        },
-        { status: 422 }
-      );
+      return apiError("INTERNAL_ERROR", 422, { message: "Dokument konnte nicht archiviert werden. " +
+            "Moeglicherweise existiert kein PDF oder das Dokument wurde bereits archiviert." });
     }
 
     // Audit log (deferred: runs after response is sent)
@@ -160,15 +148,9 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof Error && error.message.includes("bereits archiviert")) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 409 }
-      );
+      return apiError("CONFLICT", undefined, { message: error.message });
     }
     logger.error({ err: error }, "Error archiving document");
-    return NextResponse.json(
-      { error: "Fehler beim Archivieren des Dokuments" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Archivieren des Dokuments" });
   }
 }

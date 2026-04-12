@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/scada/measurements - SCADA-Messdaten abfragen
@@ -24,10 +25,7 @@ export async function GET(request: NextRequest) {
     // --- Validierung ---
 
     if (!turbineId) {
-      return NextResponse.json(
-        { error: "turbineId ist erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "turbineId ist erforderlich" });
     }
 
     // Validierung: Turbine gehoert zum Tenant
@@ -42,10 +40,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!turbine) {
-      return NextResponse.json(
-        { error: "Turbine nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Turbine nicht gefunden oder keine Berechtigung" });
     }
 
     // Where-Clause aufbauen
@@ -60,10 +55,7 @@ export async function GET(request: NextRequest) {
     if (from) {
       const fromDate = new Date(from);
       if (isNaN(fromDate.getTime())) {
-        return NextResponse.json(
-          { error: "Ungültiges Datum für 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Datum für 'from' (ISO-Format erwartet, z.B. 2025-01-01)" });
       }
       timestampFilter.gte = fromDate;
     }
@@ -71,10 +63,7 @@ export async function GET(request: NextRequest) {
     if (to) {
       const toDate = new Date(to);
       if (isNaN(toDate.getTime())) {
-        return NextResponse.json(
-          { error: "Ungültiges Datum für 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Datum für 'to' (ISO-Format erwartet, z.B. 2025-12-31)" });
       }
       timestampFilter.lte = toDate;
     }
@@ -105,9 +94,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der SCADA-Messdaten");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der SCADA-Messdaten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der SCADA-Messdaten" });
   }
 }

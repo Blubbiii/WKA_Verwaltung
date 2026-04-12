@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { generateIcsCalendar, type IcsEvent } from "@/lib/export/ics";
@@ -162,10 +163,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (events.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Termine zum Exportieren gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Keine Termine zum Exportieren gefunden" });
     }
 
     // Generate ICS
@@ -186,9 +184,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "[Calendar Export] Error");
-    return NextResponse.json(
-      { error: "Fehler beim Kalenderexport" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Kalenderexport" });
   }
 }

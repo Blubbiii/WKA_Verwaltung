@@ -18,6 +18,7 @@ import { generateExcel } from "@/lib/export/excel";
 import { generateCsvBuffer } from "@/lib/export/csv";
 import type { ColumnDef } from "@/lib/export/types";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // Types for the access report
 interface UserAccessData {
@@ -66,10 +67,7 @@ export async function GET(request: NextRequest) {
   const { tenantId } = check;
 
   if (!tenantId) {
-    return NextResponse.json(
-      { error: "Kein Mandant zugeordnet" },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
   }
 
   try {
@@ -81,10 +79,7 @@ export async function GET(request: NextRequest) {
 
     // Validate format
     if (!["json", "xlsx", "csv"].includes(format)) {
-      return NextResponse.json(
-        { error: `Ungültiges Format: ${format}. Unterstuetzte Formate: json, xlsx, csv` },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Ungültiges Format: ${format}. Unterstuetzte Formate: json, xlsx, csv` });
     }
 
     // Get tenant info
@@ -94,10 +89,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     // Build user filter
@@ -364,15 +356,9 @@ export async function GET(request: NextRequest) {
     logger.error({ err: error }, "Access report error");
 
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: `Fehler beim Erstellen des Reports: ${error.message}` },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: `Fehler beim Erstellen des Reports: ${error.message}` });
     }
 
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Reports" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen des Reports" });
   }
 }

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const shareholderCreateSchema = z.object({
   fundId: z.string().uuid("Ungültige Gesellschafts-ID"),
@@ -164,10 +165,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching shareholders");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Gesellschafter" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Gesellschafter" });
   }
 }
 
@@ -197,17 +195,11 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_CREATE);
     ]);
 
     if (!fund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     if (!person) {
-      return NextResponse.json(
-        { error: "Person nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Person nicht gefunden" });
     }
 
     // Prüfe ob Kombination bereits existiert
@@ -219,10 +211,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_CREATE);
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: "Diese Person ist bereits Gesellschafter in dieser Gesellschaft" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Diese Person ist bereits Gesellschafter in dieser Gesellschaft" });
     }
 
     // Create shareholder + recalculate fund shares atomar in einer Transaktion

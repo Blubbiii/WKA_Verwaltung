@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/scada/summary
@@ -227,9 +228,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der SCADA-Zusammenfassung");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der SCADA-Zusammenfassung" },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der SCADA-Zusammenfassung" });
   }
 }

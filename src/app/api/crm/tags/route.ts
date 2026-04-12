@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { apiError } from "@/lib/api-errors";
 
 const createSchema = z.object({
   name: z.string().min(1).max(50),
@@ -18,10 +19,7 @@ export async function GET() {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const tags = await prisma.personTag.findMany({
       where: { tenantId: check.tenantId! },
@@ -31,10 +29,7 @@ export async function GET() {
     return NextResponse.json(serializePrisma(tags));
   } catch (error) {
     logger.error({ err: error }, "Error fetching person tags");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Tags" },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Tags" });
   }
 }
 
@@ -44,18 +39,12 @@ export async function POST(request: NextRequest) {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const raw = await request.json();
     const parsed = createSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 },
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     try {
@@ -72,18 +61,12 @@ export async function POST(request: NextRequest) {
         err instanceof Prisma.PrismaClientKnownRequestError &&
         err.code === "P2002"
       ) {
-        return NextResponse.json(
-          { error: "Ein Tag mit diesem Namen existiert bereits" },
-          { status: 409 },
-        );
+        return apiError("ALREADY_EXISTS", undefined, { message: "Ein Tag mit diesem Namen existiert bereits" });
       }
       throw err;
     }
   } catch (error) {
     logger.error({ err: error }, "Error creating person tag");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen" },
-      { status: 500 },
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen" });
   }
 }

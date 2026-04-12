@@ -6,6 +6,7 @@ import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const leaseUpdateSchema = z.object({
   plotIds: z.array(z.uuid()).optional(),
@@ -80,10 +81,7 @@ export async function GET(
     });
 
     if (!lease) {
-      return NextResponse.json(
-        { error: "Pachtvertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Pachtvertrag nicht gefunden" });
     }
 
     // Transform to include plots array
@@ -95,10 +93,7 @@ export async function GET(
     return NextResponse.json(transformedLease);
   } catch (error) {
     logger.error({ err: error }, "Error fetching lease");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Pachtvertrags" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Pachtvertrags" });
   }
 }
 
@@ -122,10 +117,7 @@ export async function PATCH(
     });
 
     if (!existingLease) {
-      return NextResponse.json(
-        { error: "Pachtvertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Pachtvertrag nicht gefunden" });
     }
 
     const body = await request.json();
@@ -222,10 +214,7 @@ export async function PATCH(
     return NextResponse.json(transformedLease);
   } catch (error) {
     if (error instanceof Error && !(error instanceof z.ZodError)) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: error.message });
     }
     return handleApiError(error, "Fehler beim Aktualisieren des Pachtvertrags");
   }
@@ -251,10 +240,7 @@ export async function DELETE(
     });
 
     if (!leaseToDelete) {
-      return NextResponse.json(
-        { error: "Pachtvertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Pachtvertrag nicht gefunden" });
     }
 
     // Perform the deletion
@@ -271,9 +257,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting lease");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Pachtvertrags" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des Pachtvertrags" });
   }
 }

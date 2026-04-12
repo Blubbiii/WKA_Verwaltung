@@ -13,6 +13,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -107,10 +108,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching fund categories");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Gesellschaftstypen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Gesellschaftstypen" });
   }
 }
 
@@ -144,10 +142,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingCategory) {
-      return NextResponse.json(
-        { error: `Ein Gesellschaftstyp mit dem Code "${validatedData.code}" existiert bereits` },
-        { status: 409 } // Conflict
-      );
+      return apiError("ALREADY_EXISTS", 409, { message: `Ein Gesellschaftstyp mit dem Code "${validatedData.code}" existiert bereits` });
     }
 
     // Neuen Gesellschaftstyp erstellen

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/energy/revenue-types - Alle Vergütungsarten
 export async function GET() {
@@ -29,9 +30,6 @@ export async function GET() {
     return NextResponse.json({ data: revenueTypes });
   } catch (error) {
     logger.error({ err: error }, "Error fetching revenue types");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vergütungsarten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Vergütungsarten" });
   }
 }

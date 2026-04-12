@@ -15,6 +15,7 @@ import {
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // Validation
@@ -79,10 +80,7 @@ async function getHandler(
     });
 
     if (!recurringInvoice) {
-      return NextResponse.json(
-        { error: "Wiederkehrende Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Wiederkehrende Rechnung nicht gefunden" });
     }
 
     // Fetch recently generated invoices (last 10)
@@ -148,10 +146,7 @@ async function getHandler(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching recurring invoice");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der wiederkehrenden Rechnung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der wiederkehrenden Rechnung" });
   }
 }
 
@@ -182,10 +177,7 @@ async function patchHandler(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Wiederkehrende Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Wiederkehrende Rechnung nicht gefunden" });
     }
 
     // Build update data
@@ -253,10 +245,7 @@ async function patchHandler(
         : existing.endDate;
 
     if (effectiveEndDate && effectiveEndDate <= effectiveStartDate) {
-      return NextResponse.json(
-        { error: "Enddatum muss nach dem Startdatum liegen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Enddatum muss nach dem Startdatum liegen" });
     }
 
     const updated = await prisma.recurringInvoice.update({
@@ -319,10 +308,7 @@ async function deleteHandler(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Wiederkehrende Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Wiederkehrende Rechnung nicht gefunden" });
     }
 
     // Soft-delete: disable the recurring invoice
@@ -340,10 +326,7 @@ async function deleteHandler(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting recurring invoice");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der wiederkehrenden Rechnung" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der wiederkehrenden Rechnung" });
   }
 }
 

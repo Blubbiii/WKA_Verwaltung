@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -202,10 +203,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching fund hierarchies");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Fund-Hierarchien" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Fund-Hierarchien" });
   }
 }
 
@@ -237,10 +235,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!parentFund) {
-      return NextResponse.json(
-        { error: "Eltern-Fund nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Eltern-Fund nicht gefunden oder keine Berechtigung" });
     }
 
     // Validierung: Child Fund existiert und gehoert zum Tenant
@@ -257,10 +252,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!childFund) {
-      return NextResponse.json(
-        { error: "Kind-Fund nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Kind-Fund nicht gefunden oder keine Berechtigung" });
     }
 
     // KRITISCH: Prüfung auf zirkulaere Referenzen
@@ -271,13 +263,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (circularCheck.isCircular) {
-      return NextResponse.json(
-        {
-          error: "Zirkulaere Referenz erkannt",
-          details: `Die Hierarchie wuerde einen Zyklus erzeugen: ${circularCheck.path?.join(" -> ")}`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Zirkulaere Referenz erkannt", details: `Die Hierarchie wuerde einen Zyklus erzeugen: ${circularCheck.path?.join(" -> ")}` });
     }
 
     // Prüfung auf Duplikat (bereits existierende Beziehung für denselben Zeitraum)
@@ -290,13 +276,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        {
-          error: "Duplikat erkannt",
-          details: `Es existiert bereits eine aktive Hierarchie-Beziehung zwischen "${childFund.name}" und "${parentFund.name}"`,
-        },
-        { status: 409 }
-      );
+      return apiError("ALREADY_EXISTS", undefined, { message: "Duplikat erkannt", details: `Es existiert bereits eine aktive Hierarchie-Beziehung zwischen "${childFund.name}" und "${parentFund.name}"` });
     }
 
     // Prüfung: Gesamtanteil am Parent Fund darf nicht > 100% sein
@@ -316,14 +296,8 @@ export async function POST(request: NextRequest) {
     );
 
     if (currentTotal + validatedData.ownershipPercentage > 100) {
-      return NextResponse.json(
-        {
-          error: "Anteil übersteigt 100%",
-          details: `Aktueller Gesamtanteil: ${currentTotal.toFixed(2)}%. ` +
-            `Mit neuem Anteil (${validatedData.ownershipPercentage}%) waeren es ${(currentTotal + validatedData.ownershipPercentage).toFixed(2)}%`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Anteil übersteigt 100%", details: `Aktueller Gesamtanteil: ${currentTotal.toFixed(2)}%. ` +
+            `Mit neuem Anteil (${validatedData.ownershipPercentage}%) waeren es ${(currentTotal + validatedData.ownershipPercentage).toFixed(2)}%` });
     }
 
     // Fund-Hierarchie erstellen

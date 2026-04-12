@@ -14,6 +14,7 @@ import { z } from "zod";
 import { calculateNextRun } from "@/lib/reports/scheduled-report-service";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // Validation schema for updating a scheduled report
 const updateScheduledReportSchema = z.object({
@@ -71,10 +72,7 @@ export async function GET(
     });
 
     if (!scheduledReport) {
-      return NextResponse.json(
-        { error: "Geplanter Bericht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Geplanter Bericht nicht gefunden" });
     }
 
     return NextResponse.json({
@@ -93,10 +91,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching scheduled report");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des geplanten Berichts" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des geplanten Berichts" });
   }
 }
 
@@ -122,10 +117,7 @@ export async function PATCH(
     });
 
     if (!existingReport) {
-      return NextResponse.json(
-        { error: "Geplanter Bericht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Geplanter Bericht nicht gefunden" });
     }
 
     // If parkId is being updated, verify it belongs to the tenant
@@ -138,10 +130,7 @@ export async function PATCH(
       });
 
       if (!park) {
-        return NextResponse.json(
-          { error: "Windpark nicht gefunden oder keine Berechtigung" },
-          { status: 404 }
-        );
+        return apiError("FORBIDDEN", 404, { message: "Windpark nicht gefunden oder keine Berechtigung" });
       }
     }
 
@@ -155,10 +144,7 @@ export async function PATCH(
       });
 
       if (!fund) {
-        return NextResponse.json(
-          { error: "Gesellschaft nicht gefunden oder keine Berechtigung" },
-          { status: 404 }
-        );
+        return apiError("FORBIDDEN", 404, { message: "Gesellschaft nicht gefunden oder keine Berechtigung" });
       }
     }
 
@@ -245,10 +231,7 @@ export async function DELETE(
     });
 
     if (!existingReport) {
-      return NextResponse.json(
-        { error: "Geplanter Bericht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Geplanter Bericht nicht gefunden" });
     }
 
     // Hard delete - scheduled reports don't have execution history to preserve
@@ -262,9 +245,6 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting scheduled report");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des geplanten Berichts" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des geplanten Berichts" });
   }
 }

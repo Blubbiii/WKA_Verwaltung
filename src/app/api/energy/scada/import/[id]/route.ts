@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/scada/import/[id] - Status eines einzelnen Import-Logs
@@ -26,18 +27,12 @@ export async function GET(
     });
 
     if (!log) {
-      return NextResponse.json(
-        { error: "Import-Log nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Import-Log nicht gefunden" });
     }
 
     return NextResponse.json(log);
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden des Import-Logs");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Import-Logs" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Import-Logs" });
   }
 }

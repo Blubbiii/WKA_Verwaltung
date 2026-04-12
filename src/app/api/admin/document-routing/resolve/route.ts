@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,10 +23,7 @@ export async function GET(request: NextRequest) {
     const targetType = searchParams.get("targetType") || "onedrive";
 
     if (!invoiceType || !["INVOICE", "CREDIT_NOTE"].includes(invoiceType)) {
-      return NextResponse.json(
-        { error: "invoiceType muss INVOICE oder CREDIT_NOTE sein" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "invoiceType muss INVOICE oder CREDIT_NOTE sein" });
     }
 
     // Try specific fund match first, then fallback to null (catch-all)
@@ -56,10 +54,10 @@ export async function GET(request: NextRequest) {
     const match = rule || fallback;
 
     if (!match) {
-      return NextResponse.json(
-        { error: "Keine Routing-Regel gefunden", resolved: false },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, {
+        message: "Keine Routing-Regel gefunden",
+        details: { resolved: false },
+      });
     }
 
     return NextResponse.json({
@@ -70,9 +68,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error resolving document routing");
-    return NextResponse.json(
-      { error: "Fehler beim Auflösen der Routing-Regel" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Auflösen der Routing-Regel" });
   }
 }

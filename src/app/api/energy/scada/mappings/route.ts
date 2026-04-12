@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/scada/mappings - Alle SCADA-Turbine-Zuordnungen
@@ -52,10 +53,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: mappings });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der SCADA-Zuordnungen");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der SCADA-Zuordnungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der SCADA-Zuordnungen" });
   }
 }
 
@@ -74,39 +72,24 @@ export async function POST(request: NextRequest) {
     // --- Validierung ---
 
     if (!locationCode || typeof locationCode !== "string") {
-      return NextResponse.json(
-        { error: "locationCode ist erforderlich und muss ein String sein" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "locationCode ist erforderlich und muss ein String sein" });
     }
 
     if (!locationCode.startsWith("Loc_")) {
-      return NextResponse.json(
-        { error: "locationCode muss mit 'Loc_' beginnen (z.B. 'Loc_5842')" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "locationCode muss mit 'Loc_' beginnen (z.B. 'Loc_5842')" });
     }
 
     if (plantNo == null || typeof plantNo !== "number" || !Number.isInteger(plantNo) || plantNo < 1 || plantNo > 99) {
-      return NextResponse.json(
-        { error: "plantNo muss eine ganze Zahl zwischen 1 und 99 sein" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "plantNo muss eine ganze Zahl zwischen 1 und 99 sein" });
     }
 
     if (!parkId || typeof parkId !== "string") {
-      return NextResponse.json(
-        { error: "parkId ist erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "parkId ist erforderlich" });
     }
 
     const deviceType = body.deviceType || "WEA";
     if (!["WEA", "PARKRECHNER", "NVP"].includes(deviceType)) {
-      return NextResponse.json(
-        { error: "deviceType muss WEA, PARKRECHNER oder NVP sein" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "deviceType muss WEA, PARKRECHNER oder NVP sein" });
     }
 
     // Validierung: Park gehoert zum Tenant
@@ -119,10 +102,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     let resolvedTurbineId = turbineId;
@@ -130,10 +110,7 @@ export async function POST(request: NextRequest) {
     if (deviceType === "WEA") {
       // WEA: turbineId is required and must exist in the park
       if (!turbineId || typeof turbineId !== "string") {
-        return NextResponse.json(
-          { error: "turbineId ist erforderlich für WEA-Zuordnungen" },
-          { status: 400 }
-        );
+        return apiError("MISSING_FIELD", undefined, { message: "turbineId ist erforderlich für WEA-Zuordnungen" });
       }
 
       const turbine = await prisma.turbine.findFirst({
@@ -146,10 +123,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!turbine) {
-        return NextResponse.json(
-          { error: "Turbine nicht gefunden oder gehoert nicht zum angegebenen Park" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Turbine nicht gefunden oder gehoert nicht zum angegebenen Park" });
       }
     } else {
       // PARKRECHNER or NVP: auto-create or reuse a virtual turbine entry
@@ -192,13 +166,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        {
-          error: "Duplikat erkannt",
-          details: `Zuordnung für ${locationCode} / Anlage ${plantNo} existiert bereits`,
-        },
-        { status: 409 }
-      );
+      return apiError("ALREADY_EXISTS", undefined, { message: "Duplikat erkannt", details: `Zuordnung für ${locationCode} / Anlage ${plantNo} existiert bereits` });
     }
 
     // Zuordnung erstellen
@@ -224,9 +192,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(mapping, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Erstellen der SCADA-Zuordnung");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der SCADA-Zuordnung" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der SCADA-Zuordnung" });
   }
 }

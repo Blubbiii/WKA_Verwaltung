@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // GET /api/invoices/reminders
@@ -15,7 +16,7 @@ export async function GET() {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json({ error: "Mandant nicht gefunden" }, { status: 400 });
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const now = new Date();
@@ -88,9 +89,6 @@ export async function GET() {
     return NextResponse.json(serializePrisma(result));
   } catch (error) {
     logger.error({ err: error }, "Error fetching overdue invoices");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der überfälligen Rechnungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der überfälligen Rechnungen" });
   }
 }

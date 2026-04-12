@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const plotAreaSchema = z.object({
   areaType: z.enum(["WEA_STANDORT", "POOL", "WEG", "AUSGLEICH", "KABEL"]),
@@ -40,10 +41,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     });
 
     if (!plot) {
-      return NextResponse.json(
-        { error: "Flurstück nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
     const areas = await prisma.plotArea.findMany({
@@ -54,10 +52,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     return NextResponse.json(areas);
   } catch (error) {
     logger.error({ err: error }, "Error fetching plot areas");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Teilflächen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Teilflächen" });
   }
 }
 
@@ -83,10 +78,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     });
 
     if (!plot) {
-      return NextResponse.json(
-        { error: "Flurstück nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
     const body = await request.json();
@@ -127,10 +119,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     });
 
     if (!plot) {
-      return NextResponse.json(
-        { error: "Flurstück nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
     const body = await request.json();

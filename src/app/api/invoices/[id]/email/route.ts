@@ -5,6 +5,7 @@ import { generateInvoicePdf } from "@/lib/pdf";
 import { sendEmailSync } from "@/lib/email/sender";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // POST /api/invoices/[id]/email - Rechnung per E-Mail versenden
 export async function POST(
@@ -46,10 +47,7 @@ export async function POST(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     // E-Mail-Adresse ermitteln: Body > Shareholder Person > Lease Lessor
@@ -67,10 +65,7 @@ export async function POST(
     }
 
     if (!emailAddress) {
-      return NextResponse.json(
-        { error: "Keine E-Mail-Adresse" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine E-Mail-Adresse" });
     }
 
     // PDF generieren
@@ -99,10 +94,7 @@ export async function POST(
         { invoiceId: id, to: emailAddress, error: emailResult.error },
         "Failed to send invoice email"
       );
-      return NextResponse.json(
-        { error: `E-Mail-Versand fehlgeschlagen: ${emailResult.error}` },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: `E-Mail-Versand fehlgeschlagen: ${emailResult.error}` });
     }
 
     // Rechnung aktualisieren: E-Mail-Tracking + ggf. Status auf SENT setzen
@@ -124,12 +116,6 @@ export async function POST(
     );
   } catch (error) {
     logger.error({ err: error }, "Error emailing invoice");
-    return NextResponse.json(
-      {
-        error: "Fehler beim E-Mail-Versand",
-        details: error instanceof Error ? error.message : "Unbekannter Fehler",
-      },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim E-Mail-Versand", details: error instanceof Error ? error.message : "Unbekannter Fehler" });
   }
 }

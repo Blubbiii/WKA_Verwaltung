@@ -12,6 +12,7 @@ import { z } from "zod";
 import { validateRuleParameters, calculateNextRun, BillingRuleType, BillingRuleFrequency } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // Validation Schema für neue Regel
 const createRuleSchema = z.object({
@@ -114,10 +115,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching billing rules");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Abrechnungsregeln" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Abrechnungsregeln" });
   }
 }
 
@@ -132,10 +130,7 @@ export async function POST(request: NextRequest) {
 
     // Validiere Cron-Pattern wenn CUSTOM_CRON
     if (validatedData.frequency === "CUSTOM_CRON" && !validatedData.cronPattern) {
-      return NextResponse.json(
-        { error: "Cron-Pattern ist erforderlich für CUSTOM_CRON Frequenz" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Cron-Pattern ist erforderlich für CUSTOM_CRON Frequenz" });
     }
 
     // Validiere Parameter basierend auf Regel-Typ
@@ -145,10 +140,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (!paramValidation.valid) {
-      return NextResponse.json(
-        { error: paramValidation.error || "Ungültige Parameter" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: paramValidation.error || "Ungültige Parameter" });
     }
 
     // Berechne nextRunAt

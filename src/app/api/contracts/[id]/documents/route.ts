@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // Schema für das Verknuepfen eines existierenden Dokuments
 const linkDocumentSchema = z.object({
@@ -31,10 +32,7 @@ export async function GET(
     });
 
     if (!contract) {
-      return NextResponse.json(
-        { error: "Vertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vertrag nicht gefunden" });
     }
 
     // Hole alle Dokumente die mit diesem Vertrag verknuepft sind
@@ -80,10 +78,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching contract documents");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }
 
@@ -107,10 +102,7 @@ export async function POST(
     });
 
     if (!contract) {
-      return NextResponse.json(
-        { error: "Vertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vertrag nicht gefunden" });
     }
 
     const body = await request.json();
@@ -125,18 +117,12 @@ export async function POST(
     });
 
     if (!document) {
-      return NextResponse.json(
-        { error: "Dokument nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Dokument nicht gefunden" });
     }
 
     // Pruefe ob das Dokument bereits mit diesem Vertrag verknuepft ist
     if (document.contractId === id) {
-      return NextResponse.json(
-        { error: "Dokument ist bereits mit diesem Vertrag verknuepft" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Dokument ist bereits mit diesem Vertrag verknuepft" });
     }
 
     // Verknuepfe das Dokument mit dem Vertrag
@@ -197,10 +183,7 @@ export async function DELETE(
     const documentId = searchParams.get("documentId");
 
     if (!documentId) {
-      return NextResponse.json(
-        { error: "documentId ist erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "documentId ist erforderlich" });
     }
 
     // Pruefe ob der Vertrag existiert und zum Tenant gehoert
@@ -212,10 +195,7 @@ export async function DELETE(
     });
 
     if (!contract) {
-      return NextResponse.json(
-        { error: "Vertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vertrag nicht gefunden" });
     }
 
     // Pruefe ob das Dokument mit diesem Vertrag verknuepft ist
@@ -228,10 +208,7 @@ export async function DELETE(
     });
 
     if (!document) {
-      return NextResponse.json(
-        { error: "Dokument nicht mit diesem Vertrag verknuepft" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Dokument nicht mit diesem Vertrag verknuepft" });
     }
 
     // Entferne die Verknuepfung (setze contractId auf null)
@@ -243,9 +220,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error unlinking document from contract");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }

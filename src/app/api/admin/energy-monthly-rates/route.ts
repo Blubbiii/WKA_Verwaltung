@@ -14,6 +14,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -147,10 +148,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy monthly rates");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der monatlichen Vergütungssaetze" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der monatlichen Vergütungssaetze" });
   }
 }
 
@@ -185,10 +183,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!revenueType) {
-      return NextResponse.json(
-        { error: "Vergütungstyp nicht gefunden oder nicht berechtigt" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vergütungstyp nicht gefunden oder nicht berechtigt" });
     }
 
     // Pruefe auf Duplikat (unique constraint: revenueTypeId + year + month + tenantId)
@@ -204,12 +199,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingRate) {
-      return NextResponse.json(
-        {
-          error: `Für diesen Vergütungstyp existiert bereits ein Satz für ${validatedData.month}/${validatedData.year}`,
-        },
-        { status: 409 }
-      );
+      return apiError("CONFLICT", undefined, { message: `Für diesen Vergütungstyp existiert bereits ein Satz für ${validatedData.month}/${validatedData.year}` });
     }
 
     // Erstelle den neuen Vergütungssatz
@@ -261,10 +251,7 @@ export async function POST(request: NextRequest) {
     // Prisma Unique Constraint Error (Fallback)
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
-        return NextResponse.json(
-          { error: "Ein Vergütungssatz für diesen Monat/Jahr existiert bereits" },
-          { status: 409 }
-        );
+        return apiError("ALREADY_EXISTS", undefined, { message: "Ein Vergütungssatz für diesen Monat/Jahr existiert bereits" });
       }
     }
 

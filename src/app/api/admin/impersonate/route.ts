@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { apiLogger as logger } from "@/lib/logger";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
+import { apiError } from "@/lib/api-errors";
 
 const impersonateSchema = z.object({
   userId: z.string().uuid().optional(),
@@ -39,10 +40,7 @@ const check = await requireSuperadmin();
     const body = await request.json();
     const result = impersonateSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: result.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: result.error.flatten().fieldErrors });
     }
     const { userId, tenantId } = result.data;
 
@@ -66,10 +64,7 @@ const check = await requireSuperadmin();
       });
 
       if (!targetUser) {
-        return NextResponse.json(
-          { error: "Benutzer nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
       }
 
       targetTenant = targetUser.tenant;
@@ -81,10 +76,7 @@ const check = await requireSuperadmin();
       });
 
       if (!targetTenant) {
-        return NextResponse.json(
-          { error: "Mandant nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
       }
 
       // Find an active user for this tenant
@@ -103,10 +95,7 @@ const check = await requireSuperadmin();
       });
 
       if (!targetUser) {
-        return NextResponse.json(
-          { error: "Kein aktiver Admin-Benutzer in diesem Mandanten gefunden" },
-          { status: 404 }
-        );
+        return apiError("TENANT_MISMATCH", 404, { message: "Kein aktiver Admin-Benutzer in diesem Mandanten gefunden" });
       }
     }
 
@@ -166,10 +155,7 @@ const check = await requireSuperadmin();
     });
   } catch (error) {
     logger.error({ err: error }, "Error starting impersonation");
-    return NextResponse.json(
-      { error: "Fehler beim Starten der Impersonation" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Starten der Impersonation" });
   }
 }
 
@@ -184,10 +170,7 @@ export async function DELETE(_request: NextRequest) {
     const impersonationCookie = cookieStore.get("impersonation");
 
     if (!impersonationCookie) {
-      return NextResponse.json(
-        { error: "Keine aktive Impersonation" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine aktive Impersonation" });
     }
 
     // Remove the impersonation cookie
@@ -196,10 +179,7 @@ export async function DELETE(_request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error stopping impersonation");
-    return NextResponse.json(
-      { error: "Fehler beim Beenden der Impersonation" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Beenden der Impersonation" });
   }
 }
 

@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, name: true },
     });
     if (!park) {
-      return NextResponse.json({ error: "Park nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden" });
     }
 
     let plotsCreated = 0;

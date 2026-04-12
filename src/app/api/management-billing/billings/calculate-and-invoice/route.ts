@@ -10,6 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -32,10 +33,7 @@ async function checkFeatureEnabled(
     false
   );
   if (!enabled) {
-    return NextResponse.json(
-      { error: "Feature nicht aktiviert" },
-      { status: 404 }
-    );
+    return apiError("FEATURE_DISABLED", 404, { message: "Feature nicht aktiviert" });
   }
   return null;
 }
@@ -51,10 +49,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = calcAndInvoiceSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { stakeholderId, year, month } = parsed.data;
 
@@ -64,24 +59,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (!stakeholder) {
-      return NextResponse.json(
-        { error: "Stakeholder nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Stakeholder nicht gefunden" });
     }
 
     if (check.tenantId && stakeholder.stakeholderTenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     if (!stakeholder.billingEnabled) {
-      return NextResponse.json(
-        { error: "Abrechnung für diesen Stakeholder nicht aktiviert" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Abrechnung für diesen Stakeholder nicht aktiviert" });
     }
 
     // Step 1: Calculate and save the billing
@@ -131,9 +117,6 @@ export async function POST(request: NextRequest) {
       { err: error },
       "[Management-Billing] Calculate-and-invoice error"
     );
-    return NextResponse.json(
-      { error: `Fehler bei Berechnung und Rechnungserstellung: ${message}` },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: `Fehler bei Berechnung und Rechnungserstellung: ${message}` });
   }
 }

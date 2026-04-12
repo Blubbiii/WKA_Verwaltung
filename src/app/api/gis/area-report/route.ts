@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -139,6 +140,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating area report");
-    return NextResponse.json({ error: "Fehler beim Erstellen des Flächenreports" }, { status: 500 });
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen des Flächenreports" });
   }
 }

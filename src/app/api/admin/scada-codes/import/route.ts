@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { parseStatusCodeXlsx } from "@/lib/scada/status-code-parser";
+import { apiError } from "@/lib/api-errors";
 
 // POST /api/admin/scada-codes/import — Import XLSX code list
 export async function POST(request: NextRequest) {
@@ -17,10 +18,7 @@ export async function POST(request: NextRequest) {
       | null;
 
     if (!file) {
-      return NextResponse.json(
-        { error: "Keine Datei hochgeladen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Datei hochgeladen" });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -30,22 +28,11 @@ export async function POST(request: NextRequest) {
     const controllerType =
       controllerTypeOverride?.trim() || result.controllerType;
     if (!controllerType) {
-      return NextResponse.json(
-        {
-          error:
-            "Steuerungstyp konnte nicht ermittelt werden. Bitte manuell angeben.",
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Steuerungstyp konnte nicht ermittelt werden. Bitte manuell angeben." });
     }
 
     if (result.codes.length === 0) {
-      return NextResponse.json(
-        {
-          error: `Keine Codes in der Datei gefunden. Erkannter Steuerungstyp: ${result.controllerType || "keiner"}. Bitte prüfen Sie ob es sich um eine ServiceOrderDocuments.XLSX handelt.`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Keine Codes in der Datei gefunden. Erkannter Steuerungstyp: ${result.controllerType || "keiner"}. Bitte prüfen Sie ob es sich um eine ServiceOrderDocuments.XLSX handelt.` });
     }
 
     // Replace all codes for this controller type (transaction)
@@ -80,9 +67,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error importing SCADA status codes");
-    return NextResponse.json(
-      { error: "Fehler beim Importieren der Statuscodes" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Importieren der Statuscodes" });
   }
 }

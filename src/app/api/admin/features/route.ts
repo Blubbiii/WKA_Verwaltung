@@ -16,6 +16,7 @@ import {
   type ConfigCategory,
 } from "@/lib/config";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const putFeaturesSchema = z.object({
   features: z.record(z.string(), z.boolean()),
@@ -52,10 +53,7 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "[Features API] GET error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Feature-Flags" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Feature-Flags" });
   }
 }
 
@@ -68,10 +66,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const parsed = putFeaturesSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { features } = parsed.data;
 
@@ -93,9 +88,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, features: results });
   } catch (error) {
     logger.error({ err: error }, "[Features API] PUT error");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Feature-Flags" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der Feature-Flags" });
   }
 }

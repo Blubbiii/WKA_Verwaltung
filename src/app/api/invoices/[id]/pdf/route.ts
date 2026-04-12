@@ -5,6 +5,7 @@ import { generateInvoicePdf } from "@/lib/pdf";
 import { parseWatermarkParam } from "@/lib/pdf/utils/watermark";
 import type { InvoicePdfOptions } from "@/lib/pdf/generators/invoicePdf";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/invoices/[id]/pdf - PDF generieren und herunterladen
 export async function GET(
@@ -29,10 +30,7 @@ export async function GET(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     // Query-Parameter auslesen
@@ -81,9 +79,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating PDF");
-    return NextResponse.json(
-      { error: "Fehler bei der PDF-Generierung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der PDF-Generierung" });
   }
 }

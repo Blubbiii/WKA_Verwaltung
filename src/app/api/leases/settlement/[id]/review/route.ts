@@ -6,6 +6,7 @@ import { serializePrisma } from "@/lib/serialize";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const reviewActionSchema = z.object({
   action: z.enum(["submit", "approve", "reject"]),
@@ -37,10 +38,7 @@ export async function POST(
     });
 
     if (!settlement) {
-      return NextResponse.json(
-        { error: "Abrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnung nicht gefunden" });
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,13 +48,7 @@ export async function POST(
       case "submit": {
         // submit: status must be CALCULATED -> PENDING_REVIEW
         if (settlement.status !== "CALCULATED") {
-          return NextResponse.json(
-            {
-              error: "Zur Prüfung einreichen nicht moeglich",
-              details: `Nur berechnete Abrechnungen können zur Prüfung eingereicht werden. Aktueller Status: ${settlement.status}`,
-            },
-            { status: 400 }
-          );
+          return apiError("BAD_REQUEST", undefined, { message: "Zur Prüfung einreichen nicht moeglich", details: `Nur berechnete Abrechnungen können zur Prüfung eingereicht werden. Aktueller Status: ${settlement.status}` });
         }
         updateData = {
           status: "PENDING_REVIEW",
@@ -68,24 +60,12 @@ export async function POST(
       case "approve": {
         // approve: status must be PENDING_REVIEW -> APPROVED
         if (settlement.status !== "PENDING_REVIEW") {
-          return NextResponse.json(
-            {
-              error: "Freigabe nicht moeglich",
-              details: `Nur Abrechnungen im Status 'Zur Prüfung' können freigegeben werden. Aktueller Status: ${settlement.status}`,
-            },
-            { status: 400 }
-          );
+          return apiError("BAD_REQUEST", undefined, { message: "Freigabe nicht moeglich", details: `Nur Abrechnungen im Status 'Zur Prüfung' können freigegeben werden. Aktueller Status: ${settlement.status}` });
         }
 
         // Require different user than creator (four-eyes principle)
         if (settlement.createdById && settlement.createdById === check.userId) {
-          return NextResponse.json(
-            {
-              error: "Freigabe nicht moeglich",
-              details: "Die Freigabe muss durch eine andere Person als den Ersteller erfolgen (Vier-Augen-Prinzip)",
-            },
-            { status: 403 }
-          );
+          return apiError("FORBIDDEN", undefined, { message: "Freigabe nicht moeglich", details: "Die Freigabe muss durch eine andere Person als den Ersteller erfolgen (Vier-Augen-Prinzip)" });
         }
 
         updateData = {
@@ -100,23 +80,11 @@ export async function POST(
       case "reject": {
         // reject: status must be PENDING_REVIEW -> CALCULATED (back to previous state)
         if (settlement.status !== "PENDING_REVIEW") {
-          return NextResponse.json(
-            {
-              error: "Ablehnung nicht moeglich",
-              details: `Nur Abrechnungen im Status 'Zur Prüfung' können abgelehnt werden. Aktueller Status: ${settlement.status}`,
-            },
-            { status: 400 }
-          );
+          return apiError("BAD_REQUEST", undefined, { message: "Ablehnung nicht moeglich", details: `Nur Abrechnungen im Status 'Zur Prüfung' können abgelehnt werden. Aktueller Status: ${settlement.status}` });
         }
 
         if (!notes) {
-          return NextResponse.json(
-            {
-              error: "Validierungsfehler",
-              details: "Bei Ablehnung muss ein Grund angegeben werden (notes)",
-            },
-            { status: 400 }
-          );
+          return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: "Bei Ablehnung muss ein Grund angegeben werden (notes)" });
         }
 
         updateData = {

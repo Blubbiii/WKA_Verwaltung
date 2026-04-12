@@ -8,6 +8,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { parkLeaseSettlementSetupSchema } from "@/types/billing";
 import type { ParkSetupData } from "@/types/billing";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/leases/usage-fees/setup/[parkId] - Load park setup data
@@ -116,10 +117,7 @@ export async function GET(
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     // Build operator funds list (deduplicated)
@@ -239,10 +237,7 @@ export async function GET(
       { err: error },
       "Error loading lease settlement setup data"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Park-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Park-Konfiguration" });
   }
 }
 
@@ -269,10 +264,7 @@ export async function PUT(
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     // Run updates in a transaction

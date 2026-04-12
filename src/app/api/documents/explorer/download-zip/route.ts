@@ -9,6 +9,7 @@ import { CATEGORY_LABELS } from "@/types/document-explorer";
 import { z } from "zod";
 import JSZip from "jszip";
 import { API_LIMITS } from "@/lib/config/api-limits";
+import { apiError } from "@/lib/api-errors";
 
 const MAX_FILES = API_LIMITS.zipMaxFiles;
 const MAX_SIZE_BYTES = API_LIMITS.zipMaxSizeBytes;
@@ -142,18 +143,15 @@ export async function POST(request: NextRequest) {
         files.push({ path: `${parkName}/${year}/${prefix}/${inv.invoiceNumber}.pdf`, fileUrl: inv.pdfUrl! });
       }
     } else {
-      return NextResponse.json({ error: "Keine Dateien ausgewählt" }, { status: 400 });
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Dateien ausgewählt" });
     }
 
     if (files.length === 0) {
-      return NextResponse.json({ error: "Keine Dateien gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Keine Dateien gefunden" });
     }
 
     if (files.length > MAX_FILES) {
-      return NextResponse.json(
-        { error: `Maximal ${MAX_FILES} Dateien pro Download` },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Maximal ${MAX_FILES} Dateien pro Download` });
     }
 
     // Build ZIP
@@ -165,10 +163,7 @@ export async function POST(request: NextRequest) {
         const buffer = await getFileBuffer(file.fileUrl);
         totalSize += buffer.length;
         if (totalSize > MAX_SIZE_BYTES) {
-          return NextResponse.json(
-            { error: "ZIP-Größe überschreitet 500 MB Limit" },
-            { status: 400 }
-          );
+          return apiError("BAD_REQUEST", undefined, { message: "ZIP-Größe überschreitet 500 MB Limit" });
         }
         zip.file(file.path, buffer);
       } catch {

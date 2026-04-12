@@ -18,6 +18,7 @@ import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/withPermission';
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 import {
   findJobById,
   findJobInQueue,
@@ -81,10 +82,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     if (!result) {
-      return NextResponse.json(
-        { error: `Job "${jobId}" nicht gefunden` },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: `Job "${jobId}" nicht gefunden` });
     }
 
     const { job, queueInfo } = result;
@@ -137,10 +135,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     if (!result) {
-      return NextResponse.json(
-        { error: `Job "${jobId}" nicht gefunden` },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: `Job "${jobId}" nicht gefunden` });
     }
 
     const { job, queueInfo } = result;
@@ -149,15 +144,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const state = await job.getState();
 
     if (!['waiting', 'delayed'].includes(state)) {
-      return NextResponse.json(
-        {
-          error: `Job kann nicht gelöscht werden`,
-          message: `Jobs im Status "${state}" können nicht gelöscht werden. Nur wartende oder verzoegerte Jobs können entfernt werden.`,
-          currentState: state,
-          allowedStates: ['waiting', 'delayed'],
-        },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, {
+        message: `Jobs im Status "${state}" können nicht gelöscht werden. Nur wartende oder verzoegerte Jobs können entfernt werden.`,
+        details: { currentState: state, allowedStates: ['waiting', 'delayed'] },
+      });
     }
 
     // Remove the job
@@ -180,15 +170,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     logger.error({ err: error }, '[API:admin/jobs/[id]] DELETE Error');
 
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: error.message });
     }
 
-    return NextResponse.json(
-      { error: 'Fehler beim Löschen des Jobs' },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: 'Fehler beim Löschen des Jobs' });
   }
 }

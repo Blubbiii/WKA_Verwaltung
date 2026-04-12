@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -101,10 +102,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching turbines");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Anlagen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Anlagen" });
   }
 }
 
@@ -129,10 +127,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden" });
     }
 
     const commissioningDate = turbineData.commissioningDate
@@ -166,15 +161,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(turbine, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
     }
     logger.error({ err: error }, "Error creating turbine");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Anlage" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen der Anlage" });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     const check = await requirePermission("inbox:export");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("inbox.enabled", check.tenantId!, false)) {
-      return NextResponse.json({ error: "Inbox nicht aktiviert" }, { status: 404 });
+      return apiError("FEATURE_DISABLED", 404, { message: "Inbox nicht aktiviert" });
     }
 
     const { searchParams } = new URL(request.url);
@@ -156,6 +157,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating DATEV export for inbox");
-    return NextResponse.json({ error: "Fehler beim DATEV-Export" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim DATEV-Export" });
   }
 }

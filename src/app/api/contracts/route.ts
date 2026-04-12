@@ -8,6 +8,7 @@ import { Prisma } from "@prisma/client";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { CONTRACT_REMINDER_DAYS_DEFAULT, CONTRACT_WARNING_DAYS } from "@/lib/config/business-thresholds";
+import { apiError } from "@/lib/api-errors";
 
 const contractCreateSchema = z.object({
   contractType: z.enum([
@@ -203,10 +204,7 @@ async function getHandler(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching contracts");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }
 

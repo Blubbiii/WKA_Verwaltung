@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
@@ -39,13 +40,13 @@ export async function GET(_req: NextRequest, context: RouteContext) {
     });
 
     if (!template) {
-      return NextResponse.json({ error: "Vorlage nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Vorlage nicht gefunden" });
     }
 
     return NextResponse.json({ template });
   } catch (error) {
     logger.error({ err: error }, "[MailingTemplate] GET failed");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden" });
   }
 }
 
@@ -63,7 +64,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Vorlage nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Vorlage nicht gefunden" });
     }
 
     const template = await prisma.mailingTemplate.update({
@@ -74,10 +75,10 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     return NextResponse.json({ template });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Ungültige Eingabe", details: error.issues }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: error.issues });
     }
     logger.error({ err: error }, "[MailingTemplate] PUT failed");
-    return NextResponse.json({ error: "Fehler beim Aktualisieren" }, { status: 500 });
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren" });
   }
 }
 
@@ -91,7 +92,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Vorlage nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Vorlage nicht gefunden" });
     }
 
     await prisma.mailingTemplate.delete({ where: { id, tenantId: check.tenantId! } });
@@ -99,6 +100,6 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "[MailingTemplate] DELETE failed");
-    return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen" });
   }
 }

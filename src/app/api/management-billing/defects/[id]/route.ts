@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -30,10 +31,7 @@ const defectUpdateSchema = z.object({
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
   if (!enabled) {
-    return NextResponse.json(
-      { error: "Management-Billing Feature ist nicht aktiviert" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", 404, { message: "Management-Billing Feature ist nicht aktiviert" });
   }
   return null;
 }
@@ -77,18 +75,12 @@ export async function GET(
     });
 
     if (!defect) {
-      return NextResponse.json(
-        { error: "Mangel nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Mangel nicht gefunden" });
     }
 
     // Access control
     if (check.tenantId && defect.tenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     return NextResponse.json({
@@ -100,10 +92,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "[Inspections] GET defect detail error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Mangels" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden des Mangels" });
   }
 }
 
@@ -126,10 +115,7 @@ export async function PUT(
     const body = await request.json();
     const parsed = defectUpdateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { title, description, severity, status, dueDate, resolutionNotes, costEstimateEur, actualCostEur, parkId, turbineId } = parsed.data;
 
@@ -138,18 +124,12 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Mangel nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Mangel nicht gefunden" });
     }
 
     // Access control
     if (check.tenantId && existing.tenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     // Auto-set resolvedAt when status changes to DONE
@@ -192,10 +172,7 @@ export async function PUT(
     });
   } catch (error) {
     logger.error({ err: error }, "[Inspections] PUT defect error");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Mangels" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren des Mangels" });
   }
 }
 
@@ -224,26 +201,17 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Mangel nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Mangel nicht gefunden" });
     }
 
     // Access control
     if (check.tenantId && existing.tenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     // Prevent deletion if insurance claims reference this defect
     if (existing._count.insuranceClaims > 0) {
-      return NextResponse.json(
-        { error: `Mangel kann nicht geloescht werden, da ${existing._count.insuranceClaims} Versicherungsmeldungen zugeordnet sind` },
-        { status: 409 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 409, { message: `Mangel kann nicht geloescht werden, da ${existing._count.insuranceClaims} Versicherungsmeldungen zugeordnet sind` });
     }
 
     await prisma.defect.delete({
@@ -258,9 +226,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "[Inspections] DELETE defect error");
-    return NextResponse.json(
-      { error: "Fehler beim Loeschen des Mangels" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Loeschen des Mangels" });
   }
 }

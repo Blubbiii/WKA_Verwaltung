@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/withPermission';
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 import {
   findJobById,
   findJobInQueue,
@@ -64,10 +65,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     if (!result) {
-      return NextResponse.json(
-        { error: `Job "${jobId}" nicht gefunden` },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: `Job "${jobId}" nicht gefunden` });
     }
 
     const { job, queueInfo } = result;
@@ -76,15 +74,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const state = await job.getState();
 
     if (state !== 'failed') {
-      return NextResponse.json(
-        {
-          error: `Job kann nicht erneut gestartet werden`,
-          message: `Nur fehlgeschlagene Jobs können erneut gestartet werden. Der aktuelle Status ist "${state}".`,
-          currentState: state,
-          requiredState: 'failed',
-        },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, {
+        message: `Nur fehlgeschlagene Jobs können erneut gestartet werden. Der aktuelle Status ist "${state}".`,
+        details: { currentState: state, requiredState: 'failed' },
+      });
     }
 
     // Store original error info for logging
@@ -115,13 +108,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     if (error instanceof Error && error.message.includes('not in a failed state')) {
-      return NextResponse.json(
-        {
-          error: 'Job ist nicht im fehlgeschlagenen Status',
-          message: 'Der Job wurde moeglicherweise bereits erneut gestartet.',
-        },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, {
+        message: 'Der Job wurde moeglicherweise bereits erneut gestartet.',
+      });
     }
 
     return handleApiError(error, "Fehler beim erneuten Starten des Jobs");

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
@@ -32,13 +33,13 @@ export async function GET(
     });
 
     if (!account) {
-      return NextResponse.json({ error: "Bankkonto nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Bankkonto nicht gefunden" });
     }
 
     return NextResponse.json({ data: account });
   } catch (error) {
     logger.error({ err: error }, "Error fetching bank account");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -56,13 +57,13 @@ export async function PATCH(
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Bankkonto nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Bankkonto nicht gefunden" });
     }
 
     const body = await request.json();
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Ungültige Daten", details: parsed.error.flatten() }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Daten", details: parsed.error.flatten() });
     }
 
     const data = parsed.data;
@@ -84,7 +85,7 @@ export async function PATCH(
     return NextResponse.json({ data: account });
   } catch (error) {
     logger.error({ err: error }, "Error updating bank account");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -102,7 +103,7 @@ export async function DELETE(
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Bankkonto nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Bankkonto nicht gefunden" });
     }
 
     // Soft-deactivate instead of hard delete
@@ -114,6 +115,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting bank account");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

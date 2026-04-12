@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -118,19 +119,13 @@ export async function GET(
     });
 
     if (!turbine) {
-      return NextResponse.json(
-        { error: "Anlage nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
     }
 
     return NextResponse.json(turbine);
   } catch (error) {
     logger.error({ err: error }, "Error fetching turbine");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Anlage" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Anlage" });
   }
 }
 
@@ -156,10 +151,7 @@ export async function PUT(
     });
 
     if (!existingTurbine) {
-      return NextResponse.json(
-        { error: "Anlage nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
     }
 
     const body = await request.json();
@@ -244,16 +236,10 @@ export async function PUT(
     return NextResponse.json(turbine);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
     }
     logger.error({ err: error }, "Error updating turbine");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Anlage" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren der Anlage" });
   }
 }
 
@@ -289,18 +275,12 @@ export async function DELETE(
     });
 
     if (!existingTurbine) {
-      return NextResponse.json(
-        { error: "Anlage nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
     }
 
     // Prüfe auf aktive Verknüpfungen
     if (existingTurbine._count.contracts > 0) {
-      return NextResponse.json(
-        { error: "Anlage hat noch aktive Verträge und kann nicht gelöscht werden" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Anlage hat noch aktive Verträge und kann nicht gelöscht werden" });
     }
 
     // Hard-Delete: Anlage unwiderruflich löschen
@@ -318,9 +298,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting turbine");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Anlage" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen der Anlage" });
   }
 }

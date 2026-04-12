@@ -10,6 +10,7 @@ import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { getConfig, getEmailConfig, getWeatherConfig, getPaperlessConfig } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { EMAIL_REGEX } from "@/lib/validation/patterns";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -33,10 +34,7 @@ export async function POST(request: NextRequest) {
     const parsed = testConfigSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { type, testParams } = parsed.data;
@@ -55,17 +53,11 @@ export async function POST(request: NextRequest) {
         return await testPaperlessConnection(check.tenantId);
 
       default:
-        return NextResponse.json(
-          { error: `Unbekannter Test-Typ: ${type}` },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: `Unbekannter Test-Typ: ${type}` });
     }
   } catch (error) {
     logger.error({ err: error }, "[System Config Test API] Error");
-    return NextResponse.json(
-      { error: "Fehler beim Testen der Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Testen der Konfiguration" });
   }
 }
 

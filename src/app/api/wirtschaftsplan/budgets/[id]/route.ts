@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { withMonitoring } from "@/lib/monitoring";
@@ -36,13 +37,13 @@ async function getHandler(
     });
 
     if (!budget) {
-      return NextResponse.json({ error: "Budgetplan nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Budgetplan nicht gefunden" });
     }
 
     return NextResponse.json(budget);
   } catch (error) {
     logger.error({ err: error }, "Error fetching budget");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden" });
   }
 }
 
@@ -61,10 +62,10 @@ async function putHandler(
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Budgetplan nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Budgetplan nicht gefunden" });
     }
     if (existing.status === "LOCKED") {
-      return NextResponse.json({ error: "Gesperrter Budget kann nicht bearbeitet werden" }, { status: 403 });
+      return apiError("OPERATION_NOT_ALLOWED", 403, { message: "Gesperrter Budget kann nicht bearbeitet werden" });
     }
 
     const body = await request.json();
@@ -78,10 +79,10 @@ async function putHandler(
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
     }
     logger.error({ err: error }, "Error updating budget");
-    return NextResponse.json({ error: "Fehler beim Aktualisieren" }, { status: 500 });
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren" });
   }
 }
 
@@ -99,17 +100,17 @@ async function deleteHandler(
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Budgetplan nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Budgetplan nicht gefunden" });
     }
     if (existing.status === "LOCKED") {
-      return NextResponse.json({ error: "Gesperrter Budget kann nicht gelöscht werden" }, { status: 403 });
+      return apiError("OPERATION_NOT_ALLOWED", 403, { message: "Gesperrter Budget kann nicht gelöscht werden" });
     }
 
     await prisma.annualBudget.delete({ where: { id, tenantId: check.tenantId! } });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting budget");
-    return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen" });
   }
 }
 

@@ -6,6 +6,7 @@ import { logDeletion, createAuditLog } from "@/lib/audit";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -86,18 +87,12 @@ export async function GET(
     });
 
     if (!operator) {
-      return NextResponse.json(
-        { error: "Betreiber-Zuordnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Betreiber-Zuordnung nicht gefunden" });
     }
 
     // Multi-Tenancy Prüfung über Turbine -> Park -> Tenant
     if (operator.turbine.park.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Lade auch die Historie für diese Turbine (andere Operatoren)
@@ -136,10 +131,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching turbine operator");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Betreiber-Zuordnung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Betreiber-Zuordnung" });
   }
 }
 
@@ -178,18 +170,12 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Betreiber-Zuordnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Betreiber-Zuordnung nicht gefunden" });
     }
 
     // Multi-Tenancy Prüfung
     if (existing.turbine.park.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Validierung: Wenn Status auf HISTORICAL gesetzt wird, muss validTo gesetzt sein
@@ -199,13 +185,7 @@ export async function PATCH(
       : existing.validTo?.toISOString() || null;
 
     if (newStatus === "HISTORICAL" && !newValidTo) {
-      return NextResponse.json(
-        {
-          error: "Ungültiger Status",
-          details: "Bei Status 'HISTORICAL' muss ein Enddatum (validTo) angegeben werden",
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger Status", details: "Bei Status 'HISTORICAL' muss ein Enddatum (validTo) angegeben werden" });
     }
 
     // Validierung: validFrom darf nicht nach validTo liegen
@@ -214,13 +194,7 @@ export async function PATCH(
       : existing.validFrom;
 
     if (newValidTo && newValidFrom >= new Date(newValidTo)) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Datumsangabe",
-          details: "Das Startdatum (validFrom) muss vor dem Enddatum (validTo) liegen",
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Datumsangabe", details: "Das Startdatum (validFrom) muss vor dem Enddatum (validTo) liegen" });
     }
 
     // Alte Werte für Audit-Log speichern
@@ -314,10 +288,7 @@ export async function DELETE(
     // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
     if (hierarchy < 60) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung zum Löschen von Betreiber-Zuordnungen" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung zum Löschen von Betreiber-Zuordnungen" });
     }
 
     const { id } = await params;
@@ -341,32 +312,19 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Betreiber-Zuordnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Betreiber-Zuordnung nicht gefunden" });
     }
 
     // Multi-Tenancy Prüfung
     if (existing.turbine.park.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // WICHTIG: Aktive Betreiber-Zuordnungen können nicht gelöscht werden!
     // Stattdessen muss ein Betreiberwechsel durchgeführt werden (POST mit neuem Operator)
     if (existing.status === "ACTIVE") {
-      return NextResponse.json(
-        {
-          error: "Aktive Betreiber-Zuordnungen können nicht gelöscht werden",
-          details:
-            "Um den Betreiber zu aendern, erstellen Sie einen neuen Operator-Eintrag. " +
-            "Der aktuelle Eintrag wird dann automatisch auf HISTORICAL gesetzt.",
-        },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Aktive Betreiber-Zuordnungen können nicht gelöscht werden", details: "Um den Betreiber zu aendern, erstellen Sie einen neuen Operator-Eintrag. " +
+            "Der aktuelle Eintrag wird dann automatisch auf HISTORICAL gesetzt." });
     }
 
     // Löschen
@@ -391,9 +349,6 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting turbine operator");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Betreiber-Zuordnung" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Betreiber-Zuordnung" });
   }
 }

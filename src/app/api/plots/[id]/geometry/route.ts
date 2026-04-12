@@ -6,6 +6,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { apiError } from "@/lib/api-errors";
 
 const geometrySchema = z.object({
   geometry: z.object({
@@ -32,7 +33,7 @@ export async function PUT(
       where: { id, tenantId: check.tenantId },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Flurstück nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
     const updated = await prisma.plot.update({

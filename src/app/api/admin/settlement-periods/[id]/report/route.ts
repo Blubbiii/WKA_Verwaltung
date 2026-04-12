@@ -6,6 +6,7 @@ import {
   generateSettlementReportPdf,
   getSettlementReportFilename,
 } from "@/lib/pdf/generators/settlementReportPdf";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/admin/settlement-periods/[id]/report - PDF Report herunterladen
 export async function GET(
@@ -29,17 +30,11 @@ export async function GET(
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Abrechnungsperiode nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsperiode nicht gefunden" });
     }
 
     if (period.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // PDF generieren
@@ -63,10 +58,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating settlement report PDF");
-    return NextResponse.json(
-      { error: "Fehler beim Generieren des PDFs" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Generieren des PDFs" });
   }
 }
 
@@ -94,17 +86,11 @@ export async function POST(
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Abrechnungsperiode nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsperiode nicht gefunden" });
     }
 
     if (period.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // PDF generieren
@@ -125,9 +111,6 @@ export async function POST(
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating settlement report preview");
-    return NextResponse.json(
-      { error: "Fehler beim Generieren der Vorschau" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Generieren der Vorschau" });
   }
 }

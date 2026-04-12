@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // Typen für Berechnungsdetails
@@ -93,29 +94,17 @@ export async function POST(
     });
 
     if (!settlement) {
-      return NextResponse.json(
-        { error: "Stromabrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Stromabrechnung nicht gefunden" });
     }
 
     // Tenant-Check
     if (settlement.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Status-Check: Nur DRAFT kann berechnet werden
     if (settlement.status !== "DRAFT") {
-      return NextResponse.json(
-        {
-          error: "Nur Entwuerfe können berechnet werden",
-          details: `Aktuelle Status: ${settlement.status}`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Nur Entwuerfe können berechnet werden", details: `Aktuelle Status: ${settlement.status}` });
     }
 
     // Sammle Produktionsdaten für den Abrechnungszeitraum
@@ -192,13 +181,7 @@ export async function POST(
     }
 
     if (turbineProductionMap.size === 0) {
-      return NextResponse.json(
-        {
-          error: "Keine Produktionsdaten gefunden",
-          details: `Für den Zeitraum ${settlement.month ? `${settlement.month}/` : ""}${settlement.year} wurden keine Produktionsdaten erfasst.`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Produktionsdaten gefunden", details: `Für den Zeitraum ${settlement.month ? `${settlement.month}/` : ""}${settlement.year} wurden keine Produktionsdaten erfasst.` });
     }
 
     // Berechne Gesamtproduktion
@@ -348,10 +331,7 @@ export async function POST(
         break;
 
       default:
-        return NextResponse.json(
-          { error: "Unbekannter Verteilungsmodus" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Unbekannter Verteilungsmodus" });
     }
 
     // Berechungsdetails zusammenstellen
@@ -434,9 +414,6 @@ export async function POST(
     });
   } catch (error) {
     logger.error({ err: error }, "Error calculating settlement");
-    return NextResponse.json(
-      { error: "Fehler bei der Berechnung der Stromabrechnung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Berechnung der Stromabrechnung" });
   }
 }

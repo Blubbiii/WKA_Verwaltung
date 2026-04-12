@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextInvoiceNumber } from "@/lib/invoices/numberGenerator";
@@ -20,11 +21,11 @@ export async function POST(
     });
 
     if (!quote) {
-      return NextResponse.json({ error: "Angebot nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Angebot nicht gefunden" });
     }
 
     if (quote.status !== "ACCEPTED") {
-      return NextResponse.json({ error: "Nur angenommene Angebote können in Rechnungen umgewandelt werden" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Nur angenommene Angebote können in Rechnungen umgewandelt werden" });
     }
 
     // Atomic: create invoice + update quote
@@ -89,6 +90,6 @@ export async function POST(
     return NextResponse.json({ data: result }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error converting quote to invoice");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

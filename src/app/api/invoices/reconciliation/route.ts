@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // Types
@@ -84,10 +85,7 @@ export async function GET(request: NextRequest) {
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
 
     if (isNaN(year) || year < 2000 || year > 2100) {
-      return NextResponse.json(
-        { error: "Ungültiges Jahr" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Jahr" });
     }
 
     const tenantId = check.tenantId!;
@@ -490,9 +488,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     logger.error({ error }, "[Reconciliation API] Error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Abgleichdaten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Abgleichdaten" });
   }
 }

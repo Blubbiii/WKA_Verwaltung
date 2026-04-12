@@ -8,6 +8,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
+import { apiError } from "@/lib/api-errors";
 // ============================================================================
 // Validation
 // ============================================================================
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
-      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
+      return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
 
     const { searchParams } = new URL(request.url);
     const personId = searchParams.get("personId");
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(serializePrisma(activities));
   } catch (error) {
     logger.error({ err: error }, "Error fetching CRM activities");
-    return NextResponse.json({ error: "Fehler beim Laden der Aktivitäten" }, { status: 500 });
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Aktivitäten" });
   }
 }
 
@@ -105,15 +106,12 @@ export async function POST(request: NextRequest) {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
-      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
+      return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
 
     const raw = await request.json();
     const parsed = activitySchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     const data = parsed.data;
@@ -162,6 +160,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(serializePrisma(activity), { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating CRM activity");
-    return NextResponse.json({ error: "Fehler beim Erstellen der Aktivität" }, { status: 500 });
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Aktivität" });
   }
 }

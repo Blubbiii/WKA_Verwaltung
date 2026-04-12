@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -53,10 +54,7 @@ export async function GET(request: NextRequest) {
     const parkId = searchParams.get("parkId");
 
     if (!parkId) {
-      return NextResponse.json(
-        { error: "parkId Parameter ist erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "parkId Parameter ist erforderlich" });
     }
 
     // Verify park belongs to tenant
@@ -73,10 +71,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     // Fetch nodes with turbine data
@@ -117,10 +112,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching topology");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Topologie" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Topologie" });
   }
 }
 
@@ -146,10 +138,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     // Run full save in a transaction

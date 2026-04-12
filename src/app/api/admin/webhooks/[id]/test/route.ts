@@ -11,6 +11,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { enqueueWebhookDelivery } from "@/lib/queue/queues/webhook.queue";
 import { apiLogger as logger } from "@/lib/logger";
 import type { WebhookEventPayload } from "@/lib/webhooks/dispatcher";
+import { apiError } from "@/lib/api-errors";
 
 function isInternalUrl(url: string): boolean {
   try {
@@ -53,17 +54,11 @@ export async function POST(
     });
 
     if (!webhook) {
-      return NextResponse.json(
-        { error: "Webhook nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Webhook nicht gefunden" });
     }
 
     if (!webhook.isActive) {
-      return NextResponse.json(
-        { error: "Webhook ist deaktiviert. Bitte zuerst aktivieren." },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Webhook ist deaktiviert. Bitte zuerst aktivieren." });
     }
 
     // Build test payload
@@ -79,10 +74,7 @@ export async function POST(
 
     // SSRF protection: block requests to internal/private URLs
     if (isInternalUrl(webhook.url)) {
-      return NextResponse.json(
-        { error: "Webhook-URL darf nicht auf interne oder private Adressen zeigen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Webhook-URL darf nicht auf interne oder private Adressen zeigen" });
     }
 
     // Enqueue delivery job
@@ -104,9 +96,6 @@ export async function POST(
     });
   } catch (error) {
     logger.error({ err: error }, "Error sending webhook test event");
-    return NextResponse.json(
-      { error: "Fehler beim Senden des Test-Events" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Senden des Test-Events" });
   }
 }

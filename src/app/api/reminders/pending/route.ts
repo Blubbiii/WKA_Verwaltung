@@ -16,6 +16,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getPendingActionsSummary } from "@/lib/reminders";
 import { CACHE_TTL } from "@/lib/cache/types";
@@ -28,10 +29,7 @@ export async function GET() {
 
     const tenantId = check.tenantId;
     if (!tenantId) {
-      return NextResponse.json(
-        { error: "Kein Mandant zugeordnet" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Kein Mandant zugeordnet" });
     }
 
     const summary = await getPendingActionsSummary(tenantId);
@@ -50,9 +48,6 @@ export async function GET() {
       { err: error },
       "Error fetching pending actions summary"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Laden der ausstehenden Aktionen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der ausstehenden Aktionen" });
   }
 }

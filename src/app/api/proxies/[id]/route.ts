@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -48,10 +49,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     });
 
     if (!proxy) {
-      return NextResponse.json(
-        { error: "Vollmacht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Vollmacht nicht gefunden" });
     }
 
     return NextResponse.json({
@@ -87,10 +85,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching proxy");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vollmacht" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Vollmacht" });
   }
 }
 
@@ -117,19 +112,13 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     });
 
     if (!existingProxy) {
-      return NextResponse.json(
-        { error: "Vollmacht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Vollmacht nicht gefunden" });
     }
 
     const body = await request.json();
     const parsed = proxyUpdateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabedaten", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabedaten", details: parsed.error.flatten().fieldErrors });
     }
     const { isActive, validUntil, documentUrl } = parsed.data;
 
@@ -147,10 +136,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     return NextResponse.json(proxy);
   } catch (error) {
     logger.error({ err: error }, "Error updating proxy");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Vollmacht" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren der Vollmacht" });
   }
 }
 
@@ -177,10 +163,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     });
 
     if (!existingProxy) {
-      return NextResponse.json(
-        { error: "Vollmacht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Vollmacht nicht gefunden" });
     }
 
     await prisma.voteProxy.delete({
@@ -190,9 +173,6 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting proxy");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Vollmacht" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen der Vollmacht" });
   }
 }

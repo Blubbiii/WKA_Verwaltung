@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiLogger as logger } from "@/lib/logger";
@@ -30,28 +31,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Report-ID ist erforderlich" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Report-ID ist erforderlich" });
     }
 
     const report = await getArchivedReportById(id, check.tenantId!);
 
     if (!report) {
-      return NextResponse.json(
-        { error: "Report nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Report nicht gefunden" });
     }
 
     return NextResponse.json({ report });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Abrufen des Reports");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -67,27 +59,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Report-ID ist erforderlich" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Report-ID ist erforderlich" });
     }
 
     const success = await deleteArchivedReport(id, check.tenantId!);
 
     if (!success) {
-      return NextResponse.json(
-        { error: "Report nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Report nicht gefunden" });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Löschen des Reports");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

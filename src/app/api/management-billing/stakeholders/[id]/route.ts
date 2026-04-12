@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -29,10 +30,7 @@ const stakeholderUpdateSchema = z.object({
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
   if (!enabled) {
-    return NextResponse.json(
-      { error: "Management-Billing Feature ist nicht aktiviert" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", 404, { message: "Management-Billing Feature ist nicht aktiviert" });
   }
   return null;
 }
@@ -71,18 +69,12 @@ export async function GET(
     });
 
     if (!stakeholder) {
-      return NextResponse.json(
-        { error: "Stakeholder nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Stakeholder nicht gefunden" });
     }
 
     // Access control: non-superadmin can only see their own tenant's entries
     if (check.tenantId && stakeholder.stakeholderTenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     // Enrich with park + tenant names
@@ -132,10 +124,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] GET stakeholder detail error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Stakeholders" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden des Stakeholders" });
   }
 }
 
@@ -158,10 +147,7 @@ export async function PUT(
     const body = await request.json();
     const parsed = stakeholderUpdateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { visibleFundIds, billingEnabled, feePercentage, taxType, sepaMandate, creditorId, validTo, isActive, notes } = parsed.data;
 
@@ -170,18 +156,12 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Stakeholder nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Stakeholder nicht gefunden" });
     }
 
     // Access control
     if (check.tenantId && existing.stakeholderTenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     // If fee percentage changed, create a history entry
@@ -238,10 +218,7 @@ export async function PUT(
     return NextResponse.json({ stakeholder: updated });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] PUT stakeholder error");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Stakeholders" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren des Stakeholders" });
   }
 }
 
@@ -267,18 +244,12 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Stakeholder nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Stakeholder nicht gefunden" });
     }
 
     // Access control
     if (check.tenantId && existing.stakeholderTenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     // Soft-delete: deactivate instead of hard delete
@@ -298,9 +269,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] DELETE stakeholder error");
-    return NextResponse.json(
-      { error: "Fehler beim Deaktivieren des Stakeholders" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Deaktivieren des Stakeholders" });
   }
 }

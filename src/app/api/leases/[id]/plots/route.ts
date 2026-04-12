@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const addPlotsSchema = z.object({
   plotIds: z.array(z.string().uuid("Ungültige Flurstück-ID")).min(1, "Mindestens ein Flurstück erforderlich"),
@@ -47,10 +48,7 @@ export async function GET(
     });
 
     if (!lease) {
-      return NextResponse.json(
-        { error: "Pachtvertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Pachtvertrag nicht gefunden" });
     }
 
     const plots = lease.leasePlots.map((lp) => lp.plot);
@@ -58,10 +56,7 @@ export async function GET(
     return NextResponse.json({ plots });
   } catch (error) {
     logger.error({ err: error }, "Error fetching lease plots");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Flurstücke" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Flurstücke" });
   }
 }
 
@@ -85,10 +80,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     });
 
     if (!lease) {
-      return NextResponse.json(
-        { error: "Pachtvertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Pachtvertrag nicht gefunden" });
     }
 
     const body = await request.json();
@@ -103,10 +95,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     });
 
     if (plots.length !== plotIds.length) {
-      return NextResponse.json(
-        { error: "Ein oder mehrere Flurstücke nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Ein oder mehrere Flurstücke nicht gefunden" });
     }
 
     // Check which plots are already assigned
@@ -121,10 +110,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     const newPlotIds = plotIds.filter((pid) => !existingPlotIds.includes(pid));
 
     if (newPlotIds.length === 0) {
-      return NextResponse.json(
-        { error: "Alle angegebenen Flurstücke sind bereits diesem Vertrag zugeordnet" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Alle angegebenen Flurstücke sind bereits diesem Vertrag zugeordnet" });
     }
 
     // Add new plot relations
@@ -188,10 +174,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     });
 
     if (!lease) {
-      return NextResponse.json(
-        { error: "Pachtvertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Pachtvertrag nicht gefunden" });
     }
 
     const body = await request.json();
@@ -200,10 +183,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     // Check if we would remove all plots
     const currentPlotCount = lease._count.leasePlots;
     if (plotIds.length >= currentPlotCount) {
-      return NextResponse.json(
-        { error: "Ein Pachtvertrag muss mindestens ein Flurstück haben" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Ein Pachtvertrag muss mindestens ein Flurstück haben" });
     }
 
     // Remove plot relations

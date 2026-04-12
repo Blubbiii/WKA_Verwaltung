@@ -7,6 +7,7 @@ import type {
   DowntimeEvent,
   AvailabilityTarget,
 } from "@/types/analytics";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/analytics/availability-detail
@@ -54,10 +55,7 @@ export async function GET(request: NextRequest) {
 
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
     if (isNaN(year) || year < 2000 || year > 2100) {
-      return NextResponse.json(
-        { error: "Ungültiges Jahr (2000-2100 erwartet)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Jahr (2000-2100 erwartet)" });
     }
 
     const from = new Date(Date.UTC(year, 0, 1));
@@ -76,7 +74,7 @@ export async function GET(request: NextRequest) {
         select: { id: true, designation: true },
       });
       if (!turbine) {
-        return NextResponse.json({ error: "Anlage nicht gefunden" }, { status: 404 });
+        return apiError("NOT_FOUND", undefined, { message: "Anlage nicht gefunden" });
       }
       designation = turbine.designation;
 
@@ -276,9 +274,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der Verfügbarkeits-Details");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Verfügbarkeits-Details" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Verfügbarkeits-Details" });
   }
 }

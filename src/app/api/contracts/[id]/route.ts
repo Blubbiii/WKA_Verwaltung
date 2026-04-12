@@ -8,6 +8,7 @@ import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { apiError } from "@/lib/api-errors";
 
 const contractUpdateSchema = z.object({
   contractType: z
@@ -105,10 +106,7 @@ export async function GET(
     });
 
     if (!contract) {
-      return NextResponse.json(
-        { error: "Vertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vertrag nicht gefunden" });
     }
 
     // Calculate days until end/notice
@@ -170,10 +168,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching contract");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }
 
@@ -197,10 +192,7 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Vertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vertrag nicht gefunden" });
     }
 
     const body = await request.json();
@@ -340,10 +332,7 @@ export async function DELETE(
     });
 
     if (!contractToDelete) {
-      return NextResponse.json(
-        { error: "Vertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vertrag nicht gefunden" });
     }
 
     // Perform the deletion
@@ -360,9 +349,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting contract");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }

@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALID MODULES for energy report configurations
@@ -96,10 +97,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: configs });
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy report configs");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Berichts-Konfigurationen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Berichts-Konfigurationen" });
   }
 }
 
@@ -120,13 +118,7 @@ export async function POST(request: NextRequest) {
     const parsed = CreateConfigSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Eingabedaten",
-          details: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabedaten", details: parsed.error.flatten().fieldErrors });
     }
 
     const data = parsed.data;
@@ -137,10 +129,7 @@ export async function POST(request: NextRequest) {
         where: { id: data.parkId, tenantId },
       });
       if (!park) {
-        return NextResponse.json(
-          { error: "Windpark nicht gefunden oder nicht zugehoerig" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Windpark nicht gefunden oder nicht zugehoerig" });
       }
     }
 
@@ -153,10 +142,7 @@ export async function POST(request: NextRequest) {
         },
       });
       if (!turbine) {
-        return NextResponse.json(
-          { error: "Turbine nicht gefunden oder nicht zugehoerig" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Turbine nicht gefunden oder nicht zugehoerig" });
       }
     }
 
@@ -190,9 +176,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: config }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating energy report config");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Berichts-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Berichts-Konfiguration" });
   }
 }

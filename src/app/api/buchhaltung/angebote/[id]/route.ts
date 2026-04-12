@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
@@ -51,13 +52,13 @@ export async function GET(
     });
 
     if (!quote) {
-      return NextResponse.json({ error: "Angebot nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Angebot nicht gefunden" });
     }
 
     return NextResponse.json({ data: quote });
   } catch (error) {
     logger.error({ err: error }, "Error fetching quote");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -76,17 +77,17 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Angebot nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Angebot nicht gefunden" });
     }
 
     if (existing.status !== "DRAFT") {
-      return NextResponse.json({ error: "Nur Entwürfe können bearbeitet werden" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Nur Entwürfe können bearbeitet werden" });
     }
 
     const body = await request.json();
     const parsed = quoteUpdateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Ungültige Daten", details: parsed.error.flatten() }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Daten", details: parsed.error.flatten() });
     }
 
     const data = parsed.data;
@@ -150,7 +151,7 @@ export async function PUT(
     return NextResponse.json({ data: quote });
   } catch (error) {
     logger.error({ err: error }, "Error updating quote");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -169,11 +170,11 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Angebot nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Angebot nicht gefunden" });
     }
 
     if (existing.status === "INVOICED") {
-      return NextResponse.json({ error: "Bereits in Rechnung umgewandelte Angebote können nicht gelöscht werden" }, { status: 400 });
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Bereits in Rechnung umgewandelte Angebote können nicht gelöscht werden" });
     }
 
     await prisma.quote.update({
@@ -184,6 +185,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting quote");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

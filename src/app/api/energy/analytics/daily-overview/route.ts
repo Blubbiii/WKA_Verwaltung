@@ -9,6 +9,7 @@ import {
   round,
 } from "@/lib/analytics/query-helpers";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/analytics/daily-overview
@@ -67,10 +68,7 @@ export async function GET(request: NextRequest) {
       : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     if (isNaN(from.getTime()) || isNaN(to.getTime())) {
-      return NextResponse.json(
-        { error: "Ungültiges Datumsformat" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Datumsformat" });
     }
 
     // Load turbines
@@ -319,9 +317,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der Tagesbericht-Daten");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Tagesbericht-Daten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Tagesbericht-Daten" });
   }
 }

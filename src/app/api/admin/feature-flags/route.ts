@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma, hasPrismaModel, getPrismaModel } from "@/lib/prisma";
 import { requireSuperadmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // Default feature flags for tenants that have no flags set
 const DEFAULT_FEATURE_FLAGS = {
@@ -190,9 +191,6 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ data: tenantsWithFlags });
   } catch (error) {
     logger.error({ err: error }, "Error fetching feature flags");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Feature-Flags" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Feature-Flags" });
   }
 }

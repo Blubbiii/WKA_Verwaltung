@@ -4,6 +4,7 @@ import * as path from "path";
 import * as fs from "fs/promises";
 import { requireApiKey } from "@/lib/auth/apiKeyAuth";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const locationSchema = z.string().regex(/^Loc_\d+$/, "Ungültiger Location-Code");
 
@@ -37,10 +38,7 @@ export async function POST(request: NextRequest) {
 
     const scadaBasePath = process.env.SCADA_BASE_PATH;
     if (!scadaBasePath) {
-      return NextResponse.json(
-        { error: "SCADA_BASE_PATH ist nicht konfiguriert" },
-        { status: 500 },
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: "SCADA_BASE_PATH ist nicht konfiguriert" });
     }
 
     const formData = await request.formData();
@@ -48,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     const locResult = locationSchema.safeParse(locationCode);
     if (!locResult.success) {
-      return NextResponse.json({ error: "Ungültiger Location-Code" }, { status: 400 });
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger Location-Code" });
     }
     const validatedLocationCode = locResult.data;
 
@@ -61,10 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (files.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Dateien hochgeladen" },
-        { status: 400 },
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Dateien hochgeladen" });
     }
 
     const saved: string[] = [];
@@ -74,10 +69,7 @@ export async function POST(request: NextRequest) {
       // Reject filenames containing path separators, null bytes, or dots (beyond the extension dot)
       // path.basename() strips directory components, but we want to reject them outright.
       if (/[/\\\x00]/.test(file.name)) {
-        return NextResponse.json(
-          { error: `Ungültiger Dateiname: ${file.name}` },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: `Ungültiger Dateiname: ${file.name}` });
       }
 
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
@@ -89,10 +81,7 @@ export async function POST(request: NextRequest) {
       // Validate that the filename stem contains only safe characters (alphanumeric + underscores/dashes)
       const baseName = path.basename(file.name, `.${ext}`);
       if (!/^[\w\-]+$/.test(baseName)) {
-        return NextResponse.json(
-          { error: `Ungültiger Dateiname: ${file.name}` },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: `Ungültiger Dateiname: ${file.name}` });
       }
 
       // Try to extract date from filename (YYYYMMDD format)
@@ -140,9 +129,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim n8n SCADA-Upload");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der SCADA-Dateien" },
-      { status: 500 },
-    );
+    return apiError("STORAGE_FAILED", undefined, { message: "Fehler beim Speichern der SCADA-Dateien" });
   }
 }

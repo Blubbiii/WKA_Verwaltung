@@ -7,6 +7,7 @@ import { logDeletion } from "@/lib/audit";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { apiError } from "@/lib/api-errors";
 
 const fundUpdateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").optional(),
@@ -168,10 +169,7 @@ export async function GET(
     });
 
     if (!fund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     // Berechne Statistiken
@@ -203,10 +201,7 @@ export async function GET(
     return NextResponse.json({ ...fund, stats });
   } catch (error) {
     logger.error({ err: error }, "Error fetching fund");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Gesellschaft" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Gesellschaft" });
   }
 }
 
@@ -229,10 +224,7 @@ export async function PUT(
     });
 
     if (!existingFund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     const body = await request.json();
@@ -274,10 +266,7 @@ export async function DELETE(
     // Additional role check: Only Admin or higher (hierarchy >= 80)
     const hierarchy = await getUserHighestHierarchy(check.userId!);
     if (hierarchy < ROLE_HIERARCHY.ADMIN) {
-      return NextResponse.json(
-        { error: "Nur Administratoren dürfen Gesellschaften löschen" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Nur Administratoren dürfen Gesellschaften löschen" });
     }
 
     const { id } = await params;
@@ -290,10 +279,7 @@ export async function DELETE(
     });
 
     if (!existingFund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     // Hard-Delete: Unwiderruflich löschen
@@ -315,9 +301,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting fund");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Gesellschaft" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Gesellschaft" });
   }
 }

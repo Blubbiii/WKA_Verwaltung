@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { withMonitoring } from "@/lib/monitoring";
@@ -41,13 +42,13 @@ async function getHandler(
     });
 
     if (!costCenter) {
-      return NextResponse.json({ error: "Kostenstelle nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Kostenstelle nicht gefunden" });
     }
 
     return NextResponse.json(costCenter);
   } catch (error) {
     logger.error({ err: error }, "Error fetching cost center");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden" });
   }
 }
 
@@ -69,17 +70,17 @@ async function putHandler(
     });
 
     if (costCenter.count === 0) {
-      return NextResponse.json({ error: "Kostenstelle nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Kostenstelle nicht gefunden" });
     }
 
     const updated = await prisma.costCenter.findFirst({ where: { id, tenantId: check.tenantId! } });
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
     }
     logger.error({ err: error }, "Error updating cost center");
-    return NextResponse.json({ error: "Fehler beim Aktualisieren" }, { status: 500 });
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren" });
   }
 }
 
@@ -98,20 +99,17 @@ async function deleteHandler(
     });
 
     if (result.count === 0) {
-      return NextResponse.json({ error: "Kostenstelle nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Kostenstelle nicht gefunden" });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     // FK constraint violation: cost center still has dependent records
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
-      return NextResponse.json(
-        { error: "Kostenstelle kann nicht gelöscht werden, da noch abhängige Einträge existieren (z.B. Budgetpositionen)" },
-        { status: 409 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 409, { message: "Kostenstelle kann nicht gelöscht werden, da noch abhängige Einträge existieren (z.B. Budgetpositionen)" });
     }
     logger.error({ err: error }, "Error deleting cost center");
-    return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen" });
   }
 }
 

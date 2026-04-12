@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateAllocationInvoices } from "@/lib/lease-revenue/invoice-generator";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/leases/cost-allocation/[id]/invoice - Generate allocation invoices
@@ -42,28 +43,16 @@ export async function POST(
     });
 
     if (!allocation) {
-      return NextResponse.json(
-        { error: "Kostenaufteilung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Kostenaufteilung nicht gefunden" });
     }
 
     // Only DRAFT allocations can generate invoices
     if (allocation.status !== "DRAFT") {
-      return NextResponse.json(
-        {
-          error: "Rechnungen können nur für Kostenaufteilungen im Entwurf-Status erstellt werden",
-          details: `Aktueller Status: ${allocation.status}`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Rechnungen können nur für Kostenaufteilungen im Entwurf-Status erstellt werden", details: `Aktueller Status: ${allocation.status}` });
     }
 
     if (allocation.items.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Positionen vorhanden. Bitte zuerst die Kostenaufteilung berechnen." },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Positionen vorhanden. Bitte zuerst die Kostenaufteilung berechnen." });
     }
 
     const result = await generateAllocationInvoices(check.tenantId!, id, check.userId);
@@ -73,16 +62,13 @@ export async function POST(
       error instanceof Error ? error.message : "Unbekannter Fehler";
 
     if (message.includes("nicht gefunden") || message.includes("Status")) {
-      return NextResponse.json({ error: message }, { status: 400 });
+      return apiError("BAD_REQUEST", undefined, { message: message });
     }
 
     logger.error(
       { err: error },
       "Error generating allocation invoices"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Kostenaufteilungs-Rechnungen" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Kostenaufteilungs-Rechnungen" });
   }
 }

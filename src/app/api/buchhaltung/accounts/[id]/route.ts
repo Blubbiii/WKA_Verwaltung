@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -26,10 +27,7 @@ export async function PUT(
     const body = await request.json();
     const parsed = updateAccountSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungueltige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungueltige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
 
     const account = await prisma.ledgerAccount.findFirst({
@@ -37,14 +35,11 @@ export async function PUT(
     });
 
     if (!account) {
-      return NextResponse.json({ error: "Konto nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Konto nicht gefunden" });
     }
 
     if (account.isSystem && parsed.data.isActive === false) {
-      return NextResponse.json(
-        { error: "Systemkonten koennen nicht deaktiviert werden" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Systemkonten koennen nicht deaktiviert werden" });
     }
 
     const updated = await prisma.ledgerAccount.update({
@@ -55,7 +50,7 @@ export async function PUT(
     return NextResponse.json({ data: updated });
   } catch (error) {
     logger.error({ err: error }, "Error updating ledger account");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -74,14 +69,11 @@ export async function DELETE(
     });
 
     if (!account) {
-      return NextResponse.json({ error: "Konto nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Konto nicht gefunden" });
     }
 
     if (account.isSystem) {
-      return NextResponse.json(
-        { error: "Systemkonten koennen nicht geloescht werden" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Systemkonten koennen nicht geloescht werden" });
     }
 
     await prisma.ledgerAccount.delete({ where: { id, tenantId: check.tenantId! } });
@@ -89,6 +81,6 @@ export async function DELETE(
     return NextResponse.json({ message: "Konto geloescht" });
   } catch (error) {
     logger.error({ err: error }, "Error deleting ledger account");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

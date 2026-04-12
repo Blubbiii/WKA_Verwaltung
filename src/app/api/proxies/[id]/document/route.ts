@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -48,17 +49,11 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     });
 
     if (!proxy) {
-      return NextResponse.json(
-        { error: "Vollmacht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Vollmacht nicht gefunden" });
     }
 
     if (!proxy.documentUrl) {
-      return NextResponse.json(
-        { error: "Kein Dokument vorhanden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Kein Dokument vorhanden" });
     }
 
     // Generiere Presigned URL (gültig für 1 Stunde)
@@ -70,10 +65,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     });
   } catch (error) {
     logger.error({ err: error }, "Error getting proxy document");
-    return NextResponse.json(
-      { error: "Fehler beim Abrufen des Dokuments" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Abrufen des Dokuments" });
   }
 }
 
@@ -121,20 +113,14 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     });
 
     if (!proxy) {
-      return NextResponse.json(
-        { error: "Vollmacht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Vollmacht nicht gefunden" });
     }
 
     // Berechtigungsprüfung: Vollmachtgeber selbst (Admin-Zugriff durch requirePermission abgedeckt)
     const isGrantor = proxy.grantor.userId === check.userId;
 
     if (!isGrantor) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung zum Hochladen" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung zum Hochladen" });
     }
 
     // FormData parsen
@@ -142,26 +128,17 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json(
-        { error: "Keine Datei hochgeladen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Keine Datei hochgeladen" });
     }
 
     // Validierung: MIME-Type
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Nur PDF-Dateien sind erlaubt" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Nur PDF-Dateien sind erlaubt" });
     }
 
     // Validierung: Dateigröße
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "Die Datei darf maximal 10MB gross sein" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Die Datei darf maximal 10MB gross sein" });
     }
 
     // Datei in Buffer konvertieren
@@ -212,10 +189,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     );
   } catch (error) {
     logger.error({ err: error }, "Error uploading proxy document");
-    return NextResponse.json(
-      { error: "Fehler beim Hochladen des Dokuments" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Hochladen des Dokuments" });
   }
 }
 
@@ -255,27 +229,18 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     });
 
     if (!proxy) {
-      return NextResponse.json(
-        { error: "Vollmacht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Vollmacht nicht gefunden" });
     }
 
     // Berechtigungsprüfung: Vollmachtgeber selbst (Admin-Zugriff durch requirePermission abgedeckt)
     const isGrantor = proxy.grantor.userId === check.userId;
 
     if (!isGrantor) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung zum Löschen" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung zum Löschen" });
     }
 
     if (!proxy.documentUrl) {
-      return NextResponse.json(
-        { error: "Kein Dokument vorhanden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Kein Dokument vorhanden" });
     }
 
     // Datei aus MinIO löschen
@@ -299,9 +264,6 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting proxy document");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Dokuments" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen des Dokuments" });
   }
 }

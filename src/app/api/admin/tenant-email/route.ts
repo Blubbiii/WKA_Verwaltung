@@ -17,6 +17,7 @@ import {
 } from "@/lib/config";
 import { clearProviderCache } from "@/lib/email/provider";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -94,10 +95,7 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "[Tenant Email API] GET error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der E-Mail-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der E-Mail-Konfiguration" });
   }
 }
 
@@ -114,10 +112,7 @@ export async function POST(request: NextRequest) {
     const parsed = smtpConfigSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const {
@@ -171,10 +166,7 @@ export async function POST(request: NextRequest) {
       { err: error },
       "[Tenant Email API] POST error: " + errMsg
     );
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der E-Mail-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der E-Mail-Konfiguration" });
   }
 }
 
@@ -203,9 +195,6 @@ export async function DELETE(_request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "[Tenant Email API] DELETE error");
-    return NextResponse.json(
-      { error: "Fehler beim Zurücksetzen der E-Mail-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Zurücksetzen der E-Mail-Konfiguration" });
   }
 }

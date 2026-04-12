@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/leases/cost-allocation/[id] - Single cost allocation with full details
@@ -72,18 +73,12 @@ export async function GET(
     });
 
     if (!allocation) {
-      return NextResponse.json(
-        { error: "Kostenaufteilung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Kostenaufteilung nicht gefunden" });
     }
 
     // Tenant check
     if (allocation.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     return NextResponse.json(serializePrisma(allocation));
@@ -92,9 +87,6 @@ export async function GET(
       { err: error },
       "Error fetching cost allocation"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Kostenaufteilung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Kostenaufteilung" });
   }
 }

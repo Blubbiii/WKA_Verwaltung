@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/scada/power-curve
@@ -65,20 +66,14 @@ export async function GET(request: NextRequest) {
     if (from) {
       fromDate = new Date(from);
       if (isNaN(fromDate.getTime())) {
-        return NextResponse.json(
-          { error: "Ungültiges Datum für 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Datum für 'from' (ISO-Format erwartet, z.B. 2025-01-01)" });
       }
     }
 
     if (to) {
       toDate = new Date(to);
       if (isNaN(toDate.getTime())) {
-        return NextResponse.json(
-          { error: "Ungültiges Datum für 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Datum für 'to' (ISO-Format erwartet, z.B. 2025-12-31)" });
       }
     }
 
@@ -211,9 +206,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der Leistungskurvendaten");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Leistungskurvendaten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Leistungskurvendaten" });
   }
 }

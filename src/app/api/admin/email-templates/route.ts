@@ -9,6 +9,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { type SupportedTemplateName } from "@/lib/email/renderer";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // TEMPLATE METADATA
@@ -134,9 +135,6 @@ export async function GET() {
     return NextResponse.json({ templates });
   } catch (error) {
     logger.error({ err: error }, "[Email Templates API] GET error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vorlagen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Vorlagen" });
   }
 }

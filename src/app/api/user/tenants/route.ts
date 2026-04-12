@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 
@@ -56,9 +57,6 @@ export async function GET() {
 
     return NextResponse.json({ tenants });
   } catch {
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Mandanten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Mandanten" });
   }
 }

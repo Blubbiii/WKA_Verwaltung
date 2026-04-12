@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // Validation schema for profile updates
 const updateProfileSchema = z.object({
@@ -39,7 +40,7 @@ export async function GET(_request: NextRequest) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     // Find the shareholder linked to this user
@@ -51,10 +52,7 @@ export async function GET(_request: NextRequest) {
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Kein Gesellschafterprofil verknuepft" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Kein Gesellschafterprofil verknuepft" });
     }
 
     const person = shareholder.person;
@@ -92,10 +90,7 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching profile");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }
 
@@ -105,7 +100,7 @@ export async function PATCH(request: NextRequest) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     // Find the shareholder linked to this user
@@ -117,10 +112,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Kein Gesellschafterprofil verknuepft" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Kein Gesellschafterprofil verknuepft" });
     }
 
     // Parse and validate request body
@@ -128,13 +120,7 @@ export async function PATCH(request: NextRequest) {
     const parsed = updateProfileSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Eingabedaten",
-          details: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabedaten", details: parsed.error.flatten().fieldErrors });
     }
 
     const { email, phone, address, bankName, iban, bic } = parsed.data;
@@ -177,10 +163,7 @@ export async function PATCH(request: NextRequest) {
 
     // Check if there's anything to update
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json(
-        { error: "Keine Felder zum Aktualisieren angegeben" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Felder zum Aktualisieren angegeben" });
     }
 
     // Update the person record
@@ -221,9 +204,6 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error updating profile");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }

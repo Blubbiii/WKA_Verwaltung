@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const putAnomalyConfigSchema = z.object({
   enabled: z.boolean().optional(),
@@ -63,10 +64,7 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der Anomalie-Konfiguration");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Anomalie-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Anomalie-Konfiguration" });
   }
 }
 
@@ -83,10 +81,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const parsed = putAnomalyConfigSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
 
     const {
@@ -146,9 +141,6 @@ export async function PUT(request: NextRequest) {
       { err: error },
       "Fehler beim Speichern der Anomalie-Konfiguration"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Anomalie-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der Anomalie-Konfiguration" });
   }
 }

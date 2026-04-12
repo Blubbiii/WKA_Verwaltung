@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -36,10 +37,7 @@ const stakeholderCreateSchema = z.object({
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
   if (!enabled) {
-    return NextResponse.json(
-      { error: "Management-Billing Feature ist nicht aktiviert" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", 404, { message: "Management-Billing Feature ist nicht aktiviert" });
   }
   return null;
 }
@@ -118,10 +116,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ stakeholders: enriched });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] GET stakeholders error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Stakeholder" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Stakeholder" });
   }
 }
 
@@ -140,10 +135,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = stakeholderCreateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { stakeholderTenantId, parkTenantId, parkId, role, visibleFundIds, billingEnabled, feePercentage, taxType, sepaMandate, creditorId, validFrom, validTo, notes } = parsed.data;
 
@@ -152,10 +144,7 @@ export async function POST(request: NextRequest) {
       where: { id: stakeholderTenantId },
     });
     if (!stakeholderTenant) {
-      return NextResponse.json(
-        { error: "Stakeholder-Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Stakeholder-Mandant nicht gefunden" });
     }
 
     // Verify park exists in the park tenant
@@ -163,10 +152,7 @@ export async function POST(request: NextRequest) {
       where: { id: parkId, tenantId: parkTenantId },
     });
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden im angegebenen Mandanten" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden im angegebenen Mandanten" });
     }
 
     // Check for duplicate
@@ -180,19 +166,13 @@ export async function POST(request: NextRequest) {
       },
     });
     if (existing) {
-      return NextResponse.json(
-        { error: "Diese Rolle ist für diesen Mandanten und Park bereits vergeben" },
-        { status: 409 }
-      );
+      return apiError("CONFLICT", 409, { message: "Diese Rolle ist für diesen Mandanten und Park bereits vergeben" });
     }
 
     // BF roles need billing config
     const isBfRole = role === "TECHNICAL_BF" || role === "COMMERCIAL_BF";
     if (isBfRole && billingEnabled && (!feePercentage || feePercentage <= 0)) {
-      return NextResponse.json(
-        { error: "BF-Rollen mit Abrechnung benoetigen einen Gebührensatz (feePercentage)" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "BF-Rollen mit Abrechnung benoetigen einen Gebührensatz (feePercentage)" });
     }
 
     const stakeholder = await prisma.parkStakeholder.create({
@@ -233,9 +213,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ stakeholder }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] POST stakeholder error");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Stakeholders" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen des Stakeholders" });
   }
 }

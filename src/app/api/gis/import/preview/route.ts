@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiLogger as logger } from "@/lib/logger";
@@ -17,30 +18,24 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: "Keine Datei hochgeladen" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Keine Datei hochgeladen" });
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: `Datei zu groß. Maximum: ${MAX_FILE_SIZE / 1024 / 1024} MB` },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: `Datei zu groß. Maximum: ${MAX_FILE_SIZE / 1024 / 1024} MB` });
     }
 
     // Validate file extension
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (!ext || !["shp", "zip", "geojson", "json"].includes(ext)) {
-      return NextResponse.json(
-        { error: "Ungültiges Dateiformat. Erlaubt: .shp, .zip, .geojson, .json" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültiges Dateiformat. Erlaubt: .shp, .zip, .geojson, .json" });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // Basic content validation
     if (buffer.length < 10) {
-      return NextResponse.json({ error: "Datei ist leer oder beschädigt" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Datei ist leer oder beschädigt" });
     }
 
     const result = await parseMultiLayerShapefile(buffer, file.name);
@@ -70,6 +65,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Fehler beim Parsen der Datei";
     logger.error({ err: error }, "Error parsing GIS import file");
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError("PROCESS_FAILED", 500, { message });
   }
 }

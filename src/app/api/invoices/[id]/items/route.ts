@@ -6,6 +6,7 @@ import { z } from "zod";
 import { TaxType, PlotAreaType } from "@prisma/client";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const itemCreateSchema = z.object({
   description: z.string().min(1, "Beschreibung erforderlich"),
@@ -64,17 +65,11 @@ export async function GET(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     if (invoice.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     const items = await prisma.invoiceItem.findMany({
@@ -85,10 +80,7 @@ export async function GET(
     return NextResponse.json(items);
   } catch (error) {
     logger.error({ err: error }, "Error fetching invoice items");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Positionen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Positionen" });
   }
 }
 
@@ -112,24 +104,15 @@ export async function POST(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     if (invoice.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     if (invoice.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Nur Entwürfe können bearbeitet werden" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Nur Entwürfe können bearbeitet werden" });
     }
 
     // Nächste Position ermitteln

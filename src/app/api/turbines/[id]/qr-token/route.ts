@@ -6,6 +6,7 @@
  */
 
 import crypto from "crypto";
+import { apiError } from "@/lib/api-errors";
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -28,7 +29,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     });
 
     if (!turbine) {
-      return NextResponse.json({ error: "Anlage nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
     }
 
     const qrToken = crypto.randomBytes(24).toString("base64url");
@@ -41,7 +42,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     return NextResponse.json({ qrToken });
   } catch (error) {
     logger.error({ err: error }, "[QR Token] Generate failed");
-    return NextResponse.json({ error: "Fehler beim Generieren des QR-Tokens" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Generieren des QR-Tokens" });
   }
 }
 
@@ -58,7 +59,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     });
 
     if (!turbine) {
-      return NextResponse.json({ error: "Anlage nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
     }
 
     await prisma.turbine.update({
@@ -69,6 +70,6 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "[QR Token] Delete failed");
-    return NextResponse.json({ error: "Fehler beim Entfernen des QR-Tokens" }, { status: 500 });
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Entfernen des QR-Tokens" });
   }
 }

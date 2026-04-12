@@ -14,6 +14,7 @@ import { z } from "zod";
 import { WEBHOOK_EVENTS } from "@/lib/webhooks/events";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // Validation Schema
@@ -75,10 +76,7 @@ export async function GET(
     });
 
     if (!webhook) {
-      return NextResponse.json(
-        { error: "Webhook nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Webhook nicht gefunden" });
     }
 
     return NextResponse.json({
@@ -110,10 +108,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching webhook");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Webhooks" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Webhooks" });
   }
 }
 
@@ -134,10 +129,7 @@ export async function PUT(
     const parsed = updateWebhookSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     // Verify webhook belongs to tenant
@@ -149,10 +141,7 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Webhook nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Webhook nicht gefunden" });
     }
 
     const { url, events, description, isActive } = parsed.data;
@@ -209,10 +198,7 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Webhook nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Webhook nicht gefunden" });
     }
 
     // Hard delete - WebhookDelivery cascades via onDelete: Cascade
@@ -231,9 +217,6 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting webhook");
-    return NextResponse.json(
-      { error: "Fehler beim Loeschen des Webhooks" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Loeschen des Webhooks" });
   }
 }

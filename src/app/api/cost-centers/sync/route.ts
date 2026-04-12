@@ -3,6 +3,7 @@
  * Auto-creates cost centers for all parks and turbines that don't have one yet.
  */
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { withMonitoring } from "@/lib/monitoring";
@@ -93,7 +94,7 @@ async function postHandler() {
     });
   } catch (error) {
     logger.error({ err: error }, "Error syncing cost centers");
-    return NextResponse.json({ error: "Fehler beim Auto-Sync der Kostenstellen" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Auto-Sync der Kostenstellen" });
   }
 }
 

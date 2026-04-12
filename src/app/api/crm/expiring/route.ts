@@ -4,6 +4,7 @@ import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { getExpiringItems } from "@/lib/crm/expiring-items";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/crm/expiring?withinDays=90
 export async function GET(request: NextRequest) {
@@ -11,10 +12,7 @@ export async function GET(request: NextRequest) {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { searchParams } = new URL(request.url);
     const within = parseInt(searchParams.get("withinDays") ?? "90", 10);
@@ -26,9 +24,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(serializePrisma(data));
   } catch (error) {
     logger.error({ err: error }, "Error fetching expiring items");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der ablaufenden Verträge" },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der ablaufenden Verträge" });
   }
 }

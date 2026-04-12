@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/scada/mappings/unmatched
@@ -110,9 +111,6 @@ export async function GET() {
     return NextResponse.json({ data: result, count: result.length });
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    return NextResponse.json(
-      { error: "Fehler beim Laden der nicht-zugeordneten Anlagen", details: errMsg },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der nicht-zugeordneten Anlagen", details: errMsg });
   }
 }

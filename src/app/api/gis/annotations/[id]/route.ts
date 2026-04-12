@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -33,7 +34,7 @@ export async function PUT(
       where: { id, tenantId: check.tenantId },
     });
     if (count === 0) {
-      return NextResponse.json({ error: "Annotation nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Annotation nicht gefunden" });
     }
 
     // Build update payload — only set provided fields
@@ -51,7 +52,7 @@ export async function PUT(
     });
 
     if (updated.count === 0) {
-      return NextResponse.json({ error: "Annotation nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Annotation nicht gefunden" });
     }
 
     // Return the updated annotation
@@ -79,12 +80,12 @@ export async function DELETE(
     });
 
     if (deleted.count === 0) {
-      return NextResponse.json({ error: "Annotation nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Annotation nicht gefunden" });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting annotation");
-    return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen" });
   }
 }

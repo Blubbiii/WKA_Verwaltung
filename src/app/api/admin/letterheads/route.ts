@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const createLetterheadSchema = z.object({
   name: z.string().min(1, "Name erforderlich"),
@@ -66,10 +67,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(letterheads);
   } catch (error) {
     logger.error({ err: error }, "Error fetching letterheads");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Briefpapiere" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Briefpapiere" });
   }
 }
 
@@ -88,10 +86,7 @@ export async function POST(request: NextRequest) {
         where: { id: data.parkId, tenantId: check.tenantId! },
       });
       if (!park) {
-        return NextResponse.json(
-          { error: "Windpark nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Windpark nicht gefunden" });
       }
     }
 
@@ -101,10 +96,7 @@ export async function POST(request: NextRequest) {
         where: { id: data.fundId, tenantId: check.tenantId! },
       });
       if (!fund) {
-        return NextResponse.json(
-          { error: "Gesellschaft nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
       }
     }
 

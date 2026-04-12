@@ -6,6 +6,7 @@ import { z } from "zod";
 import { DistributionMode, EnergySettlementStatus, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -147,10 +148,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching settlements");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Stromabrechnungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Stromabrechnungen" });
   }
 }
 
@@ -181,10 +179,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     // Prüfung auf Duplikat (unique constraint: parkId + year + month + tenantId)
@@ -203,13 +198,7 @@ export async function POST(request: NextRequest) {
       const periodLabel = validatedData.month
         ? `${validatedData.month}/${validatedData.year}`
         : `Jahr ${validatedData.year}`;
-      return NextResponse.json(
-        {
-          error: "Duplikat erkannt",
-          details: `Für Park ${park.name} existiert bereits eine Stromabrechnung für ${periodLabel}`,
-        },
-        { status: 409 }
-      );
+      return apiError("ALREADY_EXISTS", undefined, { message: "Duplikat erkannt", details: `Für Park ${park.name} existiert bereits eine Stromabrechnung für ${periodLabel}` });
     }
 
     // Park-Defaults verwenden, wenn nicht explizit angegeben

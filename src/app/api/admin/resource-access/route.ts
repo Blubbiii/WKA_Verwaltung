@@ -11,6 +11,7 @@ import {
   RESOURCE_TYPES,
   ACCESS_LEVELS,
 } from "@/lib/auth/resourceAccess";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -107,10 +108,7 @@ const check = await requireAdmin();
     return NextResponse.json({ data: enrichedList });
   } catch (error) {
     logger.error({ err: error }, "Error fetching resource access");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Zugriffsrechte" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Zugriffsrechte" });
   }
 }
 
@@ -134,10 +132,7 @@ const check = await requireAdmin();
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
     // Prüfen ob Ressource existiert (mit Tenant-Filter, um Cross-Tenant-Zugriff zu verhindern)
@@ -148,10 +143,7 @@ const check = await requireAdmin();
     );
 
     if (!resourceExists) {
-      return NextResponse.json(
-        { error: "Ressource nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Ressource nicht gefunden" });
     }
 
     // Zugriff gewaehren
@@ -210,10 +202,7 @@ const check = await requireAdmin();
     );
 
     if (!revoked) {
-      return NextResponse.json(
-        { error: "Zugriffsrecht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Zugriffsrecht nicht gefunden" });
     }
 
     return NextResponse.json({

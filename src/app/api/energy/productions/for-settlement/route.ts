@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma, ProductionStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/productions/for-settlement
@@ -33,36 +34,24 @@ export async function GET(request: NextRequest) {
     const yearStr = searchParams.get("year");
 
     if (!parkId || !yearStr) {
-      return NextResponse.json(
-        { error: "Parameter parkId und year sind erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Parameter parkId und year sind erforderlich" });
     }
 
     const year = parseInt(yearStr, 10);
     if (isNaN(year) || year < 2000 || year > 2100) {
-      return NextResponse.json(
-        { error: "Ungültiges Jahr (2000-2100)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Jahr (2000-2100)" });
     }
 
     // Optionale Parameter
     const monthStr = searchParams.get("month");
     const month = monthStr ? parseInt(monthStr, 10) : null;
     if (month !== null && (isNaN(month) || month < 1 || month > 12)) {
-      return NextResponse.json(
-        { error: "Ungültiger Monat (1-12)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger Monat (1-12)" });
     }
 
     const status = searchParams.get("status") || "DRAFT";
     if (!["DRAFT", "CONFIRMED", "INVOICED"].includes(status)) {
-      return NextResponse.json(
-        { error: "Ungültiger Status (DRAFT, CONFIRMED, INVOICED)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger Status (DRAFT, CONFIRMED, INVOICED)" });
     }
 
     // Park-Zugehoerigkeit prüfen
@@ -79,10 +68,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     // Where-Clause für TurbineProduction
@@ -176,9 +162,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching productions for settlement");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Produktionsdaten für Abrechnung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Produktionsdaten für Abrechnung" });
   }
 }

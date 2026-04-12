@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -154,10 +155,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching service events");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Service-Events" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Service-Events" });
   }
 }
 
@@ -181,10 +179,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
     });
 
     if (!turbine) {
-      return NextResponse.json(
-        { error: "Anlage nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
     }
 
     const event = await prisma.serviceEvent.create({
@@ -216,15 +211,9 @@ const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
     return NextResponse.json(event, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
     }
     logger.error({ err: error }, "Error creating service event");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Service-Events" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen des Service-Events" });
   }
 }

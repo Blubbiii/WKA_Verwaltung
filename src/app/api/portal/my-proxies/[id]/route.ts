@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // DELETE /api/portal/my-proxies/[id] - Revoke a proxy
 export async function DELETE(
@@ -12,16 +13,13 @@ export async function DELETE(
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     const { id: proxyId } = await params;
 
     if (!proxyId) {
-      return NextResponse.json(
-        { error: "Vollmacht-ID erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Vollmacht-ID erforderlich" });
     }
 
     // Find the shareholder linked to this user
@@ -30,10 +28,7 @@ export async function DELETE(
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Kein Gesellschafterprofil verknüpft" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Kein Gesellschafterprofil verknüpft" });
     }
 
     // Find all shareholders for the same person
@@ -53,26 +48,17 @@ export async function DELETE(
     });
 
     if (!proxy) {
-      return NextResponse.json(
-        { error: "Vollmacht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vollmacht nicht gefunden" });
     }
 
     // Check if the user is the grantor (only grantor can revoke)
     if (!shareholderIds.includes(proxy.grantorId)) {
-      return NextResponse.json(
-        { error: "Sie können nur Ihre eigenen Vollmachten widerrufen" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Sie können nur Ihre eigenen Vollmachten widerrufen" });
     }
 
     // Check if already revoked
     if (!proxy.isActive) {
-      return NextResponse.json(
-        { error: "Vollmacht ist bereits widerrufen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Vollmacht ist bereits widerrufen" });
     }
 
     // Revoke the proxy by setting isActive to false
@@ -96,10 +82,7 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "Error revoking proxy");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }
 
@@ -112,16 +95,13 @@ export async function GET(
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     const { id: proxyId } = await params;
 
     if (!proxyId) {
-      return NextResponse.json(
-        { error: "Vollmacht-ID erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Vollmacht-ID erforderlich" });
     }
 
     // Find the shareholder linked to this user
@@ -130,10 +110,7 @@ export async function GET(
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Kein Gesellschafterprofil verknüpft" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Kein Gesellschafterprofil verknüpft" });
     }
 
     // Find all shareholders for the same person
@@ -185,10 +162,7 @@ export async function GET(
     });
 
     if (!proxy) {
-      return NextResponse.json(
-        { error: "Vollmacht nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vollmacht nicht gefunden" });
     }
 
     // Check if user is grantor or grantee
@@ -196,10 +170,7 @@ export async function GET(
     const isGrantee = shareholderIds.includes(proxy.granteeId);
 
     if (!isGrantor && !isGrantee) {
-      return NextResponse.json(
-        { error: "Sie haben keinen Zugriff auf diese Vollmacht" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Sie haben keinen Zugriff auf diese Vollmacht" });
     }
 
     // Helper to get shareholder name
@@ -228,9 +199,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching proxy");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }

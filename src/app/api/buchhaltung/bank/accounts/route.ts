@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
@@ -32,7 +33,7 @@ export async function GET() {
     return NextResponse.json({ data: accounts });
   } catch (error) {
     logger.error({ err: error }, "Error listing bank accounts");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = bankAccountSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Ungültige Daten", details: parsed.error.flatten() }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Daten", details: parsed.error.flatten() });
     }
 
     const data = parsed.data;
@@ -68,8 +69,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Error creating bank account");
     if ((error as { code?: string }).code === "P2002") {
-      return NextResponse.json({ error: "IBAN bereits vorhanden" }, { status: 409 });
+      return apiError("ALREADY_EXISTS", 409, { message: "IBAN bereits vorhanden" });
     }
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

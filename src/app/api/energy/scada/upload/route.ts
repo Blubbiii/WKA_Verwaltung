@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { startImport, isValidFileType, type ScadaFileType } from "@/lib/scada/import-service";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // All supported SCADA file extensions
 const SCADA_EXTENSIONS = new Set([
@@ -35,10 +36,7 @@ export async function POST(request: NextRequest) {
     const locationCode = formData.get("locationCode") as string | null;
 
     if (!locationCode || !locationCode.startsWith("Loc_")) {
-      return NextResponse.json(
-        { error: "locationCode ist erforderlich und muss mit 'Loc_' beginnen" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "locationCode ist erforderlich und muss mit 'Loc_' beginnen" });
     }
 
     // Collect all uploaded files
@@ -50,19 +48,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (files.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Dateien hochgeladen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Dateien hochgeladen" });
     }
 
     // Validate total size
     const totalSize = files.reduce((sum, f) => sum + f.size, 0);
     if (totalSize > MAX_TOTAL_SIZE) {
-      return NextResponse.json(
-        { error: `Gesamtgröße (${Math.round(totalSize / 1024 / 1024)} MB) überschreitet das Limit von 500 MB` },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Gesamtgröße (${Math.round(totalSize / 1024 / 1024)} MB) überschreitet das Limit von 500 MB` });
     }
 
     // Group files by detected file type
@@ -90,14 +82,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (filesByType.size === 0) {
-      return NextResponse.json(
-        {
-          error: "Keine gültigen SCADA-Dateien gefunden",
+      return apiError("VALIDATION_FAILED", undefined, {
+        message: "Keine gültigen SCADA-Dateien gefunden",
+        details: {
           invalidFiles,
           supportedExtensions: Array.from(SCADA_EXTENSIONS).map((e) => `.${e}`),
         },
-        { status: 400 }
-      );
+      });
     }
 
     // Save files to temp directory and start imports per file type
@@ -184,9 +175,6 @@ export async function POST(request: NextRequest) {
     const errMsg = error instanceof Error ? error.message : String(error);
     const errStack = process.env.NODE_ENV !== "production" && error instanceof Error ? error.stack : undefined;
     logger.error({ err: error, errMsg, errStack }, "Fehler beim SCADA-Upload");
-    return NextResponse.json(
-      { error: "Fehler beim Hochladen der SCADA-Dateien", details: errMsg },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Hochladen der SCADA-Dateien", details: errMsg });
   }
 }

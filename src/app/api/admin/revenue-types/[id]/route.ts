@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -32,19 +33,13 @@ export async function GET(
     });
 
     if (!revenueType) {
-      return NextResponse.json(
-        { error: "Vergütungsart nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vergütungsart nicht gefunden" });
     }
 
     return NextResponse.json(revenueType);
   } catch (error) {
     logger.error({ err: error }, "Error fetching revenue type");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vergütungsart" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Vergütungsart" });
   }
 }
 
@@ -64,20 +59,14 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Vergütungsart nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vergütungsart nicht gefunden" });
     }
 
     const body = await request.json();
     const parsed = updateSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message || "Ungültige Eingabe" });
     }
 
     // Check duplicate code if code is being changed
@@ -90,10 +79,7 @@ export async function PATCH(
         },
       });
       if (duplicate) {
-        return NextResponse.json(
-          { error: `Code "${parsed.data.code}" existiert bereits` },
-          { status: 409 }
-        );
+        return apiError("CONFLICT", undefined, { message: `Code "${parsed.data.code}" existiert bereits` });
       }
     }
 
@@ -105,10 +91,7 @@ export async function PATCH(
     return NextResponse.json(revenueType);
   } catch (error) {
     logger.error({ err: error }, "Error updating revenue type");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Vergütungsart" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren der Vergütungsart" });
   }
 }
 
@@ -128,10 +111,7 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Vergütungsart nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vergütungsart nicht gefunden" });
     }
 
     // Check if any monthly rates reference this revenue type
@@ -157,9 +137,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting revenue type");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Vergütungsart" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Vergütungsart" });
   }
 }

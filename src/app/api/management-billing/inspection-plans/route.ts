@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -29,10 +30,7 @@ const inspectionPlanCreateSchema = z.object({
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
   if (!enabled) {
-    return NextResponse.json(
-      { error: "Management-Billing Feature ist nicht aktiviert" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", 404, { message: "Management-Billing Feature ist nicht aktiviert" });
   }
   return null;
 }
@@ -83,10 +81,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ plans });
   } catch (error) {
     logger.error({ err: error }, "[Inspections] GET inspection-plans error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Begehungsplaene" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Begehungsplaene" });
   }
 }
 
@@ -105,20 +100,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = inspectionPlanCreateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { title, recurrence, nextDueDate, description, parkId, turbineId } = parsed.data;
 
     // Determine tenant
     const tenantId = check.tenantId;
     if (!tenantId) {
-      return NextResponse.json(
-        { error: "Mandant konnte nicht ermittelt werden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Mandant konnte nicht ermittelt werden" });
     }
 
     const plan = await prisma.inspectionPlan.create({
@@ -145,9 +134,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ plan }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "[Inspections] POST inspection-plan error");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Begehungsplans" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen des Begehungsplans" });
   }
 }

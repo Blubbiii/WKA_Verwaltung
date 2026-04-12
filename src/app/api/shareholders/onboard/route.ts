@@ -9,6 +9,7 @@ import { sendTemplatedEmailSync } from "@/lib/email/sender";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
+import { apiError } from "@/lib/api-errors";
 
 // Validation schema for the onboarding request
 const onboardingSchema = z.object({
@@ -84,10 +85,7 @@ export async function POST(request: NextRequest) {
     if (!check.authorized) return check.error!;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Kein Mandant zugeordnet" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
     }
 
     const body = await request.json();
@@ -104,10 +102,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!fund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     // Check if a user with this email already exists (if portal access requested)
@@ -118,12 +113,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (existingUser) {
-        return NextResponse.json(
-          {
-            error: `Ein Benutzer mit der E-Mail-Adresse "${personalData.email}" existiert bereits.`,
-          },
-          { status: 409 }
-        );
+        return apiError("CONFLICT", undefined, { message: `Ein Benutzer mit der E-Mail-Adresse "${personalData.email}" existiert bereits.` });
       }
     }
 
@@ -303,10 +293,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: error.issues });
     }
 
     if (error instanceof Error) {
@@ -316,17 +303,11 @@ export async function POST(request: NextRequest) {
         error.message.includes("Systemrolle") ||
         error.message.includes("E-Mail-Adresse")
       ) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: error.message });
       }
     }
 
     logger.error({ err: error }, "Error during shareholder onboarding");
-    return NextResponse.json(
-      { error: "Fehler beim Anlegen des Gesellschafters" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Anlegen des Gesellschafters" });
   }
 }

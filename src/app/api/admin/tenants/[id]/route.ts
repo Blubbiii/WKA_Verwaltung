@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const tenantUpdateSchema = z.object({
   name: z.string().min(1, "Firmenname ist erforderlich").optional(),
@@ -47,19 +48,13 @@ const check = await requireSuperadmin();
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     return NextResponse.json(tenant);
   } catch (error) {
     logger.error({ err: error }, "Error fetching tenant");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Mandanten" },
-      { status: 500 }
-    );
+    return apiError("TENANT_MISMATCH", 500, { message: "Fehler beim Laden des Mandanten" });
   }
 }
 
@@ -81,10 +76,7 @@ export async function PATCH(
 
       // ADMIN can only update their own tenant
       if (adminCheck.tenantId !== id) {
-        return NextResponse.json(
-          { error: "Keine Berechtigung für diesen Mandanten" },
-          { status: 403 }
-        );
+        return apiError("TENANT_MISMATCH", undefined, { message: "Keine Berechtigung für diesen Mandanten" });
       }
     }
 
@@ -93,10 +85,7 @@ export async function PATCH(
     });
 
     if (!existingTenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     const body = await request.json();
@@ -109,10 +98,7 @@ export async function PATCH(
       });
 
       if (slugExists) {
-        return NextResponse.json(
-          { error: "Ein Mandant mit diesem Slug existiert bereits" },
-          { status: 400 }
-        );
+        return apiError("ALREADY_EXISTS", 400, { message: "Ein Mandant mit diesem Slug existiert bereits" });
       }
     }
 
@@ -178,19 +164,13 @@ export async function DELETE(
     });
 
     if (!existingTenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     if (hardDelete) {
       // Hard-Delete: Mandant muss bereits INACTIVE sein
       if (existingTenant.status !== "INACTIVE") {
-        return NextResponse.json(
-          { error: "Mandant muss zuerst deaktiviert werden, bevor er endgültig gelöscht werden kann" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Mandant muss zuerst deaktiviert werden, bevor er endgültig gelöscht werden kann" });
       }
 
       try {
@@ -198,10 +178,7 @@ export async function DELETE(
       } catch (deleteError: unknown) {
         const msg = deleteError instanceof Error ? deleteError.message : "";
         if (msg.includes("Foreign key constraint")) {
-          return NextResponse.json(
-            { error: "Mandant kann nicht gelöscht werden, da noch zugehoerige Daten existieren" },
-            { status: 409 }
-          );
+          return apiError("OPERATION_NOT_ALLOWED", undefined, { message: "Mandant kann nicht gelöscht werden, da noch zugehoerige Daten existieren" });
         }
         throw deleteError;
       }
@@ -224,9 +201,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting tenant");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Mandanten" },
-      { status: 500 }
-    );
+    return apiError("TENANT_MISMATCH", 500, { message: "Fehler beim Löschen des Mandanten" });
   }
 }

@@ -6,6 +6,7 @@ import { logDeletion } from "@/lib/audit";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const personUpdateSchema = z.object({
   personType: z.enum(["natural", "legal"]).optional(),
@@ -74,19 +75,13 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
     });
 
     if (!person) {
-      return NextResponse.json(
-        { error: "Person nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Person nicht gefunden" });
     }
 
     return NextResponse.json(person);
   } catch (error) {
     logger.error({ err: error }, "Error fetching person");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Person" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Person" });
   }
 }
 
@@ -109,10 +104,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     });
 
     if (!existingPerson) {
-      return NextResponse.json(
-        { error: "Person nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Person nicht gefunden" });
     }
 
     const body = await request.json();
@@ -125,20 +117,14 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
         ? validatedData.lastName
         : existingPerson.lastName;
       if (!lastName) {
-        return NextResponse.json(
-          { error: "Nachname ist erforderlich" },
-          { status: 400 }
-        );
+        return apiError("MISSING_FIELD", undefined, { message: "Nachname ist erforderlich" });
       }
     } else {
       const companyName = validatedData.companyName !== undefined
         ? validatedData.companyName
         : existingPerson.companyName;
       if (!companyName) {
-        return NextResponse.json(
-          { error: "Firmenname ist erforderlich" },
-          { status: 400 }
-        );
+        return apiError("MISSING_FIELD", undefined, { message: "Firmenname ist erforderlich" });
       }
     }
 
@@ -184,10 +170,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     });
 
     if (!existingPerson) {
-      return NextResponse.json(
-        { error: "Person nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Person nicht gefunden" });
     }
 
     // Pruefe ob Person noch verwendet wird
@@ -197,12 +180,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
       existingPerson._count.contracts;
 
     if (totalReferences > 0) {
-      return NextResponse.json(
-        {
-          error: `Person kann nicht gelöscht werden, da sie noch verwendet wird (${existingPerson._count.shareholders} Beteiligungen, ${existingPerson._count.leases} Pachtverträge, ${existingPerson._count.contracts} Verträge)`
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Person kann nicht gelöscht werden, da sie noch verwendet wird (${existingPerson._count.shareholders} Beteiligungen, ${existingPerson._count.leases} Pachtverträge, ${existingPerson._count.contracts} Verträge)` });
     }
 
     // Hard-delete: Person unwiderruflich löschen
@@ -217,9 +195,6 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting person");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Person" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Person" });
   }
 }

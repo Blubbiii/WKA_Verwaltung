@@ -11,6 +11,7 @@ import {
   CONTRACT_CALENDAR_LOOKAHEAD_DAYS,
   PARK_HEALTH_LOOKBACK_DAYS,
 } from "@/lib/config/business-thresholds";
+import { apiError } from "@/lib/api-errors";
 
 export interface ThresholdSettings {
   availabilityWarning: number;
@@ -65,10 +66,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(DEFAULT_THRESHOLDS);
   } catch (error) {
     logger.error({ err: error }, "Error fetching threshold settings");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Schwellenwerte" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Schwellenwerte" });
   }
 }
 
@@ -81,28 +79,19 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const parsed = putThresholdsSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
 
     const { availabilityWarning: aw, availabilityCritical: ac, contractWarningDays: cw, contractUrgentDays: cu, contractLookaheadDays: cl, parkHealthLookbackDays: ph } = parsed.data;
 
     // Cross-field validation: critical must be less than warning
     if (ac >= aw) {
-      return NextResponse.json(
-        { error: "Verfügbarkeitsschwellen ungültig (kritisch < Warnung)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Verfügbarkeitsschwellen ungültig (kritisch < Warnung)" });
     }
 
     // Cross-field validation: urgent must be <= warning
     if (cu > cw) {
-      return NextResponse.json(
-        { error: "Vertragsschwellen ungültig (Dringend muss kleiner als Warnung sein)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Vertragsschwellen ungültig (Dringend muss kleiner als Warnung sein)" });
     }
 
     const thresholds: ThresholdSettings = {
@@ -133,9 +122,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(thresholds);
   } catch (error) {
     logger.error({ err: error }, "Error updating threshold settings");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Schwellenwerte" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der Schwellenwerte" });
   }
 }

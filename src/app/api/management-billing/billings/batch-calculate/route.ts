@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -20,7 +21,7 @@ const batchCalculateSchema = z.object({
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
   if (!enabled) {
-    return NextResponse.json({ error: "Feature nicht aktiviert" }, { status: 404 });
+    return apiError("FEATURE_DISABLED", 404, { message: "Feature nicht aktiviert" });
   }
   return null;
 }
@@ -36,10 +37,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = batchCalculateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
 
     const parsedYear = parsed.data.year;
@@ -131,9 +129,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] Batch calculate error");
-    return NextResponse.json(
-      { error: "Fehler bei der Batch-Berechnung" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler bei der Batch-Berechnung" });
   }
 }

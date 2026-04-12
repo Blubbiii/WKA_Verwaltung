@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/portal/my-permissions
 // Returns the list of permission names for the current portal user.
@@ -12,10 +13,7 @@ export async function GET() {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Nicht authentifiziert" },
-        { status: 401 }
-      );
+      return apiError("UNAUTHORIZED", undefined, { message: "Nicht authentifiziert" });
     }
 
     // Get all permissions through user's role assignments
@@ -47,9 +45,6 @@ export async function GET() {
     return NextResponse.json({ permissions: Array.from(permissions) });
   } catch (error) {
     logger.error({ err: error }, "Error fetching portal permissions");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Berechtigungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Berechtigungen" });
   }
 }

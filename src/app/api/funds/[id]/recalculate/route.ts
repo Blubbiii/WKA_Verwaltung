@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // POST /api/funds/[id]/recalculate
 // Recalculates all shareholder ownership percentages for a fund
@@ -25,10 +26,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     });
 
     if (!fund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     // Atomic recalculation: read + update all shareholders in single transaction
@@ -77,9 +75,6 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     });
   } catch (error) {
     logger.error({ err: error }, "Error recalculating fund shares");
-    return NextResponse.json(
-      { error: "Fehler bei der Neuberechnung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Neuberechnung" });
   }
 }

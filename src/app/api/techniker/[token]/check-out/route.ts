@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -39,10 +40,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const parsed = checkOutSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
 
     // Verify turbine by token
@@ -56,7 +54,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     if (!turbine) {
-      return NextResponse.json({ error: "Ungültiger QR-Code" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Ungültiger QR-Code" });
     }
 
     // Find the session and verify it belongs to this turbine
@@ -69,10 +67,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Session nicht gefunden oder bereits abgeschlossen" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Session nicht gefunden oder bereits abgeschlossen" });
     }
 
     const now = new Date();
@@ -132,9 +127,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
   } catch (error) {
     logger.error({ err: error }, "[Techniker Check-Out] Failed");
-    return NextResponse.json(
-      { error: "Ein Fehler ist aufgetreten" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Ein Fehler ist aufgetreten" });
   }
 }

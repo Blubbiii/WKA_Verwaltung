@@ -5,6 +5,7 @@ import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { ProductionDataSource, ProductionStatus, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -125,10 +126,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching productions");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Produktionsdaten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Produktionsdaten" });
   }
 }
 
@@ -156,10 +154,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!turbine) {
-      return NextResponse.json(
-        { error: "Turbine nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Turbine nicht gefunden oder keine Berechtigung" });
     }
 
     // Prüfung auf Duplikat (unique constraint: turbineId + year + month + tenantId)
@@ -175,13 +170,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        {
-          error: "Duplikat erkannt",
-          details: `Für Turbine ${turbine.designation} existieren bereits Produktionsdaten für ${validatedData.month}/${validatedData.year}`,
-        },
-        { status: 409 }
-      );
+      return apiError("ALREADY_EXISTS", undefined, { message: "Duplikat erkannt", details: `Für Turbine ${turbine.designation} existieren bereits Produktionsdaten für ${validatedData.month}/${validatedData.year}` });
     }
 
     // Produktionsdaten erstellen

@@ -11,6 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -58,17 +59,11 @@ export async function GET(
 
     // Validate dates
     if (isNaN(from.getTime()) || isNaN(to.getTime())) {
-      return NextResponse.json(
-        { error: "Ungültiges Datumsformat. Bitte ISO-Format verwenden." },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültiges Datumsformat. Bitte ISO-Format verwenden." });
     }
 
     if (from > to) {
-      return NextResponse.json(
-        { error: "Start-Datum muss vor End-Datum liegen." },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Start-Datum muss vor End-Datum liegen." });
     }
 
     // Verify park belongs to tenant
@@ -84,10 +79,7 @@ export async function GET(
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden" });
     }
 
     // Get historical weather data
@@ -110,19 +102,10 @@ export async function GET(
     logger.error({ err: error }, "[Weather History API] Error");
 
     if (error instanceof WeatherApiError) {
-      return NextResponse.json(
-        {
-          error: error.message,
-          code: (error.apiResponse as { code?: string })?.code,
-        },
-        { status: error.statusCode || 500 }
-      );
+      return apiError("INTERNAL_ERROR", 500, { message: error.message });
     }
 
-    return NextResponse.json(
-      { error: "Fehler beim Laden der historischen Wetterdaten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der historischen Wetterdaten" });
   }
 }
 

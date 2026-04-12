@@ -6,6 +6,7 @@ import { invalidateAll } from "@/lib/auth/permissionCache";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const roleUpdateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").optional(),
@@ -55,30 +56,21 @@ export async function GET(
     });
 
     if (!role) {
-      return NextResponse.json(
-        { error: "Rolle nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rolle nicht gefunden" });
     }
 
     // Check access: system roles visible to all, tenant roles only to same tenant
     if (!role.isSystem && role.tenantId !== check.tenantId!) {
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
-        return NextResponse.json(
-          { error: "Keine Berechtigung für diese Rolle" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diese Rolle" });
       }
     }
 
     return NextResponse.json(role);
   } catch (error) {
     logger.error({ err: error }, "Error fetching role");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Rolle" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Rolle" });
   }
 }
 
@@ -101,20 +93,14 @@ export async function PATCH(
     });
 
     if (!existingRole) {
-      return NextResponse.json(
-        { error: "Rolle nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rolle nicht gefunden" });
     }
 
     // System roles can only be edited by superadmins
     if (existingRole.isSystem) {
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
-        return NextResponse.json(
-          { error: "System-Rollen können nur von Superadmins bearbeitet werden" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "System-Rollen können nur von Superadmins bearbeitet werden" });
       }
     }
 
@@ -122,10 +108,7 @@ export async function PATCH(
     if (!existingRole.isSystem && existingRole.tenantId !== check.tenantId!) {
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
-        return NextResponse.json(
-          { error: "Keine Berechtigung für diese Rolle" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diese Rolle" });
       }
     }
 
@@ -140,10 +123,7 @@ export async function PATCH(
       });
 
       if (duplicateName) {
-        return NextResponse.json(
-          { error: "Eine Rolle mit diesem Namen existiert bereits" },
-          { status: 400 }
-        );
+        return apiError("ALREADY_EXISTS", 400, { message: "Eine Rolle mit diesem Namen existiert bereits" });
       }
     }
 
@@ -163,10 +143,7 @@ export async function PATCH(
       if (!isSuperadmin) {
         const hasSystemPerms = validatedData.permissions.some((p: string) => p.startsWith("system:"));
         if (hasSystemPerms) {
-          return NextResponse.json(
-            { error: "System-Berechtigungen können nur von Superadmins zugewiesen werden" },
-            { status: 403 }
-          );
+          return apiError("FORBIDDEN", undefined, { message: "System-Berechtigungen können nur von Superadmins zugewiesen werden" });
         }
       }
 
@@ -180,10 +157,7 @@ export async function PATCH(
         const foundNames = new Set(foundPermissions.map((p) => p.name));
         const missing = validatedData.permissions.filter((n) => !foundNames.has(n));
         if (missing.length > 0) {
-          return NextResponse.json(
-            { error: `Permissions nicht gefunden: ${missing.join(", ")}` },
-            { status: 400 }
-          );
+          return apiError("BAD_REQUEST", undefined, { message: `Permissions nicht gefunden: ${missing.join(", ")}` });
         }
         permissionRecords = foundPermissions.map((p) => ({
           roleId: id,
@@ -258,37 +232,25 @@ export async function DELETE(
     });
 
     if (!existingRole) {
-      return NextResponse.json(
-        { error: "Rolle nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rolle nicht gefunden" });
     }
 
     // System roles cannot be deleted
     if (existingRole.isSystem) {
-      return NextResponse.json(
-        { error: "System-Rollen können nicht gelöscht werden" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "System-Rollen können nicht gelöscht werden" });
     }
 
     // Check tenant access
     if (existingRole.tenantId !== check.tenantId!) {
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
-        return NextResponse.json(
-          { error: "Keine Berechtigung für diese Rolle" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diese Rolle" });
       }
     }
 
     // Check if role is still assigned to users
     if (existingRole._count.userAssignments > 0) {
-      return NextResponse.json(
-        { error: `Rolle ist noch ${existingRole._count.userAssignments} Benutzern zugewiesen` },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Rolle ist noch ${existingRole._count.userAssignments} Benutzern zugewiesen` });
     }
 
     // Delete role (cascade deletes RolePermissions)
@@ -303,9 +265,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting role");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Rolle" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Rolle" });
   }
 }

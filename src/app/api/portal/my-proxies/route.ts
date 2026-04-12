@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // Validation schema for creating a proxy
 const createProxySchema = z.object({
@@ -47,7 +48,7 @@ export async function GET() {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     // Find the shareholder linked to this user
@@ -204,10 +205,7 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching proxies");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }
 
@@ -217,7 +215,7 @@ export async function POST(request: NextRequest) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     const body = await request.json();
@@ -225,10 +223,7 @@ export async function POST(request: NextRequest) {
     // Validate input
     const parsed = createProxySchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0].message },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0].message });
     }
 
     const { granteeId, type, voteId } = parsed.data;
@@ -242,18 +237,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!grantorShareholder) {
-      return NextResponse.json(
-        { error: "Kein Gesellschafterprofil verknüpft" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Kein Gesellschafterprofil verknüpft" });
     }
 
     // Validate: granteeId must be a different shareholder
     if (granteeId === grantorShareholder.id) {
-      return NextResponse.json(
-        { error: "Sie können sich keine Vollmacht selbst erteilen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Sie können sich keine Vollmacht selbst erteilen" });
     }
 
     // Find the grantee shareholder
@@ -266,34 +255,22 @@ export async function POST(request: NextRequest) {
     });
 
     if (!granteeShareholder) {
-      return NextResponse.json(
-        { error: "Vollmachtnehmer nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vollmachtnehmer nicht gefunden" });
     }
 
     // Validate: grantee must be in the same fund as the grantor
     if (granteeShareholder.fundId !== grantorShareholder.fundId) {
-      return NextResponse.json(
-        { error: "Vollmachtnehmer muss in der gleichen Gesellschaft sein" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Vollmachtnehmer muss in der gleichen Gesellschaft sein" });
     }
 
     // Validate: grantee must be active
     if (granteeShareholder.status === "ARCHIVED") {
-      return NextResponse.json(
-        { error: "Vollmachtnehmer ist nicht mehr aktiv" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Vollmachtnehmer ist nicht mehr aktiv" });
     }
 
     // Validate: grantee must be a different person (not just different shareholder record)
     if (granteeShareholder.personId === grantorShareholder.personId) {
-      return NextResponse.json(
-        { error: "Sie können sich keine Vollmacht selbst erteilen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Sie können sich keine Vollmacht selbst erteilen" });
     }
 
     // If SINGLE proxy, validate the vote
@@ -304,26 +281,17 @@ export async function POST(request: NextRequest) {
       });
 
       if (!vote) {
-        return NextResponse.json(
-          { error: "Abstimmung nicht gefunden" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Abstimmung nicht gefunden" });
       }
 
       // Vote must be for the same fund
       if (vote.fundId !== grantorShareholder.fundId) {
-        return NextResponse.json(
-          { error: "Abstimmung gehört nicht zu Ihrer Gesellschaft" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Abstimmung gehört nicht zu Ihrer Gesellschaft" });
       }
 
       // Vote must be active
       if (vote.status !== "ACTIVE" || new Date(vote.endDate) <= new Date()) {
-        return NextResponse.json(
-          { error: "Abstimmung ist nicht mehr aktiv" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Abstimmung ist nicht mehr aktiv" });
       }
     }
 
@@ -342,10 +310,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingProxy) {
-      return NextResponse.json(
-        { error: "Es existiert bereits eine aktive Vollmacht für diese Kombination" },
-        { status: 400 }
-      );
+      return apiError("ALREADY_EXISTS", 400, { message: "Es existiert bereits eine aktive Vollmacht für diese Kombination" });
     }
 
     // Create the proxy
@@ -412,9 +377,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     logger.error({ err: error }, "Error creating proxy");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }

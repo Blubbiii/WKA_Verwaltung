@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getUserPermissions, getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { authLogger } from "@/lib/logger";
 
+import { apiError } from "@/lib/api-errors";
 // GET /api/auth/my-permissions
 // Returns the list of permission names for the current user.
 // Used by the dashboard sidebar to filter navigation items based on
@@ -13,10 +14,7 @@ export async function GET() {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Nicht authentifiziert" },
-        { status: 401 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: "Nicht authentifiziert" });
     }
 
     const [userPerms, roleHierarchy] = await Promise.all([
@@ -30,9 +28,6 @@ export async function GET() {
     });
   } catch (error) {
     authLogger.error({ err: error }, "Error fetching user permissions");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Berechtigungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Berechtigungen" });
   }
 }

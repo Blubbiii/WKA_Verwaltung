@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -77,10 +78,7 @@ export async function GET(
         break;
 
       default:
-        return NextResponse.json(
-          { error: "Unbekannter Berichtstyp" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", 400, { message: "Unbekannter Berichtstyp" });
     }
 
     return NextResponse.json({
@@ -98,10 +96,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating report");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 

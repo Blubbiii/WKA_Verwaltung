@@ -10,6 +10,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { getFilteredRecipients } from "@/lib/mass-communication/recipient-filter";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // Validation
@@ -34,10 +35,7 @@ export async function POST(request: NextRequest) {
     const parsed = previewSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { recipientFilter, fundIds, parkIds } = parsed.data;
@@ -56,9 +54,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "[Mass Communication Preview] Error");
-    return NextResponse.json(
-      { error: "Fehler bei der Empfänger-Vorschau" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Empfänger-Vorschau" });
   }
 }

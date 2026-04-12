@@ -4,6 +4,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/leases/cost-allocation/[id]/close - Close a cost allocation
@@ -24,20 +25,11 @@ export async function POST(
     });
 
     if (!allocation) {
-      return NextResponse.json(
-        { error: "Kostenaufteilung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Kostenaufteilung nicht gefunden" });
     }
 
     if (allocation.status !== "INVOICED") {
-      return NextResponse.json(
-        {
-          error: "Nur abgerechnete Kostenaufteilungen können abgeschlossen werden",
-          details: `Aktueller Status: ${allocation.status}`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Nur abgerechnete Kostenaufteilungen können abgeschlossen werden", details: `Aktueller Status: ${allocation.status}` });
     }
 
     const updated = await prisma.parkCostAllocation.update({
@@ -48,9 +40,6 @@ export async function POST(
     return NextResponse.json(serializePrisma(updated));
   } catch (error) {
     logger.error({ err: error }, "Error closing cost allocation");
-    return NextResponse.json(
-      { error: "Fehler beim Abschliessen der Kostenaufteilung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Abschliessen der Kostenaufteilung" });
   }
 }

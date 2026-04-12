@@ -6,6 +6,7 @@ import { serializePrisma } from "@/lib/serialize";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const cancelSchema = z.object({
   reason: z.string().min(1, "Stornogrund ist erforderlich").max(500),
@@ -37,29 +38,17 @@ export async function POST(
     });
 
     if (!settlement) {
-      return NextResponse.json(
-        { error: "Abrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnung nicht gefunden" });
     }
 
     // Cannot cancel already cancelled settlements
     if (settlement.status === "CANCELLED") {
-      return NextResponse.json(
-        { error: "Abrechnung ist bereits storniert" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Abrechnung ist bereits storniert" });
     }
 
     // Cannot cancel OPEN settlements - use delete instead
     if (settlement.status === "OPEN") {
-      return NextResponse.json(
-        {
-          error: "Offene Abrechnungen können direkt gelöscht werden",
-          details: "Stornierung ist nur für bereits berechnete oder abgerechnete Abrechnungen vorgesehen",
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Offene Abrechnungen können direkt gelöscht werden", details: "Stornierung ist nur für bereits berechnete oder abgerechnete Abrechnungen vorgesehen" });
     }
 
     // Store previous state for audit trail

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { InvoiceType } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const updateSequenceSchema = z.object({
   format: z
@@ -48,10 +49,7 @@ export async function GET(
     const invoiceType = validateType(type);
 
     if (!invoiceType) {
-      return NextResponse.json(
-        { error: "Ungültiger Typ. Erlaubt: INVOICE, CREDIT_NOTE" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger Typ. Erlaubt: INVOICE, CREDIT_NOTE" });
     }
 
     const currentYear = new Date().getFullYear();
@@ -85,10 +83,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching invoice sequence");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Nummernkreises" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Nummernkreises" });
   }
 }
 
@@ -105,10 +100,7 @@ export async function PATCH(
     const invoiceType = validateType(type);
 
     if (!invoiceType) {
-      return NextResponse.json(
-        { error: "Ungültiger Typ. Erlaubt: INVOICE, CREDIT_NOTE" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger Typ. Erlaubt: INVOICE, CREDIT_NOTE" });
     }
 
     const body = await request.json();

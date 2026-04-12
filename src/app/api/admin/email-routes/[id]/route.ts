@@ -11,6 +11,7 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // ---------------------------------------------------------------------------
 // Schema (partial for PATCH)
@@ -53,19 +54,13 @@ export async function PATCH(
       where: { id, tenantId },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Nicht gefunden" });
     }
 
     const body = await request.json();
     const result = emailRouteUpdateSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Eingabe",
-          details: result.error.flatten().fieldErrors,
-        },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: result.error.flatten().fieldErrors });
     }
 
     // If address is being changed, check for duplicates
@@ -78,10 +73,7 @@ export async function PATCH(
         },
       });
       if (duplicate) {
-        return NextResponse.json(
-          { error: "Diese Adresse ist bereits vergeben" },
-          { status: 409 },
-        );
+        return apiError("CONFLICT", undefined, { message: "Diese Adresse ist bereits vergeben" });
       }
     }
 
@@ -93,10 +85,7 @@ export async function PATCH(
     return NextResponse.json({ route });
   } catch (error) {
     logger.error({ err: error }, "Failed to update email route");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren" },
-      { status: 500 },
-    );
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren" });
   }
 }
 
@@ -119,7 +108,7 @@ export async function DELETE(
       where: { id, tenantId },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Nicht gefunden" });
     }
 
     await prisma.emailRoute.delete({ where: { id } });
@@ -127,9 +116,6 @@ export async function DELETE(
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     logger.error({ err: error }, "Failed to delete email route");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen" },
-      { status: 500 },
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen" });
   }
 }

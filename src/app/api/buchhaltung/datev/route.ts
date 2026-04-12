@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
@@ -42,7 +43,7 @@ async function getHandler(request: NextRequest) {
   });
 
   if (!parseResult.success) {
-    return NextResponse.json({ error: "Ungueltige Parameter", details: parseResult.error.issues }, { status: 400 });
+    return apiError("VALIDATION_FAILED", 400, { message: "Ungueltige Parameter", details: parseResult.error.issues });
   }
 
   const params = parseResult.data;
@@ -51,7 +52,7 @@ async function getHandler(request: NextRequest) {
   toDate.setHours(23, 59, 59, 999);
 
   if (fromDate > toDate) {
-    return NextResponse.json({ error: "Startdatum muss vor Enddatum liegen" }, { status: 400 });
+    return apiError("BAD_REQUEST", 400, { message: "Startdatum muss vor Enddatum liegen" });
   }
 
   const tenantId = check.tenantId!;
@@ -153,7 +154,7 @@ async function getHandler(request: NextRequest) {
   }
 
   if (exportCount === 0) {
-    return NextResponse.json({ error: "Keine Buchungen im angegebenen Zeitraum gefunden" }, { status: 404 });
+    return apiError("NOT_FOUND", 404, { message: "Keine Buchungen im angegebenen Zeitraum gefunden" });
   }
 
   logger.info({ userId: check.userId, tenantId, exportCount, mode: params.mode, from: params.from, to: params.to }, "DATEV export (buchhaltung) generated");
@@ -179,7 +180,7 @@ async function previewHandler(request: NextRequest) {
   const to = searchParams.get("to");
 
   if (!from || !to) {
-    return NextResponse.json({ error: "from und to sind erforderlich" }, { status: 400 });
+    return apiError("BAD_REQUEST", 400, { message: "from und to sind erforderlich" });
   }
 
   const fromDate = new Date(from);

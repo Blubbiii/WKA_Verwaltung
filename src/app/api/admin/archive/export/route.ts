@@ -15,6 +15,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getArchiveExportData } from "@/lib/archive/gobd-archive";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const exportBodySchema = z.object({
   year: z.number().int().min(2000).max(2100),
@@ -29,10 +30,7 @@ export async function POST(request: NextRequest) {
     const parsed = exportBodySchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabedaten", details: parsed.error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabedaten", details: parsed.error.issues });
     }
 
     const { year } = parsed.data;
@@ -41,10 +39,7 @@ export async function POST(request: NextRequest) {
     const exportData = await getArchiveExportData(check.tenantId!, year);
 
     if (exportData.documents.length === 0) {
-      return NextResponse.json(
-        { error: `Keine archivierten Dokumente für das Jahr ${year} gefunden` },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: `Keine archivierten Dokumente für das Jahr ${year} gefunden` });
     }
 
     // Audit log the export (deferred: runs after response is sent)
@@ -84,9 +79,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error exporting archive");
-    return NextResponse.json(
-      { error: "Fehler beim Exportieren des Archivs" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Exportieren des Archivs" });
   }
 }

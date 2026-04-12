@@ -5,6 +5,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -17,7 +18,7 @@ export async function GET() {
 
     const enabled = await getConfigBoolean("management-billing.enabled", check.tenantId, false);
     if (!enabled) {
-      return NextResponse.json({ error: "Feature nicht aktiviert" }, { status: 404 });
+      return apiError("FEATURE_DISABLED", 404, { message: "Feature nicht aktiviert" });
     }
 
     // Tenant filter for non-superadmin
@@ -134,9 +135,6 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] GET overview error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Übersicht" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Übersicht" });
   }
 }

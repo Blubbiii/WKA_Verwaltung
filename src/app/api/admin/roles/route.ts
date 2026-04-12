@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const roleCreateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
@@ -63,10 +64,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(roles);
   } catch (error) {
     logger.error({ err: error }, "Error fetching roles");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Rollen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Rollen" });
   }
 }
 
@@ -84,10 +82,7 @@ export async function POST(request: NextRequest) {
     if (!superadminCheck.authorized) {
       const hasSystemPerms = validatedData.permissions.some((p: string) => p.startsWith("system:"));
       if (hasSystemPerms) {
-        return NextResponse.json(
-          { error: "System-Berechtigungen können nur von Superadmins zugewiesen werden" },
-          { status: 403 }
-        );
+        return apiError("FORBIDDEN", undefined, { message: "System-Berechtigungen können nur von Superadmins zugewiesen werden" });
       }
     }
 
@@ -100,10 +95,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingRole) {
-      return NextResponse.json(
-        { error: "Eine Rolle mit diesem Namen existiert bereits" },
-        { status: 400 }
-      );
+      return apiError("ALREADY_EXISTS", 400, { message: "Eine Rolle mit diesem Namen existiert bereits" });
     }
 
     // Batch-validate all permissions in a single query (avoids N+1)
@@ -116,10 +108,7 @@ export async function POST(request: NextRequest) {
       const foundNames = new Set(foundPermissions.map((p) => p.name));
       const missing = validatedData.permissions.filter((n) => !foundNames.has(n));
       if (missing.length > 0) {
-        return NextResponse.json(
-          { error: `Permissions nicht gefunden: ${missing.join(", ")}` },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: `Permissions nicht gefunden: ${missing.join(", ")}` });
       }
       permissionCreateData = foundPermissions.map((p) => ({ permissionId: p.id }));
     }

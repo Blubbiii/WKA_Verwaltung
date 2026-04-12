@@ -7,6 +7,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { apiError } from "@/lib/api-errors";
 
 const voteUpdateSchema = z.object({
   title: z.string().min(1).optional(),
@@ -70,10 +71,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     });
 
     if (!vote) {
-      return NextResponse.json(
-        { error: "Abstimmung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abstimmung nicht gefunden" });
     }
 
     // Get all eligible shareholders for this fund
@@ -212,10 +210,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching vote");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Abstimmung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Abstimmung" });
   }
 }
 
@@ -241,10 +236,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_UPDATE);
     });
 
     if (!existingVote) {
-      return NextResponse.json(
-        { error: "Abstimmung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abstimmung nicht gefunden" });
     }
 
     const body = await request.json();
@@ -253,10 +245,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_UPDATE);
     // Can't change certain fields if votes have been cast
     if (existingVote._count.responses > 0) {
       if (validatedData.options || validatedData.voteType) {
-        return NextResponse.json(
-          { error: "Optionen können nicht geändert werden, wenn bereits Stimmen abgegeben wurden" },
-          { status: 400 }
-        );
+        return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Optionen können nicht geändert werden, wenn bereits Stimmen abgegeben wurden" });
       }
     }
 
@@ -322,10 +311,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_DELETE);
     });
 
     if (!existingVote) {
-      return NextResponse.json(
-        { error: "Abstimmung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abstimmung nicht gefunden" });
     }
 
     // Hard-delete + audit log atomar in einer Transaktion
@@ -353,9 +339,6 @@ const check = await requirePermission(PERMISSIONS.VOTES_DELETE);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting vote");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Abstimmung" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Abstimmung" });
   }
 }

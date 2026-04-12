@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { readWsdFile } from "@/lib/scada/dbf-reader";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // Max sample records to read from the first file
 const MAX_SAMPLE_RECORDS = 500;
@@ -29,10 +30,7 @@ export async function POST(request: NextRequest) {
     const locationCode = formData.get("locationCode") as string | null;
 
     if (!locationCode || !locationCode.startsWith("Loc_")) {
-      return NextResponse.json(
-        { error: "locationCode ist erforderlich und muss mit 'Loc_' beginnen" },
-        { status: 400 },
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "locationCode ist erforderlich und muss mit 'Loc_' beginnen" });
     }
 
     // Collect uploaded files — prefer WSD, fallback to UID
@@ -44,10 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (files.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Dateien hochgeladen" },
-        { status: 400 },
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Dateien hochgeladen" });
     }
 
     // Collect one sample file PER file type (WSD, UID, etc.) to discover all PlantNos
@@ -73,10 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (sampleFiles.length === 0) {
-      return NextResponse.json(
-        { error: "Keine WSD- oder UID-Datei unter den hochgeladenen Dateien gefunden" },
-        { status: 400 },
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine WSD- oder UID-Datei unter den hochgeladenen Dateien gefunden" });
     }
 
     // Save sample files to temp directory and read PlantNos from each
@@ -197,10 +189,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der Upload-Vorschau");
     const errMsg = error instanceof Error ? error.message : String(error);
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vorschau", details: errMsg },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Vorschau", details: errMsg });
   } finally {
     // Cleanup temp file
     if (tempDir) {

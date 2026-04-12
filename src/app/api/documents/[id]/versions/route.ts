@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const newVersionSchema = z.object({
   fileName: z.string().min(1, "Dateiname ist erforderlich"),
@@ -34,10 +35,7 @@ export async function POST(
     });
 
     if (!currentDocument) {
-      return NextResponse.json(
-        { error: "Dokument nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Dokument nicht gefunden" });
     }
 
     const body = await request.json();
@@ -129,10 +127,7 @@ export async function GET(
     });
 
     if (!document) {
-      return NextResponse.json(
-        { error: "Dokument nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Dokument nicht gefunden" });
     }
 
     // Finde das Root-Dokument
@@ -184,9 +179,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching document versions");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Versionen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Versionen" });
   }
 }

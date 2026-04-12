@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getConfigBoolean } from "@/lib/config";
@@ -25,21 +26,18 @@ export async function POST(request: NextRequest) {
 
     const enabled = await getConfigBoolean("paperless.enabled", check.tenantId, false);
     if (!enabled) {
-      return NextResponse.json({ error: "Paperless integration not enabled" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Paperless integration not enabled" });
     }
 
     const client = await getPaperlessClient(check.tenantId);
     if (!client) {
-      return NextResponse.json({ error: "Paperless not configured" }, { status: 503 });
+      return apiError("INTERNAL_ERROR", 503, { message: "Paperless not configured" });
     }
 
     const body = await request.json();
     const parsed = paperlessSyncSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { documentId } = parsed.data;
 
@@ -50,11 +48,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!document) {
-      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Document not found" });
     }
 
     if (!document.fileUrl) {
-      return NextResponse.json({ error: "Document has no file attached" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Document has no file attached" });
     }
 
     // Enqueue sync job
@@ -77,6 +75,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message });
   }
 }

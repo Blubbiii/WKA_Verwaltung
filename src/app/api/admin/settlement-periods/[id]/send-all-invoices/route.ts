@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { generateInvoicePdf } from "@/lib/pdf";
 import { sendEmailSync } from "@/lib/email/sender";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 interface SendResult {
   total: number;
@@ -36,17 +37,11 @@ export async function POST(
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Abrechnungsperiode nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsperiode nicht gefunden" });
     }
 
     if (period.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Load all invoices for this settlement period that are eligible for sending
@@ -182,12 +177,6 @@ export async function POST(
     return NextResponse.json(result);
   } catch (error) {
     logger.error({ err: error }, "Error in batch send-all-invoices");
-    return NextResponse.json(
-      {
-        error: "Fehler beim Massenversand der Gutschriften",
-        details: error instanceof Error ? error.message : "Unbekannter Fehler",
-      },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Massenversand der Gutschriften", details: error instanceof Error ? error.message : "Unbekannter Fehler" });
   }
 }

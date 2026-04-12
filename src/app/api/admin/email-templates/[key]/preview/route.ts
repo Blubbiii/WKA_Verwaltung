@@ -14,6 +14,7 @@ import {
   type SupportedTemplateName,
 } from "@/lib/email/renderer";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // CONSTANTS
@@ -60,10 +61,7 @@ export async function POST(
 
     // Validate template key
     if (!VALID_TEMPLATE_KEYS.includes(key as SupportedTemplateName)) {
-      return NextResponse.json(
-        { error: "Unbekannte Vorlage" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Unbekannte Vorlage" });
     }
 
     const templateKey = key as SupportedTemplateName;
@@ -72,10 +70,7 @@ export async function POST(
     const parsed = previewSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { htmlContent, subject } = parsed.data;
@@ -105,9 +100,6 @@ export async function POST(
       { err: error },
       "[Email Templates API] POST [key]/preview error"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Vorschau" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Vorschau" });
   }
 }

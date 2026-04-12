@@ -22,6 +22,7 @@ import {
 } from "@/lib/shapefile/field-mapping";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // ---------------------------------------------------------------------------
 // Request validation schema
@@ -92,18 +93,12 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        { error: "Ungültiger Request-Body (kein gültiges JSON)." },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger Request-Body (kein gültiges JSON)." });
     }
 
     const parsed = importConfirmSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.issues },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.issues });
     }
 
     const { parkId: rawParkId, plotMapping, ownerMapping, features, ownerOverrides, leaseDefaults } =
@@ -118,10 +113,7 @@ export async function POST(request: NextRequest) {
         where: { id: parkId, tenantId },
       });
       if (!park) {
-        return NextResponse.json(
-          { error: "Park nicht gefunden oder gehört nicht zu diesem Mandanten." },
-          { status: 404 },
-        );
+        return apiError("TENANT_MISMATCH", 404, { message: "Park nicht gefunden oder gehört nicht zu diesem Mandanten." });
       }
     }
 

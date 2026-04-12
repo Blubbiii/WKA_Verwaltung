@@ -12,6 +12,7 @@ import {
   SettlementPeriodType,
 } from "@/types/billing";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/leases/settlement - List all LeaseRevenueSettlements (paginated)
@@ -103,10 +104,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     logger.error({ err: error }, "Error fetching lease revenue settlements");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Nutzungsentgelt-Abrechnungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Nutzungsentgelt-Abrechnungen" });
   }
 }
 
@@ -125,13 +123,7 @@ export async function POST(request: NextRequest) {
     // For ADVANCE: require advanceInterval and derive month if not provided
     if (validatedData.periodType === "ADVANCE") {
       if (!validatedData.advanceInterval) {
-        return NextResponse.json(
-          {
-            error: "Validierungsfehler",
-            details: "Bei Vorschuss-Abrechnungen muss ein Abrechnungsintervall angegeben werden (advanceInterval)",
-          },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: "Bei Vorschuss-Abrechnungen muss ein Abrechnungsintervall angegeben werden (advanceInterval)" });
       }
 
       // Derive month from advanceInterval if not explicitly set
@@ -142,13 +134,7 @@ export async function POST(request: NextRequest) {
             break;
           case "QUARTERLY":
           case "MONTHLY":
-            return NextResponse.json(
-              {
-                error: "Validierungsfehler",
-                details: "Bei quartalsweisen oder monatlichen Vorschüssen muss der Monat (month) angegeben werden",
-              },
-              { status: 400 }
-            );
+            return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: "Bei quartalsweisen oder monatlichen Vorschüssen muss der Monat (month) angegeben werden" });
         }
       }
     }
@@ -166,10 +152,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     // Check unique constraint: [tenantId, parkId, year, periodType, month]
@@ -268,13 +251,7 @@ export async function POST(request: NextRequest) {
         );
       } else {
         // Already finalized — block duplicate
-        return NextResponse.json(
-          {
-            error: "Duplikat erkannt",
-            details: `Für Park "${park.name}" existiert bereits eine abgeschlossene Abrechnung für diesen Zeitraum (${validatedData.year}, ${validatedData.periodType || "FINAL"}, Monat: ${validatedData.month ?? "ganzjaehrig"})`,
-          },
-          { status: 409 }
-        );
+        return apiError("ALREADY_EXISTS", undefined, { message: "Duplikat erkannt", details: `Für Park "${park.name}" existiert bereits eine abgeschlossene Abrechnung für diesen Zeitraum (${validatedData.year}, ${validatedData.periodType || "FINAL"}, Monat: ${validatedData.month ?? "ganzjaehrig"})` });
       }
     }
 

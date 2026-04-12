@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const updateLetterheadSchema = z.object({
   name: z.string().min(1).optional(),
@@ -56,26 +57,17 @@ export async function GET(
     });
 
     if (!letterhead) {
-      return NextResponse.json(
-        { error: "Briefpapier nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Briefpapier nicht gefunden" });
     }
 
     if (letterhead.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     return NextResponse.json(letterhead);
   } catch (error) {
     logger.error({ err: error }, "Error fetching letterhead");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Briefpapiers" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Briefpapiers" });
   }
 }
 
@@ -98,17 +90,11 @@ export async function PATCH(
     });
 
     if (!letterhead) {
-      return NextResponse.json(
-        { error: "Briefpapier nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Briefpapier nicht gefunden" });
     }
 
     if (letterhead.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Wenn isDefault auf true gesetzt, andere Defaults im gleichen Scope zurücksetzen
@@ -167,17 +153,11 @@ export async function DELETE(
     });
 
     if (!letterhead) {
-      return NextResponse.json(
-        { error: "Briefpapier nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Briefpapier nicht gefunden" });
     }
 
     if (letterhead.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Soft-delete
@@ -189,9 +169,6 @@ export async function DELETE(
     return NextResponse.json({ message: "Briefpapier gelöscht" });
   } catch (error) {
     logger.error({ err: error }, "Error deleting letterhead");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Briefpapiers" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des Briefpapiers" });
   }
 }

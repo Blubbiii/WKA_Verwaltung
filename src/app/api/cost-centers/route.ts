@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -48,7 +49,7 @@ async function getHandler(request: NextRequest) {
     return NextResponse.json(costCenters);
   } catch (error) {
     logger.error({ err: error }, "Error fetching cost centers");
-    return NextResponse.json({ error: "Fehler beim Laden der Kostenstellen" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Kostenstellen" });
   }
 }
 
@@ -75,13 +76,13 @@ async function postHandler(request: NextRequest) {
     return NextResponse.json(costCenter, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
     }
     if ((error as { code?: string }).code === "P2002") {
-      return NextResponse.json({ error: "Kostenstellen-Code bereits vergeben" }, { status: 409 });
+      return apiError("CONFLICT", 409, { message: "Kostenstellen-Code bereits vergeben" });
     }
     logger.error({ err: error }, "Error creating cost center");
-    return NextResponse.json({ error: "Fehler beim Erstellen der Kostenstelle" }, { status: 500 });
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen der Kostenstelle" });
   }
 }
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -17,16 +18,13 @@ export async function POST(request: NextRequest) {
     const check = await requirePermission("inbox:export");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("inbox.enabled", check.tenantId!, false)) {
-      return NextResponse.json({ error: "Inbox nicht aktiviert" }, { status: 404 });
+      return apiError("FEATURE_DISABLED", 404, { message: "Inbox nicht aktiviert" });
     }
 
     const raw = await request.json();
     const parsed = bodySchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     const tenantId = check.tenantId!;
@@ -39,10 +37,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!tenant?.iban) {
-      return NextResponse.json(
-        { error: "Mandanten-IBAN nicht konfiguriert (Einstellungen → Bankverbindung)" },
-        { status: 422 }
-      );
+      return apiError("INTERNAL_ERROR", 422, { message: "Mandanten-IBAN nicht konfiguriert (Einstellungen → Bankverbindung)" });
     }
 
     // Load invoices
@@ -59,10 +54,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (invoices.length === 0) {
-      return NextResponse.json(
-        { error: "Keine genehmigten Rechnungen gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Keine genehmigten Rechnungen gefunden" });
     }
 
     const payments: SepaPayment[] = [];
@@ -100,10 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (payments.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Rechnungen mit IBAN und Betrag für SEPA-Export gefunden", skipped },
-        { status: 422 }
-      );
+      return apiError("INTERNAL_ERROR", 422, { message: "Keine Rechnungen mit IBAN und Betrag für SEPA-Export gefunden" });
     }
 
     const now = new Date();
@@ -133,6 +122,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating SEPA export");
-    return NextResponse.json({ error: "Fehler beim SEPA-Export" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim SEPA-Export" });
   }
 }

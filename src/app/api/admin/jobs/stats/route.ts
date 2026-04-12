@@ -12,6 +12,7 @@ import { requireAdmin } from '@/lib/auth/withPermission';
 import { getAggregatedStats, type AggregatedStats } from '@/lib/queue/registry';
 import { isRedisHealthy } from '@/lib/queue/connection';
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 /**
  * Extended stats response with health info
@@ -94,15 +95,9 @@ export async function GET(_request: NextRequest) {
         );
       }
 
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: error.message });
     }
 
-    return NextResponse.json(
-      { error: 'Fehler beim Laden der Queue-Statistiken' },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: 'Fehler beim Laden der Queue-Statistiken' });
   }
 }

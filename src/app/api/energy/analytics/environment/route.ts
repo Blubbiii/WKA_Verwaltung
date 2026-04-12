@@ -7,6 +7,7 @@ import {
 } from "@/lib/analytics/module-fetchers";
 import { apiLogger as logger } from "@/lib/logger";
 import type { EnvironmentResponse } from "@/types/analytics";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/analytics/environment
@@ -27,10 +28,7 @@ export async function GET(request: NextRequest) {
     // Validate year
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
     if (isNaN(year) || year < 2000 || year > 2100) {
-      return NextResponse.json(
-        { error: "Ungültiges Jahr (2000-2100 erwartet)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Jahr (2000-2100 erwartet)" });
     }
 
     // Fetch all data in parallel
@@ -117,9 +115,6 @@ export async function GET(request: NextRequest) {
       { err: error },
       "Fehler beim Laden der Umwelt-Analytics"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Umwelt-Analytics" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Umwelt-Analytics" });
   }
 }

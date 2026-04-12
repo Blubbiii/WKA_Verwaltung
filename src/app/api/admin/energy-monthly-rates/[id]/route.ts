@@ -15,6 +15,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -91,10 +92,7 @@ export async function GET(
     });
 
     if (!rate) {
-      return NextResponse.json(
-        { error: "Monatlicher Vergütungssatz nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Monatlicher Vergütungssatz nicht gefunden" });
     }
 
     // Response-Transformation (Decimal zu Number konvertieren)
@@ -116,10 +114,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy monthly rate");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des monatlichen Vergütungssatzes" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des monatlichen Vergütungssatzes" });
   }
 }
 
@@ -158,10 +153,7 @@ export async function PATCH(
     });
 
     if (!existingRate) {
-      return NextResponse.json(
-        { error: "Monatlicher Vergütungssatz nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Monatlicher Vergütungssatz nicht gefunden" });
     }
 
     // Baue das Update-Objekt auf (nur gesetzte Felder)
@@ -260,10 +252,7 @@ export async function DELETE(
     });
 
     if (!existingRate) {
-      return NextResponse.json(
-        { error: "Monatlicher Vergütungssatz nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Monatlicher Vergütungssatz nicht gefunden" });
     }
 
     // Loesche den Vergütungssatz
@@ -280,20 +269,11 @@ export async function DELETE(
     // Prisma Foreign Key Constraint Error
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2003") {
-        return NextResponse.json(
-          {
-            error:
-              "Dieser Vergütungssatz kann nicht gelöscht werden, da er noch von anderen Datensaetzen referenziert wird",
-          },
-          { status: 409 }
-        );
+        return apiError("OPERATION_NOT_ALLOWED", undefined, { message: "Dieser Vergütungssatz kann nicht gelöscht werden, da er noch von anderen Datensaetzen referenziert wird" });
       }
     }
 
     logger.error({ err: error }, "Error deleting energy monthly rate");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des monatlichen Vergütungssatzes" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des monatlichen Vergütungssatzes" });
   }
 }

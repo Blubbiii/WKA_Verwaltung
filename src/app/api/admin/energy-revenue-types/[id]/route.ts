@@ -15,6 +15,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -72,10 +73,7 @@ export async function GET(
 
     // Nicht gefunden?
     if (!energyRevenueType) {
-      return NextResponse.json(
-        { error: "Vergütungsart nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vergütungsart nicht gefunden" });
     }
 
     // Response mit transformierten Daten
@@ -94,10 +92,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy revenue type");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vergütungsart" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Vergütungsart" });
   }
 }
 
@@ -136,10 +131,7 @@ export async function PATCH(
     });
 
     if (!existingType) {
-      return NextResponse.json(
-        { error: "Vergütungsart nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vergütungsart nicht gefunden" });
     }
 
     // Bei Code-Änderung: Prüfen ob neuer Code bereits existiert
@@ -153,10 +145,7 @@ export async function PATCH(
       });
 
       if (codeExists) {
-        return NextResponse.json(
-          { error: `Eine Vergütungsart mit dem Code "${validatedData.code}" existiert bereits` },
-          { status: 409 } // Conflict
-        );
+        return apiError("ALREADY_EXISTS", 409, { message: `Eine Vergütungsart mit dem Code "${validatedData.code}" existiert bereits` });
       }
     }
 
@@ -250,10 +239,7 @@ export async function DELETE(
     });
 
     if (!existingType) {
-      return NextResponse.json(
-        { error: "Vergütungsart nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Vergütungsart nicht gefunden" });
     }
 
     if (hardDelete) {
@@ -277,13 +263,7 @@ export async function DELETE(
           "code" in deleteError &&
           deleteError.code === "P2003"
         ) {
-          return NextResponse.json(
-            {
-              error:
-                "Vergütungsart kann nicht gelöscht werden, da sie noch in Verwendung ist. Nutzen Sie stattdessen die Deaktivierung.",
-            },
-            { status: 409 }
-          );
+          return apiError("DEPENDENCY_EXISTS", undefined, { message: "Vergütungsart kann nicht gelöscht werden, da sie noch in Verwendung ist. Nutzen Sie stattdessen die Deaktivierung." });
         }
         throw deleteError;
       }
@@ -301,9 +281,6 @@ export async function DELETE(
     }
   } catch (error) {
     logger.error({ err: error }, "Error deleting energy revenue type");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Vergütungsart" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Vergütungsart" });
   }
 }

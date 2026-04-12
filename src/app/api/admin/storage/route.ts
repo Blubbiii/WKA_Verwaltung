@@ -6,6 +6,7 @@ import {
   getStorageInfo,
 } from "@/lib/storage-tracking";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // Category labels for the breakdown (German UI)
 const CATEGORY_LABELS: Record<string, string> = {
@@ -29,19 +30,13 @@ export async function GET(_request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 400 }
-      );
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const storageInfo = await getStorageInfoWithBreakdown(check.tenantId);
 
     if (!storageInfo) {
-      return NextResponse.json(
-        { error: "Speicherinformationen nicht verfügbar" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Speicherinformationen nicht verfügbar" });
     }
 
     // Enrich breakdown with German labels
@@ -62,10 +57,7 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching storage info");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Speicherinformationen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Speicherinformationen" });
   }
 }
 
@@ -80,10 +72,7 @@ export async function POST(_request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 400 }
-      );
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     // Recalculate from actual documents
@@ -99,9 +88,6 @@ export async function POST(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error recalculating storage usage");
-    return NextResponse.json(
-      { error: "Fehler beim Neuberechnen des Speicherverbrauchs" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Neuberechnen des Speicherverbrauchs" });
   }
 }

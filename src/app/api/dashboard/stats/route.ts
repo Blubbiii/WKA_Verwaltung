@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { getAllAccessibleIds } from "@/lib/auth/resourceFilter";
@@ -186,10 +187,7 @@ const check = await requireAuth();
 
     const tenantId = check.tenantId;
     if (!tenantId) {
-      return NextResponse.json(
-        { error: "Kein Mandant zugeordnet" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Kein Mandant zugeordnet" });
     }
 
     // Check for cache bypass via query parameter
@@ -251,10 +249,7 @@ const check = await requireAuth();
     return response;
   } catch (error) {
     logger.error({ err: error }, "Error fetching dashboard stats");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Dashboard-Statistiken" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Dashboard-Statistiken" });
   }
 }
 
@@ -271,10 +266,7 @@ const check = await requireAuth();
 
     const tenantId = check.tenantId;
     if (!tenantId) {
-      return NextResponse.json(
-        { error: "Kein Mandant zugeordnet" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Kein Mandant zugeordnet" });
     }
 
     await dashboardCache.invalidateTenantStats(tenantId);
@@ -285,9 +277,6 @@ const check = await requireAuth();
     });
   } catch (error) {
     logger.error({ err: error }, "Error invalidating dashboard cache");
-    return NextResponse.json(
-      { error: "Fehler beim Invalidieren des Caches" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Invalidieren des Caches" });
   }
 }

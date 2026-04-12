@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiLogger as logger } from "@/lib/logger";
@@ -48,13 +49,7 @@ export async function POST(request: NextRequest) {
     const parsed = annualReportSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Eingabedaten",
-          details: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabedaten", details: parsed.error.flatten().fieldErrors });
     }
 
     const { parkId, year, sections } = parsed.data;
@@ -72,10 +67,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Windpark nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Windpark nicht gefunden oder keine Berechtigung" });
     }
 
     // Generate PDF
@@ -109,9 +101,6 @@ export async function POST(request: NextRequest) {
     const message =
       error instanceof Error ? error.message : "Interner Serverfehler";
 
-    return NextResponse.json(
-      { error: `Fehler bei der Berichtserstellung: ${message}` },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: `Fehler bei der Berichtserstellung: ${message}` });
   }
 }

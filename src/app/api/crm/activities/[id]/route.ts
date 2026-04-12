@@ -6,6 +6,7 @@ import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
+import { apiError } from "@/lib/api-errors";
 const updateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().optional().nullable(),
@@ -30,7 +31,7 @@ export async function GET(
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
-      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
+      return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
     const { id } = await params;
 
     const activity = await prisma.crmActivity.findFirst({
@@ -46,13 +47,13 @@ export async function GET(
     });
 
     if (!activity) {
-      return NextResponse.json({ error: "Aktivität nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Aktivität nicht gefunden" });
     }
 
     return NextResponse.json(serializePrisma(activity));
   } catch (error) {
     logger.error({ err: error }, "Error fetching CRM activity");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden" });
   }
 }
 
@@ -65,23 +66,20 @@ export async function PUT(
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
-      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
+      return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
     const { id } = await params;
 
     const existing = await prisma.crmActivity.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Aktivität nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Aktivität nicht gefunden" });
     }
 
     const raw = await request.json();
     const parsed = updateSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     const d = parsed.data;
@@ -106,7 +104,7 @@ export async function PUT(
     return NextResponse.json(serializePrisma(updated));
   } catch (error) {
     logger.error({ err: error }, "Error updating CRM activity");
-    return NextResponse.json({ error: "Fehler beim Aktualisieren" }, { status: 500 });
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren" });
   }
 }
 
@@ -119,14 +117,14 @@ export async function DELETE(
     const check = await requirePermission("crm:delete");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
-      return NextResponse.json({ error: "CRM nicht aktiviert" }, { status: 404 });
+      return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
     const { id } = await params;
 
     const existing = await prisma.crmActivity.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Aktivität nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Aktivität nicht gefunden" });
     }
 
     await prisma.crmActivity.update({
@@ -137,6 +135,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting CRM activity");
-    return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen" });
   }
 }

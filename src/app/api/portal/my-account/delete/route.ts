@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const deleteSchema = z.object({
   confirmation: z.literal("DELETE_MY_ACCOUNT"),
@@ -16,17 +17,14 @@ export async function POST(request: NextRequest) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     const body = await request.json();
     const parsed = deleteSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Bestaetigung erforderlich: { confirmation: 'DELETE_MY_ACCOUNT' }" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Bestaetigung erforderlich: { confirmation: 'DELETE_MY_ACCOUNT' }" });
     }
 
     const userId = session.user.id;
@@ -38,15 +36,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "Benutzer nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
     const userHierarchy = await getUserHighestHierarchy(userId);
     if (userHierarchy >= 80) {
-      return NextResponse.json(
-        { error: "Administratoren koennen ihr Konto nicht selbst loeschen. Bitte kontaktieren Sie einen anderen Administrator." },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Administratoren koennen ihr Konto nicht selbst loeschen. Bitte kontaktieren Sie einen anderen Administrator." });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -124,9 +119,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting user account (Art. 17)");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }

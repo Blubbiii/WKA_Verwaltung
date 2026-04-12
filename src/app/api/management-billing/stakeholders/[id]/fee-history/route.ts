@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -21,7 +22,7 @@ const feeHistoryCreateSchema = z.object({
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
   if (!enabled) {
-    return NextResponse.json({ error: "Feature nicht aktiviert" }, { status: 404 });
+    return apiError("FEATURE_DISABLED", 404, { message: "Feature nicht aktiviert" });
   }
   return null;
 }
@@ -56,10 +57,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] GET fee-history error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Gebühren-Historie" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Gebühren-Historie" });
   }
 }
 
@@ -82,10 +80,7 @@ export async function POST(
     const body = await request.json();
     const parsed = feeHistoryCreateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { feePercentage, validFrom, reason } = parsed.data;
 
@@ -131,9 +126,6 @@ export async function POST(
     );
   } catch (error) {
     logger.error({ err: error }, "[Management-Billing] POST fee-history error");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Gebührensatzes" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren des Gebührensatzes" });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json({ error: "Mandant nicht gefunden" }, { status: 400 });
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const { searchParams } = new URL(request.url);
@@ -78,12 +79,12 @@ export async function GET(request: NextRequest) {
     const parkIdParam = searchParams.get("parkId");
 
     if (!yearParam) {
-      return NextResponse.json({ error: "Parameter 'year' fehlt" }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Parameter 'year' fehlt" });
     }
 
     const year = parseInt(yearParam, 10);
     if (isNaN(year) || year < 2000 || year > 2100) {
-      return NextResponse.json({ error: "Ungültiges Jahr" }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültiges Jahr" });
     }
 
     const startOfYear = new Date(year, 0, 1);
@@ -225,9 +226,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ year, parks: result });
   } catch (error) {
     logger.error({ err: error }, "Error generating park P&L report");
-    return NextResponse.json(
-      { error: "Fehler beim Generieren des P&L-Reports" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Generieren des P&L-Reports" });
   }
 }

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const patchAnomalySchema = z.object({
   acknowledged: z.boolean().optional(),
@@ -35,19 +36,13 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Anomalie nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Anomalie nicht gefunden" });
     }
 
     const body = await request.json();
     const parsed = patchAnomalySchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { acknowledged, notes, resolvedAt } = parsed.data;
 
@@ -75,10 +70,7 @@ export async function PATCH(
     }
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json(
-        { error: "Keine Änderungen angegeben" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Änderungen angegeben" });
     }
 
     const updated = await prisma.scadaAnomaly.update({
@@ -110,10 +102,7 @@ export async function PATCH(
     return NextResponse.json({ anomaly: updated });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Aktualisieren der SCADA-Anomalie");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der SCADA-Anomalie" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren der SCADA-Anomalie" });
   }
 }
 
@@ -164,18 +153,12 @@ export async function GET(
     });
 
     if (!anomaly) {
-      return NextResponse.json(
-        { error: "Anomalie nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Anomalie nicht gefunden" });
     }
 
     return NextResponse.json({ anomaly });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der SCADA-Anomalie");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der SCADA-Anomalie" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der SCADA-Anomalie" });
   }
 }

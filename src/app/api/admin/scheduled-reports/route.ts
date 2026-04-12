@@ -13,6 +13,7 @@ import { z } from "zod";
 import { calculateInitialNextRun } from "@/lib/reports/scheduled-report-service";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // Validation schema for creating a scheduled report
 const createScheduledReportSchema = z.object({
@@ -104,10 +105,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching scheduled reports");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der geplanten Berichte" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der geplanten Berichte" });
   }
 }
 
@@ -130,10 +128,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!park) {
-        return NextResponse.json(
-          { error: "Windpark nicht gefunden oder keine Berechtigung" },
-          { status: 404 }
-        );
+        return apiError("FORBIDDEN", 404, { message: "Windpark nicht gefunden oder keine Berechtigung" });
       }
     }
 
@@ -147,10 +142,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!fund) {
-        return NextResponse.json(
-          { error: "Gesellschaft nicht gefunden oder keine Berechtigung" },
-          { status: 404 }
-        );
+        return apiError("FORBIDDEN", 404, { message: "Gesellschaft nicht gefunden oder keine Berechtigung" });
       }
     }
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -24,7 +25,7 @@ const createSchema = z.object({
 
 async function checkInbox(tenantId: string) {
   if (!await getConfigBoolean("inbox.enabled", tenantId, false)) {
-    return NextResponse.json({ error: "Inbox nicht aktiviert" }, { status: 404 });
+    return apiError("FEATURE_DISABLED", 404, { message: "Inbox nicht aktiviert" });
   }
   return null;
 }
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching vendors");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden" });
   }
 }
 
@@ -88,10 +89,7 @@ export async function POST(request: NextRequest) {
     const raw = await request.json();
     const parsed = createSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     const d = parsed.data;
@@ -119,6 +117,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(serializePrisma(vendor), { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating vendor");
-    return NextResponse.json({ error: "Fehler beim Erstellen" }, { status: 500 });
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen" });
   }
 }

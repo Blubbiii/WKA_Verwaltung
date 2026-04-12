@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { generatePreview } from "@/lib/invoices/numberGenerator";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/admin/invoice-sequences - Liste aller Nummernkreise
 export async function GET(_request: NextRequest) {
@@ -56,9 +57,6 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(sequences);
   } catch (error) {
     logger.error({ err: error }, "Error fetching invoice sequences");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Nummernkreise" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Nummernkreise" });
   }
 }

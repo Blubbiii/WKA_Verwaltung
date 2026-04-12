@@ -6,6 +6,7 @@ import { z } from "zod";
 import deMessages from "@/messages/de.json";
 import dePersonalMessages from "@/messages/de-personal.json";
 import enMessages from "@/messages/en.json";
+import { apiError } from "@/lib/api-errors";
 
 const putTranslationSchema = z.object({
   key: z.string().min(1),
@@ -74,7 +75,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ translations, total: translations.length });
   } catch (error) {
     logger.error({ err: error }, "Error loading translations");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden" });
   }
 }
 
@@ -87,10 +88,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const parsed = putTranslationSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { key, locale, value } = parsed.data;
 
@@ -121,6 +119,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error saving translation");
-    return NextResponse.json({ error: "Fehler beim Speichern" }, { status: 500 });
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern" });
   }
 }

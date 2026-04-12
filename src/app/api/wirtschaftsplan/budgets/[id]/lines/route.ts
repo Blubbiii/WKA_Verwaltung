@@ -4,6 +4,7 @@
  * Replaces all lines for the given budget.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { withMonitoring } from "@/lib/monitoring";
@@ -62,10 +63,10 @@ async function putHandler(
       where: { id, tenantId: check.tenantId! },
     });
     if (!budget) {
-      return NextResponse.json({ error: "Budgetplan nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Budgetplan nicht gefunden" });
     }
     if (budget.status === "LOCKED") {
-      return NextResponse.json({ error: "Gesperrter Budget kann nicht bearbeitet werden" }, { status: 403 });
+      return apiError("OPERATION_NOT_ALLOWED", 403, { message: "Gesperrter Budget kann nicht bearbeitet werden" });
     }
 
     const body = await request.json();
@@ -114,10 +115,10 @@ async function putHandler(
     return NextResponse.json(updatedBudget);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
     }
     logger.error({ err: error }, "Error updating budget lines");
-    return NextResponse.json({ error: "Fehler beim Speichern der Budgetzeilen" }, { status: 500 });
+    return apiError("SAVE_FAILED", 500, { message: "Fehler beim Speichern der Budgetzeilen" });
   }
 }
 

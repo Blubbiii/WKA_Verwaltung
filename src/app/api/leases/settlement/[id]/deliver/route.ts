@@ -5,6 +5,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { generateInvoicePdf } from "@/lib/pdf/generators/invoicePdf";
 import { sendEmailSync } from "@/lib/email/sender";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const deliverSchema = z.object({
   method: z.enum(["print", "email", "both"]),
@@ -43,10 +44,7 @@ export async function POST(
 
     // Fail-safe: tenantId must be present to prevent cross-tenant data access
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Tenant-Kontext fehlt" },
-        { status: 403 }
-      );
+      return apiError("MISSING_FIELD", 403, { message: "Tenant-Kontext fehlt" });
     }
 
     const { id } = await params;
@@ -54,10 +52,7 @@ export async function POST(
     const body = await request.json();
     const parsed = deliverSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { method, invoiceIds } = parsed.data;
 
@@ -96,10 +91,7 @@ export async function POST(
     });
 
     if (!settlement) {
-      return NextResponse.json(
-        { error: "Abrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnung nicht gefunden" });
     }
 
     // Collect all invoices from items (advanceInvoice + settlementInvoice)
@@ -127,14 +119,7 @@ export async function POST(
       : invoiceEntries;
 
     if (filteredEntries.length === 0) {
-      return NextResponse.json(
-        {
-          error: "Keine Gutschriften zum Zustellen gefunden",
-          details:
-            "Es wurden keine Rechnungen/Gutschriften in dieser Abrechnung gefunden.",
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Gutschriften zum Zustellen gefunden", details: "Es wurden keine Rechnungen/Gutschriften in dieser Abrechnung gefunden." });
     }
 
     const result: DeliverResult = {
@@ -168,10 +153,7 @@ export async function POST(
       { err: error },
       "Error delivering credit notes for lease revenue settlement"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Zustellen der Gutschriften" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Zustellen der Gutschriften" });
   }
 }
 

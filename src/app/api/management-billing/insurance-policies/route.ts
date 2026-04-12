@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -21,10 +22,7 @@ import { apiLogger as logger } from "@/lib/logger";
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
   if (!enabled) {
-    return NextResponse.json(
-      { error: "Management-Billing Feature ist nicht aktiviert" },
-      { status: 404 }
-    );
+    return apiError("NOT_FOUND", 404, { message: "Management-Billing Feature ist nicht aktiviert" });
   }
   return null;
 }
@@ -78,9 +76,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ policies: enriched });
   } catch (error) {
     logger.error({ err: error }, "[Insurance] GET policies error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Versicherungsvertraege" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Versicherungsvertraege" });
   }
 }

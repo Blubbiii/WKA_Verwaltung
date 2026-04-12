@@ -14,6 +14,7 @@ import {
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // Validation Schemas
@@ -136,10 +137,7 @@ async function getHandler(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching recurring invoices");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der wiederkehrenden Rechnungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der wiederkehrenden Rechnungen" });
   }
 }
 
@@ -164,10 +162,7 @@ async function postHandler(request: NextRequest) {
 
     // Validate dates
     if (endDate && endDate <= startDate) {
-      return NextResponse.json(
-        { error: "Enddatum muss nach dem Startdatum liegen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Enddatum muss nach dem Startdatum liegen" });
     }
 
     // Calculate initial nextRunAt

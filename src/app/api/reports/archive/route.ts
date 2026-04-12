@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { z } from "zod";
@@ -66,10 +67,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Parameter", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Parameter", details: parsed.error.flatten() });
     }
 
     const { page, pageSize, reportType, format, startDate, endDate, search } =
@@ -98,10 +96,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Abrufen der archivierten Reports");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -119,10 +114,7 @@ export async function POST(request: NextRequest) {
     const parsed = postReportSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Daten", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Daten", details: parsed.error.flatten() });
     }
 
     const { title, reportType, format, fileBase64, parameters } = parsed.data;
@@ -168,9 +160,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Archivieren des Reports");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

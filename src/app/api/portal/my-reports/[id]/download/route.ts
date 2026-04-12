@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSignedUrl } from "@/lib/storage";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 /**
  * GET /api/portal/my-reports/[id]/download
@@ -24,7 +25,7 @@ export async function GET(
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     const { id } = await params;
@@ -46,10 +47,7 @@ export async function GET(
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Kein Gesellschafter-Zugang vorhanden" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Kein Gesellschafter-Zugang vorhanden" });
     }
 
     // Find all shareholders for the same person
@@ -99,20 +97,14 @@ export async function GET(
     });
 
     if (!document) {
-      return NextResponse.json(
-        { error: "Bericht nicht gefunden oder kein Zugriff" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Bericht nicht gefunden oder kein Zugriff" });
     }
 
     // fileUrl contains the S3 key
     const s3Key = document.fileUrl;
 
     if (!s3Key) {
-      return NextResponse.json(
-        { error: "Keine Datei mit diesem Bericht verknuepft" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Keine Datei mit diesem Bericht verknuepft" });
     }
 
     // Generate signed URL
@@ -121,10 +113,7 @@ export async function GET(
       signedUrl = await getSignedUrl(s3Key, validExpiresIn);
     } catch (storageError) {
       logger.error({ err: storageError }, "Failed to generate signed URL");
-      return NextResponse.json(
-        { error: "Download-URL konnte nicht generiert werden" },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: "Download-URL konnte nicht generiert werden" });
     }
 
     // Create audit log for the download (deferred: runs after response is sent)
@@ -162,9 +151,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error generating download URL");
-    return NextResponse.json(
-      { error: "Fehler beim Generieren der Download-URL" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Generieren der Download-URL" });
   }
 }

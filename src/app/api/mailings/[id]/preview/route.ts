@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     });
 
     if (!mailing) {
-      return NextResponse.json({ error: "Mailing nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Mailing nicht gefunden" });
     }
 
     const isTemplate = mailing.contentSource === "TEMPLATE" && mailing.template;
@@ -100,10 +101,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Kein Empfänger für die Vorschau gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Kein Empfänger für die Vorschau gefunden" });
     }
 
     // Get tenant name for email wrapper
@@ -161,6 +159,6 @@ export async function POST(req: NextRequest, context: RouteContext) {
     });
   } catch (error) {
     logger.error({ err: error }, "[Mailing Preview] Failed");
-    return NextResponse.json({ error: "Fehler bei der Vorschau" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler bei der Vorschau" });
   }
 }

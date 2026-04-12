@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const revenuePhaseSchema = z.object({
   phaseNumber: z.number().min(1),
@@ -36,10 +37,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
     }
 
     const phases = await prisma.parkRevenuePhase.findMany({
@@ -50,10 +48,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
     return NextResponse.json(phases);
   } catch (error) {
     logger.error({ err: error }, "Error fetching revenue phases");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Vergütungsphasen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Vergütungsphasen" });
   }
 }
 
@@ -77,10 +72,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
     }
 
     const body = await request.json();

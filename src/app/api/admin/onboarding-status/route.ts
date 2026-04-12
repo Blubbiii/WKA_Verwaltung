@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/admin/onboarding-status
@@ -42,10 +43,7 @@ export async function GET() {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 400 }
-      );
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     // Fetch tenant data and counts in parallel
@@ -76,10 +74,7 @@ export async function GET() {
     ]);
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     const steps = {
@@ -104,9 +99,6 @@ export async function GET() {
     return NextResponse.json(status);
   } catch (error) {
     logger.error({ err: error }, "Error fetching onboarding status");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Einrichtungsstatus" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Einrichtungsstatus" });
   }
 }

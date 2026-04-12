@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
@@ -41,13 +42,13 @@ export async function GET(
     });
 
     if (!ppa) {
-      return NextResponse.json({ error: "PPA nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "PPA nicht gefunden" });
     }
 
     return NextResponse.json({ ppa });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden des PPA");
-    return NextResponse.json({ error: "Fehler beim Laden des PPA" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden des PPA" });
   }
 }
 
@@ -66,16 +67,13 @@ export async function PATCH(
       where: { id, tenantId },
     });
     if (!existing) {
-      return NextResponse.json({ error: "PPA nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "PPA nicht gefunden" });
     }
 
     const body = await request.json();
     const result = ppaUpdateSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: result.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: result.error.flatten().fieldErrors });
     }
     const data = result.data;
 
@@ -107,7 +105,7 @@ export async function PATCH(
     return NextResponse.json({ ppa });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Aktualisieren des PPA");
-    return NextResponse.json({ error: "Fehler beim Aktualisieren des PPA" }, { status: 500 });
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren des PPA" });
   }
 }
 
@@ -125,7 +123,7 @@ export async function DELETE(
       where: { id, tenantId },
     });
     if (!existing) {
-      return NextResponse.json({ error: "PPA nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "PPA nicht gefunden" });
     }
 
     await prisma.powerPurchaseAgreement.delete({ where: { id } });
@@ -133,6 +131,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Löschen des PPA");
-    return NextResponse.json({ error: "Fehler beim Löschen des PPA" }, { status: 500 });
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen des PPA" });
   }
 }

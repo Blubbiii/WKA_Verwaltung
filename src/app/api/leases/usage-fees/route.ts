@@ -8,6 +8,7 @@ import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { createLeaseRevenueSettlementSchema } from "@/types/billing";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/leases/usage-fees - List all LeaseRevenueSettlements
@@ -84,10 +85,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     logger.error({ err: error }, "Error fetching lease revenue settlements");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Nutzungsentgelt-Abrechnungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Nutzungsentgelt-Abrechnungen" });
   }
 }
 
@@ -116,10 +114,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     // Check unique constraint (tenantId + parkId + year + periodType + month)
@@ -136,13 +131,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        {
-          error: "Duplikat erkannt",
-          details: `Für Park ${park.name} existiert bereits eine Nutzungsentgelt-Abrechnung für ${validatedData.year}`,
-        },
-        { status: 409 }
-      );
+      return apiError("ALREADY_EXISTS", undefined, { message: "Duplikat erkannt", details: `Für Park ${park.name} existiert bereits eine Nutzungsentgelt-Abrechnung für ${validatedData.year}` });
     }
 
     // Create settlement with status OPEN

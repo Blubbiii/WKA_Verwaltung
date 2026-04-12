@@ -7,6 +7,7 @@ import {
 import { enqueueScadaAutoImportForTenant } from "@/lib/queue";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const postAutoImportSchema = z.object({
   action: z.enum(["enable", "disable", "run-now", "configure"]),
@@ -30,10 +31,7 @@ export async function GET() {
     return NextResponse.json({ data: status });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden des Auto-Import Status");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Auto-Import Status" },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Auto-Import Status" });
   }
 }
 
@@ -57,20 +55,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = postAutoImportSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { action, locationCode, interval, autoImportPath } = parsed.data;
 
     switch (action) {
       case "enable": {
         if (!locationCode) {
-          return NextResponse.json(
-            { error: "locationCode ist erforderlich für enable" },
-            { status: 400 },
-          );
+          return apiError("MISSING_FIELD", undefined, { message: "locationCode ist erforderlich für enable" });
         }
 
         const count = await toggleAutoImport(
@@ -89,10 +81,7 @@ export async function POST(request: NextRequest) {
 
       case "disable": {
         if (!locationCode) {
-          return NextResponse.json(
-            { error: "locationCode ist erforderlich für disable" },
-            { status: 400 },
-          );
+          return apiError("MISSING_FIELD", undefined, { message: "locationCode ist erforderlich für disable" });
         }
 
         const count = await toggleAutoImport(
@@ -109,10 +98,7 @@ export async function POST(request: NextRequest) {
 
       case "configure": {
         if (!locationCode) {
-          return NextResponse.json(
-            { error: "locationCode ist erforderlich für configure" },
-            { status: 400 },
-          );
+          return apiError("MISSING_FIELD", undefined, { message: "locationCode ist erforderlich für configure" });
         }
 
         const count = await toggleAutoImport(
@@ -146,16 +132,10 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        return NextResponse.json(
-          { error: `Unbekannte Aktion: ${action}. Erlaubt: enable, disable, run-now, configure` },
-          { status: 400 },
-        );
+        return apiError("BAD_REQUEST", undefined, { message: `Unbekannte Aktion: ${action}. Erlaubt: enable, disable, run-now, configure` });
     }
   } catch (error) {
     logger.error({ err: error }, "Fehler bei Auto-Import Aktion");
-    return NextResponse.json(
-      { error: "Fehler bei Auto-Import Aktion" },
-      { status: 500 },
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei Auto-Import Aktion" });
   }
 }

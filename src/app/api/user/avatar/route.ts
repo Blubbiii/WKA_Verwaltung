@@ -14,6 +14,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { uploadFile, deleteFile, getSignedUrl } from "@/lib/storage";
@@ -49,42 +50,24 @@ export async function POST(request: Request) {
     const file = formData.get("file") as File | null;
 
     if (!file) {
-      return NextResponse.json(
-        { error: "Keine Datei hochgeladen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Keine Datei hochgeladen" });
     }
 
     // Validate file type
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        {
-          error: "Ungültiges Dateiformat. Erlaubt: PNG, JPEG, WebP",
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültiges Dateiformat. Erlaubt: PNG, JPEG, WebP" });
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        {
-          error: "Datei zu groß. Maximale Größe: 2MB",
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Datei zu groß. Maximale Größe: 2MB" });
     }
 
     // Validate file content (magic number check)
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const contentValidation = validateFileContent(fileBuffer, file.type);
     if (!contentValidation.valid) {
-      return NextResponse.json(
-        {
-          error: `Dateiinhalt ungültig: ${contentValidation.reason || "Dateityp stimmt nicht mit dem Inhalt überein"}`,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: `Dateiinhalt ungültig: ${contentValidation.reason || "Dateityp stimmt nicht mit dem Inhalt überein"}` });
     }
 
     // Get current user to check for existing avatar
@@ -141,10 +124,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     logger.error({ err: error }, "[Avatar API] POST error");
-    return NextResponse.json(
-      { error: "Fehler beim Hochladen des Avatars" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Hochladen des Avatars" });
   }
 }
 
@@ -166,10 +146,7 @@ export async function DELETE() {
     });
 
     if (!currentUser?.avatarUrl) {
-      return NextResponse.json(
-        { error: "Kein Avatar vorhanden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Kein Avatar vorhanden" });
     }
 
     // Delete from storage
@@ -194,10 +171,7 @@ export async function DELETE() {
     });
   } catch (error) {
     logger.error({ err: error }, "[Avatar API] DELETE error");
-    return NextResponse.json(
-      { error: "Fehler beim Entfernen des Avatars" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Entfernen des Avatars" });
   }
 }
 
@@ -230,9 +204,6 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "[Avatar API] GET error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Avatars" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden des Avatars" });
   }
 }

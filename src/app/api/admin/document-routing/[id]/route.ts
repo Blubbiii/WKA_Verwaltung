@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const updateRuleSchema = z.object({
   fundId: z.uuid().optional().nullable(),
@@ -38,10 +39,7 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Routing-Regel nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Routing-Regel nicht gefunden" });
     }
 
     const rule = await prisma.documentRoutingRule.update({
@@ -81,10 +79,7 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Routing-Regel nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Routing-Regel nicht gefunden" });
     }
 
     await prisma.documentRoutingRule.delete({ where: { id } });
@@ -92,9 +87,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting document routing rule");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Routing-Regel" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Routing-Regel" });
   }
 }

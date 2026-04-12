@@ -5,6 +5,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { getPaperlessConfig } from "@/lib/config";
@@ -21,11 +22,7 @@ export async function POST() {
     const config = await getPaperlessConfig(check.tenantId);
 
     if (!config) {
-      return NextResponse.json({
-        success: false,
-        error: "Paperless-ngx-Konfiguration nicht vorhanden",
-        details: "URL und API Token muessen konfiguriert sein.",
-      });
+      return apiError("INTERNAL_ERROR", 500, { message: "Paperless-ngx-Konfiguration nicht vorhanden", details: "URL und API Token muessen konfiguriert sein." });
     }
 
     const { PaperlessClient } = await import("@/lib/paperless/client");
@@ -37,11 +34,7 @@ export async function POST() {
         { url: config.url, error: result.error },
         "[Settings/Paperless Test] Connection failed"
       );
-      return NextResponse.json({
-        success: false,
-        error: `Paperless-ngx-Verbindung fehlgeschlagen: ${result.error}`,
-        details: result.error,
-      });
+      return apiError("INTERNAL_ERROR", 500, { message: `Paperless-ngx-Verbindung fehlgeschlagen: ${result.error}`, details: result.error });
     }
 
     return NextResponse.json({
@@ -61,10 +54,6 @@ export async function POST() {
     const errorMessage =
       error instanceof Error ? error.message : "Unbekannter Fehler";
 
-    return NextResponse.json({
-      success: false,
-      error: "Paperless-ngx-Test fehlgeschlagen",
-      details: errorMessage,
-    });
+    return apiError("INTERNAL_ERROR", 500, { message: "Paperless-ngx-Test fehlgeschlagen", details: errorMessage });
   }
 }

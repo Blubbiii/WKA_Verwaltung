@@ -6,6 +6,7 @@ import { z } from "zod";
 import { TaxType, PlotAreaType } from "@prisma/client";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const itemUpdateSchema = z.object({
   description: z.string().min(1).optional(),
@@ -82,10 +83,13 @@ export async function PATCH(
     // Prüfe Zugriff
     const accessCheck = await checkInvoiceAccess(id, check.tenantId!);
     if ("error" in accessCheck) {
-      return NextResponse.json(
-        { error: accessCheck.error },
-        { status: accessCheck.status }
-      );
+      const code =
+        accessCheck.status === 404
+          ? "NOT_FOUND"
+          : accessCheck.status === 403
+          ? "FORBIDDEN"
+          : "OPERATION_NOT_ALLOWED";
+      return apiError(code, accessCheck.status, { message: accessCheck.error });
     }
 
     // Prüfe ob Item existiert
@@ -95,10 +99,7 @@ export async function PATCH(
     });
 
     if (!existingItem || existingItem.invoiceId !== id) {
-      return NextResponse.json(
-        { error: "Position nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Position nicht gefunden" });
     }
 
     // Berechne neue Beträge falls Menge, Preis oder Steuertyp geändert
@@ -159,10 +160,13 @@ export async function DELETE(
     // Prüfe Zugriff
     const accessCheck = await checkInvoiceAccess(id, check.tenantId!);
     if ("error" in accessCheck) {
-      return NextResponse.json(
-        { error: accessCheck.error },
-        { status: accessCheck.status }
-      );
+      const code =
+        accessCheck.status === 404
+          ? "NOT_FOUND"
+          : accessCheck.status === 403
+          ? "FORBIDDEN"
+          : "OPERATION_NOT_ALLOWED";
+      return apiError(code, accessCheck.status, { message: accessCheck.error });
     }
 
     // Prüfe ob Item existiert
@@ -172,10 +176,7 @@ export async function DELETE(
     });
 
     if (!existingItem || existingItem.invoiceId !== id) {
-      return NextResponse.json(
-        { error: "Position nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Position nicht gefunden" });
     }
 
     // Delete + Summen aktualisieren + Positionen neu nummerieren atomar in einer Transaktion
@@ -204,9 +205,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting invoice item");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Position" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Position" });
   }
 }

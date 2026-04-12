@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION
@@ -40,10 +41,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden oder keine Berechtigung" },
-        { status: 404 }
-      );
+      return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
     const turbines = await prisma.turbine.findMany({
@@ -64,10 +62,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (turbines.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Turbinen in diesem Park vorhanden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Turbinen in diesem Park vorhanden" });
     }
 
     // Generate layout: NVP in center, turbines in a circle around it

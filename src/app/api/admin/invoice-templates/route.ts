@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createDefaultLayout } from "@/lib/invoice-templates/default-template";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const createTemplateSchema = z.object({
   name: z.string().min(1, "Name erforderlich"),
@@ -35,10 +36,7 @@ export async function GET() {
     return NextResponse.json(templates);
   } catch (error) {
     logger.error({ err: error }, "Error fetching invoice templates");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Rechnungsvorlagen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Rechnungsvorlagen" });
   }
 }
 

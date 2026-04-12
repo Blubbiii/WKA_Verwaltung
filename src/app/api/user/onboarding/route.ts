@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
@@ -35,10 +36,7 @@ export async function GET() {
     return NextResponse.json(onboarding);
   } catch (error) {
     logger.error({ err: error }, "Error fetching onboarding state");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Onboarding-Status" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden des Onboarding-Status" });
   }
 }
 
@@ -50,7 +48,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Validierungsfehler" }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler" });
     }
 
     const user = await prisma.user.findUnique({
@@ -92,9 +90,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(updatedOnboarding);
   } catch (error) {
     logger.error({ err: error }, "Error updating onboarding state");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern des Onboarding-Status" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", 500, { message: "Fehler beim Speichern des Onboarding-Status" });
   }
 }

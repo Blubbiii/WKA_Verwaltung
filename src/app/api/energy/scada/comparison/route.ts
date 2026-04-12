@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/scada/comparison
@@ -45,18 +46,12 @@ export async function GET(request: NextRequest) {
 
     // --- Validierung ---
     if (!yearParam) {
-      return NextResponse.json(
-        { error: "Parameter 'year' ist erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Parameter 'year' ist erforderlich" });
     }
 
     const year = parseInt(yearParam, 10);
     if (isNaN(year) || year < 2000 || year > 2100) {
-      return NextResponse.json(
-        { error: "Ungültiges Jahr (erwartet: 2000-2100)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Jahr (erwartet: 2000-2100)" });
     }
 
     // Optional: turbineId validieren (gehoert zum Tenant?)
@@ -69,10 +64,7 @@ export async function GET(request: NextRequest) {
         select: { id: true },
       });
       if (!turbine) {
-        return NextResponse.json(
-          { error: "Turbine nicht gefunden oder keine Berechtigung" },
-          { status: 404 }
-        );
+        return apiError("FORBIDDEN", 404, { message: "Turbine nicht gefunden oder keine Berechtigung" });
       }
     }
 
@@ -86,10 +78,7 @@ export async function GET(request: NextRequest) {
         select: { id: true },
       });
       if (!park) {
-        return NextResponse.json(
-          { error: "Park nicht gefunden oder keine Berechtigung" },
-          { status: 404 }
-        );
+        return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
       }
     }
 
@@ -320,9 +309,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim SCADA/Produktion-Vergleich");
-    return NextResponse.json(
-      { error: "Fehler beim Berechnen des SCADA/Produktion-Vergleichs" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Berechnen des SCADA/Produktion-Vergleichs" });
   }
 }

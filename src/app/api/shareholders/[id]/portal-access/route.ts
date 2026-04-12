@@ -8,6 +8,7 @@ import { sendTemplatedEmailSync } from "@/lib/email/sender";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
+import { apiError } from "@/lib/api-errors";
 
 /**
  * Generate a cryptographically secure temporary password.
@@ -59,10 +60,7 @@ export async function GET(
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Gesellschafter nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschafter nicht gefunden" });
     }
 
     return NextResponse.json({
@@ -86,10 +84,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error checking portal access status");
-    return NextResponse.json(
-      { error: "Fehler beim Prüfen des Portal-Zugangs" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Prüfen des Portal-Zugangs" });
   }
 }
 
@@ -134,29 +129,17 @@ export async function POST(
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Gesellschafter nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschafter nicht gefunden" });
     }
 
     // Check if portal access already exists
     if (shareholder.userId && shareholder.user) {
-      return NextResponse.json(
-        { error: "Dieser Gesellschafter hat bereits einen Portal-Zugang" },
-        { status: 409 }
-      );
+      return apiError("CONFLICT", undefined, { message: "Dieser Gesellschafter hat bereits einen Portal-Zugang" });
     }
 
     // Validate that the person has an email address
     if (!shareholder.person.email) {
-      return NextResponse.json(
-        {
-          error:
-            "Die Kontaktperson hat keine E-Mail-Adresse. Bitte zuerst eine E-Mail-Adresse hinterlegen.",
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Die Kontaktperson hat keine E-Mail-Adresse. Bitte zuerst eine E-Mail-Adresse hinterlegen." });
     }
 
     // Check if a user with this email already exists
@@ -166,12 +149,7 @@ export async function POST(
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        {
-          error: `Ein Benutzer mit der E-Mail-Adresse "${shareholder.person.email}" existiert bereits. Bitte verwenden Sie eine andere E-Mail-Adresse.`,
-        },
-        { status: 409 }
-      );
+      return apiError("CONFLICT", undefined, { message: `Ein Benutzer mit der E-Mail-Adresse "${shareholder.person.email}" existiert bereits. Bitte verwenden Sie eine andere E-Mail-Adresse.` });
     }
 
     // Find the Portal-Benutzer system role
@@ -184,13 +162,7 @@ export async function POST(
 
     if (!portalRole) {
       logger.error("System role 'Portal-Benutzer' not found in database");
-      return NextResponse.json(
-        {
-          error:
-            "Die Systemrolle 'Portal-Benutzer' wurde nicht gefunden. Bitte kontaktieren Sie den Administrator.",
-        },
-        { status: 500 }
-      );
+      return apiError("NOT_FOUND", 500, { message: "Die Systemrolle 'Portal-Benutzer' wurde nicht gefunden. Bitte kontaktieren Sie den Administrator." });
     }
 
     // Determine tenantId: use person's tenantId, or fund's tenant, or from park
@@ -200,10 +172,7 @@ export async function POST(
       shareholder.fund.fundParks[0]?.park?.tenantId;
 
     if (!tenantId) {
-      return NextResponse.json(
-        { error: "Mandant konnte nicht ermittelt werden" },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: "Mandant konnte nicht ermittelt werden" });
     }
 
     // Generate temporary password
@@ -336,10 +305,7 @@ export async function POST(
     );
   } catch (error) {
     logger.error({ err: error }, "Error creating portal access");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Portal-Zugangs" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen des Portal-Zugangs" });
   }
 }
 
@@ -373,17 +339,11 @@ export async function DELETE(
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Gesellschafter nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschafter nicht gefunden" });
     }
 
     if (!shareholder.userId || !shareholder.user) {
-      return NextResponse.json(
-        { error: "Dieser Gesellschafter hat keinen Portal-Zugang" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Dieser Gesellschafter hat keinen Portal-Zugang" });
     }
 
     const userId = shareholder.userId;
@@ -452,9 +412,6 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "Error removing portal access");
-    return NextResponse.json(
-      { error: "Fehler beim Entfernen des Portal-Zugangs" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Entfernen des Portal-Zugangs" });
   }
 }

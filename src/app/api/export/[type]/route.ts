@@ -20,6 +20,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from '@/lib/auth/withPermission';
 import { prisma } from '@/lib/prisma';
 import { generateExcel } from '@/lib/export/excel';
@@ -248,29 +249,20 @@ export async function GET(
 
     // Validate export type
     if (!SUPPORTED_TYPES.includes(type)) {
-      return NextResponse.json(
-        {
-          error: `Ungültiger Export-Typ: ${type}`,
-          supportedTypes: SUPPORTED_TYPES,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: `Ungültiger Export-Typ: ${type}` });
     }
 
     // Check permission for this specific export type
     const requiredPermission = EXPORT_PERMISSION_MAP[type];
     if (!requiredPermission) {
-      return NextResponse.json(
-        { error: `Keine Berechtigung für Export-Typ: ${type}` },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: `Keine Berechtigung für Export-Typ: ${type}` });
     }
 
     const check = await requirePermission(requiredPermission);
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+      return apiError("UNAUTHORIZED", 401, { message: "Nicht autorisiert" });
     }
 
     // Parse query parameters
@@ -284,10 +276,7 @@ export async function GET(
 
     // Validate format
     if (!['xlsx', 'csv'].includes(format)) {
-      return NextResponse.json(
-        { error: `Ungültiges Format: ${format}. Unterstuetzte Formate: xlsx, csv` },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: `Ungültiges Format: ${format}. Unterstuetzte Formate: xlsx, csv` });
     }
 
     // Parse dates
@@ -305,10 +294,7 @@ export async function GET(
 
     // Check if any data was found
     if (data.length === 0) {
-      return NextResponse.json(
-        { error: 'Keine Daten gefunden' },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Keine Daten gefunden" });
     }
 
     // Get column definitions for this type
@@ -365,15 +351,9 @@ export async function GET(
     logger.error({ err: error }, 'Export error');
 
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: `Export fehlgeschlagen: ${error.message}` },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", 500, { message: `Export fehlgeschlagen: ${error.message}` });
     }
 
-    return NextResponse.json(
-      { error: 'Export fehlgeschlagen' },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Export fehlgeschlagen" });
   }
 }

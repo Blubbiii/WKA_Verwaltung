@@ -9,6 +9,7 @@ import {
 } from "@/lib/analytics/module-fetchers";
 import { apiLogger as logger } from "@/lib/logger";
 import type { PortalAnalyticsResponse, PortalTurbineOverview } from "@/types/analytics";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/portal/energy-analytics
@@ -20,18 +21,12 @@ export async function GET(request: NextRequest) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Nicht autorisiert" },
-        { status: 401 }
-      );
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     const tenantId = session.user.tenantId;
     if (!tenantId) {
-      return NextResponse.json(
-        { error: "Kein Mandant zugeordnet" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Kein Mandant zugeordnet" });
     }
 
     // Check tenant portal settings
@@ -41,10 +36,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     const settings = tenant.settings as Record<string, unknown> | null;
@@ -63,10 +55,7 @@ export async function GET(request: NextRequest) {
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
 
     if (isNaN(year) || year < 2000 || year > 2100) {
-      return NextResponse.json(
-        { error: "Ungültiges Jahr" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Jahr" });
     }
 
     // Fetch all data in parallel (no park filter for portal - shows all)
@@ -158,9 +147,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: response });
   } catch (error) {
     logger.error({ err: error }, "Error fetching portal energy analytics");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Anlagen-Performance" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Anlagen-Performance" });
   }
 }

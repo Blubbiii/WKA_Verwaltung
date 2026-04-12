@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { checkDeadlinesAndNotify } from "@/lib/notifications/deadline-checker";
@@ -7,16 +8,13 @@ export async function POST(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     logger.error("CRON_SECRET env var is not set");
-    return NextResponse.json(
-      { error: "Service unavailable" },
-      { status: 503 }
-    );
+    return apiError("INTERNAL_ERROR", 503, { message: "Service unavailable" });
   }
 
   const authHeader = request.headers.get("authorization");
   if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
     logger.warn("Unauthorized cron request to check-deadlines");
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("UNAUTHORIZED", 401, { message: "Unauthorized" });
   }
 
   try {
@@ -49,9 +47,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     logger.error({ error: err }, "Deadline check cron failed");
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Internal server error" });
   }
 }

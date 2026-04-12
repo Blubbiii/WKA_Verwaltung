@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
@@ -57,7 +58,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: assets });
   } catch (error) {
     logger.error({ err: error }, "Error listing fixed assets");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json({ error: "Anlagennummer existiert bereits" }, { status: 409 });
+      return apiError("ALREADY_EXISTS", 409, { message: "Anlagennummer existiert bereits" });
     }
 
     const asset = await prisma.fixedAsset.create({

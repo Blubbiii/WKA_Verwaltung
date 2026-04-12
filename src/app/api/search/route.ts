@@ -3,6 +3,7 @@
  * Global search across all Meilisearch indices for the current tenant.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getMeilisearchClient, INDICES } from "@/lib/search/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("documents:read");
     if (!check.authorized) return check.error;
-    if (!check.tenantId) return NextResponse.json({ error: "Kein Mandant" }, { status: 400 });
+    if (!check.tenantId) return apiError("BAD_REQUEST", 400, { message: "Kein Mandant" });
 
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q")?.trim() ?? "";
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     const client = getMeilisearchClient();
     if (!client) {
-      return NextResponse.json({ error: "Suche nicht konfiguriert" }, { status: 503 });
+      return apiError("INTERNAL_ERROR", 503, { message: "Suche nicht konfiguriert" });
     }
 
     const entities: SearchEntity[] = entityParam
@@ -63,6 +64,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results: merged, query: q, total: merged.length });
   } catch (error) {
     logger.error({ err: error }, "[Search API] Error");
-    return NextResponse.json({ error: "Suchfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Suchfehler" });
   }
 }

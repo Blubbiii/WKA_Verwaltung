@@ -6,6 +6,7 @@ import {
 } from "@/lib/config";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 export interface MaintenanceStatus {
   active: boolean;
@@ -33,10 +34,7 @@ const check = await requireSuperadmin();
     return NextResponse.json(status);
   } catch (error) {
     logger.error({ err: error }, "Error fetching maintenance status");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Wartungsmodus-Status" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Wartungsmodus-Status" });
   }
 }
 
@@ -55,10 +53,7 @@ export async function PUT(request: NextRequest) {
     const parsed = maintenanceSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Daten", details: parsed.error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Daten", details: parsed.error.issues });
     }
 
     // Update maintenance mode status
@@ -83,9 +78,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error updating maintenance mode");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Wartungsmodus" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren des Wartungsmodus" });
   }
 }

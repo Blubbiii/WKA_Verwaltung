@@ -13,6 +13,7 @@ import { z } from "zod";
 import { validateRuleParameters, calculateNextRun, BillingRuleType, BillingRuleFrequency } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // Validation Schema für Update
 const updateRuleSchema = z.object({
@@ -62,10 +63,7 @@ export async function GET(
     });
 
     if (!rule) {
-      return NextResponse.json(
-        { error: "Abrechnungsregel nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsregel nicht gefunden" });
     }
 
     return NextResponse.json({
@@ -95,10 +93,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching billing rule");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Abrechnungsregel" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Abrechnungsregel" });
   }
 }
 
@@ -124,10 +119,7 @@ export async function PATCH(
     });
 
     if (!existingRule) {
-      return NextResponse.json(
-        { error: "Abrechnungsregel nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsregel nicht gefunden" });
     }
 
     // Validiere Cron-Pattern wenn CUSTOM_CRON
@@ -135,10 +127,7 @@ export async function PATCH(
     if (newFrequency === "CUSTOM_CRON") {
       const newCronPattern = validatedData.cronPattern ?? existingRule.cronPattern;
       if (!newCronPattern) {
-        return NextResponse.json(
-          { error: "Cron-Pattern ist erforderlich für CUSTOM_CRON Frequenz" },
-          { status: 400 }
-        );
+        return apiError("MISSING_FIELD", undefined, { message: "Cron-Pattern ist erforderlich für CUSTOM_CRON Frequenz" });
       }
     }
 
@@ -150,10 +139,7 @@ export async function PATCH(
       );
 
       if (!paramValidation.valid) {
-        return NextResponse.json(
-          { error: paramValidation.error || "Ungültige Parameter" },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: paramValidation.error || "Ungültige Parameter" });
       }
     }
 
@@ -226,10 +212,7 @@ export async function DELETE(
     });
 
     if (!existingRule) {
-      return NextResponse.json(
-        { error: "Abrechnungsregel nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsregel nicht gefunden" });
     }
 
     // Soft-Delete: Setze isActive auf false
@@ -241,9 +224,6 @@ export async function DELETE(
     return NextResponse.json({ success: true, message: "Abrechnungsregel deaktiviert" });
   } catch (error) {
     logger.error({ err: error }, "Error deleting billing rule");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Abrechnungsregel" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Abrechnungsregel" });
   }
 }

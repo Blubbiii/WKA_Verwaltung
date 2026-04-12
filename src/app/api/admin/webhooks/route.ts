@@ -13,6 +13,7 @@ import { z } from "zod";
 import { WEBHOOK_EVENTS } from "@/lib/webhooks/events";
 import { apiLogger as logger } from "@/lib/logger";
 import crypto from "crypto";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // Validation Schema
@@ -102,10 +103,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     logger.error({ err: error }, "Error fetching webhooks");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Webhooks" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Webhooks" });
   }
 }
 
@@ -122,20 +120,14 @@ export async function POST(request: NextRequest) {
     const parsed = createWebhookSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { url, events, description } = parsed.data;
 
     // SSRF protection: reject private/internal URLs
     if (isPrivateUrl(url)) {
-      return NextResponse.json(
-        { error: "Private oder interne URLs sind nicht erlaubt" },
-        { status: 400 }
-      );
+      return apiError("FORBIDDEN", 400, { message: "Private oder interne URLs sind nicht erlaubt" });
     }
 
     // Auto-generate webhook secret
@@ -172,9 +164,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     logger.error({ err: error }, "Error creating webhook");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Webhooks" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen des Webhooks" });
   }
 }

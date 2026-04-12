@@ -11,6 +11,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { WIDGET_REGISTRY } from "@/lib/dashboard/widget-registry";
 import type { UserRole } from "@/types/dashboard";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const VALID_ROLES: UserRole[] = ["VIEWER", "MANAGER", "ADMIN", "SUPERADMIN"];
 
@@ -62,10 +63,7 @@ export async function GET() {
     return NextResponse.json({ widgets });
   } catch (error) {
     logger.error({ err: error }, "Error fetching widget visibility");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Widget-Sichtbarkeit" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Widget-Sichtbarkeit" });
   }
 }
 
@@ -83,20 +81,14 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const parsed = putWidgetVisibilitySchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { widgetId, minRole } = parsed.data;
 
     // Verify widget exists in registry
     const widget = WIDGET_REGISTRY.find((w) => w.id === widgetId);
     if (!widget) {
-      return NextResponse.json(
-        { error: `Widget nicht gefunden: ${widgetId}` },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: `Widget nicht gefunden: ${widgetId}` });
     }
 
     const configKey = `widget.minRole.${widgetId}`;
@@ -157,9 +149,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error saving widget visibility");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Widget-Sichtbarkeit" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der Widget-Sichtbarkeit" });
   }
 }

@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 const bulkCreateSchema = z.object({
   parkId: z.uuid(),
@@ -40,10 +41,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Windpark nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Windpark nicht gefunden" });
     }
 
     // Pruefe auf existierende Perioden für dieses Jahr
@@ -74,10 +72,7 @@ export async function POST(request: NextRequest) {
     const newMonths = monthsToCreate.filter(m => !existingMonths.has(m));
 
     if (newMonths.length === 0 && (hasFinalPeriod || !createFinalPeriod)) {
-      return NextResponse.json(
-        { error: `Alle ${frequency === "MONTHLY" ? "monatlichen" : "quartalsweisen"} ADVANCE Perioden für ${year} existieren bereits` },
-        { status: 409 }
-      );
+      return apiError("ALREADY_EXISTS", 409, { message: `Alle ${frequency === "MONTHLY" ? "monatlichen" : "quartalsweisen"} ADVANCE Perioden für ${year} existieren bereits` });
     }
 
     // Erstelle Perioden in einer Transaktion
@@ -163,10 +158,7 @@ export async function GET(request: NextRequest) {
     const year = searchParams.get("year");
 
     if (!parkId || !year) {
-      return NextResponse.json(
-        { error: "parkId und year sind erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", 400, { message: "parkId und year sind erforderlich" });
     }
 
     const yearNum = parseInt(year, 10);
@@ -223,10 +215,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error checking settlement periods");
-    return NextResponse.json(
-      { error: "Fehler beim Prüfen der Abrechnungsperioden" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Prüfen der Abrechnungsperioden" });
   }
 }
 

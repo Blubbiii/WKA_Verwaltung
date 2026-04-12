@@ -10,6 +10,7 @@ import {
   type PartialCancelPosition,
   type CorrectedPosition,
 } from "@/lib/invoices/invoice-correction";
+import { apiError } from "@/lib/api-errors";
 
 // Zod schemas for validation
 const partialCancelPositionSchema = z.object({
@@ -128,10 +129,7 @@ export async function POST(
       ].some((msg) => error.message.includes(msg));
 
       if (isClientError) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: error.message });
       }
     }
 

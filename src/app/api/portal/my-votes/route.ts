@@ -5,6 +5,7 @@ import { VoteStatus } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const voteSubmitSchema = z.object({
   voteId: z.string().min(1, "Vote-ID ist erforderlich"),
@@ -265,7 +266,7 @@ export async function GET(request: NextRequest) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     const { searchParams } = new URL(request.url);
@@ -408,10 +409,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching votes");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }
 
@@ -421,16 +419,13 @@ export async function POST(request: NextRequest) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 });
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     const body = await request.json();
     const parsed = voteSubmitSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { voteId, decision } = parsed.data;
 
@@ -448,10 +443,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!userShareholder) {
-      return NextResponse.json(
-        { error: "Kein Gesellschafterprofil verknüpft" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Kein Gesellschafterprofil verknüpft" });
     }
 
     // Get the vote
@@ -460,18 +452,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!vote) {
-      return NextResponse.json(
-        { error: "Abstimmung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abstimmung nicht gefunden" });
     }
 
     // Check if vote is still active
     if (vote.status !== "ACTIVE" || new Date(vote.endDate) <= new Date()) {
-      return NextResponse.json(
-        { error: "Abstimmung ist nicht mehr aktiv" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Abstimmung ist nicht mehr aktiv" });
     }
 
     // Find the shareholder for this fund (same person)
@@ -484,10 +470,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!shareholder) {
-      return NextResponse.json(
-        { error: "Sie sind nicht an dieser Gesellschaft beteiligt" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Sie sind nicht an dieser Gesellschaft beteiligt" });
     }
 
     // Check if already voted
@@ -501,10 +484,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingResponse) {
-      return NextResponse.json(
-        { error: "Sie haben bereits abgestimmt" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Sie haben bereits abgestimmt" });
     }
 
     // Create the vote response
@@ -527,9 +507,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error submitting vote");
-    return NextResponse.json(
-      { error: "Interner Serverfehler" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }

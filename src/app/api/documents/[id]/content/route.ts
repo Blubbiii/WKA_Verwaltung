@@ -9,6 +9,7 @@ import { existsSync } from "fs";
 import path from "path";
 import { apiLogger as logger } from "@/lib/logger";
 import { CACHE_TTL } from "@/lib/cache/types";
+import { apiError } from "@/lib/api-errors";
 
 const S3_ENDPOINT = process.env.S3_ENDPOINT || "http://localhost:9000";
 
@@ -41,27 +42,18 @@ export async function GET(
     });
 
     if (!document) {
-      return NextResponse.json(
-        { error: "Dokument nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Dokument nicht gefunden" });
     }
 
     // Tenant-Prüfung
     if (document.tenantId !== check.tenantId) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Prüfe ob fileUrl vorhanden und gültig ist
     if (!document.fileUrl) {
       logger.error(`Document ${id} hat keine fileUrl`);
-      return NextResponse.json(
-        { error: "Dokument hat keine Datei verknuepft" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Dokument hat keine Datei verknuepft" });
     }
 
     // Prüfen ob fileUrl ein S3-Key ist oder eine externe URL
@@ -78,16 +70,10 @@ export async function GET(
         ].filter(Boolean);
         if (!allowedHosts.includes(externalUrl.hostname)) {
           logger.warn(`Blocked redirect to untrusted host: ${externalUrl.hostname}`);
-          return NextResponse.json(
-            { error: "Externer Link nicht vertrauenswuerdig" },
-            { status: 403 }
-          );
+          return apiError("FORBIDDEN", undefined, { message: "Externer Link nicht vertrauenswuerdig" });
         }
       } catch {
-        return NextResponse.json(
-          { error: "Ungültige Datei-URL" },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Datei-URL" });
       }
       return NextResponse.redirect(document.fileUrl);
     }
@@ -107,10 +93,7 @@ export async function GET(
 
       if (!response.Body) {
         logger.error(`S3 returned no body for key: ${document.fileUrl}`);
-        return NextResponse.json(
-          { error: "Datei konnte nicht geladen werden" },
-          { status: 500 }
-        );
+        return apiError("INTERNAL_ERROR", undefined, { message: "Datei konnte nicht geladen werden" });
       }
 
       // Body zu Buffer konvertieren
@@ -161,10 +144,7 @@ export async function GET(
 
         // Security: Prevent path traversal outside public/ directory
         if (!localPath.startsWith(publicDir + path.sep)) {
-          return NextResponse.json(
-            { error: "Ungültiger Dateipfad" },
-            { status: 400 }
-          );
+          return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger Dateipfad" });
         }
 
         if (existsSync(localPath)) {
@@ -185,33 +165,18 @@ export async function GET(
           }
         }
 
-        return NextResponse.json(
-          { error: "Datei existiert nicht. Bitte laden Sie das Dokument erneut hoch." },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Datei existiert nicht. Bitte laden Sie das Dokument erneut hoch." });
       } else if (errorName === "NoSuchBucket" || errorMessage.includes("NoSuchBucket")) {
-        return NextResponse.json(
-          { error: "Storage-Bucket nicht konfiguriert. Rufen Sie /api/documents/health auf." },
-          { status: 500 }
-        );
+        return apiError("STORAGE_FAILED", undefined, { message: "Storage-Bucket nicht konfiguriert. Rufen Sie /api/documents/health auf." });
       } else if (errorMessage.includes("ECONNREFUSED") || errorMessage.includes("connect")) {
-        return NextResponse.json(
-          { error: "Storage-Service nicht erreichbar. Bitte MinIO starten." },
-          { status: 503 }
-        );
+        return apiError("STORAGE_FAILED", 503, { message: "Storage-Service nicht erreichbar. Bitte MinIO starten." });
       } else {
-        return NextResponse.json(
-          { error: "Fehler beim Laden der Datei vom Storage" },
-          { status: 500 }
-        );
+        return apiError("STORAGE_FAILED", undefined, { message: "Fehler beim Laden der Datei vom Storage" });
       }
     }
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden des Dokuments");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Dokuments" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Dokuments" });
   }
 }
 

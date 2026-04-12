@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/admin/webhooks/stats - Delivery stats (last 24h)
@@ -99,9 +100,6 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching webhook stats");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Webhook-Statistiken" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Webhook-Statistiken" });
   }
 }

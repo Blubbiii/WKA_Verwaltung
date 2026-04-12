@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -38,13 +39,13 @@ export async function GET(_req: NextRequest, context: RouteContext) {
     });
 
     if (!mailing) {
-      return NextResponse.json({ error: "Mailing nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Mailing nicht gefunden" });
     }
 
     return NextResponse.json({ mailing });
   } catch (error) {
     logger.error({ err: error }, "[Mailing] GET failed");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden" });
   }
 }
 
@@ -59,14 +60,11 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     });
 
     if (!mailing) {
-      return NextResponse.json({ error: "Mailing nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Mailing nicht gefunden" });
     }
 
     if (mailing.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Nur Entwürfe können gelöscht werden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Nur Entwürfe können gelöscht werden" });
     }
 
     // Delete recipients first (cascade should handle this, but be explicit)
@@ -75,6 +73,6 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "[Mailing] DELETE failed");
-    return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen" });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
@@ -16,7 +17,7 @@ export async function POST(
     const check = await requirePermission("inbox:approve");
     if (!check.authorized) return check.error;
     if (!await getConfigBoolean("inbox.enabled", check.tenantId!, false)) {
-      return NextResponse.json({ error: "Inbox nicht aktiviert" }, { status: 404 });
+      return apiError("FEATURE_DISABLED", 404, { message: "Inbox nicht aktiviert" });
     }
     const { id } = await params;
 
@@ -32,14 +33,11 @@ export async function POST(
     });
 
     if (!invoice) {
-      return NextResponse.json({ error: "Rechnung nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Rechnung nicht gefunden" });
     }
 
     if (invoice.splits.length === 0) {
-      return NextResponse.json(
-        { error: "Keine offenen Splits vorhanden (alle haben bereits Ausgangsrechnungen)" },
-        { status: 409 }
-      );
+      return apiError("CONFLICT", 409, { message: "Keine offenen Splits vorhanden (alle haben bereits Ausgangsrechnungen)" });
     }
 
     const tenantId = check.tenantId!;
@@ -118,6 +116,6 @@ export async function POST(
     return NextResponse.json(serializePrisma({ created: createdInvoices }));
   } catch (error) {
     logger.error({ err: error }, "Error generating outgoing invoices from inbox splits");
-    return NextResponse.json({ error: "Fehler beim Erzeugen der Ausgangsrechnungen" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Erzeugen der Ausgangsrechnungen" });
   }
 }

@@ -10,6 +10,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getArchivedDocument } from "@/lib/archive/gobd-archive";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 export async function GET(
   request: NextRequest,
@@ -22,19 +23,13 @@ export async function GET(
     const { id } = await params;
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Archiv-ID erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Archiv-ID erforderlich" });
     }
 
     const result = await getArchivedDocument(id, check.tenantId!);
 
     if (!result) {
-      return NextResponse.json(
-        { error: "Archiviertes Dokument nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Archiviertes Dokument nicht gefunden" });
     }
 
     // Log access in audit trail (GoBD requirement: every access must be logged)
@@ -76,19 +71,11 @@ export async function GET(
       error.message.includes("Integritaetsverletzung")
     ) {
       logger.error({ err: error }, "Archive integrity violation on download");
-      return NextResponse.json(
-        {
-          error: "Integritaetsverletzung: Das Dokument wurde moeglicherweise manipuliert. " +
-            "Bitte fuehren Sie eine vollstaendige Integritaetsprüfung durch.",
-        },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: "Integritaetsverletzung: Das Dokument wurde moeglicherweise manipuliert. " +
+            "Bitte fuehren Sie eine vollstaendige Integritaetsprüfung durch." });
     }
 
     logger.error({ err: error }, "Error downloading archived document");
-    return NextResponse.json(
-      { error: "Fehler beim Herunterladen des archivierten Dokuments" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Herunterladen des archivierten Dokuments" });
   }
 }

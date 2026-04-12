@@ -8,6 +8,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { updateLeaseRevenueSettlementSchema } from "@/types/billing";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/leases/usage-fees/[id] - Single settlement with full details
@@ -95,10 +96,7 @@ export async function GET(
     });
 
     if (!settlement) {
-      return NextResponse.json(
-        { error: "Nutzungsentgelt-Abrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Nutzungsentgelt-Abrechnung nicht gefunden" });
     }
 
     // tenantId already filtered in query above
@@ -109,10 +107,7 @@ export async function GET(
       { err: error },
       "Error fetching lease revenue settlement"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Nutzungsentgelt-Abrechnung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Nutzungsentgelt-Abrechnung" });
   }
 }
 
@@ -143,17 +138,11 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Nutzungsentgelt-Abrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Nutzungsentgelt-Abrechnung nicht gefunden" });
     }
 
     if (existing.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Build update data - only allow updating dates and notes
@@ -221,21 +210,12 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Nutzungsentgelt-Abrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Nutzungsentgelt-Abrechnung nicht gefunden" });
     }
 
     // Only allow deletion if status is OPEN
     if (existing.status !== "OPEN") {
-      return NextResponse.json(
-        {
-          error: "Löschen nicht moeglich",
-          details: `Nur Abrechnungen im Status 'Offen' können gelöscht werden. Aktueller Status: ${existing.status}`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Löschen nicht moeglich", details: `Nur Abrechnungen im Status 'Offen' können gelöscht werden. Aktueller Status: ${existing.status}` });
     }
 
     // Delete settlement (items cascade via onDelete: Cascade in schema)
@@ -257,9 +237,6 @@ export async function DELETE(
       { err: error },
       "Error deleting lease revenue settlement"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Nutzungsentgelt-Abrechnung" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Nutzungsentgelt-Abrechnung" });
   }
 }

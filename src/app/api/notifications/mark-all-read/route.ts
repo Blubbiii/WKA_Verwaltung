@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -26,9 +27,6 @@ export async function POST() {
     });
   } catch (error) {
     logger.error({ err: error }, "[API] Error marking all notifications as read");
-    return NextResponse.json(
-      { error: "Fehler beim Markieren aller Benachrichtigungen" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Markieren aller Benachrichtigungen" });
   }
 }

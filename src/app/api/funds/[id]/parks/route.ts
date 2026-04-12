@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const fundParkSchema = z.object({
   parkId: z.string().uuid("Ungültige Park-ID"),
@@ -31,10 +32,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_READ);
     });
 
     if (!fund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     const fundParks = await prisma.fundPark.findMany({
@@ -55,10 +53,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_READ);
     return NextResponse.json(fundParks);
   } catch (error) {
     logger.error({ err: error }, "Error fetching fund parks");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Parks" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Parks" });
   }
 }
 
@@ -82,10 +77,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     });
 
     if (!fund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     const body = await request.json();
@@ -100,10 +92,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
     }
 
     // Check if already linked
@@ -117,10 +106,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: "Park ist bereits dieser Gesellschaft zugeordnet" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Park ist bereits dieser Gesellschaft zugeordnet" });
     }
 
     const fundPark = await prisma.fundPark.create({
@@ -162,10 +148,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     const parkId = searchParams.get("parkId");
 
     if (!parkId) {
-      return NextResponse.json(
-        { error: "Park-ID erforderlich" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Park-ID erforderlich" });
     }
 
     // Verify fund belongs to tenant
@@ -177,10 +160,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     });
 
     if (!fund) {
-      return NextResponse.json(
-        { error: "Gesellschaft nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
     await prisma.fundPark.delete({
@@ -195,9 +175,6 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error removing park from fund");
-    return NextResponse.json(
-      { error: "Fehler beim Entfernen des Parks" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Entfernen des Parks" });
   }
 }

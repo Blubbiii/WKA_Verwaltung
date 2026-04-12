@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/analytics/faults/events
@@ -26,10 +27,7 @@ export async function GET(request: NextRequest) {
 
     const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
     if (isNaN(year) || year < 2000 || year > 2100) {
-      return NextResponse.json(
-        { error: "Ungültiges Jahr (2000-2100 erwartet)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Jahr (2000-2100 erwartet)" });
     }
 
     const from = new Date(year, 0, 1);
@@ -180,9 +178,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der Störungsereignisse");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Störungsereignisse" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Störungsereignisse" });
   }
 }

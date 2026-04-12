@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getNextInvoiceNumbers } from "@/lib/invoices/numberGenerator";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // Hilfsfunktion: Formatiere Empfängername
 function formatRecipientName(person: {
@@ -67,17 +68,11 @@ export async function POST(
     });
 
     if (!distribution) {
-      return NextResponse.json(
-        { error: "Ausschuettung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Ausschuettung nicht gefunden" });
     }
 
     if (distribution.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Ausschuettung wurde bereits ausgeführt" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Ausschuettung wurde bereits ausgeführt" });
     }
 
     // Load tenant settings for payment term
@@ -202,9 +197,6 @@ export async function POST(
     });
   } catch (error) {
     logger.error({ err: error }, "Error executing distribution");
-    return NextResponse.json(
-      { error: "Fehler beim Ausfuehren der Ausschuettung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Ausfuehren der Ausschuettung" });
   }
 }

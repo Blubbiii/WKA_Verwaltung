@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -68,19 +69,13 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
     });
 
     if (!event) {
-      return NextResponse.json(
-        { error: "Service-Event nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Service-Event nicht gefunden" });
     }
 
     return NextResponse.json(event);
   } catch (error) {
     logger.error({ err: error }, "Error fetching service event");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Service-Events" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden des Service-Events" });
   }
 }
 
@@ -108,10 +103,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
     });
 
     if (!existingEvent) {
-      return NextResponse.json(
-        { error: "Service-Event nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Service-Event nicht gefunden" });
     }
 
     const body = await request.json();
@@ -140,16 +132,10 @@ const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
     return NextResponse.json(event);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
     }
     logger.error({ err: error }, "Error updating service event");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren des Service-Events" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren des Service-Events" });
   }
 }
 
@@ -178,10 +164,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_DELETE);
     });
 
     if (!event) {
-      return NextResponse.json(
-        { error: "Service-Event nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Service-Event nicht gefunden" });
     }
 
     await prisma.serviceEvent.delete({
@@ -197,9 +180,6 @@ const check = await requirePermission(PERMISSIONS.PARKS_DELETE);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting service event");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Service-Events" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen des Service-Events" });
   }
 }

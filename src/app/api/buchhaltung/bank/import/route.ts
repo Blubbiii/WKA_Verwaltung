@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -25,20 +26,17 @@ export async function POST(request: NextRequest) {
 
     const fieldsParsed = bankImportFieldsSchema.safeParse({ iban: rawIban });
     if (!fieldsParsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: fieldsParsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: fieldsParsed.error.flatten().fieldErrors });
     }
     const iban = fieldsParsed.data.iban;
 
     if (!file) {
-      return NextResponse.json({ error: "Keine Datei hochgeladen" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Keine Datei hochgeladen" });
     }
 
     const MAX_FILE_SIZE = UPLOAD_LIMITS.bankImport;
     if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json({ error: "Datei zu groß (max. 10 MB)" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Datei zu groß (max. 10 MB)" });
     }
 
     const content = await file.text();
@@ -47,7 +45,7 @@ export async function POST(request: NextRequest) {
     const transactions = isXml ? parseCamt054(content) : parseMt940(content);
 
     if (transactions.length === 0) {
-      return NextResponse.json({ error: "Keine Transaktionen in der Datei gefunden" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Keine Transaktionen in der Datei gefunden" });
     }
 
     // Match against open invoices
@@ -83,6 +81,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error importing bank transactions");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

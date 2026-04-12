@@ -6,6 +6,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import JSZip from "jszip";
 import { API_LIMITS } from "@/lib/config/api-limits";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 const batchPdfSchema = z.object({
   invoiceIds: z.array(z.string().min(1)).min(1).max(API_LIMITS.batchSize),
@@ -22,18 +23,12 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        { error: "Ungueltiger Request Body" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungueltiger Request Body" });
     }
 
     const parsed = batchPdfSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { invoiceIds } = parsed.data;
 
@@ -83,10 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (generated === 0) {
-      return NextResponse.json(
-        { error: "Keine PDFs konnten generiert werden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Keine PDFs konnten generiert werden" });
     }
 
     logger.info(
@@ -110,13 +102,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error in batch PDF generation");
-    return NextResponse.json(
-      {
-        error: "Fehler bei der Batch-PDF-Generierung",
-        details:
-          error instanceof Error ? error.message : "Unbekannter Fehler",
-      },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Batch-PDF-Generierung", details: error instanceof Error ? error.message : "Unbekannter Fehler" });
   }
 }

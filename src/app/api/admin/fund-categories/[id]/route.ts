@@ -14,6 +14,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -74,10 +75,7 @@ export async function GET(
 
     // Nicht gefunden?
     if (!fundCategory) {
-      return NextResponse.json(
-        { error: "Gesellschaftstyp nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaftstyp nicht gefunden" });
     }
 
     // Response mit transformierten Daten
@@ -95,10 +93,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching fund category");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Gesellschaftstyps" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Gesellschaftstyps" });
   }
 }
 
@@ -137,10 +132,7 @@ export async function PATCH(
     });
 
     if (!existingCategory) {
-      return NextResponse.json(
-        { error: "Gesellschaftstyp nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaftstyp nicht gefunden" });
     }
 
     // Bei Code-Änderung: Prüfen ob neuer Code bereits existiert
@@ -154,10 +146,7 @@ export async function PATCH(
       });
 
       if (codeExists) {
-        return NextResponse.json(
-          { error: `Ein Gesellschaftstyp mit dem Code "${validatedData.code}" existiert bereits` },
-          { status: 409 } // Conflict
-        );
+        return apiError("ALREADY_EXISTS", 409, { message: `Ein Gesellschaftstyp mit dem Code "${validatedData.code}" existiert bereits` });
       }
     }
 
@@ -245,10 +234,7 @@ export async function DELETE(
     });
 
     if (!existingCategory) {
-      return NextResponse.json(
-        { error: "Gesellschaftstyp nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Gesellschaftstyp nicht gefunden" });
     }
 
     // Prüfen ob Gesellschaften diesem Typ zugeordnet sind
@@ -257,14 +243,11 @@ export async function DELETE(
     });
 
     if (fundsCount > 0) {
-      return NextResponse.json(
-        {
-          error: `Kann nicht gelöscht werden: ${fundsCount} ${
-            fundsCount === 1 ? "Gesellschaft ist" : "Gesellschaften sind"
-          } diesem Typ zugeordnet`,
-        },
-        { status: 409 } // Conflict
-      );
+      return apiError("DEPENDENCY_EXISTS", 409, {
+        message: `Kann nicht gelöscht werden: ${fundsCount} ${
+          fundsCount === 1 ? "Gesellschaft ist" : "Gesellschaften sind"
+        } diesem Typ zugeordnet`,
+      });
     }
 
     // Gesellschaftstyp löschen
@@ -278,9 +261,6 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting fund category");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Gesellschaftstyps" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des Gesellschaftstyps" });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -26,10 +27,7 @@ export async function PATCH(
     });
 
     if (!notification) {
-      return NextResponse.json(
-        { error: "Benachrichtigung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Benachrichtigung nicht gefunden" });
     }
 
     const updated = await prisma.notification.update({
@@ -44,9 +42,6 @@ export async function PATCH(
     return NextResponse.json(updated);
   } catch (error) {
     logger.error({ err: error }, "[API] Error marking notification as read");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Benachrichtigung" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren der Benachrichtigung" });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateSuSa } from "@/lib/accounting/reports/susa";
@@ -23,6 +24,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: result });
   } catch (error) {
     logger.error({ err: error }, "Error generating SuSa");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

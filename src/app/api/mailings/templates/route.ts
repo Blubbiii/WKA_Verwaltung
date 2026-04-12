@@ -6,6 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
   if (!check.authorized) return check.error!;
 
   const enabled = await getConfigBoolean("communication.enabled", check.tenantId, false);
-  if (!enabled) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
+  if (!enabled) return apiError("NOT_FOUND", 404, { message: "Communication module is not enabled" });
 
   try {
     const { searchParams } = new URL(req.url);
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ templates });
   } catch (error) {
     logger.error({ err: error }, "[MailingTemplates] GET failed");
-    return NextResponse.json({ error: "Fehler beim Laden der Vorlagen" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Vorlagen" });
   }
 }
 
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
   if (!check.authorized) return check.error!;
 
   const enabledPost = await getConfigBoolean("communication.enabled", check.tenantId, false);
-  if (!enabledPost) return NextResponse.json({ error: "Communication module is not enabled" }, { status: 404 });
+  if (!enabledPost) return apiError("NOT_FOUND", 404, { message: "Communication module is not enabled" });
 
   try {
     const body = await req.json();
@@ -79,9 +80,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ template }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Ungültige Eingabe", details: error.issues }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: error.issues });
     }
     logger.error({ err: error }, "[MailingTemplates] POST failed");
-    return NextResponse.json({ error: "Fehler beim Erstellen der Vorlage" }, { status: 500 });
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen der Vorlage" });
   }
 }

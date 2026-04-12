@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const updateSchema = z.object({
   label: z.string().min(1).max(100).optional(),
@@ -28,7 +29,7 @@ export async function PATCH(
       where: { id, tenantId: check.tenantId },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Nicht gefunden" });
     }
 
     const body = await request.json();
@@ -39,7 +40,7 @@ export async function PATCH(
         Object.values(fieldErrors).flat()[0] ??
         parsed.error.flatten().formErrors[0] ??
         "Ungültige Eingabe";
-      return NextResponse.json({ error: firstError }, { status: 400 });
+      return apiError("BAD_REQUEST", undefined, { message: firstError });
     }
 
     const link = await prisma.sidebarLink.update({
@@ -50,7 +51,7 @@ export async function PATCH(
     return NextResponse.json(link);
   } catch (error) {
     logger.error({ error }, "[sidebar-links] PATCH error");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }
 
@@ -67,13 +68,13 @@ export async function DELETE(
       where: { id, tenantId: check.tenantId },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", undefined, { message: "Nicht gefunden" });
     }
 
     await prisma.sidebarLink.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     logger.error({ error }, "[sidebar-links] DELETE error");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", undefined, { message: "Interner Serverfehler" });
   }
 }

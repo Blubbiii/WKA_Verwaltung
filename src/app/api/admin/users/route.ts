@@ -8,6 +8,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
+import { apiError } from "@/lib/api-errors";
 
 /** Quick helper to check if current user is SUPERADMIN (without throwing) */
 async function requireSuperadminCheck(): Promise<boolean> {
@@ -92,10 +93,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: users });
   } catch (error) {
     logger.error({ err: error }, "Error fetching users");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Benutzer" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Benutzer" });
   }
 }
 
@@ -115,10 +113,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "Ein Benutzer mit dieser E-Mail existiert bereits" },
-        { status: 400 }
-      );
+      return apiError("ALREADY_EXISTS", 400, { message: "Ein Benutzer mit dieser E-Mail existiert bereits" });
     }
 
     // Prüfen ob Mandant existiert
@@ -127,10 +122,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     // Passwort hashen

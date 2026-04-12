@@ -8,6 +8,7 @@ import { z } from "zod";
 import { DistributionMode, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -91,19 +92,13 @@ export async function GET(
     });
 
     if (!settlement) {
-      return NextResponse.json(
-        { error: "Stromabrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Stromabrechnung nicht gefunden" });
     }
 
     return NextResponse.json(settlement);
   } catch (error) {
     logger.error({ err: error }, "Error fetching settlement");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Stromabrechnung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Stromabrechnung" });
   }
 }
 
@@ -135,28 +130,16 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Stromabrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Stromabrechnung nicht gefunden" });
     }
 
     if (existing.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Nur DRAFT-Status ist bearbeitbar
     if (existing.status !== "DRAFT") {
-      return NextResponse.json(
-        {
-          error: "Nur Entwuerfe können bearbeitet werden",
-          details: `Aktuelle Status: ${existing.status}. Setze Status zurück auf DRAFT um zu bearbeiten.`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Nur Entwuerfe können bearbeitet werden", details: `Aktuelle Status: ${existing.status}. Setze Status zurück auf DRAFT um zu bearbeiten.` });
     }
 
     // Baue Update-Daten
@@ -274,10 +257,7 @@ export async function DELETE(
     // Zusätzliche Prüfung: Nur ADMIN oder SUPERADMIN duerfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
     if (hierarchy < 80) {
-      return NextResponse.json(
-        { error: "Nur Administratoren duerfen Stromabrechnungen löschen" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Nur Administratoren duerfen Stromabrechnungen löschen" });
     }
 
     const { id } = await params;
@@ -300,29 +280,17 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Stromabrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Stromabrechnung nicht gefunden" });
     }
 
     if (existing.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Pruefe ob bereits Gutschriften erstellt wurden
     const hasInvoices = existing.items.some((item) => item.invoiceId !== null);
     if (hasInvoices) {
-      return NextResponse.json(
-        {
-          error: "Löschen nicht moeglich",
-          details: "Es wurden bereits Gutschriften aus dieser Abrechnung erstellt. Bitte zuerst die Gutschriften stornieren.",
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Löschen nicht moeglich", details: "Es wurden bereits Gutschriften aus dieser Abrechnung erstellt. Bitte zuerst die Gutschriften stornieren." });
     }
 
     // Hard-delete: Abrechnung und zugehoerige Items löschen (CASCADE)
@@ -347,9 +315,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting settlement");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Stromabrechnung" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Stromabrechnung" });
   }
 }

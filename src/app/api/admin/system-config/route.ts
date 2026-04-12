@@ -19,6 +19,7 @@ import {
   type ConfigCategory,
   type ConfigKey,
 } from "@/lib/config";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -68,10 +69,7 @@ export async function GET(request: NextRequest) {
       // Validate category
       const parsed = getCategoriesSchema.safeParse(category);
       if (!parsed.success) {
-        return NextResponse.json(
-          { error: "Ungültige Kategorie" },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Kategorie" });
       }
 
       configs = await getConfigsByCategory(
@@ -103,10 +101,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "[System Config API] GET error");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Konfiguration" });
   }
 }
 
@@ -139,10 +134,7 @@ export async function POST(request: NextRequest) {
     if (body.configs && Array.isArray(body.configs)) {
       const parsed = bulkSetConfigSchema.safeParse(body);
       if (!parsed.success) {
-        return NextResponse.json(
-          { error: "Validierungsfehler", details: parsed.error.format() },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
       }
 
       const { configs, tenantId } = parsed.data;
@@ -180,10 +172,7 @@ export async function POST(request: NextRequest) {
     // Single config operation
     const parsed = setConfigSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.format() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Validierungsfehler", details: parsed.error.format() });
     }
 
     const { key, value, category, encrypted, label, tenantId } = parsed.data;
@@ -209,9 +198,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
     logger.error({ err: error }, "[System Config API] POST error: " + errMsg);
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der Konfiguration", details: errMsg },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der Konfiguration", details: errMsg });
   }
 }

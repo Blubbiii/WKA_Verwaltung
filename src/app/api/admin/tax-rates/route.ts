@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { getAllPositionTaxMappings } from "@/lib/tax/position-tax-mapping";
+import { apiError } from "@/lib/api-errors";
 
 const createSchema = z.object({
   taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]),
@@ -55,10 +56,7 @@ export async function GET() {
     return NextResponse.json({ data: taxRates, positionMappings });
   } catch (error) {
     logger.error({ err: error }, "Error fetching tax rates");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Steuersätze" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Steuersätze" });
   }
 }
 
@@ -72,10 +70,7 @@ export async function POST(request: NextRequest) {
     const parsed = createSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message || "Ungültige Eingabe" });
     }
 
     const taxRate = await prisma.taxRateConfig.create({
@@ -92,9 +87,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(taxRate, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating tax rate");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen des Steuersatzes" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen des Steuersatzes" });
   }
 }

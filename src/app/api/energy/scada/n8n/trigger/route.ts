@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireApiKey } from "@/lib/auth/apiKeyAuth";
 import { scanAllFileTypes, startImport, isValidFileType, type ScadaFileType } from "@/lib/scada/import-service";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const triggerSchema = z.object({
   locationCode: z.string().regex(/^Loc_\d+$/, "Ungültiger Location-Code"),
@@ -29,19 +30,13 @@ export async function POST(request: NextRequest) {
 
     const scadaBasePath = process.env.SCADA_BASE_PATH;
     if (!scadaBasePath) {
-      return NextResponse.json(
-        { error: "SCADA_BASE_PATH ist nicht konfiguriert" },
-        { status: 500 },
-      );
+      return apiError("INTERNAL_ERROR", undefined, { message: "SCADA_BASE_PATH ist nicht konfiguriert" });
     }
 
     const body = await request.json();
     const result = triggerSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: result.error.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: result.error.flatten().fieldErrors });
     }
     const { locationCode, fileTypes: requestedTypes } = result.data;
 
@@ -143,9 +138,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim n8n SCADA-Trigger");
-    return NextResponse.json(
-      { error: "Fehler beim Starten der SCADA-Importe" },
-      { status: 500 },
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Starten der SCADA-Importe" });
   }
 }

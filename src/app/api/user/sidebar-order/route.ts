@@ -6,6 +6,7 @@
 // ===========================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
@@ -46,10 +47,7 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching sidebar order");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Sidebar-Reihenfolge" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Sidebar-Reihenfolge" });
   }
 }
 
@@ -65,10 +63,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validierungsfehler", details: parsed.error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: parsed.error.issues });
     }
 
     const user = await prisma.user.findUnique({
@@ -96,10 +91,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error saving sidebar order");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", 500, { message: "Fehler beim Speichern" });
   }
 }
 
@@ -134,9 +126,6 @@ export async function DELETE() {
     });
   } catch (error) {
     logger.error({ err: error }, "Error resetting sidebar order");
-    return NextResponse.json(
-      { error: "Fehler beim Zurücksetzen" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Zurücksetzen" });
   }
 }

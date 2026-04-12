@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -19,10 +20,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = batchSettlementSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Anfrage", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Anfrage", details: parsed.error.flatten() });
     }
 
     const { action, settlementIds, reason } = parsed.data;
@@ -35,10 +33,7 @@ export async function POST(request: NextRequest) {
     const foundIds = new Set(settlements.map((s) => s.id));
     const missingIds = settlementIds.filter((id) => !foundIds.has(id));
     if (missingIds.length > 0) {
-      return NextResponse.json(
-        { error: `Abrechnungen nicht gefunden: ${missingIds.join(", ")}` },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: `Abrechnungen nicht gefunden: ${missingIds.join(", ")}` });
     }
 
     // Tenant check
@@ -46,10 +41,7 @@ export async function POST(request: NextRequest) {
       (s) => s.park.tenantId !== check.tenantId
     );
     if (unauthorized.length > 0) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung für einige Abrechnungen" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung für einige Abrechnungen" });
     }
 
     const result = await processBatch(settlementIds, async (id) => {
@@ -106,12 +98,6 @@ export async function POST(request: NextRequest) {
       message: `${result.success.length} von ${result.totalProcessed} Abrechnungen erfolgreich verarbeitet`,
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Interner Serverfehler",
-      },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: error instanceof Error ? error.message : "Interner Serverfehler" });
   }
 }

@@ -10,6 +10,7 @@ import {
   generateAllocationInvoices,
 } from "@/lib/lease-revenue/invoice-generator";
 import { executeCostAllocation } from "@/lib/lease-revenue/allocator";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/leases/settlement/[id]/invoices - Generate credit notes (Gutschriften)
@@ -52,20 +53,11 @@ export async function POST(
     });
 
     if (!settlement) {
-      return NextResponse.json(
-        { error: "Nutzungsentgelt-Abrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Nutzungsentgelt-Abrechnung nicht gefunden" });
     }
 
     if (settlement.items.length === 0) {
-      return NextResponse.json(
-        {
-          error: "Keine Positionen vorhanden",
-          details: "Bitte zuerst die Berechnung durchfuehren.",
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Positionen vorhanden", details: "Bitte zuerst die Berechnung durchfuehren." });
     }
 
     const isAdvance = settlement.periodType === "ADVANCE";
@@ -73,13 +65,7 @@ export async function POST(
     if (isAdvance) {
       // ADVANCE: generate advance invoices
       if (settlement.status !== "CALCULATED") {
-        return NextResponse.json(
-          {
-            error: "Vorschussrechnungen können nur für berechnete Abrechnungen erstellt werden",
-            details: `Aktueller Status: ${settlement.status}. Bitte zuerst die Berechnung durchfuehren.`,
-          },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Vorschussrechnungen können nur für berechnete Abrechnungen erstellt werden", details: `Aktueller Status: ${settlement.status}. Bitte zuerst die Berechnung durchfuehren.` });
       }
 
       const result = await generateAdvanceInvoices(
@@ -115,13 +101,7 @@ export async function POST(
         settlement.status !== "CALCULATED" &&
         settlement.status !== "ADVANCE_CREATED"
       ) {
-        return NextResponse.json(
-          {
-            error: "Endabrechnungs-Gutschriften können nur für berechnete Abrechnungen erstellt werden",
-            details: `Aktueller Status: ${settlement.status}. Bitte zuerst die Berechnung durchfuehren.`,
-          },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Endabrechnungs-Gutschriften können nur für berechnete Abrechnungen erstellt werden", details: `Aktueller Status: ${settlement.status}. Bitte zuerst die Berechnung durchfuehren.` });
       }
 
       const result = await generateSettlementInvoices(
@@ -157,17 +137,14 @@ export async function POST(
       error instanceof Error ? error.message : "Unbekannter Fehler";
 
     if (message.includes("nicht gefunden") || message.includes("Status")) {
-      return NextResponse.json({ error: message }, { status: 400 });
+      return apiError("BAD_REQUEST", undefined, { message: message });
     }
 
     logger.error(
       { err: error },
       "Error generating invoices for lease revenue settlement"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Gutschriften" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Gutschriften" });
   }
 }
 

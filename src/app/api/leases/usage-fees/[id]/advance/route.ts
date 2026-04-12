@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateAdvanceInvoices } from "@/lib/lease-revenue/invoice-generator";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/leases/usage-fees/[id]/advance - Generate advance invoices (Vorschussrechnungen)
@@ -30,28 +31,16 @@ export async function POST(
     });
 
     if (!settlement) {
-      return NextResponse.json(
-        { error: "Nutzungsentgelt-Abrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Nutzungsentgelt-Abrechnung nicht gefunden" });
     }
 
     // Advance invoices can only be created from CALCULATED status
     if (settlement.status !== "CALCULATED") {
-      return NextResponse.json(
-        {
-          error: "Vorschussrechnungen können nur für berechnete Abrechnungen erstellt werden",
-          details: `Aktueller Status: ${settlement.status}. Bitte zuerst die Berechnung durchfuehren.`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Vorschussrechnungen können nur für berechnete Abrechnungen erstellt werden", details: `Aktueller Status: ${settlement.status}. Bitte zuerst die Berechnung durchfuehren.` });
     }
 
     if (settlement.items.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Positionen vorhanden. Bitte zuerst die Berechnung durchfuehren." },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Positionen vorhanden. Bitte zuerst die Berechnung durchfuehren." });
     }
 
     const result = await generateAdvanceInvoices(check.tenantId!, id, check.userId);
@@ -61,16 +50,13 @@ export async function POST(
       error instanceof Error ? error.message : "Unbekannter Fehler";
 
     if (message.includes("nicht gefunden") || message.includes("Status")) {
-      return NextResponse.json({ error: message }, { status: 400 });
+      return apiError("BAD_REQUEST", undefined, { message: message });
     }
 
     logger.error(
       { err: error },
       "Error generating advance invoices for lease revenue settlement"
     );
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Vorschussrechnungen" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen der Vorschussrechnungen" });
   }
 }

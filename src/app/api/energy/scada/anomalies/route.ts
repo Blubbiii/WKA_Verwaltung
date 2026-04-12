@@ -5,6 +5,7 @@ import { runAnomalyDetection } from "@/lib/scada/anomaly-detection";
 import { Prisma } from "@prisma/client";
 import { parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/scada/anomalies - List anomalies with filters
@@ -146,10 +147,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der SCADA-Anomalien");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der SCADA-Anomalien" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der SCADA-Anomalien" });
   }
 }
 
@@ -184,9 +182,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     logger.error({ err: error }, "Fehler bei der SCADA-Anomalie-Erkennung");
-    return NextResponse.json(
-      { error: "Fehler bei der SCADA-Anomalie-Erkennung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der SCADA-Anomalie-Erkennung" });
   }
 }

@@ -4,6 +4,7 @@ import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission"
 import { cache } from "@/lib/cache";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // Module name translations
 const moduleLabels: Record<string, string> = {
@@ -164,9 +165,6 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching permissions");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Berechtigungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Berechtigungen" });
   }
 }

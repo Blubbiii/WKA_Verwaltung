@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { withMonitoring } from "@/lib/monitoring";
@@ -33,7 +34,7 @@ async function getHandler(request: NextRequest) {
     return NextResponse.json(budgets);
   } catch (error) {
     logger.error({ err: error }, "Error fetching budgets");
-    return NextResponse.json({ error: "Fehler beim Laden der Budgetpläne" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Budgetpläne" });
   }
 }
 
@@ -51,7 +52,7 @@ async function postHandler(request: NextRequest) {
         include: { lines: true },
       });
       if (!source) {
-        return NextResponse.json({ error: "Quell-Budget nicht gefunden" }, { status: 404 });
+        return apiError("NOT_FOUND", 404, { message: "Quell-Budget nicht gefunden" });
       }
 
       const data = createSchema.parse(body);
@@ -85,13 +86,13 @@ async function postHandler(request: NextRequest) {
     return NextResponse.json(budget, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validierungsfehler", details: error.issues }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
     }
     if ((error as { code?: string }).code === "P2002") {
-      return NextResponse.json({ error: "Ein Budget mit diesem Namen und Jahr existiert bereits" }, { status: 409 });
+      return apiError("ALREADY_EXISTS", 409, { message: "Ein Budget mit diesem Namen und Jahr existiert bereits" });
     }
     logger.error({ err: error }, "Error creating budget");
-    return NextResponse.json({ error: "Fehler beim Erstellen des Budgetplans" }, { status: 500 });
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen des Budgetplans" });
   }
 }
 

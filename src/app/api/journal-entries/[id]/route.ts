@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -62,13 +63,13 @@ export async function GET(
     });
 
     if (!entry) {
-      return NextResponse.json({ error: "Buchung nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Buchung nicht gefunden" });
     }
 
     return NextResponse.json(serializePrisma(entry));
   } catch (error) {
     logger.error({ err: error }, "Error fetching journal entry");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden" });
   }
 }
 
@@ -92,24 +93,18 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Buchung nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Buchung nicht gefunden" });
     }
 
     if (existing.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Nur Entwürfe können bearbeitet werden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Nur Entwürfe können bearbeitet werden" });
     }
 
     const body = await request.json();
     const parsed = updateSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Ungültige Eingabedaten" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: parsed.error.issues[0]?.message || "Ungültige Eingabedaten" });
     }
 
     const { entryDate, description, reference, lines } = parsed.data;
@@ -147,7 +142,7 @@ export async function PUT(
     return NextResponse.json(serializePrisma(updated));
   } catch (error) {
     logger.error({ err: error }, "Error updating journal entry");
-    return NextResponse.json({ error: "Fehler beim Aktualisieren" }, { status: 500 });
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren" });
   }
 }
 
@@ -171,14 +166,11 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Buchung nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Buchung nicht gefunden" });
     }
 
     if (existing.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Nur Entwürfe können gelöscht werden" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: "Nur Entwürfe können gelöscht werden" });
     }
 
     await prisma.journalEntry.update({
@@ -189,6 +181,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting journal entry");
-    return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen" });
   }
 }

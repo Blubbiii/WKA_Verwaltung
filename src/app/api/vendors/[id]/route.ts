@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -23,7 +24,7 @@ const updateSchema = z.object({
 
 async function checkInbox(tenantId: string) {
   if (!await getConfigBoolean("inbox.enabled", tenantId, false)) {
-    return NextResponse.json({ error: "Inbox nicht aktiviert" }, { status: 404 });
+    return apiError("FEATURE_DISABLED", 404, { message: "Inbox nicht aktiviert" });
   }
   return null;
 }
@@ -49,13 +50,13 @@ export async function GET(
     });
 
     if (!vendor) {
-      return NextResponse.json({ error: "Lieferant nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Lieferant nicht gefunden" });
     }
 
     return NextResponse.json(serializePrisma(vendor));
   } catch (error) {
     logger.error({ err: error }, "Error fetching vendor");
-    return NextResponse.json({ error: "Fehler beim Laden" }, { status: 500 });
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden" });
   }
 }
 
@@ -75,16 +76,13 @@ export async function PUT(
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Lieferant nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Lieferant nicht gefunden" });
     }
 
     const raw = await request.json();
     const parsed = updateSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     const d = parsed.data;
@@ -112,7 +110,7 @@ export async function PUT(
     return NextResponse.json(serializePrisma(updated));
   } catch (error) {
     logger.error({ err: error }, "Error updating vendor");
-    return NextResponse.json({ error: "Fehler beim Aktualisieren" }, { status: 500 });
+    return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren" });
   }
 }
 
@@ -132,7 +130,7 @@ export async function DELETE(
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Lieferant nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Lieferant nicht gefunden" });
     }
 
     await prisma.vendor.update({
@@ -143,6 +141,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting vendor");
-    return NextResponse.json({ error: "Fehler beim Löschen" }, { status: 500 });
+    return apiError("DELETE_FAILED", 500, { message: "Fehler beim Löschen" });
   }
 }

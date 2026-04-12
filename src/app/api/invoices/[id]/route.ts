@@ -9,6 +9,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { serializePrisma } from "@/lib/serialize";
+import { apiError } from "@/lib/api-errors";
 
 const invoiceUpdateSchema = z.object({
   invoiceDate: z.string().optional(),
@@ -160,27 +161,18 @@ export async function GET(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     // Tenant-Check
     if (invoice.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     return NextResponse.json(serializePrisma(invoice));
   } catch (error) {
     logger.error({ err: error }, "Error fetching invoice");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Rechnung" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Rechnung" });
   }
 }
 
@@ -204,24 +196,15 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     if (existing.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     if (existing.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Nur Entwürfe können bearbeitet werden" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Nur Entwürfe können bearbeitet werden" });
     }
 
     // Build Skonto update data if provided
@@ -340,10 +323,7 @@ export async function DELETE(
     // Zusätzliche Prüfung: Nur ADMIN oder SUPERADMIN dürfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
     if (hierarchy < 80) {
-      return NextResponse.json(
-        { error: "Nur Administratoren dürfen Rechnungen löschen" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Nur Administratoren dürfen Rechnungen löschen" });
     }
 
     const { id } = await params;
@@ -354,24 +334,15 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     if (existing.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     if (existing.deletedAt) {
-      return NextResponse.json(
-        { error: "Rechnung wurde bereits gelöscht" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Rechnung wurde bereits gelöscht" });
     }
 
     // Soft-delete + audit log in einer Transaktion (Datenkonsistenz)
@@ -407,9 +378,6 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting invoice");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Rechnung" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Rechnung" });
   }
 }

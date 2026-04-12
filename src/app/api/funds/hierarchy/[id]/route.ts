@@ -6,6 +6,7 @@ import { logDeletion, createAuditLog } from "@/lib/audit";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -109,18 +110,12 @@ export async function GET(
     });
 
     if (!hierarchy) {
-      return NextResponse.json(
-        { error: "Fund-Hierarchie nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Fund-Hierarchie nicht gefunden" });
     }
 
     // Multi-Tenancy Prüfung über Parent Fund -> Tenant
     if (hierarchy.parentFund.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Lade auch historische Einträge für diese Beziehung
@@ -150,10 +145,7 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching fund hierarchy");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Fund-Hierarchie" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Fund-Hierarchie" });
   }
 }
 
@@ -191,18 +183,12 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Fund-Hierarchie nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Fund-Hierarchie nicht gefunden" });
     }
 
     // Multi-Tenancy Prüfung
     if (existing.parentFund.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Validierung: validFrom darf nicht nach validTo liegen
@@ -216,13 +202,7 @@ export async function PATCH(
       : existing.validTo;
 
     if (newValidTo && newValidFrom >= newValidTo) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Datumsangabe",
-          details: "Das Startdatum (validFrom) muss vor dem Enddatum (validTo) liegen",
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Datumsangabe", details: "Das Startdatum (validFrom) muss vor dem Enddatum (validTo) liegen" });
     }
 
     // Prüfung: Gesamtanteil am Parent Fund darf nicht > 100% sein (bei Änderung des Anteils)
@@ -242,14 +222,8 @@ export async function PATCH(
       );
 
       if (othersTotal + validatedData.ownershipPercentage > 100) {
-        return NextResponse.json(
-          {
-            error: "Anteil übersteigt 100%",
-            details: `Andere Gesellschafter: ${othersTotal.toFixed(2)}%. ` +
-              `Mit neuem Anteil (${validatedData.ownershipPercentage}%) waeren es ${(othersTotal + validatedData.ownershipPercentage).toFixed(2)}%`,
-          },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Anteil übersteigt 100%", details: `Andere Gesellschafter: ${othersTotal.toFixed(2)}%. ` +
+              `Mit neuem Anteil (${validatedData.ownershipPercentage}%) waeren es ${(othersTotal + validatedData.ownershipPercentage).toFixed(2)}%` });
       }
     }
 
@@ -338,10 +312,7 @@ export async function DELETE(
     // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
     if (hierarchy < 60) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung zum Löschen von Fund-Hierarchien" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung zum Löschen von Fund-Hierarchien" });
     }
 
     const { id } = await params;
@@ -363,18 +334,12 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Fund-Hierarchie nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Fund-Hierarchie nicht gefunden" });
     }
 
     // Multi-Tenancy Prüfung
     if (existing.parentFund.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Löschen
@@ -398,9 +363,6 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting fund hierarchy");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Fund-Hierarchie" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Fund-Hierarchie" });
   }
 }

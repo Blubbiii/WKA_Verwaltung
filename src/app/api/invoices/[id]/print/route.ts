@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { generateInvoicePdf } from "@/lib/pdf";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // POST /api/invoices/[id]/print - PDF generieren, drucken markieren und herunterladen
 export async function POST(
@@ -28,10 +29,7 @@ export async function POST(
     });
 
     if (!invoice) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     // Druck-Zeitstempel setzen + bei DRAFT automatisch als versendet markieren
@@ -65,12 +63,6 @@ export async function POST(
     });
   } catch (error) {
     logger.error({ err: error }, "Error printing invoice");
-    return NextResponse.json(
-      {
-        error: "Fehler beim Drucken der Rechnung",
-        details: error instanceof Error ? error.message : "Unbekannter Fehler",
-      },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Drucken der Rechnung", details: error instanceof Error ? error.message : "Unbekannter Fehler" });
   }
 }

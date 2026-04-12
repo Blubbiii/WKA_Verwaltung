@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json({ error: "Mandant nicht gefunden" }, { status: 400 });
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const { searchParams } = new URL(request.url);
@@ -106,10 +107,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: serializePrisma(entries) });
   } catch (error) {
     logger.error({ err: error }, "Error fetching journal entries");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Buchungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Buchungen" });
   }
 }
 
@@ -123,17 +121,14 @@ export async function POST(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json({ error: "Mandant nicht gefunden" }, { status: 400 });
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Ungültige Eingabedaten" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, { message: parsed.error.issues[0]?.message || "Ungültige Eingabedaten" });
     }
 
     const { entryDate, description, reference, lines } = parsed.data;
@@ -170,9 +165,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(serializePrisma(entry), { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating journal entry");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen der Buchung" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen der Buchung" });
   }
 }

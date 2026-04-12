@@ -11,6 +11,7 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -50,10 +51,7 @@ export async function GET() {
     return NextResponse.json({ routes });
   } catch (error) {
     logger.error({ err: error }, "Failed to load email routes");
-    return NextResponse.json(
-      { error: "Fehler beim Laden" },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden" });
   }
 }
 
@@ -70,13 +68,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const result = emailRouteSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Eingabe",
-          details: result.error.flatten().fieldErrors,
-        },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: result.error.flatten().fieldErrors });
     }
 
     // Check for duplicate address within tenant
@@ -84,10 +76,7 @@ export async function POST(request: NextRequest) {
       where: { address: result.data.address, tenantId },
     });
     if (existing) {
-      return NextResponse.json(
-        { error: "Diese Adresse ist bereits vergeben" },
-        { status: 409 },
-      );
+      return apiError("CONFLICT", undefined, { message: "Diese Adresse ist bereits vergeben" });
     }
 
     const route = await prisma.emailRoute.create({
@@ -97,9 +86,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ route }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Failed to create email route");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen" },
-      { status: 500 },
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen" });
   }
 }

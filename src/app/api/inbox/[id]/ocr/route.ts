@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { enqueueInboxOcrJob } from "@/lib/queue/queues/inbox-ocr.queue";
@@ -20,11 +21,11 @@ export async function POST(
     });
 
     if (!invoice) {
-      return NextResponse.json({ error: "Eingangsrechnung nicht gefunden" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Eingangsrechnung nicht gefunden" });
     }
 
     if (invoice.ocrStatus === "PROCESSING") {
-      return NextResponse.json({ error: "OCR läuft bereits" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "OCR läuft bereits" });
     }
 
     // Reset status and re-enqueue
@@ -42,6 +43,6 @@ export async function POST(
     return NextResponse.json({ success: true, message: "OCR erneut gestartet" });
   } catch (error) {
     logger.error({ err: error }, "Error re-triggering OCR");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

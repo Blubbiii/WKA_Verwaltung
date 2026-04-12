@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
@@ -17,7 +18,7 @@ import { apiLogger as logger } from "@/lib/logger";
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);
   if (!enabled) {
-    return NextResponse.json({ error: "Feature nicht aktiviert" }, { status: 404 });
+    return apiError("FEATURE_DISABLED", 404, { message: "Feature nicht aktiviert" });
   }
   return null;
 }
@@ -46,17 +47,14 @@ export async function POST(
     });
 
     if (!billing) {
-      return NextResponse.json(
-        { error: "Abrechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: "Abrechnung nicht gefunden" });
     }
 
     if (
       !check.tenantId ||
       billing.stakeholder.stakeholderTenantId !== check.tenantId
     ) {
-      return NextResponse.json({ error: "Keine Berechtigung" }, { status: 403 });
+      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
     // Delegate to shared invoice creation logic
@@ -76,12 +74,11 @@ export async function POST(
       message.includes("Status") ||
       message.includes("bereits erstellt")
     ) {
-      return NextResponse.json({ error: message }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message });
     }
 
-    return NextResponse.json(
-      { error: `Fehler beim Erstellen der Rechnung: ${message}` },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", 500, {
+      message: `Fehler beim Erstellen der Rechnung: ${message}`,
+    });
   }
 }

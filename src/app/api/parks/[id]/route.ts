@@ -8,6 +8,7 @@ import { serializePrisma } from "@/lib/serialize";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { apiError } from "@/lib/api-errors";
 
 const parkUpdateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").optional(),
@@ -69,7 +70,7 @@ export async function GET(
 
     // Resource-level check: deny access if user is restricted and park not in allowed list
     if (check.resourceRestricted && check.allowedResourceIds?.length && !check.allowedResourceIds.includes(id)) {
-      return NextResponse.json({ error: "Keine Berechtigung für diesen Park" }, { status: 403 });
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Park" });
     }
 
     const park = await prisma.park.findFirst({
@@ -202,10 +203,7 @@ export async function GET(
     });
 
     if (!park) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
     }
 
     // Berechne Statistiken (nur echte WEAs, keine NVP/Parkrechner)
@@ -228,10 +226,7 @@ export async function GET(
     return NextResponse.json(serializePrisma({ ...park, stats }));
   } catch (error) {
     logger.error({ err: error }, "Error fetching park");
-    return NextResponse.json(
-      { error: "Fehler beim Laden des Parks" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden des Parks" });
   }
 }
 
@@ -248,7 +243,7 @@ export async function PUT(
 
     // Resource-level check
     if (check.resourceRestricted && check.allowedResourceIds?.length && !check.allowedResourceIds.includes(id)) {
-      return NextResponse.json({ error: "Keine Berechtigung für diesen Park" }, { status: 403 });
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Park" });
     }
 
     // Prüfe ob Park existiert und zum Tenant gehört
@@ -260,10 +255,7 @@ export async function PUT(
     });
 
     if (!existingPark) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
     }
 
     const body = await request.json();
@@ -307,7 +299,7 @@ export async function DELETE(
 
     // Resource-level check
     if (check.resourceRestricted && check.allowedResourceIds?.length && !check.allowedResourceIds.includes(id)) {
-      return NextResponse.json({ error: "Keine Berechtigung für diesen Park" }, { status: 403 });
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Park" });
     }
 
     // Prüfe ob Park existiert und zum Tenant gehört
@@ -328,32 +320,20 @@ export async function DELETE(
     });
 
     if (!existingPark) {
-      return NextResponse.json(
-        { error: "Park nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
     }
 
     // Prüfe auf aktive Verknüpfungen
     if (existingPark._count.turbines > 0) {
-      return NextResponse.json(
-        { error: "Park hat noch Anlagen und kann nicht gelöscht werden. Bitte zuerst alle Anlagen entfernen." },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Park hat noch Anlagen und kann nicht gelöscht werden. Bitte zuerst alle Anlagen entfernen." });
     }
 
     if (existingPark._count.plots > 0) {
-      return NextResponse.json(
-        { error: "Park hat noch Flurstücke und kann nicht gelöscht werden. Bitte zuerst alle Flurstücke entfernen." },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Park hat noch Flurstücke und kann nicht gelöscht werden. Bitte zuerst alle Flurstücke entfernen." });
     }
 
     if (existingPark._count.contracts > 0) {
-      return NextResponse.json(
-        { error: "Park hat noch Verträge und kann nicht gelöscht werden. Bitte zuerst alle Verträge entfernen." },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Park hat noch Verträge und kann nicht gelöscht werden. Bitte zuerst alle Verträge entfernen." });
     }
 
     // Hard-Delete: Park unwiderruflich löschen
@@ -375,9 +355,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting park");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Parks" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen des Parks" });
   }
 }

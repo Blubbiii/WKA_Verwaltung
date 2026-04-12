@@ -7,6 +7,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { ProductionDataSource, ProductionStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALIDATION SCHEMAS
@@ -65,19 +66,13 @@ export async function GET(
     });
 
     if (!production) {
-      return NextResponse.json(
-        { error: "Produktionsdaten nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Produktionsdaten nicht gefunden" });
     }
 
     return NextResponse.json(production);
   } catch (error) {
     logger.error({ err: error }, "Error fetching production");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Produktionsdaten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Produktionsdaten" });
   }
 }
 
@@ -111,21 +106,12 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Produktionsdaten nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Produktionsdaten nicht gefunden" });
     }
 
     // Status-Prüfung: INVOICED-Einträge können nicht bearbeitet werden
     if (existing.status === "INVOICED") {
-      return NextResponse.json(
-        {
-          error: "Bereits abgerechnete Produktionsdaten können nicht bearbeitet werden",
-          details: "Status ist INVOICED - bitte zuerst die zugehoerige Rechnung stornieren"
-        },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Bereits abgerechnete Produktionsdaten können nicht bearbeitet werden", details: "Status ist INVOICED - bitte zuerst die zugehoerige Rechnung stornieren" });
     }
 
     // Update durchfuehren
@@ -185,10 +171,7 @@ export async function DELETE(
     // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
     if (hierarchy < 60) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung zum Löschen von Produktionsdaten" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung zum Löschen von Produktionsdaten" });
     }
 
     const { id } = await params;
@@ -210,21 +193,12 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Produktionsdaten nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Produktionsdaten nicht gefunden" });
     }
 
     // Status-Prüfung: INVOICED-Einträge können nicht gelöscht werden
     if (existing.status === "INVOICED") {
-      return NextResponse.json(
-        {
-          error: "Bereits abgerechnete Produktionsdaten können nicht gelöscht werden",
-          details: "Status ist INVOICED - bitte zuerst die zugehoerige Rechnung stornieren"
-        },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Bereits abgerechnete Produktionsdaten können nicht gelöscht werden", details: "Status ist INVOICED - bitte zuerst die zugehoerige Rechnung stornieren" });
     }
 
     // Löschen
@@ -246,9 +220,6 @@ export async function DELETE(
     });
   } catch (error) {
     logger.error({ err: error }, "Error deleting production");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Produktionsdaten" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Produktionsdaten" });
   }
 }

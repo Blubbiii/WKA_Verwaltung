@@ -14,6 +14,7 @@ import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -66,13 +67,7 @@ async function getHandler(request: NextRequest) {
     });
 
     if (!parseResult.success) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Parameter",
-          details: parseResult.error.issues,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Parameter", details: parseResult.error.issues });
     }
 
     const params = parseResult.data;
@@ -83,10 +78,7 @@ async function getHandler(request: NextRequest) {
 
     // Validate date range
     if (fromDate > toDate) {
-      return NextResponse.json(
-        { error: "Startdatum muss vor Enddatum liegen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Startdatum muss vor Enddatum liegen" });
     }
 
     // Build where clause
@@ -163,10 +155,7 @@ async function getHandler(request: NextRequest) {
     });
 
     if (invoices.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Belege im angegebenen Zeitraum gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Keine Belege im angegebenen Zeitraum gefunden" });
     }
 
     // Get tenant name for the export

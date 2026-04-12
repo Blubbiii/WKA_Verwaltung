@@ -7,6 +7,7 @@ import { z } from "zod";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { apiError } from "@/lib/api-errors";
 
 const PARKS_SORT_FIELDS = [
   "name",
@@ -138,10 +139,7 @@ async function getHandler(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching parks");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Parks" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Parks" });
   }
 }
 

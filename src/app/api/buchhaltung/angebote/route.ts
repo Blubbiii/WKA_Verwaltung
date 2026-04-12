@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextQuoteNumber } from "@/lib/quotes/numberGenerator";
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error listing quotes");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }
 
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = quoteCreateSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Ungültige Daten", details: parsed.error.flatten() }, { status: 400 });
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Daten", details: parsed.error.flatten() });
     }
 
     const data = parsed.data;
@@ -143,6 +144,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: quote }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating quote");
-    return NextResponse.json({ error: "Interner Serverfehler" }, { status: 500 });
+    return apiError("INTERNAL_ERROR", 500, { message: "Interner Serverfehler" });
   }
 }

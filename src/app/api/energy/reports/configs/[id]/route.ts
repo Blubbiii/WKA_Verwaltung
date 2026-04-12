@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // VALID MODULES and INTERVALS (shared constants)
@@ -85,19 +86,13 @@ export async function GET(
     });
 
     if (!config) {
-      return NextResponse.json(
-        { error: "Berichts-Konfiguration nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Berichts-Konfiguration nicht gefunden" });
     }
 
     return NextResponse.json({ data: config });
   } catch (error) {
     logger.error({ err: error }, "Error fetching energy report config");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Berichts-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Berichts-Konfiguration" });
   }
 }
 
@@ -123,23 +118,14 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Berichts-Konfiguration nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Berichts-Konfiguration nicht gefunden" });
     }
 
     const body = await request.json();
     const parsed = UpdateConfigSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Eingabedaten",
-          details: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabedaten", details: parsed.error.flatten().fieldErrors });
     }
 
     const data = parsed.data;
@@ -150,10 +136,7 @@ export async function PATCH(
         where: { id: data.parkId, tenantId },
       });
       if (!park) {
-        return NextResponse.json(
-          { error: "Windpark nicht gefunden oder nicht zugehoerig" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Windpark nicht gefunden oder nicht zugehoerig" });
       }
     }
 
@@ -166,10 +149,7 @@ export async function PATCH(
         },
       });
       if (!turbine) {
-        return NextResponse.json(
-          { error: "Turbine nicht gefunden oder nicht zugehoerig" },
-          { status: 404 }
-        );
+        return apiError("NOT_FOUND", undefined, { message: "Turbine nicht gefunden oder nicht zugehoerig" });
       }
     }
 
@@ -206,10 +186,7 @@ export async function PATCH(
     return NextResponse.json({ data: config });
   } catch (error) {
     logger.error({ err: error }, "Error updating energy report config");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren der Berichts-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren der Berichts-Konfiguration" });
   }
 }
 
@@ -235,10 +212,7 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Berichts-Konfiguration nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Berichts-Konfiguration nicht gefunden" });
     }
 
     await prisma.energyReportConfig.delete({
@@ -248,9 +222,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting energy report config");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen der Berichts-Konfiguration" },
-      { status: 500 }
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Berichts-Konfiguration" });
   }
 }

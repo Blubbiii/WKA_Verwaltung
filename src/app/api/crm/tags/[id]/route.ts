@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { apiError } from "@/lib/api-errors";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(50).optional(),
@@ -20,29 +21,20 @@ export async function PUT(
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { id } = await params;
     const existing = await prisma.personTag.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
-      return NextResponse.json(
-        { error: "Tag nicht gefunden" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Tag nicht gefunden" });
     }
 
     const raw = await request.json();
     const parsed = updateSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 },
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     const updated = await prisma.personTag.update({
@@ -55,10 +47,7 @@ export async function PUT(
     return NextResponse.json(serializePrisma(updated));
   } catch (error) {
     logger.error({ err: error }, "Error updating person tag");
-    return NextResponse.json(
-      { error: "Fehler beim Aktualisieren" },
-      { status: 500 },
-    );
+    return apiError("UPDATE_FAILED", undefined, { message: "Fehler beim Aktualisieren" });
   }
 }
 
@@ -71,29 +60,20 @@ export async function DELETE(
     const check = await requirePermission("crm:delete");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { id } = await params;
     const existing = await prisma.personTag.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
-      return NextResponse.json(
-        { error: "Tag nicht gefunden" },
-        { status: 404 },
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Tag nicht gefunden" });
     }
 
     await prisma.personTag.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting person tag");
-    return NextResponse.json(
-      { error: "Fehler beim Löschen" },
-      { status: 500 },
-    );
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen" });
   }
 }

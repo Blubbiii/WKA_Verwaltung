@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/energy/scada/productions
@@ -55,19 +56,11 @@ export async function GET(request: NextRequest) {
 
     // --- Validierung: interval ---
     if (!interval) {
-      return NextResponse.json(
-        { error: "Parameter 'interval' ist erforderlich (10min, hour, day, month, year)" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Parameter 'interval' ist erforderlich (10min, hour, day, month, year)" });
     }
 
     if (!VALID_INTERVALS.includes(interval)) {
-      return NextResponse.json(
-        {
-          error: `Ungültiges Intervall '${interval}'. Erlaubt: ${VALID_INTERVALS.join(", ")}`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Ungültiges Intervall '${interval}'. Erlaubt: ${VALID_INTERVALS.join(", ")}` });
     }
 
     // --- Pagination ---
@@ -80,20 +73,14 @@ export async function GET(request: NextRequest) {
     if (from) {
       fromDate = new Date(from);
       if (isNaN(fromDate.getTime())) {
-        return NextResponse.json(
-          { error: "Ungültiges Datum für 'from' (ISO-Format erwartet, z.B. 2025-01-01)" },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Datum für 'from' (ISO-Format erwartet, z.B. 2025-01-01)" });
       }
     }
 
     if (to) {
       toDate = new Date(to);
       if (isNaN(toDate.getTime())) {
-        return NextResponse.json(
-          { error: "Ungültiges Datum für 'to' (ISO-Format erwartet, z.B. 2025-12-31)" },
-          { status: 400 }
-        );
+        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges Datum für 'to' (ISO-Format erwartet, z.B. 2025-12-31)" });
       }
     }
 
@@ -311,9 +298,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Laden der SCADA-Produktionsdaten");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der SCADA-Produktionsdaten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der SCADA-Produktionsdaten" });
   }
 }

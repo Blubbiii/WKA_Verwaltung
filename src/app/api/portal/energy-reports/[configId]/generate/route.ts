@@ -22,6 +22,7 @@ import {
   fetchSeasonalPatterns,
   fetchDirectionEfficiency,
 } from "@/lib/analytics/module-fetchers";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/portal/energy-reports/[configId]/generate
@@ -504,18 +505,12 @@ export async function POST(
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Nicht autorisiert" },
-        { status: 401 }
-      );
+      return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
     const tenantId = session.user.tenantId;
     if (!tenantId) {
-      return NextResponse.json(
-        { error: "Kein Mandant zugeordnet" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Kein Mandant zugeordnet" });
     }
 
     const { configId } = await params;
@@ -527,20 +522,14 @@ export async function POST(
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     const settings = tenant.settings as Record<string, unknown> | null;
     const portalVisibleSections = (settings?.portalVisibleSections as string[]) ?? [];
 
     if (!portalVisibleSections.includes("energyReports")) {
-      return NextResponse.json(
-        { error: "Energieberichte sind im Portal nicht aktiviert" },
-        { status: 403 }
-      );
+      return apiError("FEATURE_DISABLED", undefined, { message: "Energieberichte sind im Portal nicht aktiviert" });
     }
 
     // Load the config - must be portal-visible and belong to tenant
@@ -553,10 +542,7 @@ export async function POST(
     });
 
     if (!config) {
-      return NextResponse.json(
-        { error: "Berichts-Konfiguration nicht gefunden oder nicht für Portal freigegeben" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Berichts-Konfiguration nicht gefunden oder nicht für Portal freigegeben" });
     }
 
     // Parse and validate from/to from request body
@@ -564,35 +550,20 @@ export async function POST(
     const parsed = PortalGenerateSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Eingabedaten",
-          details: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabedaten", details: parsed.error.flatten().fieldErrors });
     }
 
     const fromDate = new Date(parsed.data.from);
     const toDate = new Date(parsed.data.to);
 
     if (isNaN(fromDate.getTime())) {
-      return NextResponse.json(
-        { error: "Ungültiges 'from' Datum (ISO-Format erwartet)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges 'from' Datum (ISO-Format erwartet)" });
     }
     if (isNaN(toDate.getTime())) {
-      return NextResponse.json(
-        { error: "Ungültiges 'to' Datum (ISO-Format erwartet)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges 'to' Datum (ISO-Format erwartet)" });
     }
     if (fromDate >= toDate) {
-      return NextResponse.json(
-        { error: "'from' muss vor 'to' liegen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "'from' muss vor 'to' liegen" });
     }
 
     // Use config's modules, parkId, turbineId, interval
@@ -617,10 +588,7 @@ export async function POST(
     });
 
     if (turbines.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Turbinen für diese Konfiguration gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Keine Turbinen für diese Konfiguration gefunden" });
     }
 
     const turbineIds = turbines.map((t) => t.id);
@@ -843,9 +811,6 @@ export async function POST(
     return NextResponse.json(result);
   } catch (error) {
     logger.error({ err: error }, "Error generating portal energy report");
-    return NextResponse.json(
-      { error: "Fehler beim Generieren der Berichtsdaten" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Generieren der Berichtsdaten" });
   }
 }

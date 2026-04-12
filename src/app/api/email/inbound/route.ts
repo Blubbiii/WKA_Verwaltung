@@ -6,6 +6,7 @@
  */
 
 import crypto from "crypto";
+import { apiError } from "@/lib/api-errors";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.INBOUND_EMAIL_API_KEY;
     if (!apiKey) {
       logger.error("INBOUND_EMAIL_API_KEY not configured");
-      return NextResponse.json({ error: "Not configured" }, { status: 503 });
+      return apiError("INTERNAL_ERROR", 503, { message: "Not configured" });
     }
 
     const authHeader = request.headers.get("authorization");
@@ -64,17 +65,14 @@ export async function POST(request: NextRequest) {
       );
 
     if (!isValid) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("UNAUTHORIZED", 401, { message: "Unauthorized" });
     }
 
     // ── Parse & validate body ───────────────────────────────────────────
     const body = await request.json();
     const result = inboundEmailSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: result.error.flatten().fieldErrors },
-        { status: 400 },
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Invalid input", details: result.error.flatten().fieldErrors });
     }
     const data = result.data;
 
@@ -95,7 +93,7 @@ export async function POST(request: NextRequest) {
         where: { status: "ACTIVE" },
       });
       if (!defaultTenant) {
-        return NextResponse.json({ error: "No active tenant" }, { status: 500 });
+        return apiError("INTERNAL_ERROR", 500, { message: "No active tenant" });
       }
       tenantId = defaultTenant.id;
     }
@@ -232,9 +230,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Inbound email processing failed");
-    return NextResponse.json(
-      { error: "Processing failed" },
-      { status: 500 },
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Processing failed" });
   }
 }

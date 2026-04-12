@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -18,10 +19,7 @@ export async function POST(request: NextRequest) {
     const reqBody = await request.json();
     const parsed = batchEmailSchema.safeParse(reqBody);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Anfrage", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Anfrage", details: parsed.error.flatten() });
     }
 
     const { subject, body, recipientIds } = parsed.data;
@@ -36,13 +34,7 @@ export async function POST(request: NextRequest) {
     const missingIds = recipientIds.filter((id) => !foundIds.has(id));
 
     if (missingIds.length > 0) {
-      return NextResponse.json(
-        {
-          error: `${missingIds.length} Empfänger nicht gefunden`,
-          missingIds,
-        },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", 404, { message: `${missingIds.length} Empfänger nicht gefunden` });
     }
 
     // Queue emails (use notification system as fallback if BullMQ not available)
@@ -93,12 +85,6 @@ export async function POST(request: NextRequest) {
       totalRecipients: users.length,
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Interner Serverfehler",
-      },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: error instanceof Error ? error.message : "Interner Serverfehler" });
   }
 }

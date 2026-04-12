@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/energy/reports/generate
@@ -560,13 +561,7 @@ export async function POST(request: NextRequest) {
     const parsed = GenerateReportSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: "Ungültige Eingabedaten",
-          details: parsed.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabedaten", details: parsed.error.flatten().fieldErrors });
     }
 
     const { modules, parkId, turbineId, from, to, interval } = parsed.data;
@@ -576,22 +571,13 @@ export async function POST(request: NextRequest) {
     const toDate = new Date(to);
 
     if (isNaN(fromDate.getTime())) {
-      return NextResponse.json(
-        { error: "Ungültiges 'from' Datum (ISO-Format erwartet)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges 'from' Datum (ISO-Format erwartet)" });
     }
     if (isNaN(toDate.getTime())) {
-      return NextResponse.json(
-        { error: "Ungültiges 'to' Datum (ISO-Format erwartet)" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiges 'to' Datum (ISO-Format erwartet)" });
     }
     if (fromDate >= toDate) {
-      return NextResponse.json(
-        { error: "'from' muss vor 'to' liegen" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "'from' muss vor 'to' liegen" });
     }
 
     // Find turbines for this tenant, filtered by park/turbine
@@ -612,10 +598,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (turbines.length === 0) {
-      return NextResponse.json(
-        { error: "Keine Turbinen für die gewaehlten Filter gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Keine Turbinen für die gewaehlten Filter gefunden" });
     }
 
     const turbineIds = turbines.map((t) => t.id);
@@ -718,9 +701,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     logger.error({ err: error }, "Error generating energy report data");
-    return NextResponse.json(
-      { error: "Fehler beim Generieren der Berichtsdaten" },
-      { status: 500 }
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Generieren der Berichtsdaten" });
   }
 }

@@ -7,6 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { apiError } from "@/lib/api-errors";
 
 // Validation schema for remind request
 const remindSchema = z.object({
@@ -190,10 +191,7 @@ export async function POST(request: NextRequest) {
     // Validate input
     const parsed = remindSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabedaten", details: parsed.error.flatten() },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabedaten", details: parsed.error.flatten() });
     }
 
     const { leaseId, lessorName, amount, dueDate, parkName, contractInfo } =
@@ -220,20 +218,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!lease) {
-      return NextResponse.json(
-        { error: "Pachtvertrag nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Pachtvertrag nicht gefunden" });
     }
 
     if (!lease.lessor.email) {
-      return NextResponse.json(
-        {
-          error:
-            "Für diesen Verpaechter ist keine E-Mail-Adresse hinterlegt. Bitte ergaenzen Sie die E-Mail-Adresse in den Kontaktdaten.",
-        },
-        { status: 422 }
-      );
+      return apiError("INTERNAL_ERROR", 422, { message: "Für diesen Verpaechter ist keine E-Mail-Adresse hinterlegt. Bitte ergaenzen Sie die E-Mail-Adresse in den Kontaktdaten." });
     }
 
     // Get tenant details for bank info and branding
@@ -289,13 +278,7 @@ export async function POST(request: NextRequest) {
         },
         "Failed to send payment reminder email"
       );
-      return NextResponse.json(
-        {
-          error:
-            "E-Mail konnte nicht gesendet werden. Bitte prüfen Sie die E-Mail-Konfiguration.",
-        },
-        { status: 500 }
-      );
+      return apiError("EMAIL_SEND_FAILED", 500, { message: "E-Mail konnte nicht gesendet werden. Bitte prüfen Sie die E-Mail-Konfiguration." });
     }
 
     logger.info(
@@ -316,9 +299,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error sending payment reminder");
-    return NextResponse.json(
-      { error: "Fehler beim Senden der Zahlungserinnerung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Senden der Zahlungserinnerung" });
   }
 }

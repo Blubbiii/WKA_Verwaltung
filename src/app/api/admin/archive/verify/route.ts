@@ -14,6 +14,7 @@ import {
 } from "@/lib/archive/gobd-archive";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const verifyBodySchema = z.object({
   scope: z.enum(["FULL", "YEAR"]),
@@ -29,20 +30,14 @@ export async function POST(request: NextRequest) {
     const parsed = verifyBodySchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabedaten", details: parsed.error.issues },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabedaten", details: parsed.error.issues });
     }
 
     const { scope, year } = parsed.data;
 
     // Validate that year is provided when scope is YEAR
     if (scope === "YEAR" && !year) {
-      return NextResponse.json(
-        { error: "Jahr erforderlich bei Prüfungsumfang 'YEAR'" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "Jahr erforderlich bei Prüfungsumfang 'YEAR'" });
     }
 
     // Determine date range
@@ -102,9 +97,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error running archive verification");
-    return NextResponse.json(
-      { error: "Fehler bei der Integritaetsprüfung" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Integritaetsprüfung" });
   }
 }

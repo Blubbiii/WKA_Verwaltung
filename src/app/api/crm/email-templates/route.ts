@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { apiError } from "@/lib/api-errors";
 
 // Keys reserved for system templates. CRM templates must not collide with
 // these because the EmailTemplate table has a unique (tenantId, name) index.
@@ -42,10 +43,7 @@ export async function GET() {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const templates = await prisma.emailTemplate.findMany({
       where: { tenantId: check.tenantId!, category: "CRM" },
@@ -54,10 +52,7 @@ export async function GET() {
     return NextResponse.json(serializePrisma(templates));
   } catch (error) {
     logger.error({ err: error }, "Error fetching CRM email templates");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Templates" },
-      { status: 500 },
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Templates" });
   }
 }
 
@@ -67,18 +62,12 @@ export async function POST(request: NextRequest) {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
-      return NextResponse.json(
-        { error: "CRM nicht aktiviert" },
-        { status: 404 },
-      );
+      return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const raw = await request.json();
     const parsed = createSchema.safeParse(raw);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" },
-        { status: 400 },
-      );
+      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     const template = await prisma.emailTemplate.create({
@@ -93,9 +82,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(serializePrisma(template), { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating CRM email template");
-    return NextResponse.json(
-      { error: "Fehler beim Erstellen" },
-      { status: 500 },
-    );
+    return apiError("CREATE_FAILED", undefined, { message: "Fehler beim Erstellen" });
   }
 }

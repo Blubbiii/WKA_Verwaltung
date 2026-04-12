@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { analyzeDegradation, getMaintenanceRecommendations } from "@/lib/scada/degradation-analysis";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/energy/analytics/degradation
 // Returns degradation trends + maintenance recommendations
@@ -34,9 +35,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Fehler bei Degradationsanalyse");
-    return NextResponse.json(
-      { error: "Fehler bei Degradationsanalyse" },
-      { status: 500 }
-    );
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei Degradationsanalyse" });
   }
 }

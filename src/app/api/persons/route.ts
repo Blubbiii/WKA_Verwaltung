@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 const personCreateSchema = z.object({
   personType: z.enum(["natural", "legal"]).default("natural"),
@@ -84,10 +85,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching persons");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Personen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Personen" });
   }
 }
 
@@ -103,17 +101,11 @@ const check = await requirePermission(PERMISSIONS.LEASES_CREATE);
     // Validierung: Name erforderlich
     if (validatedData.personType === "natural") {
       if (!validatedData.lastName) {
-        return NextResponse.json(
-          { error: "Nachname ist erforderlich" },
-          { status: 400 }
-        );
+        return apiError("MISSING_FIELD", undefined, { message: "Nachname ist erforderlich" });
       }
     } else {
       if (!validatedData.companyName) {
-        return NextResponse.json(
-          { error: "Firmenname ist erforderlich" },
-          { status: 400 }
-        );
+        return apiError("MISSING_FIELD", undefined, { message: "Firmenname ist erforderlich" });
       }
     }
 

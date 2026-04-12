@@ -7,6 +7,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { reverseAutoPosting } from "@/lib/accounting/auto-posting";
+import { apiError } from "@/lib/api-errors";
 
 const cancelSchema = z.object({
   reason: z.string().min(1, "Storno-Grund erforderlich"),
@@ -34,31 +35,19 @@ export async function POST(
     });
 
     if (!original) {
-      return NextResponse.json(
-        { error: "Rechnung nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
     if (original.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     if (original.status === "CANCELLED") {
-      return NextResponse.json(
-        { error: "Rechnung ist bereits storniert" },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Rechnung ist bereits storniert" });
     }
 
     if (original.status === "DRAFT") {
-      return NextResponse.json(
-        { error: "Entwürfe können nicht storniert werden. Bitte löschen Sie den Entwurf." },
-        { status: 400 }
-      );
+      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Entwürfe können nicht storniert werden. Bitte löschen Sie den Entwurf." });
     }
 
     // Generiere Storno-Nummer

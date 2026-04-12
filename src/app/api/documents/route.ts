@@ -23,6 +23,7 @@ import {
   getUserHighestHierarchy,
   ROLE_HIERARCHY,
 } from "@/lib/auth/permissions";
+import { apiError } from "@/lib/api-errors";
 
 // Schema für JSON-basierte Dokument-Erstellung (ohne Datei-Upload)
 const documentCreateSchema = z.object({
@@ -71,10 +72,7 @@ export async function GET(request: NextRequest) {
 
     // Validate tenantId exists
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Kein Mandant zugeordnet" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
     }
 
     const { searchParams } = new URL(request.url);
@@ -226,10 +224,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching documents");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Dokumente" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Dokumente" });
   }
 }
 
@@ -252,10 +247,7 @@ export async function POST(request: NextRequest) {
     // Validate tenantId exists
     if (!check.tenantId) {
       logger.error("Document creation failed: No tenantId in session");
-      return NextResponse.json(
-        { error: "Kein Mandant zugeordnet. Bitte kontaktieren Sie den Administrator." },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet. Bitte kontaktieren Sie den Administrator." });
     }
 
     const contentType = request.headers.get("content-type") || "";
@@ -285,10 +277,7 @@ async function handleFileUpload(
     await ensureBucket();
   } catch (bucketError) {
     logger.error({ err: bucketError }, "Bucket initialization failed");
-    return NextResponse.json(
-      { error: "Storage-System nicht verfügbar. Bitte versuchen Sie es später erneut." },
-      { status: 503 }
-    );
+    return apiError("STORAGE_FAILED", 503, { message: "Storage-System nicht verfügbar. Bitte versuchen Sie es später erneut." });
   }
 
   // Parse FormData
@@ -297,18 +286,12 @@ async function handleFileUpload(
   // Hole die Datei aus dem FormData
   const file = formData.get("file") as File | null;
   if (!file) {
-    return NextResponse.json(
-      { error: "Keine Datei im Request gefunden" },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: "Keine Datei im Request gefunden" });
   }
 
   // Validiere Dateigröße
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json(
-      { error: `Datei zu gross. Maximum: ${MAX_FILE_SIZE / 1024 / 1024} MB` },
-      { status: 400 }
-    );
+    return apiError("BAD_REQUEST", undefined, { message: `Datei zu gross. Maximum: ${MAX_FILE_SIZE / 1024 / 1024} MB` });
   }
 
   // Check tenant storage limit
@@ -317,26 +300,21 @@ async function handleFileUpload(
     file.size
   );
   if (!allowed) {
-    return NextResponse.json(
-      {
-        error: `Speicherlimit erreicht. Verwendet: ${storageInfo.usedFormatted} von ${storageInfo.limitFormatted}. Die Datei (${(file.size / 1024 / 1024).toFixed(1)} MB) überschreitet das Limit.`,
-        code: "STORAGE_LIMIT_EXCEEDED",
-        storageInfo,
-      },
-      { status: 413 }
-    );
+    return apiError("QUOTA_EXCEEDED", 413, {
+      message: `Speicherlimit erreicht. Verwendet: ${storageInfo.usedFormatted} von ${storageInfo.limitFormatted}. Die Datei (${(file.size / 1024 / 1024).toFixed(1)} MB) überschreitet das Limit.`,
+      details: { storageInfo },
+    });
   }
 
   // Validiere MIME-Type
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-    return NextResponse.json(
-      {
-        error: "Dateityp nicht erlaubt",
+    return apiError("VALIDATION_FAILED", undefined, {
+      message: "Dateityp nicht erlaubt",
+      details: {
         allowedTypes: ALLOWED_MIME_TYPES,
-        receivedType: file.type
+        receivedType: file.type,
       },
-      { status: 400 }
-    );
+    });
   }
 
   // Hole Metadaten aus FormData
@@ -363,19 +341,16 @@ async function handleFileUpload(
 
   // Validiere Pflichtfelder
   if (!title || !category) {
-    return NextResponse.json(
-      { error: "Titel und Kategorie sind erforderlich" },
-      { status: 400 }
-    );
+    return apiError("MISSING_FIELD", undefined, { message: "Titel und Kategorie sind erforderlich" });
   }
 
   // Validiere Kategorie
   const validCategories = ["CONTRACT", "PROTOCOL", "REPORT", "INVOICE", "PERMIT", "CORRESPONDENCE", "OTHER"];
   if (!validCategories.includes(category)) {
-    return NextResponse.json(
-      { error: "Ungültige Kategorie", validCategories },
-      { status: 400 }
-    );
+    return apiError("VALIDATION_FAILED", undefined, {
+      message: "Ungültige Kategorie",
+      details: { validCategories },
+    });
   }
 
   // Konvertiere File zu Buffer für S3 Upload
@@ -385,14 +360,13 @@ async function handleFileUpload(
   // Validiere Dateiinhalt (Magic Number Check)
   const contentValidation = validateFileContent(buffer, file.type);
   if (!contentValidation.valid) {
-    return NextResponse.json(
-      {
-        error: "Dateiinhalt-Validierung fehlgeschlagen",
+    return apiError("VALIDATION_FAILED", undefined, {
+      message: "Dateiinhalt-Validierung fehlgeschlagen",
+      details: {
         reason: contentValidation.reason,
         detectedType: contentValidation.detectedType,
       },
-      { status: 400 }
-    );
+    });
   }
 
   // Upload zu S3/MinIO
@@ -401,10 +375,7 @@ async function handleFileUpload(
     s3Key = await uploadFile(buffer, file.name, file.type, tenantId);
   } catch (uploadError) {
     logger.error({ err: uploadError }, "S3 upload failed");
-    return NextResponse.json(
-      { error: "Datei-Upload fehlgeschlagen. Bitte versuchen Sie es erneut." },
-      { status: 500 }
-    );
+    return apiError("STORAGE_FAILED", undefined, { message: "Datei-Upload fehlgeschlagen. Bitte versuchen Sie es erneut." });
   }
 
   // Bestimme Versionsnummer

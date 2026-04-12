@@ -5,6 +5,7 @@ import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
 import { legalPageSchema } from "@/lib/marketing/types";
 import { DEFAULT_LEGAL_PAGES } from "@/lib/marketing/defaults";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/admin/legal-pages
@@ -17,10 +18,7 @@ export async function GET(_request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 400 }
-      );
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const tenant = await prisma.tenant.findUnique({
@@ -29,10 +27,7 @@ export async function GET(_request: NextRequest) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     // Extract legal pages from tenant settings
@@ -48,10 +43,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(merged);
   } catch (error) {
     logger.error({ err: error }, "Error fetching legal pages");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der rechtlichen Seiten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der rechtlichen Seiten" });
   }
 }
 
@@ -66,10 +58,7 @@ export async function PUT(request: NextRequest) {
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 400 }
-      );
+      return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
 
     const body = await request.json();
@@ -78,16 +67,10 @@ export async function PUT(request: NextRequest) {
     const parsed = legalPageSchema.safeParse(body);
     if (!parsed.success) {
       const firstError = parsed.error.issues[0];
-      return NextResponse.json(
-        {
-          error: firstError?.message || "Ungültige Eingabedaten",
-          details: parsed.error.issues.map((e) => ({
+      return apiError("BAD_REQUEST", undefined, { message: firstError?.message || "Ungültige Eingabedaten", details: parsed.error.issues.map((e) => ({
             field: e.path.join("."),
             message: e.message,
-          })),
-        },
-        { status: 400 }
-      );
+          })) });
     }
 
     // Get current tenant settings to preserve other keys
@@ -97,10 +80,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Mandant nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
     const existingSettings = (tenant.settings as Record<string, unknown>) || {};
@@ -150,9 +130,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(parsed.data);
   } catch (error) {
     logger.error({ err: error }, "Error saving legal pages");
-    return NextResponse.json(
-      { error: "Fehler beim Speichern der rechtlichen Seiten" },
-      { status: 500 }
-    );
+    return apiError("SAVE_FAILED", undefined, { message: "Fehler beim Speichern der rechtlichen Seiten" });
   }
 }

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { apiError } from "@/lib/api-errors";
 
 const approveSchema = z.object({
   action: z.enum(["approve", "reject"]),
@@ -38,38 +39,21 @@ export async function POST(
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Abrechnungsperiode nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsperiode nicht gefunden" });
     }
 
     if (period.tenantId !== check.tenantId!) {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
     // Only periods in PENDING_REVIEW can be approved or rejected
     if (period.status !== "PENDING_REVIEW") {
-      return NextResponse.json(
-        {
-          error: `Nur Perioden im Status "Zur Prüfung" können genehmigt oder abgelehnt werden. Aktueller Status: ${period.status}`,
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: `Nur Perioden im Status "Zur Prüfung" können genehmigt oder abgelehnt werden. Aktueller Status: ${period.status}` });
     }
 
     // Prevent self-approval: the creator cannot approve their own settlement
     if (period.createdById === check.userId) {
-      return NextResponse.json(
-        {
-          error:
-            "Sie können Ihre eigenen Abrechnungsperioden nicht selbst genehmigen. Ein anderer Administrator muss die Prüfung durchfuehren.",
-        },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Sie können Ihre eigenen Abrechnungsperioden nicht selbst genehmigen. Ein anderer Administrator muss die Prüfung durchfuehren." });
     }
 
     if (action === "approve") {
@@ -109,13 +93,7 @@ export async function POST(
     } else {
       // Reject: set back to IN_PROGRESS with rejection notes
       if (!notes || notes.trim().length === 0) {
-        return NextResponse.json(
-          {
-            error:
-              "Bei einer Ablehnung muss eine Begruendung angegeben werden",
-          },
-          { status: 400 }
-        );
+        return apiError("BAD_REQUEST", undefined, { message: "Bei einer Ablehnung muss eine Begruendung angegeben werden" });
       }
 
       const updated = await prisma.leaseSettlementPeriod.update({

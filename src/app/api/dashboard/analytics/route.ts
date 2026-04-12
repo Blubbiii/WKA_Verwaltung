@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { requireAuth, requireAdmin } from "@/lib/auth/withPermission";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { getFullAnalytics, clearAnalyticsCache } from "@/lib/analytics";
@@ -33,10 +34,7 @@ async function getHandler(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching analytics");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Analytics-Daten" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Analytics-Daten" });
   }
 }
 
@@ -61,10 +59,7 @@ async function postHandler(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error clearing analytics cache");
-    return NextResponse.json(
-      { error: "Fehler beim Leeren des Caches" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Leeren des Caches" });
   }
 }
 

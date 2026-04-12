@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { scanLocation, readWsdFile } from "@/lib/scada/dbf-reader";
 import { apiLogger as logger } from "@/lib/logger";
 import { API_LIMITS } from "@/lib/config/api-limits";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // POST /api/energy/scada/preview - Vorschau für einen SCADA-Standort
@@ -25,39 +26,24 @@ export async function POST(request: NextRequest) {
     // --- Validierung ---
 
     if (!basePath || typeof basePath !== "string") {
-      return NextResponse.json(
-        { error: "basePath ist erforderlich (z.B. 'C:\\Enercon')" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "basePath ist erforderlich (z.B. 'C:\\Enercon')" });
     }
 
     if (!locationCode || typeof locationCode !== "string") {
-      return NextResponse.json(
-        { error: "locationCode ist erforderlich (z.B. 'Loc_5842')" },
-        { status: 400 }
-      );
+      return apiError("MISSING_FIELD", undefined, { message: "locationCode ist erforderlich (z.B. 'Loc_5842')" });
     }
 
     if (!locationCode.startsWith("Loc_")) {
-      return NextResponse.json(
-        { error: "locationCode muss mit 'Loc_' beginnen (z.B. 'Loc_5842')" },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", undefined, { message: "locationCode muss mit 'Loc_' beginnen (z.B. 'Loc_5842')" });
     }
 
     // Minimale Sicherheitsprüfung: Pfad darf keine gefaehrlichen Zeichen enthalten
     if (basePath.includes("..") || basePath.includes("\0")) {
-      return NextResponse.json(
-        { error: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" },
-        { status: 400 }
-      );
+      return apiError("FORBIDDEN", 400, { message: "Ungültiger Pfad: Relative Pfade und Null-Bytes sind nicht erlaubt" });
     }
 
     if (locationCode.includes("..") || locationCode.includes("\0")) {
-      return NextResponse.json(
-        { error: "Ungültiger locationCode" },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger locationCode" });
     }
 
     // --- Standort scannen ---
@@ -236,38 +222,20 @@ export async function POST(request: NextRequest) {
 
     // Spezifische Fehlerbehandlung für Dateisystem-Fehler
     if (error instanceof Error && error.message.includes("ENOENT")) {
-      return NextResponse.json(
-        {
-          error:
-            "Verzeichnis nicht gefunden: Der angegebene Pfad oder Standort existiert nicht",
-        },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Verzeichnis nicht gefunden: Der angegebene Pfad oder Standort existiert nicht" });
     }
 
     if (error instanceof Error && error.message.includes("EACCES")) {
-      return NextResponse.json(
-        {
-          error:
-            "Zugriff verweigert: Keine Leseberechtigung für das Verzeichnis",
-        },
-        { status: 403 }
-      );
+      return apiError("FORBIDDEN", undefined, { message: "Zugriff verweigert: Keine Leseberechtigung für das Verzeichnis" });
     }
 
     if (
       error instanceof Error &&
       error.message.includes("Standort-Verzeichnis nicht gefunden")
     ) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: error.message });
     }
 
-    return NextResponse.json(
-      { error: "Fehler beim Laden der SCADA-Vorschau" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der SCADA-Vorschau" });
   }
 }

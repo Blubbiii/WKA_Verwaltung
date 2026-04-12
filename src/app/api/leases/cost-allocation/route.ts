@@ -9,6 +9,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { createCostAllocationSchema } from "@/types/billing";
 import { executeCostAllocation } from "@/lib/lease-revenue/allocator";
 import { z } from "zod";
+import { apiError } from "@/lib/api-errors";
 
 // =============================================================================
 // GET /api/leases/cost-allocation - List all ParkCostAllocations
@@ -86,10 +87,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     logger.error({ err: error }, "Error fetching cost allocations");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Kostenaufteilungen" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Kostenaufteilungen" });
   }
 }
 
@@ -150,7 +148,7 @@ export async function POST(request: NextRequest) {
       message.includes("berechnet") ||
       message.includes("Betreibergesellschaften")
     ) {
-      return NextResponse.json({ error: message }, { status: 400 });
+      return apiError("BAD_REQUEST", undefined, { message: message });
     }
 
     return handleApiError(error, "Fehler beim Erstellen der Kostenaufteilung");

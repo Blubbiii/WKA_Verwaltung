@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -36,10 +37,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const parsed = checkInSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
 
     const turbine = await prisma.turbine.findUnique({
@@ -53,11 +51,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     if (!turbine) {
-      return NextResponse.json({ error: "Ungültiger QR-Code" }, { status: 404 });
+      return apiError("NOT_FOUND", 404, { message: "Ungültiger QR-Code" });
     }
 
     if (turbine.status !== "ACTIVE") {
-      return NextResponse.json({ error: "Anlage ist nicht aktiv" }, { status: 400 });
+      return apiError("BAD_REQUEST", 400, { message: "Anlage ist nicht aktiv" });
     }
 
     // Prevent double check-in: check for open session at this turbine from same IP
@@ -71,10 +69,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     if (existingSession) {
-      return NextResponse.json(
-        { error: "Es gibt bereits einen aktiven Check-In für diese Anlage", session: { id: existingSession.id, checkInAt: existingSession.checkInAt } },
-        { status: 409 }
-      );
+      return apiError("CONFLICT", 409, { message: "Es gibt bereits einen aktiven Check-In für diese Anlage" });
     }
 
     const session = await prisma.technicianSession.create({
@@ -99,9 +94,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ session }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "[Techniker Check-In] Failed");
-    return NextResponse.json(
-      { error: "Ein Fehler ist aufgetreten" },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, { message: "Ein Fehler ist aufgetreten" });
   }
 }

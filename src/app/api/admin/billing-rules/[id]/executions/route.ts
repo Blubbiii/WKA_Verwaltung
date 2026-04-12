@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
+import { apiError } from "@/lib/api-errors";
 
 // GET /api/admin/billing-rules/[id]/executions
 export async function GET(
@@ -37,10 +38,7 @@ export async function GET(
     });
 
     if (!rule) {
-      return NextResponse.json(
-        { error: "Abrechnungsregel nicht gefunden" },
-        { status: 404 }
-      );
+      return apiError("NOT_FOUND", undefined, { message: "Abrechnungsregel nicht gefunden" });
     }
 
     // Baue Where-Clause
@@ -132,9 +130,6 @@ export async function GET(
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching billing rule executions");
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Ausführungshistorie" },
-      { status: 500 }
-    );
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Ausführungshistorie" });
   }
 }
