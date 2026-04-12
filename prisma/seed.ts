@@ -866,7 +866,10 @@ async function main() {
   // ==========================================================================
   // USERS — create without role field (uses UserRoleAssignment instead)
   // ==========================================================================
-  const superadminPassword = await bcrypt.hash("admin123", 12);
+  const superadminPassword = await bcrypt.hash(
+    process.env.SEED_SUPERADMIN_PASSWORD || "admin123",
+    12
+  );
   const superadmin = await prisma.user.upsert({
     where: { email: "admin@windparkmanager.de" },
     update: {},
@@ -893,7 +896,10 @@ async function main() {
   });
   console.log("Created superadmin:", superadmin.email);
 
-  const demoAdminPassword = await bcrypt.hash("demo123", 12);
+  const demoAdminPassword = await bcrypt.hash(
+    process.env.SEED_DEMO_ADMIN_PASSWORD || "demo123",
+    12
+  );
   const demoAdmin = await prisma.user.upsert({
     where: { email: "admin@demo-windpark.de" },
     update: {},

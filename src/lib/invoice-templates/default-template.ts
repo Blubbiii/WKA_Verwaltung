@@ -403,7 +403,8 @@ export const SAMPLE_INVOICE_DATA = {
   taxAmount: 8325.09,
   grossTotal: 52141.33,
   paymentTerms: "Zahlbar innerhalb von 30 Tagen nach Rechnungsdatum.",
-  skontoPeriod: "14 Tage",
+  // Sample values only — real skonto comes from TenantSettings.defaultSkontoDays/Percent
+  skontoPeriod: "7 Tage",
   skontoPercent: "2%",
   bankName: "Sparkasse Harburg-Buxtehude",
   iban: "DE89 3704 0044 0532 0130 00",

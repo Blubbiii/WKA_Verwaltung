@@ -7,61 +7,34 @@
 
 import Redis, { RedisOptions } from 'ioredis';
 import { jobLogger as logger } from "@/lib/logger";
+import { getBaseRedisOptions } from '@/lib/config/redis';
 
 // Connection pool to reuse connections
 let connection: Redis | null = null;
 let subscriberConnection: Redis | null = null;
 
 /**
- * Redis connection options derived from environment variables
+ * Redis connection options for BullMQ.
+ * Base URL/auth/TLS is shared; BullMQ requires specific retry semantics.
  */
-const getRedisOptions = (): RedisOptions => {
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-
-  // Parse Redis URL
-  const url = new URL(redisUrl);
-
-  const options: RedisOptions = {
-    host: url.hostname,
-    port: parseInt(url.port) || 6379,
-    maxRetriesPerRequest: null, // Required for BullMQ
-    enableReadyCheck: false, // Faster connection
-    retryStrategy: (times: number) => {
-      if (times > 10) {
-        // Stop retrying after 10 attempts
-        logger.error('[Redis] Max retry attempts reached, giving up');
-        return null;
-      }
-      // Exponential backoff: 100ms, 200ms, 400ms, ... max 30s
-      const delay = Math.min(times * 100, 30000);
-      logger.warn(`[Redis] Connection retry #${times} in ${delay}ms`);
-      return delay;
-    },
-    reconnectOnError: (err: Error) => {
-      const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT'];
-      return targetErrors.some(e => err.message.includes(e));
-    },
-  };
-
-  // Add password if present in URL
-  if (url.password) {
-    options.password = decodeURIComponent(url.password);
-  }
-
-  // Add username if present (Redis 6+ ACL)
-  if (url.username && url.username !== 'default') {
-    options.username = url.username;
-  }
-
-  // TLS support for production (rediss:// protocol)
-  if (url.protocol === 'rediss:') {
-    options.tls = {
-      rejectUnauthorized: process.env.NODE_ENV === 'production',
-    };
-  }
-
-  return options;
-};
+const getRedisOptions = (): RedisOptions => ({
+  ...getBaseRedisOptions(),
+  maxRetriesPerRequest: null, // Required for BullMQ
+  enableReadyCheck: false, // Faster connection
+  retryStrategy: (times: number) => {
+    if (times > 10) {
+      logger.error('[Redis] Max retry attempts reached, giving up');
+      return null;
+    }
+    const delay = Math.min(times * 100, 30000);
+    logger.warn(`[Redis] Connection retry #${times} in ${delay}ms`);
+    return delay;
+  },
+  reconnectOnError: (err: Error) => {
+    const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT'];
+    return targetErrors.some(e => err.message.includes(e));
+  },
+});
 
 /**
  * Get the main Redis connection (for Queue operations)

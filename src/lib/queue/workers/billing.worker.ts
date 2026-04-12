@@ -534,7 +534,7 @@ async function processGenerateSettlement(data: GenerateSettlementJobData): Promi
  *
  * 1. Loads invoice from database and verifies it is overdue
  * 2. Determines correct reminder level (1st, 2nd, 3rd notice)
- * 3. Calculates late fees if applicable (level 2: 5 EUR, level 3: 10 EUR)
+ * 3. Calculates late fees from tenant settings (reminderFee1/2/3)
  * 4. Sends reminder email via email queue
  * 5. Updates invoice notes with reminder history
  * 6. For level 3: logs escalation warning for management
@@ -649,6 +649,10 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
     ? Math.floor((now.getTime() - invoice.dueDate.getTime()) / (1000 * 60 * 60 * 24))
     : 0;
 
+  // Load tenant settings for configurable dunning fees
+  const { getTenantSettings } = await import("@/lib/tenant-settings");
+  const settings = await getTenantSettings(data.tenantId);
+
   let lateFee = 0;
   const reminderLabels: Record<number, string> = {
     1: "1. Zahlungserinnerung",
@@ -656,11 +660,13 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
     3: "3. Mahnung (Letzte Aufforderung)",
   };
 
-  // Late fees based on reminder level
-  if (data.reminderLevel === 2) {
-    lateFee = 5.0; // 5 EUR Mahngebühr
+  // Late fees from tenant settings (configurable per mandate)
+  if (data.reminderLevel === 1) {
+    lateFee = settings.reminderFee1;
+  } else if (data.reminderLevel === 2) {
+    lateFee = settings.reminderFee2;
   } else if (data.reminderLevel === 3) {
-    lateFee = 10.0; // 10 EUR Mahngebühr
+    lateFee = settings.reminderFee3;
   }
 
   const reminderLabel = reminderLabels[data.reminderLevel] || `Mahnstufe ${data.reminderLevel}`;

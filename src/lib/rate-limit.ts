@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Redis from "ioredis";
 import { apiLogger } from "@/lib/logger";
+import { getBaseRedisOptions } from "@/lib/config/redis";
 
 /**
  * Redis-backed sliding window rate limiter for Next.js API routes.
@@ -96,19 +97,8 @@ async function getRedisClient(): Promise<Redis | null> {
   redisInitialised = true;
 
   try {
-    const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
-    const url = new URL(redisUrl);
-
     redisClient = new Redis({
-      host: url.hostname,
-      port: parseInt(url.port) || 6379,
-      ...(url.password ? { password: decodeURIComponent(url.password) } : {}),
-      ...(url.username && url.username !== "default"
-        ? { username: url.username }
-        : {}),
-      ...(url.protocol === "rediss:"
-        ? { tls: { rejectUnauthorized: process.env.NODE_ENV === "production" } }
-        : {}),
+      ...getBaseRedisOptions(),
       maxRetriesPerRequest: parseInt(process.env.REDIS_RATELIMIT_MAX_RETRIES || "1"),
       connectTimeout: parseInt(process.env.REDIS_RATELIMIT_CONNECT_TIMEOUT_MS || "3000"),
       lazyConnect: true,

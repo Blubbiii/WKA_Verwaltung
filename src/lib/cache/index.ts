@@ -11,6 +11,7 @@
 import Redis, { RedisOptions } from 'ioredis';
 import { CacheSetOptions, CACHE_TTL } from './types';
 import { cacheLogger } from '@/lib/logger';
+import { getBaseRedisOptions } from '@/lib/config/redis';
 
 // Connection instance (singleton)
 let cacheConnection: Redis | null = null;
@@ -27,57 +28,24 @@ let cacheMisses = 0;
 let cacheInvalidations = 0;
 
 /**
- * Get Redis connection options from environment
+ * Get Redis connection options from environment.
+ * Base URL/auth/TLS is shared; cache adds its own retry/timeout tuning.
  */
-const getRedisOptions = () => {
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-
-  try {
-    const url = new URL(redisUrl);
-
-    const options: RedisOptions = {
-      host: url.hostname,
-      port: parseInt(url.port) || 6379,
-      maxRetriesPerRequest: parseInt(process.env.REDIS_CACHE_MAX_RETRIES || "3"),
-      enableReadyCheck: true,
-      retryStrategy: (times: number) => {
-        const maxRetries = parseInt(process.env.REDIS_CACHE_MAX_RETRIES || "3");
-        if (times > maxRetries) {
-          cacheLogger.warn('Max retry attempts reached, using memory fallback');
-          return null;
-        }
-        return Math.min(times * 100, 2000);
-      },
-      lazyConnect: true,
-      connectTimeout: parseInt(process.env.REDIS_CACHE_CONNECT_TIMEOUT_MS || "5000"),
-    };
-
-    if (url.password) {
-      options.password = decodeURIComponent(url.password);
+const getRedisOptions = (): RedisOptions => ({
+  ...getBaseRedisOptions(),
+  maxRetriesPerRequest: parseInt(process.env.REDIS_CACHE_MAX_RETRIES || "3"),
+  enableReadyCheck: true,
+  retryStrategy: (times: number) => {
+    const maxRetries = parseInt(process.env.REDIS_CACHE_MAX_RETRIES || "3");
+    if (times > maxRetries) {
+      cacheLogger.warn('Max retry attempts reached, using memory fallback');
+      return null;
     }
-
-    if (url.username && url.username !== 'default') {
-      options.username = url.username;
-    }
-
-    if (url.protocol === 'rediss:') {
-      options.tls = {
-        rejectUnauthorized: process.env.NODE_ENV === 'production',
-      };
-    }
-
-    return options;
-  } catch {
-    cacheLogger.warn('Invalid REDIS_URL, using defaults');
-    return {
-      host: 'localhost',
-      port: 6379,
-      maxRetriesPerRequest: parseInt(process.env.REDIS_CACHE_MAX_RETRIES || "3"),
-      lazyConnect: true,
-      connectTimeout: parseInt(process.env.REDIS_CACHE_CONNECT_TIMEOUT_MS || "5000"),
-    };
-  }
-};
+    return Math.min(times * 100, 2000);
+  },
+  lazyConnect: true,
+  connectTimeout: parseInt(process.env.REDIS_CACHE_CONNECT_TIMEOUT_MS || "5000"),
+});
 
 /**
  * Get or create Redis connection for caching

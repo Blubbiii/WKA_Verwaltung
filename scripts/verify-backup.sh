@@ -12,8 +12,13 @@ DB_HOST="${POSTGRES_HOST:-localhost}"
 DB_PORT="${POSTGRES_PORT:-5432}"
 DB_USER="${POSTGRES_USER:-wpm}"
 DB_NAME="wpm_backup_verify_$(date +%s)"
-PGPASSWORD="${POSTGRES_PASSWORD:-devpassword}"
-export PGPASSWORD
+
+# Require POSTGRES_PASSWORD explicitly — no insecure fallback
+if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+  echo "ERROR: POSTGRES_PASSWORD environment variable must be set" >&2
+  exit 1
+fi
+export PGPASSWORD="$POSTGRES_PASSWORD"
 
 echo "=== WindparkManager Backup Verification ==="
 echo "Backup directory: $BACKUP_DIR"

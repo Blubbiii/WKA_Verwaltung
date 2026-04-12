@@ -115,7 +115,7 @@ function NewInvoiceContent() {
     },
   ]);
 
-  // Skonto state
+  // Skonto state — initial values come from TenantSettings (defaultSkontoPercent/Days)
   const [skontoEnabled, setSkontoEnabled] = useState(false);
   const [skontoPercent, setSkontoPercent] = useState(2);
   const [skontoDays, setSkontoDays] = useState(7);
@@ -137,6 +137,19 @@ function NewInvoiceContent() {
       .then((res) => res.ok ? res.json() : Promise.reject())
       .then((data) => setFunds(data.data || []))
       .catch(() => { /* silently ignore */ });
+
+    // Load skonto defaults from tenant settings
+    fetch("/api/admin/tenant-settings")
+      .then((res) => res.ok ? res.json() : Promise.reject())
+      .then((settings) => {
+        if (typeof settings?.defaultSkontoPercent === "number") {
+          setSkontoPercent(settings.defaultSkontoPercent);
+        }
+        if (typeof settings?.defaultSkontoDays === "number") {
+          setSkontoDays(settings.defaultSkontoDays);
+        }
+      })
+      .catch(() => { /* fall back to hardcoded defaults */ });
   }, []);
 
   function handleAddItem() {
