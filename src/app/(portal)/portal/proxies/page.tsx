@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
@@ -104,23 +105,19 @@ interface ProxiesData {
   received: Proxy[];
 }
 
-// Status labels and colors
-const statusLabels: Record<string, string> = {
-  ACTIVE: "Aktiv",
-  REVOKED: "Widerrufen",
-};
-
+// Status colors only — labels via i18n
 const statusColors: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800",
   REVOKED: "bg-gray-100 text-gray-800",
 };
 
-const typeLabels: Record<string, string> = {
-  GENERAL: "Generalvollmacht",
-  SINGLE: "Einzelvollmacht",
-};
-
 export default function ProxiesPage() {
+  const t = useTranslations("portal.proxies");
+  const tStatus = useTranslations("portal.proxies.status");
+  const tType = useTranslations("portal.proxies.type");
+  const translateStatus = (key: string) => {
+    try { return tStatus(key as "ACTIVE"); } catch { return key; }
+  };
   const [proxies, setProxies] = useState<ProxiesData>({ granted: [], received: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,16 +146,16 @@ export default function ProxiesPage() {
       setError(null);
       const response = await fetch("/api/portal/my-proxies");
       if (!response.ok) {
-        throw new Error("Fehler beim Laden der Vollmachten");
+        throw new Error(t("loadError"));
       }
       const data = await response.json();
       setProxies(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
+      setError(err instanceof Error ? err.message : t("unknownError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Fetch shareholders and votes for the dialog
   const fetchDialogOptions = useCallback(async () => {
@@ -227,12 +224,12 @@ export default function ProxiesPage() {
     setFormError(null);
 
     if (!selectedGrantee) {
-      setFormError("Bitte wahlen Sie einen Vollmachtnehmer aus");
+      setFormError(t("dialog.selectGranteeError"));
       return;
     }
 
     if (proxyType === "SINGLE" && !selectedVote) {
-      setFormError("Bitte wahlen Sie eine Abstimmung aus");
+      setFormError(t("dialog.selectVoteError"));
       return;
     }
 
@@ -252,13 +249,13 @@ export default function ProxiesPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Fehler beim Erstellen der Vollmacht");
+        throw new Error(errorData.message || t("dialog.createError"));
       }
 
       setDialogOpen(false);
       fetchProxies();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
+      setFormError(err instanceof Error ? err.message : t("unknownError"));
     } finally {
       setSubmitting(false);
     }
@@ -280,12 +277,12 @@ export default function ProxiesPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Fehler beim Widerrufen der Vollmacht");
+        throw new Error(t("revokeDialog.revokeError"));
       }
 
       fetchProxies();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
+      toast.error(err instanceof Error ? err.message : t("unknownError"));
     } finally {
       setRevoking(null);
       setRevokeDialogOpen(false);
@@ -296,11 +293,11 @@ export default function ProxiesPage() {
   // Get proxy type display text
   const getProxyTypeDisplay = (proxy: Proxy) => {
     if (proxy.type === "GENERAL") {
-      return typeLabels.GENERAL;
+      return tType("GENERAL");
     }
     return proxy.vote
-      ? `Einzelvollmacht fur "${proxy.vote.title}"`
-      : typeLabels.SINGLE;
+      ? tType("singleFor", { title: proxy.vote.title })
+      : tType("SINGLE");
   };
 
   // Loading state
@@ -322,18 +319,18 @@ export default function ProxiesPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Vollmachten</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Verwalten Sie Ihre Stimmrechtsvollmachten
+            {t("description")}
           </p>
         </div>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Fehler</AlertTitle>
+          <AlertTitle>{t("loadError")}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
         <Button onClick={() => { setLoading(true); fetchProxies(); }}>
-          Erneut versuchen
+          {t("retry")}
         </Button>
       </div>
     );
@@ -349,23 +346,23 @@ export default function ProxiesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Vollmachten</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Verwalten Sie Ihre Stimmrechtsvollmachten
+            {t("description")}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleOpenDialog}>
               <Plus className="mr-2 h-4 w-4" />
-              Neue Vollmacht erteilen
+              {t("newProxy")}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Neue Vollmacht erteilen</DialogTitle>
+              <DialogTitle>{t("dialog.title")}</DialogTitle>
               <DialogDescription>
-                Erteilen Sie einem anderen Gesellschafter eine Stimmrechtsvollmacht.
+                {t("dialog.description")}
               </DialogDescription>
             </DialogHeader>
 
@@ -384,18 +381,18 @@ export default function ProxiesPage() {
 
                 {/* Grantee Selection */}
                 <div className="space-y-2">
-                  <Label htmlFor="grantee">Vollmachtnehmer</Label>
+                  <Label htmlFor="grantee">{t("dialog.grantee")}</Label>
                   <Select
                     value={selectedGrantee}
                     onValueChange={setSelectedGrantee}
                   >
                     <SelectTrigger id="grantee">
-                      <SelectValue placeholder="Gesellschafter auswahlen..." />
+                      <SelectValue placeholder={t("dialog.granteePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {shareholders.length === 0 ? (
                         <SelectItem value="_empty" disabled>
-                          Keine Gesellschafter verfugbar
+                          {t("dialog.noShareholders")}
                         </SelectItem>
                       ) : (
                         shareholders.map((sh) => (
@@ -410,7 +407,7 @@ export default function ProxiesPage() {
 
                 {/* Proxy Type Selection */}
                 <div className="space-y-3">
-                  <Label>Art der Vollmacht</Label>
+                  <Label>{t("dialog.proxyType")}</Label>
                   <RadioGroup
                     value={proxyType}
                     onValueChange={(value) => setProxyType(value as "GENERAL" | "SINGLE")}
@@ -418,13 +415,13 @@ export default function ProxiesPage() {
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="GENERAL" id="general" />
                       <Label htmlFor="general" className="font-normal cursor-pointer">
-                        Generalvollmacht (fur alle zukunftigen Abstimmungen)
+                        {t("dialog.generalLabel")}
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="SINGLE" id="single" />
                       <Label htmlFor="single" className="font-normal cursor-pointer">
-                        Einzelvollmacht (nur fur eine bestimmte Abstimmung)
+                        {t("dialog.singleLabel")}
                       </Label>
                     </div>
                   </RadioGroup>
@@ -433,18 +430,18 @@ export default function ProxiesPage() {
                 {/* Vote Selection (only for single proxy) */}
                 {proxyType === "SINGLE" && (
                   <div className="space-y-2">
-                    <Label htmlFor="vote">Abstimmung</Label>
+                    <Label htmlFor="vote">{t("dialog.vote")}</Label>
                     <Select
                       value={selectedVote}
                       onValueChange={setSelectedVote}
                     >
                       <SelectTrigger id="vote">
-                        <SelectValue placeholder="Abstimmung auswahlen..." />
+                        <SelectValue placeholder={t("dialog.votePlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         {votes.length === 0 ? (
                           <SelectItem value="_empty" disabled>
-                            Keine aktiven Abstimmungen
+                            {t("dialog.noActiveVotes")}
                           </SelectItem>
                         ) : (
                           votes.map((vote) => (
@@ -466,14 +463,14 @@ export default function ProxiesPage() {
                 onClick={() => setDialogOpen(false)}
                 disabled={submitting}
               >
-                Abbrechen
+                {t("dialog.cancel")}
               </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || loadingOptions}
               >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Vollmacht erteilen
+                {t("dialog.submit")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -484,26 +481,26 @@ export default function ProxiesPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Erteilte Vollmachten</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("stats.granted")}</CardTitle>
             <Users className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeGrantedCount}</div>
             <p className="text-xs text-muted-foreground">
-              {grantedCount} gesamt ({grantedCount - activeGrantedCount} widerrufen)
+              {t("stats.totalRevoked", { total: grantedCount, revoked: grantedCount - activeGrantedCount })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Erhaltene Vollmachten</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("stats.received")}</CardTitle>
             <UserCheck className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeReceivedCount}</div>
             <p className="text-xs text-muted-foreground">
-              {receivedCount} gesamt ({receivedCount - activeReceivedCount} widerrufen)
+              {t("stats.totalRevoked", { total: receivedCount, revoked: receivedCount - activeReceivedCount })}
             </p>
           </CardContent>
         </Card>
@@ -514,11 +511,11 @@ export default function ProxiesPage() {
         <TabsList>
           <TabsTrigger value="granted">
             <FileSignature className="mr-2 h-4 w-4" />
-            Erteilte Vollmachten ({grantedCount})
+            {t("tabs.granted", { count: grantedCount })}
           </TabsTrigger>
           <TabsTrigger value="received">
             <UserCheck className="mr-2 h-4 w-4" />
-            Erhaltene Vollmachten ({receivedCount})
+            {t("tabs.received", { count: receivedCount })}
           </TabsTrigger>
         </TabsList>
 
@@ -526,36 +523,36 @@ export default function ProxiesPage() {
         <TabsContent value="granted" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Erteilte Vollmachten</CardTitle>
+              <CardTitle>{t("granted.title")}</CardTitle>
               <CardDescription>
-                Vollmachten, die Sie anderen Gesellschaftern erteilt haben
+                {t("granted.description")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {proxies.granted.length === 0 ? (
                 <div className="py-12 text-center text-muted-foreground">
                   <FileSignature className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                  <p>Sie haben noch keine Vollmachten erteilt.</p>
+                  <p>{t("granted.empty")}</p>
                   <Button
                     variant="outline"
                     className="mt-4"
                     onClick={handleOpenDialog}
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Erste Vollmacht erteilen
+                    {t("granted.createFirst")}
                   </Button>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Vollmachtnehmer</TableHead>
-                      <TableHead>Typ</TableHead>
-                      <TableHead>Gesellschaft</TableHead>
-                      <TableHead>Erteilt am</TableHead>
-                      <TableHead>Dokument</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Aktionen</TableHead>
+                      <TableHead>{t("table.grantee")}</TableHead>
+                      <TableHead>{t("table.type")}</TableHead>
+                      <TableHead>{t("table.fund")}</TableHead>
+                      <TableHead>{t("table.grantedAt")}</TableHead>
+                      <TableHead>{t("table.document")}</TableHead>
+                      <TableHead>{t("table.status")}</TableHead>
+                      <TableHead className="text-right">{t("table.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -587,7 +584,7 @@ export default function ProxiesPage() {
                         </TableCell>
                         <TableCell>
                           <Badge className={statusColors[proxy.status]}>
-                            {statusLabels[proxy.status]}
+                            {translateStatus(proxy.status)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -601,15 +598,12 @@ export default function ProxiesPage() {
                               {revoking === proxy.id && (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               )}
-                              Widerrufen
+                              {t("table.revoke")}
                             </Button>
                           )}
                           {proxy.status === "REVOKED" && proxy.revokedAt && (
                             <span className="text-sm text-muted-foreground">
-                              Widerrufen am{" "}
-                              {format(new Date(proxy.revokedAt), "dd.MM.yyyy", {
-                                locale: de,
-                              })}
+                              {t("table.revokedOn", { date: format(new Date(proxy.revokedAt), "dd.MM.yyyy", { locale: de }) })}
                             </span>
                           )}
                         </TableCell>
@@ -626,26 +620,26 @@ export default function ProxiesPage() {
         <TabsContent value="received" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Erhaltene Vollmachten</CardTitle>
+              <CardTitle>{t("received.title")}</CardTitle>
               <CardDescription>
-                Vollmachten, die Sie von anderen Gesellschaftern erhalten haben
+                {t("received.description")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {proxies.received.length === 0 ? (
                 <div className="py-12 text-center text-muted-foreground">
                   <UserCheck className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                  <p>Sie haben noch keine Vollmachten erhalten.</p>
+                  <p>{t("received.empty")}</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Vollmachtgeber</TableHead>
-                      <TableHead>Typ</TableHead>
-                      <TableHead>Gesellschaft</TableHead>
-                      <TableHead>Erteilt am</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t("table.grantor")}</TableHead>
+                      <TableHead>{t("table.type")}</TableHead>
+                      <TableHead>{t("table.fund")}</TableHead>
+                      <TableHead>{t("table.grantedAt")}</TableHead>
+                      <TableHead>{t("table.status")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -668,14 +662,11 @@ export default function ProxiesPage() {
                         </TableCell>
                         <TableCell>
                           <Badge className={statusColors[proxy.status]}>
-                            {statusLabels[proxy.status]}
+                            {translateStatus(proxy.status)}
                           </Badge>
                           {proxy.status === "REVOKED" && proxy.revokedAt && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              am{" "}
-                              {format(new Date(proxy.revokedAt), "dd.MM.yyyy", {
-                                locale: de,
-                              })}
+                              {t("table.onDate", { date: format(new Date(proxy.revokedAt), "dd.MM.yyyy", { locale: de }) })}
                             </p>
                           )}
                         </TableCell>
@@ -694,8 +685,8 @@ export default function ProxiesPage() {
         open={revokeDialogOpen}
         onOpenChange={setRevokeDialogOpen}
         onConfirm={handleConfirmRevoke}
-        title="Widerruf bestätigen"
-        description="Möchten Sie diese Vollmacht wirklich widerrufen?"
+        title={t("revokeDialog.title")}
+        description={t("revokeDialog.description")}
       />
     </div>
   );

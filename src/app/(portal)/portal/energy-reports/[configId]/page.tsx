@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -189,31 +190,7 @@ interface ReportData {
   revenueComparison?: LostRevenueData;
 }
 
-const MODULE_LABELS: Record<string, string> = {
-  // Classic
-  kpiSummary: "KPI-Zusammenfassung",
-  production: "Produktion",
-  turbineComparison: "Anlagenvergleich",
-  powerCurve: "Leistungskurve",
-  windRose: "Windrose",
-  dailyProfile: "Tagesverlauf",
-  // Analytics
-  performanceKpis: "Performance-KPIs",
-  productionHeatmap: "Produktions-Heatmap",
-  turbineRanking: "Turbinen-Ranking",
-  yearOverYear: "Jahresvergleich",
-  availabilityBreakdown: "Verfügbarkeit T1-T6",
-  availabilityTrend: "Verfügbarkeits-Trend",
-  availabilityHeatmap: "Verfügbarkeits-Heatmap",
-  downtimePareto: "Ausfallzeiten-Pareto",
-  powerCurveOverlay: "Leistungskurven-Overlay",
-  faultPareto: "Störungen-Pareto",
-  warningTrend: "Warnungs-Trend",
-  windDistribution: "Windverteilung",
-  environmentalData: "Umweltdaten",
-  financialOverview: "Finanz-Übersicht",
-  revenueComparison: "Erlösvergleich",
-};
+// Module labels translated via portal.energyReports.modules.* at render time
 
 // =============================================================================
 // Helpers
@@ -249,6 +226,11 @@ function formatInteger(value: number): string {
 // =============================================================================
 
 export default function EnergyReportDetailPage() {
+  const t = useTranslations("portal.energyReports");
+  const tModules = useTranslations("portal.energyReports.modules");
+  const translateModule = (key: string) => {
+    try { return tModules(key as "kpiSummary"); } catch { return key; }
+  };
   const params = useParams();
   const router = useRouter();
   const configId = params.configId as string;
@@ -271,24 +253,25 @@ export default function EnergyReportDetailPage() {
         setConfigLoading(true);
         const response = await fetch("/api/portal/energy-reports");
         if (!response.ok) {
-          throw new Error("Fehler beim Laden der Berichtskonfiguration");
+          throw new Error(t("configLoadError"));
         }
         const data = await response.json();
         const configs: ReportConfig[] = data.data || [];
         const found = configs.find((c) => c.id === configId);
         if (!found) {
-          toast.error("Berichtskonfiguration nicht gefunden");
+          toast.error(t("configNotFound"));
           router.push("/portal/energy-reports");
           return;
         }
         setConfig(found);
       } catch {
-        toast.error("Fehler beim Laden der Berichtskonfiguration");
+        toast.error(t("configLoadError"));
       } finally {
         setConfigLoading(false);
       }
     }
     loadConfig();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configId, router]);
 
   // ---------------------------------------------------------------------------
@@ -311,8 +294,8 @@ export default function EnergyReportDetailPage() {
       if (!response.ok) {
         const errData = await response
           .json()
-          .catch(() => ({ error: "Unbekannter Fehler" }));
-        throw new Error(errData.error || "Fehler beim Generieren des Berichts");
+          .catch(() => ({ error: t("unknownError") }));
+        throw new Error(errData.error || t("generateError"));
       }
       const data = await response.json();
       setReportData(data.data || data);
@@ -320,11 +303,12 @@ export default function EnergyReportDetailPage() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Generieren des Berichts"
+          : t("generateError")
       );
     } finally {
       setGenerating(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configId, fromDate, toDate]);
 
   // ---------------------------------------------------------------------------
@@ -387,7 +371,7 @@ export default function EnergyReportDetailPage() {
           <div className="flex flex-wrap gap-1 mt-2 ml-12">
             {config.modules.map((mod) => (
               <Badge key={mod} variant="outline" className="text-xs">
-                {MODULE_LABELS[mod] || mod}
+                {translateModule(mod)}
               </Badge>
             ))}
           </div>
@@ -395,7 +379,7 @@ export default function EnergyReportDetailPage() {
         {reportData && (
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
-            Drucken / PDF
+            {t("printPdf")}
           </Button>
         )}
       </div>
@@ -409,7 +393,7 @@ export default function EnergyReportDetailPage() {
           <p className="text-sm text-gray-600">{config.description}</p>
         )}
         <p className="text-sm text-gray-500 mt-1">
-          Zeitraum: {fromDate} bis {toDate}
+          {t("period", { from: fromDate, to: toDate })}
         </p>
       </div>
 
@@ -422,7 +406,7 @@ export default function EnergyReportDetailPage() {
                 htmlFor="report-from"
                 className="text-sm font-medium text-muted-foreground whitespace-nowrap"
               >
-                Von
+                {t("from")}
               </label>
               <input
                 id="report-from"
@@ -437,7 +421,7 @@ export default function EnergyReportDetailPage() {
                 htmlFor="report-to"
                 className="text-sm font-medium text-muted-foreground whitespace-nowrap"
               >
-                Bis
+                {t("to")}
               </label>
               <input
                 id="report-to"
@@ -453,7 +437,7 @@ export default function EnergyReportDetailPage() {
               ) : (
                 <BarChart3 className="mr-2 h-4 w-4" />
               )}
-              Bericht generieren
+              {t("generate")}
             </Button>
           </div>
         </CardContent>
@@ -463,7 +447,7 @@ export default function EnergyReportDetailPage() {
       {generating && (
         <div className="flex flex-col items-center justify-center py-16 gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="text-muted-foreground">Bericht wird generiert...</p>
+          <p className="text-muted-foreground">{t("generating")}</p>
         </div>
       )}
 
@@ -475,11 +459,10 @@ export default function EnergyReportDetailPage() {
                 <BarChart3 className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">
-                Bericht noch nicht generiert
+                {t("notGenerated")}
               </h3>
               <p className="text-muted-foreground max-w-sm">
-                Waehlen Sie den gewuenschten Zeitraum und klicken Sie auf
-                &quot;Bericht generieren&quot;, um die Auswertung zu starten.
+                {t("notGeneratedDesc")}
               </p>
             </div>
           </CardContent>
@@ -497,14 +480,14 @@ export default function EnergyReportDetailPage() {
           {hasModule("production") && reportData.production && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Produktion</CardTitle>
+                <CardTitle>{tModules("production")}</CardTitle>
                 <CardDescription>
-                  Produktionsverlauf im ausgewaehlten Zeitraum
+                  {t("section.productionDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {reportData.production.length === 0 ? (
-                  <EmptyModuleState text="Keine Produktionsdaten verfügbar" />
+                  <EmptyModuleState text={t("empty2.production")} />
                 ) : (
                   <ProductionChart
                     data={reportData.production}
@@ -521,14 +504,14 @@ export default function EnergyReportDetailPage() {
           {hasModule("turbineComparison") && reportData.turbineComparison && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Anlagenvergleich</CardTitle>
+                <CardTitle>{tModules("turbineComparison")}</CardTitle>
                 <CardDescription>
-                  Vergleich der einzelnen Windkraftanlagen
+                  {t("section.turbineComparisonDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {reportData.turbineComparison.length === 0 ? (
-                  <EmptyModuleState text="Keine Anlagendaten verfügbar" />
+                  <EmptyModuleState text={t("empty2.turbine")} />
                 ) : (
                   <TurbineComparisonTable
                     data={reportData.turbineComparison}
@@ -542,16 +525,15 @@ export default function EnergyReportDetailPage() {
           {hasModule("powerCurve") && reportData.powerCurve && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Leistungskurve</CardTitle>
+                <CardTitle>{tModules("powerCurve")}</CardTitle>
                 <CardDescription>
-                  Zusammenhang zwischen Windgeschwindigkeit und elektrischer
-                  Leistung
+                  {t("section.powerCurveDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {reportData.powerCurve.scatter.length === 0 &&
                 reportData.powerCurve.curve.length === 0 ? (
-                  <EmptyModuleState text="Keine Leistungskurvendaten verfügbar" />
+                  <EmptyModuleState text={t("empty2.powerCurve")} />
                 ) : (
                   <PowerCurveChart
                     scatter={reportData.powerCurve.scatter}
@@ -566,14 +548,14 @@ export default function EnergyReportDetailPage() {
           {hasModule("windRose") && reportData.windRose && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Windrose</CardTitle>
+                <CardTitle>{tModules("windRose")}</CardTitle>
                 <CardDescription>
-                  Windrichtungsverteilung nach Geschwindigkeitsbereichen
+                  {t("section.windRoseDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {!reportData.windRose.data || reportData.windRose.data.length === 0 ? (
-                  <EmptyModuleState text="Keine Windrosendaten verfügbar" />
+                  <EmptyModuleState text={t("empty2.windRose")} />
                 ) : (
                   <WindRoseChart
                     data={reportData.windRose.data}
@@ -588,14 +570,14 @@ export default function EnergyReportDetailPage() {
           {hasModule("dailyProfile") && reportData.dailyProfile && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Tagesverlauf</CardTitle>
+                <CardTitle>{tModules("dailyProfile")}</CardTitle>
                 <CardDescription>
-                  Leistung und Windgeschwindigkeit im Tagesverlauf
+                  {t("section.dailyProfileDesc")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {reportData.dailyProfile.length === 0 ? (
-                  <EmptyModuleState text="Keine Tagesverlaufsdaten verfügbar" />
+                  <EmptyModuleState text={t("empty2.daily")} />
                 ) : (
                   <DailyChart
                     data={reportData.dailyProfile}
@@ -614,8 +596,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("performanceKpis") && reportData.performanceKpis && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Performance-KPIs</CardTitle>
-                <CardDescription>Flottenweite Performance-Kennzahlen</CardDescription>
+                <CardTitle>{tModules("performanceKpis")}</CardTitle>
+                <CardDescription>{t("section.performanceKpisDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsFleetKpis data={reportData.performanceKpis} />
@@ -627,8 +609,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("turbineRanking") && reportData.turbineRanking && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Turbinen-Ranking</CardTitle>
-                <CardDescription>Anlagen sortiert nach Capacity Factor</CardDescription>
+                <CardTitle>{tModules("turbineRanking")}</CardTitle>
+                <CardDescription>{t("section.turbineRankingDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsTurbineRanking data={reportData.turbineRanking} />
@@ -640,8 +622,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("productionHeatmap") && reportData.productionHeatmap && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Produktions-Heatmap</CardTitle>
-                <CardDescription>Monatliche Produktion pro Anlage (kWh)</CardDescription>
+                <CardTitle>{tModules("productionHeatmap")}</CardTitle>
+                <CardDescription>{t("section.productionHeatmapDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsHeatmapTable data={reportData.productionHeatmap} unit="kWh" />
@@ -653,8 +635,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("yearOverYear") && reportData.yearOverYear && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Jahresvergleich</CardTitle>
-                <CardDescription>Monatliche Produktion: aktuelles vs. Vorjahr</CardDescription>
+                <CardTitle>{tModules("yearOverYear")}</CardTitle>
+                <CardDescription>{t("section.yearOverYearDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsYoyTable data={reportData.yearOverYear} />
@@ -666,8 +648,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("availabilityBreakdown") && reportData.availabilityBreakdown && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Verfügbarkeit T1-T6</CardTitle>
-                <CardDescription>IEC 61400-26 Verfügbarkeitsklassen pro Anlage</CardDescription>
+                <CardTitle>{tModules("availabilityBreakdown")}</CardTitle>
+                <CardDescription>{t("section.availabilityBreakdownDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsAvailTable data={reportData.availabilityBreakdown} />
@@ -679,8 +661,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("availabilityTrend") && reportData.availabilityTrend && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Verfügbarkeits-Trend</CardTitle>
-                <CardDescription>Monatliche technische Verfügbarkeit</CardDescription>
+                <CardTitle>{tModules("availabilityTrend")}</CardTitle>
+                <CardDescription>{t("section.availabilityTrendDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsTrendTable data={reportData.availabilityTrend} unit="%" />
@@ -692,8 +674,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("availabilityHeatmap") && reportData.availabilityHeatmap && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Verfügbarkeits-Heatmap</CardTitle>
-                <CardDescription>Monatliche Verfügbarkeit pro Anlage (%)</CardDescription>
+                <CardTitle>{tModules("availabilityHeatmap")}</CardTitle>
+                <CardDescription>{t("section.availabilityHeatmapDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsHeatmapTable data={reportData.availabilityHeatmap} unit="%" />
@@ -705,8 +687,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("downtimePareto") && reportData.downtimePareto && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Ausfallzeiten-Pareto</CardTitle>
-                <CardDescription>Ausfallkategorien nach Dauer sortiert</CardDescription>
+                <CardTitle>{tModules("downtimePareto")}</CardTitle>
+                <CardDescription>{t("section.downtimeParetoDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsParetoTable data={reportData.downtimePareto} durationKey="totalSeconds" />
@@ -718,8 +700,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("faultPareto") && reportData.faultPareto && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Störungen-Pareto</CardTitle>
-                <CardDescription>Top-Zustandscodes nach Gesamtdauer</CardDescription>
+                <CardTitle>{tModules("faultPareto")}</CardTitle>
+                <CardDescription>{t("section.faultParetoDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsParetoTable data={reportData.faultPareto} durationKey="totalDurationSeconds" />
@@ -731,8 +713,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("warningTrend") && reportData.warningTrend && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Warnungs-Trend</CardTitle>
-                <CardDescription>Monatliche Warnungshaeufigkeit und -dauer</CardDescription>
+                <CardTitle>{tModules("warningTrend")}</CardTitle>
+                <CardDescription>{t("section.warningTrendDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsWarningTable data={reportData.warningTrend} />
@@ -744,8 +726,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("windDistribution") && reportData.windDistribution && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Windverteilung</CardTitle>
-                <CardDescription>Haeufigkeitsverteilung der Windgeschwindigkeit</CardDescription>
+                <CardTitle>{tModules("windDistribution")}</CardTitle>
+                <CardDescription>{t("section.windDistributionDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsWindDistTable data={reportData.windDistribution} />
@@ -757,8 +739,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("environmentalData") && reportData.environmentalData && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Umweltdaten</CardTitle>
-                <CardDescription>Saisonale Muster und Umweltkennwerte</CardDescription>
+                <CardTitle>{tModules("environmentalData")}</CardTitle>
+                <CardDescription>{t("section.environmentalDataDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsEnvironmentTable data={reportData.environmentalData} />
@@ -770,8 +752,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("financialOverview") && reportData.financialOverview && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Finanz-Übersicht</CardTitle>
-                <CardDescription>Erlöse und Finanz-Kennzahlen</CardDescription>
+                <CardTitle>{tModules("financialOverview")}</CardTitle>
+                <CardDescription>{t("section.financialOverviewDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsFinancialTable data={reportData.financialOverview} />
@@ -783,8 +765,8 @@ export default function EnergyReportDetailPage() {
           {hasModule("revenueComparison") && reportData.revenueComparison && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Erlösvergleich</CardTitle>
-                <CardDescription>Geschaetzter Erlösverlust durch Ausfallzeiten</CardDescription>
+                <CardTitle>{tModules("revenueComparison")}</CardTitle>
+                <CardDescription>{t("section.revenueComparisonDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <AnalyticsLostRevenue data={reportData.revenueComparison} />
@@ -796,14 +778,14 @@ export default function EnergyReportDetailPage() {
           {hasModule("powerCurveOverlay") && reportData.powerCurveOverlay && (
             <Card className="print:break-inside-avoid">
               <CardHeader>
-                <CardTitle>Leistungskurven-Overlay</CardTitle>
-                <CardDescription>Leistungskurven aller Anlagen (Datenpunkte je 0,5 m/s)</CardDescription>
+                <CardTitle>{tModules("powerCurveOverlay")}</CardTitle>
+                <CardDescription>{t("section.powerCurveOverlayDesc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
                   {Array.isArray(reportData.powerCurveOverlay)
-                    ? `${reportData.powerCurveOverlay.length} Anlagen mit Leistungskurvendaten`
-                    : "Keine Daten"}
+                    ? t("section.turbinesWithCurves", { count: reportData.powerCurveOverlay.length })
+                    : t("section.noData")}
                 </p>
               </CardContent>
             </Card>
@@ -827,40 +809,41 @@ function EmptyModuleState({ text }: { text: string }) {
 }
 
 function KpiSummarySection({ data }: { data: KpiSummary }) {
+  const tKpi = useTranslations("portal.energyReports.kpi");
   const kpis = [
     {
-      label: "Gesamtproduktion",
+      label: tKpi("totalProduction"),
       value: formatNumber(data.totalProductionKwh, 0),
       unit: "kWh",
       icon: Zap,
     },
     {
-      label: "Durchschnittsleistung",
+      label: tKpi("avgPower"),
       value: formatNumber(data.avgPowerKw, 1),
       unit: "kW",
       icon: Gauge,
     },
     {
-      label: "Windgeschwindigkeit",
+      label: tKpi("windSpeed"),
       value:
         data.avgWindSpeed != null ? formatNumber(data.avgWindSpeed, 1) : "-",
       unit: "m/s",
       icon: Wind,
     },
     {
-      label: "Max. Leistung",
+      label: tKpi("maxPower"),
       value: formatNumber(data.maxPowerKw, 1),
       unit: "kW",
       icon: Activity,
     },
     {
-      label: "Betriebsstunden",
+      label: tKpi("operatingHours"),
       value: formatInteger(data.operatingHours),
       unit: "h",
       icon: Clock,
     },
     {
-      label: "Datenvollstaendigkeit",
+      label: tKpi("dataCompleteness"),
       value: formatNumber(data.dataCompleteness, 1),
       unit: "%",
       icon: Database,
@@ -894,16 +877,17 @@ function KpiSummarySection({ data }: { data: KpiSummary }) {
 }
 
 function TurbineComparisonTable({ data }: { data: TurbineRow[] }) {
+  const tCols = useTranslations("portal.energyReports.cols");
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Anlage</TableHead>
-            <TableHead className="text-right">Produktion (kWh)</TableHead>
-            <TableHead className="text-right">Leistung (kW)</TableHead>
-            <TableHead className="text-right">Wind (m/s)</TableHead>
-            <TableHead className="text-right">Datenpunkte</TableHead>
+            <TableHead>{tCols("turbine")}</TableHead>
+            <TableHead className="text-right">{tCols("productionKwh")}</TableHead>
+            <TableHead className="text-right">{tCols("powerKw")}</TableHead>
+            <TableHead className="text-right">{tCols("windMs")}</TableHead>
+            <TableHead className="text-right">{tCols("dataPoints")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -941,15 +925,17 @@ function TurbineComparisonTable({ data }: { data: TurbineRow[] }) {
 const MONTH_LABELS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 function AnalyticsFleetKpis({ data }: { data: PerformanceKpisData }) {
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tKpi = useTranslations("portal.energyReports.kpi");
   const fleet = data?.fleet;
-  if (!fleet) return <EmptyModuleState text="Keine Flottendaten" />;
+  if (!fleet) return <EmptyModuleState text={tEmpty("fleet")} />;
 
   const kpis = [
-    { label: "Gesamtproduktion", value: `${formatNumber(fleet.totalProductionKwh / 1000, 1)} MWh` },
-    { label: "Capacity Factor", value: `${formatNumber(fleet.avgCapacityFactor, 2)} %` },
-    { label: "Specific Yield", value: `${formatInteger(fleet.avgSpecificYield)} kWh/kW` },
-    { label: "Installierte Leistung", value: `${formatInteger(fleet.totalInstalledKw)} kW` },
-    { label: "Mittlere Windgeschwindigkeit", value: fleet.avgWindSpeed != null ? `${formatNumber(fleet.avgWindSpeed, 1)} m/s` : "-" },
+    { label: tKpi("totalProduction"), value: `${formatNumber(fleet.totalProductionKwh / 1000, 1)} MWh` },
+    { label: tKpi("capacityFactor"), value: `${formatNumber(fleet.avgCapacityFactor, 2)} %` },
+    { label: tKpi("specificYield"), value: `${formatInteger(fleet.avgSpecificYield)} kWh/kW` },
+    { label: tKpi("installedPower"), value: `${formatInteger(fleet.totalInstalledKw)} kW` },
+    { label: tKpi("avgWindSpeed"), value: fleet.avgWindSpeed != null ? `${formatNumber(fleet.avgWindSpeed, 1)} m/s` : "-" },
   ];
 
   return (
@@ -965,7 +951,9 @@ function AnalyticsFleetKpis({ data }: { data: PerformanceKpisData }) {
 }
 
 function AnalyticsTurbineRanking({ data }: { data: TurbinePerformanceKpi[] }) {
-  if (!data || data.length === 0) return <EmptyModuleState text="Keine Ranking-Daten" />;
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tCols = useTranslations("portal.energyReports.cols");
+  if (!data || data.length === 0) return <EmptyModuleState text={tEmpty("ranking")} />;
 
   return (
     <div className="rounded-md border">
@@ -973,10 +961,10 @@ function AnalyticsTurbineRanking({ data }: { data: TurbinePerformanceKpi[] }) {
         <TableHeader>
           <TableRow>
             <TableHead>#</TableHead>
-            <TableHead>Anlage</TableHead>
-            <TableHead className="text-right">Produktion (MWh)</TableHead>
-            <TableHead className="text-right">CF (%)</TableHead>
-            <TableHead className="text-right">kWh/kW</TableHead>
+            <TableHead>{tCols("turbine")}</TableHead>
+            <TableHead className="text-right">{tCols("productionMwh")}</TableHead>
+            <TableHead className="text-right">{tCols("cf")}</TableHead>
+            <TableHead className="text-right">{tCols("kwhKw")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -998,14 +986,16 @@ function AnalyticsTurbineRanking({ data }: { data: TurbinePerformanceKpi[] }) {
 }
 
 function AnalyticsHeatmapTable({ data, unit }: { data: HeatmapData[]; unit: string }) {
-  if (!data || data.length === 0) return <EmptyModuleState text="Keine Heatmap-Daten" />;
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tCols = useTranslations("portal.energyReports.cols");
+  if (!data || data.length === 0) return <EmptyModuleState text={tEmpty("heatmap")} />;
 
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Anlage</TableHead>
+            <TableHead>{tCols("turbine")}</TableHead>
             {MONTH_LABELS.map((m) => (
               <TableHead key={m} className="text-right text-xs">{m}</TableHead>
             ))}
@@ -1032,17 +1022,19 @@ function AnalyticsHeatmapTable({ data, unit }: { data: HeatmapData[]; unit: stri
 }
 
 function AnalyticsYoyTable({ data }: { data: YearOverYearData[] }) {
-  if (!data || data.length === 0) return <EmptyModuleState text="Keine Jahresvergleichsdaten" />;
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tCols = useTranslations("portal.energyReports.cols");
+  if (!data || data.length === 0) return <EmptyModuleState text={tEmpty("yoy")} />;
 
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Monat</TableHead>
-            <TableHead className="text-right">Aktuelles Jahr (kWh)</TableHead>
-            <TableHead className="text-right">Vorjahr (kWh)</TableHead>
-            <TableHead className="text-right">Differenz</TableHead>
+            <TableHead>{tCols("month")}</TableHead>
+            <TableHead className="text-right">{tCols("currentYearKwh")}</TableHead>
+            <TableHead className="text-right">{tCols("previousYearKwh")}</TableHead>
+            <TableHead className="text-right">{tCols("diff")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -1067,9 +1059,11 @@ function AnalyticsYoyTable({ data }: { data: YearOverYearData[] }) {
 }
 
 function AnalyticsAvailTable({ data }: { data: AvailabilityBreakdown[] }) {
-  if (!data || data.length === 0) return <EmptyModuleState text="Keine Verfügbarkeitsdaten" />;
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tCols = useTranslations("portal.energyReports.cols");
+  const tT = useTranslations("portal.energyReports.cols.tLabels");
+  if (!data || data.length === 0) return <EmptyModuleState text={tEmpty("availability")} />;
 
-  const tLabels: Record<string, string> = { t1: "Prod.", t2: "Still.", t3: "Umw.", t4: "Wart.", t5: "Stoer.", t6: "Sonst." };
   const tKeys = ["t1", "t2", "t3", "t4", "t5", "t6"] as const;
 
   return (
@@ -1077,11 +1071,11 @@ function AnalyticsAvailTable({ data }: { data: AvailabilityBreakdown[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Anlage</TableHead>
-            {Object.entries(tLabels).map(([k, v]) => (
-              <TableHead key={k} className="text-right text-xs">{v}</TableHead>
+            <TableHead>{tCols("turbine")}</TableHead>
+            {tKeys.map((k) => (
+              <TableHead key={k} className="text-right text-xs">{tT(k)}</TableHead>
             ))}
-            <TableHead className="text-right">Verf. %</TableHead>
+            <TableHead className="text-right">{tCols("availPct")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -1105,15 +1099,17 @@ function AnalyticsAvailTable({ data }: { data: AvailabilityBreakdown[] }) {
 }
 
 function AnalyticsTrendTable({ data, unit }: { data: AvailabilityTrendPoint[]; unit: string }) {
-  if (!data || data.length === 0) return <EmptyModuleState text="Keine Trenddaten" />;
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tCols = useTranslations("portal.energyReports.cols");
+  if (!data || data.length === 0) return <EmptyModuleState text={tEmpty("trend")} />;
 
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Monat</TableHead>
-            <TableHead className="text-right">Wert ({unit})</TableHead>
+            <TableHead>{tCols("month")}</TableHead>
+            <TableHead className="text-right">{tCols("value", { unit })}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -1138,17 +1134,19 @@ function getParetoSeconds(row: ParetoItem | FaultParetoItem, durationKey: "total
 }
 
 function AnalyticsParetoTable({ data, durationKey }: { data: ParetoTableRow[]; durationKey: "totalSeconds" | "totalDurationSeconds" }) {
-  if (!data || data.length === 0) return <EmptyModuleState text="Keine Pareto-Daten" />;
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tCols = useTranslations("portal.energyReports.cols");
+  if (!data || data.length === 0) return <EmptyModuleState text={tEmpty("pareto")} />;
 
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Kategorie</TableHead>
-            <TableHead className="text-right">Dauer (h)</TableHead>
-            <TableHead className="text-right">Anteil (%)</TableHead>
-            <TableHead className="text-right">Kumulativ (%)</TableHead>
+            <TableHead>{tCols("category")}</TableHead>
+            <TableHead className="text-right">{tCols("durationH")}</TableHead>
+            <TableHead className="text-right">{tCols("shareP")}</TableHead>
+            <TableHead className="text-right">{tCols("cumulativeP")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -1167,16 +1165,18 @@ function AnalyticsParetoTable({ data, durationKey }: { data: ParetoTableRow[]; d
 }
 
 function AnalyticsWarningTable({ data }: { data: WarningTrendPoint[] }) {
-  if (!data || data.length === 0) return <EmptyModuleState text="Keine Warnungsdaten" />;
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tCols = useTranslations("portal.energyReports.cols");
+  if (!data || data.length === 0) return <EmptyModuleState text={tEmpty("warning")} />;
 
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Monat</TableHead>
-            <TableHead className="text-right">Haeufigkeit</TableHead>
-            <TableHead className="text-right">Dauer (h)</TableHead>
+            <TableHead>{tCols("month")}</TableHead>
+            <TableHead className="text-right">{tCols("frequency")}</TableHead>
+            <TableHead className="text-right">{tCols("durationH")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -1194,16 +1194,18 @@ function AnalyticsWarningTable({ data }: { data: WarningTrendPoint[] }) {
 }
 
 function AnalyticsWindDistTable({ data }: { data: WindDistributionBin[] }) {
-  if (!data || data.length === 0) return <EmptyModuleState text="Keine Windverteilungsdaten" />;
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tCols = useTranslations("portal.energyReports.cols");
+  if (!data || data.length === 0) return <EmptyModuleState text={tEmpty("windDist")} />;
 
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Wind (m/s)</TableHead>
-            <TableHead className="text-right">Anzahl</TableHead>
-            <TableHead className="text-right">Anteil (%)</TableHead>
+            <TableHead>{tCols("windBin")}</TableHead>
+            <TableHead className="text-right">{tCols("count")}</TableHead>
+            <TableHead className="text-right">{tCols("shareP")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -1221,19 +1223,21 @@ function AnalyticsWindDistTable({ data }: { data: WindDistributionBin[] }) {
 }
 
 function AnalyticsEnvironmentTable({ data }: { data: EnvironmentalData }) {
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tCols = useTranslations("portal.energyReports.cols");
   const seasonal = data?.seasonalPatterns;
-  if (!seasonal || seasonal.length === 0) return <EmptyModuleState text="Keine Umweltdaten" />;
+  if (!seasonal || seasonal.length === 0) return <EmptyModuleState text={tEmpty("environment")} />;
 
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Monat</TableHead>
-            <TableHead className="text-right">Wind (m/s)</TableHead>
-            <TableHead className="text-right">Leistung (kW)</TableHead>
-            <TableHead className="text-right">Druck (hPa)</TableHead>
-            <TableHead className="text-right">Feuchte (%)</TableHead>
+            <TableHead>{tCols("month")}</TableHead>
+            <TableHead className="text-right">{tCols("windMs")}</TableHead>
+            <TableHead className="text-right">{tCols("powerKwUnit")}</TableHead>
+            <TableHead className="text-right">{tCols("pressureHpa")}</TableHead>
+            <TableHead className="text-right">{tCols("humidityP")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -1253,6 +1257,7 @@ function AnalyticsEnvironmentTable({ data }: { data: EnvironmentalData }) {
 }
 
 function AnalyticsFinancialTable({ data }: { data: FinancialOverviewData }) {
+  const tCols = useTranslations("portal.energyReports.cols");
   const monthly = data?.monthly;
   const summary = data?.summary;
 
@@ -1261,15 +1266,15 @@ function AnalyticsFinancialTable({ data }: { data: FinancialOverviewData }) {
       {summary && (
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Gesamterlöse</p>
+            <p className="text-xs text-muted-foreground">{tCols("totalRevenue")}</p>
             <p className="text-lg font-bold">{formatNumber(summary.totalRevenueEur || 0, 2)} EUR</p>
           </div>
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Gesamtproduktion</p>
+            <p className="text-xs text-muted-foreground">{tCols("totalProductionAlt")}</p>
             <p className="text-lg font-bold">{formatNumber((summary.totalProductionKwh || 0) / 1000, 1)} MWh</p>
           </div>
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">EUR/kWh</p>
+            <p className="text-xs text-muted-foreground">{tCols("eurKwh")}</p>
             <p className="text-lg font-bold">{summary.avgRevenuePerKwh != null ? formatNumber(summary.avgRevenuePerKwh, 4) : "-"}</p>
           </div>
         </div>
@@ -1279,10 +1284,10 @@ function AnalyticsFinancialTable({ data }: { data: FinancialOverviewData }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Monat</TableHead>
-                <TableHead className="text-right">Erlöse (EUR)</TableHead>
-                <TableHead className="text-right">Produktion (kWh)</TableHead>
-                <TableHead className="text-right">EUR/kWh</TableHead>
+                <TableHead>{tCols("month")}</TableHead>
+                <TableHead className="text-right">{tCols("revenueEur")}</TableHead>
+                <TableHead className="text-right">{tCols("productionKwh")}</TableHead>
+                <TableHead className="text-right">{tCols("eurKwh")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1303,20 +1308,22 @@ function AnalyticsFinancialTable({ data }: { data: FinancialOverviewData }) {
 }
 
 function AnalyticsLostRevenue({ data }: { data: LostRevenueData }) {
-  if (!data) return <EmptyModuleState text="Keine Erlösverlustdaten" />;
+  const tEmpty = useTranslations("portal.energyReports.empty2");
+  const tCols = useTranslations("portal.energyReports.cols");
+  if (!data) return <EmptyModuleState text={tEmpty("lostRevenue")} />;
 
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       <div className="rounded-lg border p-3">
-        <p className="text-xs text-muted-foreground">Geschaetzter Produktionsverlust</p>
+        <p className="text-xs text-muted-foreground">{tCols("estimatedLoss")}</p>
         <p className="text-lg font-bold">{formatNumber((data.totalLostKwh || 0) / 1000, 1)} MWh</p>
       </div>
       <div className="rounded-lg border p-3">
-        <p className="text-xs text-muted-foreground">Geschaetzter Erlösverlust</p>
+        <p className="text-xs text-muted-foreground">{tCols("estimatedRevLoss")}</p>
         <p className="text-lg font-bold text-red-600">{formatNumber(data.estimatedLostEur || 0, 2)} EUR</p>
       </div>
       <div className="rounded-lg border p-3">
-        <p className="text-xs text-muted-foreground">Durchschnittlicher EUR/kWh</p>
+        <p className="text-xs text-muted-foreground">{tCols("avgEurKwh")}</p>
         <p className="text-lg font-bold">{data.avgRevenuePerKwh != null ? formatNumber(data.avgRevenuePerKwh, 4) : "-"}</p>
       </div>
     </div>

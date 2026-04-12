@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -64,18 +65,13 @@ interface IncomingInvoice {
 // Helpers
 // ============================================================================
 
-const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  INBOX: { label: "Posteingang", variant: "secondary" },
-  OCR_PROCESSING: { label: "OCR läuft", variant: "secondary" },
-  REVIEW: { label: "In Prüfung", variant: "outline" },
-  APPROVED: { label: "Genehmigt", variant: "default" },
-  PAID: { label: "Bezahlt", variant: "default" },
-  CANCELLED: { label: "Storniert", variant: "destructive" },
-};
-
-const TYPE_LABEL: Record<string, string> = {
-  INVOICE: "Rechnung",
-  CREDIT_NOTE: "Gutschrift",
+const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  INBOX: "secondary",
+  OCR_PROCESSING: "secondary",
+  REVIEW: "outline",
+  APPROVED: "default",
+  PAID: "default",
+  CANCELLED: "destructive",
 };
 
 // ============================================================================
@@ -83,6 +79,7 @@ const TYPE_LABEL: Record<string, string> = {
 // ============================================================================
 
 function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: () => void; onUploaded: () => void }) {
+  const t = useTranslations("inbox.uploadDialog");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -108,9 +105,9 @@ function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: (
       const res = await fetch("/api/inbox", { method: "POST", body: fd });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Fehler beim Hochladen");
+        throw new Error(err.error ?? t("uploadFailed"));
       }
-      toast.success(`"${file.name}" hochgeladen — OCR gestartet`);
+      toast.success(t("success", { name: file.name }));
       setFile(null);
       onUploaded();
       onClose();
@@ -125,7 +122,7 @@ function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Rechnung / Gutschrift hochladen</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
 
         <div
@@ -139,9 +136,9 @@ function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: (
         >
           <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            PDF oder Bild hierher ziehen oder klicken zum Auswählen
+            {t("dropText")}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">PDF, JPEG, PNG, TIFF — max. 50 MB</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("formats")}</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -163,10 +160,10 @@ function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: (
 
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={onClose} disabled={uploading}>
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button onClick={upload} disabled={!file || uploading}>
-            {uploading ? "Lädt hoch..." : "Hochladen"}
+            {uploading ? t("uploading") : t("upload")}
           </Button>
         </div>
       </DialogContent>
@@ -179,6 +176,7 @@ function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: (
 // ============================================================================
 
 export default function InboxPage() {
+  const t = useTranslations("inbox");
   const router = useRouter();
   const { flags, loading: flagsLoading } = useFeatureFlags();
   const [invoices, setInvoices] = useState<IncomingInvoice[]>([]);
@@ -199,11 +197,11 @@ export default function InboxPage() {
         setInvoices(data.data ?? []);
       }
     } catch {
-      toast.error("Fehler beim Laden");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, typeFilter]);
+  }, [statusFilter, typeFilter, t]);
 
   useEffect(() => {
     if (!flagsLoading && flags.inbox) load();
@@ -215,8 +213,8 @@ export default function InboxPage() {
     return (
       <div className="p-8 text-center">
         <Inbox className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <h2 className="text-xl font-semibold mb-2">Inbox nicht aktiviert</h2>
-        <p className="text-muted-foreground">Das Eingangsrechnungs-Modul ist für diesen Mandanten nicht aktiviert.</p>
+        <h2 className="text-xl font-semibold mb-2">{t("notEnabled")}</h2>
+        <p className="text-muted-foreground">{t("notEnabledDesc")}</p>
       </div>
     );
   }
@@ -229,12 +227,12 @@ export default function InboxPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Eingangsrechnungen"
-        description="Rechnungen und Gutschriften verwalten"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button onClick={() => setUploadOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
-            Hochladen
+            {t("upload")}
           </Button>
         }
       />
@@ -244,17 +242,17 @@ export default function InboxPage() {
         <div className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm">
           <AlertCircle className="h-4 w-4 text-orange-500" />
           <span className="font-medium">{open}</span>
-          <span className="text-muted-foreground">Offen</span>
+          <span className="text-muted-foreground">{t("kpi.open")}</span>
         </div>
         <div className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm">
           <Eye className="h-4 w-4 text-blue-500" />
           <span className="font-medium">{approved}</span>
-          <span className="text-muted-foreground">Genehmigt</span>
+          <span className="text-muted-foreground">{t("kpi.approved")}</span>
         </div>
         <div className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm">
           <CheckCircle2 className="h-4 w-4 text-green-500" />
           <span className="font-medium">{paid}</span>
-          <span className="text-muted-foreground">Bezahlt</span>
+          <span className="text-muted-foreground">{t("kpi.paid")}</span>
         </div>
       </div>
 
@@ -262,26 +260,26 @@ export default function InboxPage() {
       <div className="flex gap-2 flex-wrap">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("filter.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Status</SelectItem>
-            <SelectItem value="INBOX">Posteingang</SelectItem>
-            <SelectItem value="REVIEW">In Prüfung</SelectItem>
-            <SelectItem value="APPROVED">Genehmigt</SelectItem>
-            <SelectItem value="PAID">Bezahlt</SelectItem>
-            <SelectItem value="CANCELLED">Storniert</SelectItem>
+            <SelectItem value="all">{t("filter.allStatus")}</SelectItem>
+            <SelectItem value="INBOX">{t("status.INBOX")}</SelectItem>
+            <SelectItem value="REVIEW">{t("status.REVIEW")}</SelectItem>
+            <SelectItem value="APPROVED">{t("status.APPROVED")}</SelectItem>
+            <SelectItem value="PAID">{t("status.PAID")}</SelectItem>
+            <SelectItem value="CANCELLED">{t("status.CANCELLED")}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-36">
-            <SelectValue placeholder="Typ" />
+            <SelectValue placeholder={t("filter.type")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Typen</SelectItem>
-            <SelectItem value="INVOICE">Rechnung</SelectItem>
-            <SelectItem value="CREDIT_NOTE">Gutschrift</SelectItem>
+            <SelectItem value="all">{t("filter.allTypes")}</SelectItem>
+            <SelectItem value="INVOICE">{t("type.INVOICE")}</SelectItem>
+            <SelectItem value="CREDIT_NOTE">{t("type.CREDIT_NOTE")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -302,28 +300,32 @@ export default function InboxPage() {
           ) : invoices.length === 0 ? (
             <div className="py-12 text-center">
               <Inbox className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-              <p className="text-muted-foreground">Keine Eingangsrechnungen gefunden</p>
+              <p className="text-muted-foreground">{t("empty")}</p>
               <Button variant="outline" className="mt-4" onClick={() => setUploadOpen(true)}>
                 <Upload className="h-4 w-4 mr-2" />
-                Erste Rechnung hochladen
+                {t("uploadFirst")}
               </Button>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Lieferant</TableHead>
-                  <TableHead>Typ</TableHead>
-                  <TableHead>Re-Nr.</TableHead>
-                  <TableHead>Datum</TableHead>
-                  <TableHead>Fällig</TableHead>
-                  <TableHead className="text-right">Brutto</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("table.vendor")}</TableHead>
+                  <TableHead>{t("table.type")}</TableHead>
+                  <TableHead>{t("table.invoiceNumber")}</TableHead>
+                  <TableHead>{t("table.date")}</TableHead>
+                  <TableHead>{t("table.due")}</TableHead>
+                  <TableHead className="text-right">{t("table.gross")}</TableHead>
+                  <TableHead>{t("table.status")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {invoices.map((inv) => {
-                  const badgeInfo = STATUS_BADGE[inv.status] ?? { label: inv.status, variant: "secondary" as const };
+                  const variant = STATUS_VARIANT[inv.status] ?? "secondary";
+                  const statusLabel = (() => {
+                    try { return t(`status.${inv.status}` as "status.INBOX"); }
+                    catch { return inv.status; }
+                  })();
                   return (
                     <TableRow
                       key={inv.id}
@@ -332,12 +334,12 @@ export default function InboxPage() {
                     >
                       <TableCell className="font-medium">
                         {inv.vendor?.name ?? inv.vendorNameFallback ?? (
-                          <span className="text-muted-foreground italic">Kein Lieferant</span>
+                          <span className="text-muted-foreground italic">{t("table.noVendor")}</span>
                         )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">
-                          {TYPE_LABEL[inv.invoiceType] ?? inv.invoiceType}
+                          {inv.invoiceType === "INVOICE" ? t("type.INVOICE") : inv.invoiceType === "CREDIT_NOTE" ? t("type.CREDIT_NOTE") : inv.invoiceType}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
@@ -362,7 +364,7 @@ export default function InboxPage() {
                           : "—"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>
+                        <Badge variant={variant}>{statusLabel}</Badge>
                       </TableCell>
                     </TableRow>
                   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { formatDateTime } from "@/lib/format";
 import {
   Bell,
@@ -41,6 +42,7 @@ import {
 import { toast } from "sonner";
 
 export default function SettingsPage() {
+  const t = useTranslations("portal.settings");
   // Notification settings (placeholder state - not persisted)
   const [notifications, setNotifications] = useState({
     newVote: true,
@@ -54,7 +56,7 @@ export default function SettingsPage() {
     setExporting(true);
     try {
       const res = await fetch("/api/portal/my-data/export");
-      if (!res.ok) throw new Error("Export fehlgeschlagen");
+      if (!res.ok) throw new Error(t("privacy.exportFailed"));
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -62,9 +64,9 @@ export default function SettingsPage() {
       a.download = `datenauskunft-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Datenexport heruntergeladen");
+      toast.success(t("privacy.exportSuccess"));
     } catch {
-      toast.error("Datenexport fehlgeschlagen");
+      toast.error(t("privacy.exportFailed"));
     } finally {
       setExporting(false);
     }
@@ -80,14 +82,14 @@ export default function SettingsPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Loeschung fehlgeschlagen");
+        throw new Error(data.error || t("privacy.deleteFailed"));
       }
-      toast.success("Konto wurde geloescht. Sie werden abgemeldet.");
+      toast.success(t("privacy.deleteSuccess"));
       setTimeout(() => {
         window.location.href = "/";
       }, 2000);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Loeschung fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("privacy.deleteFailed"));
     } finally {
       setDeleting(false);
     }
@@ -103,9 +105,9 @@ export default function SettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Einstellungen</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground">
-          Verwalten Sie Ihre Benachrichtigungen und Kontoeinstellungen
+          {t("description")}
         </p>
       </div>
 
@@ -114,10 +116,10 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Benachrichtigungen
+            {t("notifications.title")}
           </CardTitle>
           <CardDescription>
-            Legen Sie fest, worüber Sie per E-Mail informiert werden möchten
+            {t("notifications.description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -125,8 +127,7 @@ export default function SettingsPage() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              E-Mail-Benachrichtigungen werden in einer zukuenftigen Version aktiviert.
-              Sie können Ihre Praeferenzen bereits jetzt festlegen.
+              {t("notifications.info")}
             </AlertDescription>
           </Alert>
 
@@ -140,10 +141,10 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <Label htmlFor="notify-vote" className="text-base font-medium">
-                    Neue Abstimmung
+                    {t("notifications.newVote")}
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Benachrichtigung bei neuen Gesellschafterbeschluessen
+                    {t("notifications.newVoteDesc")}
                   </p>
                 </div>
               </div>
@@ -165,10 +166,10 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <Label htmlFor="notify-distribution" className="text-base font-medium">
-                    Neue Ausschuettung
+                    {t("notifications.newDistribution")}
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Benachrichtigung bei neuen Gutschriften
+                    {t("notifications.newDistributionDesc")}
                   </p>
                 </div>
               </div>
@@ -190,10 +191,10 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <Label htmlFor="notify-document" className="text-base font-medium">
-                    Neues Dokument
+                    {t("notifications.newDocument")}
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Benachrichtigung bei neuen Dokumenten im Portal
+                    {t("notifications.newDocumentDesc")}
                   </p>
                 </div>
               </div>
@@ -215,35 +216,35 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
-            Anzeige-Einstellungen
+            {t("display.title")}
           </CardTitle>
           <CardDescription>
-            Sprache und Währungseinstellungen für das Portal
+            {t("display.description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2">
             {/* Language */}
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Sprache</Label>
+              <Label className="text-muted-foreground">{t("display.language")}</Label>
               <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
                 <Globe className="h-4 w-4 text-muted-foreground" />
-                <span>Deutsch</span>
+                <span>{t("display.german")}</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Die Sprache des Portals ist aktuell auf Deutsch festgelegt
+                {t("display.languageInfo")}
               </p>
             </div>
 
             {/* Currency */}
             <div className="space-y-2">
-              <Label className="text-muted-foreground">Währung</Label>
+              <Label className="text-muted-foreground">{t("display.currency")}</Label>
               <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
                 <span className="text-muted-foreground">EUR</span>
-                <span>Euro</span>
+                <span>{t("display.euro")}</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Alle Betraege werden in Euro angezeigt
+                {t("display.currencyInfo")}
               </p>
             </div>
           </div>
@@ -255,10 +256,10 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Sicherheit
+            {t("security.title")}
           </CardTitle>
           <CardDescription>
-            Verwalten Sie Ihre Zugangsdaten und Sicherheitseinstellungen
+            {t("security.description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -269,17 +270,17 @@ export default function SettingsPage() {
                 <Lock className="h-5 w-5 text-gray-600" />
               </div>
               <div>
-                <p className="text-base font-medium">Passwort aendern</p>
+                <p className="text-base font-medium">{t("security.changePassword")}</p>
                 <p className="text-sm text-muted-foreground">
-                  Aktualisieren Sie Ihr Anmeldepasswort
+                  {t("security.changePasswordDesc")}
                 </p>
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
               <Button variant="outline" disabled>
-                Passwort aendern
+                {t("security.changePassword")}
               </Button>
-              <span className="text-xs text-muted-foreground">Funktion folgt</span>
+              <span className="text-xs text-muted-foreground">{t("security.comingSoon")}</span>
             </div>
           </div>
 
@@ -290,7 +291,7 @@ export default function SettingsPage() {
                 <Mail className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-base font-medium">Letzte Anmeldung</p>
+                <p className="text-base font-medium">{t("security.lastLogin")}</p>
                 <p className="text-sm text-muted-foreground">
                   {formatDate(lastLogin)}
                 </p>
@@ -305,10 +306,10 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Datenschutz (DSGVO)
+            {t("privacy.title")}
           </CardTitle>
           <CardDescription>
-            Ihre Rechte gemaess der Datenschutz-Grundverordnung
+            {t("privacy.description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -319,9 +320,9 @@ export default function SettingsPage() {
                 <Download className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-base font-medium">Datenauskunft (Art. 15)</p>
+                <p className="text-base font-medium">{t("privacy.dataExport")}</p>
                 <p className="text-sm text-muted-foreground">
-                  Alle ueber Sie gespeicherten Daten als JSON herunterladen
+                  {t("privacy.dataExportDesc")}
                 </p>
               </div>
             </div>
@@ -335,7 +336,7 @@ export default function SettingsPage() {
               ) : (
                 <Download className="h-4 w-4 mr-2" />
               )}
-              Daten exportieren
+              {t("privacy.exportButton")}
             </Button>
           </div>
 
@@ -347,9 +348,9 @@ export default function SettingsPage() {
                   <Trash2 className="h-5 w-5 text-red-600" />
                 </div>
                 <div>
-                  <p className="text-base font-medium">Konto loeschen (Art. 17)</p>
+                  <p className="text-base font-medium">{t("privacy.deleteAccount")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Alle personenbezogenen Daten unwiderruflich anonymisieren
+                    {t("privacy.deleteAccountDesc")}
                   </p>
                 </div>
               </div>
@@ -357,27 +358,23 @@ export default function SettingsPage() {
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" disabled={deleting}>
                     {deleting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    Konto loeschen
+                    {t("privacy.deleteButton")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Konto unwiderruflich loeschen?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("privacy.deleteDialog.title")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Diese Aktion kann nicht rueckgaengig gemacht werden. Alle Ihre
-                      personenbezogenen Daten (Name, Adresse, Bankdaten, E-Mail)
-                      werden anonymisiert. Ihr Zugang wird dauerhaft deaktiviert.
-                      Geschaeftsdaten (Buchungen, Ausschuettungen) bleiben aus
-                      handelsrechtlichen Gruenden anonymisiert erhalten.
+                      {t("privacy.deleteDialog.description")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogCancel>{t("privacy.deleteDialog.cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleAccountDelete}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                      Ja, Konto loeschen
+                      {t("privacy.deleteDialog.confirm")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

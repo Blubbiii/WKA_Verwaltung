@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -60,37 +61,41 @@ interface Profile {
   taxId: string | null;
 }
 
-// Form validation schema
-const profileFormSchema = z.object({
-  email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein"),
-  phone: z.string().optional().nullable(),
-  street: z.string().optional().nullable(),
-  houseNumber: z.string().optional().nullable(),
-  zipCode: z.string().optional().nullable(),
-  city: z.string().optional().nullable(),
-  country: z.string().optional().nullable(),
-  bankName: z.string().optional().nullable(),
-  iban: z
-    .string()
-    .optional()
-    .nullable()
-    .refine(
-      (val) => !val || /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4,30}$/.test(val.replace(/\s/g, "")),
-      "Bitte geben Sie eine gültige IBAN ein"
-    ),
-  bic: z
-    .string()
-    .optional()
-    .nullable()
-    .refine(
-      (val) => !val || /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(val),
-      "Bitte geben Sie einen gültigen BIC ein"
-    ),
-});
+// Form validation schema factory — accepts translator for localized error messages
+function makeProfileSchema(t: (key: string) => string) {
+  return z.object({
+    email: z.string().email(t("invalidEmail")),
+    phone: z.string().optional().nullable(),
+    street: z.string().optional().nullable(),
+    houseNumber: z.string().optional().nullable(),
+    zipCode: z.string().optional().nullable(),
+    city: z.string().optional().nullable(),
+    country: z.string().optional().nullable(),
+    bankName: z.string().optional().nullable(),
+    iban: z
+      .string()
+      .optional()
+      .nullable()
+      .refine(
+        (val) => !val || /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4,30}$/.test(val.replace(/\s/g, "")),
+        t("invalidIban")
+      ),
+    bic: z
+      .string()
+      .optional()
+      .nullable()
+      .refine(
+        (val) => !val || /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(val),
+        t("invalidBic")
+      ),
+  });
+}
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+type ProfileFormValues = z.infer<ReturnType<typeof makeProfileSchema>>;
 
 export default function ProfilePage() {
+  const t = useTranslations("portal.profile");
+  const profileFormSchema = makeProfileSchema(t);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +124,7 @@ export default function ProfilePage() {
       try {
         const response = await fetch("/api/portal/my-profile");
         if (!response.ok) {
-          throw new Error("Profil konnte nicht geladen werden");
+          throw new Error(t("loadError"));
         }
         const data = await response.json();
         setProfile(data);
@@ -137,12 +142,13 @@ export default function ProfilePage() {
           bic: data.bic || "",
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
+        setError(err instanceof Error ? err.message : t("unknownError"));
       } finally {
         setLoading(false);
       }
     }
     fetchProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
 
   async function onSubmit(values: ProfileFormValues) {
@@ -161,7 +167,7 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Speichern fehlgeschlagen");
+        throw new Error(errorData.message || t("saveFailed"));
       }
 
       const updatedProfile = await response.json();
@@ -171,7 +177,7 @@ export default function ProfilePage() {
       // Clear success message after 3 seconds
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
+      setError(err instanceof Error ? err.message : t("saveFailed"));
     } finally {
       setIsSaving(false);
     }
@@ -220,9 +226,9 @@ export default function ProfilePage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Mein Profil</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Verwalten Sie Ihre persoenlichen Daten
+            {t("descriptionShort")}
           </p>
         </div>
         <Alert variant="destructive">
@@ -238,15 +244,15 @@ export default function ProfilePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Mein Profil</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Verwalten Sie Ihre persoenlichen Daten und Bankverbindung
+            {t("description")}
           </p>
         </div>
         {!isEditing && (
           <Button onClick={() => setIsEditing(true)}>
             <Pencil className="mr-2 h-4 w-4" />
-            Bearbeiten
+            {t("edit")}
           </Button>
         )}
       </div>
@@ -255,7 +261,7 @@ export default function ProfilePage() {
       {saveSuccess && (
         <Alert className="border-green-200 bg-green-50 text-green-800">
           <AlertDescription>
-            Ihre Änderungen wurden erfolgreich gespeichert.
+            {t("saveSuccess")}
           </AlertDescription>
         </Alert>
       )}
@@ -276,17 +282,17 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  Persoenliche Daten
+                  {t("personal.title")}
                 </CardTitle>
                 <CardDescription>
-                  Ihre Kontaktdaten und Anschrift
+                  {t("personal.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Name (Read-Only) */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">
-                    Name
+                    {t("personal.name")}
                   </label>
                   <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
                     <User className="h-4 w-4 text-muted-foreground" />
@@ -295,7 +301,7 @@ export default function ProfilePage() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Nur durch Administrator aenderbar
+                    {t("personal.adminOnly")}
                   </p>
                 </div>
 
@@ -306,7 +312,7 @@ export default function ProfilePage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>E-Mail</FormLabel>
+                        <FormLabel>{t("personal.email")}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -320,7 +326,7 @@ export default function ProfilePage() {
                 ) : (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">
-                      E-Mail
+                      {t("personal.email")}
                     </label>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
@@ -336,13 +342,13 @@ export default function ProfilePage() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Telefon</FormLabel>
+                        <FormLabel>{t("personal.phone")}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                               className="pl-10"
-                              placeholder="+49 123 456789"
+                              placeholder={t("personal.phonePlaceholder")}
                               {...field}
                               value={field.value || ""}
                             />
@@ -355,7 +361,7 @@ export default function ProfilePage() {
                 ) : (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">
-                      Telefon
+                      {t("personal.phone")}
                     </label>
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground" />
@@ -371,9 +377,9 @@ export default function ProfilePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  Adresse
+                  {t("address.title")}
                 </CardTitle>
-                <CardDescription>Ihre Postanschrift</CardDescription>
+                <CardDescription>{t("address.description")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {isEditing ? (
@@ -384,10 +390,10 @@ export default function ProfilePage() {
                         name="street"
                         render={({ field }) => (
                           <FormItem className="col-span-2">
-                            <FormLabel>Strasse</FormLabel>
+                            <FormLabel>{t("address.street")}</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Musterstrasse"
+                                placeholder={t("address.streetPlaceholder")}
                                 {...field}
                                 value={field.value || ""}
                               />
@@ -401,10 +407,10 @@ export default function ProfilePage() {
                         name="houseNumber"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Nr.</FormLabel>
+                            <FormLabel>{t("address.houseNumber")}</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="1a"
+                                placeholder={t("address.houseNumberPlaceholder")}
                                 {...field}
                                 value={field.value || ""}
                               />
@@ -420,10 +426,10 @@ export default function ProfilePage() {
                         name="zipCode"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>PLZ</FormLabel>
+                            <FormLabel>{t("address.zip")}</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="12345"
+                                placeholder={t("address.zipPlaceholder")}
                                 {...field}
                                 value={field.value || ""}
                               />
@@ -437,10 +443,10 @@ export default function ProfilePage() {
                         name="city"
                         render={({ field }) => (
                           <FormItem className="col-span-2">
-                            <FormLabel>Stadt</FormLabel>
+                            <FormLabel>{t("address.city")}</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Musterstadt"
+                                placeholder={t("address.cityPlaceholder")}
                                 {...field}
                                 value={field.value || ""}
                               />
@@ -455,10 +461,10 @@ export default function ProfilePage() {
                       name="country"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Land</FormLabel>
+                          <FormLabel>{t("address.country")}</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Deutschland"
+                              placeholder={t("address.countryPlaceholder")}
                               {...field}
                               value={field.value || ""}
                             />
@@ -485,7 +491,7 @@ export default function ProfilePage() {
                           </>
                         ) : (
                           <span className="text-muted-foreground">
-                            Keine Adresse hinterlegt
+                            {t("address.empty")}
                           </span>
                         )}
                       </div>
@@ -501,10 +507,10 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Bankverbindung
+                {t("bank.title")}
               </CardTitle>
               <CardDescription>
-                Ihre Bankdaten für Ausschuettungen
+                {t("bank.description")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -515,13 +521,13 @@ export default function ProfilePage() {
                     name="bankName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bank</FormLabel>
+                        <FormLabel>{t("bank.name")}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Building className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                               className="pl-10"
-                              placeholder="Musterbank"
+                              placeholder={t("bank.namePlaceholder")}
                               {...field}
                               value={field.value || ""}
                             />
@@ -536,10 +542,10 @@ export default function ProfilePage() {
                     name="iban"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>IBAN</FormLabel>
+                        <FormLabel>{t("bank.iban")}</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="DE89 3704 0044 0532 0130 00"
+                            placeholder={t("bank.ibanPlaceholder")}
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => {
@@ -557,10 +563,10 @@ export default function ProfilePage() {
                     name="bic"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>BIC</FormLabel>
+                        <FormLabel>{t("bank.bic")}</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="COBADEFFXXX"
+                            placeholder={t("bank.bicPlaceholder")}
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => {
@@ -577,7 +583,7 @@ export default function ProfilePage() {
                 <div className="grid gap-6 md:grid-cols-3">
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-muted-foreground">
-                      Bank
+                      {t("bank.name")}
                     </label>
                     <div className="flex items-center gap-2">
                       <Building className="h-4 w-4 text-muted-foreground" />
@@ -586,13 +592,13 @@ export default function ProfilePage() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-muted-foreground">
-                      IBAN
+                      {t("bank.iban")}
                     </label>
                     <p className="font-mono">{formatIBAN(profile?.iban || null)}</p>
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-muted-foreground">
-                      BIC
+                      {t("bank.bic")}
                     </label>
                     <p className="font-mono">{profile?.bic || "-"}</p>
                   </div>
@@ -606,23 +612,23 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Steuerliche Angaben
+                {t("tax.title")}
               </CardTitle>
               <CardDescription>
-                Ihre steuerlichen Identifikationsnummern
+                {t("tax.description")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">
-                  Steuer-ID
+                  {t("tax.taxId")}
                 </label>
                 <div className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
                   <Shield className="h-4 w-4 text-muted-foreground" />
                   <span className="font-mono">{profile?.taxId || "-"}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Nur durch Administrator aenderbar
+                  {t("personal.adminOnly")}
                 </p>
               </div>
             </CardContent>
@@ -638,18 +644,18 @@ export default function ProfilePage() {
                 disabled={isSaving}
               >
                 <X className="mr-2 h-4 w-4" />
-                Abbrechen
+                {t("cancel")}
               </Button>
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Speichern...
+                    {t("saving")}
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Speichern
+                    {t("save")}
                   </>
                 )}
               </Button>

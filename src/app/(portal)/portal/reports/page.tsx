@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -67,33 +68,7 @@ interface GroupedReports {
   [year: number]: Report[];
 }
 
-const reportTypeLabels: Record<string, string> = {
-  MONTHLY: "Monatsbericht",
-  QUARTERLY: "Quartalsbericht",
-  ANNUAL: "Jahresbericht",
-  STATEMENT: "Kontoauszug",
-};
-
-const categoryLabels: Record<string, string> = {
-  REPORT: "Bericht",
-  PROTOCOL: "Protokoll",
-  OTHER: "Sonstiges",
-};
-
-const monthNames = [
-  "Januar",
-  "Februar",
-  "Maerz",
-  "April",
-  "Mai",
-  "Juni",
-  "Juli",
-  "August",
-  "September",
-  "Oktober",
-  "November",
-  "Dezember",
-];
+// reportTypeLabels / categoryLabels / monthNames are translated via i18n at render time
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -104,6 +79,19 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function ReportsPage() {
+  const t = useTranslations("portal.reports");
+  const tTypes = useTranslations("portal.reports.types");
+  const tCategories = useTranslations("portal.reports.categories");
+  const tMonths = useTranslations("portal.reports.months");
+  const translateReportType = (key: string) => {
+    try { return tTypes(key as "MONTHLY"); } catch { return key; }
+  };
+  const translateCategory = (key: string) => {
+    try { return tCategories(key as "REPORT"); } catch { return key; }
+  };
+  const monthName = (month: number) => {
+    try { return tMonths(String(month) as "1"); } catch { return String(month); }
+  };
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -228,7 +216,7 @@ export default function ReportsPage() {
         document.body.removeChild(link);
       }
     } catch {
-      toast.error("Fehler beim Herunterladen des Berichts");
+      toast.error(t("downloadFailed"));
     } finally {
       setDownloadingId(null);
     }
@@ -236,7 +224,7 @@ export default function ReportsPage() {
 
   function getReportPeriod(report: Report): string {
     if (report.reportMonth && report.reportYear) {
-      return `${monthNames[report.reportMonth - 1]} ${report.reportYear}`;
+      return `${monthName(report.reportMonth)} ${report.reportYear}`;
     }
     return format(new Date(report.createdAt), "MMMM yyyy", { locale: de });
   }
@@ -256,9 +244,9 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Berichte</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground">
-          Monatsberichte, Jahresberichte und Abrechnungen zu Ihren Beteiligungen
+          {t("description")}
         </p>
       </div>
 
@@ -269,7 +257,7 @@ export default function ReportsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Suchen nach Titel, Dateiname..."
+                placeholder={t("searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8"
@@ -278,10 +266,10 @@ export default function ReportsPage() {
             <Select value={yearFilter} onValueChange={setYearFilter}>
               <SelectTrigger className="w-[140px]">
                 <Calendar className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Jahr" />
+                <SelectValue placeholder={t("year")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Jahre</SelectItem>
+                <SelectItem value="all">{t("allYears")}</SelectItem>
                 {availableYears.map((year) => (
                   <SelectItem key={year} value={year.toString()}>
                     {year}
@@ -292,14 +280,14 @@ export default function ReportsPage() {
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-[180px]">
                 <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Berichtstyp" />
+                <SelectValue placeholder={t("reportType")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Typen</SelectItem>
-                <SelectItem value="MONTHLY">Monatsberichte</SelectItem>
-                <SelectItem value="QUARTERLY">Quartalsberichte</SelectItem>
-                <SelectItem value="ANNUAL">Jahresberichte</SelectItem>
-                <SelectItem value="STATEMENT">Kontoauszuege</SelectItem>
+                <SelectItem value="all">{t("allTypes")}</SelectItem>
+                <SelectItem value="MONTHLY">{tTypes("MONTHLY_PLURAL")}</SelectItem>
+                <SelectItem value="QUARTERLY">{tTypes("QUARTERLY_PLURAL")}</SelectItem>
+                <SelectItem value="ANNUAL">{tTypes("ANNUAL_PLURAL")}</SelectItem>
+                <SelectItem value="STATEMENT">{tTypes("STATEMENT_PLURAL")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -315,11 +303,10 @@ export default function ReportsPage() {
                 <FileBarChart className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">
-                Noch keine Berichte verfügbar
+                {t("empty")}
               </h3>
               <p className="text-muted-foreground max-w-sm">
-                Monatsberichte, Jahresberichte und Abrechnungen werden hier angezeigt,
-                sobald sie erstellt wurden.
+                {t("emptyDesc")}
               </p>
             </div>
           </CardContent>
@@ -328,7 +315,7 @@ export default function ReportsPage() {
         <Card>
           <CardContent className="py-12">
             <div className="text-center text-muted-foreground">
-              Keine Berichte für die ausgewaehlten Filter gefunden.
+              {t("noFiltered")}
             </div>
           </CardContent>
         </Card>
@@ -351,8 +338,7 @@ export default function ReportsPage() {
                         )}
                         <CardTitle className="text-xl">{year}</CardTitle>
                         <Badge variant="secondary">
-                          {groupedReports[year].length} Bericht
-                          {groupedReports[year].length !== 1 ? "e" : ""}
+                          {t("reportCount", { count: groupedReports[year].length })}
                         </Badge>
                       </div>
                     </div>
@@ -364,12 +350,12 @@ export default function ReportsPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Bericht</TableHead>
-                            <TableHead>Zeitraum</TableHead>
-                            <TableHead>Gesellschaft</TableHead>
-                            <TableHead>Typ</TableHead>
-                            <TableHead>Erstellt</TableHead>
-                            <TableHead className="text-right">Größe</TableHead>
+                            <TableHead>{t("table.report")}</TableHead>
+                            <TableHead>{t("table.period")}</TableHead>
+                            <TableHead>{t("table.fund")}</TableHead>
+                            <TableHead>{t("table.type")}</TableHead>
+                            <TableHead>{t("table.created")}</TableHead>
+                            <TableHead className="text-right">{t("table.size")}</TableHead>
                             <TableHead className="w-[80px]"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -396,14 +382,12 @@ export default function ReportsPage() {
                               <TableCell>
                                 {report.reportType && (
                                   <Badge variant="outline">
-                                    {reportTypeLabels[report.reportType] ||
-                                      report.reportType}
+                                    {translateReportType(report.reportType)}
                                   </Badge>
                                 )}
                                 {!report.reportType && report.category && (
                                   <Badge variant="outline">
-                                    {categoryLabels[report.category] ||
-                                      report.category}
+                                    {translateCategory(report.category)}
                                   </Badge>
                                 )}
                               </TableCell>
@@ -419,7 +403,7 @@ export default function ReportsPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  title="Herunterladen"
+                                  title={t("download")}
                                   onClick={() => handleDownload(report)}
                                   disabled={downloadingId === report.id}
                                 >

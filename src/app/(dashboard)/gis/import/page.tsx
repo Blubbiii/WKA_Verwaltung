@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   Upload, Check, AlertTriangle, ArrowLeft, ArrowRight,
@@ -56,49 +57,43 @@ interface Park {
   shortName: string | null;
 }
 
-// Plot mapping target fields (from existing import wizard)
+// Plot mapping target fields (labels from i18n via t() at render time)
 const PLOT_TARGET_FIELDS = [
-  { key: "cadastralDistrict", label: "Gemarkung", required: true },
-  { key: "fieldNumber", label: "Flur", required: false },
-  { key: "plotNumber", label: "Flurstück (komplett)", required: false },
-  { key: "plotNumerator", label: "Flurstück Zähler", required: false },
-  { key: "plotDenominator", label: "Flurstück Nenner", required: false },
-  { key: "areaSqm", label: "Fläche (m²)", required: false },
-];
+  { key: "cadastralDistrict", required: true },
+  { key: "fieldNumber", required: false },
+  { key: "plotNumber", required: false },
+  { key: "plotNumerator", required: false },
+  { key: "plotDenominator", required: false },
+  { key: "areaSqm", required: false },
+] as const;
 
 const OWNER_TARGET_FIELDS = [
-  { key: "ownerName", label: "Eigentümer (komplett)", required: false },
-  { key: "ownerFirstName", label: "Vorname", required: false },
-  { key: "ownerLastName", label: "Nachname", required: false },
-  { key: "ownerStreet", label: "Straße", required: false },
-  { key: "ownerPostalCode", label: "PLZ", required: false },
-  { key: "ownerCity", label: "Ort", required: false },
-];
+  { key: "ownerName", required: false },
+  { key: "ownerFirstName", required: false },
+  { key: "ownerLastName", required: false },
+  { key: "ownerStreet", required: false },
+  { key: "ownerPostalCode", required: false },
+  { key: "ownerCity", required: false },
+] as const;
 
-const STEPS = [
-  { id: "upload", label: "Upload", icon: Upload },
-  { id: "layers", label: "Layer-Zuordnung", icon: Layers },
-  { id: "mapping", label: "Feld-Mapping", icon: Settings2 },
-  { id: "preview", label: "Vorschau", icon: MapPin },
-  { id: "owners", label: "Eigentümer", icon: Users },
-  { id: "options", label: "Optionen", icon: FileText },
-  { id: "import", label: "Import", icon: Check },
-];
+const STEP_IDS = ["upload", "layers", "mapping", "preview", "owners", "options", "import"] as const;
+const STEP_ICONS = [Upload, Layers, Settings2, MapPin, Users, FileText, Check];
 
-const AREA_TYPE_OPTIONS = [
-  { value: "", label: "Kein Flächentyp" },
-  { value: "WEA_STANDORT", label: "WEA-Standort" },
-  { value: "POOL", label: "Pool" },
-  { value: "WEG", label: "Zuwegung" },
-  { value: "AUSGLEICH", label: "Ausgleichsfläche" },
-  { value: "KABEL", label: "Kabeltrasse" },
-];
+const AREA_TYPE_KEYS = [
+  { value: "", labelKey: "none" },
+  { value: "WEA_STANDORT", labelKey: "weaStandort" },
+  { value: "POOL", labelKey: "pool" },
+  { value: "WEG", labelKey: "weg" },
+  { value: "AUSGLEICH", labelKey: "ausgleich" },
+  { value: "KABEL", labelKey: "kabel" },
+] as const;
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function GisImportPage() {
+  const t = useTranslations("gis.import");
   const router = useRouter();
 
   // Wizard state
@@ -169,7 +164,7 @@ export default function GisImportPage() {
       const res = await fetch("/api/gis/import/preview", { method: "POST", body: formData });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Upload fehlgeschlagen");
+        throw new Error(err.error || t("upload.uploadFailed"));
       }
 
       const data = await res.json();
@@ -195,9 +190,9 @@ export default function GisImportPage() {
       setOwnerMappings(ownerMaps);
 
       setStep(1);
-      toast.success(`${data.layers.length} Layer erkannt`);
+      toast.success(t("upload.layersDetected", { count: data.layers.length }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Hochladen");
+      toast.error(err instanceof Error ? err.message : t("upload.uploadError"));
     } finally {
       setUploading(false);
     }
@@ -209,7 +204,7 @@ export default function GisImportPage() {
 
   const handleImport = async () => {
     if (!selectedParkId) {
-      toast.error("Bitte einen Park auswählen");
+      toast.error(t("options.selectParkError"));
       return;
     }
 
@@ -247,16 +242,16 @@ export default function GisImportPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Import fehlgeschlagen");
+        throw new Error(err.error || t("result.importFailed"));
       }
 
       const result = await res.json();
       setImportResult(result);
       setStep(6);
       const { celebrationToast } = await import("@/lib/celebration-toast");
-      celebrationToast("Import abgeschlossen!");
+      celebrationToast(t("result.toast"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Import");
+      toast.error(err instanceof Error ? err.message : t("result.importError"));
     } finally {
       setImporting(false);
     }
@@ -271,23 +266,23 @@ export default function GisImportPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <PageHeader
-        title="QGIS-Projekt importieren"
-        description="Shapefiles oder ZIP mit mehreren Layern importieren"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button variant="outline" asChild>
-            <Link href="/gis"><ArrowLeft className="h-4 w-4 mr-2" />Zurück zur Karte</Link>
+            <Link href="/gis"><ArrowLeft className="h-4 w-4 mr-2" />{t("backToMap")}</Link>
           </Button>
         }
       />
 
       {/* Step indicator */}
       <div className="flex items-center gap-1 overflow-x-auto pb-2">
-        {STEPS.map((s, i) => {
-          const Icon = s.icon;
+        {STEP_IDS.map((id, i) => {
+          const Icon = STEP_ICONS[i];
           const isActive = i === step;
           const isDone = i < step;
           return (
-            <div key={s.id} className="flex items-center gap-1">
+            <div key={id} className="flex items-center gap-1">
               {i > 0 && <div className={`w-6 h-px ${isDone ? "bg-primary" : "bg-border"}`} />}
               <button
                 onClick={() => isDone && setStep(i)}
@@ -299,7 +294,7 @@ export default function GisImportPage() {
                 }`}
               >
                 {isDone ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
-                <span className="hidden sm:inline">{s.label}</span>
+                <span className="hidden sm:inline">{t(`steps.${id}` as "steps.upload")}</span>
               </button>
             </div>
           );
@@ -324,18 +319,18 @@ export default function GisImportPage() {
                 {uploading ? (
                   <div className="flex flex-col items-center gap-3">
                     <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                    <p className="text-sm font-medium">Datei wird analysiert...</p>
+                    <p className="text-sm font-medium">{t("upload.analyzing")}</p>
                   </div>
                 ) : (
                   <label className="cursor-pointer flex flex-col items-center gap-3">
                     <Upload className="h-10 w-10 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">Shapefile oder ZIP hierher ziehen</p>
+                      <p className="text-sm font-medium">{t("upload.drop")}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        .shp, .zip (Multi-Layer), .geojson — max. 50 MB
+                        {t("upload.formats")}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" className="mt-2">Datei auswählen</Button>
+                    <Button variant="outline" size="sm" className="mt-2">{t("upload.chooseFile")}</Button>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -349,8 +344,7 @@ export default function GisImportPage() {
               <Alert>
                 <Download className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Tipp:</strong> In QGIS können Sie Layer als Shapefile exportieren (Rechtsklick → Exportieren → Features speichern als...).
-                  Für mehrere Layer: Alle SHP-Dateien in ein ZIP packen.
+                  <strong>{t("upload.tip")}</strong> {t("upload.tipText")}
                 </AlertDescription>
               </Alert>
             </div>
@@ -359,17 +353,17 @@ export default function GisImportPage() {
           {/* ---- Step 1: Layer-Zuordnung ---- */}
           {step === 1 && (
             <div className="space-y-4">
-              <h3 className="font-semibold">Layer-Zuordnung ({layers.length} Layer erkannt)</h3>
+              <h3 className="font-semibold">{t("layers.heading", { count: layers.length })}</h3>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Layer</TableHead>
-                    <TableHead>Geometrie</TableHead>
-                    <TableHead>Features</TableHead>
-                    <TableHead>Typ</TableHead>
-                    <TableHead>Farbe</TableHead>
-                    <TableHead>Transparenz</TableHead>
-                    <TableHead>Flächentyp</TableHead>
+                    <TableHead>{t("layers.colLayer")}</TableHead>
+                    <TableHead>{t("layers.colGeometry")}</TableHead>
+                    <TableHead>{t("layers.colFeatures")}</TableHead>
+                    <TableHead>{t("layers.colType")}</TableHead>
+                    <TableHead>{t("layers.colColor")}</TableHead>
+                    <TableHead>{t("layers.colTransparency")}</TableHead>
+                    <TableHead>{t("layers.colAreaType")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -413,7 +407,7 @@ export default function GisImportPage() {
                               [l.name]: { ...prev[l.name], color: e.target.value },
                             }))}
                             className="h-8 w-10 rounded border border-border cursor-pointer"
-                            title="Farbe wählen"
+                            title={t("layers.chooseColor")}
                           />
                         </TableCell>
                         <TableCell>
@@ -442,11 +436,11 @@ export default function GisImportPage() {
                               onValueChange={(v) => setLayerAreaTypes((prev) => ({ ...prev, [l.name]: v }))}
                             >
                               <SelectTrigger className="w-40">
-                                <SelectValue placeholder="Optional" />
+                                <SelectValue placeholder={t("layers.optional")} />
                               </SelectTrigger>
                               <SelectContent>
-                                {AREA_TYPE_OPTIONS.map((o) => (
-                                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                                {AREA_TYPE_KEYS.map((o) => (
+                                  <SelectItem key={o.value} value={o.value}>{t(`areaTypes.${o.labelKey}` as "areaTypes.none")}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
@@ -469,17 +463,17 @@ export default function GisImportPage() {
           {/* ---- Step 2: Feld-Mapping ---- */}
           {step === 2 && (
             <div className="space-y-6">
-              <h3 className="font-semibold">Feld-Mapping für Flurstücke</h3>
+              <h3 className="font-semibold">{t("mapping.heading")}</h3>
               {plotLayers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Keine Flurstück-Layer vorhanden. Weiter zum nächsten Schritt.</p>
+                <p className="text-sm text-muted-foreground">{t("mapping.empty")}</p>
               ) : (
                 plotLayers.map((l) => (
                   <div key={l.name} className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground">Layer: {l.name}</h4>
+                    <h4 className="text-sm font-medium text-muted-foreground">{t("mapping.layerLabel", { name: l.name })}</h4>
                     <div className="grid grid-cols-2 gap-3">
                       {PLOT_TARGET_FIELDS.map((tf) => (
                         <div key={tf.key} className="space-y-1">
-                          <Label className="text-xs">{tf.label} {tf.required && "*"}</Label>
+                          <Label className="text-xs">{t(`mapping.plotFields.${tf.key}` as "mapping.plotFields.cadastralDistrict")} {tf.required && "*"}</Label>
                           <Select
                             value={plotMappings[l.name]?.[tf.key] || "__none__"}
                             onValueChange={(v) => setPlotMappings((prev) => ({
@@ -489,7 +483,7 @@ export default function GisImportPage() {
                           >
                             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__none__">— Nicht zuordnen —</SelectItem>
+                              <SelectItem value="__none__">{t("mapping.notMapped")}</SelectItem>
                               {l.fields.map((f) => (
                                 <SelectItem key={f} value={f}>{f}</SelectItem>
                               ))}
@@ -498,11 +492,11 @@ export default function GisImportPage() {
                         </div>
                       ))}
                     </div>
-                    <h4 className="text-sm font-medium text-muted-foreground mt-4">Eigentümer-Felder</h4>
+                    <h4 className="text-sm font-medium text-muted-foreground mt-4">{t("mapping.ownerFields")}</h4>
                     <div className="grid grid-cols-2 gap-3">
                       {OWNER_TARGET_FIELDS.map((tf) => (
                         <div key={tf.key} className="space-y-1">
-                          <Label className="text-xs">{tf.label}</Label>
+                          <Label className="text-xs">{t(`mapping.ownerFieldsLabels.${tf.key}` as "mapping.ownerFieldsLabels.ownerName")}</Label>
                           <Select
                             value={ownerMappings[l.name]?.[tf.key] || "__none__"}
                             onValueChange={(v) => setOwnerMappings((prev) => ({
@@ -512,7 +506,7 @@ export default function GisImportPage() {
                           >
                             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__none__">— Nicht zuordnen —</SelectItem>
+                              <SelectItem value="__none__">{t("mapping.notMapped")}</SelectItem>
                               {l.fields.map((f) => (
                                 <SelectItem key={f} value={f}>{f}</SelectItem>
                               ))}
@@ -530,7 +524,7 @@ export default function GisImportPage() {
           {/* ---- Step 3: Vorschau ---- */}
           {step === 3 && (
             <div className="space-y-4">
-              <h3 className="font-semibold">Vorschau — {totalFeatures} Features in {layers.length} Layern</h3>
+              <h3 className="font-semibold">{t("preview.heading", { features: totalFeatures, layers: layers.length })}</h3>
               {layers.map((l) => {
                 const type = layerTypes[l.name] ?? l.suggestedType;
                 const typeInfo = IMPORT_LAYER_TYPES[type];
@@ -567,7 +561,7 @@ export default function GisImportPage() {
                           </TableBody>
                         </Table>
                         {l.features.length > 10 && (
-                          <p className="text-xs text-muted-foreground p-2">...und {l.features.length - 10} weitere</p>
+                          <p className="text-xs text-muted-foreground p-2">{t("preview.andMore", { count: l.features.length - 10 })}</p>
                         )}
                       </div>
                     )}
@@ -580,16 +574,14 @@ export default function GisImportPage() {
           {/* ---- Step 4: Eigentümer (Placeholder) ---- */}
           {step === 4 && (
             <div className="space-y-4">
-              <h3 className="font-semibold">Eigentümer-Zuordnung</h3>
+              <h3 className="font-semibold">{t("owners.heading")}</h3>
               <p className="text-sm text-muted-foreground">
-                Eigentümer werden beim Import automatisch per Fuzzy-Matching gegen bestehende Personen geprüft.
-                Neue Eigentümer werden automatisch angelegt.
+                {t("owners.intro")}
               </p>
               <Alert>
                 <Users className="h-4 w-4" />
                 <AlertDescription>
-                  Die Eigentümer-Zuordnung basiert auf den Feld-Mappings aus Schritt 3.
-                  Bestehende Personen werden wiederverwendet, neue werden erstellt.
+                  {t("owners.alert")}
                 </AlertDescription>
               </Alert>
             </div>
@@ -598,12 +590,12 @@ export default function GisImportPage() {
           {/* ---- Step 5: Optionen ---- */}
           {step === 5 && (
             <div className="space-y-4">
-              <h3 className="font-semibold">Import-Optionen</h3>
+              <h3 className="font-semibold">{t("options.heading")}</h3>
               <div className="space-y-4 max-w-md">
                 <div className="space-y-1.5">
-                  <Label>Park *</Label>
+                  <Label>{t("options.park")}</Label>
                   <Select value={selectedParkId} onValueChange={setSelectedParkId}>
-                    <SelectTrigger><SelectValue placeholder="Park auswählen" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("options.parkPlaceholder")} /></SelectTrigger>
                     <SelectContent>
                       {parks.map((p) => (
                         <SelectItem key={p.id} value={p.id}>{p.shortName || p.name}</SelectItem>
@@ -618,13 +610,13 @@ export default function GisImportPage() {
                     checked={createLeases}
                     onCheckedChange={(v) => setCreateLeases(!!v)}
                   />
-                  <label htmlFor="create-leases" className="text-sm">Pachtverträge erstellen</label>
+                  <label htmlFor="create-leases" className="text-sm">{t("options.createLeases")}</label>
                 </div>
 
                 {createLeases && (
                   <div className="grid grid-cols-2 gap-3 pl-6">
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Startdatum</Label>
+                      <Label className="text-xs">{t("options.startDate")}</Label>
                       <Input
                         type="date"
                         value={leaseStartDate}
@@ -633,12 +625,12 @@ export default function GisImportPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Status</Label>
+                      <Label className="text-xs">{t("options.status")}</Label>
                       <Select value={leaseStatus} onValueChange={(v) => setLeaseStatus(v as "DRAFT" | "ACTIVE")}>
                         <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="DRAFT">Entwurf</SelectItem>
-                          <SelectItem value="ACTIVE">Aktiv</SelectItem>
+                          <SelectItem value="DRAFT">{t("options.statusDraft")}</SelectItem>
+                          <SelectItem value="ACTIVE">{t("options.statusActive")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -649,7 +641,7 @@ export default function GisImportPage() {
               {/* Summary */}
               <Card className="bg-muted/30">
                 <CardContent className="pt-4">
-                  <h4 className="text-sm font-semibold mb-2">Zusammenfassung</h4>
+                  <h4 className="text-sm font-semibold mb-2">{t("options.summary")}</h4>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     {layers.map((l) => {
                       const type = layerTypes[l.name] ?? l.suggestedType;
@@ -675,26 +667,26 @@ export default function GisImportPage() {
                   <Check className="h-6 w-6 text-green-500" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Import abgeschlossen</h3>
-                  <p className="text-sm text-muted-foreground">Alle Daten wurden erfolgreich importiert.</p>
+                  <h3 className="font-semibold text-lg">{t("result.heading")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("result.subtitle")}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <Card>
-                  <CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground">Flurstücke</CardTitle></CardHeader>
+                  <CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground">{t("result.plots")}</CardTitle></CardHeader>
                   <CardContent><p className="text-2xl font-bold">{importResult.plotsCreated}</p></CardContent>
                 </Card>
                 <Card>
-                  <CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground">Zeichnungen</CardTitle></CardHeader>
+                  <CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground">{t("result.annotations")}</CardTitle></CardHeader>
                   <CardContent><p className="text-2xl font-bold">{importResult.annotationsCreated}</p></CardContent>
                 </Card>
                 <Card>
-                  <CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground">Eigentümer (neu)</CardTitle></CardHeader>
+                  <CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground">{t("result.newOwners")}</CardTitle></CardHeader>
                   <CardContent><p className="text-2xl font-bold">{importResult.personsCreated}</p></CardContent>
                 </Card>
                 <Card>
-                  <CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground">Verträge</CardTitle></CardHeader>
+                  <CardHeader className="pb-1"><CardTitle className="text-xs text-muted-foreground">{t("result.contracts")}</CardTitle></CardHeader>
                   <CardContent><p className="text-2xl font-bold">{importResult.leasesCreated}</p></CardContent>
                 </Card>
               </div>
@@ -703,7 +695,7 @@ export default function GisImportPage() {
                 <Alert>
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
-                    {importResult.skipped.length} Features übersprungen:
+                    {t("result.skipped", { count: importResult.skipped.length })}
                     <ul className="mt-1 text-xs list-disc pl-4">
                       {importResult.skipped.slice(0, 5).map((s, i) => (
                         <li key={i}>{s.name}: {s.reason}</li>
@@ -715,7 +707,7 @@ export default function GisImportPage() {
 
               <Button onClick={() => router.push("/gis")} className="w-full">
                 <MapPin className="h-4 w-4 mr-2" />
-                Zur GIS-Karte
+                {t("result.toMap")}
               </Button>
             </div>
           )}
@@ -730,12 +722,12 @@ export default function GisImportPage() {
             onClick={() => setStep(Math.max(0, step - 1))}
             disabled={step === 0}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />Zurück
+            <ArrowLeft className="h-4 w-4 mr-2" />{t("nav.back")}
           </Button>
 
           {step < 5 ? (
             <Button onClick={() => setStep(step + 1)} disabled={step === 0 && layers.length === 0}>
-              Weiter<ArrowRight className="h-4 w-4 ml-2" />
+              {t("nav.next")}<ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           ) : (
             <Button
@@ -744,7 +736,7 @@ export default function GisImportPage() {
               className="gap-2"
             >
               {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              {importing ? "Importiert..." : `${totalFeatures} Features importieren`}
+              {importing ? t("nav.importing") : t("nav.importFeatures", { count: totalFeatures })}
             </Button>
           )}
         </div>

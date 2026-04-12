@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 import {
@@ -123,6 +124,7 @@ interface FormDialogProps {
 }
 
 function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
+  const t = useTranslations("journalEntries");
   const [entryDate, setEntryDate] = useState("");
   const [description, setDescription] = useState("");
   const [reference, setReference] = useState("");
@@ -196,7 +198,7 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
   });
 
   const handleSave = async () => {
-    if (!description.trim()) { toast.error("Beschreibung fehlt"); return; }
+    if (!description.trim()) { toast.error(t("dialog.descriptionMissing")); return; }
     setSaving(true);
     try {
       const url = editing ? `/api/journal-entries/${editing.id}` : "/api/journal-entries";
@@ -207,28 +209,28 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
         body: JSON.stringify(buildPayload()),
       });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.error || "Fehler beim Speichern"); return; }
-      toast.success(editing ? "Buchung aktualisiert" : "Buchung gespeichert");
+      if (!res.ok) { toast.error(data.error || t("dialog.saveError")); return; }
+      toast.success(editing ? t("dialog.updated") : t("dialog.savedDraft"));
       onSaved();
-    } catch { toast.error("Verbindungsfehler"); }
+    } catch { toast.error(t("dialog.connectionError")); }
     finally { setSaving(false); }
   };
 
   const handlePost = async () => {
-    if (!balanced) { toast.error("Soll ≠ Haben — Buchung nicht ausgeglichen"); return; }
+    if (!balanced) { toast.error(t("dialog.notBalancedError")); return; }
     setPosting(true);
     try {
       // Save first if new
       let id = editing?.id;
       if (!id) {
-        if (!description.trim()) { toast.error("Beschreibung fehlt"); return; }
+        if (!description.trim()) { toast.error(t("dialog.descriptionMissing")); return; }
         const res = await fetch("/api/journal-entries", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(buildPayload()),
         });
         const data = await res.json();
-        if (!res.ok) { toast.error(data.error || "Fehler beim Speichern"); return; }
+        if (!res.ok) { toast.error(data.error || t("dialog.saveError")); return; }
         id = data.id;
       } else {
         // Update first
@@ -237,16 +239,16 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(buildPayload()),
         });
-        if (!res.ok) { const d = await res.json(); toast.error(d.error || "Fehler"); return; }
+        if (!res.ok) { const d = await res.json(); toast.error(d.error || t("dialog.saveError")); return; }
       }
 
       // Then post
       const postRes = await fetch(`/api/journal-entries/${id}/post`, { method: "POST" });
       const postData = await postRes.json();
-      if (!postRes.ok) { toast.error(postData.error || "Fehler beim Buchen"); return; }
-      toast.success("Buchung erfolgreich gebucht");
+      if (!postRes.ok) { toast.error(postData.error || t("dialog.postError")); return; }
+      toast.success(t("dialog.postedSuccess"));
       onSaved();
-    } catch { toast.error("Verbindungsfehler"); }
+    } catch { toast.error(t("dialog.connectionError")); }
     finally { setPosting(false); }
   };
 
@@ -258,10 +260,10 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
         <DialogHeader>
           <DialogTitle>
             {isReadOnly
-              ? "Buchung ansehen"
+              ? t("dialog.view")
               : editing
-              ? "Buchung bearbeiten"
-              : "Neue Buchung"}
+              ? t("dialog.edit")
+              : t("dialog.new")}
           </DialogTitle>
         </DialogHeader>
 
@@ -269,7 +271,7 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
           {/* Header fields */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="entryDate">Datum</Label>
+              <Label htmlFor="entryDate">{t("dialog.date")}</Label>
               <Input
                 id="entryDate"
                 type="date"
@@ -279,24 +281,24 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
               />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label htmlFor="description">Beschreibung</Label>
+              <Label htmlFor="description">{t("dialog.description")}</Label>
               <Input
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="z.B. Abgrenzung Wartungskosten März"
+                placeholder={t("dialog.descriptionPlaceholder")}
                 disabled={isReadOnly}
               />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="reference">Beleg-Nr. (optional)</Label>
+              <Label htmlFor="reference">{t("dialog.reference")}</Label>
               <Input
                 id="reference"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                placeholder="K-001"
+                placeholder={t("dialog.referencePlaceholder")}
                 disabled={isReadOnly}
               />
             </div>
@@ -307,11 +309,11 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="text-left py-2 px-3 font-medium w-8">#</th>
-                  <th className="text-left py-2 px-3 font-medium w-28">Konto</th>
-                  <th className="text-left py-2 px-3 font-medium">Bezeichnung</th>
-                  <th className="text-right py-2 px-3 font-medium w-32">Soll (€)</th>
-                  <th className="text-right py-2 px-3 font-medium w-32">Haben (€)</th>
+                  <th className="text-left py-2 px-3 font-medium w-8">{t("dialog.cols.line")}</th>
+                  <th className="text-left py-2 px-3 font-medium w-28">{t("dialog.cols.account")}</th>
+                  <th className="text-left py-2 px-3 font-medium">{t("dialog.cols.accountName")}</th>
+                  <th className="text-right py-2 px-3 font-medium w-32">{t("dialog.cols.debit")}</th>
+                  <th className="text-right py-2 px-3 font-medium w-32">{t("dialog.cols.credit")}</th>
                   {!isReadOnly && <th className="w-8" />}
                 </tr>
               </thead>
@@ -323,7 +325,7 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
                       <Input
                         value={line.account}
                         onChange={(e) => updateLine(idx, "account", e.target.value)}
-                        placeholder="4210"
+                        placeholder={t("dialog.accountPlaceholder")}
                         className="h-7 text-sm font-mono"
                         disabled={isReadOnly}
                       />
@@ -332,7 +334,7 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
                       <Input
                         value={line.accountName}
                         onChange={(e) => updateLine(idx, "accountName", e.target.value)}
-                        placeholder="Pachtaufwand"
+                        placeholder={t("dialog.accountNamePlaceholder")}
                         className="h-7 text-sm"
                         disabled={isReadOnly}
                       />
@@ -344,7 +346,7 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
                           updateLine(idx, "debitAmount", e.target.value);
                           if (e.target.value) updateLine(idx, "creditAmount", "");
                         }}
-                        placeholder="0,00"
+                        placeholder={t("dialog.amountPlaceholder")}
                         className="h-7 text-sm text-right font-mono"
                         disabled={isReadOnly}
                       />
@@ -356,7 +358,7 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
                           updateLine(idx, "creditAmount", e.target.value);
                           if (e.target.value) updateLine(idx, "debitAmount", "");
                         }}
-                        placeholder="0,00"
+                        placeholder={t("dialog.amountPlaceholder")}
                         className="h-7 text-sm text-right font-mono"
                         disabled={isReadOnly}
                       />
@@ -384,7 +386,7 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
           {!isReadOnly && (
             <Button variant="outline" size="sm" onClick={addLine}>
               <Plus className="h-4 w-4 mr-1.5" />
-              Zeile hinzufügen
+              {t("dialog.addLine")}
             </Button>
           )}
 
@@ -398,28 +400,28 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
           >
             {balanced ? <CheckCircle2 className="h-4 w-4" /> : null}
             <span>
-              Σ Soll:{" "}
+              {t("dialog.sumDebit")}{" "}
               <strong>
                 {new Intl.NumberFormat("de-DE", {
                   style: "currency",
                   currency: "EUR",
                 }).format(totalDebit)}
               </strong>
-              {"  |  "}Σ Haben:{" "}
+              {"  |  "}{t("dialog.sumCredit")}{" "}
               <strong>
                 {new Intl.NumberFormat("de-DE", {
                   style: "currency",
                   currency: "EUR",
                 }).format(totalCredit)}
               </strong>
-              {balanced ? "  ✓" : "  — nicht ausgeglichen"}
+              {balanced ? "  ✓" : `  ${t("dialog.notBalanced")}`}
             </span>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            {isReadOnly ? "Schließen" : "Abbrechen"}
+            {isReadOnly ? t("dialog.close") : t("dialog.cancel")}
           </Button>
           {!isReadOnly && (
             <>
@@ -429,14 +431,14 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
                 disabled={saving || posting}
               >
                 {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Als Entwurf speichern
+                {t("dialog.saveDraft")}
               </Button>
               <Button
                 onClick={handlePost}
                 disabled={saving || posting || !balanced}
               >
                 {posting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Buchen
+                {t("dialog.post")}
               </Button>
             </>
           )}
@@ -451,6 +453,7 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
 // ============================================================================
 
 export default function JournalEntriesPage() {
+  const t = useTranslations("journalEntries");
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -486,20 +489,20 @@ export default function JournalEntriesPage() {
     try {
       const res = await fetch(`/api/journal-entries/${id}`, { method: "DELETE" });
       if (res.ok) {
-        toast.success("Buchung gelöscht");
+        toast.success(t("delete.success"));
         setEntries((prev) => prev.filter((e) => e.id !== id));
       } else {
         const d = await res.json();
-        toast.error(d.error || "Fehler beim Löschen");
+        toast.error(d.error || t("delete.error"));
       }
-    } catch { toast.error("Verbindungsfehler"); }
+    } catch { toast.error(t("dialog.connectionError")); }
     finally { setDeletingId(null); }
   };
 
   // Batch CSV export
   const handleBatchExport = useCallback(() => {
     const selected = entries.filter((e) => selectedIds.has(e.id));
-    const header = "Datum;Buchungsnummer;Beschreibung;Soll;Haben;Status";
+    const header = t("batch.csvHeader");
     const rows = selected.map((e) => {
       const totalDebit = e.lines.reduce((s, l) => s + (l.debitAmount ? parseFloat(l.debitAmount) : 0), 0);
       const totalCredit = e.lines.reduce((s, l) => s + (l.creditAmount ? parseFloat(l.creditAmount) : 0), 0);
@@ -509,7 +512,7 @@ export default function JournalEntriesPage() {
         (e.description || "").replace(/;/g, ","),
         totalDebit.toFixed(2).replace(".", ","),
         totalCredit.toFixed(2).replace(".", ","),
-        e.status === "POSTED" ? "Gebucht" : "Entwurf",
+        e.status === "POSTED" ? t("status.posted") : t("status.draft"),
       ].join(";");
     });
     const csv = "\uFEFF" + [header, ...rows].join("\n");
@@ -520,8 +523,8 @@ export default function JournalEntriesPage() {
     a.download = `buchungsjournal-export-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`${selected.length} Buchung(en) exportiert`);
-  }, [entries, selectedIds]);
+    toast.success(t("batch.exported", { count: selected.length }));
+  }, [entries, selectedIds, t]);
 
   // Batch delete (only DRAFT entries)
   const handleBatchDelete = useCallback(async () => {
@@ -530,11 +533,11 @@ export default function JournalEntriesPage() {
       return entry?.status === "DRAFT";
     });
     if (draftIds.length === 0) {
-      toast.error("Nur Entwürfe können gelöscht werden");
+      toast.error(t("batch.onlyDrafts"));
       return;
     }
     const skipped = selectedIds.size - draftIds.length;
-    if (!confirm(`${draftIds.length} Entwurf/Entwürfe wirklich löschen?${skipped > 0 ? ` (${skipped} gebuchte Einträge werden übersprungen)` : ""}`)) return;
+    if (!confirm(skipped > 0 ? t("batch.confirmWithSkipped", { count: draftIds.length, skipped }) : t("batch.confirm", { count: draftIds.length }))) return;
     let success = 0;
     let failed = 0;
     for (const id of draftIds) {
@@ -547,14 +550,14 @@ export default function JournalEntriesPage() {
       }
     }
     if (success > 0) {
-      toast.success(`${success} Buchung(en) gelöscht`);
+      toast.success(t("batch.deleted", { count: success }));
       clearSelection();
       load();
     }
     if (failed > 0) {
-      toast.error(`${failed} Buchung(en) konnten nicht gelöscht werden`);
+      toast.error(t("batch.failed", { count: failed }));
     }
-  }, [selectedIds, entries, clearSelection, load]);
+  }, [selectedIds, entries, clearSelection, load, t]);
 
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -572,23 +575,23 @@ export default function JournalEntriesPage() {
             <BookOpen className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold">Buchungsjournal</h1>
+            <h1 className="text-2xl font-semibold">{t("title")}</h1>
             <p className="text-sm text-muted-foreground">
-              Manuelle Soll/Haben-Buchungen mit SKR03-Konten
+              {t("description")}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Aktualisieren
+            {t("refresh")}
           </Button>
           <Button
             size="sm"
             onClick={() => { setEditingEntry(null); setDialogOpen(true); }}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Neue Buchung
+            {t("newEntry")}
           </Button>
         </div>
       </div>
@@ -597,13 +600,13 @@ export default function JournalEntriesPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Gesamt</p>
+            <p className="text-sm text-muted-foreground">{t("stats.total")}</p>
             <p className="text-3xl font-bold mt-1">{entries.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Entwürfe</p>
+            <p className="text-sm text-muted-foreground">{t("stats.drafts")}</p>
             <p className="text-3xl font-bold mt-1 text-amber-600 dark:text-amber-400">
               {draftCount}
             </p>
@@ -611,7 +614,7 @@ export default function JournalEntriesPage() {
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-sm text-muted-foreground">Gebucht</p>
+            <p className="text-sm text-muted-foreground">{t("stats.posted")}</p>
             <p className="text-3xl font-bold mt-1 text-green-700 dark:text-green-400">
               {postedCount}
             </p>
@@ -622,16 +625,16 @@ export default function JournalEntriesPage() {
       {/* Filters + Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-base">Buchungen</CardTitle>
+          <CardTitle className="text-base">{t("bookings")}</CardTitle>
           <div className="flex items-center gap-2">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-8 w-32 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle</SelectItem>
-                <SelectItem value="DRAFT">Entwürfe</SelectItem>
-                <SelectItem value="POSTED">Gebucht</SelectItem>
+                <SelectItem value="all">{t("filters.all")}</SelectItem>
+                <SelectItem value="DRAFT">{t("filters.drafts")}</SelectItem>
+                <SelectItem value="POSTED">{t("filters.posted")}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={yearFilter} onValueChange={setYearFilter}>
@@ -652,12 +655,12 @@ export default function JournalEntriesPage() {
           {loading && entries.length === 0 ? (
             <div className="flex items-center justify-center py-14 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin mr-3" />
-              Wird geladen…
+              {t("loading")}
             </div>
           ) : !loading && entries.length === 0 ? (
             <div className="flex flex-col items-center py-14 text-muted-foreground gap-2">
               <BookOpen className="h-10 w-10 opacity-30" />
-              <p className="text-sm">Keine Buchungen vorhanden</p>
+              <p className="text-sm">{t("empty")}</p>
               <Button
                 size="sm"
                 variant="outline"
@@ -665,7 +668,7 @@ export default function JournalEntriesPage() {
                 onClick={() => { setEditingEntry(null); setDialogOpen(true); }}
               >
                 <Plus className="h-4 w-4 mr-1.5" />
-                Erste Buchung erstellen
+                {t("createFirst")}
               </Button>
             </div>
           ) : (
@@ -674,14 +677,14 @@ export default function JournalEntriesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
-                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label="Alle auswählen"
+                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label={t("table.selectAll")}
                       {...(isSomeSelected ? { "data-state": "indeterminate" } : {})} />
                   </TableHead>
-                  <TableHead>Datum</TableHead>
-                  <TableHead>Beschreibung</TableHead>
-                  <TableHead>Beleg</TableHead>
-                  <TableHead className="text-right">Σ Soll</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("table.date")}</TableHead>
+                  <TableHead>{t("table.description")}</TableHead>
+                  <TableHead>{t("table.reference")}</TableHead>
+                  <TableHead className="text-right">{t("table.debitTotal")}</TableHead>
+                  <TableHead>{t("table.status")}</TableHead>
                   <TableHead className="w-20" />
                 </TableRow>
               </TableHeader>
@@ -702,7 +705,7 @@ export default function JournalEntriesPage() {
                       }}
                     >
                       <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox checked={selectedIds.has(entry.id)} onCheckedChange={() => toggleItem(entry.id)} aria-label="Auswählen" />
+                        <Checkbox checked={selectedIds.has(entry.id)} onCheckedChange={() => toggleItem(entry.id)} aria-label={t("table.select")} />
                       </TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
                         {formatDate(entry.entryDate)}
@@ -718,8 +721,8 @@ export default function JournalEntriesPage() {
                               body: JSON.stringify({ description: val }),
                             });
                             if (!res.ok) {
-                              const err = await res.json().catch(() => ({ error: "Fehler" }));
-                              throw new Error(err.error ?? "Fehler beim Speichern");
+                              const err = await res.json().catch(() => ({ error: t("dialog.saveError") }));
+                              throw new Error(err.error ?? t("dialog.saveError"));
                             }
                             load();
                           }}
@@ -734,11 +737,11 @@ export default function JournalEntriesPage() {
                       <TableCell>
                         {entry.status === "POSTED" ? (
                           <Badge variant="success">
-                            Gebucht
+                            {t("status.posted")}
                           </Badge>
                         ) : (
                           <Badge variant="warning">
-                            Entwurf
+                            {t("status.draft")}
                           </Badge>
                         )}
                       </TableCell>
@@ -794,12 +797,12 @@ export default function JournalEntriesPage() {
         onClearSelection={clearSelection}
         actions={[
           {
-            label: "CSV Export",
+            label: t("batch.export"),
             icon: <Download className="h-4 w-4" />,
             onClick: handleBatchExport,
           },
           {
-            label: "Löschen",
+            label: t("batch.delete"),
             icon: <Trash2 className="h-4 w-4" />,
             onClick: handleBatchDelete,
             variant: "destructive",

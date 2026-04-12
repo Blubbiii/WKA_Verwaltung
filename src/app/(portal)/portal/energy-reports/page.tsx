@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { CloudOff, BarChart3, ArrowRight } from "lucide-react";
 import {
@@ -29,42 +30,24 @@ interface ReportConfig {
   portalLabel: string | null;
 }
 
-const MODULE_LABELS: Record<string, string> = {
-  // Classic
-  kpiSummary: "KPI-Zusammenfassung",
-  production: "Produktion",
-  turbineComparison: "Anlagenvergleich",
-  powerCurve: "Leistungskurve",
-  windRose: "Windrose",
-  dailyProfile: "Tagesverlauf",
-  // Analytics
-  performanceKpis: "Performance-KPIs",
-  productionHeatmap: "Produktions-Heatmap",
-  turbineRanking: "Turbinen-Ranking",
-  yearOverYear: "Jahresvergleich",
-  availabilityBreakdown: "Verfügbarkeit T1-T6",
-  availabilityTrend: "Verfügbarkeits-Trend",
-  availabilityHeatmap: "Verfügbarkeits-Heatmap",
-  downtimePareto: "Ausfallzeiten-Pareto",
-  powerCurveOverlay: "Leistungskurven-Overlay",
-  faultPareto: "Störungen-Pareto",
-  warningTrend: "Warnungs-Trend",
-  windDistribution: "Windverteilung",
-  environmentalData: "Umweltdaten",
-  financialOverview: "Finanz-Übersicht",
-  revenueComparison: "Erlösvergleich",
-};
+// Module labels translated via portal.energyReports.modules.* at render time
 
 // =============================================================================
 // Page Component
 // =============================================================================
 
 export default function EnergyReportsPage() {
+  const t = useTranslations("portal.energyReports");
+  const tModules = useTranslations("portal.energyReports.modules");
+  const translateModule = (key: string) => {
+    try { return tModules(key as "kpiSummary"); } catch { return key; }
+  };
   const [configs, setConfigs] = useState<ReportConfig[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchConfigs();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchConfigs() {
@@ -72,12 +55,12 @@ export default function EnergyReportsPage() {
       setLoading(true);
       const response = await fetch("/api/portal/energy-reports");
       if (!response.ok) {
-        throw new Error("Fehler beim Laden der Energieberichte");
+        throw new Error(t("loadError"));
       }
       const data = await response.json();
       setConfigs(data.data || []);
     } catch {
-      toast.error("Fehler beim Laden der Energieberichte");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
@@ -126,10 +109,10 @@ export default function EnergyReportsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Energieberichte
+            {t("title")}
           </h1>
           <p className="text-muted-foreground">
-            SCADA-Auswertungen und Produktionsberichte
+            {t("description")}
           </p>
         </div>
         <Card>
@@ -139,11 +122,10 @@ export default function EnergyReportsPage() {
                 <CloudOff className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">
-                Keine Energieberichte verfügbar
+                {t("empty")}
               </h3>
               <p className="text-muted-foreground max-w-sm">
-                Derzeit sind keine Energieberichte für Ihr Portal
-                freigeschaltet. Bitte wenden Sie sich an die Verwaltung.
+                {t("emptyDesc")}
               </p>
             </div>
           </CardContent>
@@ -159,9 +141,9 @@ export default function EnergyReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Energieberichte</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground">
-          SCADA-Auswertungen und Produktionsberichte
+          {t("description")}
         </p>
       </div>
 
@@ -177,8 +159,7 @@ export default function EnergyReportsPage() {
                   {config.portalLabel || config.name}
                 </CardTitle>
                 <Badge variant="secondary" className="shrink-0">
-                  {config.modules.length}{" "}
-                  {config.modules.length === 1 ? "Modul" : "Module"}
+                  {t("moduleCount", { count: config.modules.length })}
                 </Badge>
               </div>
               {config.description && (
@@ -191,14 +172,14 @@ export default function EnergyReportsPage() {
               <div className="flex flex-wrap gap-1 mb-4">
                 {config.modules.map((mod) => (
                   <Badge key={mod} variant="outline" className="text-xs">
-                    {MODULE_LABELS[mod] || mod}
+                    {translateModule(mod)}
                   </Badge>
                 ))}
               </div>
               <Button asChild className="w-full">
                 <Link href={`/portal/energy-reports/${config.id}`}>
                   <BarChart3 className="mr-2 h-4 w-4" />
-                  Bericht anzeigen
+                  {t("viewReport")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

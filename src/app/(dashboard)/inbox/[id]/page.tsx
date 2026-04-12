@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -82,13 +83,13 @@ interface InvoiceDetail {
   splits: Split[];
 }
 
-const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  INBOX: { label: "Posteingang", variant: "secondary" },
-  OCR_PROCESSING: { label: "OCR läuft", variant: "secondary" },
-  REVIEW: { label: "In Prüfung", variant: "outline" },
-  APPROVED: { label: "Genehmigt", variant: "default" },
-  PAID: { label: "Bezahlt", variant: "default" },
-  CANCELLED: { label: "Storniert", variant: "destructive" },
+const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  INBOX: "secondary",
+  OCR_PROCESSING: "secondary",
+  REVIEW: "outline",
+  APPROVED: "default",
+  PAID: "default",
+  CANCELLED: "destructive",
 };
 
 // ============================================================================
@@ -108,6 +109,8 @@ function PayDialog({
   invoiceId: string;
   grossAmount: number | null;
 }) {
+  const t = useTranslations("inbox.payDialog");
+  const tDetail = useTranslations("inbox.detail");
   const [paidAmount, setPaidAmount] = useState(grossAmount?.toFixed(2) ?? "");
   const [paidAt, setPaidAt] = useState(new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);
@@ -125,9 +128,9 @@ function PayDialog({
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Fehler");
+        throw new Error(err.error ?? tDetail("error"));
       }
-      toast.success("Als bezahlt markiert");
+      toast.success(t("success"));
       onPaid();
       onClose();
     } catch (err) {
@@ -141,11 +144,11 @@ function PayDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Als bezahlt markieren</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Zahlungsdatum</Label>
+            <Label>{t("date")}</Label>
             <Input
               type="date"
               value={paidAt}
@@ -153,7 +156,7 @@ function PayDialog({
             />
           </div>
           <div>
-            <Label>Bezahlter Betrag €</Label>
+            <Label>{t("amount")}</Label>
             <Input
               type="number"
               step="0.01"
@@ -164,10 +167,10 @@ function PayDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={saving}>
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button onClick={save} disabled={saving}>
-            {saving ? "Speichere..." : "Speichern"}
+            {saving ? t("saving") : t("save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -180,6 +183,8 @@ function PayDialog({
 // ============================================================================
 
 export default function InboxDetailPage() {
+  const t = useTranslations("inbox.detail");
+  const tStatus = useTranslations("inbox.status");
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { flags } = useFeatureFlags();
@@ -198,11 +203,11 @@ export default function InboxDetailPage() {
         router.push("/inbox");
       }
     } catch {
-      toast.error("Fehler beim Laden");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, [id, router]);
+  }, [id, router, t]);
 
   useEffect(() => {
     if (flags.inbox) load();
@@ -215,9 +220,9 @@ export default function InboxDetailPage() {
       const res = await fetch(`/api/inbox/${id}/approve`, { method: "POST" });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Fehler");
+        throw new Error(err.error ?? t("error"));
       }
-      toast.success("Rechnung genehmigt");
+      toast.success(t("approved"));
       load();
     } catch (err) {
       toast.error(String(err instanceof Error ? err.message : err));
@@ -237,7 +242,7 @@ export default function InboxDetailPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Fehler");
+        throw new Error(err.error ?? t("error"));
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -246,7 +251,7 @@ export default function InboxDetailPage() {
       a.download = `sepa-${id.slice(0, 8)}.xml`;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("SEPA XML heruntergeladen");
+      toast.success(t("sepaDownloaded"));
     } catch (err) {
       toast.error(String(err instanceof Error ? err.message : err));
     } finally {
@@ -264,7 +269,11 @@ export default function InboxDetailPage() {
 
   if (!invoice) return null;
 
-  const badgeInfo = STATUS_BADGE[invoice.status] ?? { label: invoice.status, variant: "secondary" as const };
+  const variant = STATUS_VARIANT[invoice.status] ?? "secondary";
+  const statusLabel = (() => {
+    try { return tStatus(invoice.status as "INBOX"); }
+    catch { return invoice.status; }
+  })();
   const grossNum = invoice.grossAmount ? parseFloat(invoice.grossAmount) : null;
   const isEditable = ["INBOX", "REVIEW"].includes(invoice.status);
   const canApprove = ["INBOX", "REVIEW"].includes(invoice.status);
@@ -283,10 +292,10 @@ export default function InboxDetailPage() {
             <h1 className="text-2xl font-bold">
               {invoice.vendor?.name ?? invoice.vendorNameFallback ?? invoice.fileName}
             </h1>
-            <Badge variant={badgeInfo.variant}>{badgeInfo.label}</Badge>
+            <Badge variant={variant}>{statusLabel}</Badge>
           </div>
           {invoice.invoiceNumber && (
-            <p className="text-muted-foreground text-sm">Re. {invoice.invoiceNumber}</p>
+            <p className="text-muted-foreground text-sm">{t("invoiceNumber", { number: invoice.invoiceNumber })}</p>
           )}
         </div>
       </div>
@@ -300,7 +309,7 @@ export default function InboxDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <Inbox className="h-4 w-4" />
-                Datei
+                {t("file")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -309,7 +318,7 @@ export default function InboxDetailPage() {
                 <Button variant="outline" size="sm" asChild>
                   <a href={`/api/documents/file?url=${encodeURIComponent(invoice.fileUrl)}`} target="_blank" rel="noreferrer">
                     <ExternalLink className="h-3 w-3 mr-1" />
-                    Öffnen
+                    {t("open")}
                   </a>
                 </Button>
               </div>
@@ -319,7 +328,7 @@ export default function InboxDetailPage() {
           {/* OCR fields */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Rechnungsfelder</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("invoiceFields")}</CardTitle>
             </CardHeader>
             <CardContent>
               <OcrFieldEditor
@@ -356,13 +365,13 @@ export default function InboxDetailPage() {
           {/* Action buttons */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Aktionen</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("actions")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {canApprove && (
                 <Button className="w-full" onClick={approve} disabled={approving}>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                  {approving ? "Genehmigt..." : "Genehmigen"}
+                  {approving ? t("approving") : t("approve")}
                 </Button>
               )}
 
@@ -373,7 +382,7 @@ export default function InboxDetailPage() {
                   onClick={() => setPayDialogOpen(true)}
                 >
                   <CreditCard className="h-4 w-4 mr-2" />
-                  Als bezahlt markieren
+                  {t("markPaid")}
                 </Button>
               )}
 
@@ -385,19 +394,20 @@ export default function InboxDetailPage() {
                   disabled={sepaExporting}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  {sepaExporting ? "Exportiert..." : "SEPA XML exportieren"}
+                  {sepaExporting ? t("exporting") : t("exportSepa")}
                 </Button>
               )}
 
               {invoice.status === "PAID" && invoice.paidAt && (
                 <div className="text-sm text-muted-foreground flex flex-col gap-0.5">
-                  <span>Bezahlt am {format(new Date(invoice.paidAt), "dd.MM.yyyy", { locale: de })}</span>
+                  <span>{t("paidOn", { date: format(new Date(invoice.paidAt), "dd.MM.yyyy", { locale: de }) })}</span>
                   {invoice.paidAmount && (
                     <span>
-                      Betrag:{" "}
-                      {parseFloat(invoice.paidAmount).toLocaleString("de-DE", {
-                        style: "currency",
-                        currency: "EUR",
+                      {t("amount", {
+                        amount: parseFloat(invoice.paidAmount).toLocaleString("de-DE", {
+                          style: "currency",
+                          currency: "EUR",
+                        }),
                       })}
                     </span>
                   )}
@@ -413,7 +423,7 @@ export default function InboxDetailPage() {
                     {grossNum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {invoice.invoiceType === "CREDIT_NOTE" ? "Gutschrift" : "Brutto"}
+                    {invoice.invoiceType === "CREDIT_NOTE" ? t("creditNote") : t("gross")}
                   </div>
                 </div>
               )}
@@ -423,7 +433,7 @@ export default function InboxDetailPage() {
           {/* Splits */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Kostenaufteilung</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("splits")}</CardTitle>
             </CardHeader>
             <CardContent>
               <SplitEditor

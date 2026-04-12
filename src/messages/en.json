@@ -255,7 +255,12 @@
       "notFound": "Widget \"{widgetId}\" not found",
       "loadError": "Failed to load",
       "remove": "Remove"
-    }
+    },
+    "editTitle": "Customize dashboard",
+    "editDescription": "Add, remove and arrange widgets",
+    "refresh": "Refresh dashboard",
+    "errorTitle": "Error",
+    "retry": "Try again"
   },
   "parks": {
     "title": "Wind Farms",
@@ -5944,6 +5949,456 @@
         "description": "Distributions aggregated by year",
         "count": "{count} distribution(s)"
       }
+    },
+    "energyReports": {
+      "title": "Energy reports",
+      "description": "SCADA analytics and production reports",
+      "empty": "No energy reports available",
+      "emptyDesc": "Currently no energy reports are enabled for your portal. Please contact administration.",
+      "moduleCount": "{count, plural, one {# module} other {# modules}}",
+      "viewReport": "View report",
+      "loadError": "Failed to load energy reports",
+      "configLoadError": "Failed to load report configuration",
+      "configNotFound": "Report configuration not found",
+      "printPdf": "Print / PDF",
+      "period": "Period: {from} to {to}",
+      "from": "From",
+      "to": "To",
+      "generate": "Generate report",
+      "generating": "Generating report...",
+      "notGenerated": "Report not yet generated",
+      "notGeneratedDesc": "Choose the desired period and click \"Generate report\" to start the analysis.",
+      "unknownError": "Unknown error",
+      "generateError": "Failed to generate report",
+      "modules": {
+        "kpiSummary": "KPI-Zusammenfassung",
+        "production": "Produktion",
+        "turbineComparison": "Anlagenvergleich",
+        "powerCurve": "Leistungskurve",
+        "windRose": "Windrose",
+        "dailyProfile": "Tagesverlauf",
+        "performanceKpis": "Performance-KPIs",
+        "productionHeatmap": "Produktions-Heatmap",
+        "turbineRanking": "Turbinen-Ranking",
+        "yearOverYear": "Jahresvergleich",
+        "availabilityBreakdown": "Verfügbarkeit T1-T6",
+        "availabilityTrend": "Verfügbarkeits-Trend",
+        "availabilityHeatmap": "Verfügbarkeits-Heatmap",
+        "downtimePareto": "Ausfallzeiten-Pareto",
+        "powerCurveOverlay": "Leistungskurven-Overlay",
+        "faultPareto": "Störungen-Pareto",
+        "warningTrend": "Warnungs-Trend",
+        "windDistribution": "Windverteilung",
+        "environmentalData": "Umweltdaten",
+        "financialOverview": "Finanz-Übersicht",
+        "revenueComparison": "Erlösvergleich"
+      },
+      "section": {
+        "productionDesc": "Produktionsverlauf im ausgewählten Zeitraum",
+        "turbineComparisonDesc": "Vergleich der einzelnen Windkraftanlagen",
+        "powerCurveDesc": "Zusammenhang zwischen Windgeschwindigkeit und elektrischer Leistung",
+        "windRoseDesc": "Windrichtungsverteilung nach Geschwindigkeitsbereichen",
+        "dailyProfileDesc": "Leistung und Windgeschwindigkeit im Tagesverlauf",
+        "performanceKpisDesc": "Flottenweite Performance-Kennzahlen",
+        "turbineRankingDesc": "Anlagen sortiert nach Capacity Factor",
+        "productionHeatmapDesc": "Monatliche Produktion pro Anlage (kWh)",
+        "yearOverYearDesc": "Monatliche Produktion: aktuelles vs. Vorjahr",
+        "availabilityBreakdownDesc": "IEC 61400-26 Verfügbarkeitsklassen pro Anlage",
+        "availabilityTrendDesc": "Monatliche technische Verfügbarkeit",
+        "availabilityHeatmapDesc": "Monatliche Verfügbarkeit pro Anlage (%)",
+        "downtimeParetoDesc": "Ausfallkategorien nach Dauer sortiert",
+        "faultParetoDesc": "Top-Zustandscodes nach Gesamtdauer",
+        "warningTrendDesc": "Monatliche Warnungshäufigkeit und -dauer",
+        "windDistributionDesc": "Häufigkeitsverteilung der Windgeschwindigkeit",
+        "environmentalDataDesc": "Saisonale Muster und Umweltkennwerte",
+        "financialOverviewDesc": "Erlöse und Finanz-Kennzahlen",
+        "revenueComparisonDesc": "Geschätzter Erlösverlust durch Ausfallzeiten",
+        "powerCurveOverlayDesc": "Leistungskurven aller Anlagen (Datenpunkte je 0,5 m/s)",
+        "turbinesWithCurves": "{count} Anlagen mit Leistungskurvendaten",
+        "noData": "Keine Daten"
+      },
+      "empty2": {
+        "production": "Keine Produktionsdaten verfügbar",
+        "turbine": "Keine Anlagendaten verfügbar",
+        "powerCurve": "Keine Leistungskurvendaten verfügbar",
+        "windRose": "Keine Windrosendaten verfügbar",
+        "daily": "Keine Tagesverlaufsdaten verfügbar",
+        "fleet": "Keine Flottendaten",
+        "ranking": "Keine Ranking-Daten",
+        "heatmap": "Keine Heatmap-Daten",
+        "yoy": "Keine Jahresvergleichsdaten",
+        "availability": "Keine Verfügbarkeitsdaten",
+        "trend": "Keine Trenddaten",
+        "pareto": "Keine Pareto-Daten",
+        "warning": "Keine Warnungsdaten",
+        "windDist": "Keine Windverteilungsdaten",
+        "environment": "Keine Umweltdaten",
+        "lostRevenue": "Keine Erlösverlustdaten"
+      },
+      "kpi": {
+        "totalProduction": "Gesamtproduktion",
+        "avgPower": "Durchschnittsleistung",
+        "windSpeed": "Windgeschwindigkeit",
+        "maxPower": "Max. Leistung",
+        "operatingHours": "Betriebsstunden",
+        "dataCompleteness": "Datenvollständigkeit",
+        "capacityFactor": "Capacity Factor",
+        "specificYield": "Specific Yield",
+        "installedPower": "Installierte Leistung",
+        "avgWindSpeed": "Mittlere Windgeschwindigkeit"
+      },
+      "cols": {
+        "turbine": "Anlage",
+        "productionKwh": "Produktion (kWh)",
+        "powerKw": "Leistung (kW)",
+        "windMs": "Wind (m/s)",
+        "dataPoints": "Datenpunkte",
+        "productionMwh": "Produktion (MWh)",
+        "cf": "CF (%)",
+        "kwhKw": "kWh/kW",
+        "month": "Monat",
+        "currentYearKwh": "Aktuelles Jahr (kWh)",
+        "previousYearKwh": "Vorjahr (kWh)",
+        "diff": "Differenz",
+        "availPct": "Verf. %",
+        "value": "Wert ({unit})",
+        "category": "Kategorie",
+        "durationH": "Dauer (h)",
+        "shareP": "Anteil (%)",
+        "cumulativeP": "Kumulativ (%)",
+        "frequency": "Häufigkeit",
+        "windBin": "Wind (m/s)",
+        "count": "Anzahl",
+        "powerKwUnit": "Leistung (kW)",
+        "pressureHpa": "Druck (hPa)",
+        "humidityP": "Feuchte (%)",
+        "revenueEur": "Erlöse (EUR)",
+        "eurKwh": "EUR/kWh",
+        "totalRevenue": "Gesamterlöse",
+        "totalProductionAlt": "Gesamtproduktion",
+        "estimatedLoss": "Geschätzter Produktionsverlust",
+        "estimatedRevLoss": "Geschätzter Erlösverlust",
+        "avgEurKwh": "Durchschnittlicher EUR/kWh",
+        "authoritative": "Maßgeblich",
+        "tLabels": {
+          "t1": "Prod.",
+          "t2": "Still.",
+          "t3": "Umw.",
+          "t4": "Wart.",
+          "t5": "Stör.",
+          "t6": "Sonst."
+        }
+      }
+    },
+    "profile": {
+      "title": "My profile",
+      "descriptionShort": "Manage your personal data",
+      "description": "Manage your personal data and bank details",
+      "edit": "Edit",
+      "saveSuccess": "Your changes have been saved successfully.",
+      "loadError": "Profile could not be loaded",
+      "saveFailed": "Save failed",
+      "unknownError": "An error occurred",
+      "invalidEmail": "Please enter a valid email address",
+      "invalidIban": "Please enter a valid IBAN",
+      "invalidBic": "Please enter a valid BIC",
+      "personal": {
+        "title": "Personal data",
+        "description": "Your contact details and address",
+        "name": "Name",
+        "adminOnly": "Editable by administrator only",
+        "email": "Email",
+        "phone": "Phone",
+        "phonePlaceholder": "+49 123 456789"
+      },
+      "address": {
+        "title": "Address",
+        "description": "Your postal address",
+        "street": "Street",
+        "streetPlaceholder": "Sample street",
+        "houseNumber": "No.",
+        "houseNumberPlaceholder": "1a",
+        "zip": "ZIP",
+        "zipPlaceholder": "12345",
+        "city": "City",
+        "cityPlaceholder": "Sample city",
+        "country": "Country",
+        "countryPlaceholder": "Germany",
+        "empty": "No address provided"
+      },
+      "bank": {
+        "title": "Bank account",
+        "description": "Your bank details for distributions",
+        "name": "Bank",
+        "namePlaceholder": "Sample bank",
+        "iban": "IBAN",
+        "ibanPlaceholder": "DE89 3704 0044 0532 0130 00",
+        "bic": "BIC",
+        "bicPlaceholder": "COBADEFFXXX"
+      },
+      "tax": {
+        "title": "Tax information",
+        "description": "Your tax identification numbers",
+        "taxId": "Tax ID"
+      },
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving..."
+    },
+    "proxies": {
+      "title": "Proxies",
+      "description": "Manage your voting proxies",
+      "loadError": "Failed to load proxies",
+      "unknownError": "An error occurred",
+      "retry": "Try again",
+      "newProxy": "Grant new proxy",
+      "dialog": {
+        "title": "Grant new proxy",
+        "description": "Grant a voting proxy to another shareholder.",
+        "grantee": "Grantee",
+        "granteePlaceholder": "Select shareholder...",
+        "noShareholders": "No shareholders available",
+        "proxyType": "Type of proxy",
+        "generalLabel": "General proxy (for all future votes)",
+        "singleLabel": "Single proxy (only for a specific vote)",
+        "vote": "Vote",
+        "votePlaceholder": "Select vote...",
+        "noActiveVotes": "No active votes",
+        "cancel": "Cancel",
+        "submit": "Grant proxy",
+        "selectGranteeError": "Please select a grantee",
+        "selectVoteError": "Please select a vote",
+        "createError": "Failed to create proxy"
+      },
+      "status": {
+        "ACTIVE": "Active",
+        "REVOKED": "Revoked"
+      },
+      "type": {
+        "GENERAL": "General proxy",
+        "SINGLE": "Single proxy",
+        "singleFor": "Single proxy for \"{title}\""
+      },
+      "stats": {
+        "granted": "Granted proxies",
+        "received": "Received proxies",
+        "totalRevoked": "{total} total ({revoked} revoked)"
+      },
+      "tabs": {
+        "granted": "Granted proxies ({count})",
+        "received": "Received proxies ({count})"
+      },
+      "granted": {
+        "title": "Granted proxies",
+        "description": "Proxies you have granted to other shareholders",
+        "empty": "You have not granted any proxies yet.",
+        "createFirst": "Grant first proxy"
+      },
+      "received": {
+        "title": "Received proxies",
+        "description": "Proxies you have received from other shareholders",
+        "empty": "You have not received any proxies yet."
+      },
+      "table": {
+        "grantee": "Grantee",
+        "grantor": "Grantor",
+        "type": "Type",
+        "fund": "Fund",
+        "grantedAt": "Granted on",
+        "document": "Document",
+        "status": "Status",
+        "actions": "Actions",
+        "revoke": "Revoke",
+        "revokedOn": "Revoked on {date}",
+        "onDate": "on {date}"
+      },
+      "revokeDialog": {
+        "title": "Confirm revocation",
+        "description": "Do you really want to revoke this proxy?",
+        "revokeError": "Failed to revoke proxy"
+      }
+    },
+    "reports": {
+      "title": "Reports",
+      "description": "Monthly reports, annual reports and statements for your participations",
+      "searchPlaceholder": "Search by title, file name...",
+      "year": "Year",
+      "allYears": "All years",
+      "reportType": "Report type",
+      "allTypes": "All types",
+      "empty": "No reports available yet",
+      "emptyDesc": "Monthly reports, annual reports and statements will appear here once they are created.",
+      "noFiltered": "No reports found for the selected filters.",
+      "downloadFailed": "Failed to download report",
+      "download": "Download",
+      "reportCount": "{count, plural, one {# report} other {# reports}}",
+      "types": {
+        "MONTHLY": "Monthly report",
+        "QUARTERLY": "Quarterly report",
+        "ANNUAL": "Annual report",
+        "STATEMENT": "Statement",
+        "MONTHLY_PLURAL": "Monthly reports",
+        "QUARTERLY_PLURAL": "Quarterly reports",
+        "ANNUAL_PLURAL": "Annual reports",
+        "STATEMENT_PLURAL": "Statements"
+      },
+      "categories": {
+        "REPORT": "Report",
+        "PROTOCOL": "Protocol",
+        "OTHER": "Other"
+      },
+      "months": {
+        "1": "January",
+        "2": "February",
+        "3": "March",
+        "4": "April",
+        "5": "May",
+        "6": "June",
+        "7": "July",
+        "8": "August",
+        "9": "September",
+        "10": "October",
+        "11": "November",
+        "12": "December"
+      },
+      "table": {
+        "report": "Report",
+        "period": "Period",
+        "fund": "Fund",
+        "type": "Type",
+        "created": "Created",
+        "size": "Size"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your notifications and account settings",
+      "notifications": {
+        "title": "Notifications",
+        "description": "Choose what you want to be notified about by email",
+        "info": "Email notifications will be enabled in a future version. You can already configure your preferences now.",
+        "newVote": "New vote",
+        "newVoteDesc": "Notification on new shareholder votes",
+        "newDistribution": "New distribution",
+        "newDistributionDesc": "Notification on new distributions",
+        "newDocument": "New document",
+        "newDocumentDesc": "Notification on new documents in the portal"
+      },
+      "display": {
+        "title": "Display settings",
+        "description": "Language and currency settings for the portal",
+        "language": "Language",
+        "german": "German",
+        "languageInfo": "The portal language is currently set to German",
+        "currency": "Currency",
+        "euro": "Euro",
+        "currencyInfo": "All amounts are displayed in Euro"
+      },
+      "security": {
+        "title": "Security",
+        "description": "Manage your credentials and security settings",
+        "changePassword": "Change password",
+        "changePasswordDesc": "Update your login password",
+        "comingSoon": "Coming soon",
+        "lastLogin": "Last login"
+      },
+      "privacy": {
+        "title": "Data protection (GDPR)",
+        "description": "Your rights under the General Data Protection Regulation",
+        "dataExport": "Data subject access request (Art. 15)",
+        "dataExportDesc": "Download all your stored data as JSON",
+        "exportButton": "Export data",
+        "exportFailed": "Data export failed",
+        "exportSuccess": "Data export downloaded",
+        "deleteAccount": "Delete account (Art. 17)",
+        "deleteAccountDesc": "Irreversibly anonymize all personal data",
+        "deleteButton": "Delete account",
+        "deleteFailed": "Deletion failed",
+        "deleteSuccess": "Account has been deleted. You will be signed out.",
+        "deleteDialog": {
+          "title": "Permanently delete account?",
+          "description": "This action cannot be undone. All your personal data (name, address, bank details, email) will be anonymized. Your access will be permanently disabled. Business records (bookings, distributions) will be retained anonymized for legal reasons.",
+          "cancel": "Cancel",
+          "confirm": "Yes, delete account"
+        }
+      }
+    },
+    "votes": {
+      "title": "Votes",
+      "description": "Shareholder votes and decisions",
+      "decision": {
+        "YES": "Yes",
+        "NO": "No",
+        "ABSTAIN": "Abstain"
+      },
+      "stats": {
+        "openTitle": "Open votes",
+        "openDesc": "Your vote is expected",
+        "activeTitle": "Active",
+        "activeDesc": "Ongoing votes",
+        "closedTitle": "Closed",
+        "closedDesc": "Completed votes"
+      },
+      "pending": {
+        "title": "Vote required",
+        "description": "Your vote is expected for the following votes",
+        "deadline": "Deadline",
+        "vote": "Vote"
+      },
+      "tabs": {
+        "active": "Active ({count})",
+        "closed": "Closed ({count})"
+      },
+      "empty": {
+        "active": "No active votes available.",
+        "closed": "No closed votes available."
+      },
+      "notVoted": "Not voted",
+      "open": "Open",
+      "deadline": "Deadline:",
+      "yourVotingRight": "Your voting right:",
+      "quorum": "Quorum:",
+      "vote": "Vote",
+      "detail": {
+        "back": "Back to votes",
+        "notFound": "Vote not found.",
+        "details": "Vote details",
+        "info": "Information about the resolution",
+        "votedWith": "You voted \"{decision}\"",
+        "ended": "Vote ended",
+        "openBadge": "Vote open",
+        "description": "Description",
+        "deadline": "Deadline",
+        "yourVotingRight": "Your voting right",
+        "quorum": "Quorum",
+        "requiredMajority": "Required majority",
+        "castVote": "Cast your vote",
+        "chooseOption": "Choose one of the following options",
+        "submitVote": "Submit vote",
+        "submitError": "Failed to submit vote",
+        "alreadyVoted": "You have already voted",
+        "yourDecision": "Your decision: {decision}",
+        "votedOn": "(on {date})",
+        "notParticipated": "You did not participate in this vote.",
+        "result": "Vote result",
+        "accepted": "Resolution accepted",
+        "rejected": "Resolution rejected",
+        "quorumTitle": "Quorum",
+        "quorumRequired": "Required: {value}",
+        "quorumAchieved": "Achieved: {value}",
+        "quorumReached": "Quorum reached",
+        "quorumNotReached": "Quorum not reached",
+        "headcount": "Result by headcount",
+        "headcountDesc": "{count} shareholders voted",
+        "capital": "Result by capital share",
+        "authoritative": "Authoritative",
+        "capitalDesc": "{voted} of {eligible} capital voted",
+        "votes": "votes",
+        "confirmTitle": "Confirm vote",
+        "confirmDesc": "You are about to vote {decision}. This decision cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      }
     }
   },
   "funds": {
@@ -6284,6 +6739,408 @@
       "title": "New Shareholder",
       "description": "Shareholder onboarding: Create a new shareholder step by step.",
       "backLabel": "Back to companies overview"
+    }
+  },
+  "gis": {
+    "import": {
+      "title": "Import QGIS Project",
+      "description": "Import shapefiles or ZIP with multiple layers",
+      "backToMap": "Back to map",
+      "steps": {
+        "upload": "Upload",
+        "layers": "Layer assignment",
+        "mapping": "Field mapping",
+        "preview": "Preview",
+        "owners": "Owners",
+        "options": "Options",
+        "import": "Import"
+      },
+      "upload": {
+        "analyzing": "Analyzing file...",
+        "drop": "Drag shapefile or ZIP here",
+        "formats": ".shp, .zip (multi-layer), .geojson — max. 50 MB",
+        "chooseFile": "Choose file",
+        "tip": "Tip:",
+        "tipText": "In QGIS you can export layers as Shapefile (right-click → Export → Save Features As...). For multiple layers: pack all SHP files into one ZIP.",
+        "uploadFailed": "Upload failed",
+        "uploadError": "Error during upload",
+        "layersDetected": "{count} layers detected"
+      },
+      "layers": {
+        "heading": "Layer assignment ({count} layers detected)",
+        "colLayer": "Layer",
+        "colGeometry": "Geometry",
+        "colFeatures": "Features",
+        "colType": "Type",
+        "colColor": "Color",
+        "colTransparency": "Transparency",
+        "colAreaType": "Area type",
+        "chooseColor": "Choose color",
+        "optional": "Optional"
+      },
+      "areaTypes": {
+        "none": "No area type",
+        "weaStandort": "Turbine site",
+        "pool": "Pool",
+        "weg": "Access road",
+        "ausgleich": "Compensation area",
+        "kabel": "Cable route"
+      },
+      "mapping": {
+        "heading": "Field mapping for plots",
+        "empty": "No plot layers available. Continue to the next step.",
+        "layerLabel": "Layer: {name}",
+        "ownerFields": "Owner fields",
+        "notMapped": "— Not mapped —",
+        "plotFields": {
+          "cadastralDistrict": "Cadastral district",
+          "fieldNumber": "Field",
+          "plotNumber": "Plot (complete)",
+          "plotNumerator": "Plot numerator",
+          "plotDenominator": "Plot denominator",
+          "areaSqm": "Area (m²)"
+        },
+        "ownerFieldsLabels": {
+          "ownerName": "Owner (complete)",
+          "ownerFirstName": "First name",
+          "ownerLastName": "Last name",
+          "ownerStreet": "Street",
+          "ownerPostalCode": "ZIP",
+          "ownerCity": "City"
+        }
+      },
+      "preview": {
+        "heading": "Preview — {features} features in {layers} layers",
+        "andMore": "...and {count} more"
+      },
+      "owners": {
+        "heading": "Owner mapping",
+        "intro": "Owners are automatically fuzzy-matched against existing persons during import. New owners are created automatically.",
+        "alert": "Owner mapping is based on the field mappings from step 3. Existing persons are reused, new ones are created."
+      },
+      "options": {
+        "heading": "Import options",
+        "park": "Park *",
+        "parkPlaceholder": "Select park",
+        "createLeases": "Create lease contracts",
+        "startDate": "Start date",
+        "status": "Status",
+        "statusDraft": "Draft",
+        "statusActive": "Active",
+        "summary": "Summary",
+        "selectParkError": "Please select a park"
+      },
+      "result": {
+        "heading": "Import completed",
+        "subtitle": "All data has been imported successfully.",
+        "plots": "Plots",
+        "annotations": "Annotations",
+        "newOwners": "Owners (new)",
+        "contracts": "Contracts",
+        "skipped": "{count} features skipped:",
+        "toMap": "To GIS map",
+        "toast": "Import completed!",
+        "importFailed": "Import failed",
+        "importError": "Error during import"
+      },
+      "nav": {
+        "back": "Back",
+        "next": "Next",
+        "importing": "Importing...",
+        "importFeatures": "Import {count} features"
+      }
+    }
+  },
+  "inbox": {
+    "title": "Incoming invoices",
+    "description": "Manage invoices and credit notes",
+    "upload": "Upload",
+    "notEnabled": "Inbox not enabled",
+    "notEnabledDesc": "The incoming invoices module is not enabled for this tenant.",
+    "kpi": {
+      "open": "Open",
+      "approved": "Approved",
+      "paid": "Paid"
+    },
+    "filter": {
+      "status": "Status",
+      "type": "Type",
+      "allStatus": "All statuses",
+      "allTypes": "All types"
+    },
+    "status": {
+      "INBOX": "Inbox",
+      "OCR_PROCESSING": "OCR running",
+      "REVIEW": "Under review",
+      "APPROVED": "Approved",
+      "PAID": "Paid",
+      "CANCELLED": "Cancelled"
+    },
+    "type": {
+      "INVOICE": "Invoice",
+      "CREDIT_NOTE": "Credit note"
+    },
+    "table": {
+      "vendor": "Vendor",
+      "type": "Type",
+      "invoiceNumber": "Inv. no.",
+      "date": "Date",
+      "due": "Due",
+      "gross": "Gross",
+      "status": "Status",
+      "noVendor": "No vendor"
+    },
+    "empty": "No incoming invoices found",
+    "uploadFirst": "Upload first invoice",
+    "loadError": "Failed to load",
+    "uploadDialog": {
+      "title": "Upload invoice / credit note",
+      "dropText": "Drag PDF or image here or click to choose",
+      "formats": "PDF, JPEG, PNG, TIFF — max. 50 MB",
+      "cancel": "Cancel",
+      "upload": "Upload",
+      "uploading": "Uploading...",
+      "uploadFailed": "Upload failed",
+      "success": "\"{name}\" uploaded — OCR started"
+    },
+    "detail": {
+      "invoiceNumber": "Inv. {number}",
+      "file": "File",
+      "open": "Open",
+      "invoiceFields": "Invoice fields",
+      "actions": "Actions",
+      "approve": "Approve",
+      "approving": "Approving...",
+      "markPaid": "Mark as paid",
+      "exportSepa": "Export SEPA XML",
+      "exporting": "Exporting...",
+      "paidOn": "Paid on {date}",
+      "amount": "Amount: {amount}",
+      "creditNote": "Credit note",
+      "gross": "Gross",
+      "splits": "Cost split",
+      "loadError": "Failed to load",
+      "approved": "Invoice approved",
+      "sepaDownloaded": "SEPA XML downloaded",
+      "error": "Error"
+    },
+    "payDialog": {
+      "title": "Mark as paid",
+      "date": "Payment date",
+      "amount": "Paid amount €",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving...",
+      "success": "Marked as paid"
+    }
+  },
+  "journalEntries": {
+    "title": "Journal entries",
+    "description": "Manual debit/credit bookings using SKR03 accounts",
+    "refresh": "Refresh",
+    "newEntry": "New entry",
+    "stats": {
+      "total": "Total",
+      "drafts": "Drafts",
+      "posted": "Posted"
+    },
+    "filters": {
+      "all": "All",
+      "drafts": "Drafts",
+      "posted": "Posted"
+    },
+    "bookings": "Entries",
+    "loading": "Loading…",
+    "empty": "No entries available",
+    "createFirst": "Create first entry",
+    "table": {
+      "date": "Date",
+      "description": "Description",
+      "reference": "Reference",
+      "debitTotal": "Σ Debit",
+      "status": "Status",
+      "selectAll": "Select all",
+      "select": "Select"
+    },
+    "status": {
+      "draft": "Draft",
+      "posted": "Posted"
+    },
+    "dialog": {
+      "view": "View entry",
+      "edit": "Edit entry",
+      "new": "New entry",
+      "date": "Date",
+      "description": "Description",
+      "descriptionPlaceholder": "e.g. Maintenance accrual March",
+      "reference": "Reference (optional)",
+      "referencePlaceholder": "K-001",
+      "cols": {
+        "line": "#",
+        "account": "Account",
+        "accountName": "Name",
+        "debit": "Debit (€)",
+        "credit": "Credit (€)"
+      },
+      "accountPlaceholder": "4210",
+      "accountNamePlaceholder": "Lease expense",
+      "amountPlaceholder": "0.00",
+      "addLine": "Add line",
+      "sumDebit": "Σ Debit:",
+      "sumCredit": "Σ Credit:",
+      "notBalanced": "— not balanced",
+      "close": "Close",
+      "cancel": "Cancel",
+      "saveDraft": "Save as draft",
+      "post": "Post",
+      "descriptionMissing": "Description missing",
+      "notBalancedError": "Debit ≠ Credit — entry not balanced",
+      "saveError": "Failed to save",
+      "postError": "Failed to post",
+      "connectionError": "Connection error",
+      "savedDraft": "Entry saved",
+      "updated": "Entry updated",
+      "postedSuccess": "Entry posted successfully"
+    },
+    "delete": {
+      "success": "Entry deleted",
+      "error": "Failed to delete"
+    },
+    "batch": {
+      "export": "CSV export",
+      "delete": "Delete",
+      "onlyDrafts": "Only drafts can be deleted",
+      "confirm": "Really delete {count} draft(s)?",
+      "confirmWithSkipped": "Really delete {count} draft(s)? ({skipped} posted entries will be skipped)",
+      "deleted": "{count} entry/entries deleted",
+      "failed": "Failed to delete {count} entry/entries",
+      "exported": "{count} entry/entries exported",
+      "csvHeader": "Date;Number;Description;Debit;Credit;Status"
+    }
+  },
+  "serviceEvents": {
+    "title": "Service events",
+    "description": "Overview of all maintenance, repairs and inspections",
+    "list": {
+      "total": "Total events",
+      "totalSubtitle": "All service events",
+      "thisMonth": "This month",
+      "thisMonthSubtitle": "Events in the current month",
+      "totalCost": "Total cost",
+      "totalCostSubtitle": "All costs accumulated",
+      "upcoming": "Open events",
+      "upcomingSubtitle": "Planned events",
+      "cardTitle": "All service events",
+      "cardDescription": "Maintenance, repairs and inspections of all turbines",
+      "searchPlaceholder": "Search by description, company, notes...",
+      "parkPlaceholder": "Wind park",
+      "allParks": "All wind parks",
+      "typePlaceholder": "Event type",
+      "allTypes": "All types",
+      "cols": {
+        "date": "Date",
+        "type": "Type",
+        "turbinePark": "Turbine / park",
+        "description": "Description",
+        "company": "Company",
+        "cost": "Cost",
+        "duration": "Duration",
+        "notes": "Notes",
+        "sortByDate": "Sort by date",
+        "sortByType": "Sort by type",
+        "sortByCompany": "Sort by company",
+        "sortByCost": "Sort by cost",
+        "sortByDuration": "Sort by duration"
+      },
+      "showDetails": "Show details",
+      "moreActions": "More actions",
+      "delete": "Delete",
+      "empty": "No service events found",
+      "emptyDesc": "No service events match your filter criteria.",
+      "pagination": "Showing {from} to {to} of {total} service events",
+      "prev": "Previous",
+      "next": "Next",
+      "loadError": "Failed to load service events",
+      "retry": "Try again"
+    },
+    "eventTypes": {
+      "MAINTENANCE": "Maintenance",
+      "REPAIR": "Repair",
+      "INSPECTION": "Inspection",
+      "BLADE_INSPECTION": "Blade inspection",
+      "GEARBOX_SERVICE": "Gearbox service",
+      "GENERATOR_SERVICE": "Generator service",
+      "SOFTWARE_UPDATE": "Software update",
+      "EMERGENCY": "Emergency",
+      "TECHNICIAN_VISIT": "Technician visit",
+      "OTHER": "Other"
+    },
+    "delete": {
+      "success": "Service event deleted",
+      "error": "Failed to delete service event",
+      "title": "Delete service event"
+    },
+    "noteSaved": "Note saved",
+    "noteError": "Failed to save",
+    "batch": {
+      "export": "CSV export",
+      "delete": "Delete",
+      "confirm": "Really delete {count} service event(s)?",
+      "deleted": "{count} service event(s) deleted",
+      "failed": "Failed to delete {count} service event(s)",
+      "exported": "{count} service events exported",
+      "csvHeader": "Date;Type;Turbine;Park;Description;Cost;Duration (h)"
+    },
+    "detail": {
+      "notFound": "Service event not found",
+      "loadError": "Failed to load service event",
+      "loadErrorGeneric": "Failed to load",
+      "backToParks": "Back to wind parks",
+      "title": "Service event",
+      "deleteError": "Failed to delete",
+      "deleteErrorGeneric": "Failed to delete service event",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cards": {
+        "date": "Date",
+        "dateTooltip": "Date and time of the service event.",
+        "eventDate": "Event date",
+        "duration": "Duration",
+        "durationTooltip": "Total duration of the service work.",
+        "workingHours": "Working hours",
+        "cost": "Cost",
+        "costTooltip": "Cost incurred for this service work.",
+        "totalCost": "Total cost",
+        "documents": "Documents",
+        "documentsTooltip": "Protocols and reports related to this service event.",
+        "attached": "Attached"
+      },
+      "eventDetails": "Event details",
+      "eventDetailsTooltip": "Description, affected turbine and category of the event.",
+      "type": "Type",
+      "performedBy": "Performed by",
+      "description": "Description",
+      "notes": "Notes",
+      "createdOn": "Created on {date}",
+      "createdBy": " by {name}",
+      "documents": "Documents",
+      "documentsDescription": "Protocols, reports and other documents",
+      "upload": "Upload",
+      "noDocuments": "No documents available",
+      "addDocument": "Add document",
+      "docCols": {
+        "title": "Title",
+        "category": "Category",
+        "date": "Date"
+      },
+      "deleteDialog": {
+        "title": "Permanently delete service event",
+        "question": "Do you really want to permanently delete this entry?",
+        "warning": "This action cannot be undone.",
+        "cancel": "Cancel",
+        "deleting": "Deleting...",
+        "confirm": "Delete permanently"
+      }
     }
   }
 }

@@ -255,7 +255,12 @@
       "notFound": "Widget \"{widgetId}\" nicht gefunden",
       "loadError": "Ups, das hat nicht geklappt",
       "remove": "Entfernen"
-    }
+    },
+    "editTitle": "Dashboard anpassen",
+    "editDescription": "Widgets hinzufügen, entfernen und anordnen",
+    "refresh": "Dashboard aktualisieren",
+    "errorTitle": "Fehler",
+    "retry": "Erneut versuchen"
   },
   "parks": {
     "title": "Deine Windparks",
@@ -5946,6 +5951,456 @@
         "description": "Ausschüttungen nach Jahr zusammengefasst",
         "count": "{count} Ausschüttung(en)"
       }
+    },
+    "energyReports": {
+      "title": "Energieberichte",
+      "description": "SCADA-Auswertungen und Produktionsberichte",
+      "empty": "Keine Energieberichte verfügbar",
+      "emptyDesc": "Derzeit sind keine Energieberichte für Dein Portal freigeschaltet. Bitte wenden Sie sich an die Verwaltung.",
+      "moduleCount": "{count, plural, one {# Modul} other {# Module}}",
+      "viewReport": "Bericht anzeigen",
+      "loadError": "Fehler beim Laden der Energieberichte",
+      "configLoadError": "Fehler beim Laden der Berichtskonfiguration",
+      "configNotFound": "Berichtskonfiguration nicht gefunden",
+      "printPdf": "Drucken / PDF",
+      "period": "Zeitraum: {from} bis {to}",
+      "from": "Von",
+      "to": "Bis",
+      "generate": "Bericht generieren",
+      "generating": "Bericht wird generiert...",
+      "notGenerated": "Bericht noch nicht generiert",
+      "notGeneratedDesc": "Wähle den gewünschten Zeitraum und klicken Sie auf \"Bericht generieren\", um die Auswertung zu starten.",
+      "unknownError": "Unbekannter Fehler",
+      "generateError": "Fehler beim Generieren des Berichts",
+      "modules": {
+        "kpiSummary": "KPI-Zusammenfassung",
+        "production": "Produktion",
+        "turbineComparison": "Anlagenvergleich",
+        "powerCurve": "Leistungskurve",
+        "windRose": "Windrose",
+        "dailyProfile": "Tagesverlauf",
+        "performanceKpis": "Performance-KPIs",
+        "productionHeatmap": "Produktions-Heatmap",
+        "turbineRanking": "Turbinen-Ranking",
+        "yearOverYear": "Jahresvergleich",
+        "availabilityBreakdown": "Verfügbarkeit T1-T6",
+        "availabilityTrend": "Verfügbarkeits-Trend",
+        "availabilityHeatmap": "Verfügbarkeits-Heatmap",
+        "downtimePareto": "Ausfallzeiten-Pareto",
+        "powerCurveOverlay": "Leistungskurven-Overlay",
+        "faultPareto": "Störungen-Pareto",
+        "warningTrend": "Warnungs-Trend",
+        "windDistribution": "Windverteilung",
+        "environmentalData": "Umweltdaten",
+        "financialOverview": "Finanz-Übersicht",
+        "revenueComparison": "Erlösvergleich"
+      },
+      "section": {
+        "productionDesc": "Produktionsverlauf im ausgewählten Zeitraum",
+        "turbineComparisonDesc": "Vergleich der einzelnen Windkraftanlagen",
+        "powerCurveDesc": "Zusammenhang zwischen Windgeschwindigkeit und elektrischer Leistung",
+        "windRoseDesc": "Windrichtungsverteilung nach Geschwindigkeitsbereichen",
+        "dailyProfileDesc": "Leistung und Windgeschwindigkeit im Tagesverlauf",
+        "performanceKpisDesc": "Flottenweite Performance-Kennzahlen",
+        "turbineRankingDesc": "Anlagen sortiert nach Capacity Factor",
+        "productionHeatmapDesc": "Monatliche Produktion pro Anlage (kWh)",
+        "yearOverYearDesc": "Monatliche Produktion: aktuelles vs. Vorjahr",
+        "availabilityBreakdownDesc": "IEC 61400-26 Verfügbarkeitsklassen pro Anlage",
+        "availabilityTrendDesc": "Monatliche technische Verfügbarkeit",
+        "availabilityHeatmapDesc": "Monatliche Verfügbarkeit pro Anlage (%)",
+        "downtimeParetoDesc": "Ausfallkategorien nach Dauer sortiert",
+        "faultParetoDesc": "Top-Zustandscodes nach Gesamtdauer",
+        "warningTrendDesc": "Monatliche Warnungshäufigkeit und -dauer",
+        "windDistributionDesc": "Häufigkeitsverteilung der Windgeschwindigkeit",
+        "environmentalDataDesc": "Saisonale Muster und Umweltkennwerte",
+        "financialOverviewDesc": "Erlöse und Finanz-Kennzahlen",
+        "revenueComparisonDesc": "Geschätzter Erlösverlust durch Ausfallzeiten",
+        "powerCurveOverlayDesc": "Leistungskurven aller Anlagen (Datenpunkte je 0,5 m/s)",
+        "turbinesWithCurves": "{count} Anlagen mit Leistungskurvendaten",
+        "noData": "Keine Daten"
+      },
+      "empty2": {
+        "production": "Keine Produktionsdaten verfügbar",
+        "turbine": "Keine Anlagendaten verfügbar",
+        "powerCurve": "Keine Leistungskurvendaten verfügbar",
+        "windRose": "Keine Windrosendaten verfügbar",
+        "daily": "Keine Tagesverlaufsdaten verfügbar",
+        "fleet": "Keine Flottendaten",
+        "ranking": "Keine Ranking-Daten",
+        "heatmap": "Keine Heatmap-Daten",
+        "yoy": "Keine Jahresvergleichsdaten",
+        "availability": "Keine Verfügbarkeitsdaten",
+        "trend": "Keine Trenddaten",
+        "pareto": "Keine Pareto-Daten",
+        "warning": "Keine Warnungsdaten",
+        "windDist": "Keine Windverteilungsdaten",
+        "environment": "Keine Umweltdaten",
+        "lostRevenue": "Keine Erlösverlustdaten"
+      },
+      "kpi": {
+        "totalProduction": "Gesamtproduktion",
+        "avgPower": "Durchschnittsleistung",
+        "windSpeed": "Windgeschwindigkeit",
+        "maxPower": "Max. Leistung",
+        "operatingHours": "Betriebsstunden",
+        "dataCompleteness": "Datenvollständigkeit",
+        "capacityFactor": "Capacity Factor",
+        "specificYield": "Specific Yield",
+        "installedPower": "Installierte Leistung",
+        "avgWindSpeed": "Mittlere Windgeschwindigkeit"
+      },
+      "cols": {
+        "turbine": "Anlage",
+        "productionKwh": "Produktion (kWh)",
+        "powerKw": "Leistung (kW)",
+        "windMs": "Wind (m/s)",
+        "dataPoints": "Datenpunkte",
+        "productionMwh": "Produktion (MWh)",
+        "cf": "CF (%)",
+        "kwhKw": "kWh/kW",
+        "month": "Monat",
+        "currentYearKwh": "Aktuelles Jahr (kWh)",
+        "previousYearKwh": "Vorjahr (kWh)",
+        "diff": "Differenz",
+        "availPct": "Verf. %",
+        "value": "Wert ({unit})",
+        "category": "Kategorie",
+        "durationH": "Dauer (h)",
+        "shareP": "Anteil (%)",
+        "cumulativeP": "Kumulativ (%)",
+        "frequency": "Häufigkeit",
+        "windBin": "Wind (m/s)",
+        "count": "Anzahl",
+        "powerKwUnit": "Leistung (kW)",
+        "pressureHpa": "Druck (hPa)",
+        "humidityP": "Feuchte (%)",
+        "revenueEur": "Erlöse (EUR)",
+        "eurKwh": "EUR/kWh",
+        "totalRevenue": "Gesamterlöse",
+        "totalProductionAlt": "Gesamtproduktion",
+        "estimatedLoss": "Geschätzter Produktionsverlust",
+        "estimatedRevLoss": "Geschätzter Erlösverlust",
+        "avgEurKwh": "Durchschnittlicher EUR/kWh",
+        "authoritative": "Maßgeblich",
+        "tLabels": {
+          "t1": "Prod.",
+          "t2": "Still.",
+          "t3": "Umw.",
+          "t4": "Wart.",
+          "t5": "Stör.",
+          "t6": "Sonst."
+        }
+      }
+    },
+    "profile": {
+      "title": "Mein Profil",
+      "descriptionShort": "Verwalte Deine persönlichen Daten",
+      "description": "Verwalte Deine persönlichen Daten und Bankverbindung",
+      "edit": "Bearbeiten",
+      "saveSuccess": "Deine Änderungen wurden erfolgreich gespeichert.",
+      "loadError": "Profil konnte nicht geladen werden",
+      "saveFailed": "Speichern fehlgeschlagen",
+      "unknownError": "Ein Fehler ist aufgetreten",
+      "invalidEmail": "Bitte gib eine gültige E-Mail-Adresse ein",
+      "invalidIban": "Bitte gib eine gültige IBAN ein",
+      "invalidBic": "Bitte gib einen gültigen BIC ein",
+      "personal": {
+        "title": "Persönliche Daten",
+        "description": "Deine Kontaktdaten und Anschrift",
+        "name": "Name",
+        "adminOnly": "Nur durch Administrator änderbar",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "phonePlaceholder": "+49 123 456789"
+      },
+      "address": {
+        "title": "Adresse",
+        "description": "Deine Postanschrift",
+        "street": "Straße",
+        "streetPlaceholder": "Musterstraße",
+        "houseNumber": "Nr.",
+        "houseNumberPlaceholder": "1a",
+        "zip": "PLZ",
+        "zipPlaceholder": "12345",
+        "city": "Stadt",
+        "cityPlaceholder": "Musterstadt",
+        "country": "Land",
+        "countryPlaceholder": "Deutschland",
+        "empty": "Keine Adresse hinterlegt"
+      },
+      "bank": {
+        "title": "Bankverbindung",
+        "description": "Deine Bankdaten für Ausschüttungen",
+        "name": "Bank",
+        "namePlaceholder": "Musterbank",
+        "iban": "IBAN",
+        "ibanPlaceholder": "DE89 3704 0044 0532 0130 00",
+        "bic": "BIC",
+        "bicPlaceholder": "COBADEFFXXX"
+      },
+      "tax": {
+        "title": "Steuerliche Angaben",
+        "description": "Deine steuerlichen Identifikationsnummern",
+        "taxId": "Steuer-ID"
+      },
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saving": "Speichern..."
+    },
+    "proxies": {
+      "title": "Vollmachten",
+      "description": "Verwalte Deine Stimmrechtsvollmachten",
+      "loadError": "Fehler beim Laden der Vollmachten",
+      "unknownError": "Ein Fehler ist aufgetreten",
+      "retry": "Erneut versuchen",
+      "newProxy": "Neue Vollmacht erteilen",
+      "dialog": {
+        "title": "Neue Vollmacht erteilen",
+        "description": "Erteile einem anderen Gesellschafter eine Stimmrechtsvollmacht.",
+        "grantee": "Vollmachtnehmer",
+        "granteePlaceholder": "Gesellschafter auswählen...",
+        "noShareholders": "Keine Gesellschafter verfügbar",
+        "proxyType": "Art der Vollmacht",
+        "generalLabel": "Generalvollmacht (für alle zukünftigen Abstimmungen)",
+        "singleLabel": "Einzelvollmacht (nur für eine bestimmte Abstimmung)",
+        "vote": "Abstimmung",
+        "votePlaceholder": "Abstimmung auswählen...",
+        "noActiveVotes": "Keine aktiven Abstimmungen",
+        "cancel": "Abbrechen",
+        "submit": "Vollmacht erteilen",
+        "selectGranteeError": "Bitte wähle einen Vollmachtnehmer aus",
+        "selectVoteError": "Bitte wähle eine Abstimmung aus",
+        "createError": "Fehler beim Erstellen der Vollmacht"
+      },
+      "status": {
+        "ACTIVE": "Aktiv",
+        "REVOKED": "Widerrufen"
+      },
+      "type": {
+        "GENERAL": "Generalvollmacht",
+        "SINGLE": "Einzelvollmacht",
+        "singleFor": "Einzelvollmacht für \"{title}\""
+      },
+      "stats": {
+        "granted": "Erteilte Vollmachten",
+        "received": "Erhaltene Vollmachten",
+        "totalRevoked": "{total} gesamt ({revoked} widerrufen)"
+      },
+      "tabs": {
+        "granted": "Erteilte Vollmachten ({count})",
+        "received": "Erhaltene Vollmachten ({count})"
+      },
+      "granted": {
+        "title": "Erteilte Vollmachten",
+        "description": "Vollmachten, die du anderen Gesellschaftern erteilt haben",
+        "empty": "Du hast noch keine Vollmachten erteilt.",
+        "createFirst": "Erste Vollmacht erteilen"
+      },
+      "received": {
+        "title": "Erhaltene Vollmachten",
+        "description": "Vollmachten, die Sie von anderen Gesellschaftern erhalten haben",
+        "empty": "Du hast noch keine Vollmachten erhalten."
+      },
+      "table": {
+        "grantee": "Vollmachtnehmer",
+        "grantor": "Vollmachtgeber",
+        "type": "Typ",
+        "fund": "Gesellschaft",
+        "grantedAt": "Erteilt am",
+        "document": "Dokument",
+        "status": "Status",
+        "actions": "Aktionen",
+        "revoke": "Widerrufen",
+        "revokedOn": "Widerrufen am {date}",
+        "onDate": "am {date}"
+      },
+      "revokeDialog": {
+        "title": "Widerruf bestätigen",
+        "description": "Möchtest du diese Vollmacht wirklich widerrufen?",
+        "revokeError": "Fehler beim Widerrufen der Vollmacht"
+      }
+    },
+    "reports": {
+      "title": "Berichte",
+      "description": "Monatsberichte, Jahresberichte und Abrechnungen zu Deinen Beteiligungen",
+      "searchPlaceholder": "Suchen nach Titel, Dateiname...",
+      "year": "Jahr",
+      "allYears": "Alle Jahre",
+      "reportType": "Berichtstyp",
+      "allTypes": "Alle Typen",
+      "empty": "Noch keine Berichte verfügbar",
+      "emptyDesc": "Monatsberichte, Jahresberichte und Abrechnungen werden hier angezeigt, sobald sie erstellt wurden.",
+      "noFiltered": "Keine Berichte für die ausgewählten Filter gefunden.",
+      "downloadFailed": "Fehler beim Herunterladen des Berichts",
+      "download": "Herunterladen",
+      "reportCount": "{count, plural, one {# Bericht} other {# Berichte}}",
+      "types": {
+        "MONTHLY": "Monatsbericht",
+        "QUARTERLY": "Quartalsbericht",
+        "ANNUAL": "Jahresbericht",
+        "STATEMENT": "Kontoauszug",
+        "MONTHLY_PLURAL": "Monatsberichte",
+        "QUARTERLY_PLURAL": "Quartalsberichte",
+        "ANNUAL_PLURAL": "Jahresberichte",
+        "STATEMENT_PLURAL": "Kontoauszüge"
+      },
+      "categories": {
+        "REPORT": "Bericht",
+        "PROTOCOL": "Protokoll",
+        "OTHER": "Sonstiges"
+      },
+      "months": {
+        "1": "Januar",
+        "2": "Februar",
+        "3": "März",
+        "4": "April",
+        "5": "Mai",
+        "6": "Juni",
+        "7": "Juli",
+        "8": "August",
+        "9": "September",
+        "10": "Oktober",
+        "11": "November",
+        "12": "Dezember"
+      },
+      "table": {
+        "report": "Bericht",
+        "period": "Zeitraum",
+        "fund": "Gesellschaft",
+        "type": "Typ",
+        "created": "Erstellt",
+        "size": "Größe"
+      }
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "description": "Verwalte Deine Benachrichtigungen und Kontoeinstellungen",
+      "notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Legen Sie fest, worüber dich per E-Mail informiert werden möchten",
+        "info": "E-Mail-Benachrichtigungen werden in einer zukünftigen Version aktiviert. Du kannst Deine Präferenzen bereits jetzt festlegen.",
+        "newVote": "Neue Abstimmung",
+        "newVoteDesc": "Benachrichtigung bei neuen Gesellschafterbeschlüssen",
+        "newDistribution": "Neue Ausschüttung",
+        "newDistributionDesc": "Benachrichtigung bei neuen Gutschriften",
+        "newDocument": "Neues Dokument",
+        "newDocumentDesc": "Benachrichtigung bei neuen Dokumenten im Portal"
+      },
+      "display": {
+        "title": "Anzeige-Einstellungen",
+        "description": "Sprache und Währungseinstellungen für das Portal",
+        "language": "Sprache",
+        "german": "Deutsch",
+        "languageInfo": "Die Sprache des Portals ist aktuell auf Deutsch festgelegt",
+        "currency": "Währung",
+        "euro": "Euro",
+        "currencyInfo": "Alle Beträge werden in Euro angezeigt"
+      },
+      "security": {
+        "title": "Sicherheit",
+        "description": "Verwalte Deine Zugangsdaten und Sicherheitseinstellungen",
+        "changePassword": "Passwort ändern",
+        "changePasswordDesc": "Aktualisieren Sie Ihr Anmeldepasswort",
+        "comingSoon": "Funktion folgt",
+        "lastLogin": "Letzte Anmeldung"
+      },
+      "privacy": {
+        "title": "Datenschutz (DSGVO)",
+        "description": "Deine Rechte gemäß der Datenschutz-Grundverordnung",
+        "dataExport": "Datenauskunft (Art. 15)",
+        "dataExportDesc": "Alle über dich gespeicherten Daten als JSON herunterladen",
+        "exportButton": "Daten exportieren",
+        "exportFailed": "Datenexport fehlgeschlagen",
+        "exportSuccess": "Datenexport heruntergeladen",
+        "deleteAccount": "Konto löschen (Art. 17)",
+        "deleteAccountDesc": "Alle personenbezogenen Daten unwiderruflich anonymisieren",
+        "deleteButton": "Konto löschen",
+        "deleteFailed": "Löschung fehlgeschlagen",
+        "deleteSuccess": "Konto wurde gelöscht. Du wirst abgemeldet.",
+        "deleteDialog": {
+          "title": "Konto unwiderruflich löschen?",
+          "description": "Diese Aktion kann nicht rückgängig gemacht werden. Alle Deine personenbezogenen Daten (Name, Adresse, Bankdaten, E-Mail) werden anonymisiert. Ihr Zugang wird dauerhaft deaktiviert. Geschäftsdaten (Buchungen, Ausschüttungen) bleiben aus handelsrechtlichen Gründen anonymisiert erhalten.",
+          "cancel": "Abbrechen",
+          "confirm": "Ja, Konto löschen"
+        }
+      }
+    },
+    "votes": {
+      "title": "Abstimmungen",
+      "description": "Gesellschafterbeschlüsse und Abstimmungen",
+      "decision": {
+        "YES": "Ja",
+        "NO": "Nein",
+        "ABSTAIN": "Enthaltung"
+      },
+      "stats": {
+        "openTitle": "Offene Abstimmungen",
+        "openDesc": "Deine Stimme wird erwartet",
+        "activeTitle": "Aktiv",
+        "activeDesc": "Laufende Abstimmungen",
+        "closedTitle": "Abgeschlossen",
+        "closedDesc": "Beendete Abstimmungen"
+      },
+      "pending": {
+        "title": "Abstimmung erforderlich",
+        "description": "Bei den folgenden Abstimmungen wird Deine Stimme erwartet",
+        "deadline": "Frist",
+        "vote": "Abstimmen"
+      },
+      "tabs": {
+        "active": "Aktiv ({count})",
+        "closed": "Abgeschlossen ({count})"
+      },
+      "empty": {
+        "active": "Keine aktiven Abstimmungen vorhanden.",
+        "closed": "Keine abgeschlossenen Abstimmungen vorhanden."
+      },
+      "notVoted": "Nicht abgestimmt",
+      "open": "Offen",
+      "deadline": "Frist:",
+      "yourVotingRight": "Dein Stimmrecht:",
+      "quorum": "Quorum:",
+      "vote": "Abstimmen",
+      "detail": {
+        "back": "Zurück zu Abstimmungen",
+        "notFound": "Abstimmung nicht gefunden.",
+        "details": "Abstimmungsdetails",
+        "info": "Informationen zur Beschlussfassung",
+        "votedWith": "Du hast mit \"{decision}\" gestimmt",
+        "ended": "Abstimmung beendet",
+        "openBadge": "Abstimmung offen",
+        "description": "Beschreibung",
+        "deadline": "Frist",
+        "yourVotingRight": "Dein Stimmrecht",
+        "quorum": "Quorum",
+        "requiredMajority": "Erforderliche Mehrheit",
+        "castVote": "Deine Stimme abgeben",
+        "chooseOption": "Wähle eine der folgenden Optionen",
+        "submitVote": "Stimme abgeben",
+        "submitError": "Fehler beim Abstimmen",
+        "alreadyVoted": "Du hast bereits abgestimmt",
+        "yourDecision": "Deine Entscheidung: {decision}",
+        "votedOn": "(am {date})",
+        "notParticipated": "Du hast nicht an dieser Abstimmung teilgenommen.",
+        "result": "Abstimmungsergebnis",
+        "accepted": "Beschluss angenommen",
+        "rejected": "Beschluss abgelehnt",
+        "quorumTitle": "Quorum",
+        "quorumRequired": "Erforderlich: {value}",
+        "quorumAchieved": "Erreicht: {value}",
+        "quorumReached": "Quorum erreicht",
+        "quorumNotReached": "Quorum nicht erreicht",
+        "headcount": "Ergebnis nach Köpfen",
+        "headcountDesc": "{count} Gesellschafter haben abgestimmt",
+        "capital": "Ergebnis nach Kapitalanteil",
+        "authoritative": "Maßgeblich",
+        "capitalDesc": "{voted} von {eligible} Kapital haben abgestimmt",
+        "votes": "Stimmen",
+        "confirmTitle": "Stimme bestätigen",
+        "confirmDesc": "Du bist dabei, mit {decision} zu stimmen. Diese Entscheidung kann nicht rückgängig gemacht werden.",
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen"
+      }
     }
   },
   "funds": {
@@ -6286,6 +6741,408 @@
       "title": "Neuer Gesellschafter",
       "description": "Gesellschafter-Onboarding: Schritt für Schritt einen neuen Gesellschafter anlegen.",
       "backLabel": "Zurück zur Gesellschaftenübersicht"
+    }
+  },
+  "gis": {
+    "import": {
+      "title": "QGIS-Projekt importieren",
+      "description": "Shapefiles oder ZIP mit mehreren Layern importieren",
+      "backToMap": "Zurück zur Karte",
+      "steps": {
+        "upload": "Upload",
+        "layers": "Layer-Zuordnung",
+        "mapping": "Feld-Mapping",
+        "preview": "Vorschau",
+        "owners": "Eigentümer",
+        "options": "Optionen",
+        "import": "Import"
+      },
+      "upload": {
+        "analyzing": "Datei wird analysiert...",
+        "drop": "Shapefile oder ZIP hierher ziehen",
+        "formats": ".shp, .zip (Multi-Layer), .geojson — max. 50 MB",
+        "chooseFile": "Datei auswählen",
+        "tip": "Tipp:",
+        "tipText": "In QGIS kannst du Layer als Shapefile exportieren (Rechtsklick → Exportieren → Features speichern als...). Für mehrere Layer: Alle SHP-Dateien in ein ZIP packen.",
+        "uploadFailed": "Upload fehlgeschlagen",
+        "uploadError": "Fehler beim Hochladen",
+        "layersDetected": "{count} Layer erkannt"
+      },
+      "layers": {
+        "heading": "Layer-Zuordnung ({count} Layer erkannt)",
+        "colLayer": "Layer",
+        "colGeometry": "Geometrie",
+        "colFeatures": "Features",
+        "colType": "Typ",
+        "colColor": "Farbe",
+        "colTransparency": "Transparenz",
+        "colAreaType": "Flächentyp",
+        "chooseColor": "Farbe wählen",
+        "optional": "Optional"
+      },
+      "areaTypes": {
+        "none": "Kein Flächentyp",
+        "weaStandort": "WEA-Standort",
+        "pool": "Pool",
+        "weg": "Zuwegung",
+        "ausgleich": "Ausgleichsfläche",
+        "kabel": "Kabeltrasse"
+      },
+      "mapping": {
+        "heading": "Feld-Mapping für Flurstücke",
+        "empty": "Keine Flurstück-Layer vorhanden. Weiter zum nächsten Schritt.",
+        "layerLabel": "Layer: {name}",
+        "ownerFields": "Eigentümer-Felder",
+        "notMapped": "— Nicht zuordnen —",
+        "plotFields": {
+          "cadastralDistrict": "Gemarkung",
+          "fieldNumber": "Flur",
+          "plotNumber": "Flurstück (komplett)",
+          "plotNumerator": "Flurstück Zähler",
+          "plotDenominator": "Flurstück Nenner",
+          "areaSqm": "Fläche (m²)"
+        },
+        "ownerFieldsLabels": {
+          "ownerName": "Eigentümer (komplett)",
+          "ownerFirstName": "Vorname",
+          "ownerLastName": "Nachname",
+          "ownerStreet": "Straße",
+          "ownerPostalCode": "PLZ",
+          "ownerCity": "Ort"
+        }
+      },
+      "preview": {
+        "heading": "Vorschau — {features} Features in {layers} Layern",
+        "andMore": "...und {count} weitere"
+      },
+      "owners": {
+        "heading": "Eigentümer-Zuordnung",
+        "intro": "Eigentümer werden beim Import automatisch per Fuzzy-Matching gegen bestehende Personen geprüft. Neue Eigentümer werden automatisch angelegt.",
+        "alert": "Die Eigentümer-Zuordnung basiert auf den Feld-Mappings aus Schritt 3. Bestehende Personen werden wiederverwendet, neue werden erstellt."
+      },
+      "options": {
+        "heading": "Import-Optionen",
+        "park": "Park *",
+        "parkPlaceholder": "Park auswählen",
+        "createLeases": "Pachtverträge erstellen",
+        "startDate": "Startdatum",
+        "status": "Status",
+        "statusDraft": "Entwurf",
+        "statusActive": "Aktiv",
+        "summary": "Zusammenfassung",
+        "selectParkError": "Bitte einen Park auswählen"
+      },
+      "result": {
+        "heading": "Import abgeschlossen",
+        "subtitle": "Alle Daten wurden erfolgreich importiert.",
+        "plots": "Flurstücke",
+        "annotations": "Zeichnungen",
+        "newOwners": "Eigentümer (neu)",
+        "contracts": "Verträge",
+        "skipped": "{count} Features übersprungen:",
+        "toMap": "Zur GIS-Karte",
+        "toast": "Import abgeschlossen!",
+        "importFailed": "Import fehlgeschlagen",
+        "importError": "Fehler beim Import"
+      },
+      "nav": {
+        "back": "Zurück",
+        "next": "Weiter",
+        "importing": "Importiert...",
+        "importFeatures": "{count} Features importieren"
+      }
+    }
+  },
+  "inbox": {
+    "title": "Eingangsrechnungen",
+    "description": "Rechnungen und Gutschriften verwalten",
+    "upload": "Hochladen",
+    "notEnabled": "Inbox nicht aktiviert",
+    "notEnabledDesc": "Das Eingangsrechnungs-Modul ist für deinen Mandanten nicht aktiviert.",
+    "kpi": {
+      "open": "Offen",
+      "approved": "Genehmigt",
+      "paid": "Bezahlt"
+    },
+    "filter": {
+      "status": "Status",
+      "type": "Typ",
+      "allStatus": "Alle Status",
+      "allTypes": "Alle Typen"
+    },
+    "status": {
+      "INBOX": "Posteingang",
+      "OCR_PROCESSING": "OCR läuft",
+      "REVIEW": "In Prüfung",
+      "APPROVED": "Genehmigt",
+      "PAID": "Bezahlt",
+      "CANCELLED": "Storniert"
+    },
+    "type": {
+      "INVOICE": "Rechnung",
+      "CREDIT_NOTE": "Gutschrift"
+    },
+    "table": {
+      "vendor": "Lieferant",
+      "type": "Typ",
+      "invoiceNumber": "Re-Nr.",
+      "date": "Datum",
+      "due": "Fällig",
+      "gross": "Brutto",
+      "status": "Status",
+      "noVendor": "Kein Lieferant"
+    },
+    "empty": "Keine Eingangsrechnungen gefunden",
+    "uploadFirst": "Erste Rechnung hochladen",
+    "loadError": "Fehler beim Laden",
+    "uploadDialog": {
+      "title": "Rechnung / Gutschrift hochladen",
+      "dropText": "PDF oder Bild hierher ziehen oder klicken zum Auswählen",
+      "formats": "PDF, JPEG, PNG, TIFF — max. 50 MB",
+      "cancel": "Abbrechen",
+      "upload": "Hochladen",
+      "uploading": "Lädt hoch...",
+      "uploadFailed": "Fehler beim Hochladen",
+      "success": "\"{name}\" hochgeladen — OCR gestartet"
+    },
+    "detail": {
+      "invoiceNumber": "Re. {number}",
+      "file": "Datei",
+      "open": "Öffnen",
+      "invoiceFields": "Rechnungsfelder",
+      "actions": "Aktionen",
+      "approve": "Genehmigen",
+      "approving": "Genehmigt...",
+      "markPaid": "Als bezahlt markieren",
+      "exportSepa": "SEPA XML exportieren",
+      "exporting": "Exportiert...",
+      "paidOn": "Bezahlt am {date}",
+      "amount": "Betrag: {amount}",
+      "creditNote": "Gutschrift",
+      "gross": "Brutto",
+      "splits": "Kostenaufteilung",
+      "loadError": "Fehler beim Laden",
+      "approved": "Rechnung genehmigt",
+      "sepaDownloaded": "SEPA XML heruntergeladen",
+      "error": "Fehler"
+    },
+    "payDialog": {
+      "title": "Als bezahlt markieren",
+      "date": "Zahlungsdatum",
+      "amount": "Bezahlter Betrag €",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saving": "Speichere...",
+      "success": "Als bezahlt markiert"
+    }
+  },
+  "journalEntries": {
+    "title": "Buchungsjournal",
+    "description": "Manuelle Soll/Haben-Buchungen mit SKR03-Konten",
+    "refresh": "Aktualisieren",
+    "newEntry": "Neue Buchung",
+    "stats": {
+      "total": "Gesamt",
+      "drafts": "Entwürfe",
+      "posted": "Gebucht"
+    },
+    "filters": {
+      "all": "Alle",
+      "drafts": "Entwürfe",
+      "posted": "Gebucht"
+    },
+    "bookings": "Buchungen",
+    "loading": "Wird geladen…",
+    "empty": "Keine Buchungen vorhanden",
+    "createFirst": "Erste Buchung erstellen",
+    "table": {
+      "date": "Datum",
+      "description": "Beschreibung",
+      "reference": "Beleg",
+      "debitTotal": "Σ Soll",
+      "status": "Status",
+      "selectAll": "Alle auswählen",
+      "select": "Auswählen"
+    },
+    "status": {
+      "draft": "Entwurf",
+      "posted": "Gebucht"
+    },
+    "dialog": {
+      "view": "Buchung ansehen",
+      "edit": "Buchung bearbeiten",
+      "new": "Neue Buchung",
+      "date": "Datum",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "z.B. Abgrenzung Wartungskosten März",
+      "reference": "Beleg-Nr. (optional)",
+      "referencePlaceholder": "K-001",
+      "cols": {
+        "line": "#",
+        "account": "Konto",
+        "accountName": "Bezeichnung",
+        "debit": "Soll (€)",
+        "credit": "Haben (€)"
+      },
+      "accountPlaceholder": "4210",
+      "accountNamePlaceholder": "Pachtaufwand",
+      "amountPlaceholder": "0,00",
+      "addLine": "Zeile hinzufügen",
+      "sumDebit": "Σ Soll:",
+      "sumCredit": "Σ Haben:",
+      "notBalanced": "— nicht ausgeglichen",
+      "close": "Schließen",
+      "cancel": "Abbrechen",
+      "saveDraft": "Als Entwurf speichern",
+      "post": "Buchen",
+      "descriptionMissing": "Beschreibung fehlt",
+      "notBalancedError": "Soll ≠ Haben — Buchung nicht ausgeglichen",
+      "saveError": "Fehler beim Speichern",
+      "postError": "Fehler beim Buchen",
+      "connectionError": "Verbindungsfehler",
+      "savedDraft": "Buchung gespeichert",
+      "updated": "Buchung aktualisiert",
+      "postedSuccess": "Buchung erfolgreich gebucht"
+    },
+    "delete": {
+      "success": "Buchung gelöscht",
+      "error": "Fehler beim Löschen"
+    },
+    "batch": {
+      "export": "CSV Export",
+      "delete": "Löschen",
+      "onlyDrafts": "Nur Entwürfe können gelöscht werden",
+      "confirm": "{count} Entwurf/Entwürfe wirklich löschen?",
+      "confirmWithSkipped": "{count} Entwurf/Entwürfe wirklich löschen? ({skipped} gebuchte Einträge werden übersprungen)",
+      "deleted": "{count} Buchung(en) gelöscht",
+      "failed": "{count} Buchung(en) konnten nicht gelöscht werden",
+      "exported": "{count} Buchung(en) exportiert",
+      "csvHeader": "Datum;Buchungsnummer;Beschreibung;Soll;Haben;Status"
+    }
+  },
+  "serviceEvents": {
+    "title": "Service-Events",
+    "description": "Übersicht aller Wartungen, Reparaturen und Inspektionen",
+    "list": {
+      "total": "Gesamte Events",
+      "totalSubtitle": "Alle Service-Events",
+      "thisMonth": "Diesen Monat",
+      "thisMonthSubtitle": "Events im aktuellen Monat",
+      "totalCost": "Gesamtkosten",
+      "totalCostSubtitle": "Alle Kosten kumuliert",
+      "upcoming": "Offene Events",
+      "upcomingSubtitle": "Geplante Events",
+      "cardTitle": "Alle Service-Events",
+      "cardDescription": "Wartungen, Reparaturen und Inspektionen aller Anlagen",
+      "searchPlaceholder": "Suchen nach Beschreibung, Firma, Notizen...",
+      "parkPlaceholder": "Windpark",
+      "allParks": "Alle Windparks",
+      "typePlaceholder": "Event-Typ",
+      "allTypes": "Alle Typen",
+      "cols": {
+        "date": "Datum",
+        "type": "Typ",
+        "turbinePark": "Anlage / Park",
+        "description": "Beschreibung",
+        "company": "Firma",
+        "cost": "Kosten",
+        "duration": "Dauer",
+        "notes": "Notizen",
+        "sortByDate": "Nach Datum sortieren",
+        "sortByType": "Nach Typ sortieren",
+        "sortByCompany": "Nach Firma sortieren",
+        "sortByCost": "Nach Kosten sortieren",
+        "sortByDuration": "Nach Dauer sortieren"
+      },
+      "showDetails": "Details anzeigen",
+      "moreActions": "Weitere Aktionen",
+      "delete": "Löschen",
+      "empty": "Keine Service-Events gefunden",
+      "emptyDesc": "Es wurden keine Service-Events gefunden, die Ihren Filterkriterien entsprechen.",
+      "pagination": "Zeige {from} bis {to} von {total} Service-Events",
+      "prev": "Zurück",
+      "next": "Weiter",
+      "loadError": "Fehler beim Laden der Service-Events",
+      "retry": "Erneut versuchen"
+    },
+    "eventTypes": {
+      "MAINTENANCE": "Wartung",
+      "REPAIR": "Reparatur",
+      "INSPECTION": "Inspektion",
+      "BLADE_INSPECTION": "Rotorblatt-Inspektion",
+      "GEARBOX_SERVICE": "Getriebe-Service",
+      "GENERATOR_SERVICE": "Generator-Service",
+      "SOFTWARE_UPDATE": "Software-Update",
+      "EMERGENCY": "Notfall",
+      "TECHNICIAN_VISIT": "Techniker-Besuch",
+      "OTHER": "Sonstiges"
+    },
+    "delete": {
+      "success": "Service-Event wurde gelöscht",
+      "error": "Fehler beim Löschen des Service-Events",
+      "title": "Service-Event löschen"
+    },
+    "noteSaved": "Notiz gespeichert",
+    "noteError": "Fehler beim Speichern",
+    "batch": {
+      "export": "CSV Export",
+      "delete": "Löschen",
+      "confirm": "{count} Service-Event(s) wirklich löschen?",
+      "deleted": "{count} Service-Event(s) gelöscht",
+      "failed": "{count} Service-Event(s) konnten nicht gelöscht werden",
+      "exported": "{count} Service-Events exportiert",
+      "csvHeader": "Datum;Typ;Anlage;Park;Beschreibung;Kosten;Dauer (h)"
+    },
+    "detail": {
+      "notFound": "Service-Event nicht gefunden",
+      "loadError": "Fehler beim Laden des Service-Events",
+      "loadErrorGeneric": "Fehler beim Laden",
+      "backToParks": "Zurück zu Windparks",
+      "title": "Service-Event",
+      "deleteError": "Fehler beim Löschen",
+      "deleteErrorGeneric": "Fehler beim Löschen des Service-Events",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "cards": {
+        "date": "Datum",
+        "dateTooltip": "Zeitpunkt des Service-Ereignisses.",
+        "eventDate": "Event-Datum",
+        "duration": "Dauer",
+        "durationTooltip": "Gesamtdauer des Service-Einsatzes.",
+        "workingHours": "Arbeitsstunden",
+        "cost": "Kosten",
+        "costTooltip": "Entstandene Kosten für diesen Service-Einsatz.",
+        "totalCost": "Gesamtkosten",
+        "documents": "Dokumente",
+        "documentsTooltip": "Zum Service-Ereignis gehörende Protokolle und Berichte.",
+        "attached": "Angehängt"
+      },
+      "eventDetails": "Event-Details",
+      "eventDetailsTooltip": "Beschreibung, betroffene Anlage und Kategorie des Ereignisses.",
+      "type": "Typ",
+      "performedBy": "Durchgeführt von",
+      "description": "Beschreibung",
+      "notes": "Notizen",
+      "createdOn": "Erstellt am {date}",
+      "createdBy": " von {name}",
+      "documents": "Dokumente",
+      "documentsDescription": "Protokolle, Berichte und andere Dokumente",
+      "upload": "Hochladen",
+      "noDocuments": "Keine Dokumente vorhanden",
+      "addDocument": "Dokument hinzufügen",
+      "docCols": {
+        "title": "Titel",
+        "category": "Kategorie",
+        "date": "Datum"
+      },
+      "deleteDialog": {
+        "title": "Service-Event unwiderruflich löschen",
+        "question": "Möchten Sie diesen Eintrag wirklich unwiderruflich löschen?",
+        "warning": "Diese Aktion kann nicht rückgängig gemacht werden.",
+        "cancel": "Abbrechen",
+        "deleting": "Wird gelöscht...",
+        "confirm": "Unwiderruflich löschen"
+      }
     }
   }
 }

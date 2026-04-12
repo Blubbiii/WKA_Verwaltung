@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -117,18 +118,18 @@ interface ParksResponse {
 
 // -- Constants --
 
-const eventTypeLabels: Record<string, string> = {
-  MAINTENANCE: "Wartung",
-  REPAIR: "Reparatur",
-  INSPECTION: "Inspektion",
-  BLADE_INSPECTION: "Rotorblatt-Inspektion",
-  GEARBOX_SERVICE: "Getriebe-Service",
-  GENERATOR_SERVICE: "Generator-Service",
-  SOFTWARE_UPDATE: "Software-Update",
-  EMERGENCY: "Notfall",
-  TECHNICIAN_VISIT: "Techniker-Besuch",
-  OTHER: "Sonstiges",
-};
+const EVENT_TYPE_KEYS = [
+  "MAINTENANCE",
+  "REPAIR",
+  "INSPECTION",
+  "BLADE_INSPECTION",
+  "GEARBOX_SERVICE",
+  "GENERATOR_SERVICE",
+  "SOFTWARE_UPDATE",
+  "EMERGENCY",
+  "TECHNICIAN_VISIT",
+  "OTHER",
+] as const;
 
 const eventTypeBadgeVariants: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "warning"> = {
   MAINTENANCE: "warning",
@@ -175,6 +176,8 @@ function SortIcon({
 // -- Component --
 
 export default function ServiceEventsPage() {
+  const t = useTranslations("serviceEvents");
+  const tType = useTranslations("serviceEvents.eventTypes");
   const router = useRouter();
 
   // Filter state
@@ -255,20 +258,20 @@ export default function ServiceEventsPage() {
       if (!response.ok) {
         const data = await response
           .json()
-          .catch(() => ({ error: "Fehler beim Löschen" }));
+          .catch(() => ({ error: t("delete.error") }));
         throw new Error(
-          data.error || "Fehler beim Löschen des Service-Events"
+          data.error || t("delete.error")
         );
       }
       return response.json();
     },
     {
       onSuccess: () => {
-        toast.success("Service-Event wurde gelöscht");
+        toast.success(t("delete.success"));
         invalidate(["service-events"]);
       },
       onError: (error) => {
-        toast.error(error.message || "Fehler beim Löschen des Service-Events");
+        toast.error(error.message || t("delete.error"));
       },
     }
   );
@@ -294,14 +297,19 @@ export default function ServiceEventsPage() {
     return text.substring(0, maxLength) + "...";
   }
 
+  // Helper to safely translate event type
+  const translateEventType = useCallback((type: string) => {
+    try { return tType(type as "MAINTENANCE"); } catch { return type; }
+  }, [tType]);
+
   // Batch CSV export
   const handleBatchExport = useCallback(() => {
     const selected = events.filter((e) => selectedIds.has(e.id));
-    const header = "Datum;Typ;Anlage;Park;Beschreibung;Kosten;Dauer (h)";
+    const header = t("batch.csvHeader");
     const rows = selected.map((e) =>
       [
         format(new Date(e.eventDate), "dd.MM.yyyy", { locale: de }),
-        eventTypeLabels[e.eventType] || e.eventType,
+        translateEventType(e.eventType),
         e.turbine.designation,
         e.turbine.park.shortName || e.turbine.park.name,
         (e.description || "").replace(/;/g, ","),
@@ -317,13 +325,13 @@ export default function ServiceEventsPage() {
     a.download = `service-events-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`${selected.length} Service-Events exportiert`);
-  }, [events, selectedIds]);
+    toast.success(t("batch.exported", { count: selected.length }));
+  }, [events, selectedIds, t, translateEventType]);
 
   // Batch delete
   const handleBatchDelete = useCallback(async () => {
     const ids = Array.from(selectedIds);
-    if (!confirm(`${ids.length} Service-Event(s) wirklich löschen?`)) return;
+    if (!confirm(t("batch.confirm", { count: ids.length }))) return;
     let success = 0;
     let failed = 0;
     for (const id of ids) {
@@ -336,21 +344,21 @@ export default function ServiceEventsPage() {
       }
     }
     if (success > 0) {
-      toast.success(`${success} Service-Event(s) gelöscht`);
+      toast.success(t("batch.deleted", { count: success }));
       clearSelection();
       invalidate(["service-events"]);
     }
     if (failed > 0) {
-      toast.error(`${failed} Service-Event(s) konnten nicht gelöscht werden`);
+      toast.error(t("batch.failed", { count: failed }));
     }
-  }, [selectedIds, clearSelection, invalidate]);
+  }, [selectedIds, clearSelection, invalidate, t]);
 
   if (error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-destructive">Fehler beim Laden der Service-Events</p>
+        <p className="text-destructive">{t("list.loadError")}</p>
         <Button onClick={() => refetch()} variant="outline" className="mt-4">
-          Erneut versuchen
+          {t("list.retry")}
         </Button>
       </div>
     );
@@ -360,8 +368,8 @@ export default function ServiceEventsPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Service-Events"
-        description="Übersicht aller Wartungen, Reparaturen und Inspektionen"
+        title={t("title")}
+        description={t("description")}
       />
 
       {/* Stats Cards */}
@@ -369,28 +377,28 @@ export default function ServiceEventsPage() {
         columns={4}
         stats={[
           {
-            label: "Gesamte Events",
+            label: t("list.total"),
             value: stats.totalCount,
             icon: Wrench,
-            subtitle: "Alle Service-Events",
+            subtitle: t("list.totalSubtitle"),
           },
           {
-            label: "Diesen Monat",
+            label: t("list.thisMonth"),
             value: stats.monthCount,
             icon: Calendar,
-            subtitle: "Events im aktuellen Monat",
+            subtitle: t("list.thisMonthSubtitle"),
           },
           {
-            label: "Gesamtkosten",
+            label: t("list.totalCost"),
             value: formatCurrency(stats.totalCost),
             icon: Euro,
-            subtitle: "Alle Kosten kumuliert",
+            subtitle: t("list.totalCostSubtitle"),
           },
           {
-            label: "Offene Events",
+            label: t("list.upcoming"),
             value: stats.upcomingCount,
             icon: Clock,
-            subtitle: "Geplante Events",
+            subtitle: t("list.upcomingSubtitle"),
           },
         ]}
       />
@@ -398,9 +406,9 @@ export default function ServiceEventsPage() {
       {/* Filters & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Alle Service-Events</CardTitle>
+          <CardTitle>{t("list.cardTitle")}</CardTitle>
           <CardDescription>
-            Wartungen, Reparaturen und Inspektionen aller Anlagen
+            {t("list.cardDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -408,16 +416,16 @@ export default function ServiceEventsPage() {
           <SearchFilter
             search={search}
             onSearchChange={(val) => { setSearch(val); setPage(1); }}
-            searchPlaceholder="Suchen nach Beschreibung, Firma, Notizen..."
+            searchPlaceholder={t("list.searchPlaceholder")}
             filters={[
               {
                 value: parkFilter,
                 onChange: (val) => { setParkFilter(val); setPage(1); },
-                placeholder: "Windpark",
+                placeholder: t("list.parkPlaceholder"),
                 icon: <Filter className="mr-2 h-4 w-4" />,
                 width: "w-[200px]",
                 options: [
-                  { value: "all", label: "Alle Windparks" },
+                  { value: "all", label: t("list.allParks") },
                   ...parks.map((park) => ({
                     value: park.id,
                     label: park.shortName || park.name,
@@ -427,14 +435,14 @@ export default function ServiceEventsPage() {
               {
                 value: typeFilter,
                 onChange: (val) => { setTypeFilter(val); setPage(1); },
-                placeholder: "Event-Typ",
+                placeholder: t("list.typePlaceholder"),
                 icon: <Filter className="mr-2 h-4 w-4" />,
                 width: "w-[200px]",
                 options: [
-                  { value: "all", label: "Alle Typen" },
-                  ...Object.entries(eventTypeLabels).map(([value, label]) => ({
+                  { value: "all", label: t("list.allTypes") },
+                  ...EVENT_TYPE_KEYS.map((value) => ({
                     value,
-                    label,
+                    label: translateEventType(value),
                   })),
                 ],
               },
@@ -447,7 +455,7 @@ export default function ServiceEventsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
-                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label="Alle auswählen"
+                    <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label={t("list.cols.sortByDate")}
                       {...(isSomeSelected ? { "data-state": "indeterminate" } : {})} />
                   </TableHead>
                   <TableHead>
@@ -455,9 +463,9 @@ export default function ServiceEventsPage() {
                       type="button"
                       className="flex items-center font-medium hover:text-foreground transition-colors"
                       onClick={() => handleSort("eventDate")}
-                      aria-label="Nach Datum sortieren"
+                      aria-label={t("list.cols.sortByDate")}
                     >
-                      Datum
+                      {t("list.cols.date")}
                       <SortIcon field="eventDate" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
@@ -466,22 +474,22 @@ export default function ServiceEventsPage() {
                       type="button"
                       className="flex items-center font-medium hover:text-foreground transition-colors"
                       onClick={() => handleSort("eventType")}
-                      aria-label="Nach Typ sortieren"
+                      aria-label={t("list.cols.sortByType")}
                     >
-                      Typ
+                      {t("list.cols.type")}
                       <SortIcon field="eventType" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
-                  <TableHead>Anlage / Park</TableHead>
-                  <TableHead>Beschreibung</TableHead>
+                  <TableHead>{t("list.cols.turbinePark")}</TableHead>
+                  <TableHead>{t("list.cols.description")}</TableHead>
                   <TableHead>
                     <button
                       type="button"
                       className="flex items-center font-medium hover:text-foreground transition-colors"
                       onClick={() => handleSort("performedBy")}
-                      aria-label="Nach Firma sortieren"
+                      aria-label={t("list.cols.sortByCompany")}
                     >
-                      Firma
+                      {t("list.cols.company")}
                       <SortIcon field="performedBy" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
@@ -490,9 +498,9 @@ export default function ServiceEventsPage() {
                       type="button"
                       className="flex items-center font-medium hover:text-foreground transition-colors ml-auto"
                       onClick={() => handleSort("cost")}
-                      aria-label="Nach Kosten sortieren"
+                      aria-label={t("list.cols.sortByCost")}
                     >
-                      Kosten
+                      {t("list.cols.cost")}
                       <SortIcon field="cost" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
@@ -501,13 +509,13 @@ export default function ServiceEventsPage() {
                       type="button"
                       className="flex items-center font-medium hover:text-foreground transition-colors ml-auto"
                       onClick={() => handleSort("durationHours")}
-                      aria-label="Nach Dauer sortieren"
+                      aria-label={t("list.cols.sortByDuration")}
                     >
-                      Dauer
+                      {t("list.cols.duration")}
                       <SortIcon field="durationHours" sortBy={sortBy} sortOrder={sortOrder} />
                     </button>
                   </TableHead>
-                  <TableHead>Notizen</TableHead>
+                  <TableHead>{t("list.cols.notes")}</TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -552,8 +560,8 @@ export default function ServiceEventsPage() {
                     <TableCell colSpan={10} className="p-0">
                       <EmptyState
                         icon={Wrench}
-                        title="Keine Service-Events gefunden"
-                        description="Es wurden keine Service-Events gefunden, die Ihren Filterkriterien entsprechen."
+                        title={t("list.empty")}
+                        description={t("list.emptyDesc")}
                       />
                     </TableCell>
                   </TableRow>
@@ -574,7 +582,7 @@ export default function ServiceEventsPage() {
                       }}
                     >
                       <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox checked={selectedIds.has(event.id)} onCheckedChange={() => toggleItem(event.id)} aria-label="Auswählen" />
+                        <Checkbox checked={selectedIds.has(event.id)} onCheckedChange={() => toggleItem(event.id)} aria-label={t("list.cols.sortByDate")} />
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         {format(
@@ -590,8 +598,7 @@ export default function ServiceEventsPage() {
                             eventTypeBadgeVariants.OTHER
                           }
                         >
-                          {eventTypeLabels[event.eventType] ||
-                            event.eventType}
+                          {translateEventType(event.eventType)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -640,10 +647,10 @@ export default function ServiceEventsPage() {
                               body: JSON.stringify({ notes: newValue || null }),
                             });
                             if (!res.ok) {
-                              const data = await res.json().catch(() => ({ error: "Fehler" }));
-                              throw new Error(data.error || "Fehler beim Speichern");
+                              const data = await res.json().catch(() => ({ error: t("noteError") }));
+                              throw new Error(data.error || t("noteError"));
                             }
-                            toast.success("Notiz gespeichert");
+                            toast.success(t("noteSaved"));
                             invalidate(["service-events"]);
                           }}
                         />
@@ -654,7 +661,7 @@ export default function ServiceEventsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label="Details anzeigen"
+                            aria-label={t("list.showDetails")}
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/service-events/${event.id}`);
@@ -667,7 +674,7 @@ export default function ServiceEventsPage() {
                               asChild
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Weitere Aktionen">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("list.moreActions")}>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -681,7 +688,7 @@ export default function ServiceEventsPage() {
                                 className="text-red-600 focus:text-red-600 focus:bg-red-50"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Löschen
+                                {t("list.delete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -698,13 +705,11 @@ export default function ServiceEventsPage() {
           {pagination.totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Zeige{" "}
-                {(pagination.page - 1) * pagination.limit + 1} bis{" "}
-                {Math.min(
-                  pagination.page * pagination.limit,
-                  pagination.total
-                )}{" "}
-                von {pagination.total} Service-Events
+                {t("list.pagination", {
+                  from: (pagination.page - 1) * pagination.limit + 1,
+                  to: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: pagination.total,
+                })}
               </p>
               <div className="flex gap-2">
                 <Button
@@ -713,7 +718,7 @@ export default function ServiceEventsPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Zurück
+                  {t("list.prev")}
                 </Button>
                 <Button
                   variant="outline"
@@ -721,7 +726,7 @@ export default function ServiceEventsPage() {
                   disabled={page >= pagination.totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  Weiter
+                  {t("list.next")}
                 </Button>
               </div>
             </div>
@@ -735,12 +740,12 @@ export default function ServiceEventsPage() {
         onClearSelection={clearSelection}
         actions={[
           {
-            label: "CSV Export",
+            label: t("batch.export"),
             icon: <Download className="h-4 w-4" />,
             onClick: handleBatchExport,
           },
           {
-            label: "Löschen",
+            label: t("batch.delete"),
             icon: <Trash2 className="h-4 w-4" />,
             onClick: handleBatchDelete,
             variant: "destructive",
@@ -758,10 +763,10 @@ export default function ServiceEventsPage() {
             setEventToDelete(null);
           }
         }}
-        title="Service-Event löschen"
+        title={t("delete.title")}
         itemName={
           eventToDelete
-            ? `${eventTypeLabels[eventToDelete.eventType] || eventToDelete.eventType} - ${eventToDelete.turbine.designation}`
+            ? `${translateEventType(eventToDelete.eventType)} - ${eventToDelete.turbine.designation}`
             : undefined
         }
       />

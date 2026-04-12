@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -16,6 +17,7 @@ import { useDashboardConfig } from "@/hooks/useDashboardConfig";
 // =============================================================================
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
   const searchParams = useSearchParams();
   const router = useRouter();
   const editParam = searchParams.get("edit") === "true";
@@ -42,8 +44,8 @@ export default function DashboardPage() {
         <div>
           {isEditing ? (
             <>
-              <h1 className="text-3xl font-bold tracking-tight">Dashboard anpassen</h1>
-              <p className="text-muted-foreground">Widgets hinzufügen, entfernen und anordnen</p>
+              <h1 className="text-3xl font-bold tracking-tight">{t("editTitle")}</h1>
+              <p className="text-muted-foreground">{t("editDescription")}</p>
             </>
           ) : (
             <DashboardGreeting />
@@ -57,7 +59,7 @@ export default function DashboardPage() {
             size="icon"
             onClick={() => refetch()}
             disabled={isLoading}
-            title="Dashboard aktualisieren"
+            title={t("refresh")}
             className="h-9 w-9 text-muted-foreground hover:text-foreground"
           >
             <RefreshCcw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -72,7 +74,7 @@ export default function DashboardPage() {
       {error && !isEditing && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Fehler</AlertTitle>
+          <AlertTitle>{t("errorTitle")}</AlertTitle>
           <AlertDescription>
             {error}
             <Button
@@ -81,7 +83,7 @@ export default function DashboardPage() {
               onClick={() => refetch()}
               className="ml-2 p-0 h-auto"
             >
-              Erneut versuchen
+              {t("retry")}
             </Button>
           </AlertDescription>
         </Alert>

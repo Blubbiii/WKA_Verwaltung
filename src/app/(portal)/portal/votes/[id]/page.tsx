@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { format, isPast } from "date-fns";
 import { de } from "date-fns/locale";
@@ -100,15 +101,6 @@ interface VoteDetail {
   results: VoteResults | null;
 }
 
-const decisionLabels: Record<string, string> = {
-  YES: "Ja",
-  NO: "Nein",
-  ABSTAIN: "Enthaltung",
-  Ja: "Ja",
-  Nein: "Nein",
-  Enthaltung: "Enthaltung",
-};
-
 const decisionColors: Record<string, string> = {
   YES: "bg-green-100 text-green-800 border-green-300",
   NO: "bg-red-100 text-red-800 border-red-300",
@@ -133,6 +125,7 @@ interface ResultBarProps {
 }
 
 function ResultBar({ label, count, percent, color, totalLabel }: ResultBarProps) {
+  const t = useTranslations("portal.votes.detail");
   const colorClasses = {
     green: "bg-green-500",
     red: "bg-red-500",
@@ -150,7 +143,7 @@ function ResultBar({ label, count, percent, color, totalLabel }: ResultBarProps)
       <div className="flex justify-between text-sm">
         <span className="font-medium">{label}</span>
         <span className="text-muted-foreground">
-          {count} {totalLabel || "Stimmen"} ({formatPercent(percent)})
+          {count} {totalLabel || t("votes")} ({formatPercent(percent)})
         </span>
       </div>
       <div className={`h-6 rounded-full overflow-hidden ${bgColorClasses[color]}`}>
@@ -176,6 +169,8 @@ interface VoteResultsDisplayProps {
 }
 
 function VoteResultsDisplay({ results, requiresCapitalMajority }: VoteResultsDisplayProps) {
+  const t = useTranslations("portal.votes.detail");
+  const tDecision = useTranslations("portal.votes.decision");
   return (
     <div className="space-y-6">
       {/* Beschluss-Status */}
@@ -200,8 +195,8 @@ function VoteResultsDisplay({ results, requiresCapitalMajority }: VoteResultsDis
                 }`}
               >
                 {results.decision.accepted
-                  ? "Beschluss angenommen"
-                  : "Beschluss abgelehnt"}
+                  ? t("accepted")
+                  : t("rejected")}
               </p>
               <p
                 className={`text-sm ${
@@ -221,17 +216,17 @@ function VoteResultsDisplay({ results, requiresCapitalMajority }: VoteResultsDis
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <AlertCircle className="h-4 w-4" />
-              Quorum
+              {t("quorumTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>
-                  Erforderlich: {formatPercent(results.quorum.required)}
+                  {t("quorumRequired", { value: formatPercent(results.quorum.required) })}
                 </span>
                 <span>
-                  Erreicht: {formatPercent(results.quorum.achieved)}
+                  {t("quorumAchieved", { value: formatPercent(results.quorum.achieved) })}
                 </span>
               </div>
               <div className="relative">
@@ -259,12 +254,12 @@ function VoteResultsDisplay({ results, requiresCapitalMajority }: VoteResultsDis
                 {results.quorum.reached ? (
                   <Badge className="bg-green-100 text-green-800 border-green-300">
                     <CheckCircle className="h-3 w-3 mr-1" />
-                    Quorum erreicht
+                    {t("quorumReached")}
                   </Badge>
                 ) : (
                   <Badge className="bg-red-100 text-red-800 border-red-300">
                     <XCircle className="h-3 w-3 mr-1" />
-                    Quorum nicht erreicht
+                    {t("quorumNotReached")}
                   </Badge>
                 )}
               </div>
@@ -278,27 +273,27 @@ function VoteResultsDisplay({ results, requiresCapitalMajority }: VoteResultsDis
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Users className="h-4 w-4" />
-            Ergebnis nach Koepfen
+            {t("headcount")}
           </CardTitle>
           <CardDescription>
-            {results.byHeadcount.total} Gesellschafter haben abgestimmt
+            {t("headcountDesc", { count: results.byHeadcount.total })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <ResultBar
-            label="Ja"
+            label={tDecision("YES")}
             count={results.byHeadcount.yes.count}
             percent={results.byHeadcount.yes.percent}
             color="green"
           />
           <ResultBar
-            label="Nein"
+            label={tDecision("NO")}
             count={results.byHeadcount.no.count}
             percent={results.byHeadcount.no.percent}
             color="red"
           />
           <ResultBar
-            label="Enthaltung"
+            label={tDecision("ABSTAIN")}
             count={results.byHeadcount.abstain.count}
             percent={results.byHeadcount.abstain.percent}
             color="gray"
@@ -312,38 +307,39 @@ function VoteResultsDisplay({ results, requiresCapitalMajority }: VoteResultsDis
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
               <PieChart className="h-4 w-4" />
-              Ergebnis nach Kapitalanteil
+              {t("capital")}
             </CardTitle>
             {requiresCapitalMajority && (
               <Badge variant="outline" className="text-xs">
                 <TrendingUp className="h-3 w-3 mr-1" />
-                Massgeblich
+                {t("authoritative")}
               </Badge>
             )}
           </div>
           <CardDescription>
-            {formatPercent(results.byCapital.totalVoted)} von{" "}
-            {formatPercent(results.byCapital.totalEligible)} Kapital haben
-            abgestimmt
+            {t("capitalDesc", {
+              voted: formatPercent(results.byCapital.totalVoted),
+              eligible: formatPercent(results.byCapital.totalEligible),
+            })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <ResultBar
-            label="Ja"
+            label={tDecision("YES")}
             count={Number(results.byCapital.yes.amount.toFixed(2))}
             percent={results.byCapital.yes.percent}
             color="green"
             totalLabel="%"
           />
           <ResultBar
-            label="Nein"
+            label={tDecision("NO")}
             count={Number(results.byCapital.no.amount.toFixed(2))}
             percent={results.byCapital.no.percent}
             color="red"
             totalLabel="%"
           />
           <ResultBar
-            label="Enthaltung"
+            label={tDecision("ABSTAIN")}
             count={Number(results.byCapital.abstain.amount.toFixed(2))}
             percent={results.byCapital.abstain.percent}
             color="gray"
@@ -356,6 +352,11 @@ function VoteResultsDisplay({ results, requiresCapitalMajority }: VoteResultsDis
 }
 
 export default function VoteDetailPage() {
+  const t = useTranslations("portal.votes.detail");
+  const tDecision = useTranslations("portal.votes.decision");
+  const translateDecision = (key: string) => {
+    try { return tDecision(key as "YES"); } catch { return key; }
+  };
   const params = useParams();
   const _router = useRouter();
   const [vote, setVote] = useState<VoteDetail | null>(null);
@@ -405,7 +406,7 @@ export default function VoteDetailPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Fehler beim Abstimmen");
+        throw new Error(data.error || t("submitError"));
       }
 
       // Update local state
@@ -420,7 +421,7 @@ export default function VoteDetailPage() {
 
       setShowConfirm(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler beim Abstimmen");
+      setError(err instanceof Error ? err.message : t("submitError"));
     } finally {
       setSubmitting(false);
     }
@@ -442,12 +443,12 @@ export default function VoteDetailPage() {
         <Button variant="ghost" asChild>
           <Link href="/portal/votes">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurück zu Abstimmungen
+            {t("back")}
           </Link>
         </Button>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Abstimmung nicht gefunden.
+            {t("notFound")}
           </CardContent>
         </Card>
       </div>
@@ -477,20 +478,20 @@ export default function VoteDetailPage() {
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle>Abstimmungsdetails</CardTitle>
+              <CardTitle>{t("details")}</CardTitle>
               <CardDescription>
-                Informationen zur Beschlussfassung
+                {t("info")}
               </CardDescription>
             </div>
             {vote.userVote ? (
               <Badge className={decisionColors[vote.userVote.decision]}>
-                Sie haben mit &quot;{decisionLabels[vote.userVote.decision]}&quot; gestimmt
+                {t("votedWith", { decision: translateDecision(vote.userVote.decision) })}
               </Badge>
             ) : isClosed ? (
-              <Badge variant="secondary">Abstimmung beendet</Badge>
+              <Badge variant="secondary">{t("ended")}</Badge>
             ) : (
               <Badge variant="outline" className="text-orange-600 border-orange-600">
-                Abstimmung offen
+                {t("openBadge")}
               </Badge>
             )}
           </div>
@@ -498,7 +499,7 @@ export default function VoteDetailPage() {
         <CardContent className="space-y-4">
           {vote.description && (
             <div>
-              <h4 className="font-medium mb-2">Beschreibung</h4>
+              <h4 className="font-medium mb-2">{t("description")}</h4>
               <p className="text-muted-foreground whitespace-pre-wrap">
                 {vote.description}
               </p>
@@ -507,7 +508,7 @@ export default function VoteDetailPage() {
 
           <div className="grid gap-4 md:grid-cols-4 pt-4 border-t">
             <div>
-              <p className="text-sm text-muted-foreground">Frist</p>
+              <p className="text-sm text-muted-foreground">{t("deadline")}</p>
               <p className="font-medium flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 {format(new Date(vote.deadline), "dd.MM.yyyy HH:mm", {
@@ -517,19 +518,19 @@ export default function VoteDetailPage() {
             </div>
             {vote.userSharePercentage && (
               <div>
-                <p className="text-sm text-muted-foreground">Ihr Stimmrecht</p>
+                <p className="text-sm text-muted-foreground">{t("yourVotingRight")}</p>
                 <p className="font-medium">{vote.userSharePercentage.toFixed(2)}%</p>
               </div>
             )}
             {vote.quorumPercent && (
               <div>
-                <p className="text-sm text-muted-foreground">Quorum</p>
+                <p className="text-sm text-muted-foreground">{t("quorum")}</p>
                 <p className="font-medium">{vote.quorumPercent}%</p>
               </div>
             )}
             {vote.majorityPercent && (
               <div>
-                <p className="text-sm text-muted-foreground">Erforderliche Mehrheit</p>
+                <p className="text-sm text-muted-foreground">{t("requiredMajority")}</p>
                 <p className="font-medium">{vote.majorityPercent}%</p>
               </div>
             )}
@@ -543,10 +544,10 @@ export default function VoteDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Vote className="h-5 w-5" />
-              Ihre Stimme abgeben
+              {t("castVote")}
             </CardTitle>
             <CardDescription>
-              Wählen Sie eine der folgenden Optionen
+              {t("chooseOption")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -566,7 +567,7 @@ export default function VoteDetailPage() {
                 onClick={() => setSelectedDecision("YES")}
               >
                 <CheckCircle className="h-8 w-8" />
-                <span className="text-lg">Ja</span>
+                <span className="text-lg">{tDecision("YES")}</span>
               </Button>
 
               <Button
@@ -577,7 +578,7 @@ export default function VoteDetailPage() {
                 onClick={() => setSelectedDecision("NO")}
               >
                 <XCircle className="h-8 w-8" />
-                <span className="text-lg">Nein</span>
+                <span className="text-lg">{tDecision("NO")}</span>
               </Button>
 
               <Button
@@ -588,7 +589,7 @@ export default function VoteDetailPage() {
                 onClick={() => setSelectedDecision("ABSTAIN")}
               >
                 <MinusCircle className="h-8 w-8" />
-                <span className="text-lg">Enthaltung</span>
+                <span className="text-lg">{tDecision("ABSTAIN")}</span>
               </Button>
             </div>
 
@@ -599,7 +600,7 @@ export default function VoteDetailPage() {
                 onClick={() => setShowConfirm(true)}
               >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Stimme abgeben
+                {t("submitVote")}
               </Button>
             </div>
           </CardContent>
@@ -614,17 +615,13 @@ export default function VoteDetailPage() {
               <CheckCircle className="h-8 w-8 text-green-600" />
               <div>
                 <p className="font-medium text-green-800">
-                  Sie haben bereits abgestimmt
+                  {t("alreadyVoted")}
                 </p>
                 <p className="text-sm text-green-700">
-                  Ihre Entscheidung: {decisionLabels[vote.userVote.decision]}
+                  {t("yourDecision", { decision: translateDecision(vote.userVote.decision) })}
                   {vote.userVote.votedAt && (
                     <span className="ml-2">
-                      (am{" "}
-                      {format(new Date(vote.userVote.votedAt), "dd.MM.yyyy HH:mm", {
-                        locale: de,
-                      })}
-                      )
+                      {t("votedOn", { date: format(new Date(vote.userVote.votedAt), "dd.MM.yyyy HH:mm", { locale: de }) })}
                     </span>
                   )}
                 </p>
@@ -642,10 +639,10 @@ export default function VoteDetailPage() {
               <Clock className="h-8 w-8 text-gray-600" />
               <div>
                 <p className="font-medium text-gray-800">
-                  Abstimmung beendet
+                  {t("ended")}
                 </p>
                 <p className="text-sm text-gray-700">
-                  Sie haben nicht an dieser Abstimmung teilgenommen.
+                  {t("notParticipated")}
                 </p>
               </div>
             </div>
@@ -658,7 +655,7 @@ export default function VoteDetailPage() {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <PieChart className="h-5 w-5" />
-            Abstimmungsergebnis
+            {t("result")}
           </h2>
           <VoteResultsDisplay
             results={vote.results}
@@ -671,20 +668,19 @@ export default function VoteDetailPage() {
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Stimme bestätigen</AlertDialogTitle>
+            <AlertDialogTitle>{t("confirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Sie sind dabei, mit <strong>{decisionLabels[selectedDecision || ""]}</strong> zu
-              stimmen. Diese Entscheidung kann nicht rückgängig gemacht werden.
+              {t("confirmDesc", { decision: translateDecision(selectedDecision || "") })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel disabled={submitting}>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleSubmitVote}
               disabled={submitting}
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Bestätigen
+              {t("confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

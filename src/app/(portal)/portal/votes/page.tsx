@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { format, isPast } from "date-fns";
 import { de } from "date-fns/locale";
@@ -51,12 +52,6 @@ interface Summary {
   closedVotes: number;
 }
 
-const decisionLabels: Record<string, string> = {
-  YES: "Ja",
-  NO: "Nein",
-  ABSTAIN: "Enthaltung",
-};
-
 const decisionColors: Record<string, string> = {
   YES: "bg-green-100 text-green-800",
   NO: "bg-red-100 text-red-800",
@@ -64,6 +59,11 @@ const decisionColors: Record<string, string> = {
 };
 
 export default function VotesPage() {
+  const t = useTranslations("portal.votes");
+  const tDecision = useTranslations("portal.votes.decision");
+  const translateDecision = (key: string) => {
+    try { return tDecision(key as "YES"); } catch { return key; }
+  };
   const [votes, setVotes] = useState<VoteItem[]>([]);
   const [_summary, setSummary] = useState<Summary>({
     totalVotes: 0,
@@ -115,9 +115,9 @@ export default function VotesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Abstimmungen</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground">
-          Gesellschafterbeschlüsse und Abstimmungen
+          {t("description")}
         </p>
       </div>
 
@@ -125,7 +125,7 @@ export default function VotesPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Offene Abstimmungen</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("stats.openTitle")}</CardTitle>
             <Clock className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
@@ -133,32 +133,32 @@ export default function VotesPage() {
               {pendingVotes.length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Ihre Stimme wird erwartet
+              {t("stats.openDesc")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aktiv</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("stats.activeTitle")}</CardTitle>
             <Vote className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
               {activeVotes.length}
             </div>
-            <p className="text-xs text-muted-foreground">Laufende Abstimmungen</p>
+            <p className="text-xs text-muted-foreground">{t("stats.activeDesc")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Abgeschlossen</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("stats.closedTitle")}</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{closedVotes.length}</div>
-            <p className="text-xs text-muted-foreground">Beendete Abstimmungen</p>
+            <p className="text-xs text-muted-foreground">{t("stats.closedDesc")}</p>
           </CardContent>
         </Card>
       </div>
@@ -169,10 +169,10 @@ export default function VotesPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-800">
               <AlertCircle className="h-5 w-5" />
-              Abstimmung erforderlich
+              {t("pending.title")}
             </CardTitle>
             <CardDescription>
-              Bei den folgenden Abstimmungen wird Ihre Stimme erwartet
+              {t("pending.description")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -190,7 +190,7 @@ export default function VotesPage() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-sm font-medium">Frist</p>
+                      <p className="text-sm font-medium">{t("pending.deadline")}</p>
                       <p className="text-sm text-orange-600">
                         {format(new Date(vote.deadline), "dd.MM.yyyy HH:mm", {
                           locale: de,
@@ -199,7 +199,7 @@ export default function VotesPage() {
                     </div>
                     <Button asChild>
                       <Link href={`/portal/votes/${vote.id}`}>
-                        Abstimmen
+                        {t("pending.vote")}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
@@ -215,10 +215,10 @@ export default function VotesPage() {
       <Tabs defaultValue="active">
         <TabsList>
           <TabsTrigger value="active">
-            Aktiv ({activeVotes.length})
+            {t("tabs.active", { count: activeVotes.length })}
           </TabsTrigger>
           <TabsTrigger value="closed">
-            Abgeschlossen ({closedVotes.length})
+            {t("tabs.closed", { count: closedVotes.length })}
           </TabsTrigger>
         </TabsList>
 
@@ -226,13 +226,13 @@ export default function VotesPage() {
           {activeVotes.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                Keine aktiven Abstimmungen vorhanden.
+                {t("empty.active")}
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-4">
               {activeVotes.map((vote) => (
-                <VoteCard key={vote.id} vote={vote} />
+                <VoteCard key={vote.id} vote={vote} t={t} translateDecision={translateDecision} />
               ))}
             </div>
           )}
@@ -242,13 +242,13 @@ export default function VotesPage() {
           {closedVotes.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                Keine abgeschlossenen Abstimmungen vorhanden.
+                {t("empty.closed")}
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-4">
               {closedVotes.map((vote) => (
-                <VoteCard key={vote.id} vote={vote} />
+                <VoteCard key={vote.id} vote={vote} t={t} translateDecision={translateDecision} />
               ))}
             </div>
           )}
@@ -258,7 +258,7 @@ export default function VotesPage() {
   );
 }
 
-function VoteCard({ vote }: { vote: VoteItem }) {
+function VoteCard({ vote, t, translateDecision }: { vote: VoteItem; t: ReturnType<typeof useTranslations>; translateDecision: (k: string) => string }) {
   const isExpired = isPast(new Date(vote.deadline));
   const isClosed = vote.status === "CLOSED" || isExpired;
 
@@ -273,13 +273,13 @@ function VoteCard({ vote }: { vote: VoteItem }) {
           <div className="flex items-center gap-2">
             {vote.userVote ? (
               <Badge className={decisionColors[vote.userVote.decision]}>
-                {decisionLabels[vote.userVote.decision]}
+                {translateDecision(vote.userVote.decision)}
               </Badge>
             ) : isClosed ? (
-              <Badge variant="secondary">Nicht abgestimmt</Badge>
+              <Badge variant="secondary">{t("notVoted")}</Badge>
             ) : (
               <Badge variant="outline" className="text-orange-600 border-orange-600">
-                Offen
+                {t("open")}
               </Badge>
             )}
           </div>
@@ -293,7 +293,7 @@ function VoteCard({ vote }: { vote: VoteItem }) {
         <div className="flex items-center justify-between">
           <div className="flex gap-6 text-sm">
             <div>
-              <span className="text-muted-foreground">Frist: </span>
+              <span className="text-muted-foreground">{t("deadline")} </span>
               <span className={isClosed ? "text-muted-foreground" : ""}>
                 {format(new Date(vote.deadline), "dd.MM.yyyy HH:mm", {
                   locale: de,
@@ -302,13 +302,13 @@ function VoteCard({ vote }: { vote: VoteItem }) {
             </div>
             {vote.userSharePercentage && (
               <div>
-                <span className="text-muted-foreground">Ihr Stimmrecht: </span>
+                <span className="text-muted-foreground">{t("yourVotingRight")} </span>
                 <span>{vote.userSharePercentage.toFixed(2)}%</span>
               </div>
             )}
             {vote.quorumPercent && (
               <div>
-                <span className="text-muted-foreground">Quorum: </span>
+                <span className="text-muted-foreground">{t("quorum")} </span>
                 <span>{vote.quorumPercent}%</span>
               </div>
             )}
@@ -317,7 +317,7 @@ function VoteCard({ vote }: { vote: VoteItem }) {
           {vote.canVote && (
             <Button asChild>
               <Link href={`/portal/votes/${vote.id}`}>
-                Abstimmen
+                {t("vote")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
