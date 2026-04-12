@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -89,6 +90,7 @@ function formatMWh(kwh: number): string {
 // =============================================================================
 
 export default function SettlementsPage() {
+  const t = useTranslations("energy.settlementsPage");
   const router = useRouter();
 
   // ---------------------------------------------------------------------------
@@ -288,10 +290,10 @@ export default function SettlementsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Netzbetreiber-Daten
+            {t("title")}
           </h1>
           <p className="text-muted-foreground">
-            Abrechnungsdaten von Netzbetreibern und Direktvermarktern
+            {t("description")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -301,7 +303,7 @@ export default function SettlementsPage() {
             onClick={() => setImportSheetOpen(true)}
           >
             <Upload className="h-4 w-4 mr-2" />
-            CSV-Import
+            {t("csvImport")}
           </Button>
           <Button
             variant="outline"
@@ -312,12 +314,12 @@ export default function SettlementsPage() {
             }}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Manuell erfassen
+            {t("manualEntry")}
           </Button>
           <Button size="sm" asChild>
             <Link href="/energy/settlements/wizard">
               <Wand2 className="h-4 w-4 mr-2" />
-              Abrechnung erstellen
+              {t("createSettlement")}
             </Link>
           </Button>
         </div>
@@ -329,7 +331,7 @@ export default function SettlementsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Gesamtproduktion (NB)
+              {t("totalProductionNB")}
             </CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -342,10 +344,10 @@ export default function SettlementsPage() {
                   {formatMWh(stats.totalProductionKwh)} MWh
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {selectedYear !== "all" ? selectedYear : "Alle Jahre"} -{" "}
+                  {selectedYear !== "all" ? selectedYear : t("allYears")} -{" "}
                   {selectedParkId === "all"
-                    ? "Alle Parks"
-                    : "Ausgewaehlter Park"}
+                    ? t("allParks")
+                    : t("selectedPark")}
                 </p>
               </>
             )}
@@ -356,7 +358,7 @@ export default function SettlementsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Netzbetreiber-Erlös
+              {t("gridOperatorRevenue")}
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -369,8 +371,7 @@ export default function SettlementsPage() {
                   {formatCurrency(stats.totalRevenueEur)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Netzbetreiber-Erlöse{" "}
-                  {selectedYear !== "all" ? selectedYear : "gesamt"}
+                  {t("gridOperatorRevenueYear", { year: selectedYear !== "all" ? selectedYear : "" })}
                 </p>
               </>
             )}
@@ -381,7 +382,7 @@ export default function SettlementsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Offene Abrechnungen
+              {t("openSettlements")}
             </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -392,7 +393,7 @@ export default function SettlementsPage() {
               <>
                 <div className="text-2xl font-bold">{stats.openCount}</div>
                 <p className="text-xs text-muted-foreground">
-                  Entwurf oder berechnet
+                  {t("draftOrCalculated")}
                 </p>
               </>
             )}
@@ -403,7 +404,7 @@ export default function SettlementsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Letzter Import
+              {t("lastImport")}
             </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -424,7 +425,7 @@ export default function SettlementsPage() {
                     ? format(new Date(stats.lastImportDate), "HH:mm 'Uhr'", {
                         locale: de,
                       })
-                    : "Keine Daten"}
+                    : t("noData")}
                 </p>
               </>
             )}
@@ -435,9 +436,9 @@ export default function SettlementsPage() {
       {/* Filters & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Netzbetreiber-Daten</CardTitle>
+          <CardTitle>{t("gridOperatorData")}</CardTitle>
           <CardDescription>
-            Abrechnungsdaten nach Park, Jahr und Status filtern
+            {t("filterDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -448,16 +449,16 @@ export default function SettlementsPage() {
               setSearchQuery(value);
               setCurrentPage(1);
             }}
-            searchPlaceholder="Park, Referenz oder Zeitraum suchen..."
+            searchPlaceholder={t("searchPlaceholder")}
             filters={[
               {
                 value: selectedParkId,
                 onChange: (value) =>
                   handleFilterChange(setSelectedParkId, value),
-                placeholder: "Park waehlen",
+                placeholder: t("selectPark"),
                 width: "w-[200px]",
                 options: [
-                  { value: "all", label: "Alle Parks" },
+                  { value: "all", label: t("allParks") },
                   ...(parks?.map((park) => ({
                     value: park.id,
                     label: park.name,
@@ -474,7 +475,7 @@ export default function SettlementsPage() {
                 placeholder: "Jahr",
                 width: "w-[140px]",
                 options: [
-                  { value: "all", label: "Alle Jahre" },
+                  { value: "all", label: t("allYears") },
                   ...years.map((year) => ({
                     value: year.toString(),
                     label: year.toString(),
@@ -488,7 +489,7 @@ export default function SettlementsPage() {
                 placeholder: "Status",
                 width: "w-[180px]",
                 options: [
-                  { value: "all", label: "Alle Status" },
+                  { value: "all", label: t("allStatus") },
                   { value: "DRAFT", label: "Entwurf" },
                   { value: "CALCULATED", label: "Berechnet" },
                   { value: "INVOICED", label: "Abgerechnet" },
@@ -510,7 +511,7 @@ export default function SettlementsPage() {
                     onClick={() => handleSort("park")}
                   >
                     <div className="flex items-center gap-1">
-                      Park
+                      {t("park")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -519,7 +520,7 @@ export default function SettlementsPage() {
                     onClick={() => handleSort("period")}
                   >
                     <div className="flex items-center gap-1">
-                      Zeitraum
+                      {t("period")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -528,7 +529,7 @@ export default function SettlementsPage() {
                     onClick={() => handleSort("revenue")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Netzbetreiber-Erlös
+                      {t("gridOperatorRevenueCol")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -537,7 +538,7 @@ export default function SettlementsPage() {
                     onClick={() => handleSort("production")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Produktion (MWh)
+                      {t("productionMWh")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -546,7 +547,7 @@ export default function SettlementsPage() {
                     onClick={() => handleSort("distributionMode")}
                   >
                     <div className="flex items-center gap-1">
-                      Verteilmodus
+                      {t("distributionMode")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -555,7 +556,7 @@ export default function SettlementsPage() {
                     onClick={() => handleSort("status")}
                   >
                     <div className="flex items-center gap-1">
-                      Status
+                      {t("status")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -597,8 +598,7 @@ export default function SettlementsPage() {
                   <TableRow>
                     <TableCell colSpan={7} className="h-32 text-center">
                       <div className="text-destructive">
-                        Fehler beim Laden der Netzbetreiber-Daten. Bitte versuchen
-                        Sie es erneut.
+                        {t("loadError")}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -611,13 +611,13 @@ export default function SettlementsPage() {
                     >
                       <div className="flex flex-col items-center gap-2">
                         <FileText className="h-8 w-8 text-muted-foreground/50" />
-                        <p>Keine Netzbetreiber-Daten gefunden</p>
+                        <p>{t("emptyState")}</p>
                         {(selectedParkId !== "all" ||
                           selectedYear !== "all" ||
                           statusFilter !== "all" ||
                           searchQuery) && (
                           <p className="text-sm">
-                            Versuchen Sie, die Filter anzupassen.
+                            {t("adjustFilters")}
                           </p>
                         )}
                         <div className="flex gap-2 mt-2">
@@ -626,7 +626,7 @@ export default function SettlementsPage() {
                             size="sm"
                             onClick={() => setImportSheetOpen(true)}
                           >
-                            CSV importieren
+                            {t("csvImportAction")}
                           </Button>
                           <Button
                             size="sm"
@@ -635,7 +635,7 @@ export default function SettlementsPage() {
                               setEntryDialogOpen(true);
                             }}
                           >
-                            Manuell erfassen
+                            {t("manualEntry")}
                           </Button>
                         </div>
                       </div>
@@ -696,7 +696,7 @@ export default function SettlementsPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              aria-label="Bearbeiten"
+                              aria-label={t("edit")}
                               onClick={(e) => handleEditClick(e, settlement)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -706,7 +706,7 @@ export default function SettlementsPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            aria-label="Details anzeigen"
+                            aria-label={t("showDetails")}
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(
@@ -725,7 +725,7 @@ export default function SettlementsPage() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                aria-label="Weitere Aktionen"
+                                aria-label={t("moreActions")}
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
@@ -740,7 +740,7 @@ export default function SettlementsPage() {
                                 }}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
-                                Details anzeigen
+                                {t("showDetails")}
                               </DropdownMenuItem>
                               {settlement.status === "DRAFT" && (
                                 <DropdownMenuItem
@@ -752,7 +752,7 @@ export default function SettlementsPage() {
                                   }}
                                 >
                                   <Calculator className="mr-2 h-4 w-4" />
-                                  Berechnen
+                                  {t("calculateAction")}
                                 </DropdownMenuItem>
                               )}
                               {settlement.status === "CALCULATED" && (
@@ -765,7 +765,7 @@ export default function SettlementsPage() {
                                   }}
                                 >
                                   <Receipt className="mr-2 h-4 w-4" />
-                                  Gutschriften erstellen
+                                  {t("createInvoicesAction")}
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem
@@ -777,7 +777,7 @@ export default function SettlementsPage() {
                                 }}
                               >
                                 <FileText className="mr-2 h-4 w-4" />
-                                Gutschriften anzeigen
+                                {t("showInvoicesAction")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -794,14 +794,7 @@ export default function SettlementsPage() {
           {!isLoading && pagination && pagination.total > 0 && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-sm text-muted-foreground">
-                Zeige{" "}
-                {(currentPage - 1) * (pagination.limit || ITEMS_PER_PAGE) + 1}{" "}
-                bis{" "}
-                {Math.min(
-                  currentPage * (pagination.limit || ITEMS_PER_PAGE),
-                  pagination.total
-                )}{" "}
-                von {pagination.total} Einträgen
+                {t("showRange", { from: (currentPage - 1) * (pagination.limit || ITEMS_PER_PAGE) + 1, to: Math.min(currentPage * (pagination.limit || ITEMS_PER_PAGE), pagination.total), total: pagination.total })}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -814,7 +807,7 @@ export default function SettlementsPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-sm">
-                  Seite {currentPage} von {totalPages}
+                  {t("pageInfo", { page: currentPage, total: totalPages })}
                 </span>
                 <Button
                   variant="outline"

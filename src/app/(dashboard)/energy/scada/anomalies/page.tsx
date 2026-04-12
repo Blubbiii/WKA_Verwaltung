@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -165,6 +166,7 @@ function formatResponseTime(minutes: number): string {
 // =============================================================================
 
 export default function ScadaAnomaliesPage() {
+  const t = useTranslations("energy.anomalies");
   // State
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [stats, setStats] = useState<AnomalyStats>({
@@ -394,8 +396,8 @@ export default function ScadaAnomaliesPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Anomalie-Erkennung"
-        description="Automatische Erkennung von Leistungsabfaellen, Verfügbarkeitsproblemen und Datenqualitaet aus SCADA-Messdaten"
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button
             onClick={handleRunDetection}
@@ -404,7 +406,7 @@ export default function ScadaAnomaliesPage() {
             <RefreshCw
               className={`mr-2 h-4 w-4 ${runningDetection ? "animate-spin" : ""}`}
             />
-            {runningDetection ? "Analyse läuft..." : "Analyse starten"}
+            {runningDetection ? t("analysisRunning") : t("runAnalysis")}
           </Button>
         }
       />
@@ -413,46 +415,46 @@ export default function ScadaAnomaliesPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Offene Anomalien</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("openAnomalies")}</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {loading ? <Skeleton className="h-8 w-12" /> : stats.openCount}
             </div>
-            <p className="text-xs text-muted-foreground">Nicht bestätigt</p>
+            <p className="text-xs text-muted-foreground">{t("notAcknowledged")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Kritisch</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("critical")}</CardTitle>
             <AlertCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
               {loading ? <Skeleton className="h-8 w-12" /> : stats.criticalCount}
             </div>
-            <p className="text-xs text-muted-foreground">Sofortige Aufmerksamkeit erforderlich</p>
+            <p className="text-xs text-muted-foreground">{t("immediateAttention")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Heute erkannt</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("detectedToday")}</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {loading ? <Skeleton className="h-8 w-12" /> : stats.todayCount}
             </div>
-            <p className="text-xs text-muted-foreground">Neue Anomalien heute</p>
+            <p className="text-xs text-muted-foreground">{t("newToday")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Reaktionszeit</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("responseTime")}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -463,7 +465,7 @@ export default function ScadaAnomaliesPage() {
                 formatResponseTime(stats.avgResponseTimeMinutes)
               )}
             </div>
-            <p className="text-xs text-muted-foreground">Durchschnitt (letzte 30 Tage)</p>
+            <p className="text-xs text-muted-foreground">{t("avgLast30")}</p>
           </CardContent>
         </Card>
       </div>
@@ -472,7 +474,7 @@ export default function ScadaAnomaliesPage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Filter</CardTitle>
+            <CardTitle className="text-base">{t("filter")}</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -481,10 +483,10 @@ export default function ScadaAnomaliesPage() {
               <Label className="text-xs text-muted-foreground mb-1 block">Park</Label>
               <Select value={filterParkId} onValueChange={(v) => { setFilterParkId(v); setPage(1); }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Alle Parks" />
+                  <SelectValue placeholder={t("allParks")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Alle Parks</SelectItem>
+                  <SelectItem value="all">{t("allParks")}</SelectItem>
                   {parks.map((park) => (
                     <SelectItem key={park.id} value={park.id}>
                       {park.name}
@@ -498,10 +500,10 @@ export default function ScadaAnomaliesPage() {
               <Label className="text-xs text-muted-foreground mb-1 block">Typ</Label>
               <Select value={filterType} onValueChange={(v) => { setFilterType(v); setPage(1); }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Alle Typen" />
+                  <SelectValue placeholder={t("allTypes")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Alle Typen</SelectItem>
+                  <SelectItem value="all">{t("allTypes")}</SelectItem>
                   {Object.entries(ANOMALY_TYPE_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>
                       {label}
@@ -515,12 +517,12 @@ export default function ScadaAnomaliesPage() {
               <Label className="text-xs text-muted-foreground mb-1 block">Schweregrad</Label>
               <Select value={filterSeverity} onValueChange={(v) => { setFilterSeverity(v); setPage(1); }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Alle" />
+                  <SelectValue placeholder={t("all")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Alle</SelectItem>
-                  <SelectItem value="CRITICAL">Kritisch</SelectItem>
-                  <SelectItem value="WARNING">Warnung</SelectItem>
+                  <SelectItem value="all">{t("all")}</SelectItem>
+                  <SelectItem value="CRITICAL">{t("severityLabels.CRITICAL")}</SelectItem>
+                  <SelectItem value="WARNING">{t("severityLabels.WARNING")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -529,13 +531,13 @@ export default function ScadaAnomaliesPage() {
               <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
               <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); setPage(1); }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Offen" />
+                  <SelectValue placeholder={t("open")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="open">Offen</SelectItem>
-                  <SelectItem value="acknowledged">Bestätigt</SelectItem>
-                  <SelectItem value="resolved">Geloest</SelectItem>
-                  <SelectItem value="all">Alle</SelectItem>
+                  <SelectItem value="open">{t("open")}</SelectItem>
+                  <SelectItem value="acknowledged">{t("acknowledged")}</SelectItem>
+                  <SelectItem value="resolved">{t("resolved")}</SelectItem>
+                  <SelectItem value="all">{t("all")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -546,9 +548,9 @@ export default function ScadaAnomaliesPage() {
       {/* Anomalies Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Anomalien ({total})</CardTitle>
+          <CardTitle>{t("anomaliesCount", { count: total })}</CardTitle>
           <CardDescription>
-            Erkannte Anomalien aus der SCADA-Datenanalyse
+            {t("anomaliesDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -561,9 +563,9 @@ export default function ScadaAnomaliesPage() {
           ) : anomalies.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <CheckCircle2 className="h-12 w-12 mb-4 text-green-500" />
-              <p className="text-lg font-medium">Keine Anomalien gefunden</p>
+              <p className="text-lg font-medium">{t("noAnomaliesTitle")}</p>
               <p className="text-sm">
-                Alle Anlagen arbeiten innerhalb der normalen Parameter.
+                {t("noAnomaliesDesc")}
               </p>
             </div>
           ) : (
@@ -572,14 +574,14 @@ export default function ScadaAnomaliesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[140px]">Datum</TableHead>
-                      <TableHead>Anlage</TableHead>
-                      <TableHead>Park</TableHead>
-                      <TableHead>Typ</TableHead>
-                      <TableHead className="w-[100px]">Schweregrad</TableHead>
-                      <TableHead className="max-w-[300px]">Nachricht</TableHead>
-                      <TableHead className="w-[100px]">Status</TableHead>
-                      <TableHead className="w-[100px]">Aktionen</TableHead>
+                      <TableHead className="w-[140px]">{t("colDate")}</TableHead>
+                      <TableHead>{t("colTurbine")}</TableHead>
+                      <TableHead>{t("colPark")}</TableHead>
+                      <TableHead>{t("colType")}</TableHead>
+                      <TableHead className="w-[100px]">{t("colSeverity")}</TableHead>
+                      <TableHead className="max-w-[300px]">{t("colMessage")}</TableHead>
+                      <TableHead className="w-[100px]">{t("colStatus")}</TableHead>
+                      <TableHead className="w-[100px]">{t("colActions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -620,15 +622,15 @@ export default function ScadaAnomaliesPage() {
                         <TableCell>
                           {anomaly.resolvedAt ? (
                             <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
-                              Geloest
+                              {t("resolved")}
                             </Badge>
                           ) : anomaly.acknowledged ? (
                             <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-                              Bestätigt
+                              {t("acknowledged")}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                              Offen
+                              {t("open")}
                             </Badge>
                           )}
                         </TableCell>
@@ -638,7 +640,7 @@ export default function ScadaAnomaliesPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              title="Details anzeigen"
+                              title={t("showDetailsTooltip")}
                               onClick={() => openDetail(anomaly)}
                             >
                               <Eye className="h-4 w-4" />
@@ -648,7 +650,7 @@ export default function ScadaAnomaliesPage() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                title="Bestätigen"
+                                title={t("acknowledgeTooltip")}
                                 onClick={() => handleAcknowledge(anomaly)}
                               >
                                 <Check className="h-4 w-4" />
@@ -666,7 +668,7 @@ export default function ScadaAnomaliesPage() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-muted-foreground">
-                    Seite {page} von {totalPages} ({total} Ergebnisse)
+                    {t("pageStatus", { page, total: totalPages, count: total })}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -675,7 +677,7 @@ export default function ScadaAnomaliesPage() {
                       disabled={page <= 1}
                       onClick={() => setPage(page - 1)}
                     >
-                      Zurück
+                      {t("prev")}
                     </Button>
                     <Button
                       variant="outline"
@@ -683,7 +685,7 @@ export default function ScadaAnomaliesPage() {
                       disabled={page >= totalPages}
                       onClick={() => setPage(page + 1)}
                     >
-                      Weiter
+                      {t("next")}
                     </Button>
                   </div>
                 </div>

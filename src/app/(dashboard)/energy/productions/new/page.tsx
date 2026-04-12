@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
@@ -53,6 +54,7 @@ const years = Array.from({ length: 11 }, (_, i) => currentYear + 1 - i);
 // =============================================================================
 
 export default function NewProductionPage() {
+  const t = useTranslations("energy.productionNew");
   const router = useRouter();
   const { parks, isLoading: parksLoading } = useParks();
   const [saving, setSaving] = useState(false);
@@ -108,23 +110,23 @@ export default function NewProductionPage() {
     e.preventDefault();
 
     if (!formData.parkId) {
-      toast.error("Bitte waehlen Sie einen Park aus");
+      toast.error(t("errPark"));
       return;
     }
     if (!formData.turbineId) {
-      toast.error("Bitte waehlen Sie eine Anlage aus");
+      toast.error(t("errTurbine"));
       return;
     }
     if (!formData.month) {
-      toast.error("Bitte waehlen Sie einen Monat aus");
+      toast.error(t("errMonth"));
       return;
     }
     if (!formData.revenueTypeId) {
-      toast.error("Bitte waehlen Sie eine Vergütungsart aus");
+      toast.error(t("errRevenueType"));
       return;
     }
     if (!formData.productionKwh || parseFloat(formData.productionKwh) < 0) {
-      toast.error("Bitte geben Sie eine gültige Produktionsmenge ein");
+      toast.error(t("errProduction"));
       return;
     }
 
@@ -153,15 +155,15 @@ export default function NewProductionPage() {
       if (!response.ok) {
         const error = await response.json();
         throw new Error(
-          error.details || error.error || "Fehler beim Erstellen"
+          error.details || error.error || t("errCreate")
         );
       }
 
-      toast.success("Produktionsdaten erfolgreich erfasst");
+      toast.success(t("success"));
       router.push(`/energy/productions?year=${formData.year}`);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen"
+        error instanceof Error ? error.message : t("errCreate")
       );
     } finally {
       setSaving(false);
@@ -173,9 +175,9 @@ export default function NewProductionPage() {
       {/* Notice banner */}
       <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
         <p className="text-sm text-blue-800">
-          Die manuelle Erfassung ist auch direkt über die Produktionsdaten-Seite erreichbar.
+          {t("noticeBanner")}
           <Link href="/energy/productions" className="underline ml-1 font-medium">
-            Zur Übersicht
+            {t("toOverview")}
           </Link>
         </p>
       </div>
@@ -189,9 +191,9 @@ export default function NewProductionPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Produktionsdaten erfassen</h1>
+            <h1 className="text-2xl font-bold">{t("title")}</h1>
             <p className="text-muted-foreground">
-              Manuelle Eingabe von Produktionsdaten einer Anlage
+              {t("description")}
             </p>
           </div>
         </div>
@@ -201,7 +203,7 @@ export default function NewProductionPage() {
             variant="outline"
             onClick={() => router.back()}
           >
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button type="submit" disabled={saving}>
             {saving ? (
@@ -209,7 +211,7 @@ export default function NewProductionPage() {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Speichern
+            {t("save")}
           </Button>
         </div>
       </div>
@@ -220,16 +222,16 @@ export default function NewProductionPage() {
           {/* Park & Turbine */}
           <Card>
             <CardHeader>
-              <CardTitle>Anlage & Zeitraum</CardTitle>
+              <CardTitle>{t("turbinePeriod")}</CardTitle>
               <CardDescription>
-                Waehlen Sie die Anlage und den Zeitraum
+                {t("turbinePeriodDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Park */}
                 <div className="space-y-2">
-                  <Label htmlFor="parkId">Park *</Label>
+                  <Label htmlFor="parkId">{t("park")}</Label>
                   <Select
                     value={formData.parkId || "none"}
                     onValueChange={(value) =>
@@ -237,15 +239,15 @@ export default function NewProductionPage() {
                     }
                   >
                     <SelectTrigger id="parkId">
-                      <SelectValue placeholder="Park waehlen" />
+                      <SelectValue placeholder={t("selectPark")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none" disabled>
-                        Park waehlen...
+                        {t("selectParkPlaceholder")}
                       </SelectItem>
                       {parksLoading ? (
                         <SelectItem value="loading" disabled>
-                          Laden...
+                          {t("loading")}
                         </SelectItem>
                       ) : (
                         parks?.map((park) => (
@@ -260,7 +262,7 @@ export default function NewProductionPage() {
 
                 {/* Turbine */}
                 <div className="space-y-2">
-                  <Label htmlFor="turbineId">Anlage (WKA) *</Label>
+                  <Label htmlFor="turbineId">{t("turbineWka")}</Label>
                   <Select
                     value={formData.turbineId || "none"}
                     onValueChange={(value) =>
@@ -272,18 +274,18 @@ export default function NewProductionPage() {
                       <SelectValue
                         placeholder={
                           !formData.parkId
-                            ? "Zuerst Park waehlen"
-                            : "Anlage waehlen"
+                            ? t("selectParkFirst")
+                            : t("selectTurbine")
                         }
                       />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none" disabled>
-                        Anlage waehlen...
+                        {t("selectTurbinePlaceholder")}
                       </SelectItem>
                       {turbinesLoading ? (
                         <SelectItem value="loading" disabled>
-                          Laden...
+                          {t("loading")}
                         </SelectItem>
                       ) : (
                         turbines.map((turbine) => (
@@ -300,7 +302,7 @@ export default function NewProductionPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Year */}
                 <div className="space-y-2">
-                  <Label htmlFor="year">Jahr *</Label>
+                  <Label htmlFor="year">{t("year")}</Label>
                   <Select
                     value={formData.year}
                     onValueChange={(value) => handleChange("year", value)}
@@ -320,7 +322,7 @@ export default function NewProductionPage() {
 
                 {/* Month */}
                 <div className="space-y-2">
-                  <Label htmlFor="month">Monat *</Label>
+                  <Label htmlFor="month">{t("month")}</Label>
                   <Select
                     value={formData.month || "none"}
                     onValueChange={(value) =>
@@ -328,11 +330,11 @@ export default function NewProductionPage() {
                     }
                   >
                     <SelectTrigger id="month">
-                      <SelectValue placeholder="Monat waehlen" />
+                      <SelectValue placeholder={t("selectMonth")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none" disabled>
-                        Monat waehlen...
+                        {t("selectMonthPlaceholder")}
                       </SelectItem>
                       {Object.entries(monthNames).map(([num, name]) => (
                         <SelectItem key={num} value={num}>
@@ -349,15 +351,15 @@ export default function NewProductionPage() {
           {/* Production & Revenue */}
           <Card>
             <CardHeader>
-              <CardTitle>Produktion & Erlös</CardTitle>
+              <CardTitle>{t("productionRevenue")}</CardTitle>
               <CardDescription>
-                Produktionsdaten und Erlöse eintragen
+                {t("productionRevenueDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Revenue Type */}
               <div className="space-y-2">
-                <Label htmlFor="revenueTypeId">Vergütungsart *</Label>
+                <Label htmlFor="revenueTypeId">{t("revenueType")}</Label>
                 <Select
                   value={formData.revenueTypeId || "none"}
                   onValueChange={(value) =>
@@ -369,15 +371,15 @@ export default function NewProductionPage() {
                   disabled={revenueTypesLoading}
                 >
                   <SelectTrigger id="revenueTypeId">
-                    <SelectValue placeholder="Vergütungsart waehlen" />
+                    <SelectValue placeholder={t("selectRevenueType")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none" disabled>
-                      Vergütungsart waehlen...
+                      {t("selectRevenueTypePlaceholder")}
                     </SelectItem>
                     {revenueTypesLoading ? (
                       <SelectItem value="loading" disabled>
-                        Laden...
+                        {t("loading")}
                       </SelectItem>
                     ) : (
                       revenueTypes.map((rt) => (
@@ -393,7 +395,7 @@ export default function NewProductionPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Production */}
                 <div className="space-y-2">
-                  <Label htmlFor="productionKwh">Produktion (kWh) *</Label>
+                  <Label htmlFor="productionKwh">{t("productionKwh")}</Label>
                   <Input
                     id="productionKwh"
                     type="number"
@@ -403,14 +405,14 @@ export default function NewProductionPage() {
                     onChange={(e) =>
                       handleChange("productionKwh", e.target.value)
                     }
-                    placeholder="0,000"
+                    placeholder={t("productionPlaceholder")}
                     required
                   />
                 </div>
 
                 {/* Revenue */}
                 <div className="space-y-2">
-                  <Label htmlFor="revenueEur">Erlös (EUR)</Label>
+                  <Label htmlFor="revenueEur">{t("revenueEur")}</Label>
                   <Input
                     id="revenueEur"
                     type="number"
@@ -420,7 +422,7 @@ export default function NewProductionPage() {
                     onChange={(e) =>
                       handleChange("revenueEur", e.target.value)
                     }
-                    placeholder="optional"
+                    placeholder={t("revenueOptional")}
                   />
                 </div>
               </div>
@@ -430,13 +432,13 @@ export default function NewProductionPage() {
           {/* Notes */}
           <Card>
             <CardHeader>
-              <CardTitle>Bemerkungen</CardTitle>
+              <CardTitle>{t("notes")}</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
-                placeholder="Optionale Bemerkungen"
+                placeholder={t("notesPlaceholder")}
                 rows={3}
                 maxLength={1000}
               />
@@ -449,12 +451,10 @@ export default function NewProductionPage() {
           <Card className="border-blue-200 bg-blue-50">
             <CardContent className="pt-6 space-y-3">
               <p className="text-sm text-blue-800">
-                Der Datensatz wird als <strong>Entwurf</strong> mit der Quelle{" "}
-                <strong>Manuell</strong> erstellt.
+                {t("infoDraft", { draft: t("draft"), manual: t("manual") })}
               </p>
               <p className="text-sm text-blue-800">
-                Pro Anlage, Monat und Vergütungsart kann nur ein Eintrag
-                existieren.
+                {t("infoUnique")}
               </p>
             </CardContent>
           </Card>

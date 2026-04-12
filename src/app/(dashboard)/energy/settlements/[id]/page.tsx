@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, use } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -88,6 +89,7 @@ export default function SettlementDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslations("energy.settlementDetail");
   const router = useRouter();
   const { settlement, isLoading, isError, mutate } = useEnergySettlement(id);
 
@@ -100,11 +102,11 @@ export default function SettlementDetailPage({
     try {
       setActionLoading("calculate");
       await calculateEnergySettlement(id);
-      toast.success("Abrechnung wurde erfolgreich berechnet");
+      toast.success(t("calculateSuccess"));
       mutate();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler bei der Berechnung"
+        error instanceof Error ? error.message : t("calculateError")
       );
     } finally {
       setActionLoading(null);
@@ -115,13 +117,13 @@ export default function SettlementDetailPage({
     try {
       setActionLoading("invoices");
       await createEnergySettlementInvoices(id, {});
-      toast.success("Gutschriften wurden erfolgreich erstellt");
+      toast.success(t("invoicesSuccess"));
       mutate();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Erstellen der Gutschriften"
+          : t("invoicesError")
       );
     } finally {
       setActionLoading(null);
@@ -131,11 +133,11 @@ export default function SettlementDetailPage({
   async function handleDelete() {
     try {
       await deleteEnergySettlement(id);
-      toast.success("Abrechnung wurde gelöscht");
+      toast.success(t("deleteSuccess"));
       router.push("/energy");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Löschen"
+        error instanceof Error ? error.message : t("deleteError")
       );
     }
   }
@@ -170,18 +172,18 @@ export default function SettlementDetailPage({
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold">Abrechnung nicht gefunden</h1>
+          <h1 className="text-2xl font-bold">{t("notFoundTitle")}</h1>
         </div>
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Die angeforderte Abrechnung konnte nicht geladen werden.
+            {t("notFoundDesc")}
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const title = `Abrechnung ${settlement.park?.name || ""} - ${formatPeriod(settlement.year, settlement.month)}`;
+  const title = t("settlementTitle", { park: settlement.park?.name || "", period: formatPeriod(settlement.year, settlement.month) });
 
   return (
     <div className="space-y-6">
@@ -204,10 +206,7 @@ export default function SettlementDetailPage({
               </Badge>
             </div>
             <p className="text-muted-foreground">
-              Erstellt am{" "}
-              {format(new Date(settlement.createdAt), "dd.MM.yyyy HH:mm", {
-                locale: de,
-              })}
+              {t("createdAt", { date: format(new Date(settlement.createdAt), "dd.MM.yyyy HH:mm", { locale: de }) })}
             </p>
           </div>
         </div>
@@ -225,12 +224,12 @@ export default function SettlementDetailPage({
                 ) : (
                   <Calculator className="mr-2 h-4 w-4" />
                 )}
-                Berechnen
+                {t("calculate")}
               </Button>
               <Button variant="outline" asChild>
                 <Link href={`/energy/settlements/${id}/edit`}>
                   <Pencil className="mr-2 h-4 w-4" />
-                  Bearbeiten
+                  {t("edit")}
                 </Link>
               </Button>
               <Button
@@ -238,7 +237,7 @@ export default function SettlementDetailPage({
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Löschen
+                {t("delete")}
               </Button>
             </>
           )}
@@ -253,7 +252,7 @@ export default function SettlementDetailPage({
               ) : (
                 <Receipt className="mr-2 h-4 w-4" />
               )}
-              Gutschriften erstellen
+              {t("createInvoices")}
             </Button>
           )}
 
@@ -261,7 +260,7 @@ export default function SettlementDetailPage({
             <Button variant="outline" asChild>
               <Link href="/invoices">
                 <FileText className="mr-2 h-4 w-4" />
-                Gutschriften anzeigen
+                {t("showInvoices")}
               </Link>
             </Button>
           )}
@@ -275,25 +274,25 @@ export default function SettlementDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Park & Zeitraum
-              <InfoTooltip text="Windpark und Abrechnungszeitraum dieser Stromabrechnung." />
+              {t("parkPeriod")}
+              <InfoTooltip text={t("parkPeriodTooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Park</span>
+              <span className="text-sm text-muted-foreground">{t("park")}</span>
               <span className="font-medium">
                 {settlement.park?.name || "-"}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Zeitraum</span>
+              <span className="text-sm text-muted-foreground">{t("period")}</span>
               <span className="font-medium">
                 {formatPeriod(settlement.year, settlement.month)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Status</span>
+              <span className="text-sm text-muted-foreground">{t("status")}</span>
               <Badge
                 variant="secondary"
                 className={settlementStatusColors[settlement.status]}
@@ -309,14 +308,14 @@ export default function SettlementDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Zap className="h-4 w-4" />
-              Produktion & Erlös
-              <InfoTooltip text="Erzeugte Strommenge und daraus resultierende Erlöse." />
+              {t("productionRevenue")}
+              <InfoTooltip text={t("productionRevenueTooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">
-                Gesamtproduktion
+                {t("totalProduction")}
               </span>
               <span className="font-medium font-mono">
                 {formatMWh(Number(settlement.totalProductionKwh))} MWh
@@ -324,7 +323,7 @@ export default function SettlementDetailPage({
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">
-                Netzeinspeisung Erlös
+                {t("gridFeedRevenue")}
               </span>
               <span className="font-medium font-mono">
                 {formatCurrency(Number(settlement.netOperatorRevenueEur))}
@@ -333,7 +332,7 @@ export default function SettlementDetailPage({
             {settlement.netOperatorReference && (
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">
-                  Referenz
+                  {t("reference")}
                 </span>
                 <span className="font-mono text-sm">
                   {settlement.netOperatorReference}
@@ -348,14 +347,14 @@ export default function SettlementDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              Verteilung
-              <InfoTooltip text="Aufteilung der Erlöse auf die einzelnen Betreibergesellschaften." />
+              {t("distribution")}
+              <InfoTooltip text={t("distributionTooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">
-                Verteilungsmodus
+                {t("distributionMode")}
               </span>
               <span className="font-medium">
                 {distributionModeLabels[settlement.distributionMode] ||
@@ -366,7 +365,7 @@ export default function SettlementDetailPage({
               settlement.smoothingFactor !== null && (
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Glaettungsfaktor
+                    {t("smoothingFactor")}
                   </span>
                   <span className="font-mono">
                     {settlement.smoothingFactor}
@@ -377,7 +376,7 @@ export default function SettlementDetailPage({
               settlement.tolerancePercentage !== null && (
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Toleranz
+                    {t("tolerance")}
                   </span>
                   <span className="font-mono">
                     {settlement.tolerancePercentage}%
@@ -385,7 +384,7 @@ export default function SettlementDetailPage({
                 </div>
               )}
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Positionen</span>
+              <span className="text-sm text-muted-foreground">{t("positions")}</span>
               <span className="font-medium">
                 {settlement.items?.length || 0}
               </span>
@@ -400,8 +399,8 @@ export default function SettlementDetailPage({
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Info className="h-4 w-4" />
-              Notizen
-              <InfoTooltip text="Interne Bemerkungen zur Stromabrechnung." />
+              {t("notesTitle")}
+              <InfoTooltip text={t("notesTooltip")} />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -415,12 +414,11 @@ export default function SettlementDetailPage({
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <CardTitle>Abrechnungspositionen</CardTitle>
-              <InfoTooltip text="Einzelne Positionen der Abrechnung je Gesellschaft und Anlage." />
+              <CardTitle>{t("itemsTitle")}</CardTitle>
+              <InfoTooltip text={t("itemsTooltip")} />
             </div>
             <CardDescription>
-              {settlement.items.length} Position(en) -{" "}
-              {settlementStatusLabels[settlement.status]}
+              {t("itemsCount", { count: settlement.items.length, status: settlementStatusLabels[settlement.status] })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -428,17 +426,17 @@ export default function SettlementDetailPage({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Gesellschaft / Empfänger</TableHead>
-                    <TableHead>Anlage</TableHead>
+                    <TableHead>{t("recipientFund")}</TableHead>
+                    <TableHead>{t("turbine")}</TableHead>
                     <TableHead className="text-right">
-                      Produktionsanteil (kWh)
+                      {t("productionShareKwh")}
                     </TableHead>
-                    <TableHead className="text-right">Anteil (%)</TableHead>
+                    <TableHead className="text-right">{t("sharePct")}</TableHead>
                     <TableHead className="text-right">
-                      Erlösanteil (EUR)
+                      {t("revenueShareEur")}
                     </TableHead>
-                    <TableHead>Verteilungsschluessel</TableHead>
-                    <TableHead>Gutschrift</TableHead>
+                    <TableHead>{t("distributionKey")}</TableHead>
+                    <TableHead>{t("invoice")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -485,7 +483,7 @@ export default function SettlementDetailPage({
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between gap-8">
                   <span className="text-muted-foreground">
-                    Gesamtproduktion:
+                    {t("totalProductionLabel")}
                   </span>
                   <span className="font-mono font-medium">
                     {formatKwh(
@@ -500,7 +498,7 @@ export default function SettlementDetailPage({
                 <Separator />
                 <div className="flex justify-between gap-8">
                   <span className="text-muted-foreground font-medium">
-                    Gesamterlös:
+                    {t("totalRevenueLabel")}
                   </span>
                   <span className="font-mono font-bold">
                     {formatCurrency(
@@ -524,11 +522,10 @@ export default function SettlementDetailPage({
             <CardContent className="py-12 text-center">
               <Calculator className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">
-                Noch keine Abrechnungspositionen
+                {t("noItemsTitle")}
               </h3>
               <p className="text-muted-foreground mb-4">
-                Klicken Sie auf &quot;Berechnen&quot;, um die
-                Abrechnungspositionen aus den Netzbetreiber-Daten zu generieren.
+                {t("noItemsDesc")}
               </p>
               <Button
                 onClick={handleCalculate}
@@ -539,7 +536,7 @@ export default function SettlementDetailPage({
                 ) : (
                   <Calculator className="mr-2 h-4 w-4" />
                 )}
-                Jetzt berechnen
+                {t("calculateNow")}
               </Button>
             </CardContent>
           </Card>
@@ -550,7 +547,7 @@ export default function SettlementDetailPage({
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
         onConfirm={handleDelete}
-        title="Abrechnung löschen"
+        title={t("deleteTitle")}
         itemName={title}
       />
     </div>

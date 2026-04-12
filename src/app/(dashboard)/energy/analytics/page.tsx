@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
@@ -72,6 +73,7 @@ function ErrorState({ message }: { message: string }) {
 // =============================================================================
 
 export default function AnalyticsPage() {
+  const t = useTranslations("energy.analyticsPage");
   const currentYear = new Date().getFullYear();
 
   // Filter state
@@ -209,8 +211,8 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Energie-Analysen"
-        description="Umfassende Auswertung Ihrer Windenergieanlagen"
+        title={t("title")}
+        description={t("description")}
       />
 
       {showFilterBar && (
@@ -230,27 +232,27 @@ export default function AnalyticsPage() {
         <TabsList className="flex h-auto gap-1 w-full">
           <TabsTrigger value="daily" className="gap-1.5">
             <LayoutDashboard className="h-4 w-4 hidden sm:block" />
-            <span>Tagesbericht</span>
+            <span>{t("dailyReport")}</span>
           </TabsTrigger>
           <TabsTrigger value="production" className="gap-1.5">
             <BarChart3 className="h-4 w-4 hidden sm:block" />
-            <span>Produktion & Vergleich</span>
+            <span>{t("productionComparison")}</span>
           </TabsTrigger>
           <TabsTrigger value="operations" className="gap-1.5">
             <Activity className="h-4 w-4 hidden sm:block" />
-            <span>Betrieb & Umwelt</span>
+            <span>{t("operationsEnvironment")}</span>
           </TabsTrigger>
           <TabsTrigger value="finance" className="gap-1.5">
             <CreditCard className="h-4 w-4 hidden sm:block" />
-            <span>Finanzen & Technik</span>
+            <span>{t("financeTech")}</span>
           </TabsTrigger>
           <TabsTrigger value="tools" className="gap-1.5">
             <Wrench className="h-4 w-4 hidden sm:block" />
-            <span>Werkzeuge</span>
+            <span>{t("tools")}</span>
           </TabsTrigger>
           <TabsTrigger value="bericht" className="gap-1.5">
             <FileText className="h-4 w-4 hidden sm:block" />
-            <span>Bericht</span>
+            <span>{t("report")}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -278,7 +280,7 @@ export default function AnalyticsPage() {
             {drillDown.state.level === "year" && (
               <>
                 {perfError ? (
-                  <ErrorState message="Fehler beim Laden der Performance-Daten" />
+                  <ErrorState message={t("perfLoadError")} />
                 ) : (
                   <PerformanceOverview
                     turbines={perfData?.turbines ?? []}
@@ -318,9 +320,9 @@ export default function AnalyticsPage() {
           </CollapsibleSection>
 
           {/* Comparison Section */}
-          <CollapsibleSection title="Turbinen-Vergleich" icon={GitCompare} defaultOpen>
+          <CollapsibleSection title={t("turbineComparison")} icon={GitCompare} defaultOpen>
             {compError ? (
-              <ErrorState message="Fehler beim Laden der Vergleichsdaten" />
+              <ErrorState message={t("compLoadError")} />
             ) : (
               <TurbineComparison
                 comparison={compData?.comparison ?? []}
@@ -335,9 +337,9 @@ export default function AnalyticsPage() {
         {/* Tab 3: Betrieb & Umwelt                                           */}
         {/* ================================================================= */}
         <TabsContent value="operations" className="mt-6 space-y-8">
-          <CollapsibleSection title="Verfügbarkeit" icon={Clock} defaultOpen>
+          <CollapsibleSection title={t("availability")} icon={Clock} defaultOpen>
             {availError ? (
-              <ErrorState message="Fehler beim Laden der Verfügbarkeitsdaten" />
+              <ErrorState message={t("availLoadError")} />
             ) : (
               <AvailabilityChart
                 breakdown={availData?.breakdown ?? []}
@@ -351,9 +353,9 @@ export default function AnalyticsPage() {
             )}
           </CollapsibleSection>
 
-          <CollapsibleSection title="Störungen" icon={AlertTriangle} defaultOpen>
+          <CollapsibleSection title={t("faults")} icon={AlertTriangle} defaultOpen>
             {faultError ? (
-              <ErrorState message="Fehler beim Laden der Störungsdaten" />
+              <ErrorState message={t("faultLoadError")} />
             ) : (
               <FaultAnalysis
                 statePareto={faultData?.statePareto ?? []}
@@ -366,9 +368,9 @@ export default function AnalyticsPage() {
             )}
           </CollapsibleSection>
 
-          <CollapsibleSection title="Wind & Umwelt" icon={Cloud} defaultOpen>
+          <CollapsibleSection title={t("windEnvironment")} icon={Cloud} defaultOpen>
             {envError ? (
-              <ErrorState message="Fehler beim Laden der Umweltdaten" />
+              <ErrorState message={t("envLoadError")} />
             ) : (
               <EnvironmentChart
                 windDistribution={envData?.windDistribution ?? []}
@@ -380,9 +382,9 @@ export default function AnalyticsPage() {
             )}
           </CollapsibleSection>
 
-          <CollapsibleSection title="Schattenwurf" icon={Sun} defaultOpen>
+          <CollapsibleSection title={t("shadowCast")} icon={Sun} defaultOpen>
             {shadowError ? (
-              <ErrorState message="Fehler beim Laden der Schattenwurf-Daten" />
+              <ErrorState message={t("shadowLoadError")} />
             ) : (
               <ShadowChart
                 perTurbine={shadowData?.perTurbine ?? []}
@@ -399,9 +401,9 @@ export default function AnalyticsPage() {
         {/* Tab 4: Finanzen & Technik                                         */}
         {/* ================================================================= */}
         <TabsContent value="finance" className="mt-6 space-y-8">
-          <CollapsibleSection title="Finanzen" icon={CreditCard} defaultOpen>
+          <CollapsibleSection title={t("finance")} icon={CreditCard} defaultOpen>
             {finError ? (
-              <ErrorState message="Fehler beim Laden der Finanzdaten" />
+              <ErrorState message={t("finLoadError")} />
             ) : (
               <FinancialAnalysis
                 monthly={finData?.monthly ?? []}
@@ -412,9 +414,9 @@ export default function AnalyticsPage() {
             )}
           </CollapsibleSection>
 
-          <CollapsibleSection title="Phasen-Analyse" icon={Zap} defaultOpen>
+          <CollapsibleSection title={t("phaseAnalysis")} icon={Zap} defaultOpen>
             {phaseError ? (
-              <ErrorState message="Fehler beim Laden der Phasen-Daten" />
+              <ErrorState message={t("phaseLoadError")} />
             ) : (
               <PhaseSymmetryChart
                 symmetryTrend={phaseData?.symmetryTrend ?? []}
@@ -433,11 +435,11 @@ export default function AnalyticsPage() {
         <TabsContent value="tools" className="mt-6">
           <div className="flex gap-2 mb-6">
             {[
-              { key: "data-explorer", label: "Daten-Explorer", icon: Search },
-              { key: "data-comparison", label: "Datenabgleich", icon: ArrowLeftRight },
-              { key: "pdf-reports", label: "PDF-Berichte", icon: FileText },
-              { key: "vorlagen", label: "Vorlagen", icon: BookMarked },
-              { key: "archive", label: "Archiv", icon: Archive },
+              { key: "data-explorer", label: t("dataExplorer"), icon: Search },
+              { key: "data-comparison", label: t("dataComparison"), icon: ArrowLeftRight },
+              { key: "pdf-reports", label: t("pdfReports"), icon: FileText },
+              { key: "vorlagen", label: t("templates"), icon: BookMarked },
+              { key: "archive", label: t("archive"), icon: Archive },
             ].map(({ key, label, icon: Icon }) => (
               <Button
                 key={key}

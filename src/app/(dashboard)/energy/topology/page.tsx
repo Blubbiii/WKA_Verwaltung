@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import {
   Select,
@@ -87,6 +88,7 @@ function deriveStatus(
 // =============================================================================
 
 export default function TopologyPage() {
+  const t = useTranslations("energy.topology");
   // Park selection
   const [parks, setParks] = useState<Park[]>([]);
   const [selectedParkId, setSelectedParkId] = useState<string>("");
@@ -146,7 +148,7 @@ export default function TopologyPage() {
       const res = await fetch(`/api/energy/topology?parkId=${selectedParkId}`);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Fehler beim Laden der Topologie");
+        throw new Error(errData.error || t("loadError"));
       }
 
       const data: TopologyData = await res.json();
@@ -155,7 +157,7 @@ export default function TopologyPage() {
       setConnections(state.connections);
       setHasChanges(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unbekannter Fehler");
+      setError(err instanceof Error ? err.message : t("unknownError"));
     } finally {
       setIsLoading(false);
     }
@@ -186,7 +188,7 @@ export default function TopologyPage() {
 
       const newNode: TopologyNode = {
         id: tempId(),
-        name: `Neuer ${addNodeType === "TURBINE" ? "Turbine" : addNodeType === "NVP" ? "NVP" : addNodeType === "SUBSTATION" ? "Umspannwerk" : addNodeType === "TRANSFORMER" ? "Trafo" : "Verteiler"}`,
+        name: `Neuer ${addNodeType === "TURBINE" ? t("newTurbine") : addNodeType === "NVP" ? t("newNVP") : addNodeType === "SUBSTATION" ? t("newSubstation") : addNodeType === "TRANSFORMER" ? t("newTransformer") : t("newDistributor")}`,
         type: addNodeType,
         posX,
         posY,
@@ -319,14 +321,14 @@ export default function TopologyPage() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Fehler beim Speichern");
+        throw new Error(errData.error || t("saveError"));
       }
 
       // Re-fetch to get new IDs
       await fetchTopology();
       setHasChanges(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler beim Speichern");
+      setError(err instanceof Error ? err.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -349,14 +351,14 @@ export default function TopologyPage() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Fehler beim Generieren");
+        throw new Error(errData.error || t("generateError"));
       }
 
       // Re-fetch to get the generated topology
       await fetchTopology();
       setHasChanges(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler beim Generieren");
+      setError(err instanceof Error ? err.message : t("generateError"));
     } finally {
       setIsGenerating(false);
     }
@@ -381,17 +383,17 @@ export default function TopologyPage() {
       {/* Header */}
       <div className="shrink-0 px-6 pt-6 pb-3">
         <PageHeader
-          title="Netz-Topologie"
-          description="Visualisierung der Netzstruktur mit Turbinen, Kabelwegen und Netzanschlusspunkten"
+          title={t("title")}
+          description={t("description")}
           actions={
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">Park:</span>
+              <span className="text-sm font-medium text-muted-foreground">{t("park")}</span>
               {parksLoading ? (
                 <Skeleton className="h-9 w-[200px]" />
               ) : (
                 <Select value={selectedParkId} onValueChange={setSelectedParkId}>
                   <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Park waehlen..." />
+                    <SelectValue placeholder={t("selectPark")} />
                   </SelectTrigger>
                   <SelectContent>
                     {parks.map((p) => (
@@ -416,7 +418,7 @@ export default function TopologyPage() {
             className="ml-auto text-xs underline"
             onClick={() => setError(null)}
           >
-            Schliessen
+            {t("close")}
           </button>
         </div>
       )}
@@ -450,8 +452,8 @@ export default function TopologyPage() {
             <Card className="h-full flex items-center justify-center">
               <EmptyState
                 icon={Network}
-                title="Kein Park ausgewaehlt"
-                description="Bitte waehlen Sie einen Park aus, um die Netz-Topologie anzuzeigen."
+                title={t("noPark")}
+                description={t("noParkDesc")}
               />
             </Card>
           ) : isLoading ? (
@@ -467,8 +469,8 @@ export default function TopologyPage() {
             <Card className="h-full flex items-center justify-center">
               <EmptyState
                 icon={Network}
-                title="Keine Topologie vorhanden"
-                description="Für diesen Park wurde noch keine Netz-Topologie erstellt. Nutzen Sie 'Bearbeiten' und 'Auto-Layout' um eine zu generieren."
+                title={t("noTopology")}
+                description={t("noTopologyDesc")}
               />
             </Card>
           ) : (

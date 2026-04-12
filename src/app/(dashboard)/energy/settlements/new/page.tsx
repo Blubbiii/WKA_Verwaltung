@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Save, Download } from "lucide-react";
@@ -49,6 +50,7 @@ const DISTRIBUTION_MODES = [
 // =============================================================================
 
 export default function NewSettlementPage() {
+  const t = useTranslations("energy.settlementNew");
   const router = useRouter();
   const { parks, isLoading: parksLoading } = useParks();
   const [saving, setSaving] = useState(false);
@@ -79,7 +81,7 @@ export default function NewSettlementPage() {
 
   async function handleAutoFill() {
     if (!formData.parkId) {
-      toast.error("Bitte waehlen Sie zuerst einen Park aus");
+      toast.error(t("errParkAutoFill"));
       return;
     }
     if (!formData.month || formData.month === "annual") {
@@ -103,9 +105,7 @@ export default function NewSettlementPage() {
       setAutoFillData(data);
 
       if (data.recordCount === 0) {
-        toast.info(
-          "Keine Produktionsdaten im Status DRAFT für diesen Zeitraum gefunden"
-        );
+        toast.info(t("autoFillEmpty"));
         return;
       }
 
@@ -115,14 +115,12 @@ export default function NewSettlementPage() {
         totalProductionKwh: data.totalProductionKwh.toFixed(3),
       }));
 
-      toast.success(
-        `Produktionsdaten übernommen: ${data.turbineCount} Turbinen, ${data.recordCount} Einträge`
-      );
+      toast.success(t("autoFillSuccess", { turbineCount: data.turbineCount, recordCount: data.recordCount }));
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Laden der Produktionsdaten"
+          : t("autoFillError")
       );
     } finally {
       setAutoFilling(false);
@@ -134,15 +132,15 @@ export default function NewSettlementPage() {
 
     // Validation
     if (!formData.parkId) {
-      toast.error("Bitte waehlen Sie einen Park aus");
+      toast.error(t("errPark"));
       return;
     }
     if (!formData.netOperatorRevenueEur || parseFloat(formData.netOperatorRevenueEur) < 0) {
-      toast.error("Bitte geben Sie einen gültigen Erlösbetrag ein");
+      toast.error(t("errRevenue"));
       return;
     }
     if (!formData.totalProductionKwh || parseFloat(formData.totalProductionKwh) < 0) {
-      toast.error("Bitte geben Sie eine gültige Produktionsmenge ein");
+      toast.error(t("errProduction"));
       return;
     }
 
@@ -175,11 +173,11 @@ export default function NewSettlementPage() {
       };
 
       const result = await createEnergySettlement(payload);
-      toast.success("Abrechnung erfolgreich erstellt");
+      toast.success(t("success"));
       router.push(`/energy/settlements/${result.id}`);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen"
+        error instanceof Error ? error.message : t("errCreate")
       );
     } finally {
       setSaving(false);
@@ -197,9 +195,9 @@ export default function NewSettlementPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Netzbetreiber-Daten erfassen</h1>
+            <h1 className="text-2xl font-bold">{t("title")}</h1>
             <p className="text-muted-foreground">
-              Neue Netzbetreiber-Abrechnung erstellen
+              {t("description")}
             </p>
           </div>
         </div>
@@ -209,7 +207,7 @@ export default function NewSettlementPage() {
             variant="outline"
             onClick={() => router.back()}
           >
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button type="submit" disabled={saving}>
             {saving ? (
@@ -217,7 +215,7 @@ export default function NewSettlementPage() {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Erstellen
+            {t("create")}
           </Button>
         </div>
       </div>
@@ -228,16 +226,16 @@ export default function NewSettlementPage() {
           {/* Park & Period */}
           <Card>
             <CardHeader>
-              <CardTitle>Park & Zeitraum</CardTitle>
+              <CardTitle>{t("parkPeriod")}</CardTitle>
               <CardDescription>
-                Waehlen Sie den Windpark und den Abrechnungszeitraum
+                {t("parkPeriodDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-3">
                 {/* Park */}
                 <div className="space-y-2">
-                  <Label htmlFor="parkId">Park *</Label>
+                  <Label htmlFor="parkId">{t("park")}</Label>
                   <Select
                     value={formData.parkId || "none"}
                     onValueChange={(value) =>
@@ -245,15 +243,15 @@ export default function NewSettlementPage() {
                     }
                   >
                     <SelectTrigger id="parkId">
-                      <SelectValue placeholder="Park waehlen" />
+                      <SelectValue placeholder={t("selectPark")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none" disabled>
-                        Park waehlen...
+                        {t("selectParkPlaceholder")}
                       </SelectItem>
                       {parksLoading ? (
                         <SelectItem value="loading" disabled>
-                          Laden...
+                          {t("loading")}
                         </SelectItem>
                       ) : (
                         parks?.map((park) => (
@@ -268,7 +266,7 @@ export default function NewSettlementPage() {
 
                 {/* Year */}
                 <div className="space-y-2">
-                  <Label htmlFor="year">Jahr *</Label>
+                  <Label htmlFor="year">{t("year")}</Label>
                   <Select
                     value={formData.year}
                     onValueChange={(value) => handleChange("year", value)}
@@ -288,7 +286,7 @@ export default function NewSettlementPage() {
 
                 {/* Month */}
                 <div className="space-y-2">
-                  <Label htmlFor="month">Monat</Label>
+                  <Label htmlFor="month">{t("month")}</Label>
                   <Select
                     value={formData.month || "none"}
                     onValueChange={(value) =>
@@ -296,14 +294,14 @@ export default function NewSettlementPage() {
                     }
                   >
                     <SelectTrigger id="month">
-                      <SelectValue placeholder="Monat waehlen" />
+                      <SelectValue placeholder={t("selectMonth")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none" disabled>
-                        Monat waehlen...
+                        {t("selectMonthPlaceholder")}
                       </SelectItem>
                       <SelectItem value="annual">
-                        Jahresabrechnung
+                        {t("annualSettlement")}
                       </SelectItem>
                       {Object.entries(monthNames).map(([num, name]) => (
                         <SelectItem key={num} value={num}>
@@ -322,9 +320,9 @@ export default function NewSettlementPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Produktion & Erlös</CardTitle>
+                  <CardTitle>{t("productionRevenue")}</CardTitle>
                   <CardDescription>
-                    Daten vom Netzbetreiber eintragen oder aus Produktionsdaten übernehmen
+                    {t("productionRevenueDesc")}
                   </CardDescription>
                 </div>
                 <Button
@@ -335,8 +333,8 @@ export default function NewSettlementPage() {
                   disabled={autoFilling || !formData.parkId}
                   title={
                     !formData.parkId
-                      ? "Bitte zuerst einen Park auswaehlen"
-                      : "Produktionsdaten (DRAFT) für den gewaehlten Zeitraum laden"
+                      ? t("autoFillSelectPark")
+                      : t("autoFillTooltip")
                   }
                 >
                   {autoFilling ? (
@@ -344,7 +342,7 @@ export default function NewSettlementPage() {
                   ) : (
                     <Download className="mr-2 h-4 w-4" />
                   )}
-                  Auto-Fill
+                  {t("autoFill")}
                 </Button>
               </div>
             </CardHeader>
@@ -353,7 +351,7 @@ export default function NewSettlementPage() {
                 {/* Revenue */}
                 <div className="space-y-2">
                   <Label htmlFor="netOperatorRevenueEur">
-                    Netzeinspeisung Erlös (EUR) *
+                    {t("gridFeedRevenue")}
                   </Label>
                   <Input
                     id="netOperatorRevenueEur"
@@ -372,7 +370,7 @@ export default function NewSettlementPage() {
                 {/* Production */}
                 <div className="space-y-2">
                   <Label htmlFor="totalProductionKwh">
-                    Gesamtproduktion (kWh) *
+                    {t("totalProductionKwh")}
                   </Label>
                   <Input
                     id="totalProductionKwh"
@@ -392,7 +390,7 @@ export default function NewSettlementPage() {
               {/* Reference */}
               <div className="space-y-2">
                 <Label htmlFor="netOperatorReference">
-                  Netzbetreiber-Referenz (optional)
+                  {t("gridOperatorRef")}
                 </Label>
                 <Input
                   id="netOperatorReference"
@@ -400,7 +398,7 @@ export default function NewSettlementPage() {
                   onChange={(e) =>
                     handleChange("netOperatorReference", e.target.value)
                   }
-                  placeholder="z.B. Abrechnungsnummer des Netzbetreibers"
+                  placeholder={t("gridOperatorRefPlaceholder")}
                 />
               </div>
 
@@ -408,11 +406,11 @@ export default function NewSettlementPage() {
               {autoFillData && autoFillData.recordCount > 0 && (
                 <div className="rounded-lg border border-green-200 bg-green-50 p-4 space-y-2">
                   <p className="text-sm font-medium text-green-800">
-                    Produktionsdaten übernommen
+                    {t("autoFillSummaryTitle")}
                   </p>
                   <div className="text-sm text-green-700 space-y-1">
                     <p>
-                      {autoFillData.turbineCount} Turbine(n), {autoFillData.recordCount} Datensaetze (Status: DRAFT)
+                      {t("autoFillRecords", { turbineCount: autoFillData.turbineCount, recordCount: autoFillData.recordCount })}
                     </p>
                     {autoFillData.turbineSummary.map((t) => (
                       <div key={t.turbineId} className="flex justify-between text-xs font-mono">
@@ -428,7 +426,7 @@ export default function NewSettlementPage() {
                     ))}
                   </div>
                   <p className="text-xs text-green-600">
-                    Der Erlösbetrag muss ggf. manuell vom Netzbetreiber-Beleg übernommen werden.
+                    {t("autoFillRevenueHint")}
                   </p>
                 </div>
               )}
@@ -438,13 +436,13 @@ export default function NewSettlementPage() {
           {/* Notes */}
           <Card>
             <CardHeader>
-              <CardTitle>Notizen</CardTitle>
+              <CardTitle>{t("notes")}</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
-                placeholder="Optionale Notizen zur Abrechnung"
+                placeholder={t("notesPlaceholder")}
                 rows={3}
               />
             </CardContent>
@@ -455,15 +453,15 @@ export default function NewSettlementPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Verteilung</CardTitle>
+              <CardTitle>{t("distributionTitle")}</CardTitle>
               <CardDescription>
-                Wie soll der Erlös verteilt werden?
+                {t("distributionDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Distribution Mode */}
               <div className="space-y-2">
-                <Label htmlFor="distributionMode">Verteilungsmodus</Label>
+                <Label htmlFor="distributionMode">{t("distributionMode")}</Label>
                 <Select
                   value={formData.distributionMode}
                   onValueChange={(value) =>
@@ -487,7 +485,7 @@ export default function NewSettlementPage() {
               {formData.distributionMode === "SMOOTHED" && (
                 <div className="space-y-2">
                   <Label htmlFor="smoothingFactor">
-                    Glaettungsfaktor (0-1)
+                    {t("smoothingFactor")}
                   </Label>
                   <Input
                     id="smoothingFactor"
@@ -502,7 +500,7 @@ export default function NewSettlementPage() {
                     placeholder="0.5"
                   />
                   <p className="text-xs text-muted-foreground">
-                    0 = keine Glaettung, 1 = maximale Glaettung
+                    {t("smoothingHint")}
                   </p>
                 </div>
               )}
@@ -511,7 +509,7 @@ export default function NewSettlementPage() {
               {formData.distributionMode === "TOLERATED" && (
                 <div className="space-y-2">
                   <Label htmlFor="tolerancePercentage">
-                    Toleranz (%)
+                    {t("tolerancePct")}
                   </Label>
                   <Input
                     id="tolerancePercentage"
@@ -526,7 +524,7 @@ export default function NewSettlementPage() {
                     placeholder="5"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Erlaubte Abweichung in Prozent
+                    {t("toleranceHint")}
                   </p>
                 </div>
               )}
@@ -537,9 +535,7 @@ export default function NewSettlementPage() {
           <Card className="border-blue-200 bg-blue-50">
             <CardContent className="pt-6">
               <p className="text-sm text-blue-800">
-                Die Abrechnung wird als <strong>Entwurf</strong> erstellt.
-                Nach der Erstellung können Sie die Berechnung starten, um
-                die Abrechnungspositionen zu generieren.
+                {t("infoDraft", { draft: t("draft") })}
               </p>
             </CardContent>
           </Card>

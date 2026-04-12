@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   Zap,
   ArrowUpDown,
@@ -102,12 +103,7 @@ interface Turbine {
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 11 }, (_, i) => currentYear + 1 - i);
 
-const sourceLabels: Record<string, string> = {
-  MANUAL: "Manuell",
-  CSV_IMPORT: "CSV Import",
-  EXCEL_IMPORT: "Excel Import",
-  SCADA: "SCADA",
-};
+// sourceLabels moved to useTranslations
 
 const sourceBadgeColors: Record<string, string> = {
   MANUAL: "bg-blue-50 text-blue-700 border-blue-200",
@@ -116,11 +112,7 @@ const sourceBadgeColors: Record<string, string> = {
   SCADA: "bg-blue-50 text-blue-700 border-blue-200",
 };
 
-const statusLabels: Record<string, string> = {
-  DRAFT: "Entwurf",
-  CONFIRMED: "Bestätigt",
-  INVOICED: "Abgerechnet",
-};
+// statusLabels moved to useTranslations
 
 const statusBadgeColors: Record<string, string> = {
   DRAFT: "bg-gray-50 text-gray-700 border-gray-200",
@@ -147,6 +139,9 @@ function formatMWh(kwh: number): string {
 // =============================================================================
 
 export default function ProductionDataPage() {
+  const t = useTranslations("energy.productions");
+  const tSrc = useTranslations("energy.sourceLabels");
+  const tSt = useTranslations("energy.statusLabels");
   // Filter State
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
@@ -341,9 +336,9 @@ export default function ProductionDataPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Produktionsdaten</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Produktionsdaten der Windenergieanlagen (WEA)
+            {t("description")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -353,7 +348,7 @@ export default function ProductionDataPage() {
             onClick={() => setImportSheetOpen(true)}
           >
             <Upload className="h-4 w-4 mr-2" />
-            CSV-Import
+            {t("csvImport")}
           </Button>
           <Button
             size="sm"
@@ -363,7 +358,7 @@ export default function ProductionDataPage() {
             }}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Manuell erfassen
+            {t("manualEntry")}
           </Button>
         </div>
       </div>
@@ -374,7 +369,7 @@ export default function ProductionDataPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Gesamtproduktion (Turbinen)
+              {t("totalProductionTurbines")}
             </CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -388,8 +383,8 @@ export default function ProductionDataPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {selectedParkId === "all"
-                    ? "Alle Parks"
-                    : "Ausgewaehlter Park"}{" "}
+                    ? t("allParks")
+                    : t("selectedPark")}{" "}
                   - {selectedYear}
                 </p>
               </>
@@ -400,7 +395,7 @@ export default function ProductionDataPage() {
         {/* Datensaetze */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Datensaetze</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("records")}</CardTitle>
             <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -412,7 +407,7 @@ export default function ProductionDataPage() {
                   {pagination?.total ?? 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Gefilterte Einträge
+                  {t("filteredEntries")}
                 </p>
               </>
             )}
@@ -423,9 +418,9 @@ export default function ProductionDataPage() {
       {/* Filters & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Produktionsdaten</CardTitle>
+          <CardTitle>{t("productionData")}</CardTitle>
           <CardDescription>
-            Monatliche Produktionsdaten pro Anlage
+            {t("monthlyPerTurbine")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -448,7 +443,7 @@ export default function ProductionDataPage() {
                 placeholder: "Monat",
                 width: "w-[150px]",
                 options: [
-                  { value: "all", label: "Alle Monate" },
+                  { value: "all", label: t("allMonths") },
                   ...Object.entries(monthNames).map(([num, name]) => ({
                     value: num,
                     label: name,
@@ -458,10 +453,10 @@ export default function ProductionDataPage() {
               {
                 value: selectedParkId,
                 onChange: handleParkChange,
-                placeholder: "Park waehlen",
+                placeholder: t("selectPark"),
                 width: "w-[180px]",
                 options: [
-                  { value: "all", label: "Alle Parks" },
+                  { value: "all", label: t("allParks") },
                   ...(parks?.map((park) => ({
                     value: park.id,
                     label: park.name,
@@ -474,10 +469,10 @@ export default function ProductionDataPage() {
                 placeholder: "Status",
                 width: "w-[150px]",
                 options: [
-                  { value: "all", label: "Alle Status" },
-                  { value: "DRAFT", label: "Entwurf" },
-                  { value: "CONFIRMED", label: "Bestätigt" },
-                  { value: "INVOICED", label: "Abgerechnet" },
+                  { value: "all", label: t("allStatus") },
+                  { value: "DRAFT", label: tSt("DRAFT") },
+                  { value: "CONFIRMED", label: tSt("CONFIRMED") },
+                  { value: "INVOICED", label: tSt("INVOICED") },
                 ],
               },
             ]}
@@ -492,13 +487,13 @@ export default function ProductionDataPage() {
                 <SelectValue
                   placeholder={
                     selectedParkId === "all"
-                      ? "Zuerst Park waehlen"
-                      : "Anlage waehlen"
+                      ? t("selectParkFirst")
+                      : t("selectTurbine")
                   }
                 />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Anlagen</SelectItem>
+                <SelectItem value="all">{t("allTurbines")}</SelectItem>
                 {turbines.map((turbine) => (
                   <SelectItem key={turbine.id} value={turbine.id}>
                     {turbine.designation}
@@ -520,7 +515,7 @@ export default function ProductionDataPage() {
                     onClick={() => handleSort("turbine")}
                   >
                     <div className="flex items-center gap-1">
-                      Anlage
+                      {t("turbine")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -529,7 +524,7 @@ export default function ProductionDataPage() {
                     onClick={() => handleSort("park")}
                   >
                     <div className="flex items-center gap-1">
-                      Park
+                      {t("park")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -538,7 +533,7 @@ export default function ProductionDataPage() {
                     onClick={() => handleSort("period")}
                   >
                     <div className="flex items-center gap-1">
-                      Zeitraum
+                      {t("period")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -547,7 +542,7 @@ export default function ProductionDataPage() {
                     onClick={() => handleSort("production")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Produktion (MWh)
+                      {t("productionMWh")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -556,7 +551,7 @@ export default function ProductionDataPage() {
                     onClick={() => handleSort("operatingHours")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Betriebsstunden
+                      {t("operatingHours")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -565,7 +560,7 @@ export default function ProductionDataPage() {
                     onClick={() => handleSort("availability")}
                   >
                     <div className="flex items-center justify-end gap-1">
-                      Verfügbarkeit
+                      {t("availabilityCol")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -574,7 +569,7 @@ export default function ProductionDataPage() {
                     onClick={() => handleSort("source")}
                   >
                     <div className="flex items-center gap-1">
-                      Quelle
+                      {t("source")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -583,7 +578,7 @@ export default function ProductionDataPage() {
                     onClick={() => handleSort("status")}
                   >
                     <div className="flex items-center gap-1">
-                      Status
+                      {t("status")}
                       <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </TableHead>
@@ -612,10 +607,10 @@ export default function ProductionDataPage() {
                     <TableCell colSpan={9} className="h-32 text-center">
                       <div className="flex flex-col items-center gap-2">
                         <p className="text-destructive">
-                          Fehler beim Laden der Produktionsdaten
+                          {t("loadError")}
                         </p>
                         <Button onClick={() => refetch()} variant="outline" size="sm">
-                          Erneut versuchen
+                          {t("retry")}
                         </Button>
                       </div>
                     </TableCell>
@@ -627,7 +622,7 @@ export default function ProductionDataPage() {
                       <div className="flex flex-col items-center gap-2">
                         <FileSpreadsheet className="h-8 w-8 text-muted-foreground" />
                         <p className="text-muted-foreground">
-                          Keine Produktionsdaten für den ausgewaehlten Zeitraum
+                          {t("emptyState")}
                         </p>
                         <div className="flex gap-2">
                           <Button
@@ -635,7 +630,7 @@ export default function ProductionDataPage() {
                             size="sm"
                             onClick={() => setImportSheetOpen(true)}
                           >
-                            CSV importieren
+                            {t("csvImportAction")}
                           </Button>
                           <Button
                             size="sm"
@@ -644,7 +639,7 @@ export default function ProductionDataPage() {
                               setEntryDialogOpen(true);
                             }}
                           >
-                            Manuell erfassen
+                            {t("manualEntry")}
                           </Button>
                         </div>
                       </div>
@@ -681,7 +676,7 @@ export default function ProductionDataPage() {
                           variant="outline"
                           className={sourceBadgeColors[row.source] || ""}
                         >
-                          {sourceLabels[row.source] || row.source}
+                          {tSrc(row.source as "MANUAL" | "CSV_IMPORT" | "EXCEL_IMPORT" | "SCADA")}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -689,7 +684,7 @@ export default function ProductionDataPage() {
                           variant="outline"
                           className={statusBadgeColors[row.status] || ""}
                         >
-                          {statusLabels[row.status] || row.status}
+                          {tSt(row.status as "DRAFT" | "CONFIRMED" | "INVOICED")}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -698,7 +693,7 @@ export default function ProductionDataPage() {
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => handleEditClick(row)}
-                          aria-label="Bearbeiten"
+                          aria-label={t("edit")}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -714,12 +709,7 @@ export default function ProductionDataPage() {
           {!isLoading && pagination && pagination.total > 0 && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-sm text-muted-foreground">
-                Zeige {(currentPage - 1) * (pagination.limit || 25) + 1} bis{" "}
-                {Math.min(
-                  currentPage * (pagination.limit || 25),
-                  pagination.total
-                )}{" "}
-                von {pagination.total} Einträgen
+                {t("showRange", { from: (currentPage - 1) * (pagination.limit || 25) + 1, to: Math.min(currentPage * (pagination.limit || 25), pagination.total), total: pagination.total })}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -732,7 +722,7 @@ export default function ProductionDataPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-sm">
-                  Seite {currentPage} von {totalPages}
+                  {t("pageInfo", { page: currentPage, total: totalPages })}
                 </span>
                 <Button
                   variant="outline"

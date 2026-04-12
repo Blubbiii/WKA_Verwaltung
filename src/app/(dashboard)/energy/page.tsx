@@ -5,6 +5,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { formatCurrency } from "@/lib/format";
+import { useTranslations } from "next-intl";
 import {
   Zap,
   TrendingUp,
@@ -71,12 +72,7 @@ interface ProductionEntry {
   };
 }
 
-const sourceLabels: Record<string, string> = {
-  MANUAL: "Manuell",
-  CSV_IMPORT: "CSV Import",
-  EXCEL_IMPORT: "Excel Import",
-  SCADA: "SCADA",
-};
+// sourceLabels moved to useTranslations
 
 interface SettlementEntry {
   id: string;
@@ -211,6 +207,8 @@ async function fetchOverviewData(): Promise<OverviewData> {
 // =============================================================================
 
 export default function EnergyOverviewPage() {
+  const t = useTranslations("energy.overview");
+  const tSrc = useTranslations("energy.sourceLabels");
   const [data, setData] = useState<OverviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -247,8 +245,8 @@ export default function EnergyOverviewPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-        title="Energie - Übersicht"
-        description="Zusammenfassung aller Energie-Daten und -Abrechnungen"
+        title={t("title")}
+        description={t("description")}
       />
 
       {/* KPI Cards */}
@@ -258,34 +256,33 @@ export default function EnergyOverviewPage() {
         <Card>
           <CardContent className="py-8">
             <p className="text-center text-destructive">
-              Fehler beim Laden der Übersichtsdaten. Bitte versuchen Sie es
-              erneut.
+              {t("loadError")}
             </p>
           </CardContent>
         </Card>
       ) : (
         <KPICardGrid className="lg:grid-cols-3 xl:grid-cols-6">
           <KPICard
-            title="Gesamtproduktion (Turbinen)"
+            title={t("totalProductionTurbines")}
             value={`${formatMWh(data?.totalProductionKwh ?? 0)} MWh`}
             icon={Zap}
-            description={`Produktionsdaten ${currentYear}`}
+            description={t("productionDataYear", { year: currentYear })}
           />
           <KPICard
-            title="Netzbetreiber-Erlös"
+            title={t("gridOperatorRevenue")}
             value={formatCurrency(data?.totalRevenueEur ?? 0)}
             icon={TrendingUp}
-            description={`Netzbetreiber-Erlöse ${currentYear}`}
+            description={t("gridOperatorRevenueYear", { year: currentYear })}
           />
           <KPICard
-            title="Offene Abrechnungen"
+            title={t("openSettlements")}
             value={data?.openSettlementsCount ?? 0}
             icon={FileText}
-            description="Entwurf oder berechnet"
+            description={t("draftOrCalculated")}
             isAlert={(data?.openSettlementsCount ?? 0) > 0}
           />
           <KPICard
-            title="Letzter Import"
+            title={t("lastImport")}
             value={
               data?.lastImportDate
                 ? format(new Date(data.lastImportDate), "dd.MM.yyyy", {
@@ -299,23 +296,23 @@ export default function EnergyOverviewPage() {
                 ? format(new Date(data.lastImportDate), "HH:mm 'Uhr'", {
                     locale: de,
                   })
-                : "Keine Daten"
+                : t("noData")
             }
           />
           <KPICard
-            title="Anzahl Anlagen"
+            title={t("turbineCount")}
             value={formatNumber(data?.turbineCount ?? 0)}
             icon={Wind}
-            description="Aktive Turbinen"
+            description={t("activeTurbines")}
           />
           <KPICard
-            title="SCADA-Abdeckung"
+            title={t("scadaCoverage")}
             value={formatNumber(data?.scadaCoverage ?? 0)}
             icon={Radio}
             description={
               data?.turbineCount
-                ? `von ${data.turbineCount} Turbinen`
-                : "Turbinen mit SCADA-Zuordnung"
+                ? t("ofTurbines", { count: data.turbineCount })
+                : t("turbinesWithScada")
             }
           />
         </KPICardGrid>
@@ -326,7 +323,7 @@ export default function EnergyOverviewPage() {
         <div className="flex items-center gap-2 mb-3">
           <Activity className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-medium text-muted-foreground">
-            SCADA Live-Daten
+            {t("scadaLiveData")}
           </h2>
         </div>
         <ScadaKpiCards />
@@ -339,14 +336,14 @@ export default function EnergyOverviewPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Neueste Produktionsdaten</CardTitle>
+                <CardTitle>{t("recentProductions")}</CardTitle>
                 <CardDescription>
-                  Die letzten Produktionsdaten der Windenergieanlagen
+                  {t("recentProductionsDesc")}
                 </CardDescription>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/energy/productions">
-                  Alle anzeigen
+                  {t("showAll")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -365,19 +362,19 @@ export default function EnergyOverviewPage() {
               </div>
             ) : isError ? (
               <p className="text-center text-muted-foreground py-8">
-                Daten konnten nicht geladen werden
+                {t("dataLoadError")}
               </p>
             ) : data?.recentProductions && data.recentProductions.length > 0 ? (
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Turbine</TableHead>
-                      <TableHead>Zeitraum</TableHead>
+                      <TableHead>{t("turbine")}</TableHead>
+                      <TableHead>{t("period")}</TableHead>
                       <TableHead className="text-right">
-                        Produktion (MWh)
+                        {t("productionMWh")}
                       </TableHead>
-                      <TableHead>Quelle</TableHead>
+                      <TableHead>{t("source")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -394,7 +391,7 @@ export default function EnergyOverviewPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
-                            {sourceLabels[production.source] || production.source}
+                            {tSrc(production.source as "MANUAL" | "CSV_IMPORT" | "EXCEL_IMPORT" | "SCADA")}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -404,7 +401,7 @@ export default function EnergyOverviewPage() {
               </div>
             ) : (
               <div className="py-8 text-center text-muted-foreground">
-                Keine Produktionsdaten vorhanden
+                {t("noProductionData")}
               </div>
             )}
           </CardContent>
@@ -415,14 +412,14 @@ export default function EnergyOverviewPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Neueste Netzbetreiber-Daten</CardTitle>
+                <CardTitle>{t("recentSettlements")}</CardTitle>
                 <CardDescription>
-                  Die letzten Abrechnungen von Netzbetreibern
+                  {t("recentSettlementsDesc")}
                 </CardDescription>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/energy/settlements">
-                  Alle anzeigen
+                  {t("showAll")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -441,17 +438,17 @@ export default function EnergyOverviewPage() {
               </div>
             ) : isError ? (
               <p className="text-center text-muted-foreground py-8">
-                Daten konnten nicht geladen werden
+                {t("dataLoadError")}
               </p>
             ) : data?.recentSettlements && data.recentSettlements.length > 0 ? (
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Park</TableHead>
-                      <TableHead>Zeitraum</TableHead>
-                      <TableHead className="text-right">Erlös</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t("park")}</TableHead>
+                      <TableHead>{t("period")}</TableHead>
+                      <TableHead className="text-right">{t("revenue")}</TableHead>
+                      <TableHead>{t("status")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -493,7 +490,7 @@ export default function EnergyOverviewPage() {
               </div>
             ) : (
               <div className="py-8 text-center text-muted-foreground">
-                Keine Netzbetreiber-Daten vorhanden
+                {t("noSettlementData")}
               </div>
             )}
           </CardContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -205,6 +206,7 @@ function FileUploadStep({
   previewData,
   error,
 }: FileUploadStepProps) {
+  const t = useTranslations("energy.importPage");
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -223,14 +225,14 @@ function FileUploadStep({
   const validateAndSelectFile = useCallback((selectedFile: File) => {
     // Check file size
     if (selectedFile.size > MAX_FILE_SIZE) {
-      toast.error("Datei zu gross. Maximale Größe: 10MB");
+      toast.error(t("fileTooLarge"));
       return;
     }
 
     // Check file type
     const extension = "." + selectedFile.name.split(".").pop()?.toLowerCase();
     if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-      toast.error("Ungültiges Dateiformat. Erlaubt: CSV, XLSX");
+      toast.error(t("invalidFormat"));
       return;
     }
 
@@ -289,17 +291,17 @@ function FileUploadStep({
                 }}
               >
                 <X className="h-4 w-4 mr-2" />
-                Datei entfernen
+                {t("removeFile")}
               </Button>
             </>
           ) : (
             <>
               <Upload className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-lg font-medium mb-2">
-                Datei hierher ziehen oder klicken zum Auswaehlen
+                {t("dragOrClick")}
               </p>
               <p className="text-sm text-muted-foreground">
-                Unterstuetzte Formate: CSV, XLSX (max. 10MB)
+                {t("supportedFormats")}
               </p>
             </>
           )}
@@ -317,15 +319,15 @@ function FileUploadStep({
       {/* Sample CSV Download */}
       <Alert>
         <Info className="h-4 w-4" />
-        <AlertTitle>Beispiel-Datei</AlertTitle>
+        <AlertTitle>{t("sampleFile")}</AlertTitle>
         <AlertDescription className="flex items-center justify-between">
           <span>
-            Laden Sie eine Beispiel-CSV herunter, um das erwartete Format zu sehen.
+            {t("sampleFileDesc")}
           </span>
           <Button variant="outline" size="sm" asChild className="ml-4 shrink-0">
             <a href="/api/energy/productions/sample-csv" download="einspeisedaten_beispiel.csv">
               <Download className="h-4 w-4 mr-2" />
-              Beispiel-CSV
+              {t("sampleCsv")}
             </a>
           </Button>
         </AlertDescription>
@@ -335,7 +337,7 @@ function FileUploadStep({
       {error && (
         <Alert variant="destructive">
           <XCircle className="h-4 w-4" />
-          <AlertTitle>Fehler beim Lesen der Datei</AlertTitle>
+          <AlertTitle>{t("fileReadError")}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -344,9 +346,9 @@ function FileUploadStep({
       {previewData && previewData.rows.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Vorschau (erste 5 Zeilen)</CardTitle>
+            <CardTitle className="text-lg">{t("previewTitle")}</CardTitle>
             <CardDescription>
-              {previewData.rows.length} Zeilen gefunden, {previewData.headers.length} Spalten
+              {t("previewDesc", { rows: previewData.rows.length, cols: previewData.headers.length })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -388,6 +390,7 @@ interface ColumnMappingStepProps {
 }
 
 function ColumnMappingStep({ headers, mapping, onMappingChange }: ColumnMappingStepProps) {
+  const t = useTranslations("energy.importPage");
   const handleFieldChange = (field: keyof ColumnMapping, value: string) => {
     onMappingChange({
       ...mapping,
@@ -413,18 +416,17 @@ function ColumnMappingStep({ headers, mapping, onMappingChange }: ColumnMappingS
     <div className="space-y-6">
       <Alert>
         <Info className="h-4 w-4" />
-        <AlertTitle>Spalten-Zuordnung</AlertTitle>
+        <AlertTitle>{t("fieldMapping")}</AlertTitle>
         <AlertDescription>
-          Ordnen Sie die Spalten aus Ihrer Datei den entsprechenden Feldern zu.
-          Pflichtfelder sind mit * gekennzeichnet.
+          {t("mappingInfo")}
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Feld-Zuordnung</CardTitle>
+          <CardTitle className="text-lg">{t("fieldMapping")}</CardTitle>
           <CardDescription>
-            WKA-ID oder WKA-Bezeichnung muss zugeordnet werden
+            {t("fieldMappingDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -453,10 +455,10 @@ function ColumnMappingStep({ headers, mapping, onMappingChange }: ColumnMappingS
                         isRequired && !mapping[field] && "border-destructive"
                       )}
                     >
-                      <SelectValue placeholder="Spalte auswaehlen..." />
+                      <SelectValue placeholder={t("selectColumn")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">-- Nicht zuordnen --</SelectItem>
+                      <SelectItem value="none">{t("notAssigned")}</SelectItem>
                       {headers.map((header) => (
                         <SelectItem key={header} value={header}>
                           {header}
@@ -479,14 +481,14 @@ function ColumnMappingStep({ headers, mapping, onMappingChange }: ColumnMappingS
               <>
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                 <span className="text-green-600 font-medium">
-                  Alle Pflichtfelder zugeordnet
+                  {t("allRequired")}
                 </span>
               </>
             ) : (
               <>
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
                 <span className="text-amber-600 font-medium">
-                  Bitte ordnen Sie alle Pflichtfelder zu
+                  {t("missingRequired")}
                 </span>
               </>
             )}
@@ -510,6 +512,7 @@ function ValidationStep({
   onSkipErrorsChange,
   isValidating,
 }: ValidationStepProps) {
+  const t = useTranslations("energy.importPage");
   const successCount = validationResults.filter((r) => r.status === "success").length;
   const warningCount = validationResults.filter((r) => r.status === "warning").length;
   const errorCount = validationResults.filter((r) => r.status === "error").length;
@@ -519,9 +522,9 @@ function ValidationStep({
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <p className="text-lg font-medium">Validiere Daten...</p>
+          <p className="text-lg font-medium">{t("validating")}</p>
           <p className="text-sm text-muted-foreground">
-            Dies kann einen Moment dauern
+            {t("validatingWait")}
           </p>
         </CardContent>
       </Card>
@@ -538,7 +541,7 @@ function ValidationStep({
               <CheckCircle2 className="h-8 w-8 text-green-600" />
               <div>
                 <p className="text-2xl font-bold text-green-700">{successCount}</p>
-                <p className="text-sm text-green-600">Erfolgreich validiert</p>
+                <p className="text-sm text-green-600">{t("successValidated")}</p>
               </div>
             </div>
           </CardContent>
@@ -550,7 +553,7 @@ function ValidationStep({
               <AlertTriangle className="h-8 w-8 text-amber-600" />
               <div>
                 <p className="text-2xl font-bold text-amber-700">{warningCount}</p>
-                <p className="text-sm text-amber-600">Warnungen</p>
+                <p className="text-sm text-amber-600">{t("warnings")}</p>
               </div>
             </div>
           </CardContent>
@@ -562,7 +565,7 @@ function ValidationStep({
               <XCircle className="h-8 w-8 text-red-600" />
               <div>
                 <p className="text-2xl font-bold text-red-700">{errorCount}</p>
-                <p className="text-sm text-red-600">Fehler</p>
+                <p className="text-sm text-red-600">{t("errors")}</p>
               </div>
             </div>
           </CardContent>
@@ -580,7 +583,7 @@ function ValidationStep({
                 onCheckedChange={(checked) => onSkipErrorsChange(checked as boolean)}
               />
               <Label htmlFor="skipErrors" className="cursor-pointer">
-                Fehlerhafte Zeilen beim Import überspringen ({errorCount} Zeilen)
+                {t("skipErrors", { count: errorCount })}
               </Label>
             </div>
           </CardContent>
@@ -590,9 +593,9 @@ function ValidationStep({
       {/* Validation Details */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Validierungsergebnisse</CardTitle>
+          <CardTitle className="text-lg">{t("validationResults")}</CardTitle>
           <CardDescription>
-            Details zu allen {validationResults.length} Zeilen
+            {t("validationResultsDesc", { count: validationResults.length })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -600,7 +603,7 @@ function ValidationStep({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">Zeile</TableHead>
+                  <TableHead className="w-16">{t("row")}</TableHead>
                   <TableHead className="w-24">Status</TableHead>
                   <TableHead>Details</TableHead>
                 </TableRow>
