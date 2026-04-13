@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Inline Edit", () => {
   test("Notizen-Zelle öffnet Input bei Klick", async ({ page }) => {

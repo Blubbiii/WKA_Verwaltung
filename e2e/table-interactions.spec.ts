@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Tabellen-Interaktion", () => {
   test("Parks: Suche filtert Ergebnisse", async ({ page }) => {

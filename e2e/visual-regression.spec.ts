@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Visual Regression", () => {
   // Note: First run creates baseline screenshots.

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Daten-Flows", () => {
   test("Parks-Seite → Detail → Turbinen sichtbar", async ({ page }) => {

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("RBAC & Berechtigungen", () => {
   test("Admin-Panel ist für eingeloggten User erreichbar", async ({ page }) => {

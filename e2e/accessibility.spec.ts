@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Accessibility", () => {
   test("Alle Header-Buttons haben aria-labels", async ({ page }) => {

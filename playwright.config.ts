@@ -62,12 +62,13 @@ export default defineConfig({
     },
   ],
 
-  webServer: process.env.CI
-    ? undefined
-    : {
-        command: "npm run dev",
-        url: "http://localhost:3050",
-        reuseExistingServer: true,
-        timeout: 120_000,
-      },
+  webServer:
+    process.env.CI || process.env.E2E_BASE_URL
+      ? undefined
+      : {
+          command: "npm run dev",
+          url: "http://localhost:3050",
+          reuseExistingServer: true,
+          timeout: 120_000,
+        },
 });

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Dashboard Widgets", () => {
   test("Dashboard hat mindestens 3 Widget-Cards", async ({ page }) => {

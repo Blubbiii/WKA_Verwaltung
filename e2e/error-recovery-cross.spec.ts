@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Error Recovery", () => {
   test("Ungültige URL zeigt 404", async ({ page }) => {

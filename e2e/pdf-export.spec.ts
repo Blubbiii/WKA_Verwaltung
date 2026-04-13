@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("PDF & Export", () => {
   test("CSV-Export auf Parks-Seite funktioniert", async ({ page }) => {

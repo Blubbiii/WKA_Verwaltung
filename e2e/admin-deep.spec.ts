@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Admin-Bereich", () => {
   test("Admin-Hauptseite lädt", async ({ page }) => {

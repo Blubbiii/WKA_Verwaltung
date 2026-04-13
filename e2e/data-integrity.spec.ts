@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Daten-Integrität", () => {
   test("Park-Anlagenanzahl in Liste stimmt mit Detail überein", async ({ page }) => {

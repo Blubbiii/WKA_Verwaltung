@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 // Helper: flexible page-loaded assertion for feature-flagged pages
 async function expectPageLoaded(page: import("@playwright/test").Page, keywords: RegExp) {

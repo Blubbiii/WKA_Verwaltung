@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Multi-Tab Verhalten", () => {
   test("Zwei Tabs zeigen gleiche Daten", async ({ context }) => {

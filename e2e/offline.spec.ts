@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Offline-Verhalten", () => {
   // Note: context.setOffline() only works reliably on localhost, not remote servers.

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Bulk Actions", () => {
   test("Checkbox auswählen zeigt BatchActionBar", async ({ page }) => {

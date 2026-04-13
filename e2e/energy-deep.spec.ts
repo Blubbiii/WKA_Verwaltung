@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Energie/SCADA Detailliert", () => {
   test("Analytics: Alle Tabs durchklicken ohne Crash", async ({ page }) => {

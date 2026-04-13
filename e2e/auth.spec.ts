@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Auth & Security", () => {
   test("Logout leitet zu Login weiter", async ({ page }) => {

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 /**
  * Smoke-Tests — bestätigen dass die wichtigsten Seiten ladbar sind.

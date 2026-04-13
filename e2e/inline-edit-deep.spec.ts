@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 async function dismissTourOverlay(page: any) {
   const overlay = page.locator(".driver-overlay");

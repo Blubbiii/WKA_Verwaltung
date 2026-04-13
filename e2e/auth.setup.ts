@@ -36,5 +36,22 @@ setup("authenticate", async ({ page }) => {
   await page.waitForURL("**/dashboard**", { timeout: 45_000 });
   await expect(page).toHaveURL(/.*\/dashboard/);
 
+  // Dismiss the onboarding tour (driver.js) so its overlay doesn't intercept
+  // clicks and screenshots in subsequent tests. Persists via user-scoped API,
+  // so the tour won't re-appear for this test user on later runs.
+  await page.request
+    .put("/api/user/onboarding", {
+      data: { skippedAt: new Date().toISOString() },
+    })
+    .catch(() => {
+      /* non-critical — the tour may simply not be shown for this user */
+    });
+
+  // If the tour popover is already rendered on this page load, close it too.
+  const tourClose = page.locator(".driver-popover-close-btn").first();
+  if (await tourClose.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await tourClose.click().catch(() => {});
+  }
+
   await page.context().storageState({ path: authFile });
 });

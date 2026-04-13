@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Load & Stress Tests", () => {
   test("10 parallele Seitenaufrufe crashen nicht", async ({ browser }) => {

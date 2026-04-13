@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Command Palette (Cmd+K)", () => {
   test("Ctrl+K öffnet die Palette", async ({ page }) => {
