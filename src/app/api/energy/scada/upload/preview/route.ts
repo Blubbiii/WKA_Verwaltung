@@ -193,7 +193,9 @@ export async function POST(request: NextRequest) {
   } finally {
     // Cleanup temp file
     if (tempDir) {
-      fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      fs.rm(tempDir, { recursive: true, force: true }).catch((err) => {
+        logger.warn({ err, tempDir }, "Failed to cleanup temp dir");
+      });
     }
   }
 }
