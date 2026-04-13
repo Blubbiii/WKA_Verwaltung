@@ -40,8 +40,18 @@ export async function POST(req: NextRequest) {
 
     const { name, company, email, phone, message } = parsed.data;
 
-    // Structured logging — no string interpolation of user input
-    logger.info({ name, company, email, phone: phone ?? null }, "Demo request received");
+    // DSGVO Art. 5 (Datenminimierung): Keine PII in Ops-Logs schreiben.
+    // Name, Email, Telefon bleiben ausschliesslich im Notification-Email-
+    // Flow. Für Observability reichen nicht-identifizierende Signale.
+    logger.info(
+      {
+        hasCompany: Boolean(company),
+        hasPhone: Boolean(phone),
+        messageLength: message?.length ?? 0,
+        emailDomain: email.split("@")[1] ?? "unknown",
+      },
+      "Demo request received"
+    );
 
     // Send notification email if DEMO_REQUEST_NOTIFY_EMAIL env var is set.
     // Non-blocking: failure does NOT prevent the user-facing success response.
