@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   Line,
@@ -134,6 +135,7 @@ export function DrillDownDaily({
   parkId,
   turbineId,
 }: DrillDownDailyProps) {
+  const t = useTranslations("energy.drillDown");
   // Build API URL for 10-min intervals
   const monthStr = String(month).padStart(2, "0");
   const dayStr = String(day).padStart(2, "0");
@@ -230,31 +232,31 @@ export function DrillDownDaily({
 
     return [
       {
-        title: "Tagesproduktion",
+        title: t("dailyProduction"),
         value: totalKwh >= 1000 ? formatMwh(totalKwh) : `${dec1Fmt.format(totalKwh)} kWh`,
         icon: Zap,
         description: `${dayStr}.${monthStr}.${year}`,
       },
       {
-        title: "Mittlere Leistung",
+        title: t("avgPower"),
         value: `${dec1Fmt.format(avgPower)} kW`,
         icon: Gauge,
-        description: `Spitze: ${dec1Fmt.format(peakPower)} kW`,
+        description: t("peakPower", { peak: dec1Fmt.format(peakPower) }),
       },
       {
-        title: "Mittlerer Wind",
+        title: t("avgWind"),
         value: `${dec1Fmt.format(avgWind)} m/s`,
         icon: Wind,
-        description: "Tagesdurchschnitt",
+        description: t("dailyAverage"),
       },
       {
-        title: "Messpunkte",
+        title: t("measurementPoints"),
         value: numFmt.format(points),
         icon: Clock,
-        description: "10-Min Intervalle",
+        description: t("intervals10Min"),
       },
     ];
-  }, [response, chartData, dayStr, monthStr, year]);
+  }, [response, chartData, dayStr, monthStr, year, t]);
 
   if (isLoading) {
     return (
@@ -281,7 +283,7 @@ export function DrillDownDaily({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <Zap className="h-8 w-8 mb-2" />
-        <p>Keine 10-Min-Daten für diesen Tag verfügbar</p>
+        <p>{t("no10MinDay")}</p>
       </div>
     );
   }
@@ -295,7 +297,7 @@ export function DrillDownDaily({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">
-            Leistung & Windgeschwindigkeit (10-Min-Intervalle)
+            {t("powerWindTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -339,7 +341,7 @@ export function DrillDownDaily({
                 yAxisId="power"
                 type="monotone"
                 dataKey="powerKw"
-                name="Leistung (kW)"
+                name={t("powerLegend")}
                 fill="#22c55e"
                 fillOpacity={0.15}
                 stroke="#22c55e"
@@ -349,7 +351,7 @@ export function DrillDownDaily({
                 yAxisId="wind"
                 type="monotone"
                 dataKey="windSpeed"
-                name="Wind (m/s)"
+                name={t("windLegend")}
                 stroke="hsl(var(--chart-1))"
                 strokeWidth={1.5}
                 dot={false}
@@ -363,18 +365,18 @@ export function DrillDownDaily({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Messdaten-Tabelle
+              {t("measurementTableTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Zeit</TableHead>
-                  {!turbineId && <TableHead>Anlage</TableHead>}
-                  <TableHead className="text-right">Leistung (kW)</TableHead>
-                  <TableHead className="text-right">Wind (m/s)</TableHead>
-                  <TableHead className="text-right">Produktion (kWh)</TableHead>
+                  <TableHead>{t("colTime")}</TableHead>
+                  {!turbineId && <TableHead>{t("colTurbine")}</TableHead>}
+                  <TableHead className="text-right">{t("colPower")}</TableHead>
+                  <TableHead className="text-right">{t("colWind")}</TableHead>
+                  <TableHead className="text-right">{t("colProduction")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -403,7 +405,7 @@ export function DrillDownDaily({
             </Table>
             {response && response.data.length > 144 && (
               <p className="text-xs text-muted-foreground text-center mt-2">
-                Zeige 144 von {response.data.length} Messpunkten
+                {t("showing144Of", { total: response.data.length })}
               </p>
             )}
           </CardContent>

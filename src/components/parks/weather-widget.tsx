@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -105,6 +106,7 @@ export function WeatherWidget({
   showLink = true,
   compact = false,
 }: WeatherWidgetProps) {
+  const t = useTranslations("parks.weatherWidget");
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -118,18 +120,18 @@ export function WeatherWidget({
       );
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Fehler beim Laden");
+        throw new Error(data.error || t("loadError"));
       }
       const data = await response.json();
       setWeather(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler");
+      setError(err instanceof Error ? err.message : t("error"));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [parkId]);
+  }, [parkId, t]);
 
   // Initial load
   useEffect(() => {
@@ -167,12 +169,12 @@ export function WeatherWidget({
     return (
       <Card className={className}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Wetter</CardTitle>
+          <CardTitle className="text-sm font-medium">{t("title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2 text-muted-foreground">
             <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{error || "Nicht verfügbar"}</span>
+            <span className="text-sm">{error || t("unavailable")}</span>
           </div>
         </CardContent>
       </Card>
@@ -203,9 +205,9 @@ export function WeatherWidget({
                         {weather.current.windSpeed.toFixed(1)} m/s
                       </TooltipTrigger>
                       <TooltipContent>
-                        Windgeschwindigkeit: {weather.current.windSpeed.toFixed(1)} m/s
+                        {t("windSpeed")}: {weather.current.windSpeed.toFixed(1)} m/s
                         {weather.current.windGust && (
-                          <> (Boeen: {weather.current.windGust.toFixed(1)} m/s)</>
+                          <> ({t("gusts")}: {weather.current.windGust.toFixed(1)} m/s)</>
                         )}
                       </TooltipContent>
                     </Tooltip>
@@ -215,7 +217,7 @@ export function WeatherWidget({
                         {getWindDirectionLabel(weather.current.windDirection)}
                       </TooltipTrigger>
                       <TooltipContent>
-                        Windrichtung: {weather.current.windDirection}
+                        {t("windDirection")}: {weather.current.windDirection}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -256,9 +258,9 @@ export function WeatherWidget({
     <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
-          <CardTitle className="text-sm font-medium">Wetter</CardTitle>
+          <CardTitle className="text-sm font-medium">{t("title")}</CardTitle>
           <CardDescription className="text-xs">
-            {format(new Date(weather.current.timestamp), "HH:mm", { locale: de })} Uhr
+            {format(new Date(weather.current.timestamp), "HH:mm", { locale: de })} {t("clock")}
           </CardDescription>
         </div>
         <div className="flex items-center gap-1">
@@ -315,7 +317,7 @@ export function WeatherWidget({
               </div>
               {weather.current.windGust && (
                 <div className="col-span-2 text-xs text-muted-foreground">
-                  Boeen: {weather.current.windGust.toFixed(1)} m/s
+                  {t("gusts")}: {weather.current.windGust.toFixed(1)} m/s
                 </div>
               )}
             </div>
@@ -325,7 +327,7 @@ export function WeatherWidget({
           <div className="mt-3 border-t pt-2">
             <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
               <Link href={`/parks/${parkId}/weather`}>
-                Anzeigen
+                {t("show")}
                 <ExternalLink className="ml-1 h-3 w-3" />
               </Link>
             </Button>

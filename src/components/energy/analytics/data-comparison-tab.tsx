@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -116,8 +117,8 @@ const fetcher = async (url: string) => {
   if (!res.ok) {
     const error = await res
       .json()
-      .catch(() => ({ error: "Unbekannter Fehler" }));
-    throw new Error(error.error || "Fehler beim Laden");
+      .catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error || "Failed to load");
   }
   return res.json();
 };
@@ -160,6 +161,7 @@ function getCoverageBgColor(coverage: number | null): string {
 // =============================================================================
 
 export function DataComparisonTab() {
+  const t = useTranslations("energy.dataComparison");
   // Filter state
   const [selectedParkId, setSelectedParkId] = useState<string>("all");
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
@@ -343,7 +345,7 @@ export function DataComparisonTab() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              SCADA Produktion
+              {t("scadaProduction")}
             </CardTitle>
             <Radio className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -358,7 +360,7 @@ export function DataComparisonTab() {
                     : "- kWh"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Messdaten {selectedYear}
+                  {t("measurementData", { year: selectedYear })}
                 </p>
               </>
             )}
@@ -369,7 +371,7 @@ export function DataComparisonTab() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Gemeldete Produktion
+              {t("reportedProduction")}
             </CardTitle>
             <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -384,7 +386,7 @@ export function DataComparisonTab() {
                     : "- kWh"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Gemeldete Daten {selectedYear}
+                  {t("reportedData", { year: selectedYear })}
                 </p>
               </>
             )}
@@ -394,7 +396,7 @@ export function DataComparisonTab() {
         {/* Abweichung (kWh) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Abweichung</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("delta")}</CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -412,7 +414,7 @@ export function DataComparisonTab() {
                     : "- kWh"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Differenz SCADA vs. Gemeldet
+                  {t("deltaDesc")}
                 </p>
               </>
             )}
@@ -422,7 +424,7 @@ export function DataComparisonTab() {
         {/* Abweichung (%) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Abweichung %</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("deltaPercent")}</CardTitle>
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -440,7 +442,7 @@ export function DataComparisonTab() {
                     : "- %"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Prozentuale Abweichung
+                  {t("percentageDelta")}
                 </p>
               </>
             )}
@@ -451,9 +453,9 @@ export function DataComparisonTab() {
       {/* Filters & Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Vergleichsdaten</CardTitle>
+          <CardTitle>{t("comparisonData")}</CardTitle>
           <CardDescription>
-            SCADA-Messdaten und Netzbetreiber-Abrechnungsdaten im Vergleich
+            {t("comparisonDataDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -465,10 +467,10 @@ export function DataComparisonTab() {
               onValueChange={(value) => setSelectedParkId(value)}
             >
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Park waehlen" />
+                <SelectValue placeholder={t("selectPark")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Parks</SelectItem>
+                <SelectItem value="all">{t("allParks")}</SelectItem>
                 {parks?.map((park) => (
                   <SelectItem key={park.id} value={park.id}>
                     {park.name}
@@ -483,7 +485,7 @@ export function DataComparisonTab() {
               onValueChange={(value) => setSelectedYear(parseInt(value))}
             >
               <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Jahr" />
+                <SelectValue placeholder={t("year")} />
               </SelectTrigger>
               <SelectContent>
                 {years.map((year) => (
@@ -501,9 +503,9 @@ export function DataComparisonTab() {
               className="flex-1"
             >
               <TabsList>
-                <TabsTrigger value="details">Monatsdetails</TabsTrigger>
-                <TabsTrigger value="turbine">Pro Anlage</TabsTrigger>
-                <TabsTrigger value="park">Pro Park</TabsTrigger>
+                <TabsTrigger value="details">{t("tabDetails")}</TabsTrigger>
+                <TabsTrigger value="turbine">{t("tabTurbine")}</TabsTrigger>
+                <TabsTrigger value="park">{t("tabPark")}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -514,18 +516,14 @@ export function DataComparisonTab() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Anlage</TableHead>
-                    <TableHead>Park</TableHead>
-                    <TableHead>Monat</TableHead>
-                    <TableHead className="text-right">SCADA (kWh)</TableHead>
-                    <TableHead className="text-right">
-                      Gemeldet (kWh)
-                    </TableHead>
-                    <TableHead className="text-right">
-                      Abweichung (kWh)
-                    </TableHead>
-                    <TableHead className="text-right">Abw. (%)</TableHead>
-                    <TableHead className="text-right">Abdeckung</TableHead>
+                    <TableHead>{t("colTurbine")}</TableHead>
+                    <TableHead>{t("colPark")}</TableHead>
+                    <TableHead>{t("colMonth")}</TableHead>
+                    <TableHead className="text-right">{t("colScada")}</TableHead>
+                    <TableHead className="text-right">{t("colReported")}</TableHead>
+                    <TableHead className="text-right">{t("colDelta")}</TableHead>
+                    <TableHead className="text-right">{t("colDeltaPct")}</TableHead>
+                    <TableHead className="text-right">{t("colCoverage")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -562,7 +560,7 @@ export function DataComparisonTab() {
                     <TableRow>
                       <TableCell colSpan={8} className="h-32 text-center">
                         <div className="text-destructive">
-                          Fehler beim Laden der Vergleichsdaten
+                          {t("loadError")}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -572,16 +570,15 @@ export function DataComparisonTab() {
                         <div className="flex flex-col items-center gap-2">
                           <BarChart3 className="h-8 w-8 text-muted-foreground" />
                           <p className="text-muted-foreground">
-                            Keine Vergleichsdaten vorhanden
+                            {t("noComparisonData")}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Importieren Sie SCADA-Daten, um den Vergleich zu
-                            starten.
+                            {t("importHint")}
                           </p>
                           <Button variant="outline" size="sm" asChild>
                             <Link href="/energy/scada">
                               <Radio className="mr-2 h-4 w-4" />
-                              Zur SCADA-Import & Verwaltung
+                              {t("toScadaImport")}
                             </Link>
                           </Button>
                         </div>
@@ -595,7 +592,7 @@ export function DataComparisonTab() {
                         </TableCell>
                         <TableCell>{row.parkName}</TableCell>
                         <TableCell>
-                          {monthNames[row.month] ?? `Monat ${row.month}`}
+                          {monthNames[row.month] ?? t("monthFallback", { num: row.month })}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {row.scadaKwh !== null ? formatKwh(row.scadaKwh) : "-"}
@@ -659,21 +656,13 @@ export function DataComparisonTab() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Anlage</TableHead>
-                    <TableHead>Park</TableHead>
-                    <TableHead className="text-right">
-                      SCADA Gesamt (kWh)
-                    </TableHead>
-                    <TableHead className="text-right">
-                      Gemeldet Gesamt (kWh)
-                    </TableHead>
-                    <TableHead className="text-right">
-                      Abweichung (kWh)
-                    </TableHead>
-                    <TableHead className="text-right">Abw. (%)</TableHead>
-                    <TableHead className="text-right">
-                      Monate mit Daten
-                    </TableHead>
+                    <TableHead>{t("colTurbine")}</TableHead>
+                    <TableHead>{t("colPark")}</TableHead>
+                    <TableHead className="text-right">{t("colScadaTotal")}</TableHead>
+                    <TableHead className="text-right">{t("colReportedTotal")}</TableHead>
+                    <TableHead className="text-right">{t("colDelta")}</TableHead>
+                    <TableHead className="text-right">{t("colDeltaPct")}</TableHead>
+                    <TableHead className="text-right">{t("colMonthsWithData")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -707,7 +696,7 @@ export function DataComparisonTab() {
                     <TableRow>
                       <TableCell colSpan={7} className="h-32 text-center">
                         <div className="text-destructive">
-                          Fehler beim Laden der Vergleichsdaten
+                          {t("loadError")}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -717,16 +706,15 @@ export function DataComparisonTab() {
                         <div className="flex flex-col items-center gap-2">
                           <BarChart3 className="h-8 w-8 text-muted-foreground" />
                           <p className="text-muted-foreground">
-                            Keine Vergleichsdaten vorhanden
+                            {t("noComparisonData")}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Importieren Sie SCADA-Daten, um den Vergleich zu
-                            starten.
+                            {t("importHint")}
                           </p>
                           <Button variant="outline" size="sm" asChild>
                             <Link href="/energy/scada">
                               <Radio className="mr-2 h-4 w-4" />
-                              Zur SCADA-Import & Verwaltung
+                              {t("toScadaImport")}
                             </Link>
                           </Button>
                         </div>
@@ -778,24 +766,18 @@ export function DataComparisonTab() {
               {/* Park Totals */}
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                  Jahressummen pro Park
+                  {t("annualPerPark")}
                 </h3>
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Park</TableHead>
-                        <TableHead className="text-right">
-                          SCADA Gesamt (kWh)
-                        </TableHead>
-                        <TableHead className="text-right">
-                          Gemeldet Gesamt (kWh)
-                        </TableHead>
-                        <TableHead className="text-right">
-                          Abweichung (kWh)
-                        </TableHead>
-                        <TableHead className="text-right">Abw. (%)</TableHead>
-                        <TableHead className="text-right">Anlagen</TableHead>
+                        <TableHead>{t("colPark")}</TableHead>
+                        <TableHead className="text-right">{t("colScadaTotal")}</TableHead>
+                        <TableHead className="text-right">{t("colReportedTotal")}</TableHead>
+                        <TableHead className="text-right">{t("colDelta")}</TableHead>
+                        <TableHead className="text-right">{t("colDeltaPct")}</TableHead>
+                        <TableHead className="text-right">{t("colTurbines")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

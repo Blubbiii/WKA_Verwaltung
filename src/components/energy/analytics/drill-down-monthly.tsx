@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bar,
@@ -109,6 +110,7 @@ export function DrillDownMonthly({
   turbineId,
   onDayClick,
 }: DrillDownMonthlyProps) {
+  const t = useTranslations("energy.drillDown");
   // Build API URL
   const monthStr = String(month).padStart(2, "0");
   const nextMonth = month === 12 ? 1 : month + 1;
@@ -190,31 +192,31 @@ export function DrillDownMonthly({
 
     return [
       {
-        title: "Monatsproduktion",
+        title: t("monthlyProduction"),
         value: formatMwh(totalKwh),
         icon: Zap,
-        description: `${daysWithData} Tage mit Daten`,
+        description: t("daysWithData", { count: daysWithData }),
       },
       {
-        title: "Mittlere Leistung",
+        title: t("avgPower"),
         value: `${dec1Fmt.format(avgPower)} kW`,
         icon: Gauge,
-        description: "Durchschnitt im Monat",
+        description: t("avgInMonth"),
       },
       {
-        title: "Mittlerer Wind",
+        title: t("avgWind"),
         value: `${dec1Fmt.format(avgWind)} m/s`,
         icon: Wind,
-        description: "Durchschnittliche Windgeschwindigkeit",
+        description: t("avgWindSpeed"),
       },
       {
-        title: "Datenpunkte",
+        title: t("dataPoints"),
         value: numFmt.format(points),
         icon: Clock,
-        description: "10-Min Intervalle",
+        description: t("intervals10Min"),
       },
     ];
-  }, [response, chartData]);
+  }, [response, chartData, t]);
 
   if (isLoading) {
     return (
@@ -241,7 +243,7 @@ export function DrillDownMonthly({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <Zap className="h-8 w-8 mb-2" />
-        <p>Keine SCADA-Daten für diesen Monat verfügbar</p>
+        <p>{t("noScadaMonth")}</p>
       </div>
     );
   }
@@ -255,7 +257,7 @@ export function DrillDownMonthly({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">
-            Tagesproduktion (kWh)
+            {t("dailyProductionTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -291,7 +293,7 @@ export function DrillDownMonthly({
               <Tooltip content={<DayTooltip />} />
               <Bar
                 dataKey="productionKwh"
-                name="Produktion"
+                name={t("production")}
                 radius={[3, 3, 0, 0]}
                 onClick={(data) => {
                   const payload = data?.payload as ChartDay | undefined;
@@ -312,7 +314,7 @@ export function DrillDownMonthly({
             </BarChart>
           {onDayClick && (
             <p className="text-xs text-muted-foreground text-center mt-2">
-              Klicken Sie auf einen Tag für die Tagesdetails
+              {t("clickDayHint")}
             </p>
           )}
         </CardContent>

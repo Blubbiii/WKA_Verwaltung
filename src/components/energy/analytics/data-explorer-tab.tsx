@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Radio, BarChart3, TrendingUp, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -112,26 +113,26 @@ interface PowerCurveResponse {
 type Interval = "10min" | "hour" | "day" | "month" | "year";
 type ChartType = "bar" | "line" | "area";
 
-const INTERVAL_LABELS: Record<Interval, string> = {
-  "10min": "10 Min",
-  hour: "Stunde",
-  day: "Tag",
-  month: "Monat",
-  year: "Jahr",
+const INTERVAL_KEYS: Record<Interval, string> = {
+  "10min": "interval10min",
+  hour: "intervalHour",
+  day: "intervalDay",
+  month: "intervalMonth",
+  year: "intervalYear",
 };
 
-const CHART_TYPE_OPTIONS: { value: ChartType; label: string; icon: React.ElementType }[] = [
-  { value: "bar", label: "Balken", icon: BarChart3 },
-  { value: "line", label: "Linie", icon: TrendingUp },
-  { value: "area", label: "Flaeche", icon: Layers },
+const CHART_TYPE_OPTIONS: { value: ChartType; labelKey: string; icon: React.ElementType }[] = [
+  { value: "bar", labelKey: "chartBar", icon: BarChart3 },
+  { value: "line", labelKey: "chartLine", icon: TrendingUp },
+  { value: "area", labelKey: "chartArea", icon: Layers },
 ];
 
-const INTERVAL_DESCRIPTIONS: Record<Interval, string> = {
-  "10min": "10-Minuten-Messwerte",
-  hour: "Stuendliche Aggregation",
-  day: "Taegliche Aggregation",
-  month: "Monatliche Aggregation",
-  year: "Jährliche Aggregation",
+const INTERVAL_DESCRIPTION_KEYS: Record<Interval, string> = {
+  "10min": "interval10minDesc",
+  hour: "intervalHourDesc",
+  day: "intervalDayDesc",
+  month: "intervalMonthDesc",
+  year: "intervalYearDesc",
 };
 
 // =============================================================================
@@ -170,8 +171,8 @@ const fetcher = async (url: string) => {
   if (!res.ok) {
     const error = await res
       .json()
-      .catch(() => ({ error: "Unbekannter Fehler" }));
-    throw new Error(error.error || "Fehler beim Laden");
+      .catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error || "Failed to load");
   }
   return res.json();
 };
@@ -181,6 +182,8 @@ const fetcher = async (url: string) => {
 // =============================================================================
 
 export function DataExplorerTab() {
+  const t = useTranslations("energy.dataExplorer");
+
   // ---------------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------------
@@ -379,10 +382,10 @@ export function DataExplorerTab() {
         {/* Park Filter */}
         <Select value={selectedParkId} onValueChange={handleParkChange}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Park waehlen" />
+            <SelectValue placeholder={t("selectPark")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Parks</SelectItem>
+            <SelectItem value="all">{t("allParks")}</SelectItem>
             {parks?.map((park) => (
               <SelectItem key={park.id} value={park.id}>
                 {park.name}
@@ -401,13 +404,13 @@ export function DataExplorerTab() {
             <SelectValue
               placeholder={
                 selectedParkId === "all"
-                  ? "Zuerst Park waehlen"
-                  : "Anlage waehlen"
+                  ? t("selectParkFirst")
+                  : t("selectTurbine")
               }
             />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle Anlagen</SelectItem>
+            <SelectItem value="all">{t("allTurbines")}</SelectItem>
             {turbines.map((turbine) => (
               <SelectItem key={turbine.id} value={turbine.id}>
                 {turbine.designation}
@@ -422,7 +425,7 @@ export function DataExplorerTab() {
             htmlFor="explorer-filter-from"
             className="text-sm font-medium text-muted-foreground whitespace-nowrap"
           >
-            Von
+            {t("from")}
           </label>
           <input
             id="explorer-filter-from"
@@ -439,7 +442,7 @@ export function DataExplorerTab() {
             htmlFor="explorer-filter-to"
             className="text-sm font-medium text-muted-foreground whitespace-nowrap"
           >
-            Bis
+            {t("to")}
           </label>
           <input
             id="explorer-filter-to"
@@ -454,10 +457,10 @@ export function DataExplorerTab() {
       {/* Chart Sub-Tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
         <TabsList>
-          <TabsTrigger value="production">Produktion</TabsTrigger>
-          <TabsTrigger value="power-curve">Leistungskurve</TabsTrigger>
-          <TabsTrigger value="wind-rose">Windrose</TabsTrigger>
-          <TabsTrigger value="daily">Tagesverlauf</TabsTrigger>
+          <TabsTrigger value="production">{t("tabProduction")}</TabsTrigger>
+          <TabsTrigger value="power-curve">{t("tabPowerCurve")}</TabsTrigger>
+          <TabsTrigger value="wind-rose">{t("tabWindRose")}</TabsTrigger>
+          <TabsTrigger value="daily">{t("tabDaily")}</TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Produktion */}
@@ -466,33 +469,33 @@ export function DataExplorerTab() {
             <CardHeader>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle>Produktion</CardTitle>
+                  <CardTitle>{t("production")}</CardTitle>
                   <CardDescription>
-                    {INTERVAL_DESCRIPTIONS[prodInterval]}
-                    {selectedParkId !== "all" ? " - gruppiert nach Anlage" : ""}
+                    {t(INTERVAL_DESCRIPTION_KEYS[prodInterval])}
+                    {selectedParkId !== "all" ? t("groupedByTurbine") : ""}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-3">
                   {/* Interval Selector */}
                   <Tabs value={prodInterval} onValueChange={(v) => setProdInterval(v as Interval)}>
                     <TabsList className="h-8">
-                      {(Object.entries(INTERVAL_LABELS) as [Interval, string][]).map(([val, label]) => (
+                      {(Object.entries(INTERVAL_KEYS) as [Interval, string][]).map(([val, key]) => (
                         <TabsTrigger key={val} value={val} className="text-xs px-2 py-1">
-                          {label}
+                          {t(key)}
                         </TabsTrigger>
                       ))}
                     </TabsList>
                   </Tabs>
                   {/* Chart Type Selector */}
                   <div className="flex items-center border rounded-md">
-                    {CHART_TYPE_OPTIONS.map(({ value, label, icon: Icon }) => (
+                    {CHART_TYPE_OPTIONS.map(({ value, labelKey, icon: Icon }) => (
                       <Button
                         key={value}
                         variant={prodChartType === value ? "default" : "ghost"}
                         size="sm"
                         className="h-8 px-2"
                         onClick={() => setProdChartType(value)}
-                        title={label}
+                        title={t(labelKey)}
                       >
                         <Icon className="h-4 w-4" />
                       </Button>
@@ -506,13 +509,13 @@ export function DataExplorerTab() {
                 <Skeleton className="h-[400px] w-full" />
               ) : productionError ? (
                 <div className="flex items-center justify-center h-[400px] text-destructive">
-                  Fehler beim Laden der Produktionsdaten
+                  {t("productionLoadError")}
                 </div>
               ) : !productionData?.data || productionData.data.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-[400px] gap-2">
                   <Radio className="h-8 w-8 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    Keine Produktionsdaten für den ausgewaehlten Zeitraum
+                    {t("noProductionData")}
                   </p>
                 </div>
               ) : (
@@ -531,10 +534,9 @@ export function DataExplorerTab() {
         <TabsContent value="power-curve">
           <Card>
             <CardHeader>
-              <CardTitle>Leistungskurve</CardTitle>
+              <CardTitle>{t("powerCurve")}</CardTitle>
               <CardDescription>
-                Zusammenhang zwischen Windgeschwindigkeit und elektrischer
-                Leistung
+                {t("powerCurveDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -542,7 +544,7 @@ export function DataExplorerTab() {
                 <Skeleton className="h-[400px] w-full" />
               ) : powerCurveError ? (
                 <div className="flex items-center justify-center h-[400px] text-destructive">
-                  Fehler beim Laden der Leistungskurvendaten
+                  {t("powerCurveLoadError")}
                 </div>
               ) : !powerCurveData ||
                 ((!powerCurveData.scatter ||
@@ -552,7 +554,7 @@ export function DataExplorerTab() {
                 <div className="flex flex-col items-center justify-center h-[400px] gap-2">
                   <Radio className="h-8 w-8 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    Keine Leistungskurvendaten für den ausgewaehlten Zeitraum
+                    {t("noPowerCurveData")}
                   </p>
                 </div>
               ) : (
@@ -569,9 +571,9 @@ export function DataExplorerTab() {
         <TabsContent value="wind-rose">
           <Card>
             <CardHeader>
-              <CardTitle>Windrose</CardTitle>
+              <CardTitle>{t("windRose")}</CardTitle>
               <CardDescription>
-                Windrichtungsverteilung nach Geschwindigkeitsbereichen
+                {t("windRoseDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -579,13 +581,13 @@ export function DataExplorerTab() {
                 <Skeleton className="h-[400px] w-full" />
               ) : windRoseError ? (
                 <div className="flex items-center justify-center h-[400px] text-destructive">
-                  Fehler beim Laden der Windrosendaten
+                  {t("windRoseLoadError")}
                 </div>
               ) : !windRoseData?.data || windRoseData.data.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-[400px] gap-2">
                   <Radio className="h-8 w-8 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    Keine Windrosendaten für den ausgewaehlten Zeitraum
+                    {t("noWindRoseData")}
                   </p>
                 </div>
               ) : (
@@ -604,9 +606,9 @@ export function DataExplorerTab() {
             <CardHeader>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle>Tagesverlauf</CardTitle>
+                  <CardTitle>{t("daily")}</CardTitle>
                   <CardDescription>
-                    Leistung und Windgeschwindigkeit im Tagesverlauf (10-Minuten-Intervall)
+                    {t("dailyDesc")}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-3">
@@ -616,7 +618,7 @@ export function DataExplorerTab() {
                       htmlFor="explorer-daily-date"
                       className="text-sm font-medium text-muted-foreground whitespace-nowrap"
                     >
-                      Tag
+                      {t("day")}
                     </label>
                     <input
                       id="explorer-daily-date"
@@ -628,14 +630,14 @@ export function DataExplorerTab() {
                   </div>
                   {/* Chart Type Selector */}
                   <div className="flex items-center border rounded-md">
-                    {CHART_TYPE_OPTIONS.map(({ value, label, icon: Icon }) => (
+                    {CHART_TYPE_OPTIONS.map(({ value, labelKey, icon: Icon }) => (
                       <Button
                         key={value}
                         variant={dailyChartType === value ? "default" : "ghost"}
                         size="sm"
                         className="h-8 px-2"
                         onClick={() => setDailyChartType(value)}
-                        title={label}
+                        title={t(labelKey)}
                       >
                         <Icon className="h-4 w-4" />
                       </Button>
@@ -649,13 +651,13 @@ export function DataExplorerTab() {
                 <Skeleton className="h-[400px] w-full" />
               ) : dailyError ? (
                 <div className="flex items-center justify-center h-[400px] text-destructive">
-                  Fehler beim Laden der Tagesverlaufsdaten
+                  {t("dailyLoadError")}
                 </div>
               ) : !dailyData?.data || dailyData.data.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-[400px] gap-2">
                   <Radio className="h-8 w-8 text-muted-foreground" />
                   <p className="text-muted-foreground">
-                    Keine Daten für den ausgewaehlten Tag
+                    {t("noDayData")}
                   </p>
                 </div>
               ) : (

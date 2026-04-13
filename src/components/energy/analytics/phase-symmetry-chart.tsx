@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   LineChart,
   BarChart,
@@ -146,43 +147,45 @@ export function PhaseSymmetryChart({
   summary,
   isLoading,
 }: PhaseSymmetryChartProps) {
+  const t = useTranslations("energy.phaseSymmetry");
+
   // KPI cards
   const kpis = useMemo(
     () => [
       {
-        title: "Ø Unsymmetrie",
+        title: t("avgImbalance"),
         value: dec1Fmt.format(summary.fleetAvgImbalancePct) + " %",
         icon: Activity,
         description:
           summary.fleetAvgImbalancePct > 5
-            ? "Kritisch (> 5 %)"
+            ? t("statusCritical")
             : summary.fleetAvgImbalancePct >= 3
-              ? "Erhöht (3–5 %)"
-              : "Normal (< 3 %)",
+              ? t("statusElevated")
+              : t("statusNormal"),
       },
       {
-        title: "Kritischste Anlage",
+        title: t("worstTurbine"),
         value: summary.worstTurbineDesignation ?? "---",
         icon: Zap,
         description:
           summary.worstTurbineDesignation
             ? dec1Fmt.format(summary.worstTurbineImbalancePct) + " %"
-            : "Keine Daten",
+            : t("noData"),
       },
       {
-        title: "Datenpunkte",
+        title: t("dataPoints"),
         value: numFmt.format(summary.totalDataPoints),
         icon: Database,
-        description: "10-Minuten-Intervalle",
+        description: t("intervals"),
       },
       {
-        title: "Anlagen",
+        title: t("turbines"),
         value: String(perTurbine.length),
         icon: Wind,
-        description: "Mit Phasendaten",
+        description: t("withPhaseData"),
       },
     ],
-    [summary, perTurbine.length],
+    [summary, perTurbine.length, t],
   );
 
   // Trend chart data
@@ -237,7 +240,7 @@ export function PhaseSymmetryChart({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <Activity className="h-8 w-8 mb-2" />
-        <p>Keine Phasen-Daten vorhanden</p>
+        <p>{t("noPhaseData")}</p>
       </div>
     );
   }
@@ -254,7 +257,7 @@ export function PhaseSymmetryChart({
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">
-                Unsymmetrie-Trend (monatlich)
+                {t("trendTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -283,7 +286,7 @@ export function PhaseSymmetryChart({
                     stroke="#ef4444"
                     strokeDasharray="6 4"
                     label={{
-                      value: "5% Grenzwert",
+                      value: t("threshold5"),
                       position: "insideTopRight",
                       fontSize: 11,
                       fill: "#ef4444",
@@ -292,7 +295,7 @@ export function PhaseSymmetryChart({
                   <Line
                     type="monotone"
                     dataKey="avgImbalancePct"
-                    name="Unsymmetrie"
+                    name={t("imbalanceLegend")}
                     stroke="#f43f5e"
                     strokeWidth={2}
                     dot={{ r: 4, fill: "#f43f5e" }}
@@ -308,7 +311,7 @@ export function PhaseSymmetryChart({
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">
-                Phasenleistung (monatlich)
+                {t("phasePowerTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -367,7 +370,7 @@ export function PhaseSymmetryChart({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Unsymmetrie pro Anlage
+              {t("perTurbineTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -412,7 +415,7 @@ export function PhaseSymmetryChart({
                 />
                 <Bar
                   dataKey="avgImbalancePct"
-                  name="Unsymmetrie"
+                  name={t("imbalanceLegend")}
                   fill="#f43f5e"
                   radius={[0, 4, 4, 0]}
                 />

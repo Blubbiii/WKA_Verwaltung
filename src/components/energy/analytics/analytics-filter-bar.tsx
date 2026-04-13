@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -38,6 +39,7 @@ export function AnalyticsFilterBar({
   showCompareYear = true,
   onCreateReport,
 }: AnalyticsFilterBarProps) {
+  const t = useTranslations("energy.filterBar");
   const [parks, setParks] = useState<Park[]>([]);
 
   useEffect(() => {
@@ -63,14 +65,14 @@ export function AnalyticsFilterBar({
         {/* Park Filter */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-            Park:
+            {t("park")}
           </span>
           <Select value={selectedParkId} onValueChange={onParkChange}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Alle Parks" />
+              <SelectValue placeholder={t("allParks")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle Parks</SelectItem>
+              <SelectItem value="all">{t("allParks")}</SelectItem>
               {parks.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
                   {p.name}
@@ -83,7 +85,7 @@ export function AnalyticsFilterBar({
         {/* Year Filter */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-            Jahr:
+            {t("year")}
           </span>
           <Select
             value={String(selectedYear)}
@@ -106,7 +108,7 @@ export function AnalyticsFilterBar({
         {showCompareYear && onCompareYearChange && (
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-              Vergleich:
+              {t("compare")}
             </span>
             <Select
               value={compareYear ? String(compareYear) : "none"}
@@ -115,10 +117,10 @@ export function AnalyticsFilterBar({
               }
             >
               <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Kein Vergleich" />
+                <SelectValue placeholder={t("noCompare")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Kein Vergleich</SelectItem>
+                <SelectItem value="none">{t("noCompare")}</SelectItem>
                 {years
                   .filter((y) => y !== selectedYear)
                   .map((y) => (
@@ -138,7 +140,7 @@ export function AnalyticsFilterBar({
         {onCreateReport && (
           <Button variant="outline" size="sm" onClick={onCreateReport}>
             <FileText className="mr-2 h-4 w-4" />
-            Bericht erstellen
+            {t("createReport")}
           </Button>
         )}
       </CardContent>

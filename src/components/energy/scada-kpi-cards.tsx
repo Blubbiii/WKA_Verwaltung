@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { Zap, Sun, Wind, CheckCircle } from "lucide-react";
 import {
   KPICard,
@@ -53,17 +54,19 @@ const numFmt = new Intl.NumberFormat("de-DE", {
   maximumFractionDigits: 0,
 });
 
-function formatTimestamp(ts: string | null): string {
-  if (!ts) return "Keine Daten";
-  try {
-    const date = new Date(ts);
-    return `Stand: ${date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`;
-  } catch {
-    return "Keine Daten";
-  }
-}
-
 export function ScadaKpiCards({ parkId }: ScadaKpiCardsProps) {
+  const t = useTranslations("energy.scadaKpi");
+
+  const formatTimestamp = (ts: string | null): string => {
+    if (!ts) return t("noData");
+    try {
+      const date = new Date(ts);
+      return t("stand", { time: date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) });
+    } catch {
+      return t("noData");
+    }
+  };
+
   const params = new URLSearchParams();
   if (parkId && parkId !== "all") params.set("parkId", parkId);
 
@@ -86,7 +89,7 @@ export function ScadaKpiCards({ parkId }: ScadaKpiCardsProps) {
       <Card>
         <CardContent className="py-6">
           <p className="text-center text-sm text-muted-foreground">
-            SCADA-Daten konnten nicht geladen werden
+            {t("loadError")}
           </p>
         </CardContent>
       </Card>
@@ -99,7 +102,7 @@ export function ScadaKpiCards({ parkId }: ScadaKpiCardsProps) {
       <Card>
         <CardContent className="py-6">
           <p className="text-center text-sm text-muted-foreground">
-            Keine SCADA-Daten verfügbar. Bitte importieren Sie SCADA-Daten über die SCADA-Verwaltung.
+            {t("noScadaImport")}
           </p>
         </CardContent>
       </Card>
@@ -110,47 +113,47 @@ export function ScadaKpiCards({ parkId }: ScadaKpiCardsProps) {
     <KPICardGrid>
       {/* Current Production */}
       <KPICard
-        title="Aktuelle Produktion"
+        title={t("currentProduction")}
         value={`${numFmt.format(data.currentProductionKw)} kW`}
         icon={Zap}
         description={formatTimestamp(data.latestTimestamp)}
         trend={data.trends.production.change || undefined}
         trendLabel={
           data.trends.production.change === 0 && data.trends.production.previous > 0
-            ? "Wie gestern"
+            ? t("sameAsYesterday")
             : undefined
         }
       />
 
       {/* Daily Production */}
       <KPICard
-        title="Tagesproduktion"
+        title={t("dailyProduction")}
         value={`${dec2Fmt.format(data.todayProductionMwh)} MWh`}
         icon={Sun}
         description={
           data.trends.production.previous > 0
-            ? `Gestern: ${dec2Fmt.format(data.trends.production.previous)} MWh`
-            : "Heutige Produktion"
+            ? t("yesterdayMwh", { value: dec2Fmt.format(data.trends.production.previous) })
+            : t("todayProduction")
         }
         trend={data.trends.production.change || undefined}
       />
 
       {/* Average Wind Speed */}
       <KPICard
-        title="Mittlerer Wind"
+        title={t("avgWind")}
         value={`${dec1Fmt.format(data.avgWindSpeed)} m/s`}
         icon={Wind}
         description={
           data.trends.wind.previous > 0
-            ? `Gestern: ${dec1Fmt.format(data.trends.wind.previous)} m/s`
-            : "Aktuelle Windgeschwindigkeit"
+            ? t("yesterdayWind", { value: dec1Fmt.format(data.trends.wind.previous) })
+            : t("currentWindSpeed")
         }
         trend={data.trends.wind.change || undefined}
       />
 
       {/* Monthly Availability */}
       <KPICard
-        title="Verfügbarkeit"
+        title={t("availability")}
         value={
           data.monthAvailability > 0
             ? `${dec1Fmt.format(data.monthAvailability)} %`
@@ -159,8 +162,8 @@ export function ScadaKpiCards({ parkId }: ScadaKpiCardsProps) {
         icon={CheckCircle}
         description={
           data.trends.availability.previous > 0
-            ? `Vormonat: ${dec1Fmt.format(data.trends.availability.previous)} %`
-            : "Aktueller Monat"
+            ? t("previousMonth", { value: dec1Fmt.format(data.trends.availability.previous) })
+            : t("currentMonth")
         }
         trend={data.trends.availability.change || undefined}
       />

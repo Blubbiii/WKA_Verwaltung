@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useState, useEffect, Suspense } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,7 @@ export function InvoicePreviewDialog({
   invoiceId,
   invoiceNumber,
 }: InvoicePreviewDialogProps) {
+  const t = useTranslations("invoices.previewDialog");
   const [scale, setScale] = useState(1.0);
   const [rotation, setRotation] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -82,15 +84,15 @@ export function InvoicePreviewDialog({
             const dataUrl = `data:application/pdf;base64,${data.base64}`;
             setPdfDataUrl(dataUrl);
           } else {
-            setError("PDF konnte nicht generiert werden");
+            setError(t("pdfGenerationError"));
           }
         })
         .catch(() => {
-          setError("Fehler beim Laden der Vorschau");
+          setError(t("loadError"));
         })
         .finally(() => setLoading(false));
     }
-  }, [invoiceId, open]);
+  }, [invoiceId, open, t]);
 
   if (!invoiceId) return null;
 
@@ -136,7 +138,7 @@ export function InvoicePreviewDialog({
 
   function onDocumentLoadError(_err: Error) {
     setLoading(false);
-    setError("PDF konnte nicht geladen werden");
+    setError(t("pdfLoadError"));
   }
 
   return (
@@ -152,20 +154,20 @@ export function InvoicePreviewDialog({
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between gap-4">
             <DialogTitle className="truncate flex-1">
-              Vorschau: {invoiceNumber || "Rechnung"}
+              {t("preview")}: {invoiceNumber || t("invoice")}
             </DialogTitle>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={handlePrint} title="Drucken">
+              <Button variant="ghost" size="icon" onClick={handlePrint} title={t("print")}>
                 <Printer className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={toggleFullscreen} title="Vollbild">
+              <Button variant="ghost" size="icon" onClick={toggleFullscreen} title={t("fullscreen")}>
                 {isFullscreen ? (
                   <Minimize2 className="h-4 w-4" />
                 ) : (
                   <Maximize2 className="h-4 w-4" />
                 )}
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleDownload} title="Herunterladen">
+              <Button variant="ghost" size="icon" onClick={handleDownload} title={t("download")}>
                 <Download className="h-4 w-4" />
               </Button>
             </div>
@@ -177,7 +179,7 @@ export function InvoicePreviewDialog({
           {loading && (
             <div className="flex flex-col items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">PDF wird generiert...</p>
+              <p className="mt-2 text-sm text-muted-foreground">{t("pdfGenerating")}</p>
             </div>
           )}
 
@@ -186,7 +188,7 @@ export function InvoicePreviewDialog({
               fallback={
                 <div className="flex flex-col items-center justify-center h-64">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">PDF wird geladen...</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{t("pdfLoading")}</p>
                 </div>
               }
             >
@@ -213,11 +215,11 @@ export function InvoicePreviewDialog({
           {!loading && error && (
             <div className="flex flex-col items-center justify-center h-64 text-center p-8">
               <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">Fehler beim Laden</p>
+              <p className="text-lg font-medium">{t("loadError")}</p>
               <p className="text-sm text-muted-foreground mt-1">{error}</p>
               <Button variant="default" className="mt-4" onClick={handleDownload}>
                 <Download className="mr-2 h-4 w-4" />
-                PDF herunterladen
+                {t("downloadPdf")}
               </Button>
             </div>
           )}

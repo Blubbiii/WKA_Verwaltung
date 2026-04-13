@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -60,6 +61,7 @@ export function HeatmapChart({
   isLoading = false,
   onCellClick,
 }: HeatmapChartProps) {
+  const t = useTranslations("energy.heatmap");
   // Determine which months have data
   const months = useMemo(() => {
     const monthSet = new Set<number>();
@@ -99,7 +101,7 @@ export function HeatmapChart({
         )}
         <CardContent>
           <p className="text-sm text-muted-foreground text-center py-8">
-            Keine Daten verfügbar
+            {t("noData")}
           </p>
         </CardContent>
       </Card>
@@ -124,7 +126,7 @@ export function HeatmapChart({
               }}
             >
               <div className="text-xs text-muted-foreground font-medium py-1">
-                Anlage
+                {t("turbine")}
               </div>
               {months.map((m) => (
                 <div
@@ -184,7 +186,7 @@ export function HeatmapChart({
                             }}
                             aria-label={
                               onCellClick && hasData
-                                ? `${row.designation} - ${MONTH_LABELS[m - 1]}: ${valueFormatter(cell!.value)}. Klicken für Details.`
+                                ? t("cellAria", { designation: row.designation, month: MONTH_LABELS[m - 1], value: valueFormatter(cell!.value) })
                                 : undefined
                             }
                           />
@@ -196,7 +198,7 @@ export function HeatmapChart({
                           <p className="text-sm">
                             {hasData
                               ? valueFormatter(cell!.value)
-                              : "Keine Daten"}
+                              : t("noDataShort")}
                           </p>
                         </TooltipContent>
                       </Tooltip>
@@ -210,7 +212,7 @@ export function HeatmapChart({
 
         {/* Color legend */}
         <div className="flex items-center justify-end gap-2 mt-3">
-          <span className="text-xs text-muted-foreground">Niedrig</span>
+          <span className="text-xs text-muted-foreground">{t("legendLow")}</span>
           <div className="flex gap-0.5">
             {[0.1, 0.3, 0.5, 0.7, 0.9].map((n) => (
               <div
@@ -220,7 +222,7 @@ export function HeatmapChart({
               />
             ))}
           </div>
-          <span className="text-xs text-muted-foreground">Hoch</span>
+          <span className="text-xs text-muted-foreground">{t("legendHigh")}</span>
         </div>
       </CardContent>
     </Card>

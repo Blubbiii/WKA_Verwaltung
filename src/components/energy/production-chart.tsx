@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   Bar,
   Area,
@@ -163,6 +164,7 @@ export function ProductionChart({
   interval = "month",
   chartType = "bar",
 }: ProductionChartProps) {
+  const t = useTranslations("energy.productionChart");
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return [];
 
@@ -262,7 +264,7 @@ export function ProductionChart({
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-[400px] text-muted-foreground">
-        Keine Produktionsdaten vorhanden
+        {t("noData")}
       </div>
     );
   }
@@ -323,7 +325,7 @@ export function ProductionChart({
             yAxisId="kwh"
             type="monotone"
             dataKey="produktionKwh"
-            name="Produktion (kWh)"
+            name={t("productionLegend")}
             stroke="hsl(var(--chart-1))"
             strokeWidth={2}
             dot={{ r: 3 }}
@@ -343,7 +345,7 @@ export function ProductionChart({
               yAxisId="kwh"
               type="monotone"
               dataKey="produktionKwh"
-              name="Produktion (kWh)"
+              name={t("productionLegend")}
               stroke="hsl(var(--chart-1))"
               fill="url(#prodGradient)"
               strokeWidth={2}
@@ -356,7 +358,7 @@ export function ProductionChart({
           <Bar
             yAxisId="kwh"
             dataKey="produktionKwh"
-            name="Produktion (kWh)"
+            name={t("productionLegend")}
             fill="hsl(var(--chart-1))"
             radius={[4, 4, 0, 0]}
           />
@@ -390,7 +392,7 @@ export function ProductionChart({
           className="text-muted-foreground"
           tickFormatter={(value) => numberFormatter.format(value)}
           label={{
-            value: "Produktion (kWh)",
+            value: t("productionAxis"),
             angle: -90,
             position: "insideLeft",
             style: { fontSize: 12, fill: "hsl(var(--muted-foreground))" },
@@ -404,7 +406,7 @@ export function ProductionChart({
           axisLine={false}
           className="text-muted-foreground"
           label={{
-            value: "Wind (m/s)",
+            value: t("windAxis"),
             angle: 90,
             position: "insideRight",
             style: { fontSize: 12, fill: "hsl(var(--muted-foreground))" },
@@ -417,7 +419,7 @@ export function ProductionChart({
           yAxisId="wind"
           type="monotone"
           dataKey="avgWindSpeed"
-          name="Windgeschwindigkeit (m/s)"
+          name={t("windLegend")}
           stroke="#f59e0b"
           strokeWidth={2}
           dot={chartData.length <= 50 ? { r: 2 } : false}

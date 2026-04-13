@@ -4,6 +4,7 @@
 // Layout: Left sidebar (palette) | Center (preview canvas) | Right sidebar (properties)
 
 import { useState, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import type {
   TemplateBlock,
   TemplateLayout,
@@ -58,6 +59,7 @@ export function InvoiceTemplateEditor({
   onBack,
   isSaving = false,
 }: InvoiceTemplateEditorProps) {
+  const t = useTranslations("settings.invoiceTemplateEditor");
   const [name, setName] = useState(initialName);
   const [layout, setLayout] = useState<TemplateLayout>(
     initialLayout || createDefaultLayout()
@@ -251,17 +253,17 @@ export function InvoiceTemplateEditor({
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onBack} className="h-8">
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Zurück
+            {t("back")}
           </Button>
           <div className="space-y-0.5">
-            <Label className="text-[10px] text-muted-foreground">Vorlagenname</Label>
+            <Label className="text-[10px] text-muted-foreground">{t("templateName")}</Label>
             <Input
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
                 markDirty();
               }}
-              placeholder="z.B. Standard Rechnung"
+              placeholder={t("templateNamePlaceholder")}
               className="h-8 w-64 text-sm"
             />
           </div>
@@ -274,7 +276,7 @@ export function InvoiceTemplateEditor({
             className="h-8 text-xs"
           >
             <RotateCcw className="h-3 w-3 mr-1" />
-            Zurücksetzen
+            {t("reset")}
           </Button>
           <Button
             size="sm"
@@ -287,7 +289,7 @@ export function InvoiceTemplateEditor({
             ) : (
               <Save className="h-3 w-3 mr-1" />
             )}
-            {hasChanges ? "Speichern *" : "Speichern"}
+            {hasChanges ? t("saveDirty") : t("save")}
           </Button>
         </div>
       </div>
@@ -315,9 +317,9 @@ export function InvoiceTemplateEditor({
           >
             {layout.blocks.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                <p className="text-sm">Keine Bausteine vorhanden</p>
+                <p className="text-sm">{t("noBlocks")}</p>
                 <p className="text-xs mt-1">
-                  Ziehen Sie Bausteine aus der linken Leiste hierher
+                  {t("dragBlocksHint")}
                 </p>
               </div>
             )}
@@ -359,8 +361,8 @@ export function InvoiceTemplateEditor({
                         moveBlock(block.id, "up");
                       }}
                       className="p-0.5 rounded hover:bg-accent"
-                      title="Nach oben"
-                      aria-label="Block nach oben verschieben"
+                      title={t("moveUp")}
+                      aria-label={t("moveUpAria")}
                       disabled={index === 0}
                     >
                       <ChevronUp className="h-3 w-3" />
@@ -374,8 +376,8 @@ export function InvoiceTemplateEditor({
                         moveBlock(block.id, "down");
                       }}
                       className="p-0.5 rounded hover:bg-accent"
-                      title="Nach unten"
-                      aria-label="Block nach unten verschieben"
+                      title={t("moveDown")}
+                      aria-label={t("moveDownAria")}
                       disabled={index === layout.blocks.length - 1}
                     >
                       <ChevronDown className="h-3 w-3" />

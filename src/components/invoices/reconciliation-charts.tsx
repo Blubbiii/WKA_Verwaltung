@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   Bar,
   XAxis,
@@ -41,12 +42,12 @@ const PIE_COLORS: Record<string, string> = {
   OVERDUE: "#f97316", // orange
 };
 
-const PIE_LABELS: Record<string, string> = {
-  PAID: "Bezahlt",
-  SENT: "Versendet",
-  DRAFT: "Entwurf",
-  CANCELLED: "Storniert",
-  OVERDUE: "Überfällig",
+const PIE_LABEL_KEYS: Record<string, string> = {
+  PAID: "statusPaid",
+  SENT: "statusSent",
+  DRAFT: "statusDraft",
+  CANCELLED: "statusCancelled",
+  OVERDUE: "statusOverdue",
 };
 
 // =============================================================================
@@ -119,6 +120,7 @@ export function MonthlyComparisonChart({
   data,
   className,
 }: MonthlyComparisonChartProps) {
+  const t = useTranslations("invoices.reconciliationCharts");
   // Only show months that have data
   const hasData = data.some((d) => d.advances !== 0 || d.settled !== 0);
 
@@ -127,15 +129,15 @@ export function MonthlyComparisonChart({
       <Card className={className}>
         <CardHeader>
           <CardTitle className="text-base">
-            Monatlicher Vergleich
+            {t("monthlyTitle")}
           </CardTitle>
           <CardDescription>
-            Vorschüsse vs. Abrechnungen pro Monat
+            {t("monthlyDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-[300px]">
           <p className="text-muted-foreground text-sm">
-            Keine Daten für diesen Zeitraum vorhanden
+            {t("noPeriodData")}
           </p>
         </CardContent>
       </Card>
@@ -150,9 +152,9 @@ export function MonthlyComparisonChart({
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="text-base">Monatlicher Vergleich</CardTitle>
+        <CardTitle className="text-base">{t("monthlyTitle")}</CardTitle>
         <CardDescription>
-          Vorschüsse vs. Abrechnungen pro Monat
+          {t("monthlyDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -179,20 +181,20 @@ export function MonthlyComparisonChart({
             />
             <Bar
               dataKey="advances"
-              name="Vorschüsse"
+              name={t("advances")}
               fill={COLORS.advances}
               radius={[2, 2, 0, 0]}
             />
             <Bar
               dataKey="settled"
-              name="Abrechnungen"
+              name={t("settlements")}
               fill={COLORS.settled}
               radius={[2, 2, 0, 0]}
             />
             <Line
               type="monotone"
               dataKey="difference"
-              name="Differenz"
+              name={t("difference")}
               stroke="#f59e0b"
               strokeWidth={2}
               dot={{ r: 3 }}
@@ -255,13 +257,18 @@ export function InvoiceStatusChart({
   data,
   className,
 }: InvoiceStatusChartProps) {
+  const t = useTranslations("invoices.reconciliationCharts");
+
   const chartData = Object.entries(data)
     .filter(([, value]) => value > 0)
-    .map(([key, value]) => ({
-      name: PIE_LABELS[key] ?? key,
-      value,
-      key,
-    }));
+    .map(([key, value]) => {
+      const labelKey = PIE_LABEL_KEYS[key];
+      return {
+        name: labelKey ? t(labelKey) : key,
+        value,
+        key,
+      };
+    });
 
   const total = chartData.reduce((sum, d) => sum + d.value, 0);
 
@@ -269,12 +276,12 @@ export function InvoiceStatusChart({
     return (
       <Card className={className}>
         <CardHeader>
-          <CardTitle className="text-base">Rechnungsstatus</CardTitle>
-          <CardDescription>Verteilung nach Status</CardDescription>
+          <CardTitle className="text-base">{t("statusTitle")}</CardTitle>
+          <CardDescription>{t("statusDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-[300px]">
           <p className="text-muted-foreground text-sm">
-            Keine Rechnungen vorhanden
+            {t("noInvoices")}
           </p>
         </CardContent>
       </Card>
@@ -284,9 +291,9 @@ export function InvoiceStatusChart({
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="text-base">Rechnungsstatus</CardTitle>
+        <CardTitle className="text-base">{t("statusTitle")}</CardTitle>
         <CardDescription>
-          Verteilung nach Status ({total} gesamt)
+          {t("statusDescTotal", { total })}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -311,7 +318,7 @@ export function InvoiceStatusChart({
             </Pie>
             <Tooltip
               formatter={(value, name) => [
-                `${typeof value === "number" ? value : 0} Rechnungen`,
+                t("invoicesCount", { count: typeof value === "number" ? value : 0 }),
                 String(name ?? ""),
               ]}
             />

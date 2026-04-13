@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -70,6 +71,7 @@ export function TurbineDetailDialog({
   setIsOpen,
   onEdit,
 }: TurbineDetailDialogProps) {
+  const t = useTranslations("parks.turbineDetail");
   const [turbineDetail, setTurbineDetail] = useState<TurbineDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -131,24 +133,24 @@ export function TurbineDetailDialog({
         ) : (
           <Tabs defaultValue="details" className="mt-4">
             <TabsList>
-              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="details">{t("tabDetails")}</TabsTrigger>
               <TabsTrigger value="service">
-                Service-Events ({turbineDetail?._count?.serviceEvents || 0})
+                {t("tabServiceEvents")} ({turbineDetail?._count?.serviceEvents || 0})
               </TabsTrigger>
               <TabsTrigger value="documents">
-                Dokumente ({turbineDetail?._count?.documents || 0})
+                {t("tabDocuments")} ({turbineDetail?._count?.documents || 0})
               </TabsTrigger>
               <TabsTrigger value="checkins">
                 <Clock className="h-4 w-4 mr-1" />
-                Check-Ins ({turbineDetail?._count?.technicianSessions || 0})
+                {t("tabCheckIns")} ({turbineDetail?._count?.technicianSessions || 0})
               </TabsTrigger>
               <TabsTrigger value="qrcode">
                 <QrCode className="h-4 w-4 mr-1" />
-                QR-Code
+                {t("tabQrCode")}
               </TabsTrigger>
               <TabsTrigger value="operating-states">
                 <Activity className="h-4 w-4 mr-1" />
-                Betriebszustände
+                {t("tabOperatingStates")}
               </TabsTrigger>
             </TabsList>
 
@@ -157,23 +159,23 @@ export function TurbineDetailDialog({
               <div className="space-y-3">
                 <h4 className="font-medium flex items-center gap-2">
                   <Zap className="h-4 w-4" />
-                  Technische Daten
+                  {t("technicalData")}
                 </h4>
                 <div className="grid grid-cols-3 gap-4 rounded-lg border p-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Leistung</p>
+                    <p className="text-sm text-muted-foreground">{t("power")}</p>
                     <p className="font-medium">
                       {turbine.ratedPowerKw ? formatCapacity(turbine.ratedPowerKw) : "-"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Nabenhoehe</p>
+                    <p className="text-sm text-muted-foreground">{t("hubHeight")}</p>
                     <p className="font-medium">
                       {turbine.hubHeightM ? `${turbine.hubHeightM} m` : "-"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Rotordurchmesser</p>
+                    <p className="text-sm text-muted-foreground">{t("rotorDiameter")}</p>
                     <p className="font-medium">
                       {turbine.rotorDiameterM ? `${turbine.rotorDiameterM} m` : "-"}
                     </p>
@@ -185,21 +187,21 @@ export function TurbineDetailDialog({
               <div className="space-y-3">
                 <h4 className="font-medium flex items-center gap-2">
                   <FileText className="h-4 w-4" />
-                  Registrierung
+                  {t("registration")}
                 </h4>
                 <div className="grid grid-cols-3 gap-4 rounded-lg border p-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Geraetetyp</p>
+                    <p className="text-sm text-muted-foreground">{t("deviceType")}</p>
                     <p className="font-medium">
                       {deviceTypeLabels[turbine.deviceType || "WEA"] || "WEA"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Seriennummer</p>
+                    <p className="text-sm text-muted-foreground">{t("serialNumber")}</p>
                     <p className="font-medium">{turbine.serialNumber || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">MaStR-Nummer</p>
+                    <p className="text-sm text-muted-foreground">{t("mastrNumber")}</p>
                     <p className="font-medium">{turbine.mastrNumber || "-"}</p>
                   </div>
                 </div>
@@ -212,11 +214,11 @@ export function TurbineDetailDialog({
                   <div className="space-y-3">
                     <h4 className="font-medium flex items-center gap-2">
                       <Building2 className="h-4 w-4" />
-                      Betrieb & Verwaltung
+                      {t("operation")}
                     </h4>
                     <div className="grid grid-cols-1 gap-4 rounded-lg border p-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Betreibergesellschaft</p>
+                        <p className="text-sm text-muted-foreground">{t("operator")}</p>
                         <span className="font-medium flex items-center gap-2">
                           {activeOp
                             ? <>
@@ -228,16 +230,16 @@ export function TurbineDetailDialog({
                                   </Badge>
                                 )}
                               </>
-                            : <span className="text-muted-foreground">Keine Zuordnung</span>}
+                            : <span className="text-muted-foreground">{t("noAssignment")}</span>}
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm text-muted-foreground">Technische Betriebsfuehrung</p>
+                          <p className="text-sm text-muted-foreground">{t("technicalManagement")}</p>
                           <p className="font-medium">{turbineDetail?.technischeBetriebsfuehrung || "-"}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Kaufmaennische Betriebsfuehrung</p>
+                          <p className="text-sm text-muted-foreground">{t("commercialManagement")}</p>
                           <p className="font-medium">{turbineDetail?.kaufmaennischeBetriebsfuehrung || "-"}</p>
                         </div>
                       </div>
@@ -250,11 +252,11 @@ export function TurbineDetailDialog({
               <div className="space-y-3">
                 <h4 className="font-medium flex items-center gap-2">
                   <Zap className="h-4 w-4" />
-                  Netzanbindung
+                  {t("gridConnection")}
                 </h4>
                 <div className="rounded-lg border p-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Netzgesellschaft</p>
+                    <p className="text-sm text-muted-foreground">{t("gridCompany")}</p>
                     <span className="font-medium flex items-center gap-2">
                       {turbine.netzgesellschaftFund
                         ? <>
@@ -275,31 +277,31 @@ export function TurbineDetailDialog({
               {(turbineDetail?.minimumRent != null || turbineDetail?.weaSharePercentage != null || turbineDetail?.poolSharePercentage != null) && (
                 <div className="space-y-3">
                   <h4 className="font-medium flex items-center gap-2">
-                    Pacht-Konfiguration (Anlagen-Override)
+                    {t("leaseConfig")}
                   </h4>
                   <div className="grid grid-cols-3 gap-4 rounded-lg border p-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">Mindestpacht</p>
+                      <p className="text-sm text-muted-foreground">{t("minimumRent")}</p>
                       <p className="font-medium">
                         {turbineDetail.minimumRent != null
                           ? `${Number(turbineDetail.minimumRent).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}`
-                          : "Park-Standard"}
+                          : t("parkDefault")}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">WEA-Anteil</p>
+                      <p className="text-sm text-muted-foreground">{t("weaShare")}</p>
                       <p className="font-medium">
                         {turbineDetail.weaSharePercentage != null
                           ? `${Number(turbineDetail.weaSharePercentage).toLocaleString("de-DE")} %`
-                          : "Park-Standard"}
+                          : t("parkDefault")}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Pool-Anteil</p>
+                      <p className="text-sm text-muted-foreground">{t("poolShare")}</p>
                       <p className="font-medium">
                         {turbineDetail.poolSharePercentage != null
                           ? `${Number(turbineDetail.poolSharePercentage).toLocaleString("de-DE")} %`
-                          : "Park-Standard"}
+                          : t("parkDefault")}
                       </p>
                     </div>
                   </div>
@@ -310,11 +312,11 @@ export function TurbineDetailDialog({
               <div className="space-y-3">
                 <h4 className="font-medium flex items-center gap-2">
                   <CalendarIcon className="h-4 w-4" />
-                  Termine
+                  {t("dates")}
                 </h4>
                 <div className="grid grid-cols-2 gap-4 rounded-lg border p-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Inbetriebnahme</p>
+                    <p className="text-sm text-muted-foreground">{t("commissioning")}</p>
                     <p className="font-medium">
                       {turbine.commissioningDate
                         ? format(new Date(turbine.commissioningDate), "dd.MM.yyyy", { locale: de })
@@ -322,7 +324,7 @@ export function TurbineDetailDialog({
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Garantie bis</p>
+                    <p className="text-sm text-muted-foreground">{t("warrantyUntil")}</p>
                     <p className="font-medium">
                       {turbine.warrantyEndDate
                         ? format(new Date(turbine.warrantyEndDate), "dd.MM.yyyy", { locale: de })
@@ -337,7 +339,7 @@ export function TurbineDetailDialog({
                 <div className="space-y-3">
                   <h4 className="font-medium flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
-                    Standort
+                    {t("location")}
                   </h4>
                   <div className="rounded-lg border p-4">
                     <p className="font-mono text-sm">
@@ -352,7 +354,7 @@ export function TurbineDetailDialog({
                 <div className="space-y-3">
                   <h4 className="font-medium flex items-center gap-2">
                     <FileText className="h-4 w-4" />
-                    Notizen
+                    {t("notes")}
                   </h4>
                   <div className="rounded-lg border p-4">
                     <p className="whitespace-pre-wrap text-sm">{turbine.notes}</p>
@@ -363,22 +365,22 @@ export function TurbineDetailDialog({
               {/* Statistiken */}
               {turbineDetail?._count && (
                 <div className="space-y-3">
-                  <h4 className="font-medium">Statistiken</h4>
+                  <h4 className="font-medium">{t("statistics")}</h4>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="rounded-lg border p-3 text-center">
                       <Wrench className="mx-auto h-5 w-5 text-muted-foreground mb-1" />
                       <p className="text-2xl font-bold">{turbineDetail._count.serviceEvents}</p>
-                      <p className="text-xs text-muted-foreground">Service-Events</p>
+                      <p className="text-xs text-muted-foreground">{t("serviceEvents")}</p>
                     </div>
                     <div className="rounded-lg border p-3 text-center">
                       <FileText className="mx-auto h-5 w-5 text-muted-foreground mb-1" />
                       <p className="text-2xl font-bold">{turbineDetail._count.documents}</p>
-                      <p className="text-xs text-muted-foreground">Dokumente</p>
+                      <p className="text-xs text-muted-foreground">{t("documents")}</p>
                     </div>
                     <div className="rounded-lg border p-3 text-center">
                       <FileText className="mx-auto h-5 w-5 text-muted-foreground mb-1" />
                       <p className="text-2xl font-bold">{turbineDetail._count.contracts}</p>
-                      <p className="text-xs text-muted-foreground">Vertraege</p>
+                      <p className="text-xs text-muted-foreground">{t("contracts")}</p>
                     </div>
                   </div>
                 </div>
@@ -389,16 +391,16 @@ export function TurbineDetailDialog({
               {!turbineDetail?.serviceEvents || turbineDetail.serviceEvents.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   <Wrench className="mx-auto h-12 w-12 opacity-50 mb-4" />
-                  <p>Keine Service-Events vorhanden</p>
+                  <p>{t("noServiceEvents")}</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Typ</TableHead>
-                      <TableHead>Titel</TableHead>
-                      <TableHead>Datum</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t("type")}</TableHead>
+                      <TableHead>{t("title")}</TableHead>
+                      <TableHead>{t("date")}</TableHead>
+                      <TableHead>{t("status")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -435,22 +437,22 @@ export function TurbineDetailDialog({
             {/* Documents Tab */}
             <TabsContent value="documents" className="mt-4">
               <div className="flex justify-between items-center mb-4">
-                <h4 className="font-medium">Dokumente</h4>
+                <h4 className="font-medium">{t("documents")}</h4>
                 <Button size="sm" asChild>
                   <Link href={`/documents/upload?turbineId=${turbine.id}`}>
                     <Upload className="mr-2 h-4 w-4" />
-                    Hochladen
+                    {t("upload")}
                   </Link>
                 </Button>
               </div>
               {!turbineDetail?.documents || turbineDetail.documents.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   <FileText className="mx-auto h-12 w-12 opacity-50 mb-4" />
-                  <p>Keine Dokumente vorhanden</p>
+                  <p>{t("noDocuments")}</p>
                   <Button variant="outline" size="sm" className="mt-4" asChild>
                     <Link href={`/documents/upload?turbineId=${turbine.id}`}>
                       <Upload className="mr-2 h-4 w-4" />
-                      Erstes Dokument hochladen
+                      {t("uploadFirst")}
                     </Link>
                   </Button>
                 </div>
@@ -458,10 +460,10 @@ export function TurbineDetailDialog({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Dokument</TableHead>
-                      <TableHead>Kategorie</TableHead>
-                      <TableHead>Datum</TableHead>
-                      <TableHead className="w-[100px]">Aktionen</TableHead>
+                      <TableHead>{t("document")}</TableHead>
+                      <TableHead>{t("category")}</TableHead>
+                      <TableHead>{t("date")}</TableHead>
+                      <TableHead className="w-[100px]">{t("actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -488,7 +490,7 @@ export function TurbineDetailDialog({
                                 setPreviewDocument(doc);
                                 setPreviewOpen(true);
                               }}
-                              title="Vorschau"
+                              title={t("preview")}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -496,7 +498,7 @@ export function TurbineDetailDialog({
                               variant="ghost"
                               size="icon"
                               onClick={() => window.open(doc.fileUrl, "_blank")}
-                              title="Herunterladen"
+                              title={t("download")}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -514,17 +516,17 @@ export function TurbineDetailDialog({
               {!turbineDetail?.technicianSessions || turbineDetail.technicianSessions.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   <Clock className="mx-auto h-12 w-12 opacity-50 mb-4" />
-                  <p>Keine Techniker-Check-Ins vorhanden</p>
+                  <p>{t("noCheckIns")}</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Techniker</TableHead>
-                      <TableHead>Firma</TableHead>
-                      <TableHead>Einchecken</TableHead>
-                      <TableHead>Auschecken</TableHead>
-                      <TableHead>Dauer</TableHead>
+                      <TableHead>{t("technician")}</TableHead>
+                      <TableHead>{t("company")}</TableHead>
+                      <TableHead>{t("checkIn")}</TableHead>
+                      <TableHead>{t("checkOut")}</TableHead>
+                      <TableHead>{t("duration")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -538,7 +540,7 @@ export function TurbineDetailDialog({
                         <TableCell>
                           {s.checkOutAt
                             ? format(new Date(s.checkOutAt), "dd.MM.yyyy HH:mm", { locale: de })
-                            : <Badge variant="secondary" className="bg-green-100 text-green-800">Aktiv</Badge>
+                            : <Badge variant="secondary" className="bg-green-100 text-green-800">{t("active")}</Badge>
                           }
                         </TableCell>
                         <TableCell>
@@ -576,7 +578,7 @@ export function TurbineDetailDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Schliessen
+            {t("close")}
           </Button>
           <Button
             onClick={() => {
@@ -584,7 +586,7 @@ export function TurbineDetailDialog({
               onEdit();
             }}
           >
-            Bearbeiten
+            {t("edit")}
           </Button>
         </DialogFooter>
       </DialogContent>

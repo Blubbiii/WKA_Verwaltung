@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
   Activity,
   Clock,
@@ -68,25 +69,17 @@ function formatTime(iso: string): string {
   });
 }
 
-function formatUptime(hours: number): string {
-  if (hours < 1) return `${Math.round(hours * 60)} Min`;
-  if (hours < 24) return `${Math.round(hours)} Std`;
-  const days = Math.floor(hours / 24);
-  const h = Math.round(hours % 24);
-  return `${days}d ${h}h`;
-}
-
-const QUEUE_LABELS: Record<string, string> = {
-  email: "E-Mail",
-  pdf: "PDF",
-  billing: "Abrechnung",
-  weather: "Wetter",
-  report: "Berichte",
-  reminder: "Erinnerungen",
-  "scada-auto-import": "SCADA Import",
-  paperless: "Paperless",
-  "inbox-ocr": "Inbox OCR",
-  webhook: "Webhooks",
+const QUEUE_LABELS_KEYS: Record<string, string> = {
+  email: "queueEmail",
+  pdf: "queuePdf",
+  billing: "queueBilling",
+  weather: "queueWeather",
+  report: "queueReport",
+  reminder: "queueReminder",
+  "scada-auto-import": "queueScadaImport",
+  paperless: "queuePaperless",
+  "inbox-ocr": "queueInboxOcr",
+  webhook: "queueWebhook",
 };
 
 // =============================================================================
@@ -94,10 +87,19 @@ const QUEUE_LABELS: Record<string, string> = {
 // =============================================================================
 
 export function MonitoringDashboard() {
+  const t = useTranslations("admin.monitoringDashboard");
   const [data, setData] = useState<MonitoringData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+  const formatUptime = (hours: number): string => {
+    if (hours < 1) return `${Math.round(hours * 60)} ${t("min")}`;
+    if (hours < 24) return `${Math.round(hours)} ${t("hour")}`;
+    const days = Math.floor(hours / 24);
+    const h = Math.round(hours % 24);
+    return `${days}d ${h}h`;
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -108,11 +110,11 @@ export function MonitoringDashboard() {
       setError(null);
       setLastUpdate(new Date());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler beim Laden");
+      setError(err instanceof Error ? err.message : t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -124,7 +126,7 @@ export function MonitoringDashboard() {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
         <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-        Lade Monitoring-Daten...
+        {t("loading")}
       </div>
     );
   }
@@ -135,7 +137,7 @@ export function MonitoringDashboard() {
         <AlertTriangle className="h-8 w-8 text-destructive" />
         <p>{error}</p>
         <Button variant="outline" size="sm" onClick={fetchData}>
-          Erneut versuchen
+          {t("retry")}
         </Button>
       </div>
     );
@@ -154,7 +156,7 @@ export function MonitoringDashboard() {
       {/* Status Bar */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          {lastUpdate && `Aktualisiert: ${lastUpdate.toLocaleTimeString("de-DE")}`}
+          {lastUpdate && t("updated", { time: lastUpdate.toLocaleTimeString("de-DE") })}
           {error && <span className="text-destructive ml-2">({error})</span>}
         </span>
         <Button
@@ -164,22 +166,22 @@ export function MonitoringDashboard() {
           className="h-7 text-xs"
         >
           <RefreshCw className="h-3 w-3 mr-1" />
-          Aktualisieren
+          {t("refresh")}
         </Button>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Requests (5 Min)"
+          title={t("requests5Min")}
           value={data.realtime.totalRequests}
           icon={Activity}
-          description={`${data.realtime.slowRequests} langsame Anfragen`}
+          description={t("slowRequests", { count: data.realtime.slowRequests })}
           accentColor="text-blue-600 dark:text-blue-400"
           iconColor="text-blue-500/40 dark:text-blue-400/30"
         />
         <KPICard
-          title="Ø Antwortzeit"
+          title={t("avgResponseTime")}
           value={`${data.realtime.avgResponseTime} ms`}
           icon={Clock}
           description={`P99: ${data.realtime.p99ResponseTime} ms`}
@@ -188,7 +190,7 @@ export function MonitoringDashboard() {
           isAlert={data.realtime.avgResponseTime > 1000}
         />
         <KPICard
-          title="P95 Latenz"
+          title={t("p95Latency")}
           value={`${data.realtime.p95ResponseTime} ms`}
           icon={Zap}
           accentColor="text-amber-600 dark:text-amber-400"
@@ -196,7 +198,7 @@ export function MonitoringDashboard() {
           isAlert={data.realtime.p95ResponseTime > 2000}
         />
         <KPICard
-          title="Fehlerrate"
+          title={t("errorRate")}
           value={`${data.realtime.errorRate} %`}
           icon={AlertTriangle}
           accentColor={
@@ -219,7 +221,7 @@ export function MonitoringDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Request-Rate (letzte Stunde)
+              {t("requestRateTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -257,7 +259,7 @@ export function MonitoringDashboard() {
                     labelStyle={{ color: "hsl(var(--foreground))" }}
                     formatter={(value) => {
                       const num = typeof value === "number" ? value : 0;
-                      return [`${num.toFixed(2)} req/s`, "Rate"];
+                      return [`${num.toFixed(2)} req/s`, t("rate")];
                     }}
                   />
                   <Area
@@ -276,7 +278,7 @@ export function MonitoringDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              P95 Latenz (letzte Stunde)
+              {t("p95LatencyTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -332,7 +334,7 @@ export function MonitoringDashboard() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Server className="h-4 w-4" />
-              System
+              {t("system")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -370,29 +372,33 @@ export function MonitoringDashboard() {
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Queue Status
+              {t("queueStatus")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {data.queues.length > 0 ? (
-                data.queues.map((q) => (
-                  <Badge
-                    key={q.name}
-                    variant={q.active > 0 ? "default" : "secondary"}
-                    className="text-xs py-1 px-2.5"
-                  >
-                    {QUEUE_LABELS[q.name] || q.name}
-                    {q.active > 0 && (
-                      <span className="ml-1.5 bg-background/20 px-1 rounded">
-                        {q.active}
-                      </span>
-                    )}
-                  </Badge>
-                ))
+                data.queues.map((q) => {
+                  const queueKey = QUEUE_LABELS_KEYS[q.name];
+                  const label = queueKey ? t(queueKey) : q.name;
+                  return (
+                    <Badge
+                      key={q.name}
+                      variant={q.active > 0 ? "default" : "secondary"}
+                      className="text-xs py-1 px-2.5"
+                    >
+                      {label}
+                      {q.active > 0 && (
+                        <span className="ml-1.5 bg-background/20 px-1 rounded">
+                          {q.active}
+                        </span>
+                      )}
+                    </Badge>
+                  );
+                })
               ) : (
                 <span className="text-sm text-muted-foreground">
-                  Keine aktiven Queues
+                  {t("noQueues")}
                 </span>
               )}
             </div>
@@ -405,7 +411,7 @@ export function MonitoringDashboard() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Top Endpoints (letzte 5 Min)
+              {t("topEndpointsTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -413,10 +419,10 @@ export function MonitoringDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-2 font-medium">Endpoint</th>
-                    <th className="pb-2 font-medium text-right">Requests</th>
-                    <th className="pb-2 font-medium text-right">Ø Latenz</th>
-                    <th className="pb-2 font-medium text-right">Max</th>
+                    <th className="pb-2 font-medium">{t("colEndpoint")}</th>
+                    <th className="pb-2 font-medium text-right">{t("colRequests")}</th>
+                    <th className="pb-2 font-medium text-right">{t("colAvgLatency")}</th>
+                    <th className="pb-2 font-medium text-right">{t("colMax")}</th>
                   </tr>
                 </thead>
                 <tbody>

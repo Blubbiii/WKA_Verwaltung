@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { GeoJSON, Tooltip } from "react-leaflet";
 import type { Layer, PathOptions } from "leaflet";
 import type { Feature, Geometry } from "geojson";
@@ -63,20 +64,7 @@ function buildOwnerColorMap(plots: PlotFeature[]): Map<string, string> {
   return map;
 }
 
-function getLeaseStatusLabel(status: string | null): string {
-  switch (status) {
-    case "ACTIVE":
-      return "Aktiv";
-    case "DRAFT":
-      return "Entwurf";
-    case "EXPIRED":
-      return "Abgelaufen";
-    case "TERMINATED":
-      return "Beendet";
-    default:
-      return "Kein Vertrag";
-  }
-}
+type LeaseStatusTranslator = (status: string | null) => string;
 
 function getLeaseStatusBadgeClasses(status: string | null): string {
   switch (status) {
@@ -100,6 +88,23 @@ export function PlotGeoJsonLayer({
   showLabels,
   hiddenOwnerIds,
 }: PlotGeoJsonLayerProps) {
+  const t = useTranslations("maps.plotLayer");
+
+  const getLeaseStatusLabel: LeaseStatusTranslator = (status) => {
+    switch (status) {
+      case "ACTIVE":
+        return t("statusActive");
+      case "DRAFT":
+        return t("statusDraft");
+      case "EXPIRED":
+        return t("statusExpired");
+      case "TERMINATED":
+        return t("statusTerminated");
+      default:
+        return t("statusNoContract");
+    }
+  };
+
   // Build color map once when plots change
   const ownerColorMap = useMemo(() => buildOwnerColorMap(plots), [plots]);
 
@@ -205,24 +210,25 @@ export function PlotGeoJsonLayer({
       } = feature.properties;
 
       const areaHa =
-        areaSqm != null ? (areaSqm / 10000).toFixed(4) : "unbekannt";
+        areaSqm != null ? (areaSqm / 10000).toFixed(4) : t("unknown");
 
       const statusBadge = `<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:500;${getLeaseStatusBadgeClasses(leaseStatus)}">${getLeaseStatusLabel(leaseStatus)}</span>`;
 
       const html = `
         <div style="min-width:180px;font-size:13px;line-height:1.5;">
           <div style="font-weight:600;margin-bottom:4px;">
-            Flurstueck: ${cadastralDistrict || ""} ${fieldNumber || ""}/${plotNumber || ""}
+            ${t("plot")}: ${cadastralDistrict || ""} ${fieldNumber || ""}/${plotNumber || ""}
           </div>
-          <div>Flaeche: ${areaHa} ha</div>
-          <div>Eigentuemer: ${lessorName || "Nicht zugeordnet"}</div>
-          <div style="margin-top:4px;">Vertrag: ${statusBadge}</div>
+          <div>${t("area")}: ${areaHa} ha</div>
+          <div>${t("owner")}: ${lessorName || t("unassigned")}</div>
+          <div style="margin-top:4px;">${t("contract")}: ${statusBadge}</div>
         </div>
       `;
 
       layer.bindPopup(html);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
 
   if (!visible || visiblePlots.length === 0) {
     return null;

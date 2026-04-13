@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { NetworkNodeType } from "@/types/topology";
 import { NODE_TYPE_CONFIG } from "@/types/topology";
 import {
@@ -67,6 +68,7 @@ export function TopologyToolbar({
   isGenerating,
   hasChanges,
 }: TopologyToolbarProps) {
+  const t = useTranslations("energy.topologyToolbar");
   const [selectedNodeType, setSelectedNodeType] = useState<NetworkNodeType>("TURBINE");
 
   return (
@@ -80,12 +82,12 @@ export function TopologyToolbar({
         {editMode ? (
           <>
             <Eye className="mr-2 h-4 w-4" />
-            Ansicht
+            {t("view")}
           </>
         ) : (
           <>
             <Pencil className="mr-2 h-4 w-4" />
-            Bearbeiten
+            {t("edit")}
           </>
         )}
       </Button>
@@ -103,7 +105,7 @@ export function TopologyToolbar({
               onValueChange={(v) => setSelectedNodeType(v as NetworkNodeType)}
             >
               <SelectTrigger className="h-8 w-[160px] text-xs">
-                <SelectValue placeholder="Knotentyp" />
+                <SelectValue placeholder={t("nodeType")} />
               </SelectTrigger>
               <SelectContent>
                 {(Object.keys(NODE_TYPE_CONFIG) as NetworkNodeType[]).map((type) => (
@@ -126,7 +128,7 @@ export function TopologyToolbar({
               }}
             >
               <Plus className="mr-1 h-3.5 w-3.5" />
-              {addNodeType ? "Abbrechen" : "Platzieren"}
+              {addNodeType ? t("cancel") : t("place")}
             </Button>
           </div>
 
@@ -137,7 +139,7 @@ export function TopologyToolbar({
             onClick={onToggleConnectionDrawing}
           >
             <Link2 className="mr-1 h-3.5 w-3.5" />
-            {drawingConnection ? "Abbrechen" : "Verbinden"}
+            {drawingConnection ? t("cancel") : t("connect")}
           </Button>
 
           {/* Separator */}
@@ -155,7 +157,7 @@ export function TopologyToolbar({
             ) : (
               <Wand2 className="mr-1 h-3.5 w-3.5" />
             )}
-            Auto-Layout
+            {t("autoLayout")}
           </Button>
 
           {/* Save */}
@@ -170,7 +172,7 @@ export function TopologyToolbar({
             ) : (
               <Save className="mr-1 h-3.5 w-3.5" />
             )}
-            Speichern
+            {t("save")}
           </Button>
         </>
       )}
@@ -182,15 +184,15 @@ export function TopologyToolbar({
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onZoomOut}>
           <ZoomOut className="h-4 w-4" />
-          <span className="sr-only">Herauszoomen</span>
+          <span className="sr-only">{t("zoomOut")}</span>
         </Button>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onZoomReset}>
           <Maximize className="h-4 w-4" />
-          <span className="sr-only">Zoom zurücksetzen</span>
+          <span className="sr-only">{t("zoomReset")}</span>
         </Button>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onZoomIn}>
           <ZoomIn className="h-4 w-4" />
-          <span className="sr-only">Hineinzoomen</span>
+          <span className="sr-only">{t("zoomIn")}</span>
         </Button>
       </div>
     </div>
