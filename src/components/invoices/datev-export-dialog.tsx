@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { CalendarIcon, Download, Loader2, Settings2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,7 @@ type ExportType = "all" | "invoices" | "credit_notes";
 // ============================================================================
 
 export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps) {
+  const t = useTranslations("invoices.datevExport");
   // Date range state - default to current year
   const currentYear = new Date().getFullYear();
   const [fromDate, setFromDate] = useState<Date | undefined>(
@@ -93,12 +95,12 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
    */
   async function handleExport() {
     if (!fromDate || !toDate) {
-      toast.error("Bitte waehlen Sie einen Zeitraum aus.");
+      toast.error(t("validation.selectRange"));
       return;
     }
 
     if (fromDate > toDate) {
-      toast.error("Das Startdatum muss vor dem Enddatum liegen.");
+      toast.error(t("validation.startBeforeEnd"));
       return;
     }
 
@@ -159,16 +161,16 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
       // Show success with count
       const exportCount = response.headers.get("X-Export-Count");
       toast.success(
-        `DATEV-Export erfolgreich heruntergeladen${
-          exportCount ? ` (${exportCount} Belege)` : ""
-        }.`
+        exportCount
+          ? t("toast.successWithCount", { count: exportCount })
+          : t("toast.success")
       );
 
       // Close dialog after successful export
       onOpenChange(false);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Fehler beim DATEV-Export";
+        error instanceof Error ? error.message : t("toast.error");
       toast.error(message);
     } finally {
       setIsExporting(false);
@@ -179,10 +181,9 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>DATEV-Export</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>
-            Exportieren Sie Buchungssaetze im DATEV-Format (Buchungsstapel) für
-            Ihren Steuerberater.
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -191,7 +192,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
           <div className="grid grid-cols-2 gap-4">
             {/* From Date */}
             <div className="space-y-2">
-              <Label htmlFor="datev-from">Von</Label>
+              <Label htmlFor="datev-from">{t("labelFrom")}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -205,7 +206,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {fromDate
                       ? format(fromDate, "dd.MM.yyyy", { locale: de })
-                      : "Startdatum"}
+                      : t("placeholderStart")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -221,7 +222,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
 
             {/* To Date */}
             <div className="space-y-2">
-              <Label htmlFor="datev-to">Bis</Label>
+              <Label htmlFor="datev-to">{t("labelTo")}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -235,7 +236,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {toDate
                       ? format(toDate, "dd.MM.yyyy", { locale: de })
-                      : "Enddatum"}
+                      : t("placeholderEnd")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -252,18 +253,18 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
 
           {/* Export Type */}
           <div className="space-y-2">
-            <Label htmlFor="datev-type">Belegtyp</Label>
+            <Label htmlFor="datev-type">{t("labelType")}</Label>
             <Select
               value={exportType}
               onValueChange={(value) => setExportType(value as ExportType)}
             >
               <SelectTrigger id="datev-type">
-                <SelectValue placeholder="Belegtyp waehlen" />
+                <SelectValue placeholder={t("selectType")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Belege</SelectItem>
-                <SelectItem value="invoices">Nur Rechnungen</SelectItem>
-                <SelectItem value="credit_notes">Nur Gutschriften</SelectItem>
+                <SelectItem value="all">{t("typeAll")}</SelectItem>
+                <SelectItem value="invoices">{t("typeInvoices")}</SelectItem>
+                <SelectItem value="credit_notes">{t("typeCreditNotes")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -279,13 +280,13 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
                 className="w-full justify-start gap-2 text-muted-foreground"
               >
                 <Settings2 className="h-4 w-4" />
-                Erweiterte Einstellungen
+                {t("advancedSettings")}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 pt-2">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="datev-consultant">Beraternummer</Label>
+                  <Label htmlFor="datev-consultant">{t("labelConsultant")}</Label>
                   <Input
                     id="datev-consultant"
                     value={consultantNumber}
@@ -295,7 +296,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="datev-client">Mandantennummer</Label>
+                  <Label htmlFor="datev-client">{t("labelClient")}</Label>
                   <Input
                     id="datev-client"
                     value={clientNumber}
@@ -307,7 +308,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="datev-revenue">Erlöskonto</Label>
+                  <Label htmlFor="datev-revenue">{t("labelRevenueAccount")}</Label>
                   <Input
                     id="datev-revenue"
                     value={revenueAccount}
@@ -316,11 +317,11 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
                     maxLength={10}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Standard: 8400 (Erlöse Stromlieferung)
+                    {t("revenueAccountHint")}
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="datev-debtor">Debitoren ab Nr.</Label>
+                  <Label htmlFor="datev-debtor">{t("labelDebtorStart")}</Label>
                   <Input
                     id="datev-debtor"
                     type="number"
@@ -329,7 +330,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
                     placeholder="10000"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Debitorennummernkreis Beginn
+                    {t("debtorStartHint")}
                   </p>
                 </div>
               </div>
@@ -338,8 +339,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
 
           {/* Info text */}
           <p className="text-xs text-muted-foreground">
-            Es werden nur versendete und bezahlte Belege exportiert. Entwuerfe
-            und stornierte Belege sind ausgeschlossen.
+            {t("infoText")}
           </p>
         </div>
 
@@ -349,7 +349,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
             onClick={() => onOpenChange(false)}
             disabled={isExporting}
           >
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button
             onClick={handleExport}
@@ -358,12 +358,12 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
             {isExporting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Exportiere...
+                {t("exporting")}
               </>
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                DATEV-Export herunterladen
+                {t("download")}
               </>
             )}
           </Button>

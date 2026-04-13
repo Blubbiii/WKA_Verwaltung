@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Plus,
   Search,
@@ -131,6 +132,8 @@ function slugify(text: string): string {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function TenantManagement() {
+  const t = useTranslations("admin.tenantManagementUI");
+
   // Data state
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -173,11 +176,11 @@ export function TenantManagement() {
       const json = await res.json();
       setTenants(json.data ?? []);
     } catch {
-      toast.error("Mandanten konnten nicht geladen werden");
+      toast.error(t("loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter]);
+  }, [search, statusFilter, t]);
 
   useEffect(() => {
     fetchTenants();
@@ -221,12 +224,12 @@ export function TenantManagement() {
 
   async function handleSave() {
     if (!formData.name.trim() || !formData.slug.trim()) {
-      toast.error("Firmenname und Slug sind Pflichtfelder");
+      toast.error(t("nameRequired"));
       return;
     }
 
     if (!/^[a-z0-9-]+$/.test(formData.slug)) {
-      toast.error("Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten");
+      toast.error(t("slugInvalid"));
       return;
     }
 
@@ -245,14 +248,14 @@ export function TenantManagement() {
 
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error || "Fehler beim Speichern");
+        throw new Error(json.error || t("saveError"));
       }
 
-      toast.success(editingId ? "Mandant aktualisiert" : "Mandant erstellt");
+      toast.success(editingId ? t("updated") : t("created"));
       setDialogOpen(false);
       fetchTenants();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -268,12 +271,12 @@ export function TenantManagement() {
       });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error || "Fehler beim Deaktivieren");
+        throw new Error(json.error || t("deactivateError"));
       }
-      toast.success(`"${tenantToDeactivate.name}" wurde deaktiviert`);
+      toast.success(t("deactivated", { name: tenantToDeactivate.name }));
       fetchTenants();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Deaktivieren");
+      toast.error(err instanceof Error ? err.message : t("deactivateError"));
     }
   }
 
@@ -282,7 +285,7 @@ export function TenantManagement() {
   async function handleHardDelete() {
     if (!tenantToHardDelete) return;
     if (hardDeleteConfirmName !== tenantToHardDelete.name) {
-      toast.error("Der eingegebene Name stimmt nicht überein");
+      toast.error(t("nameMismatch"));
       return;
     }
 
@@ -294,14 +297,14 @@ export function TenantManagement() {
       );
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error || "Fehler beim Löschen");
+        throw new Error(json.error || t("deleteError"));
       }
-      toast.success(`"${tenantToHardDelete.name}" wurde endgültig gelöscht`);
+      toast.success(t("deleted", { name: tenantToHardDelete.name }));
       setHardDeleteDialogOpen(false);
       setHardDeleteConfirmName("");
       fetchTenants();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Löschen");
+      toast.error(err instanceof Error ? err.message : t("deleteError"));
     } finally {
       setIsHardDeleting(false);
     }
@@ -318,12 +321,12 @@ export function TenantManagement() {
       });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error || "Fehler beim Reaktivieren");
+        throw new Error(json.error || t("reactivateError"));
       }
-      toast.success(`"${tenant.name}" wurde reaktiviert`);
+      toast.success(t("reactivated", { name: tenant.name }));
       fetchTenants();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Reaktivieren");
+      toast.error(err instanceof Error ? err.message : t("reactivateError"));
     }
   }
 

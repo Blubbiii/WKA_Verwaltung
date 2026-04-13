@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface PositionTemplate {
   id: string;
@@ -76,6 +77,7 @@ export function PositionTemplateDialog({
   onOpenChange,
   onSelect,
 }: PositionTemplateDialogProps) {
+  const t = useTranslations("invoices.positionTemplate");
   const [step, setStep] = useState<Step>("search");
   const [searchQuery, setSearchQuery] = useState("");
   const [templates, setTemplates] = useState<PositionTemplate[]>([]);
@@ -146,11 +148,11 @@ export function PositionTemplateDialog({
 
   async function handleCreate() {
     if (!newName.trim()) {
-      toast.error("Name ist erforderlich");
+      toast.error(t("validation.nameRequired"));
       return;
     }
     if (!newDescription.trim()) {
-      toast.error("Beschreibung ist erforderlich");
+      toast.error(t("validation.descriptionRequired"));
       return;
     }
 
@@ -171,11 +173,11 @@ export function PositionTemplateDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Anlegen");
+        throw new Error(error.error || t("toast.createError"));
       }
 
       const created: PositionTemplate = await response.json();
-      toast.success("Vorlage erfolgreich angelegt");
+      toast.success(t("toast.created"));
 
       // Directly select the newly created template
       onSelect({
@@ -186,17 +188,17 @@ export function PositionTemplateDialog({
       });
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Anlegen");
+      toast.error(error instanceof Error ? error.message : t("toast.createError"));
     } finally {
       setIsCreating(false);
     }
   }
 
   // Group by category
-  const grouped = templates.reduce<Record<string, PositionTemplate[]>>((acc, t) => {
-    const cat = t.category || "Sonstige";
+  const grouped = templates.reduce<Record<string, PositionTemplate[]>>((acc, tpl) => {
+    const cat = tpl.category || t("categoryOther");
     if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(t);
+    acc[cat].push(tpl);
     return acc;
   }, {});
 
@@ -205,12 +207,10 @@ export function PositionTemplateDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {step === "search" ? "Positionsvorlage auswaehlen" : "Neue Vorlage anlegen"}
+            {step === "search" ? t("titleSearch") : t("titleCreate")}
           </DialogTitle>
           <DialogDescription>
-            {step === "search"
-              ? "Waehlen Sie eine Vorlage oder legen Sie eine neue an."
-              : "Die Vorlage wird gespeichert und direkt verwendet."}
+            {step === "search" ? t("descSearch") : t("descCreate")}
           </DialogDescription>
         </DialogHeader>
 
@@ -220,7 +220,7 @@ export function PositionTemplateDialog({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Vorlage suchen..."
+                placeholder={t("searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -236,7 +236,7 @@ export function PositionTemplateDialog({
                 </div>
               ) : templates.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground text-sm">
-                  {searchQuery ? "Keine Vorlagen gefunden" : "Noch keine Positionsvorlagen vorhanden."}
+                  {searchQuery ? t("noResults") : t("emptyState")}
                 </div>
               ) : (
                 Object.entries(grouped).map(([category, items]) => (
@@ -286,26 +286,26 @@ export function PositionTemplateDialog({
               onClick={() => setStep("create")}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Neue Vorlage anlegen
+              {t("newTemplate")}
             </Button>
           </div>
         ) : (
           /* Create Form */
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="tpl-name">Name *</Label>
+              <Label htmlFor="tpl-name">{t("labelName")}</Label>
               <Input
                 id="tpl-name"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="z.B. Betriebsführungspauschale"
+                placeholder={t("placeholderName")}
                 autoFocus
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="tpl-description">
-                Beschreibung / Rechnungstext *
+                {t("labelDescription")}
               </Label>
               <Input
                 id="tpl-description"
@@ -320,16 +320,16 @@ export function PositionTemplateDialog({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="tpl-category">Kategorie</Label>
+                <Label htmlFor="tpl-category">{t("labelCategory")}</Label>
                 <Input
                   id="tpl-category"
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
-                  placeholder="z.B. Betriebsführung"
+                  placeholder={t("placeholderCategory")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tpl-unit">Einheit</Label>
+                <Label htmlFor="tpl-unit">{t("labelUnit")}</Label>
                 <Select value={newUnit} onValueChange={setNewUnit}>
                   <SelectTrigger id="tpl-unit">
                     <SelectValue />
@@ -350,7 +350,7 @@ export function PositionTemplateDialog({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="tpl-tax">Steuer</Label>
+                <Label htmlFor="tpl-tax">{t("labelTax")}</Label>
                 <Select value={newTaxType} onValueChange={(v) => setNewTaxType(v as typeof newTaxType)}>
                   <SelectTrigger id="tpl-tax">
                     <SelectValue />
@@ -363,7 +363,7 @@ export function PositionTemplateDialog({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tpl-price">Standardpreis (€)</Label>
+                <Label htmlFor="tpl-price">{t("labelPrice")}</Label>
                 <Input
                   id="tpl-price"
                   type="number"
@@ -371,7 +371,7 @@ export function PositionTemplateDialog({
                   step="0.01"
                   value={newDefaultPrice}
                   onChange={(e) => setNewDefaultPrice(e.target.value)}
-                  placeholder="Optional"
+                  placeholder={t("placeholderPrice")}
                 />
               </div>
             </div>
@@ -387,7 +387,7 @@ export function PositionTemplateDialog({
                   resetCreateForm();
                 }}
               >
-                Zurück
+                {t("back")}
               </Button>
               <Button type="button" onClick={handleCreate} disabled={isCreating}>
                 {isCreating ? (
@@ -395,7 +395,7 @@ export function PositionTemplateDialog({
                 ) : (
                   <Plus className="mr-2 h-4 w-4" />
                 )}
-                Anlegen und verwenden
+                {t("createAndUse")}
               </Button>
             </div>
           </div>

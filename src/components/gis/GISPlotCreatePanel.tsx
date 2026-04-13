@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { X, ChevronDown, ChevronUp, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,9 +64,9 @@ interface GISPlotCreatePanelProps {
   onCancel: () => void;
 }
 
-function getPersonName(p: PersonSearchResult): string {
-  if (p.personType === "legal") return p.companyName ?? "Unbekannt";
-  return [p.firstName, p.lastName].filter(Boolean).join(" ") || "Unbekannt";
+function getPersonName(p: PersonSearchResult, unknown: string): string {
+  if (p.personType === "legal") return p.companyName ?? unknown;
+  return [p.firstName, p.lastName].filter(Boolean).join(" ") || unknown;
 }
 
 export function GISPlotCreatePanel({
@@ -75,6 +76,8 @@ export function GISPlotCreatePanel({
   onSaved,
   onCancel,
 }: GISPlotCreatePanelProps) {
+  const t = useTranslations("gis.plotCreate");
+  const tToast = useTranslations("gis.toasts");
   // Basic form state
   const [cadastralDistrict, setCadastralDistrict] = useState("");
   const [fieldNumber, setFieldNumber] = useState("0");
@@ -150,23 +153,23 @@ export function GISPlotCreatePanel({
 
   const handleSave = async () => {
     if (!cadastralDistrict.trim()) {
-      toast.error("Gemarkung ist erforderlich");
+      toast.error(tToast("cadastralRequired"));
       return;
     }
     if (!parkId) {
-      toast.error("Bitte einen Park auswählen");
+      toast.error(tToast("parkRequired"));
       return;
     }
     if (!plotNumber.trim()) {
-      toast.error("Flurstücknummer ist erforderlich");
+      toast.error(tToast("plotNumberRequired"));
       return;
     }
     if (!geometry) {
-      toast.error("Keine Geometrie vorhanden");
+      toast.error(tToast("noGeometry"));
       return;
     }
     if (isSmallArea && !smallAreaConfirmed) {
-      toast.error(`Fläche unter ${minAreaSqm} m² — bitte bestätigen Sie die Mindestgröße`);
+      toast.error(tToast("smallAreaConfirm", { min: minAreaSqm }));
       return;
     }
 
@@ -196,14 +199,14 @@ export function GISPlotCreatePanel({
 
       if (!plotRes.ok) {
         const err = await plotRes.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Erstellen des Flurstücks");
+        throw new Error(err.error || tToast("plotCreateError"));
       }
 
       const newPlot = await plotRes.json();
 
       // Validate response has an ID
       if (!newPlot?.id) {
-        throw new Error("Flurstück wurde erstellt, aber keine ID erhalten");
+        throw new Error(tToast("noIdReceived"));
       }
 
       const plotId: string = newPlot.id;
@@ -225,13 +228,13 @@ export function GISPlotCreatePanel({
           if (!leaseRes.ok) {
             const leaseErr = await leaseRes.json().catch(() => ({}));
             toast.warning(
-              `Flurstück gespeichert, aber Vertrag konnte nicht erstellt werden: ${leaseErr.error || "Unbekannter Fehler"}`
+              tToast("plotSavedLeaseFailedDetail", { error: leaseErr.error || t("unknown") })
             );
           } else {
-            toast.success("Flurstück und Pachtvertrag gespeichert");
+            toast.success(tToast("plotAndLeaseSaved"));
           }
         } catch {
-          toast.warning("Flurstück gespeichert, aber Vertragserstellung fehlgeschlagen");
+          toast.warning(tToast("plotSavedLeaseFailed"));
         }
       } else if (leaseOpen && useExistingLease && selectedLeaseId) {
         try {
@@ -241,20 +244,20 @@ export function GISPlotCreatePanel({
             body: JSON.stringify({ plotIds: [plotId] }),
           });
           if (!assignRes.ok) {
-            toast.warning("Flurstück gespeichert, aber Vertragszuordnung fehlgeschlagen");
+            toast.warning(tToast("plotSavedAssignFailed"));
           } else {
-            toast.success("Flurstück gespeichert und Vertrag zugeordnet");
+            toast.success(tToast("plotSavedLeaseAssigned"));
           }
         } catch {
-          toast.warning("Flurstück gespeichert, aber Vertragszuordnung fehlgeschlagen");
+          toast.warning(tToast("plotSavedAssignFailed"));
         }
       } else {
-        toast.success("Flurstück gespeichert");
+        toast.success(tToast("plotSaved"));
       }
 
       onSaved(plotId);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : tToast("saveError"));
     } finally {
       setSaving(false);
     }
@@ -264,10 +267,10 @@ export function GISPlotCreatePanel({
     <div className="bg-background border-l shadow-xl w-80 flex flex-col overflow-hidden rounded-lg">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-        <h2 className="font-semibold text-sm">Neues Flurstück</h2>
+        <h2 className="font-semibold text-sm">{t("title")}</h2>
         <button
           onClick={onCancel}
-          aria-label="Panel schließen"
+          aria-label={t("closePanel")}
           className="p-1 rounded hover:bg-muted transition-colors"
         >
           <X className="h-4 w-4 text-muted-foreground" />
@@ -278,20 +281,20 @@ export function GISPlotCreatePanel({
         {/* Area display with manual override */}
         <div className="bg-muted/50 rounded-md px-3 py-2 space-y-2">
           <div className="text-sm">
-            <span className="text-muted-foreground text-xs">Berechnete Fläche: </span>
+            <span className="text-muted-foreground text-xs">{t("calculatedArea")} </span>
             <span className="font-semibold">{calculatedArea.toLocaleString("de-DE")} m²</span>
             <span className="text-muted-foreground text-xs ml-2">
               ({(calculatedArea / 10000).toFixed(4)} ha)
             </span>
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Fläche überschreiben (Katasterwert)</Label>
+            <Label className="text-xs text-muted-foreground">{t("overrideArea")}</Label>
             <Input
               type="number"
               min="0"
               value={manualArea}
               onChange={(e) => setManualArea(e.target.value)}
-              placeholder={`${calculatedArea} m² (GPS-Berechnung)`}
+              placeholder={t("areaPlaceholder", { area: calculatedArea })}
               className="h-7 text-xs mt-1"
             />
           </div>
@@ -299,7 +302,7 @@ export function GISPlotCreatePanel({
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
               <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
               <div className="text-xs">
-                <p className="text-amber-800 font-medium">Fläche unter {minAreaSqm} m²</p>
+                <p className="text-amber-800 font-medium">{t("smallAreaWarning", { min: minAreaSqm })}</p>
                 <label className="flex items-center gap-1.5 mt-1 cursor-pointer">
                   <input
                     type="checkbox"
@@ -307,7 +310,7 @@ export function GISPlotCreatePanel({
                     onChange={(e) => setSmallAreaConfirmed(e.target.checked)}
                     className="rounded h-3 w-3"
                   />
-                  <span className="text-amber-700">Kleine Fläche bestätigen</span>
+                  <span className="text-amber-700">{t("confirmSmallArea")}</span>
                 </label>
               </div>
             </div>
@@ -317,17 +320,17 @@ export function GISPlotCreatePanel({
         {/* Basic fields */}
         <div className="space-y-3">
           <div>
-            <Label className="text-xs">Gemarkung *</Label>
+            <Label className="text-xs">{t("cadastralDistrict")}</Label>
             <Input
               value={cadastralDistrict}
               onChange={(e) => setCadastralDistrict(e.target.value)}
-              placeholder="z.B. Musterburg"
+              placeholder={t("cadastralDistrictPlaceholder")}
               className="h-8 text-sm mt-1"
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Flur</Label>
+              <Label className="text-xs">{t("field")}</Label>
               <Input
                 value={fieldNumber}
                 onChange={(e) => setFieldNumber(e.target.value)}
@@ -336,20 +339,20 @@ export function GISPlotCreatePanel({
               />
             </div>
             <div>
-              <Label className="text-xs">Flurstück-Nr. *</Label>
+              <Label className="text-xs">{t("plotNumber")}</Label>
               <Input
                 value={plotNumber}
                 onChange={(e) => setPlotNumber(e.target.value)}
-                placeholder="z.B. 12/3"
+                placeholder={t("plotNumberPlaceholder")}
                 className="h-8 text-sm mt-1"
               />
             </div>
           </div>
           <div>
-            <Label className="text-xs">Park *</Label>
+            <Label className="text-xs">{t("park")}</Label>
             <Select value={parkId} onValueChange={setParkId}>
               <SelectTrigger className="h-8 text-sm mt-1">
-                <SelectValue placeholder="Park auswählen" />
+                <SelectValue placeholder={t("parkPlaceholder")} />
               </SelectTrigger>
               <SelectContent className="z-[2000]">
                 {parks.map((p) => (
@@ -370,7 +373,7 @@ export function GISPlotCreatePanel({
             aria-expanded={areasOpen}
             className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left hover:bg-muted/50 transition-colors"
           >
-            <span>Flächenaufteilung</span>
+            <span>{t("areaDistribution")}</span>
             {areasOpen ? (
               <ChevronUp className="h-3.5 w-3.5" />
             ) : (
@@ -404,7 +407,7 @@ export function GISPlotCreatePanel({
               {effectiveArea > 0 && totalAssigned > 0 && (
                 <div className="pt-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                    <span>Zugeordnet</span>
+                    <span>{t("assigned")}</span>
                     <span>
                       {Math.round(totalAssigned).toLocaleString("de-DE")} /{" "}
                       {effectiveArea.toLocaleString("de-DE")} m²
@@ -432,7 +435,7 @@ export function GISPlotCreatePanel({
             aria-expanded={leaseOpen}
             className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left hover:bg-muted/50 transition-colors"
           >
-            <span>Pachtvertrag zuordnen</span>
+            <span>{t("assignLease")}</span>
             {leaseOpen ? (
               <ChevronUp className="h-3.5 w-3.5" />
             ) : (
@@ -453,7 +456,7 @@ export function GISPlotCreatePanel({
                       : "border-border hover:bg-muted"
                   }`}
                 >
-                  Neuer Vertrag
+                  {t("newLease")}
                 </button>
                 <button
                   type="button"
@@ -465,7 +468,7 @@ export function GISPlotCreatePanel({
                       : "border-border hover:bg-muted"
                   }`}
                 >
-                  Bestehend zuordnen
+                  {t("assignExisting")}
                 </button>
               </div>
 
@@ -478,17 +481,17 @@ export function GISPlotCreatePanel({
                       onCheckedChange={(v) => setCreateLease(!!v)}
                     />
                     <label htmlFor="create-lease" className="text-xs cursor-pointer">
-                      Pachtvertrag anlegen
+                      {t("createLease")}
                     </label>
                   </div>
                   {createLease && (
                     <div className="space-y-2 pl-5">
                       <div>
-                        <Label className="text-xs">Verpächter suchen</Label>
+                        <Label className="text-xs">{t("searchLessor")}</Label>
                         <Input
                           value={lessorSearch}
                           onChange={(e) => setLessorSearch(e.target.value)}
-                          placeholder="Name suchen..."
+                          placeholder={t("searchPlaceholder")}
                           className="h-7 text-xs mt-1"
                         />
                         {lessorResults.length > 0 && !selectedLessorId && (
@@ -500,11 +503,11 @@ export function GISPlotCreatePanel({
                                 className="w-full text-left px-2 py-1.5 text-xs hover:bg-muted transition-colors"
                                 onClick={() => {
                                   setSelectedLessorId(p.id);
-                                  setLessorSearch(getPersonName(p));
+                                  setLessorSearch(getPersonName(p, t("unknown")));
                                   setLessorResults([]);
                                 }}
                               >
-                                {getPersonName(p)}
+                                {getPersonName(p, t("unknown"))}
                               </button>
                             ))}
                           </div>
@@ -512,7 +515,7 @@ export function GISPlotCreatePanel({
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <Label className="text-xs">Von</Label>
+                          <Label className="text-xs">{t("from")}</Label>
                           <Input
                             type="date"
                             value={leaseStartDate}
@@ -521,7 +524,7 @@ export function GISPlotCreatePanel({
                           />
                         </div>
                         <div>
-                          <Label className="text-xs">Bis</Label>
+                          <Label className="text-xs">{t("to")}</Label>
                           <Input
                             type="date"
                             value={leaseEndDate}
@@ -537,18 +540,18 @@ export function GISPlotCreatePanel({
 
               {useExistingLease && (
                 <div>
-                  <Label className="text-xs">Bestehender Pachtvertrag</Label>
+                  <Label className="text-xs">{t("existingLease")}</Label>
                   <Select
                     value={selectedLeaseId || ""}
                     onValueChange={(v) => setSelectedLeaseId(v || null)}
                   >
                     <SelectTrigger className="h-7 text-xs mt-1">
-                      <SelectValue placeholder="Vertrag auswählen..." />
+                      <SelectValue placeholder={t("selectLease")} />
                     </SelectTrigger>
                     <SelectContent className="z-[2000]">
                       {existingLeases.map((l) => (
                         <SelectItem key={l.id} value={l.id}>
-                          {getPersonName(l.lessor)} ({l.status})
+                          {getPersonName(l.lessor, t("unknown"))} ({l.status})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -569,7 +572,7 @@ export function GISPlotCreatePanel({
           disabled={saving}
           className="flex-1"
         >
-          Abbrechen
+          {t("cancel")}
         </Button>
         <Button
           size="sm"
@@ -584,7 +587,7 @@ export function GISPlotCreatePanel({
           className="flex-1"
         >
           {saving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
-          Speichern
+          {t("save")}
         </Button>
       </div>
     </div>

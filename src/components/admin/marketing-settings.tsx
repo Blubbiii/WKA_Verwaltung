@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Sparkles,
   LayoutGrid,
@@ -163,6 +164,7 @@ function getIcon(name: string) {
 // ---------------------------------------------------------------------------
 
 export function MarketingSettings() {
+  const t = useTranslations("admin.marketingSettingsUI");
   const [config, setConfig] = useState<MarketingConfig>(DEFAULT_MARKETING_CONFIG);
   const [legal, setLegal] = useState<LegalPages>({ impressum: "", datenschutz: "", cookies: "" });
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -195,11 +197,11 @@ export function MarketingSettings() {
         });
       }
     } catch {
-      toast.error("Fehler beim Laden der Marketing-Konfiguration");
+      toast.error(t("loadError"));
     } finally {
       setLoadingConfig(false);
     }
-  }, []);
+  }, [t]);
 
   const fetchLegal = useCallback(async () => {
     try {
@@ -214,11 +216,11 @@ export function MarketingSettings() {
         });
       }
     } catch {
-      toast.error("Fehler beim Laden der rechtlichen Texte");
+      toast.error(t("loadLegalError"));
     } finally {
       setLoadingLegal(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchConfig();
@@ -240,13 +242,13 @@ export function MarketingSettings() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
-      toast.success("Marketing-Konfiguration gespeichert");
+      toast.success(t("saved"));
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("saveError")
       );
     } finally {
       setSavingConfig(false);
@@ -264,14 +266,14 @@ export function MarketingSettings() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
       const label = page === "impressum" ? "Impressum" : page === "datenschutz" ? "Datenschutzerklärung" : "Cookie-Richtlinie";
-      toast.success(`${label} gespeichert`);
+      toast.success(t("savedLabel", { label }));
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("saveError")
       );
     } finally {
       setSavingLegal(null);
@@ -334,7 +336,7 @@ export function MarketingSettings() {
 
   function addFeature() {
     if (config.features.length >= 12) {
-      toast.error("Maximal 12 Features erlaubt");
+      toast.error(t("maxFeatures"));
       return;
     }
     setConfig((prev) => ({
@@ -363,7 +365,7 @@ export function MarketingSettings() {
 
   function addStat() {
     if (config.stats.items.length >= 6) {
-      toast.error("Maximal 6 Statistiken erlaubt");
+      toast.error(t("maxStats"));
       return;
     }
     setConfig((prev) => ({
@@ -395,7 +397,7 @@ export function MarketingSettings() {
 
   function addTestimonial() {
     if (config.testimonials.items.length >= 6) {
-      toast.error("Maximal 6 Kundenstimmen erlaubt");
+      toast.error(t("maxTestimonials"));
       return;
     }
     setConfig((prev) => ({
@@ -412,7 +414,7 @@ export function MarketingSettings() {
       ...prev,
       testimonials: {
         ...prev.testimonials,
-        items: prev.testimonials.items.map((t, i) => (i === idx ? { ...t, [field]: value } : t)),
+        items: prev.testimonials.items.map((item, i) => (i === idx ? { ...item, [field]: value } : item)),
       },
     }));
   }
@@ -433,7 +435,7 @@ export function MarketingSettings() {
 
   function addWorkflowStep() {
     if (config.workflow.steps.length >= 5) {
-      toast.error("Maximal 5 Workflow-Schritte erlaubt");
+      toast.error(t("maxWorkflowSteps"));
       return;
     }
     setConfig((prev) => ({
@@ -468,7 +470,7 @@ export function MarketingSettings() {
 
   function addModule() {
     if (config.modules.items.length >= 12) {
-      toast.error("Maximal 12 Module erlaubt");
+      toast.error(t("maxModules"));
       return;
     }
     const newId = `mod-${Date.now()}`;

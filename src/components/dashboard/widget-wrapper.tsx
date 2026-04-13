@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,6 +45,8 @@ export function WidgetWrapper({
   showHeader = true,
   noPadding = false,
 }: WidgetWrapperProps) {
+  const t = useTranslations("common");
+  const td = useTranslations("dashboard");
   // Loading State
   if (isLoading) {
     return (
@@ -57,7 +60,7 @@ export function WidgetWrapper({
           <div className="flex items-center justify-center h-full min-h-[80px]">
             <div className="flex flex-col items-center gap-2">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-              <span className="text-xs text-muted-foreground">Laden...</span>
+              <span className="text-xs text-muted-foreground">{t("loading")}</span>
             </div>
           </div>
         </CardContent>
@@ -93,7 +96,7 @@ export function WidgetWrapper({
             {onRetry && (
               <Button variant="outline" size="sm" onClick={onRetry} className="h-7 text-xs">
                 <RefreshCcw className="h-3 w-3 mr-1" />
-                Erneut versuchen
+                {td("retry")}
               </Button>
             )}
           </div>
@@ -173,12 +176,13 @@ export function WidgetSkeleton({ className }: { className?: string }) {
 // =============================================================================
 
 export function EmptyWidgetState({
-  message = "Keine Daten verfügbar",
+  message,
   className,
 }: {
   message?: string;
   className?: string;
 }) {
+  const t = useTranslations("common");
   return (
     <div
       className={cn(
@@ -186,7 +190,7 @@ export function EmptyWidgetState({
         className
       )}
     >
-      <p className="text-sm">{message}</p>
+      <p className="text-sm">{message ?? t("noData")}</p>
     </div>
   );
 }

@@ -48,6 +48,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useParks } from "@/hooks/useParks";
 import type { ScadaMapping, ImportJob, Turbine } from "./types";
 import {
@@ -64,6 +65,8 @@ interface UnmatchedPlant {
 }
 
 export default function ScadaMappingsTab() {
+  const t = useTranslations("energy.scada.mappingsTab");
+  const tc = useTranslations("energy.scada.common");
   const { parks, isLoading: parksLoading } = useParks();
   const [mappings, setMappings] = useState<ScadaMapping[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,17 +102,17 @@ export default function ScadaMappingsTab() {
     setIsLoading(true);
     try {
       const res = await fetch("/api/energy/scada/mappings");
-      if (!res.ok) throw new Error("Fehler beim Laden der Zuordnungen");
+      if (!res.ok) throw new Error(tc("errorLoadingMappings"));
       const data = await res.json();
       setMappings(data.data ?? data);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Laden der Zuordnungen"
+        err instanceof Error ? err.message : tc("errorLoadingMappings")
       );
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [tc]);
 
   // Load unmatched plants
   const loadUnmatched = useCallback(async () => {
@@ -204,11 +207,11 @@ export default function ScadaMappingsTab() {
       setTurbinesLoading(true);
       try {
         const res = await fetch(`/api/turbines?parkId=${formParkId}&limit=100`);
-        if (!res.ok) throw new Error("Fehler beim Laden der Turbinen");
+        if (!res.ok) throw new Error(tc("errorLoadingTurbines"));
         const data = await res.json();
         setParkTurbines(data.data ?? []);
       } catch {
-        toast.error("Fehler beim Laden der Turbinen");
+        toast.error(tc("errorLoadingTurbines"));
         setParkTurbines([]);
       } finally {
         setTurbinesLoading(false);
@@ -216,7 +219,7 @@ export default function ScadaMappingsTab() {
     }
 
     loadTurbines();
-  }, [formParkId]);
+  }, [formParkId, tc]);
 
   // Reset form
   const resetForm = () => {
@@ -232,19 +235,19 @@ export default function ScadaMappingsTab() {
   // Save mapping
   const handleSave = async () => {
     if (!formLocationCode.trim()) {
-      toast.error("Bitte Standort-Code eingeben");
+      toast.error(t("toastLocationCodeRequired"));
       return;
     }
     if (!formParkId) {
-      toast.error("Bitte Park auswaehlen");
+      toast.error(t("toastParkRequired"));
       return;
     }
     if (!formPlantNo || Number(formPlantNo) < 1) {
-      toast.error("Bitte gültige Anlage-Nr. eingeben");
+      toast.error(t("toastValidPlantNoRequired"));
       return;
     }
     if (formDeviceType === "WEA" && !formTurbineId) {
-      toast.error("Bitte WKA auswaehlen");
+      toast.error(t("toastWkaRequired"));
       return;
     }
 
@@ -265,16 +268,16 @@ export default function ScadaMappingsTab() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Speichern");
+        throw new Error(err.error || t("toastErrorSaving"));
       }
 
-      toast.success("Zuordnung erfolgreich erstellt");
+      toast.success(t("toastMappingCreated"));
       setDialogOpen(false);
       resetForm();
       loadMappings();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Speichern"
+        err instanceof Error ? err.message : t("toastErrorSaving")
       );
     } finally {
       setIsSaving(false);
@@ -324,7 +327,7 @@ export default function ScadaMappingsTab() {
     });
 
     if (entries.length === 0) {
-      toast.error("Bitte mindestens eine Zuordnung auswaehlen");
+      toast.error(t("toastSelectAtLeastOne"));
       return;
     }
 
@@ -360,13 +363,13 @@ export default function ScadaMappingsTab() {
     setIsSavingUnmatched(false);
 
     if (saved > 0) {
-      toast.success(`${saved} Zuordnung(en) erstellt`);
+      toast.success(t("toastMappingsCreated", { count: saved }));
       setUnmatchedSelections({});
       loadMappings();
       loadUnmatched();
     }
     if (failed > 0) {
-      toast.error(`${failed} Zuordnung(en) fehlgeschlagen`);
+      toast.error(t("toastMappingsFailed", { count: failed }));
     }
   };
 
@@ -381,14 +384,14 @@ export default function ScadaMappingsTab() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Deaktivieren");
+        throw new Error(err.error || t("toastErrorDeactivating"));
       }
 
-      toast.success("Zuordnung deaktiviert");
+      toast.success(t("toastMappingDeactivated"));
       loadMappings();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Deaktivieren"
+        err instanceof Error ? err.message : t("toastErrorDeactivating")
       );
     }
   };
@@ -404,7 +407,7 @@ export default function ScadaMappingsTab() {
     ];
 
     if (activeLocations.length === 0) {
-      toast.error("Keine aktiven Zuordnungen vorhanden");
+      toast.error(t("toastNoActiveMappings"));
       return;
     }
 
@@ -474,11 +477,11 @@ export default function ScadaMappingsTab() {
 
     if (failed === 0) {
       toast.success(
-        `${started} Import(e) gestartet für ${activeLocations.length} Standort(e). Importe laufen im Hintergrund.`
+        t("toastImportsStarted", { started, locations: activeLocations.length })
       );
     } else {
       toast.warning(
-        `${started} gestartet, ${failed} fehlgeschlagen von ${activeLocations.length} Standort(en)`
+        t("toastPartialImportsStarted", { started, failed, locations: activeLocations.length })
       );
     }
 
@@ -493,10 +496,8 @@ export default function ScadaMappingsTab() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>SCADA-Zuordnungen</CardTitle>
-            <CardDescription>
-              Zuordnung von SCADA-Standorten zu Windpark-Anlagen
-            </CardDescription>
+            <CardTitle>{t("cardTitle")}</CardTitle>
+            <CardDescription>{t("cardDescription")}</CardDescription>
           </div>
           <div className="flex gap-2">
             <Button
@@ -509,7 +510,7 @@ export default function ScadaMappingsTab() {
               ) : (
                 <Play className="h-4 w-4 mr-2" />
               )}
-              Alle Importe starten
+              {t("startAllImports")}
             </Button>
             <Button
               variant="outline"
@@ -520,7 +521,7 @@ export default function ScadaMappingsTab() {
               <RefreshCw
                 className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
               />
-              Aktualisieren
+              {tc("refresh")}
             </Button>
             <Dialog open={dialogOpen} onOpenChange={(open) => {
               setDialogOpen(open);
@@ -529,23 +530,21 @@ export default function ScadaMappingsTab() {
               <DialogTrigger asChild>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-2" />
-                  Neue Zuordnung
+                  {t("newMapping")}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Neue SCADA-Zuordnung</DialogTitle>
-                  <DialogDescription>
-                    Ordnen Sie einen SCADA-Standort einer Windkraftanlage zu.
-                  </DialogDescription>
+                  <DialogTitle>{t("newMappingTitle")}</DialogTitle>
+                  <DialogDescription>{t("newMappingDesc")}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   {/* Standort-Code */}
                   <div className="space-y-2">
-                    <Label htmlFor="locationCode">Standort-Code *</Label>
+                    <Label htmlFor="locationCode">{t("locationCodeLabel")}</Label>
                     <Input
                       id="locationCode"
-                      placeholder="z.B. Loc_5842"
+                      placeholder={t("locationCodePlaceholder")}
                       value={formLocationCode}
                       onChange={(e) => setFormLocationCode(e.target.value)}
                     />
@@ -553,15 +552,15 @@ export default function ScadaMappingsTab() {
 
                   {/* Park */}
                   <div className="space-y-2">
-                    <Label htmlFor="park">Park *</Label>
+                    <Label htmlFor="park">{t("parkLabel")}</Label>
                     <Select value={formParkId} onValueChange={setFormParkId}>
                       <SelectTrigger id="park">
-                        <SelectValue placeholder="Park auswaehlen..." />
+                        <SelectValue placeholder={t("parkPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         {parksLoading ? (
                           <SelectItem value="__loading" disabled>
-                            Laden...
+                            {tc("loading")}
                           </SelectItem>
                         ) : (
                           parks?.map((park) => (
@@ -576,13 +575,13 @@ export default function ScadaMappingsTab() {
 
                   {/* Anlage-Nr. */}
                   <div className="space-y-2">
-                    <Label htmlFor="plantNo">Anlage-Nr. (PlantNo) *</Label>
+                    <Label htmlFor="plantNo">{t("plantNoLabel")}</Label>
                     <Input
                       id="plantNo"
                       type="number"
                       min={1}
                       max={99}
-                      placeholder="z.B. 1"
+                      placeholder={t("plantNoPlaceholder")}
                       value={formPlantNo}
                       onChange={(e) => setFormPlantNo(e.target.value)}
                     />
@@ -590,7 +589,7 @@ export default function ScadaMappingsTab() {
 
                   {/* Gerätetyp */}
                   <div className="space-y-2">
-                    <Label htmlFor="deviceType">Gerätetyp *</Label>
+                    <Label htmlFor="deviceType">{t("deviceTypeLabel")}</Label>
                     <Select
                       value={formDeviceType}
                       onValueChange={(val) => {
@@ -602,9 +601,9 @@ export default function ScadaMappingsTab() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="WEA">WEA (Windkraftanlage)</SelectItem>
-                        <SelectItem value="PARKRECHNER">Parkrechner (Summenwerte)</SelectItem>
-                        <SelectItem value="NVP">NVP (Netzverknuepfungspunkt)</SelectItem>
+                        <SelectItem value="WEA">{t("deviceTypeWEA")}</SelectItem>
+                        <SelectItem value="PARKRECHNER">{t("deviceTypePARKRECHNER")}</SelectItem>
+                        <SelectItem value="NVP">{t("deviceTypeNVP")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -612,7 +611,7 @@ export default function ScadaMappingsTab() {
                   {/* Turbine - only for WEA */}
                   {formDeviceType === "WEA" && (
                     <div className="space-y-2">
-                      <Label htmlFor="turbine">WKA / Turbine *</Label>
+                      <Label htmlFor="turbine">{t("wkaLabel")}</Label>
                       <Select
                         value={formTurbineId}
                         onValueChange={setFormTurbineId}
@@ -622,22 +621,22 @@ export default function ScadaMappingsTab() {
                           <SelectValue
                             placeholder={
                               !formParkId
-                                ? "Zuerst Park auswaehlen"
+                                ? t("wkaPlaceholderFirst")
                                 : turbinesLoading
-                                  ? "Laden..."
-                                  : "WKA auswaehlen..."
+                                  ? tc("loading")
+                                  : t("wkaPlaceholder")
                             }
                           />
                         </SelectTrigger>
                         <SelectContent>
-                          {parkTurbines.map((t) => (
-                            <SelectItem key={t.id} value={t.id}>
-                              {t.designation}
+                          {parkTurbines.map((tu) => (
+                            <SelectItem key={tu.id} value={tu.id}>
+                              {tu.designation}
                             </SelectItem>
                           ))}
                           {parkTurbines.length === 0 && !turbinesLoading && formParkId && (
                             <SelectItem value="__empty" disabled>
-                              Keine Turbinen gefunden
+                              {t("noTurbinesFound")}
                             </SelectItem>
                           )}
                         </SelectContent>
@@ -649,17 +648,17 @@ export default function ScadaMappingsTab() {
                   {formDeviceType !== "WEA" && (
                     <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
                       {formDeviceType === "PARKRECHNER"
-                        ? "Ein Parkrechner-Eintrag wird automatisch im Park erstellt. Dieser sammelt aggregierte Daten aller Anlagen."
-                        : "Ein NVP-Eintrag (Netzverknuepfungspunkt) wird automatisch im Park erstellt. Dieser misst die Netzeinspeisung."}
+                        ? t("infoParkrechner")
+                        : t("infoNVP")}
                     </div>
                   )}
 
                   {/* Beschreibung */}
                   <div className="space-y-2">
-                    <Label htmlFor="description">Beschreibung (optional)</Label>
+                    <Label htmlFor="description">{t("descriptionLabel")}</Label>
                     <Input
                       id="description"
-                      placeholder="Optionale Beschreibung"
+                      placeholder={t("descriptionPlaceholder")}
                       value={formDescription}
                       onChange={(e) => setFormDescription(e.target.value)}
                     />
@@ -674,13 +673,13 @@ export default function ScadaMappingsTab() {
                     }}
                     disabled={isSaving}
                   >
-                    Abbrechen
+                    {tc("cancel")}
                   </Button>
                   <Button onClick={handleSave} disabled={isSaving}>
                     {isSaving && (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     )}
-                    Speichern
+                    {tc("save")}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -693,13 +692,13 @@ export default function ScadaMappingsTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Standort-Code</TableHead>
-                <TableHead>Anlage-Nr.</TableHead>
-                <TableHead>Park</TableHead>
-                <TableHead>Gerät</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[140px]">Import</TableHead>
-                <TableHead className="w-[100px]">Aktionen</TableHead>
+                <TableHead>{t("colLocationCode")}</TableHead>
+                <TableHead>{t("colPlantNo")}</TableHead>
+                <TableHead>{t("colPark")}</TableHead>
+                <TableHead>{t("colDevice")}</TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
+                <TableHead className="w-[140px]">{t("colImport")}</TableHead>
+                <TableHead className="w-[100px]">{t("colActions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -721,8 +720,7 @@ export default function ScadaMappingsTab() {
                     colSpan={7}
                     className="h-32 text-center text-muted-foreground"
                   >
-                    Keine Zuordnungen vorhanden. Erstellen Sie eine neue
-                    Zuordnung.
+                    {t("noMappings")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -791,7 +789,7 @@ export default function ScadaMappingsTab() {
                         if (job.status === "FAILED") {
                           return (
                             <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
-                              Fehler
+                              {t("errorBadge")}
                             </Badge>
                           );
                         }
@@ -806,7 +804,7 @@ export default function ScadaMappingsTab() {
                           size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => handleDeactivate(mapping.id)}
-                          aria-label="Zuordnung deaktivieren"
+                          aria-label={t("deactivateLabel")}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -825,22 +823,21 @@ export default function ScadaMappingsTab() {
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               <h3 className="font-semibold text-sm">
-                Nicht zugeordnete Anlagen ({unmatchedPlants.length})
+                {t("unmatchedTitle", { count: unmatchedPlants.length })}
               </h3>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Diese PlantNos wurden beim Import erkannt, aber übersprungen, weil keine Zuordnung existiert.
-              Ordnen Sie sie zu, damit die Daten beim nächsten Import erfasst werden.
+              {t("unmatchedDesc")}
             </p>
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Standort</TableHead>
+                    <TableHead>{t("colLocationCode")}</TableHead>
                     <TableHead>PlantNo</TableHead>
-                    <TableHead>Gerätetyp</TableHead>
-                    <TableHead>Park</TableHead>
-                    <TableHead>WKA / Turbine</TableHead>
+                    <TableHead>{t("colDeviceType")}</TableHead>
+                    <TableHead>{t("colPark")}</TableHead>
+                    <TableHead>{t("colWka")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -888,12 +885,12 @@ export default function ScadaMappingsTab() {
                             }
                           >
                             <SelectTrigger className="w-[180px] h-8 text-xs">
-                              <SelectValue placeholder="Park..." />
+                              <SelectValue placeholder={t("parkPlaceholderShort")} />
                             </SelectTrigger>
                             <SelectContent>
                               {parksLoading ? (
                                 <SelectItem value="__loading" disabled>
-                                  Laden...
+                                  {tc("loading")}
                                 </SelectItem>
                               ) : (
                                 parks?.map((park) => (
@@ -917,26 +914,26 @@ export default function ScadaMappingsTab() {
                               <SelectTrigger className="w-[180px] h-8 text-xs">
                                 <SelectValue
                                   placeholder={
-                                    !sel.parkId ? "Zuerst Park..." : "Turbine..."
+                                    !sel.parkId ? t("firstPark") : t("turbinePlaceholder")
                                   }
                                 />
                               </SelectTrigger>
                               <SelectContent>
-                                {turbines.map((t) => (
-                                  <SelectItem key={t.id} value={t.id}>
-                                    {t.designation}
+                                {turbines.map((tu) => (
+                                  <SelectItem key={tu.id} value={tu.id}>
+                                    {tu.designation}
                                   </SelectItem>
                                 ))}
                                 {turbines.length === 0 && sel.parkId && (
                                   <SelectItem value="__empty" disabled>
-                                    Keine Turbinen
+                                    {t("noTurbinesShort")}
                                   </SelectItem>
                                 )}
                               </SelectContent>
                             </Select>
                           ) : (
                             <span className="text-xs text-muted-foreground">
-                              Wird automatisch erstellt
+                              {t("autoCreated")}
                             </span>
                           )}
                         </TableCell>
@@ -961,7 +958,7 @@ export default function ScadaMappingsTab() {
                 {isSavingUnmatched && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
-                Zuordnungen speichern
+                {t("saveMappings")}
               </Button>
             </div>
           </div>

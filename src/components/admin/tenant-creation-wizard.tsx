@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   ChevronLeft,
   ChevronRight,
@@ -65,10 +66,7 @@ interface AdminFormData {
 // Constants
 // =============================================================================
 
-const STEPS = [
-  { id: "tenant", title: "Firma", description: "Stammdaten" },
-  { id: "admin", title: "Admin", description: "Erstzugang" },
-];
+// STEPS now built dynamically inside component using translations
 
 const EMPTY_TENANT: TenantFormData = {
   name: "",
@@ -117,6 +115,13 @@ export function TenantCreationWizard({
   onOpenChange,
   onSuccess,
 }: TenantCreationWizardProps) {
+  const t = useTranslations("admin.tenantCreation");
+
+  const STEPS = [
+    { id: "tenant", title: t("stepTenantTitle"), description: t("stepTenantDesc") },
+    { id: "admin", title: t("stepAdminTitle"), description: t("stepAdminDesc") },
+  ];
+
   // Step state
   const [currentStep, setCurrentStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -171,17 +176,15 @@ export function TenantCreationWizard({
 
   function validateTenantStep(): boolean {
     if (!tenant.name.trim()) {
-      toast.error("Firmenname ist ein Pflichtfeld");
+      toast.error(t("nameRequired"));
       return false;
     }
     if (!tenant.slug.trim()) {
-      toast.error("Slug ist ein Pflichtfeld");
+      toast.error(t("slugRequired"));
       return false;
     }
     if (!SLUG_REGEX.test(tenant.slug)) {
-      toast.error(
-        "Slug darf nur Kleinbuchstaben, Zahlen und Bindestriche enthalten"
-      );
+      toast.error(t("slugInvalid"));
       return false;
     }
     return true;
@@ -193,25 +196,25 @@ export function TenantCreationWizard({
     }
 
     if (!admin.email.trim()) {
-      toast.error("E-Mail ist ein Pflichtfeld");
+      toast.error(t("emailRequired"));
       return false;
     }
     if (!admin.firstName.trim()) {
-      toast.error("Vorname ist ein Pflichtfeld");
+      toast.error(t("firstNameRequired"));
       return false;
     }
     if (!admin.lastName.trim()) {
-      toast.error("Nachname ist ein Pflichtfeld");
+      toast.error(t("lastNameRequired"));
       return false;
     }
 
     if (adminMode === "password") {
       if (admin.password.length < 8) {
-        toast.error("Passwort muss mindestens 8 Zeichen lang sein");
+        toast.error(t("passwordTooShort"));
         return false;
       }
       if (admin.password !== admin.passwordConfirm) {
-        toast.error("Passwörter stimmen nicht überein");
+        toast.error(t("passwordMismatch"));
         return false;
       }
     }
@@ -280,8 +283,7 @@ export function TenantCreationWizard({
       if (!res.ok) {
         const json = await res.json().catch(() => ({}));
         throw new Error(
-          (json as { error?: string }).error ||
-            "Fehler beim Erstellen des Mandanten"
+          (json as { error?: string }).error || t("createError")
         );
       }
 
@@ -291,26 +293,22 @@ export function TenantCreationWizard({
       if (adminMode === "invitation") {
         if (json.emailSent) {
           toast.success(
-            `Mandant erstellt und Einladung an ${admin.email.trim()} gesendet.`
+            t("createdWithInvitation", { email: admin.email.trim() })
           );
         } else {
-          toast.warning(
-            "Mandant erstellt, aber Einladungs-E-Mail konnte nicht gesendet werden. Bitte E-Mail-Konfiguration prüfen."
-          );
+          toast.warning(t("createdInvitationFailed"));
         }
       } else if (adminMode === "password") {
-        toast.success("Mandant und Admin-Benutzer erstellt.");
+        toast.success(t("createdWithAdmin"));
       } else {
-        toast.success("Mandant erstellt.");
+        toast.success(t("createdSimple"));
       }
 
       onOpenChange(false);
       onSuccess();
     } catch (err) {
       toast.error(
-        err instanceof Error
-          ? err.message
-          : "Fehler beim Erstellen des Mandanten"
+        err instanceof Error ? err.message : t("createError")
       );
     } finally {
       setIsSaving(false);
@@ -327,35 +325,33 @@ export function TenantCreationWizard({
         {/* Name */}
         <div className="space-y-2">
           <Label htmlFor="wizard-tenant-name">
-            Firmenname <span className="text-destructive">*</span>
+            {t("companyName")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="wizard-tenant-name"
             value={tenant.name}
             onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="z.B. Scharper GmbH"
+            placeholder={t("companyNamePlaceholder")}
           />
         </div>
 
         {/* Slug */}
         <div className="space-y-2">
           <Label htmlFor="wizard-tenant-slug">
-            Slug <span className="text-destructive">*</span>
+            {t("slug")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="wizard-tenant-slug"
             value={tenant.slug}
             onChange={(e) => handleSlugChange(e.target.value)}
-            placeholder="z.B. windpark-barenburg"
+            placeholder={t("slugPlaceholder")}
           />
-          <p className="text-xs text-muted-foreground">
-            Nur Kleinbuchstaben, Zahlen und Bindestriche
-          </p>
+          <p className="text-xs text-muted-foreground">{t("slugHint")}</p>
         </div>
 
         {/* Contact Email */}
         <div className="space-y-2">
-          <Label htmlFor="wizard-tenant-email">Kontakt-E-Mail</Label>
+          <Label htmlFor="wizard-tenant-email">{t("contactEmail")}</Label>
           <Input
             id="wizard-tenant-email"
             type="email"
@@ -369,7 +365,7 @@ export function TenantCreationWizard({
 
         {/* Phone */}
         <div className="space-y-2">
-          <Label htmlFor="wizard-tenant-phone">Telefon</Label>
+          <Label htmlFor="wizard-tenant-phone">{t("phone")}</Label>
           <Input
             id="wizard-tenant-phone"
             value={tenant.contactPhone}
@@ -382,10 +378,10 @@ export function TenantCreationWizard({
 
         {/* Address */}
         <div className="space-y-2">
-          <Label>Adresse</Label>
+          <Label>{t("address")}</Label>
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-8 space-y-2">
-              <Label htmlFor="wizard-tenant-street">Strasse</Label>
+              <Label htmlFor="wizard-tenant-street">{t("street")}</Label>
               <Input
                 id="wizard-tenant-street"
                 value={tenant.street}
@@ -396,7 +392,7 @@ export function TenantCreationWizard({
               />
             </div>
             <div className="col-span-4 space-y-2">
-              <Label htmlFor="wizard-tenant-houseNumber">Hausnummer</Label>
+              <Label htmlFor="wizard-tenant-houseNumber">{t("houseNumber")}</Label>
               <Input
                 id="wizard-tenant-houseNumber"
                 value={tenant.houseNumber}
@@ -407,7 +403,7 @@ export function TenantCreationWizard({
               />
             </div>
             <div className="col-span-4 space-y-2">
-              <Label htmlFor="wizard-tenant-postalCode">PLZ</Label>
+              <Label htmlFor="wizard-tenant-postalCode">{t("postalCode")}</Label>
               <Input
                 id="wizard-tenant-postalCode"
                 value={tenant.postalCode}
@@ -418,7 +414,7 @@ export function TenantCreationWizard({
               />
             </div>
             <div className="col-span-8 space-y-2">
-              <Label htmlFor="wizard-tenant-city">Ort</Label>
+              <Label htmlFor="wizard-tenant-city">{t("city")}</Label>
               <Input
                 id="wizard-tenant-city"
                 value={tenant.city}
@@ -434,7 +430,7 @@ export function TenantCreationWizard({
         {/* Colors */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="wizard-tenant-primary">Primaerfarbe</Label>
+            <Label htmlFor="wizard-tenant-primary">{t("primaryColor")}</Label>
             <div className="flex gap-2">
               <input
                 type="color"
@@ -461,7 +457,7 @@ export function TenantCreationWizard({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="wizard-tenant-secondary">Sekundaerfarbe</Label>
+            <Label htmlFor="wizard-tenant-secondary">{t("secondaryColor")}</Label>
             <div className="flex gap-2">
               <input
                 type="color"
@@ -502,7 +498,7 @@ export function TenantCreationWizard({
         {/* Email */}
         <div className="space-y-2">
           <Label htmlFor="wizard-admin-email">
-            E-Mail <span className="text-destructive">*</span>
+            {t("email")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="wizard-admin-email"
@@ -519,7 +515,7 @@ export function TenantCreationWizard({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="wizard-admin-firstname">
-              Vorname <span className="text-destructive">*</span>
+              {t("firstName")} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="wizard-admin-firstname"
@@ -532,7 +528,7 @@ export function TenantCreationWizard({
           </div>
           <div className="space-y-2">
             <Label htmlFor="wizard-admin-lastname">
-              Nachname <span className="text-destructive">*</span>
+              {t("lastName")} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="wizard-admin-lastname"
@@ -557,15 +553,15 @@ export function TenantCreationWizard({
         <TabsList className="w-full">
           <TabsTrigger value="invitation" className="flex-1 gap-1.5">
             <Mail className="h-3.5 w-3.5" />
-            Einladung
+            {t("tabInvitation")}
           </TabsTrigger>
           <TabsTrigger value="password" className="flex-1 gap-1.5">
             <KeyRound className="h-3.5 w-3.5" />
-            Passwort
+            {t("tabPassword")}
           </TabsTrigger>
           <TabsTrigger value="skip" className="flex-1 gap-1.5">
             <SkipForward className="h-3.5 w-3.5" />
-            Überspringen
+            {t("tabSkip")}
           </TabsTrigger>
         </TabsList>
 
@@ -573,8 +569,7 @@ export function TenantCreationWizard({
         <TabsContent value="invitation" className="space-y-4 mt-4">
           {renderAdminUserFields()}
           <p className="text-sm text-muted-foreground rounded-md bg-muted/50 p-3">
-            Eine Einladungs-E-Mail mit Aktivierungslink (7 Tage gültig) wird an
-            diese Adresse gesendet.
+            {t("invitationHint")}
           </p>
         </TabsContent>
 
@@ -585,7 +580,7 @@ export function TenantCreationWizard({
           {/* Password */}
           <div className="space-y-2">
             <Label htmlFor="wizard-admin-password">
-              Passwort <span className="text-destructive">*</span>
+              {t("password")} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="wizard-admin-password"
@@ -594,17 +589,15 @@ export function TenantCreationWizard({
               onChange={(e) =>
                 setAdmin((prev) => ({ ...prev, password: e.target.value }))
               }
-              placeholder="Mindestens 8 Zeichen"
+              placeholder={t("passwordPlaceholder")}
             />
-            <p className="text-xs text-muted-foreground">
-              Mindestens 8 Zeichen
-            </p>
+            <p className="text-xs text-muted-foreground">{t("passwordHint")}</p>
           </div>
 
           {/* Password Confirm */}
           <div className="space-y-2">
             <Label htmlFor="wizard-admin-password-confirm">
-              Passwort bestätigen <span className="text-destructive">*</span>
+              {t("passwordConfirm")} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="wizard-admin-password-confirm"
@@ -616,7 +609,7 @@ export function TenantCreationWizard({
                   passwordConfirm: e.target.value,
                 }))
               }
-              placeholder="Passwort wiederholen"
+              placeholder={t("passwordConfirmPlaceholder")}
             />
           </div>
         </TabsContent>
@@ -624,9 +617,7 @@ export function TenantCreationWizard({
         {/* Tab: Überspringen */}
         <TabsContent value="skip" className="mt-4">
           <p className="text-sm text-muted-foreground rounded-md bg-muted/50 p-3">
-            Der Mandant wird ohne Admin-Benutzer erstellt. Sie können Benutzer
-            später in der Mandantenverwaltung unter &quot;Benutzer&quot;
-            anlegen.
+            {t("skipHint")}
           </p>
         </TabsContent>
       </Tabs>
@@ -641,11 +632,8 @@ export function TenantCreationWizard({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Neuer Mandant</DialogTitle>
-          <DialogDescription>
-            Erstellen Sie einen neuen Mandanten (Verwaltungsfirma) mit optionalem
-            Administrator-Benutzer.
-          </DialogDescription>
+          <DialogTitle>{t("dialogTitle")}</DialogTitle>
+          <DialogDescription>{t("dialogDesc")}</DialogDescription>
         </DialogHeader>
 
         {/* Stepper */}
@@ -664,10 +652,10 @@ export function TenantCreationWizard({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Abbrechen
+                {t("cancel")}
               </Button>
               <Button onClick={handleNext}>
-                Weiter
+                {t("next")}
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </>
@@ -679,13 +667,13 @@ export function TenantCreationWizard({
                 disabled={isSaving}
               >
                 <ChevronLeft className="mr-1 h-4 w-4" />
-                Zurück
+                {t("back")}
               </Button>
               <Button onClick={handleSubmit} disabled={isSaving}>
                 {isSaving && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isSaving ? "Erstellen..." : "Mandant erstellen"}
+                {isSaving ? t("creating") : t("createTenant")}
               </Button>
             </>
           )}

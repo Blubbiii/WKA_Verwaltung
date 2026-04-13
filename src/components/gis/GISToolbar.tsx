@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTranslations } from "next-intl";
 import {
   LandPlot, Ruler, Download, Loader2, Map, Undo2, Redo2, Printer,
   Search, Upload, Globe, X, PenLine, Layers,
@@ -65,6 +66,7 @@ export function GISToolbar({
   canRedo,
   onRedo,
 }: GISToolbarProps) {
+  const tToast = useTranslations("gis.toasts");
   const [showCoordSearch, setShowCoordSearch] = useState(false);
   const [coordInput, setCoordInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,12 +74,12 @@ export function GISToolbar({
   const handleCoordSearch = () => {
     const parts = coordInput.split(",").map((s) => parseFloat(s.trim()));
     if (parts.length !== 2 || parts.some(isNaN)) {
-      toast.error("Ungültige Koordinaten. Format: 51.1657, 10.4515");
+      toast.error(tToast("coordsInvalid"));
       return;
     }
     const [lat, lng] = parts;
     if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      toast.error("Koordinaten außerhalb gültiger Bereiche (Lat: -90..90, Lng: -180..180)");
+      toast.error(tToast("coordsOutOfRange"));
       return;
     }
     // Dispatch custom event for map to handle
@@ -86,7 +88,7 @@ export function GISToolbar({
     );
     setShowCoordSearch(false);
     setCoordInput("");
-    toast.success(`Karte zentriert auf ${parts[0].toFixed(4)}, ${parts[1].toFixed(4)}`);
+    toast.success(tToast("mapCentered", { lat: parts[0].toFixed(4), lng: parts[1].toFixed(4) }));
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,7 +98,7 @@ export function GISToolbar({
     // File size limit check (20 MB)
     const MAX_IMPORT_SIZE = 20 * 1024 * 1024;
     if (file.size > MAX_IMPORT_SIZE) {
-      toast.error(`Datei zu groß (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum: 20 MB`);
+      toast.error(tToast("fileTooLarge", { size: (file.size / 1024 / 1024).toFixed(1) }));
       e.target.value = "";
       return;
     }
@@ -111,20 +113,20 @@ export function GISToolbar({
         const geojson = await shp.default(buffer);
         const fc = Array.isArray(geojson) ? geojson[0] : geojson;
         window.dispatchEvent(new CustomEvent("gis:import", { detail: fc }));
-        toast.success(`${file.name} importiert (${(fc as GeoJSON.FeatureCollection).features?.length ?? 0} Features)`);
+        toast.success(tToast("fileImported", { name: file.name, count: (fc as GeoJSON.FeatureCollection).features?.length ?? 0 }));
       } else {
         // GeoJSON / JSON import
         const text = await file.text();
         const geojson = JSON.parse(text);
         if (geojson.type === "FeatureCollection" || geojson.type === "Feature") {
           window.dispatchEvent(new CustomEvent("gis:import", { detail: geojson }));
-          toast.success(`${file.name} importiert`);
+          toast.success(tToast("fileImportedSimple", { name: file.name }));
         } else {
-          toast.error("Ungültiges GeoJSON-Format");
+          toast.error(tToast("invalidGeoJson"));
         }
       }
     } catch {
-      toast.error("Datei konnte nicht gelesen werden");
+      toast.error(tToast("fileReadError"));
     }
 
     // Reset input so same file can be imported again
@@ -329,7 +331,7 @@ export function GISToolbar({
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => {
               window.dispatchEvent(new CustomEvent("gis:export-area-report"));
-              toast.info("Flächenreport wird generiert...");
+              toast.info(tToast("generatingReport"));
             }}>
               Flächenreport (Excel)
             </DropdownMenuItem>

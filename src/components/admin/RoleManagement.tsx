@@ -75,6 +75,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { PermissionMatrix } from "@/components/admin/PermissionMatrix";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 // Schema
 const roleFormSchema = z.object({
@@ -132,6 +133,7 @@ const presetColors = [
 ];
 
 export function RoleManagement() {
+  const t = useTranslations("admin.roleManagementUI");
   const [roles, setRoles] = useState<Role[]>([]);
   const [groupedPermissions, setGroupedPermissions] = useState<ModuleGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,7 +189,7 @@ export function RoleManagement() {
         );
       }
     } catch {
-      toast.error("Fehler beim Laden der Daten");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
@@ -223,7 +225,7 @@ export function RoleManagement() {
         });
       }
     } catch {
-      toast.error("Fehler beim Laden der Rolle");
+      toast.error(t("loadRoleError"));
       return;
     }
 
@@ -267,14 +269,14 @@ export function RoleManagement() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
       await fetchData();
       setShowRoleDialog(false);
-      toast.success(selectedRole ? "Rolle aktualisiert" : "Rolle erstellt");
+      toast.success(selectedRole ? t("updated") : t("created"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -291,14 +293,14 @@ export function RoleManagement() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Löschen");
+        throw new Error(error.error || t("deleteError"));
       }
 
       await fetchData();
       setShowDeleteDialog(false);
-      toast.success("Rolle gelöscht");
+      toast.success(t("deleted"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
+      toast.error(error instanceof Error ? error.message : t("deleteError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -317,7 +319,7 @@ export function RoleManagement() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Export fehlgeschlagen");
+        throw new Error(error.error || t("exportError"));
       }
 
       // Create blob and download
@@ -331,9 +333,9 @@ export function RoleManagement() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success(`Matrix als ${format.toUpperCase()} exportiert`);
+      toast.success(t("exported", { format: format.toUpperCase() }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Export fehlgeschlagen");
+      toast.error(error instanceof Error ? error.message : t("exportError"));
     } finally {
       setIsExporting(false);
     }

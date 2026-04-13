@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   FileArchive,
@@ -41,6 +42,7 @@ export function PaperlessSyncButton({
   paperlessDocumentId,
   onSyncStarted,
 }: PaperlessSyncButtonProps) {
+  const tToast = useTranslations("documents.toasts");
   const { flags } = useFeatureFlags();
   const [syncing, setSyncing] = useState(false);
 
@@ -60,14 +62,14 @@ export function PaperlessSyncButton({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({ error: "Fehler" }));
-        throw new Error(data.error || "Fehler beim Senden an Paperless");
+        throw new Error(data.error || tToast("uploadFailed"));
       }
 
-      toast.success("Dokument wird an Paperless-ngx gesendet...");
+      toast.success(tToast("sentToPaperless"));
       onSyncStarted?.();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Senden an Paperless"
+        error instanceof Error ? error.message : tToast("uploadFailed")
       );
     } finally {
       setSyncing(false);

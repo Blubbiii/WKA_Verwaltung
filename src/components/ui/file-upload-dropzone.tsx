@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 /**
  * Generic drag & drop file upload zone.
@@ -47,6 +48,7 @@ export function FileUploadDropzone({
   className,
   hint,
 }: FileUploadDropzoneProps) {
+  const t = useTranslations("common.dropzone");
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -80,23 +82,25 @@ export function FileUploadDropzone({
           } else {
             const err = await res.json().catch(() => ({}));
             toast.error(
-              `Fehler bei ${file.name}: ${err.error || "Upload fehlgeschlagen"}`
+              t("errorAt", { file: file.name, error: err.error || t("uploadFailed") })
             );
           }
         } catch {
-          toast.error(`Fehler bei ${file.name}`);
+          toast.error(t("errorAtSimple", { file: file.name }));
         }
       }
 
       setUploading(false);
       if (successCount > 0) {
         toast.success(
-          `${successCount} Datei${successCount > 1 ? "en" : ""} hochgeladen`
+          successCount > 1
+            ? t("uploadedMultiple", { count: successCount })
+            : t("uploadedSingle", { count: successCount })
         );
         onUploadComplete();
       }
     },
-    [endpoint, additionalFields, maxFiles, onUploadComplete]
+    [endpoint, additionalFields, maxFiles, onUploadComplete, t]
   );
 
   if (disabled) return null;
@@ -122,14 +126,14 @@ export function FileUploadDropzone({
       {uploading ? (
         <div className="flex items-center justify-center gap-2 text-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Wird hochgeladen...</span>
+          <span>{t("uploading")}</span>
         </div>
       ) : (
         <label className="cursor-pointer flex flex-col items-center gap-1">
           <Upload className="h-5 w-5" />
           <span className="text-xs">
-            Dateien hierher ziehen oder{" "}
-            <span className="text-primary underline">auswählen</span>
+            {t("dragOrSelect")}{" "}
+            <span className="text-primary underline">{t("select")}</span>
           </span>
           {hint && <span className="text-[10px]">{hint}</span>}
           <input

@@ -27,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface InvoiceItem {
   id: string;
@@ -70,6 +71,7 @@ export function PartialCancelDialog({
   items,
   onSuccess,
 }: PartialCancelDialogProps) {
+  const t = useTranslations("invoices.partialCancel");
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState("");
   const [positions, setPositions] = useState<SelectedPosition[]>(
@@ -135,12 +137,12 @@ export function PartialCancelDialog({
       const cancelQty = parseFloat(positions[i].cancelQuantity);
 
       if (isNaN(cancelQty) || cancelQty <= 0) {
-        validationError = `Position ${item.position}: Ungültige Menge`;
+        validationError = t("errorInvalidQuantity", { position: item.position });
         continue;
       }
 
       if (cancelQty > item.quantity) {
-        validationError = `Position ${item.position}: Menge (${cancelQty}) übersteigt Original (${item.quantity})`;
+        validationError = t("errorQuantityExceeds", { position: item.position, cancelQty, original: item.quantity });
         continue;
       }
 
@@ -174,16 +176,16 @@ export function PartialCancelDialog({
         selectedItems.length === items.length &&
         selectedItems.every((si) => si.cancelQty === si.item.quantity),
     };
-  }, [positions, items]);
+  }, [positions, items, t]);
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
-      toast.error("Bitte geben Sie einen Storno-Grund an");
+      toast.error(t("validation.reasonRequired"));
       return;
     }
 
     if (!preview.hasSelection) {
-      toast.error("Bitte waehlen Sie mindestens eine Position aus");
+      toast.error(t("validation.selectAtLeastOne"));
       return;
     }
 
@@ -193,9 +195,7 @@ export function PartialCancelDialog({
     }
 
     if (preview.isFullCancel) {
-      toast.error(
-        "Alle Positionen mit voller Menge ausgewaehlt. Bitte nutzen Sie die Vollstornierung."
-      );
+      toast.error(t("validation.fullCancel"));
       return;
     }
 
@@ -220,16 +220,16 @@ export function PartialCancelDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Erstellen der Teilstornierung");
+        throw new Error(error.error || t("toast.createError"));
       }
 
       const result = await response.json();
-      toast.success("Teilstorno erstellt");
+      toast.success(t("toast.created"));
       onOpenChange(false);
       onSuccess(result.creditNote.id);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen der Teilstornierung"
+        error instanceof Error ? error.message : t("toast.createError")
       );
     } finally {
       setLoading(false);
@@ -240,17 +240,16 @@ export function PartialCancelDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Teilstorno erstellen</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>
-            Erstellen Sie eine Teilstornierung für {invoiceNumber}. Waehlen Sie die
-            zu stornierenden Positionen und optional eine reduzierte Menge.
+            {t("description", { invoiceNumber })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Positions table with checkboxes */}
           <div>
-            <Label className="text-sm font-medium">Positionen auswaehlen</Label>
+            <Label className="text-sm font-medium">{t("labelSelectPositions")}</Label>
             <div className="mt-2 border rounded-md">
               <Table>
                 <TableHeader>
@@ -344,7 +343,7 @@ export function PartialCancelDialog({
             <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-md">
               <AlertTriangle className="h-4 w-4 flex-shrink-0" />
               <span>
-                Alle Positionen mit voller Menge ausgewaehlt. Bitte nutzen Sie die Vollstornierung.
+                {t("validation.fullCancel")}
               </span>
             </div>
           )}
@@ -352,7 +351,7 @@ export function PartialCancelDialog({
           {/* Preview summary */}
           {preview.hasSelection && !preview.isFullCancel && (
             <div className="bg-muted/50 p-4 rounded-md space-y-2">
-              <Label className="text-sm font-medium">Vorschau Teilstorno-Gutschrift</Label>
+              <Label className="text-sm font-medium">{t("labelPreview")}</Label>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Netto:</span>
@@ -380,10 +379,10 @@ export function PartialCancelDialog({
 
           {/* Reason input */}
           <div className="space-y-2">
-            <Label htmlFor="partialCancelReason">Storno-Grund *</Label>
+            <Label htmlFor="partialCancelReason">{t("labelReason")}</Label>
             <Textarea
               id="partialCancelReason"
-              placeholder="z.B. Falsche Menge berechnet, Position nicht erbracht"
+              placeholder={t("placeholderReason")}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
@@ -393,7 +392,7 @@ export function PartialCancelDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -409,7 +408,7 @@ export function PartialCancelDialog({
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            Teilstorno erstellen
+            {t("submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

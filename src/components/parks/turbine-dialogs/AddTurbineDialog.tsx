@@ -42,6 +42,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { parseDateInput, formatDateInput } from "./types";
 
 interface AddTurbineDialogProps {
@@ -59,6 +60,7 @@ export function AddTurbineDialog({
   setIsOpen,
   onSuccess,
 }: AddTurbineDialogProps) {
+  const t = useTranslations("parks.turbineDialog");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [funds, setFunds] = useState<{ id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null }[]>([]);
   const [formData, setFormData] = useState<{
@@ -163,7 +165,7 @@ export function AddTurbineDialog({
 
   async function handleCreateFund() {
     if (!newFundName.trim()) {
-      toast.error("Name ist erforderlich");
+      toast.error(t("validation.nameRequired"));
       return;
     }
     try {
@@ -179,7 +181,7 @@ export function AddTurbineDialog({
       });
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Erstellen");
+        throw new Error(error.error || t("toast.fundCreateError"));
       }
       const created = await response.json();
       setFunds((prev) => [...prev, { id: created.id, name: created.name, legalForm: created.legalForm, fundCategory: created.fundCategory }]);
@@ -192,9 +194,9 @@ export function AddTurbineDialog({
       setNewFundName("");
       setNewFundLegalForm("");
       setNewFundCategoryId("");
-      toast.success("Gesellschaft wurde erstellt");
+      toast.success(t("toast.fundCreated"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Erstellen");
+      toast.error(err instanceof Error ? err.message : t("toast.fundCreateError"));
     } finally {
       setIsCreatingFund(false);
     }
@@ -230,7 +232,7 @@ export function AddTurbineDialog({
 
   async function handleSubmit() {
     if (!formData.designation.trim()) {
-      toast.error("Bezeichnung ist erforderlich");
+      toast.error(t("validation.designationRequired"));
       return;
     }
 
@@ -267,15 +269,15 @@ export function AddTurbineDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Erstellen");
+        throw new Error(error.error || t("toast.createError"));
       }
 
-      toast.success("Anlage wurde erstellt");
+      toast.success(t("toast.turbineCreated"));
       resetForm();
       setIsOpen(false);
       onSuccess();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Erstellen");
+      toast.error(err instanceof Error ? err.message : t("toast.createError"));
     } finally {
       setIsSubmitting(false);
     }

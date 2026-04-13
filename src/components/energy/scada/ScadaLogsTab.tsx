@@ -21,10 +21,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { ImportJob } from "./types";
 import { STATUS_BADGE_COLORS, STATUS_LABELS, formatDateTime } from "./types";
 
 export default function ScadaLogsTab() {
+  const t = useTranslations("energy.scada.logsTab");
+  const tc = useTranslations("energy.scada.common");
   const [logs, setLogs] = useState<ImportJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -32,15 +35,15 @@ export default function ScadaLogsTab() {
     setIsLoading(true);
     try {
       const res = await fetch("/api/energy/scada/import?limit=100");
-      if (!res.ok) throw new Error("Fehler beim Laden der Protokolle");
+      if (!res.ok) throw new Error(tc("errorLoadingLogs"));
       const data = await res.json();
       setLogs(data.data ?? data);
     } catch {
-      toast.error("Fehler beim Laden der Protokolle");
+      toast.error(tc("errorLoadingLogs"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [tc]);
 
   useEffect(() => {
     loadLogs();
@@ -51,10 +54,8 @@ export default function ScadaLogsTab() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Import-Protokolle</CardTitle>
-            <CardDescription>
-              Detaillierte Protokolle aller SCADA-Importe
-            </CardDescription>
+            <CardTitle>{t("cardTitle")}</CardTitle>
+            <CardDescription>{t("cardDescription")}</CardDescription>
           </div>
           <Button
             variant="outline"
@@ -65,7 +66,7 @@ export default function ScadaLogsTab() {
             <RefreshCw
               className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
             />
-            Aktualisieren
+            {tc("refresh")}
           </Button>
         </div>
       </CardHeader>
@@ -74,14 +75,14 @@ export default function ScadaLogsTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Startzeit</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Standort</TableHead>
-                <TableHead>Dateityp</TableHead>
-                <TableHead className="text-right">Dateien</TableHead>
-                <TableHead className="text-right">Importiert</TableHead>
-                <TableHead className="text-right">Übersprungen</TableHead>
-                <TableHead className="text-right">Fehlerhaft</TableHead>
+                <TableHead>{t("colStartTime")}</TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
+                <TableHead>{t("colLocation")}</TableHead>
+                <TableHead>{t("colFileType")}</TableHead>
+                <TableHead className="text-right">{t("colFiles")}</TableHead>
+                <TableHead className="text-right">{t("colImported")}</TableHead>
+                <TableHead className="text-right">{t("colSkipped")}</TableHead>
+                <TableHead className="text-right">{t("colFailed")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -104,7 +105,7 @@ export default function ScadaLogsTab() {
                     colSpan={8}
                     className="h-32 text-center text-muted-foreground"
                   >
-                    Keine Protokolle vorhanden
+                    {t("noLogs")}
                   </TableCell>
                 </TableRow>
               ) : (

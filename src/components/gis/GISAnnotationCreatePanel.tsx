@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ export function GISAnnotationCreatePanel({
   onSaved,
   onCancel,
 }: GISAnnotationCreatePanelProps) {
+  const tToast = useTranslations("gis.toasts");
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("CABLE_ROUTE");
   const [description, setDescription] = useState("");
@@ -44,11 +46,11 @@ export function GISAnnotationCreatePanel({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error("Name ist erforderlich");
+      toast.error(tToast("nameRequired"));
       return;
     }
     if (!parkId) {
-      toast.error("Bitte einen Park auswählen");
+      toast.error(tToast("parkRequired"));
       return;
     }
 
@@ -68,13 +70,13 @@ export function GISAnnotationCreatePanel({
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Erstellen");
+        throw new Error(err.error || tToast("plotCreateError"));
       }
 
-      toast.success("Zeichnung gespeichert");
+      toast.success(tToast("annotationSaved"));
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : tToast("saveError"));
     } finally {
       setSaving(false);
     }

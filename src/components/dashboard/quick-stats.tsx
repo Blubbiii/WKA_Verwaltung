@@ -1,6 +1,7 @@
 "use client";
 
 import { Wind, Zap, Users, FileText } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -36,24 +37,25 @@ export function QuickStats({
   isLoading = false,
   className,
 }: QuickStatsProps) {
+  const t = useTranslations("dashboard.widget");
   const stats: QuickStat[] = [
     {
-      label: "Parks",
+      label: t("parks"),
       value: parks ?? 0,
       icon: <Wind className="h-4 w-4" />,
     },
     {
-      label: "Turbinen",
+      label: t("turbines"),
       value: turbines ?? 0,
       icon: <Zap className="h-4 w-4" />,
     },
     {
-      label: "Gesellschafter",
+      label: t("shareholders"),
       value: shareholders ?? 0,
       icon: <Users className="h-4 w-4" />,
     },
     {
-      label: "Offene Rechnungen",
+      label: t("openInvoices"),
       value: openInvoices ?? 0,
       icon: <FileText className="h-4 w-4" />,
     },

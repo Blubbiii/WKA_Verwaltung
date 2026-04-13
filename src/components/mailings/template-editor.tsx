@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +60,7 @@ const CATEGORIES = [
 // =============================================================================
 
 export function TemplateEditor({ open, onClose, onSaved, template }: TemplateEditorProps) {
+  const tToast = useTranslations("mailings.toasts");
   const isEdit = !!template?.id;
 
   const [name, setName] = useState(template?.name ?? "");
@@ -78,7 +80,7 @@ export function TemplateEditor({ open, onClose, onSaved, template }: TemplateEdi
 
   const handleSave = async () => {
     if (!name.trim() || !subject.trim() || !bodyHtml.trim()) {
-      toast.error("Bitte füllen Sie alle Pflichtfelder aus");
+      toast.error(tToast("requiredFields"));
       return;
     }
 
@@ -105,14 +107,14 @@ export function TemplateEditor({ open, onClose, onSaved, template }: TemplateEdi
       });
 
       if (res.ok) {
-        toast.success(isEdit ? "Vorlage aktualisiert" : "Vorlage erstellt");
+        toast.success(isEdit ? tToast("templateUpdated") : tToast("templateCreated"));
         onSaved();
       } else {
         const data = await res.json();
-        toast.error(data.error ?? "Fehler beim Speichern");
+        toast.error(data.error ?? tToast("saveError"));
       }
     } catch {
-      toast.error("Speichern fehlgeschlagen");
+      toast.error(tToast("saveFailed"));
     } finally {
       setSaving(false);
     }

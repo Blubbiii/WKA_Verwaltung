@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { X, ExternalLink, MapPin, Zap, PenLine, Trash2, Clock, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -327,6 +328,7 @@ function AnnotationInfo({
   annotation: AnnotationData;
   onDelete?: () => void;
 }) {
+  const tToast = useTranslations("gis.toasts");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -334,11 +336,11 @@ function AnnotationInfo({
     setDeleting(true);
     try {
       const res = await fetch(`/api/gis/annotations/${annotation.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Fehler beim Löschen");
-      toast.success("Zeichnung gelöscht");
+      if (!res.ok) throw new Error(tToast("annotationDeleteError"));
+      toast.success(tToast("annotationDeleted"));
       onDelete?.();
     } catch {
-      toast.error("Fehler beim Löschen der Zeichnung");
+      toast.error(tToast("annotationDeleteError"));
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);

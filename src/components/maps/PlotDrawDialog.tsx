@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,6 +77,7 @@ export function PlotDrawDialog({
   parkId,
   onSaved,
 }: PlotDrawDialogProps) {
+  const tToast = useTranslations("leases.toasts");
   const [cadastralDistrict, setCadastralDistrict] = useState("");
   const [fieldNumber, setFieldNumber] = useState("");
   const [plotNumber, setPlotNumber] = useState("");
@@ -107,11 +109,11 @@ export function PlotDrawDialog({
 
   const handleSave = async () => {
     if (!cadastralDistrict.trim()) {
-      toast.error("Bitte Gemarkung eingeben");
+      toast.error(tToast("cadastralRequired"));
       return;
     }
     if (!plotNumber.trim()) {
-      toast.error("Bitte Flurstücknummer eingeben");
+      toast.error(tToast("plotNumberRequired"));
       return;
     }
     if (!geometry) return;
@@ -134,7 +136,7 @@ export function PlotDrawDialog({
 
       if (!plotRes.ok) {
         const err = await plotRes.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Speichern des Flurstücks");
+        throw new Error(err.error || tToast("saveError"));
       }
 
       const plot = await plotRes.json();
@@ -148,12 +150,12 @@ export function PlotDrawDialog({
         });
         if (!linkRes.ok) {
           // Plot was saved — just warn about the link failure
-          toast.warning("Flurstück gespeichert, aber Pachtvertrag konnte nicht verknüpft werden");
+          toast.warning(tToast("plotSavedLeaseFailed"));
         } else {
-          toast.success("Flurstück gespeichert und Pachtvertrag zugeordnet");
+          toast.success(tToast("plotSavedLeaseAssigned"));
         }
       } else {
-        toast.success("Flurstück gespeichert");
+        toast.success(tToast("plotSaved"));
       }
 
       // Reset form
@@ -164,7 +166,7 @@ export function PlotDrawDialog({
       onOpenChange(false);
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : tToast("saveError"));
     } finally {
       setSaving(false);
     }

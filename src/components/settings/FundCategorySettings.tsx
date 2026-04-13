@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Plus, Pencil, Trash2, Loader2, Building2 } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
@@ -74,6 +75,7 @@ function SettingsSkeleton() {
 }
 
 export function FundCategorySettings() {
+  const t = useTranslations("admin.fundCategoryUI");
   const [categories, setCategories] = useState<FundCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -91,11 +93,11 @@ export function FundCategorySettings() {
         setCategories(data.data || []);
       }
     } catch {
-      toast.error("Fehler beim Laden der Gesellschaftstypen");
+      toast.error(t("loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -134,13 +136,13 @@ export function FundCategorySettings() {
       );
       if (response.ok) {
         const result = await response.json();
-        toast.success(result.message || "Gesellschaftstyp gelöscht");
+        toast.success(result.message || t("deleted"));
         fetchData();
       } else {
-        throw new Error("Fehler beim Löschen");
+        throw new Error(t("deleteError"));
       }
     } catch {
-      toast.error("Fehler beim Löschen des Gesellschaftstyps");
+      toast.error(t("deleteError"));
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -149,11 +151,11 @@ export function FundCategorySettings() {
 
   async function handleSave() {
     if (!formData.name.trim()) {
-      toast.error("Name ist erforderlich");
+      toast.error(t("nameRequired"));
       return;
     }
     if (!formData.code.trim()) {
-      toast.error("Code ist erforderlich");
+      toast.error(t("codeRequired"));
       return;
     }
 
@@ -180,19 +182,15 @@ export function FundCategorySettings() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
-      toast.success(
-        editingId
-          ? "Gesellschaftstyp aktualisiert"
-          : "Gesellschaftstyp erstellt"
-      );
+      toast.success(t("saved"));
       setDialogOpen(false);
       fetchData();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("saveError")
       );
     } finally {
       setIsSaving(false);

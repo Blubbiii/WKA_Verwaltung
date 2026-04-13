@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Upload, X, FileText, FileImage, File } from "lucide-react";
@@ -55,6 +56,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export function StepDocuments({ data, onChange }: StepDocumentsProps) {
+  const tToast = useTranslations("funds.toasts");
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   function handleFileSelect(slotLabel: string, category: string, event: React.ChangeEvent<HTMLInputElement>) {
@@ -63,13 +65,13 @@ export function StepDocuments({ data, onChange }: StepDocumentsProps) {
 
     // Validate type
     if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error("Dateityp nicht erlaubt. Erlaubt: PDF, JPG, PNG, WebP, DOC, DOCX");
+      toast.error(tToast("fileTypeNotAllowed"));
       return;
     }
 
     // Validate size
     if (file.size > MAX_SIZE_BYTES) {
-      toast.error(`Datei zu gross. Maximal ${MAX_SIZE_MB} MB erlaubt.`);
+      toast.error(tToast("fileTooLarge", { max: MAX_SIZE_MB }));
       return;
     }
 

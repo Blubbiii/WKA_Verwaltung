@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,7 @@ interface TaxExportDialogProps {
 }
 
 export function TaxExportDialog({ parks }: TaxExportDialogProps) {
+  const tToast = useTranslations("documents.toasts");
   const [open, setOpen] = useState(false);
   const [parkId, setParkId] = useState("");
   const [year, setYear] = useState(String(new Date().getFullYear()));
@@ -39,7 +41,7 @@ export function TaxExportDialog({ parks }: TaxExportDialogProps) {
 
   const handleExport = async () => {
     if (!parkId) {
-      toast.error("Bitte einen Park auswählen");
+      toast.error(tToast("parkRequired"));
       return;
     }
 
@@ -55,7 +57,7 @@ export function TaxExportDialog({ parks }: TaxExportDialogProps) {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Export fehlgeschlagen");
+        throw new Error(err.error || tToast("exportFailed"));
       }
 
       // Download the ZIP
@@ -67,10 +69,10 @@ export function TaxExportDialog({ parks }: TaxExportDialogProps) {
       a.click();
       URL.revokeObjectURL(url);
 
-      toast.success("Steuerberater-Export heruntergeladen");
+      toast.success(tToast("taxExportDownloaded"));
       setOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Export fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : tToast("exportFailed"));
     } finally {
       setExporting(false);
     }

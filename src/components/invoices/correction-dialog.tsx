@@ -33,6 +33,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, ArrowRight, Pencil } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface InvoiceItem {
   id: string;
@@ -85,6 +86,7 @@ export function CorrectionDialog({
   items,
   onSuccess,
 }: CorrectionDialogProps) {
+  const t = useTranslations("invoices.correction");
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState("");
   const [editedPositions, setEditedPositions] = useState<EditedPosition[]>(
@@ -220,12 +222,12 @@ export function CorrectionDialog({
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
-      toast.error("Bitte geben Sie einen Korrekturgrund an");
+      toast.error(t("validation.reasonRequired"));
       return;
     }
 
     if (!preview.hasChanges) {
-      toast.error("Keine Änderungen vorgenommen");
+      toast.error(t("validation.noChanges"));
       return;
     }
 
@@ -263,16 +265,16 @@ export function CorrectionDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Erstellen der Korrektur");
+        throw new Error(error.error || t("toast.createError"));
       }
 
       const result = await response.json();
-      toast.success("Korrektur erstellt");
+      toast.success(t("toast.created"));
       onOpenChange(false);
       onSuccess(result.creditNote.id, result.correctionInvoice.id);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen der Korrektur"
+        error instanceof Error ? error.message : t("toast.createError")
       );
     } finally {
       setLoading(false);
@@ -283,17 +285,16 @@ export function CorrectionDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Korrektur erstellen</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>
-            Erstellen Sie eine Rechnungskorrektur für {invoiceNumber}. Klicken Sie auf
-            das Bearbeiten-Symbol bei den zu korrigierenden Positionen und aendern Sie die Werte.
+            {t("description", { invoiceNumber })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Positions table with inline editing */}
           <div>
-            <Label className="text-sm font-medium">Positionen bearbeiten</Label>
+            <Label className="text-sm font-medium">{t("labelEditPositions")}</Label>
             <div className="mt-2 border rounded-md">
               <Table>
                 <TableHeader>
@@ -431,7 +432,7 @@ export function CorrectionDialog({
           {/* Preview of changes */}
           {preview.hasChanges && (
             <div className="bg-muted/50 p-4 rounded-md space-y-4">
-              <Label className="text-sm font-medium">Vorschau der Korrekturen</Label>
+              <Label className="text-sm font-medium">{t("labelPreview")}</Label>
               <div className="space-y-3">
                 {preview.changedPositions.map((cp) => (
                   <div
@@ -463,7 +464,7 @@ export function CorrectionDialog({
               </div>
               <Separator />
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Gesamtdifferenz (Brutto):</span>
+                <span className="text-sm font-medium">{t("totalDifference")}</span>
                 <span
                   className={`text-lg font-bold ${
                     preview.totalDifference > 0
@@ -478,8 +479,7 @@ export function CorrectionDialog({
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Es werden zwei Dokumente erstellt: Eine Korrekturgutschrift (negativer Betrag für die
-                alten Werte) und eine Korrekturrechnung (neuer Betrag mit den korrigierten Werten).
+                {t("previewHint")}
               </p>
             </div>
           )}
@@ -488,10 +488,10 @@ export function CorrectionDialog({
 
           {/* Reason input */}
           <div className="space-y-2">
-            <Label htmlFor="correctionReason">Korrekturgrund *</Label>
+            <Label htmlFor="correctionReason">{t("labelReason")}</Label>
             <Textarea
               id="correctionReason"
-              placeholder="z.B. Falscher Einzelpreis, Beschreibung korrigiert"
+              placeholder={t("placeholderReason")}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
@@ -501,14 +501,14 @@ export function CorrectionDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={loading || !preview.hasChanges || !reason.trim()}
           >
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Korrektur erstellen
+            {t("submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -57,6 +57,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useParks } from "@/hooks/useParks";
 import type {
   ScanResult,
@@ -83,6 +84,8 @@ const SCADA_EXTENSIONS = [
 ];
 
 export default function ScadaImportTab() {
+  const t = useTranslations("energy.scada.importTab");
+  const tc = useTranslations("energy.scada.common");
   const { parks, isLoading: parksLoading } = useParks();
 
   // Scan state
@@ -165,15 +168,15 @@ export default function ScadaImportTab() {
     setHistoryLoading(true);
     try {
       const res = await fetch("/api/energy/scada/import?limit=20");
-      if (!res.ok) throw new Error("Fehler beim Laden der Import-Historie");
+      if (!res.ok) throw new Error(tc("errorLoadingHistory"));
       const data = await res.json();
       setImportHistory(data.data ?? data);
     } catch {
-      toast.error("Fehler beim Laden der Import-Historie");
+      toast.error(tc("errorLoadingHistory"));
     } finally {
       setHistoryLoading(false);
     }
-  }, []);
+  }, [tc]);
 
   useEffect(() => {
     loadHistory();
@@ -263,8 +266,8 @@ export default function ScadaImportTab() {
       }
 
       if (entries.length === 0) {
-        toast.error("Keine gültigen SCADA-Dateien gefunden", {
-          description: `${filesWithPaths.length} Datei(en) geprüft — keine mit unterstützter Endung`,
+        toast.error(t("toastNoValidFiles"), {
+          description: t("toastNoValidFilesDesc", { count: filesWithPaths.length }),
         });
         return;
       }
@@ -273,19 +276,19 @@ export default function ScadaImportTab() {
 
       const locs = [...new Set(entries.map((e) => e.locCode).filter(Boolean))];
       if (locs.length === 1) {
-        toast.success(`${entries.length} SCADA-Datei(en) — Standort „${locs[0]}" erkannt`);
+        toast.success(t("toastFilesWithLocation", { count: entries.length, loc: locs[0] ?? "" }));
       } else if (locs.length > 1) {
-        toast.success(`${entries.length} SCADA-Datei(en) — ${locs.length} Standorte erkannt`);
+        toast.success(t("toastFilesMultiLocation", { count: entries.length, locations: locs.length }));
       } else {
-        toast.success(`${entries.length} SCADA-Datei(en) hinzugefügt`);
+        toast.success(t("toastFilesAdded", { count: entries.length }));
       }
 
       const skipped = filesWithPaths.length - entries.length;
       if (skipped > 0) {
-        toast.warning(`${skipped} Datei(en) ignoriert (nicht unterstützt)`);
+        toast.warning(t("toastFilesIgnored", { count: skipped }));
       }
     },
-    [toUploadEntry]
+    [toUploadEntry, t]
   );
 
   // Load turbines for a park in upload dialog (cached)
@@ -293,7 +296,7 @@ export default function ScadaImportTab() {
     if (uploadParkTurbines[parkId]) return;
     try {
       const res = await fetch(`/api/turbines?parkId=${parkId}&limit=100`);
-      if (!res.ok) throw new Error("Fehler beim Laden der Turbinen");
+      if (!res.ok) throw new Error(tc("errorLoadingTurbines"));
       const data = await res.json();
       const turbines = data.data ?? [];
       setUploadParkTurbines((prev) => ({
@@ -301,9 +304,9 @@ export default function ScadaImportTab() {
         [parkId]: Array.isArray(turbines) ? turbines : [],
       }));
     } catch {
-      toast.error("Fehler beim Laden der Turbinen");
+      toast.error(tc("errorLoadingTurbines"));
     }
-  }, [uploadParkTurbines]);
+  }, [uploadParkTurbines, tc]);
 
   const handleUploadPlantParkChange = (plantNo: number, parkId: string) => {
     setUploadPlantMappings((prev) => ({
@@ -329,7 +332,7 @@ export default function ScadaImportTab() {
     );
 
     if (unmappedWithSelections.length === 0) {
-      toast.error("Bitte mindestens eine Zuordnung auswählen");
+      toast.error(t("toastSelectAtLeastOne"));
       return;
     }
 
@@ -351,14 +354,14 @@ export default function ScadaImportTab() {
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(
-            err.error || `Fehler beim Speichern der Zuordnung für Anlage ${plant.plantNo}`,
+            err.error || t("toastSaveMappingErrorPlant", { plantNo: plant.plantNo }),
           );
         }
       }
 
-      toast.success(`${unmappedWithSelections.length} Zuordnung(en) gespeichert`);
+      toast.success(t("toastMappingsSaved", { count: unmappedWithSelections.length }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern der Zuordnungen");
+      toast.error(err instanceof Error ? err.message : t("toastSaveMappingsError"));
       setIsSavingUploadMappings(false);
       return;
     }
@@ -381,9 +384,9 @@ export default function ScadaImportTab() {
     try {
       await uploadLocGroup(group);
       setUploadEntries((prev) => prev.filter((e) => (e.locCode ?? "unbekannt") !== group.locCode));
-      toast.success(`Upload gestartet: ${group.locCode}`);
+      toast.success(t("toastUploadStarted", { locCode: group.locCode }));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : `Upload ${group.locCode} fehlgeschlagen`);
+      toast.error(err instanceof Error ? err.message : t("toastUploadFailed", { locCode: group.locCode }));
     }
     setIsUploading(false);
   };
@@ -472,14 +475,14 @@ export default function ScadaImportTab() {
         const err = await res.json().catch(() => ({}));
         const msg = err.details
           ? `${err.error}: ${err.details}`
-          : err.error || `Upload ${group.locCode} fehlgeschlagen`;
+          : err.error || t("toastUploadFailed", { locCode: group.locCode });
         throw new Error(msg);
       }
 
       const data = await res.json();
 
       if (data.invalidFiles?.length > 0) {
-        toast.warning(`${group.locCode}: ${data.invalidFiles.length} Datei(en) ignoriert`);
+        toast.warning(t("toastFilesIgnoredAtLoc", { locCode: group.locCode, count: data.invalidFiles.length }));
       }
 
       // Start polling for each import job from this location
@@ -538,7 +541,7 @@ export default function ScadaImportTab() {
 
       return data;
     },
-    [loadHistory]
+    [loadHistory, t]
   );
 
   // Upload all location groups (or a single one)
@@ -549,7 +552,7 @@ export default function ScadaImportTab() {
       const validGroups = groups.filter((g) => g.locCode !== "unbekannt" && g.locCode.startsWith("Loc_"));
 
       if (validGroups.length === 0) {
-        toast.error("Keine Standorte mit gültigem Loc-Code gefunden");
+        toast.error(t("toastNoValidLocCode"));
         return;
       }
 
@@ -617,7 +620,7 @@ export default function ScadaImportTab() {
           successCount++;
         } catch (err) {
           failCount++;
-          toast.error(err instanceof Error ? err.message : `Upload ${group.locCode} fehlgeschlagen`);
+          toast.error(err instanceof Error ? err.message : t("toastUploadFailed", { locCode: group.locCode }));
         }
       }
 
@@ -629,14 +632,14 @@ export default function ScadaImportTab() {
       }
 
       if (successCount > 0 && failCount === 0) {
-        toast.success(`Upload gestartet: ${successCount} Standort(e)`);
+        toast.success(t("toastUploadStartedCount", { count: successCount }));
       } else if (successCount > 0) {
-        toast.warning(`${successCount} Standort(e) gestartet, ${failCount} fehlgeschlagen`);
+        toast.warning(t("toastPartialUploadStarted", { success: successCount, failed: failCount }));
       }
 
       setIsUploading(false);
     },
-    [uploadGroups, uploadLocGroup]
+    [uploadGroups, uploadLocGroup, t]
   );
 
   // ---------------------------------------------------------------------------
@@ -653,7 +656,7 @@ export default function ScadaImportTab() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Laden der Verzeichnisse");
+        throw new Error(err.error || t("toastErrorLoadingDirs"));
       }
 
       const data = await res.json();
@@ -662,7 +665,7 @@ export default function ScadaImportTab() {
       setBrowseParentPath(data.parentPath || null);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Laden der Verzeichnisse"
+        err instanceof Error ? err.message : t("toastErrorLoadingDirs")
       );
     } finally {
       setIsBrowsing(false);
@@ -686,7 +689,7 @@ export default function ScadaImportTab() {
   // ---------------------------------------------------------------------------
   const handleScan = async () => {
     if (!scanPath.trim()) {
-      toast.error("Bitte Pfad eingeben");
+      toast.error(t("toastPathRequired"));
       return;
     }
 
@@ -705,7 +708,7 @@ export default function ScadaImportTab() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Scannen");
+        throw new Error(err.error || t("toastErrorScanning"));
       }
 
       const data = await res.json();
@@ -713,15 +716,15 @@ export default function ScadaImportTab() {
       setScanResults(Array.isArray(results) ? results : []);
 
       if (Array.isArray(results) && results.length === 0) {
-        toast.info("Keine SCADA-Daten im angegebenen Pfad gefunden");
+        toast.info(t("toastNoScadaDataFound"));
       } else {
         toast.success(
-          `${Array.isArray(results) ? results.length : 0} Standort(e) gefunden`
+          t("toastLocationsFound", { count: Array.isArray(results) ? results.length : 0 })
         );
       }
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Scannen"
+        err instanceof Error ? err.message : t("toastErrorScanning")
       );
     } finally {
       setIsScanning(false);
@@ -749,7 +752,7 @@ export default function ScadaImportTab() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Laden der Vorschau");
+        throw new Error(err.error || t("toastErrorLoadingPreview"));
       }
 
       const data = await res.json();
@@ -757,7 +760,7 @@ export default function ScadaImportTab() {
       setPreview(result);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Laden der Vorschau"
+        err instanceof Error ? err.message : t("toastErrorLoadingPreview")
       );
       setSelectedLocation(null);
     } finally {
@@ -772,7 +775,7 @@ export default function ScadaImportTab() {
     if (parkTurbines[parkId]) return; // already cached
     try {
       const res = await fetch(`/api/turbines?parkId=${parkId}&limit=100`);
-      if (!res.ok) throw new Error("Fehler beim Laden der Turbinen");
+      if (!res.ok) throw new Error(tc("errorLoadingTurbines"));
       const data = await res.json();
       const turbines = data.data ?? [];
       setParkTurbines((prev) => ({
@@ -780,9 +783,9 @@ export default function ScadaImportTab() {
         [parkId]: Array.isArray(turbines) ? turbines : [],
       }));
     } catch {
-      toast.error("Fehler beim Laden der Turbinen");
+      toast.error(tc("errorLoadingTurbines"));
     }
-  }, [parkTurbines]);
+  }, [parkTurbines, tc]);
 
   // ---------------------------------------------------------------------------
   // Handle park selection for a plant mapping
@@ -827,7 +830,7 @@ export default function ScadaImportTab() {
     );
 
     if (unmappedWithSelections.length === 0) {
-      toast.error("Bitte mindestens eine Zuordnung auswaehlen");
+      toast.error(t("toastSelectAtLeastOne"));
       return false;
     }
 
@@ -849,18 +852,18 @@ export default function ScadaImportTab() {
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(
-            err.error || `Fehler beim Speichern der Zuordnung für Anlage ${plant.plantNo}`
+            err.error || t("toastSaveMappingErrorPlant", { plantNo: plant.plantNo })
           );
         }
       }
 
       toast.success(
-        `${unmappedWithSelections.length} Zuordnung(en) erfolgreich gespeichert`
+        t("toastMappingsSavedCount", { count: unmappedWithSelections.length })
       );
       return true;
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Speichern der Zuordnungen"
+        err instanceof Error ? err.message : t("toastSaveMappingsError")
       );
       return false;
     } finally {
@@ -960,15 +963,15 @@ export default function ScadaImportTab() {
     }
 
     if (startedCount === 0) {
-      toast.error("Kein Import konnte gestartet werden");
+      toast.error(t("toastNoImportStarted"));
       setIsImporting(false);
     } else if (failedToStart > 0) {
       toast.warning(
-        `${startedCount} von ${types.length} Dateitypen gestartet (${failedToStart} fehlgeschlagen)`
+        t("toastPartialImportStarted", { started: startedCount, total: types.length, failed: failedToStart })
       );
     } else {
       toast.success(
-        `Import gestartet: ${startedCount} Dateityp(en) für ${locationCode}`
+        t("toastImportStarted", { count: startedCount, locationCode })
       );
     }
   };
@@ -1020,11 +1023,9 @@ export default function ScadaImportTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileUp className="h-5 w-5" />
-            SCADA-Daten importieren
+            {t("cardTitle")}
           </CardTitle>
-          <CardDescription>
-            Ordner oder Dateien vom PC auswählen, oder einen Server-Pfad scannen — Duplikate werden automatisch übersprungen
-          </CardDescription>
+          <CardDescription>{t("cardDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Drop Zone */}
@@ -1043,9 +1044,7 @@ export default function ScadaImportTab() {
             onDrop={handleDrop}
           >
             <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm font-medium mb-3">
-              SCADA-Dateien oder Ordner hier ablegen
-            </p>
+            <p className="text-sm font-medium mb-3">{t("dropzoneText")}</p>
             <div className="flex items-center justify-center gap-2 mb-2">
               <Button
                 variant="outline"
@@ -1053,7 +1052,7 @@ export default function ScadaImportTab() {
                 onClick={() => folderInputRef.current?.click()}
               >
                 <FolderOpen className="h-4 w-4 mr-1" />
-                Ordner auswählen
+                {t("selectFolder")}
               </Button>
               <Button
                 variant="outline"
@@ -1061,11 +1060,11 @@ export default function ScadaImportTab() {
                 onClick={() => uploadInputRef.current?.click()}
               >
                 <FileUp className="h-4 w-4 mr-1" />
-                Dateien auswählen
+                {t("selectFiles")}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Unterstützt: {SCADA_EXTENSIONS.join(", ")}
+              {t("supportedFormats", { formats: SCADA_EXTENSIONS.join(", ") })}
             </p>
             <input
               ref={uploadInputRef}
@@ -1095,14 +1094,14 @@ export default function ScadaImportTab() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium">
-                  {uploadEntries.length} Datei(en) — {uploadGroups.length} Standort(e)
+                  {t("filesAndLocations", { files: uploadEntries.length, locations: uploadGroups.length })}
                 </h4>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setUploadEntries([])}
                 >
-                  Alle entfernen
+                  {t("removeAll")}
                 </Button>
               </div>
 
@@ -1110,10 +1109,10 @@ export default function ScadaImportTab() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Standort</TableHead>
-                      <TableHead className="text-right">Dateien</TableHead>
-                      <TableHead>Dateitypen</TableHead>
-                      <TableHead className="w-[180px]">Aktion</TableHead>
+                      <TableHead>{t("colLocation")}</TableHead>
+                      <TableHead className="text-right">{t("colFiles")}</TableHead>
+                      <TableHead>{t("colFileTypes")}</TableHead>
+                      <TableHead className="w-[180px]">{t("colAction")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1170,7 +1169,7 @@ export default function ScadaImportTab() {
                               ) : (
                                 <Play className="h-4 w-4 mr-1" />
                               )}
-                              Import
+                              {t("import")}
                             </Button>
                             <Button
                               size="sm"
@@ -1203,17 +1202,14 @@ export default function ScadaImportTab() {
                   ) : (
                     <Upload className="h-4 w-4 mr-2" />
                   )}
-                  Alle Standorte importieren
+                  {t("importAllLocations")}
                 </Button>
               )}
 
               {/* Info badge */}
               <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-3">
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>
-                  Der Standort-Code wird automatisch aus dem Ordnernamen erkannt (z.B. Loc_5842).
-                  Duplikate werden beim Import automatisch übersprungen.
-                </span>
+                <span>{t("infoLocCode")}</span>
               </div>
             </div>
           )}
@@ -1222,7 +1218,7 @@ export default function ScadaImportTab() {
           {isLoadingUploadPreview && (
             <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-sm">Prüfe Zuordnungen...</span>
+              <span className="text-sm">{t("checkingMappings")}</span>
             </div>
           )}
 
@@ -1238,12 +1234,13 @@ export default function ScadaImportTab() {
             <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  Anlagen zuordnen — {mappingDialogGroup?.locCode}
+                  {t("mapPlantsTitle", { locCode: mappingDialogGroup?.locCode ?? "" })}
                 </DialogTitle>
                 <DialogDescription>
-                  {uploadPreviewPlants.filter((p) => !p.mapping).length} von{" "}
-                  {uploadPreviewPlants.length} Anlagen sind noch nicht zugeordnet.
-                  Bitte ordnen Sie die Anlagen einem Park und einer Turbine zu.
+                  {t("mapPlantsDescription", {
+                    unmapped: uploadPreviewPlants.filter((p) => !p.mapping).length,
+                    total: uploadPreviewPlants.length,
+                  })}
                 </DialogDescription>
               </DialogHeader>
 
@@ -1251,12 +1248,12 @@ export default function ScadaImportTab() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[60px]">Nr.</TableHead>
-                      <TableHead>Wind (m/s)</TableHead>
-                      <TableHead>Leistung (W)</TableHead>
-                      <TableHead>Park</TableHead>
-                      <TableHead>WKA / Turbine</TableHead>
-                      <TableHead className="w-[60px]">Status</TableHead>
+                      <TableHead className="w-[60px]">{t("colNo")}</TableHead>
+                      <TableHead>{t("colWind")}</TableHead>
+                      <TableHead>{t("colPower")}</TableHead>
+                      <TableHead>{t("colPark")}</TableHead>
+                      <TableHead>{t("colTurbine")}</TableHead>
+                      <TableHead className="w-[60px]">{t("colStatus")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1290,11 +1287,11 @@ export default function ScadaImportTab() {
                                 onValueChange={(val) => handleUploadPlantParkChange(plant.plantNo, val)}
                               >
                                 <SelectTrigger className="w-[160px] h-8">
-                                  <SelectValue placeholder="Park..." />
+                                  <SelectValue placeholder={t("parkPlaceholder")} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {parksLoading ? (
-                                    <SelectItem value="__loading" disabled>Laden...</SelectItem>
+                                    <SelectItem value="__loading" disabled>{tc("loading")}</SelectItem>
                                   ) : (
                                     parks?.map((park) => (
                                       <SelectItem key={park.id} value={park.id}>
@@ -1319,22 +1316,22 @@ export default function ScadaImportTab() {
                               >
                                 <SelectTrigger className="w-[160px] h-8">
                                   <SelectValue
-                                    placeholder={!currentMapping?.parkId ? "Zuerst Park" : "WKA..."}
+                                    placeholder={!currentMapping?.parkId ? t("firstPark") : t("wkaPlaceholder")}
                                   />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {currentMapping?.parkId && uploadParkTurbines[currentMapping.parkId] ? (
                                     uploadParkTurbines[currentMapping.parkId].length > 0 ? (
-                                      uploadParkTurbines[currentMapping.parkId].map((t) => (
-                                        <SelectItem key={t.id} value={t.id}>
-                                          {t.designation}
+                                      uploadParkTurbines[currentMapping.parkId].map((tu) => (
+                                        <SelectItem key={tu.id} value={tu.id}>
+                                          {tu.designation}
                                         </SelectItem>
                                       ))
                                     ) : (
-                                      <SelectItem value="__empty" disabled>Keine Turbinen</SelectItem>
+                                      <SelectItem value="__empty" disabled>{t("noTurbines")}</SelectItem>
                                     )
                                   ) : currentMapping?.parkId ? (
-                                    <SelectItem value="__loading" disabled>Laden...</SelectItem>
+                                    <SelectItem value="__loading" disabled>{tc("loading")}</SelectItem>
                                   ) : null}
                                 </SelectContent>
                               </Select>
@@ -1369,7 +1366,7 @@ export default function ScadaImportTab() {
                   }}
                   disabled={isSavingUploadMappings}
                 >
-                  Abbrechen
+                  {tc("cancel")}
                 </Button>
                 <Button
                   onClick={handleSaveUploadMappingsAndImport}
@@ -1380,7 +1377,7 @@ export default function ScadaImportTab() {
                   ) : (
                     <Play className="h-4 w-4 mr-2" />
                   )}
-                  Speichern & Importieren
+                  {t("saveAndImport")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -1390,13 +1387,13 @@ export default function ScadaImportTab() {
           <details className="group">
             <summary className="flex items-center gap-2 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors py-2">
               <FolderSearch className="h-4 w-4" />
-              Server-Ordner scannen (für Dateien auf dem Server)
+              {t("scanServerFolderToggle")}
               <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
             </summary>
             <div className="pt-3 space-y-4">
               <div className="flex gap-3 items-end">
                 <div className="flex-1 space-y-2">
-                  <Label htmlFor="scanPath">Server-Pfad</Label>
+                  <Label htmlFor="scanPath">{t("serverPath")}</Label>
                   <div className="flex gap-2">
                     <Input
                       id="scanPath"
@@ -1409,8 +1406,8 @@ export default function ScadaImportTab() {
                       variant="outline"
                       size="icon"
                       onClick={handleOpenBrowser}
-                      aria-label="Ordner durchsuchen"
-                      title="Server-Ordner durchsuchen"
+                      aria-label={t("browseFolder")}
+                      title={t("browseServerFolder")}
                     >
                       <FolderOpen className="h-4 w-4" />
                     </Button>
@@ -1422,7 +1419,7 @@ export default function ScadaImportTab() {
                   ) : (
                     <FolderSearch className="h-4 w-4 mr-2" />
                   )}
-                  Scannen
+                  {t("scan")}
                 </Button>
               </div>
 
@@ -1430,20 +1427,18 @@ export default function ScadaImportTab() {
               <Dialog open={browseOpen} onOpenChange={setBrowseOpen}>
                 <DialogContent className="max-w-lg">
                   <DialogHeader>
-                    <DialogTitle>Server-Ordner auswählen</DialogTitle>
-                    <DialogDescription>
-                      Navigieren Sie zum SCADA-Datenverzeichnis auf dem Server
-                    </DialogDescription>
+                    <DialogTitle>{t("selectServerFolder")}</DialogTitle>
+                    <DialogDescription>{t("navigateToScadaDir")}</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-3">
                     <div className="text-sm font-mono bg-muted px-3 py-2 rounded-md break-all">
-                      {browsePath || "Laufwerke"}
+                      {browsePath || t("drives")}
                     </div>
                     <div className="border rounded-md max-h-[320px] overflow-y-auto">
                       {isBrowsing ? (
                         <div className="flex items-center justify-center py-8 text-muted-foreground">
                           <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                          Laden...
+                          {tc("loading")}
                         </div>
                       ) : (
                         <div className="divide-y">
@@ -1458,7 +1453,7 @@ export default function ScadaImportTab() {
                           )}
                           {browseDirectories.length === 0 && !browseParentPath && (
                             <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                              Keine Verzeichnisse gefunden
+                              {t("noDirectories")}
                             </div>
                           )}
                           {browseDirectories.map((dir) => (
@@ -1478,11 +1473,11 @@ export default function ScadaImportTab() {
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setBrowseOpen(false)}>
-                      Abbrechen
+                      {tc("cancel")}
                     </Button>
                     <Button onClick={handleBrowseSelect} disabled={!browsePath}>
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Auswählen
+                      {t("select")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -1492,17 +1487,17 @@ export default function ScadaImportTab() {
               {scanResults.length > 0 && !selectedLocation && (
                 <div>
                   <h4 className="text-sm font-medium mb-3">
-                    Gefundene Standorte ({scanResults.length})
+                    {t("foundLocations", { count: scanResults.length })}
                   </h4>
                   <div className="rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Standort</TableHead>
-                          <TableHead className="text-right">Dateien</TableHead>
-                          <TableHead>Dateitypen</TableHead>
-                          <TableHead>Zeitraum</TableHead>
-                          <TableHead className="w-[200px]">Aktion</TableHead>
+                          <TableHead>{t("colLocation")}</TableHead>
+                          <TableHead className="text-right">{t("colFiles")}</TableHead>
+                          <TableHead>{t("colFileTypes")}</TableHead>
+                          <TableHead>{t("colDateRange")}</TableHead>
+                          <TableHead className="w-[200px]">{t("colAction")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1533,7 +1528,7 @@ export default function ScadaImportTab() {
                                   disabled={isImporting}
                                 >
                                   <Eye className="h-4 w-4 mr-2" />
-                                  Vorschau
+                                  {t("preview")}
                                 </Button>
                                 <Button
                                   size="sm"
@@ -1545,7 +1540,7 @@ export default function ScadaImportTab() {
                                   ) : (
                                     <Play className="h-4 w-4 mr-2" />
                                   )}
-                                  Import
+                                  {t("import")}
                                 </Button>
                               </div>
                             </TableCell>
@@ -1567,7 +1562,7 @@ export default function ScadaImportTab() {
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin" />
-              <p>Vorschau wird geladen...</p>
+              <p>{t("loadingPreview")}</p>
             </div>
           </CardContent>
         </Card>
@@ -1580,19 +1575,21 @@ export default function ScadaImportTab() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  Standort: {preview.locationCode}
+                  {t("locationLabel", { locationCode: preview.locationCode })}
                 </CardTitle>
                 <CardDescription>
-                  {preview.fileCount.toLocaleString("de-DE")} Dateien |{" "}
-                  {preview.fileTypes.join(", ")} |{" "}
-                  {preview.dateRange
-                    ? `${preview.dateRange.from} - ${preview.dateRange.to}`
-                    : "Kein Zeitraum"}
+                  {t("previewMeta", {
+                    fileCount: preview.fileCount.toLocaleString("de-DE"),
+                    fileTypes: preview.fileTypes.join(", "),
+                    dateRange: preview.dateRange
+                      ? `${preview.dateRange.from} - ${preview.dateRange.to}`
+                      : t("noDateRange"),
+                  })}
                 </CardDescription>
               </div>
               <Button variant="outline" size="sm" onClick={handleBackToScan}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Zurück
+                {t("back")}
               </Button>
             </div>
           </CardHeader>
@@ -1603,7 +1600,7 @@ export default function ScadaImportTab() {
                 <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-md p-4">
                   <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
                   <p className="text-sm font-medium">
-                    Alle {preview.totalPlants} Anlagen sind zugeordnet. Import kann gestartet werden.
+                    {t("allMappedMessage", { total: preview.totalPlants })}
                   </p>
                 </div>
 
@@ -1611,12 +1608,12 @@ export default function ScadaImportTab() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nr.</TableHead>
-                        <TableHead>Wind (m/s)</TableHead>
-                        <TableHead>Leistung (W)</TableHead>
-                        <TableHead>Park</TableHead>
-                        <TableHead>WKA</TableHead>
-                        <TableHead className="w-[80px]">Status</TableHead>
+                        <TableHead>{t("colNo")}</TableHead>
+                        <TableHead>{t("colWind")}</TableHead>
+                        <TableHead>{t("colPower")}</TableHead>
+                        <TableHead>{t("colPark")}</TableHead>
+                        <TableHead>{t("wkaShort")}</TableHead>
+                        <TableHead className="w-[80px]">{t("colStatus")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1656,7 +1653,7 @@ export default function ScadaImportTab() {
                     ) : (
                       <Play className="h-4 w-4 mr-2" />
                     )}
-                    Import starten
+                    {t("startImport")}
                   </Button>
                 </div>
               </div>
@@ -1667,8 +1664,7 @@ export default function ScadaImportTab() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-4">
                   <p className="text-sm font-medium">
-                    {preview.unmappedCount} von {preview.totalPlants} Anlagen
-                    sind noch nicht zugeordnet
+                    {t("unmappedMessage", { unmapped: preview.unmappedCount, total: preview.totalPlants })}
                   </p>
                 </div>
 
@@ -1676,12 +1672,12 @@ export default function ScadaImportTab() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nr.</TableHead>
-                        <TableHead>Wind (m/s)</TableHead>
-                        <TableHead>Leistung (W)</TableHead>
-                        <TableHead>Park</TableHead>
-                        <TableHead>WKA / Turbine</TableHead>
-                        <TableHead className="w-[80px]">Status</TableHead>
+                        <TableHead>{t("colNo")}</TableHead>
+                        <TableHead>{t("colWind")}</TableHead>
+                        <TableHead>{t("colPower")}</TableHead>
+                        <TableHead>{t("colPark")}</TableHead>
+                        <TableHead>{t("colTurbine")}</TableHead>
+                        <TableHead className="w-[80px]">{t("colStatus")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1717,12 +1713,12 @@ export default function ScadaImportTab() {
                                   }
                                 >
                                   <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Park auswaehlen..." />
+                                    <SelectValue placeholder={t("parkPlaceholderLong")} />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {parksLoading ? (
                                       <SelectItem value="__loading" disabled>
-                                        Laden...
+                                        {tc("loading")}
                                       </SelectItem>
                                     ) : (
                                       parks?.map((park) => (
@@ -1752,8 +1748,8 @@ export default function ScadaImportTab() {
                                     <SelectValue
                                       placeholder={
                                         !currentMapping?.parkId
-                                          ? "Zuerst Park"
-                                          : "WKA auswaehlen..."
+                                          ? t("firstPark")
+                                          : t("wkaPlaceholderLong")
                                       }
                                     />
                                   </SelectTrigger>
@@ -1761,19 +1757,19 @@ export default function ScadaImportTab() {
                                     {currentMapping?.parkId &&
                                     parkTurbines[currentMapping.parkId] ? (
                                       parkTurbines[currentMapping.parkId].length > 0 ? (
-                                        parkTurbines[currentMapping.parkId].map((t) => (
-                                          <SelectItem key={t.id} value={t.id}>
-                                            {t.designation}
+                                        parkTurbines[currentMapping.parkId].map((tu) => (
+                                          <SelectItem key={tu.id} value={tu.id}>
+                                            {tu.designation}
                                           </SelectItem>
                                         ))
                                       ) : (
                                         <SelectItem value="__empty" disabled>
-                                          Keine Turbinen gefunden
+                                          {t("noTurbinesFound")}
                                         </SelectItem>
                                       )
                                     ) : currentMapping?.parkId ? (
                                       <SelectItem value="__loading" disabled>
-                                        Laden...
+                                        {tc("loading")}
                                       </SelectItem>
                                     ) : null}
                                   </SelectContent>
@@ -1809,7 +1805,7 @@ export default function ScadaImportTab() {
                     ) : (
                       <Save className="h-4 w-4 mr-2" />
                     )}
-                    Nur Zuordnungen speichern
+                    {t("saveMappingsOnly")}
                   </Button>
                   <Button
                     onClick={handleSaveMappingsAndImport}
@@ -1820,7 +1816,7 @@ export default function ScadaImportTab() {
                     ) : (
                       <Play className="h-4 w-4 mr-2" />
                     )}
-                    Zuordnungen speichern und importieren
+                    {t("saveMappingsAndImport")}
                   </Button>
                 </div>
               </div>

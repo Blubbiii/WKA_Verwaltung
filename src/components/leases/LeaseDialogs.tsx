@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { format, differenceInDays } from "date-fns";
 import { de } from "date-fns/locale";
 import { formatCurrency } from "@/lib/format";
@@ -209,6 +210,7 @@ function LeaseDetailDialog({
   onOpenChange,
   onSuccess,
 }: LeaseDetailDialogProps) {
+  const tToast = useTranslations("leases.toasts");
   const [leaseDetail, setLeaseDetail] = useState<LeaseDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
@@ -241,11 +243,11 @@ function LeaseDetailDialog({
     setLoading(true);
     try {
       const response = await fetch(`/api/leases/${lease.id}`);
-      if (!response.ok) throw new Error("Fehler beim Laden");
+      if (!response.ok) throw new Error(tToast("loadDetailsError"));
       const data = await response.json();
       setLeaseDetail(data);
     } catch {
-      toast.error("Fehler beim Laden der Details");
+      toast.error(tToast("loadDetailsError"));
     } finally {
       setLoading(false);
     }
@@ -309,10 +311,10 @@ function LeaseDetailDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Erstellen");
+        throw new Error(error.error || tToast("saveError"));
       }
 
-      toast.success("Teilflaeche hinzugefügt");
+      toast.success(tToast("partialAreaAdded"));
       setIsAddingArea(false);
       setEditingPlotId(null);
       setNewArea({
@@ -328,7 +330,7 @@ function LeaseDetailDialog({
       onSuccess?.();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen"
+        error instanceof Error ? error.message : tToast("saveError")
       );
     } finally {
       setSavingArea(false);
@@ -342,15 +344,15 @@ function LeaseDetailDialog({
       });
 
       if (!response.ok) {
-        throw new Error("Fehler beim Löschen");
+        throw new Error(tToast("partialAreaDeleteError"));
       }
 
-      toast.success("Teilflaeche gelöscht");
+      toast.success(tToast("partialAreaDeleted"));
       setDeleteAreaId(null);
       fetchLeaseDetail();
       onSuccess?.();
     } catch {
-      toast.error("Fehler beim Löschen der Teilflaeche");
+      toast.error(tToast("partialAreaDeleteError"));
     }
   }
 

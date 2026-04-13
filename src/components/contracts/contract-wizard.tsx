@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format, addYears } from "date-fns";
@@ -186,6 +187,7 @@ const STATUS_OPTIONS = [
 
 export function ContractWizard() {
   const router = useRouter();
+  const tToast = useTranslations("contracts.toasts");
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -253,13 +255,13 @@ export function ContractWizard() {
           setPersons(data.data || []);
         }
       } catch {
-        toast.error("Fehler beim Laden der Stammdaten");
+        toast.error(tToast("loadStammdatenError"));
       } finally {
         setLoadingData(false);
       }
     }
     fetchData();
-  }, []);
+  }, [tToast]);
 
   // Helper: get display name for a person
   const getPersonLabel = useCallback((person: Person): string => {
@@ -292,7 +294,7 @@ export function ContractWizard() {
   // Helper: set end date relative to start date
   function setEndDateYears(years: number) {
     if (!formData.startDate) {
-      toast.error("Bitte zuerst Vertragsbeginn waehlen");
+      toast.error(tToast("startDateFirst"));
       return;
     }
     const newEndDate = addYears(formData.startDate, years);
@@ -303,11 +305,11 @@ export function ContractWizard() {
   function addReminder() {
     const days = parseInt(newReminderInput);
     if (isNaN(days) || days <= 0) {
-      toast.error("Bitte eine gültige Anzahl Tage eingeben");
+      toast.error(tToast("validDaysRequired"));
       return;
     }
     if (formData.reminderDays.includes(days)) {
-      toast.error("Diese Erinnerung existiert bereits");
+      toast.error(tToast("reminderExists"));
       return;
     }
     setFormData((prev) => ({
@@ -385,15 +387,15 @@ export function ContractWizard() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Erstellen des Vertrags");
+        throw new Error(error.error || tToast("contractCreated"));
       }
 
       const contract = await response.json();
-      toast.success("Vertrag erfolgreich erstellt");
+      toast.success(tToast("contractCreated"));
       router.push(`/contracts/${contract.id}`);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen"
+        error instanceof Error ? error.message : tToast("loadStammdatenError")
       );
     } finally {
       setLoading(false);

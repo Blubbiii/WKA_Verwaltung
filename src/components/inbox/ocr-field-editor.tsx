@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,6 +53,7 @@ const OCR_STATUS_LABEL: Record<string, string> = {
 };
 
 export function OcrFieldEditor({ invoiceId, fields, onSaved, disabled }: OcrFieldEditorProps) {
+  const tToast = useTranslations("inbox.toasts");
   const [form, setForm] = useState<InvoiceFields>({ ...fields });
   const [saving, setSaving] = useState(false);
 
@@ -92,7 +94,7 @@ export function OcrFieldEditor({ invoiceId, fields, onSaved, disabled }: OcrFiel
         throw new Error(err.error ?? "Fehler");
       }
 
-      toast.success("Felder gespeichert");
+      toast.success(tToast("fieldsSaved"));
       onSaved?.(form);
     } catch (err) {
       toast.error(String(err instanceof Error ? err.message : err));

@@ -23,6 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Loader2,
   Save,
@@ -88,6 +89,7 @@ function SettingsSkeleton() {
 }
 
 export function GeneralSettings() {
+  const t = useTranslations("admin.generalSettingsUI");
   const { settings, isLoading, isError, mutate } = useGeneralSettings();
   const [formData, setFormData] = useState<GeneralSettingsType | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -116,44 +118,44 @@ export function GeneralSettings() {
 
     // Validation
     if (!formData.applicationName.trim()) {
-      toast.error("Anwendungsname darf nicht leer sein");
+      toast.error(t("appNameRequired"));
       return;
     }
 
     if (formData.sessionTimeoutMinutes < 5 || formData.sessionTimeoutMinutes > 1440) {
-      toast.error("Session-Timeout muss zwischen 5 und 1440 Minuten liegen");
+      toast.error(t("sessionTimeoutInvalid"));
       return;
     }
 
     if (formData.maxLoginAttempts < 1 || formData.maxLoginAttempts > 10) {
-      toast.error("Maximale Login-Versuche muss zwischen 1 und 10 liegen");
+      toast.error(t("loginAttemptsInvalid"));
       return;
     }
 
     if (formData.minPasswordLength < 6 || formData.minPasswordLength > 32) {
-      toast.error("Passwort-Mindestlaenge muss zwischen 6 und 32 Zeichen liegen");
+      toast.error(t("passwordLengthInvalid"));
       return;
     }
 
     if (formData.emailNotificationsEnabled && !formData.adminEmail) {
-      toast.error("Admin-E-Mail ist erforderlich wenn Benachrichtigungen aktiviert sind");
+      toast.error(t("adminEmailRequired"));
       return;
     }
 
     if (formData.adminEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.adminEmail)) {
-      toast.error("Bitte geben Sie eine gültige E-Mail-Adresse ein");
+      toast.error(t("emailInvalid"));
       return;
     }
 
     try {
       setIsSaving(true);
       await updateGeneralSettings(formData);
-      toast.success("Einstellungen gespeichert");
+      toast.success(t("saved"));
       setHasChanges(false);
       mutate();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("saveError")
       );
     } finally {
       setIsSaving(false);

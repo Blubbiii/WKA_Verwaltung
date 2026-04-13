@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Mail,
   Send,
@@ -94,6 +95,7 @@ function EmailServerSkeleton() {
 // =============================================================================
 
 export function TenantEmailServerSettings() {
+  const t = useTranslations("admin.tenantEmailServerUI");
   // Data state
   const [data, setData] = useState<TenantEmailConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -149,12 +151,12 @@ export function TenantEmailServerSettings() {
   // Save configuration
   async function handleSave() {
     if (!smtpHost || !smtpUser || !fromAddress) {
-      toast.error("Bitte fuellen Sie alle Pflichtfelder aus");
+      toast.error(t("fillRequired"));
       return;
     }
 
     if (!data?.config.hasPassword && !smtpPassword) {
-      toast.error("Bitte geben Sie ein SMTP-Passwort ein");
+      toast.error(t("passwordRequired"));
       return;
     }
 
@@ -183,15 +185,15 @@ export function TenantEmailServerSettings() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
-      toast.success("E-Mail-Server-Konfiguration gespeichert");
+      toast.success(t("saved"));
       setSmtpPassword(""); // Clear password field
       await loadConfig(); // Reload to get fresh state
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("saveError")
       );
     } finally {
       setSaving(false);
@@ -208,10 +210,10 @@ export function TenantEmailServerSettings() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Entfernen");
+        throw new Error(error.error || t("removeError"));
       }
 
-      toast.success("Eigene Konfiguration entfernt - System-Standard wird verwendet");
+      toast.success(t("removed"));
       setUseCustom(false);
       setSmtpHost("");
       setSmtpPort("587");
@@ -223,7 +225,7 @@ export function TenantEmailServerSettings() {
       await loadConfig();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Entfernen"
+        error instanceof Error ? error.message : t("removeError")
       );
     } finally {
       setDeleting(false);
@@ -239,7 +241,7 @@ export function TenantEmailServerSettings() {
       const body: Record<string, string> = { type };
       if (type === "email") {
         if (!testEmail) {
-          toast.error("Bitte geben Sie eine Test-E-Mail-Adresse ein");
+          toast.error(t("testEmailRequired"));
           setTesting(false);
           return;
         }
@@ -262,14 +264,14 @@ export function TenantEmailServerSettings() {
       if (result.success) {
         toast.success(result.message);
       } else {
-        toast.error(result.error || "Test fehlgeschlagen");
+        toast.error(result.error || t("testFailed"));
       }
     } catch (error) {
       setTestResult({
         success: false,
         message: error instanceof Error ? error.message : "Verbindungsfehler",
       });
-      toast.error("Fehler beim Testen");
+      toast.error(t("testError"));
     } finally {
       setTesting(false);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { FolderPath } from "@/types/document-explorer";
@@ -11,12 +12,13 @@ interface UploadDropzoneProps {
 }
 
 export function UploadDropzone({ activePath, onUploadComplete }: UploadDropzoneProps) {
+  const tToast = useTranslations("documents.toasts");
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = useCallback(async (files: FileList) => {
     if (!activePath) {
-      toast.error("Bitte wählen Sie zuerst einen Ordner aus");
+      toast.error(tToast("selectFolderFirst"));
       return;
     }
 
@@ -40,19 +42,19 @@ export function UploadDropzone({ activePath, onUploadComplete }: UploadDropzoneP
           successCount++;
         } else {
           const err = await res.json().catch(() => ({}));
-          toast.error(`Fehler bei ${file.name}: ${err.error || "Upload fehlgeschlagen"}`);
+          toast.error(tToast("uploadFileFailed", { file: file.name, error: err.error || tToast("uploadFailed") }));
         }
       } catch {
-        toast.error(`Fehler bei ${file.name}`);
+        toast.error(tToast("uploadFileFailedSimple", { file: file.name }));
       }
     }
 
     setUploading(false);
     if (successCount > 0) {
-      toast.success(`${successCount} Datei(en) hochgeladen`);
+      toast.success(tToast("filesUploaded", { count: successCount }));
       onUploadComplete();
     }
-  }, [activePath, onUploadComplete]);
+  }, [activePath, onUploadComplete, tToast]);
 
   if (!activePath || activePath.category === "INVOICE_PDF") return null;
 

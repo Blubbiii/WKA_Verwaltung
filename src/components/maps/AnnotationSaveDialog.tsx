@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,7 @@ export function AnnotationSaveDialog({
   parkId,
   onSaved,
 }: AnnotationSaveDialogProps) {
+  const tToast = useTranslations("maps.toasts");
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("CUSTOM");
   const [description, setDescription] = useState("");
@@ -52,7 +54,7 @@ export function AnnotationSaveDialog({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error("Bitte einen Namen eingeben");
+      toast.error(tToast("nameRequired"));
       return;
     }
     if (!geometry) return;
@@ -72,17 +74,17 @@ export function AnnotationSaveDialog({
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Fehler beim Speichern");
+        throw new Error(err.error || tToast("saveError"));
       }
 
-      toast.success("Zeichnung gespeichert");
+      toast.success(tToast("annotationSaved"));
       setName("");
       setType("CUSTOM");
       setDescription("");
       onOpenChange(false);
       onSaved();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : tToast("saveError"));
     } finally {
       setSaving(false);
     }

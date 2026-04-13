@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
@@ -66,6 +67,7 @@ function validateParticipation(data: ParticipationData): Partial<Record<keyof Pa
 
 export function OnboardingWizard() {
   const router = useRouter();
+  const tToast = useTranslations("funds.toasts");
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<OnboardingFormData>(getInitialFormData());
   const [personalErrors, setPersonalErrors] = useState<Partial<Record<keyof PersonalData, string>>>({});
@@ -221,9 +223,9 @@ export function OnboardingWizard() {
 
       setOnboardingResult(result);
       setShowResultDialog(true);
-      toast.success("Gesellschafter wurde erfolgreich angelegt");
+      toast.success(tToast("shareholderCreated"));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Ein unbekannter Fehler ist aufgetreten";
+      const message = err instanceof Error ? err.message : tToast("saveError");
       setSubmitError(message);
       toast.error(message);
     } finally {
@@ -237,9 +239,9 @@ export function OnboardingWizard() {
       await navigator.clipboard.writeText(onboardingResult.temporaryPassword);
       setCopiedPassword(true);
       setTimeout(() => setCopiedPassword(false), 2000);
-      toast.success("Passwort in die Zwischenablage kopiert");
+      toast.success(tToast("passwordCopied"));
     } catch {
-      toast.error("Kopieren fehlgeschlagen");
+      toast.error(tToast("copyFailed"));
     }
   }
 

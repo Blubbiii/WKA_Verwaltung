@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Progress } from "@/components/ui/progress";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { useFileUpload } from "@/hooks/useFileUpload";
@@ -113,6 +114,7 @@ const defaultFormData: LetterheadFormData = {
 };
 
 export function LetterheadSettings() {
+  const t = useTranslations("admin.letterheadSettingsUI");
   const { letterheads, isLoading, isError, mutate } = useLetterheads();
   const [showDialog, setShowDialog] = useState(false);
   const [editingLetterhead, setEditingLetterhead] = useState<Letterhead | null>(null);
@@ -193,12 +195,12 @@ export function LetterheadSettings() {
     // Validierung
     const allowedTypes = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Nur PNG, JPEG, SVG oder WebP erlaubt");
+      toast.error(t("invalidImageType"));
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("Datei darf maximal 2MB gross sein");
+      toast.error(t("imageTooLarge"));
       return;
     }
 
@@ -209,9 +211,9 @@ export function LetterheadSettings() {
 
       const result = await uploadWithProgress("/api/upload", formDataUpload) as { url: string };
       setFormData({ ...formData, [field]: result.url });
-      toast.success("Bild hochgeladen");
+      toast.success(t("imageUploaded"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Upload fehlgeschlagen");
+      toast.error(error instanceof Error ? error.message : t("uploadFailed"));
     }
   }
 
@@ -220,12 +222,12 @@ export function LetterheadSettings() {
     if (!file) return;
 
     if (file.type !== "application/pdf") {
-      toast.error("Nur PDF-Dateien erlaubt");
+      toast.error(t("invalidPdfType"));
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("PDF darf maximal 5MB gross sein");
+      toast.error(t("pdfTooLarge"));
       return;
     }
 
@@ -240,15 +242,15 @@ export function LetterheadSettings() {
         backgroundPdfKey: result.key,
         backgroundPdfName: file.name,
       });
-      toast.success("Briefpapier-PDF hochgeladen");
+      toast.success(t("pdfUploaded"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Upload fehlgeschlagen");
+      toast.error(error instanceof Error ? error.message : t("uploadFailed"));
     }
   }
 
   async function handleSave() {
     if (!formData.name.trim()) {
-      toast.error("Name erforderlich");
+      toast.error(t("nameRequired"));
       return;
     }
 
@@ -281,16 +283,16 @@ export function LetterheadSettings() {
 
       if (editingLetterhead) {
         await updateLetterhead(editingLetterhead.id, payload);
-        toast.success("Briefpapier aktualisiert");
+        toast.success(t("letterheadUpdated"));
       } else {
         await createLetterhead(payload);
-        toast.success("Briefpapier erstellt");
+        toast.success(t("letterheadCreated"));
       }
 
       setShowDialog(false);
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -306,10 +308,10 @@ export function LetterheadSettings() {
 
     try {
       await deleteLetterhead(letterheadToDelete);
-      toast.success("Briefpapier gelöscht");
+      toast.success(t("letterheadDeleted"));
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
+      toast.error(error instanceof Error ? error.message : t("deleteError"));
     } finally {
       setDeleteDialogOpen(false);
       setLetterheadToDelete(null);
@@ -319,10 +321,10 @@ export function LetterheadSettings() {
   async function handleSetDefault(id: string) {
     try {
       await updateLetterhead(id, { isDefault: true });
-      toast.success("Standard-Briefpapier gesetzt");
+      toast.success(t("defaultSet"));
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler");
+      toast.error(error instanceof Error ? error.message : t("genericError"));
     }
   }
 
@@ -338,7 +340,7 @@ export function LetterheadSettings() {
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Laden der Vorschau");
+      toast.error(error instanceof Error ? error.message : t("previewError"));
     } finally {
       setIsLoadingPreview(false);
     }

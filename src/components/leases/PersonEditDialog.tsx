@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Loader2, User, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,7 @@ export function PersonEditDialog({
   person,
   onSaved,
 }: PersonEditDialogProps) {
+  const tToast = useTranslations("leases.toasts");
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<PersonData>(person);
 
@@ -78,11 +80,11 @@ export function PersonEditDialog({
   async function handleSave() {
     // Basic validation
     if (form.personType === "natural" && !form.lastName?.trim()) {
-      toast.error("Nachname ist erforderlich");
+      toast.error(tToast("lastNameRequired"));
       return;
     }
     if (form.personType === "legal" && !form.companyName?.trim()) {
-      toast.error("Firmenname ist erforderlich");
+      toast.error(tToast("companyNameRequired"));
       return;
     }
 
@@ -111,16 +113,16 @@ export function PersonEditDialog({
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Fehler" }));
-        throw new Error(err.error || "Speichern fehlgeschlagen");
+        throw new Error(err.error || tToast("saveError"));
       }
 
       const updated = await res.json();
-      toast.success("Person gespeichert");
+      toast.success(tToast("personSaved"));
       onSaved(updated);
       onOpenChange(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Speichern fehlgeschlagen"
+        error instanceof Error ? error.message : tToast("saveError")
       );
     } finally {
       setSaving(false);

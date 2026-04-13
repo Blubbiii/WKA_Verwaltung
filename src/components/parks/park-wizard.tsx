@@ -49,6 +49,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 // Types
@@ -92,6 +93,7 @@ const LEASE_SETTLEMENT_MODE_LABELS: Record<LeaseSettlementMode, { label: string;
 
 export function ParkWizard() {
   const router = useRouter();
+  const t = useTranslations("parks.wizard");
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showCompensation, setShowCompensation] = useState(false);
@@ -148,7 +150,7 @@ export function ParkWizard() {
   // Submit handler
   async function handleSubmit() {
     if (!name.trim()) {
-      toast.error("Bitte geben Sie einen Namen ein");
+      toast.error(t("validation.nameRequired"));
       return;
     }
 
@@ -200,15 +202,15 @@ export function ParkWizard() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Fehler beim Erstellen des Parks");
+        throw new Error(errorData.error || t("toast.createError"));
       }
 
       const park = await res.json();
-      toast.success("Windpark erfolgreich erstellt");
+      toast.success(t("toast.created"));
       router.push(`/parks/${park.id}`);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen"
+        error instanceof Error ? error.message : t("toast.createError")
       );
     } finally {
       setLoading(false);

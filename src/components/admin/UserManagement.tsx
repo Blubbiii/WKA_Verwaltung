@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -202,6 +203,8 @@ const actionLabels: Record<string, string> = {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function UserManagement() {
+  const tr = useTranslations("admin.userManagementUI");
+
   // Data state
   const [users, setUsers] = useState<User[]>([]);
   const [tenants, setTenants] = useState<TenantOption[]>([]);
@@ -265,11 +268,11 @@ export function UserManagement() {
       const json = await res.json();
       setUsers(json.data ?? []);
     } catch {
-      toast.error("Benutzer konnten nicht geladen werden");
+      toast.error(tr("loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [tr]);
 
   const fetchTenants = useCallback(async () => {
     try {
@@ -277,9 +280,9 @@ export function UserManagement() {
       if (!res.ok) throw new Error("Fehler beim Laden");
       const json = await res.json();
       setTenants(
-        (json.data ?? []).map((t: { id: string; name: string }) => ({
-          id: t.id,
-          name: t.name,
+        (json.data ?? []).map((tn: { id: string; name: string }) => ({
+          id: tn.id,
+          name: tn.name,
         }))
       );
     } catch {
@@ -314,7 +317,7 @@ export function UserManagement() {
         setAvailableRoles(json.data ?? json ?? []);
       }
     } catch {
-      toast.error("Fehler beim Laden der Rollen");
+      toast.error(tr("loadRolesError"));
     } finally {
       setLoadingRoles(false);
     }
@@ -349,7 +352,7 @@ export function UserManagement() {
         setOriginalRoleScopes(scopes);
       }
     } catch {
-      toast.error("Fehler beim Laden der Benutzer-Rollen");
+      toast.error(tr("loadUserRolesError"));
     } finally {
       setLoadingRoles(false);
     }
@@ -532,7 +535,7 @@ export function UserManagement() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || tr("saveError"));
       }
 
       const savedUser = await response.json();
@@ -572,11 +575,11 @@ export function UserManagement() {
         }
       }
 
-      toast.success(selectedUser ? "Benutzer aktualisiert" : "Benutzer erstellt");
+      toast.success(selectedUser ? tr("updated") : tr("created"));
       setDialogOpen(false);
       fetchUsers();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : tr("saveError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -621,14 +624,19 @@ export function UserManagement() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || "Impersonation fehlgeschlagen");
+        throw new Error(error.error || tr("impersonateError"));
       }
 
-      toast.success(`Angemeldet als ${user.firstName} ${user.lastName}`);
+      toast.success(
+        tr("impersonating", {
+          firstName: user.firstName ?? "",
+          lastName: user.lastName ?? "",
+        })
+      );
       window.location.href = "/dashboard";
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Impersonation fehlgeschlagen"
+        err instanceof Error ? err.message : tr("impersonateError")
       );
     }
   };
@@ -676,7 +684,7 @@ export function UserManagement() {
 
       setUserRoleAssignments(detailedAssignments);
     } catch {
-      toast.error("Fehler beim Laden der Berechtigungen");
+      toast.error(tr("loadPermissionsError"));
     } finally {
       setLoadingPermissions(false);
     }

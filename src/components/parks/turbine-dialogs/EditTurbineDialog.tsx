@@ -42,6 +42,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { Turbine } from "./types";
 import { deviceTypeLabels, parseDateInput, formatDateInput } from "./types";
 
@@ -58,6 +59,7 @@ export function EditTurbineDialog({
   setIsOpen,
   onSuccess,
 }: EditTurbineDialogProps) {
+  const t = useTranslations("parks.turbineDialog");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [funds, setFunds] = useState<{ id: string; name: string; legalForm: string | null; fundCategory?: { id: string; name: string; code: string; color: string | null } | null }[]>([]);
   const [formData, setFormData] = useState({
@@ -157,7 +159,7 @@ export function EditTurbineDialog({
   }, [turbine]);
 
   async function handleCreateFund() {
-    if (!newFundName.trim()) { toast.error("Name ist erforderlich"); return; }
+    if (!newFundName.trim()) { toast.error(t("validation.nameRequired")); return; }
     try {
       setIsCreatingFund(true);
       const response = await fetch("/api/funds", {
@@ -165,7 +167,7 @@ export function EditTurbineDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newFundName, legalForm: newFundLegalForm || undefined, fundCategoryId: newFundCategoryId || undefined }),
       });
-      if (!response.ok) { const error = await response.json(); throw new Error(error.error || "Fehler beim Erstellen"); }
+      if (!response.ok) { const error = await response.json(); throw new Error(error.error || t("toast.fundCreateError")); }
       const created = await response.json();
       setFunds((prev) => [...prev, { id: created.id, name: created.name, legalForm: created.legalForm, fundCategory: created.fundCategory }]);
       if (fundCreationTarget === "operator") {
@@ -174,14 +176,14 @@ export function EditTurbineDialog({
         setFormData({ ...formData, netzgesellschaftFundId: created.id });
       }
       setShowNewFundDialog(false); setNewFundName(""); setNewFundLegalForm(""); setNewFundCategoryId("");
-      toast.success("Gesellschaft wurde erstellt");
+      toast.success(t("toast.fundCreated"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Erstellen");
+      toast.error(err instanceof Error ? err.message : t("toast.fundCreateError"));
     } finally { setIsCreatingFund(false); }
   }
 
   async function handleSubmit() {
-    if (!turbine || !formData.designation.trim()) { toast.error("Bezeichnung ist erforderlich"); return; }
+    if (!turbine || !formData.designation.trim()) { toast.error(t("validation.designationRequired")); return; }
     try {
       setIsSubmitting(true);
       const response = await fetch(`/api/turbines/${turbine.id}`, {
@@ -211,12 +213,12 @@ export function EditTurbineDialog({
           poolSharePercentage: formData.poolSharePercentage ? parseFloat(formData.poolSharePercentage) : null,
         }),
       });
-      if (!response.ok) { const error = await response.json(); throw new Error(error.error || "Fehler beim Speichern"); }
-      toast.success("Anlage wurde aktualisiert");
+      if (!response.ok) { const error = await response.json(); throw new Error(error.error || t("toast.saveError")); }
+      toast.success(t("toast.turbineUpdated"));
       setIsOpen(false);
       onSuccess();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : t("toast.saveError"));
     } finally { setIsSubmitting(false); }
   }
 

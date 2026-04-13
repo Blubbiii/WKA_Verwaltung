@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -242,6 +243,7 @@ export function ParkMap({
   height = "400px",
   mapPageUrl,
 }: ParkMapProps) {
+  const tToast = useTranslations("maps.toasts");
   // Layer visibility state
   const [showTurbines, setShowTurbines] = useState(true);
   const [showPlots, setShowPlots] = useState(true);
@@ -295,18 +297,18 @@ export function ParkMap({
         `/api/parks/${parkId}/annotations/${deletingAnnotationId}`,
         { method: "DELETE" }
       );
-      if (!res.ok) throw new Error("Fehler beim Löschen");
+      if (!res.ok) throw new Error(tToast("annotationDeleteError"));
       const { toast } = await import("sonner");
-      toast.success("Zeichnung gelöscht");
+      toast.success(tToast("annotationDeleted"));
       setDeletingAnnotationId(null);
       onAnnotationSaved?.();
     } catch {
       const { toast } = await import("sonner");
-      toast.error("Fehler beim Löschen der Zeichnung");
+      toast.error(tToast("annotationDeleteError"));
     } finally {
       setDeleteLoading(false);
     }
-  }, [deletingAnnotationId, parkId, onAnnotationSaved]);
+  }, [deletingAnnotationId, parkId, onAnnotationSaved, tToast]);
 
   // Create icons once
   const parkIcon = useMemo(() => createParkIcon(), []);

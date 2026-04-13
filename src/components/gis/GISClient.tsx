@@ -1,6 +1,7 @@
 "use client";
 
 import { useReducer, useEffect, useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { Loader2, AlertTriangle, MapPinOff, RefreshCw, Undo2, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -270,6 +271,7 @@ function isValidGISData(d: unknown): d is GISData {
 }
 
 export function GISClient() {
+  const tToast = useTranslations("gis.toasts");
   const [state, dispatch] = useReducer(gisReducer, INITIAL_STATE);
   const { data, loading, error, parkFilter, tileLayer, layers, settings,
     selectedFeature, drawMode, pendingGeometry, showCreatePanel, isMeasuring,
@@ -290,19 +292,19 @@ export function GISClient() {
         if (isValidGISData(d)) {
           dispatch({ type: "SET_DATA", payload: d });
         } else {
-          const errMsg = (d as { error?: string })?.error ?? "Ungültiges Antwortformat";
+          const errMsg = (d as { error?: string })?.error ?? tToast("invalidGeoJson");
           dispatch({ type: "SET_ERROR", payload: errMsg });
           toast.error(errMsg);
         }
       })
       .catch((err: Error) => {
         dispatch({ type: "SET_ERROR", payload: err.message });
-        toast.error("Netzwerkfehler beim Laden der GIS-Daten");
+        toast.error(tToast("networkError"));
       })
       .finally(() => {
         dispatch({ type: "SET_LOADING", payload: false });
       });
-  }, []);
+  }, [tToast]);
 
   useEffect(() => {
     fetchData(parkFilter);
@@ -311,7 +313,7 @@ export function GISClient() {
   // Listen for center-copied events from map (Fix 3: copy coordinates)
   useEffect(() => {
     const handleCopied = (e: Event) => {
-      toast.success(`Koordinaten kopiert: ${(e as CustomEvent).detail}`);
+      toast.success(tToast("coordsCopied", { coords: (e as CustomEvent).detail }));
     };
     window.addEventListener("gis:center-copied", handleCopied);
     return () => window.removeEventListener("gis:center-copied", handleCopied);

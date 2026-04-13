@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { formatCurrency } from "@/lib/format";
@@ -219,6 +220,7 @@ function AddShareholderDialog({
   setIsOpen,
   onSuccess,
 }: AddShareholderDialogProps) {
+  const tToast = useTranslations("funds.toasts");
   const [step, setStep] = useState<"select-person" | "enter-details">("select-person");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -332,15 +334,15 @@ function AddShareholderDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Erstellen");
+        throw new Error(error.error || tToast("personCreateError"));
       }
 
       const newPerson = await response.json();
       setSelectedPerson(newPerson);
       setStep("enter-details");
-      toast.success("Person wurde erstellt");
+      toast.success(tToast("personCreated"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Erstellen der Person");
+      toast.error(err instanceof Error ? err.message : tToast("personCreateError"));
     } finally {
       setIsCreatingPerson(false);
     }
@@ -367,14 +369,14 @@ function AddShareholderDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || tToast("saveError"));
       }
 
-      toast.success("Gesellschafter wurde hinzugefügt");
+      toast.success(tToast("shareholderAdded"));
       setIsOpen(false);
       onSuccess();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : tToast("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -690,6 +692,7 @@ function EditShareholderDialog({
   setIsOpen,
   onSuccess,
 }: EditShareholderDialogProps) {
+  const tToast = useTranslations("funds.toasts");
   const [isSaving, setIsSaving] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
@@ -752,14 +755,14 @@ function EditShareholderDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || tToast("saveError"));
       }
 
-      toast.success("Änderungen wurden gespeichert");
+      toast.success(tToast("changesSaved"));
       setIsOpen(false);
       onSuccess();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Speichern");
+      toast.error(err instanceof Error ? err.message : tToast("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -780,15 +783,15 @@ function EditShareholderDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Archivieren");
+        throw new Error(error.error || tToast("archiveError"));
       }
 
-      toast.success("Gesellschafter wurde archiviert");
+      toast.success(tToast("shareholderArchived"));
       setArchiveDialogOpen(false);
       setIsOpen(false);
       onSuccess();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Archivieren");
+      toast.error(err instanceof Error ? err.message : tToast("archiveError"));
     } finally {
       setIsArchiving(false);
     }

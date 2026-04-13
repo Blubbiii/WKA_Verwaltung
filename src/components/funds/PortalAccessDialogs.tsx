@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Loader2,
   Shield,
@@ -199,6 +200,7 @@ export function RemovePortalAccessDialog({
   shareholder,
   onRefresh,
 }: RemovePortalAccessDialogProps) {
+  const tToast = useTranslations("funds.toasts");
   const [isRemoving, setIsRemoving] = useState(false);
 
   async function handleRemove() {
@@ -215,17 +217,17 @@ export function RemovePortalAccessDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Entfernen des Portal-Zugangs");
+        throw new Error(error.error || tToast("portalAccessRemoved"));
       }
 
-      toast.success("Portal-Zugang entfernt");
+      toast.success(tToast("portalAccessRemoved"));
       onOpenChange(false);
       onRefresh();
     } catch (err) {
       toast.error(
         err instanceof Error
           ? err.message
-          : "Fehler beim Entfernen des Portal-Zugangs"
+          : tToast("portalAccessRemoved")
       );
     } finally {
       setIsRemoving(false);
@@ -295,6 +297,7 @@ export function PasswordDisplayDialog({
   onOpenChange,
   credentials,
 }: PasswordDisplayDialogProps) {
+  const tToast = useTranslations("funds.toasts");
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPassword, setCopiedPassword] = useState(false);
 
@@ -308,9 +311,9 @@ export function PasswordDisplayDialog({
         setCopiedPassword(true);
         setTimeout(() => setCopiedPassword(false), 2000);
       }
-      toast.success("In die Zwischenablage kopiert");
+      toast.success(tToast("copiedToClipboard"));
     } catch {
-      toast.error("Kopieren fehlgeschlagen");
+      toast.error(tToast("copyFailed"));
     }
   }
 

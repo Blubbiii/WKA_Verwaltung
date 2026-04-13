@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import {
   ArrowLeft,
   ArrowRight,
@@ -85,13 +86,7 @@ interface InvitedUser {
 // Constants
 // =============================================================================
 
-const STEPS = [
-  { id: "company", title: "Firmendaten", description: "Kontaktdaten" },
-  { id: "park", title: "Windpark", description: "Erster Park" },
-  { id: "fund", title: "Gesellschaft", description: "Erste Gesellschaft" },
-  { id: "users", title: "Benutzer", description: "Team einladen" },
-  { id: "done", title: "Fertig", description: "Zusammenfassung" },
-];
+// STEPS now built dynamically inside component using translations
 
 // =============================================================================
 // Component
@@ -100,6 +95,15 @@ const STEPS = [
 export function TenantOnboardingWizard() {
   const _router = useRouter();
   const { data: session } = useSession();
+  const t = useTranslations("admin.tenantOnboarding");
+
+  const STEPS = [
+    { id: "company", title: t("stepCompanyTitle"), description: t("stepCompanyDesc") },
+    { id: "park", title: t("stepParkTitle"), description: t("stepParkDesc") },
+    { id: "fund", title: t("stepFundTitle"), description: t("stepFundDesc") },
+    { id: "users", title: t("stepUsersTitle"), description: t("stepUsersDesc") },
+    { id: "done", title: t("stepDoneTitle"), description: t("stepDoneDesc") },
+  ];
 
   // Step state
   const [currentStep, setCurrentStep] = useState(0);
@@ -157,7 +161,7 @@ export function TenantOnboardingWizard() {
     try {
       const res = await fetch("/api/admin/onboarding-status");
       if (!res.ok) {
-        throw new Error("Fehler beim Laden des Einrichtungsstatus");
+        throw new Error(t("loadStatusError"));
       }
       const data: OnboardingStatus = await res.json();
       setOnboardingStatus(data);
@@ -182,12 +186,12 @@ export function TenantOnboardingWizard() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Laden des Einrichtungsstatus"
+          : t("loadStatusError")
       );
     } finally {
       setInitialLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadOnboardingStatus();
@@ -221,7 +225,7 @@ export function TenantOnboardingWizard() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Fehler beim Speichern der Firmendaten");
+        throw new Error(data.error || t("companySaveError"));
       }
 
       // Also update bank data and tax info via tenant-settings if needed
@@ -231,13 +235,13 @@ export function TenantOnboardingWizard() {
       // The onboarding-status API will still track company as done.
 
       setCompanyUpdated(true);
-      toast.success("Firmendaten gespeichert");
+      toast.success(t("companySaved"));
       setCurrentStep(1);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Speichern der Firmendaten"
+          : t("companySaveError")
       );
     } finally {
       setLoading(false);
@@ -247,7 +251,7 @@ export function TenantOnboardingWizard() {
   // Step 2: Create park
   async function handleCreatePark() {
     if (!park.name.trim()) {
-      toast.error("Bitte geben Sie einen Parknamen ein");
+      toast.error(t("parkNameRequired"));
       return;
     }
 
@@ -272,19 +276,19 @@ export function TenantOnboardingWizard() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Fehler beim Erstellen des Parks");
+        throw new Error(data.error || t("parkCreateError"));
       }
 
       const data = await res.json();
       setCreatedParkId(data.id);
       setCreatedParkName(park.name.trim());
-      toast.success(`Park "${park.name.trim()}" erstellt`);
+      toast.success(t("parkCreated", { name: park.name.trim() }));
       setCurrentStep(2);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Erstellen des Parks"
+          : t("parkCreateError")
       );
     } finally {
       setLoading(false);
@@ -294,7 +298,7 @@ export function TenantOnboardingWizard() {
   // Step 3: Create fund
   async function handleCreateFund() {
     if (!fund.name.trim()) {
-      toast.error("Bitte geben Sie einen Gesellschaftsnamen ein");
+      toast.error(t("fundNameRequired"));
       return;
     }
 
@@ -315,14 +319,14 @@ export function TenantOnboardingWizard() {
       if (!res.ok) {
         const data = await res.json();
         throw new Error(
-          data.error || "Fehler beim Erstellen der Gesellschaft"
+          data.error || t("fundCreateError")
         );
       }
 
       const data = await res.json();
       setCreatedFundId(data.id);
       setCreatedFundName(fund.name.trim());
-      toast.success(`Gesellschaft "${fund.name.trim()}" erstellt`);
+      toast.success(t("fundCreated", { name: fund.name.trim() }));
 
       // Automatically link fund to park if both were created in this wizard
       if (createdParkId && data.id) {
@@ -335,7 +339,7 @@ export function TenantOnboardingWizard() {
 
           if (linkRes.ok) {
             toast.success(
-              `Gesellschaft mit Park "${createdParkName}" verknuepft`
+              t("fundLinked", { park: createdParkName ?? "" })
             );
           }
         } catch {
@@ -348,7 +352,7 @@ export function TenantOnboardingWizard() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Erstellen der Gesellschaft"
+          : t("fundCreateError")
       );
     } finally {
       setLoading(false);
@@ -358,7 +362,7 @@ export function TenantOnboardingWizard() {
   // Step 4: Invite users
   function addUserForm() {
     if (userForms.length >= 5) {
-      toast.error("Maximal 5 Benutzer gleichzeitig einladen");
+      toast.error(t("maxUsers"));
       return;
     }
 
@@ -404,9 +408,7 @@ export function TenantOnboardingWizard() {
     );
 
     if (validUsers.length === 0) {
-      toast.error(
-        "Bitte fuellen Sie mindestens einen Benutzer vollstaendig aus"
-      );
+      toast.error(t("userFormIncomplete"));
       return;
     }
 
@@ -434,7 +436,10 @@ export function TenantOnboardingWizard() {
         } else {
           const data = await res.json();
           toast.error(
-            `${user.email}: ${data.error || "Fehler beim Erstellen"}`
+            t("userCreateError", {
+              email: user.email,
+              error: data.error || t("userCreateErrorGeneric"),
+            })
           );
         }
       }
@@ -442,7 +447,7 @@ export function TenantOnboardingWizard() {
       if (successfulEmails.length > 0) {
         setInvitedUsers(successfulEmails);
         toast.success(
-          `${successfulEmails.length} Benutzer erfolgreich erstellt`
+          t("usersCreated", { count: successfulEmails.length })
         );
       }
 
@@ -451,7 +456,7 @@ export function TenantOnboardingWizard() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Erstellen der Benutzer"
+          : t("usersCreateError")
       );
     } finally {
       setLoading(false);
@@ -469,30 +474,27 @@ export function TenantOnboardingWizard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Firmendaten
+              {t("companyCardTitle")}
             </CardTitle>
-            <CardDescription>
-              Hinterlegen Sie die Kontakt- und Bankdaten Ihres Unternehmens.
-              Diese werden z.B. auf Rechnungen verwendet.
-            </CardDescription>
+            <CardDescription>{t("companyCardDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Firmenname - from session, read-only */}
             <div className="space-y-2">
-              <Label>Firmenname</Label>
+              <Label>{t("companyName")}</Label>
               <Input
                 value={session?.user?.tenantName || ""}
                 disabled
                 className="bg-muted"
               />
               <p className="text-xs text-muted-foreground">
-                Der Firmenname kann in der Mandantenverwaltung geändert werden.
+                {t("companyNameHint")}
               </p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="contactEmail">Kontakt-E-Mail</Label>
+                <Label htmlFor="contactEmail">{t("contactEmail")}</Label>
                 <Input
                   id="contactEmail"
                   type="email"
@@ -504,7 +506,7 @@ export function TenantOnboardingWizard() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contactPhone">Telefon</Label>
+                <Label htmlFor="contactPhone">{t("phone")}</Label>
                 <Input
                   id="contactPhone"
                   value={company.contactPhone}
@@ -517,10 +519,10 @@ export function TenantOnboardingWizard() {
             </div>
 
             <div className="space-y-2">
-              <Label>Adresse</Label>
+              <Label>{t("address")}</Label>
               <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-8 space-y-2">
-                  <Label htmlFor="onboarding-street">Strasse</Label>
+                  <Label htmlFor="onboarding-street">{t("street")}</Label>
                   <Input
                     id="onboarding-street"
                     value={company.street}
@@ -531,7 +533,7 @@ export function TenantOnboardingWizard() {
                   />
                 </div>
                 <div className="col-span-4 space-y-2">
-                  <Label htmlFor="onboarding-houseNumber">Hausnummer</Label>
+                  <Label htmlFor="onboarding-houseNumber">{t("houseNumber")}</Label>
                   <Input
                     id="onboarding-houseNumber"
                     value={company.houseNumber}
@@ -542,7 +544,7 @@ export function TenantOnboardingWizard() {
                   />
                 </div>
                 <div className="col-span-4 space-y-2">
-                  <Label htmlFor="onboarding-postalCode">PLZ</Label>
+                  <Label htmlFor="onboarding-postalCode">{t("postalCode")}</Label>
                   <Input
                     id="onboarding-postalCode"
                     value={company.postalCode}
@@ -553,7 +555,7 @@ export function TenantOnboardingWizard() {
                   />
                 </div>
                 <div className="col-span-8 space-y-2">
-                  <Label htmlFor="onboarding-city">Ort</Label>
+                  <Label htmlFor="onboarding-city">{t("city")}</Label>
                   <Input
                     id="onboarding-city"
                     value={company.city}
@@ -567,11 +569,11 @@ export function TenantOnboardingWizard() {
             </div>
 
             <Separator />
-            <p className="text-sm font-medium">Steuerliche Angaben</p>
+            <p className="text-sm font-medium">{t("taxInfo")}</p>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="taxId">Steuernummer</Label>
+                <Label htmlFor="taxId">{t("taxId")}</Label>
                 <Input
                   id="taxId"
                   value={company.taxId}
@@ -582,7 +584,7 @@ export function TenantOnboardingWizard() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="vatId">USt-IdNr.</Label>
+                <Label htmlFor="vatId">{t("vatId")}</Label>
                 <Input
                   id="vatId"
                   value={company.vatId}
@@ -595,11 +597,11 @@ export function TenantOnboardingWizard() {
             </div>
 
             <Separator />
-            <p className="text-sm font-medium">Bankverbindung</p>
+            <p className="text-sm font-medium">{t("bankInfo")}</p>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="bankName">Bank</Label>
+                <Label htmlFor="bankName">{t("bank")}</Label>
                 <Input
                   id="bankName"
                   value={company.bankName}
@@ -611,7 +613,7 @@ export function TenantOnboardingWizard() {
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="iban">IBAN</Label>
+                  <Label htmlFor="iban">{t("iban")}</Label>
                   <Input
                     id="iban"
                     value={company.iban}
@@ -622,7 +624,7 @@ export function TenantOnboardingWizard() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bic">BIC</Label>
+                  <Label htmlFor="bic">{t("bic")}</Label>
                   <Input
                     id="bic"
                     value={company.bic}
@@ -647,16 +649,13 @@ export function TenantOnboardingWizard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wind className="h-5 w-5" />
-              Ersten Windpark anlegen
+              {t("parkCardTitle")}
             </CardTitle>
-            <CardDescription>
-              Erstellen Sie Ihren ersten Windpark. Details und Turbinen können
-              Sie später ergaenzen.
-            </CardDescription>
+            <CardDescription>{t("parkCardDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="parkName">Name *</Label>
+              <Label htmlFor="parkName">{t("parkNameLabel")}</Label>
               <Input
                 id="parkName"
                 value={park.name}
@@ -667,7 +666,7 @@ export function TenantOnboardingWizard() {
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="parkShortName">Kurzbezeichnung</Label>
+                <Label htmlFor="parkShortName">{t("parkShortName")}</Label>
                 <Input
                   id="parkShortName"
                   value={park.shortName}
@@ -678,7 +677,7 @@ export function TenantOnboardingWizard() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="parkCity">Stadt / Standort</Label>
+                <Label htmlFor="parkCity">{t("parkCity")}</Label>
                 <Input
                   id="parkCity"
                   value={park.city}
@@ -690,7 +689,7 @@ export function TenantOnboardingWizard() {
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="parkDate">Inbetriebnahme-Datum</Label>
+                <Label htmlFor="parkDate">{t("parkCommissioning")}</Label>
                 <Input
                   id="parkDate"
                   type="date"
@@ -701,7 +700,7 @@ export function TenantOnboardingWizard() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="parkCapacity">Gesamtleistung (kW)</Label>
+                <Label htmlFor="parkCapacity">{t("parkCapacity")}</Label>
                 <Input
                   id="parkCapacity"
                   type="number"
@@ -716,10 +715,7 @@ export function TenantOnboardingWizard() {
 
             <Alert>
               <Info className="h-4 w-4" />
-              <AlertDescription>
-                Sie können später weitere Parks und Detail-Konfiguration in
-                der Parkverwaltung hinzufügen.
-              </AlertDescription>
+              <AlertDescription>{t("parkInfoAlert")}</AlertDescription>
             </Alert>
           </CardContent>
         </Card>
@@ -734,15 +730,13 @@ export function TenantOnboardingWizard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Landmark className="h-5 w-5" />
-              Erste Gesellschaft anlegen
+              {t("fundCardTitle")}
             </CardTitle>
-            <CardDescription>
-              Erstellen Sie die Betreibergesellschaft für Ihren Windpark.
-            </CardDescription>
+            <CardDescription>{t("fundCardDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="fundName">Name *</Label>
+              <Label htmlFor="fundName">{t("fundNameLabel")}</Label>
               <Input
                 id="fundName"
                 value={fund.name}
@@ -752,13 +746,13 @@ export function TenantOnboardingWizard() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="fundLegalForm">Rechtsform</Label>
+              <Label htmlFor="fundLegalForm">{t("fundLegalForm")}</Label>
               <Select
                 value={fund.legalForm}
                 onValueChange={(v) => setFund({ ...fund, legalForm: v })}
               >
                 <SelectTrigger id="fundLegalForm">
-                  <SelectValue placeholder="Rechtsform waehlen..." />
+                  <SelectValue placeholder={t("fundLegalFormPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="GbR">GbR</SelectItem>
@@ -768,7 +762,7 @@ export function TenantOnboardingWizard() {
                   <SelectItem value="OHG">OHG</SelectItem>
                   <SelectItem value="AG">AG</SelectItem>
                   <SelectItem value="eG">eG</SelectItem>
-                  <SelectItem value="Sonstige">Sonstige</SelectItem>
+                  <SelectItem value="Sonstige">{t("fundOther")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -776,15 +770,9 @@ export function TenantOnboardingWizard() {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Die Betreibergesellschaft ist die juristische Person, die den
-                Windpark betreibt und Erlöse erhaelt.
-                {createdParkId && (
-                  <>
-                    {" "}
-                    Die Gesellschaft wird automatisch mit dem Park &quot;
-                    {createdParkName}&quot; verknuepft.
-                  </>
-                )}
+                {t("fundInfoAlert")}
+                {createdParkId &&
+                  t("fundLinkAlert", { park: createdParkName ?? "" })}
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -800,20 +788,16 @@ export function TenantOnboardingWizard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Benutzer einladen
+              {t("usersCardTitle")}
             </CardTitle>
-            <CardDescription>
-              Laden Sie weitere Teammitglieder ein, die mit dem System arbeiten
-              sollen.
-            </CardDescription>
+            <CardDescription>{t("usersCardDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {userForms.length === 0 && (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                 <p className="text-muted-foreground mb-4">
-                  Noch keine Benutzer hinzugefügt. Klicken Sie auf den Button
-                  unten, um einen Benutzer einzuladen.
+                  {t("noUsersHint")}
                 </p>
               </div>
             )}
@@ -825,13 +809,13 @@ export function TenantOnboardingWizard() {
               >
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">
-                    Benutzer {index + 1}
+                    {t("userIndex", { index: index + 1 })}
                   </p>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => removeUserForm(user.tempId)}
-                    aria-label="Benutzer entfernen"
+                    aria-label={t("removeUserAria")}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -839,7 +823,7 @@ export function TenantOnboardingWizard() {
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   <div className="space-y-2">
-                    <Label>E-Mail *</Label>
+                    <Label>{t("userEmail")}</Label>
                     <Input
                       type="email"
                       value={user.email}
@@ -850,7 +834,7 @@ export function TenantOnboardingWizard() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Vorname *</Label>
+                    <Label>{t("userFirstName")}</Label>
                     <Input
                       value={user.firstName}
                       onChange={(e) =>
@@ -860,7 +844,7 @@ export function TenantOnboardingWizard() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Nachname *</Label>
+                    <Label>{t("userLastName")}</Label>
                     <Input
                       value={user.lastName}
                       onChange={(e) =>
@@ -872,7 +856,7 @@ export function TenantOnboardingWizard() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Rolle</Label>
+                  <Label>{t("userRole")}</Label>
                   <Select
                     value={user.role}
                     onValueChange={(v) =>
@@ -883,15 +867,9 @@ export function TenantOnboardingWizard() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ADMIN">
-                        Administrator - Vollzugriff
-                      </SelectItem>
-                      <SelectItem value="MANAGER">
-                        Manager - Lesen und Schreiben
-                      </SelectItem>
-                      <SelectItem value="VIEWER">
-                        Betrachter - Nur Lesen
-                      </SelectItem>
+                      <SelectItem value="ADMIN">{t("roleAdmin")}</SelectItem>
+                      <SelectItem value="MANAGER">{t("roleManager")}</SelectItem>
+                      <SelectItem value="VIEWER">{t("roleViewer")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -906,17 +884,13 @@ export function TenantOnboardingWizard() {
                 className="w-full"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Benutzer hinzufügen
+                {t("addUser")}
               </Button>
             )}
 
             <Alert>
               <Info className="h-4 w-4" />
-              <AlertDescription>
-                Den Benutzern wird ein temporaeres Passwort zugewiesen. Bitte
-                teilen Sie den Benutzern ihre Zugangsdaten manuell mit - sie
-                können das Passwort nach der ersten Anmeldung aendern.
-              </AlertDescription>
+              <AlertDescription>{t("usersInfoAlert")}</AlertDescription>
             </Alert>
           </CardContent>
         </Card>
@@ -935,11 +909,10 @@ export function TenantOnboardingWizard() {
                 <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
               <h2 className="text-2xl font-bold mb-2">
-                Einrichtung abgeschlossen!
+                {t("doneTitle")}
               </h2>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Ihr Mandant ist jetzt einsatzbereit. Hier ist eine
-                Zusammenfassung der Einrichtung.
+                {t("doneDesc")}
               </p>
             </div>
           </CardContent>
@@ -948,28 +921,28 @@ export function TenantOnboardingWizard() {
         {/* Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>Zusammenfassung</CardTitle>
+            <CardTitle>{t("summary")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <SummaryItem
               done={companyUpdated}
-              label="Firmendaten hinterlegt"
-              skipLabel="übersprungen"
+              label={t("summaryCompany")}
+              skipLabel={t("summarySkipped")}
             />
             <SummaryItem
               done={!!createdParkName}
-              label={`Park "${createdParkName}" angelegt`}
-              skipLabel="übersprungen"
+              label={t("summaryPark", { name: createdParkName ?? "" })}
+              skipLabel={t("summarySkipped")}
             />
             <SummaryItem
               done={!!createdFundName}
-              label={`Gesellschaft "${createdFundName}" angelegt`}
-              skipLabel="übersprungen"
+              label={t("summaryFund", { name: createdFundName ?? "" })}
+              skipLabel={t("summarySkipped")}
             />
             <SummaryItem
               done={invitedUsers.length > 0}
-              label={`${invitedUsers.length} Benutzer eingeladen`}
-              skipLabel="übersprungen"
+              label={t("summaryUsers", { count: invitedUsers.length })}
+              skipLabel={t("summarySkipped")}
             />
           </CardContent>
         </Card>
@@ -977,35 +950,33 @@ export function TenantOnboardingWizard() {
         {/* Next Steps */}
         <Card>
           <CardHeader>
-            <CardTitle>Nächste Schritte</CardTitle>
-            <CardDescription>
-              Hier sind ein paar Vorschlaege, wie Sie weitermachen können.
-            </CardDescription>
+            <CardTitle>{t("nextSteps")}</CardTitle>
+            <CardDescription>{t("nextStepsDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
               <NextStepCard
                 icon={Wind}
-                title="Turbinen hinzufügen"
-                description="Fuegen Sie Windkraftanlagen zu Ihrem Park hinzu."
+                title={t("nextStepTurbines")}
+                description={t("nextStepTurbinesDesc")}
                 href="/parks"
               />
               <NextStepCard
                 icon={Zap}
-                title="SCADA-Anbindung"
-                description="Konfigurieren Sie die automatische Datenerfassung."
+                title={t("nextStepScada")}
+                description={t("nextStepScadaDesc")}
                 href="/energy/scada"
               />
               <NextStepCard
                 icon={FileText}
-                title="Pachtverträge anlegen"
-                description="Erfassen Sie die Grundstueckspachtverträge."
+                title={t("nextStepLeases")}
+                description={t("nextStepLeasesDesc")}
                 href="/leases/new"
               />
               <NextStepCard
                 icon={LayoutDashboard}
-                title="Zum Dashboard"
-                description="Zurück zur Übersicht."
+                title={t("nextStepDashboard")}
+                description={t("nextStepDashboardDesc")}
                 href="/dashboard"
               />
             </div>
@@ -1015,7 +986,7 @@ export function TenantOnboardingWizard() {
         {/* Primary CTA */}
         <div className="flex justify-center">
           <Button size="lg" asChild>
-            <Link href="/dashboard">Zum Dashboard</Link>
+            <Link href="/dashboard">{t("toDashboard")}</Link>
           </Button>
         </div>
       </div>
@@ -1089,7 +1060,7 @@ export function TenantOnboardingWizard() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Einrichtungsstatus wird geladen...</p>
+          <p className="text-muted-foreground">{t("loadingStatus")}</p>
         </div>
       </div>
     );
@@ -1126,7 +1097,7 @@ export function TenantOnboardingWizard() {
                 disabled={loading}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Zurück
+                {t("back")}
               </Button>
             )}
             <Button
@@ -1135,7 +1106,7 @@ export function TenantOnboardingWizard() {
               disabled={loading}
             >
               <SkipForward className="mr-2 h-4 w-4" />
-              Überspringen
+              {t("skip")}
             </Button>
           </div>
 
@@ -1146,12 +1117,12 @@ export function TenantOnboardingWizard() {
               <ArrowRight className="mr-2 h-4 w-4" />
             )}
             {loading
-              ? "Wird gespeichert..."
+              ? t("saving")
               : currentStep === 3
                 ? userForms.length > 0
-                  ? "Benutzer einladen"
-                  : "Ohne Benutzer fortfahren"
-                : "Weiter"}
+                  ? t("inviteUsers")
+                  : t("continueWithout")
+                : t("next")}
           </Button>
         </StepActions>
       )}

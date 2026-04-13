@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { formatDateTime } from "@/lib/format";
 import {
   Clock,
@@ -117,6 +118,7 @@ const SCHEDULE_LABELS: Record<string, string> = {
 // ===========================================
 
 export function ScheduledReportsManager() {
+  const tToast = useTranslations("reports.toasts");
   const [reports, setReports] = useState<ScheduledReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [parks, setParks] = useState<Park[]>([]);
@@ -150,11 +152,11 @@ export function ScheduledReportsManager() {
         setReports(data.data || []);
       }
     } catch {
-      toast.error("Fehler beim Laden der geplanten Berichte");
+      toast.error(tToast("loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tToast]);
 
   const fetchFilters = useCallback(async () => {
     try {
@@ -199,7 +201,7 @@ export function ScheduledReportsManager() {
   async function handleCreate() {
     // Validate
     if (!formName.trim()) {
-      toast.error("Bitte geben Sie einen Namen ein");
+      toast.error(tToast("nameRequired"));
       return;
     }
 
@@ -209,14 +211,14 @@ export function ScheduledReportsManager() {
       .filter((e) => e.length > 0);
 
     if (recipientList.length === 0) {
-      toast.error("Bitte geben Sie mindestens eine E-Mail-Adresse ein");
+      toast.error(tToast("emailRequired"));
       return;
     }
 
     // Basic email validation
     const invalidEmails = recipientList.filter((e) => !EMAIL_REGEX.test(e));
     if (invalidEmails.length > 0) {
-      toast.error(`Ungültige E-Mail-Adresse(n): ${invalidEmails.join(", ")}`);
+      toast.error(tToast("invalidEmails", { emails: invalidEmails.join(", ") }));
       return;
     }
 
@@ -242,11 +244,11 @@ export function ScheduledReportsManager() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(
-          errorData?.error || "Fehler beim Erstellen"
+          errorData?.error || tToast("loadError")
         );
       }
 
-      toast.success("Geplanter Bericht wurde erstellt");
+      toast.success(tToast("reportCreated"));
       setDialogOpen(false);
       resetForm();
       fetchReports();
@@ -254,7 +256,7 @@ export function ScheduledReportsManager() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Erstellen des geplanten Berichts"
+          : tToast("loadError")
       );
     } finally {
       setSaving(false);
@@ -275,7 +277,7 @@ export function ScheduledReportsManager() {
       );
 
       if (!response.ok) {
-        throw new Error("Fehler beim Aktualisieren");
+        throw new Error(tToast("statusUpdateError"));
       }
 
       // Update local state
@@ -287,11 +289,11 @@ export function ScheduledReportsManager() {
 
       toast.success(
         report.enabled
-          ? "Geplanter Bericht deaktiviert"
-          : "Geplanter Bericht aktiviert"
+          ? tToast("reportDisabled")
+          : tToast("reportEnabled")
       );
     } catch {
-      toast.error("Fehler beim Aktualisieren des Status");
+      toast.error(tToast("statusUpdateError"));
     } finally {
       setTogglingId(null);
     }
@@ -307,15 +309,15 @@ export function ScheduledReportsManager() {
       );
 
       if (!response.ok) {
-        throw new Error("Fehler beim Löschen");
+        throw new Error(tToast("deleteError"));
       }
 
-      toast.success("Geplanter Bericht wurde gelöscht");
+      toast.success(tToast("reportDeleted"));
       setDeleteDialogOpen(false);
       setDeletingReport(null);
       fetchReports();
     } catch {
-      toast.error("Fehler beim Löschen des geplanten Berichts");
+      toast.error(tToast("deleteError"));
     }
   }
 

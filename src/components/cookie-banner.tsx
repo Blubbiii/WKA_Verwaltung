@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 const COOKIE_CONSENT_KEY = "wpm-cookie-consent";
 
 export function CookieBanner() {
+  const t = useTranslations("cookieBanner");
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -31,26 +33,27 @@ export function CookieBanner() {
         <div className="flex items-start gap-4">
           <div className="flex-1 text-sm text-muted-foreground">
             <p>
-              Diese Website verwendet ausschliesslich{" "}
-              <strong className="text-foreground">technisch notwendige Cookies</strong>{" "}
-              fuer die Anmeldung und Sitzungsverwaltung. Es werden keine
-              Tracking- oder Werbe-Cookies gesetzt.{" "}
+              {t.rich("text", {
+                tech: (chunks) => (
+                  <strong className="text-foreground">{chunks}</strong>
+                ),
+              })}{" "}
               <Link
                 href="/cookies"
                 className="underline underline-offset-2 hover:text-foreground"
               >
-                Mehr erfahren
+                {t("learnMore")}
               </Link>
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Button size="sm" onClick={handleAccept}>
-              Verstanden
+              {t("accept")}
             </Button>
             <button
               onClick={handleAccept}
               className="rounded-md p-1 text-muted-foreground hover:text-foreground"
-              aria-label="Schliessen"
+              aria-label={t("close")}
             >
               <X className="h-4 w-4" />
             </button>

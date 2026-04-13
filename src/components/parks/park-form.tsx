@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 import { ImageIcon, Loader2, Plus, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,7 @@ interface SettlementArticle {
 }
 
 const parkFormSchema = z.object({
-  name: z.string().min(1, "Name ist erforderlich"),
+  name: z.string().min(1, "validation.nameRequired"),
   shortName: z.string().optional(),
   description: z.string().optional(),
   notes: z.string().optional(),
@@ -71,6 +72,7 @@ interface ParkFormProps {
 
 export function ParkForm({ initialData }: ParkFormProps) {
   const router = useRouter();
+  const t = useTranslations("parks.form");
   const [isLoading, setIsLoading] = useState(false);
 
   // Settlement articles state (separate from react-hook-form since it's a complex JSON)
@@ -123,11 +125,11 @@ export function ParkForm({ initialData }: ParkFormProps) {
     // Validate file type and size
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Nur JPG, PNG oder WebP Bilder erlaubt");
+      toast.error(t("validation.imageType"));
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("Maximale Dateigröße: 10 MB");
+      toast.error(t("validation.imageSize"));
       return;
     }
 
@@ -142,9 +144,9 @@ export function ParkForm({ initialData }: ParkFormProps) {
       const { key, url } = await res.json();
       setCoverImageKey(key);
       setCoverImagePreview(url);
-      toast.success("Titelbild hochgeladen");
+      toast.success(t("toast.imageUploaded"));
     } catch {
-      toast.error("Fehler beim Hochladen des Titelbilds");
+      toast.error(t("toast.imageUploadError"));
     } finally {
       setIsUploadingCover(false);
       // Reset the input
@@ -183,16 +185,16 @@ export function ParkForm({ initialData }: ParkFormProps) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("toast.saveError"));
       }
 
       const park = await response.json();
-      toast.success(initialData ? "Park gespeichert" : "Park erstellt");
+      toast.success(initialData ? t("toast.saved") : t("toast.created"));
       router.push(`/parks/${park.id}`);
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
+        error instanceof Error ? error.message : t("toast.saveError")
       );
     } finally {
       setIsLoading(false);

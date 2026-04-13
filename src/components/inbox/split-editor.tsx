@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,7 @@ export function SplitEditor({
   onSaved,
   disabled,
 }: SplitEditorProps) {
+  const tToast = useTranslations("inbox.toasts");
   const [splits, setSplits] = useState<Split[]>(initialSplits);
   const [funds, setFunds] = useState<Fund[]>([]);
   const [saving, setSaving] = useState(false);
@@ -79,7 +81,7 @@ export function SplitEditor({
 
   const save = async () => {
     if (splits.some((s) => !s.fundId)) {
-      toast.error("Bitte für jeden Split einen Fonds auswählen");
+      toast.error(tToast("fundRequired"));
       return;
     }
     setSaving(true);
@@ -101,7 +103,7 @@ export function SplitEditor({
         const err = await res.json();
         throw new Error(err.error ?? "Fehler");
       }
-      toast.success("Splits gespeichert");
+      toast.success(tToast("splitsSaved"));
       onSaved?.();
     } catch (err) {
       toast.error(String(err instanceof Error ? err.message : err));
@@ -119,7 +121,7 @@ export function SplitEditor({
         throw new Error(err.error ?? "Fehler");
       }
       const data = await res.json();
-      toast.success(`${data.created?.length ?? 0} Ausgangsrechnung(en) erzeugt`);
+      toast.success(tToast("outgoingCreated", { count: data.created?.length ?? 0 }));
       onSaved?.();
     } catch (err) {
       toast.error(String(err instanceof Error ? err.message : err));
