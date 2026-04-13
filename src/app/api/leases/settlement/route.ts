@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
         });
 
         const reactivated = await prisma.leaseRevenueSettlement.update({
-          where: { id: existing.id },
+          where: { id: existing.id, tenantId: check.tenantId!},
           data: {
             status: "OPEN",
             advanceInterval: validatedData.advanceInterval ?? existing.advanceInterval,

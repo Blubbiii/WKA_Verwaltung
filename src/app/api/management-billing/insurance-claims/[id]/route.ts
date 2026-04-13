@@ -162,7 +162,7 @@ export async function PUT(
     }
 
     const updated = await prisma.insuranceClaim.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: {
         ...(title !== undefined && { title }),
         ...(claimNumber !== undefined && { claimNumber }),
@@ -232,7 +232,7 @@ export async function DELETE(
     }
 
     await prisma.insuranceClaim.delete({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
     });
 
     logger.info(

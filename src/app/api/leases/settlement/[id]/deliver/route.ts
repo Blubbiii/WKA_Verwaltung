@@ -295,7 +295,7 @@ async function processEmail(
       }
 
       await prisma.invoice.update({
-        where: { id: entry.invoice.id },
+        where: { id: entry.invoice.id, tenantId },
         data: updateData,
       });
 

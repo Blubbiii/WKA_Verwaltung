@@ -189,7 +189,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     const finalStatus = failedCount === 0 ? "SENT" : "PARTIALLY_FAILED";
 
     await prisma.mailing.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: {
         status: finalStatus,
         sentCount,
@@ -211,7 +211,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
 
     try {
       await prisma.mailing.update({
-        where: { id },
+        where: { id, tenantId: check.tenantId!},
         data: { status: "PARTIALLY_FAILED" },
       });
     } catch {

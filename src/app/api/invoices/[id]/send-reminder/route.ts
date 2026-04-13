@@ -189,7 +189,7 @@ export async function POST(
 
     // Update invoice
     await prisma.invoice.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: {
         reminderLevel,
         reminderSentAt: new Date(),

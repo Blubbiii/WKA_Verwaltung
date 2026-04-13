@@ -241,7 +241,7 @@ export async function PATCH(
     }
 
     const invoice = await prisma.invoice.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: {
         ...(validatedData.invoiceDate && {
           invoiceDate: new Date(validatedData.invoiceDate),

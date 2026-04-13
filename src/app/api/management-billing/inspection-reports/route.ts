@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     // If linked to an inspection plan, update lastExecuted
     if (inspectionPlanId) {
       await prisma.inspectionPlan.update({
-        where: { id: inspectionPlanId },
+        where: { id: inspectionPlanId, tenantId: check.tenantId!},
         data: { lastExecuted: new Date(inspectionDate) },
       });
     }

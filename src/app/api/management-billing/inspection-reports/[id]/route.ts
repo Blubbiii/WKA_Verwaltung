@@ -128,7 +128,7 @@ export async function PUT(
     }
 
     const updated = await prisma.inspectionReport.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: {
         ...(inspectionDate !== undefined && { inspectionDate: new Date(inspectionDate) }),
         ...(inspector !== undefined && { inspector }),
@@ -190,7 +190,7 @@ export async function DELETE(
     }
 
     await prisma.inspectionReport.delete({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
     });
 
     logger.info(

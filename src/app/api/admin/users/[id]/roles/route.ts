@@ -202,7 +202,7 @@ export async function DELETE(
     }
 
     await prisma.userRoleAssignment.delete({
-      where: { id: assignment.id },
+      where: { id: assignment.id, tenantId: check.tenantId!},
     });
 
     // Cache invalidieren da sich die Permissions des Users geändert haben

@@ -199,7 +199,7 @@ export async function PATCH(
 
     // Update durchfuehren
     const settlement = await prisma.energySettlement.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
         park: {
@@ -294,7 +294,7 @@ export async function DELETE(
     }
 
     // Hard-delete: Abrechnung und zugehoerige Items löschen (CASCADE)
-    await prisma.energySettlement.delete({ where: { id } });
+    await prisma.energySettlement.delete({ where: { id, tenantId: check.tenantId!} });
 
     // Log deletion for audit trail (deferred: runs after response is sent)
     const settlementDeletionData = {

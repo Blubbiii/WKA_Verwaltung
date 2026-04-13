@@ -141,7 +141,7 @@ export async function POST(
       // Speichere Ergebnis
       if (options.saveResult) {
         await prisma.leaseSettlementPeriod.update({
-          where: { id },
+          where: { id, tenantId: check.tenantId!},
           data: {
             totalMinimumRent: new Decimal(scaledResult.totals.totalMonthlyMinimumRent),
             status: period.status === "OPEN" ? "IN_PROGRESS" : period.status,
@@ -172,7 +172,7 @@ export async function POST(
       // Speichere Ergebnis
       if (options.saveResult) {
         await prisma.leaseSettlementPeriod.update({
-          where: { id },
+          where: { id, tenantId: check.tenantId!},
           data: {
             totalRevenue: new Decimal(finalResult.totalRevenue),
             totalMinimumRent: new Decimal(finalResult.totals.totalMinimumRent),

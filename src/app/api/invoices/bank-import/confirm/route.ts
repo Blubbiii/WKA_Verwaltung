@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
       try {
         await prisma.invoice.update({
-          where: { id: conf.invoiceId },
+          where: { id: conf.invoiceId, tenantId: check.tenantId!},
           data: {
             status: "PAID",
             paidAt: new Date(conf.paidAt),

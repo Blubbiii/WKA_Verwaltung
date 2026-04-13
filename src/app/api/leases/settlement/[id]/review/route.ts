@@ -98,7 +98,7 @@ export async function POST(
     }
 
     const updated = await prisma.leaseRevenueSettlement.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
         park: {

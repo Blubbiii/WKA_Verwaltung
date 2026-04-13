@@ -122,7 +122,7 @@ export async function PUT(
     if (isActive !== undefined) data.isActive = isActive;
 
     const checklist = await prisma.operationalChecklist.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data,
       include: {
         park: { select: { id: true, name: true } },
@@ -183,7 +183,7 @@ export async function DELETE(
       return apiError("OPERATION_NOT_ALLOWED", 409, { message: `Checkliste kann nicht geloescht werden, da ${taskCount} Aufgabe(n) sie referenzieren` });
     }
 
-    await prisma.operationalChecklist.delete({ where: { id } });
+    await prisma.operationalChecklist.delete({ where: { id, tenantId: check.tenantId!} });
 
     logger.info(
       { checklistId: id, tenantId: check.tenantId },

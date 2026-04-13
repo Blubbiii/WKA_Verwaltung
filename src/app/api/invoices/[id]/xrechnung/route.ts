@@ -156,7 +156,7 @@ export async function GET(
     // Cache the generated XML in the database
     try {
       await prisma.invoice.update({
-        where: { id },
+        where: { id, tenantId: check.tenantId!},
         data: {
           einvoiceXml: xml,
           einvoiceFormat: formatTag,

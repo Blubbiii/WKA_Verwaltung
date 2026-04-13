@@ -563,7 +563,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
 
   // Aktualisiere Periode
   await prisma.leaseSettlementPeriod.update({
-    where: { id: period.id },
+    where: { id: period.id, tenantId },
     data: {
       advanceInvoiceDate: invoiceDateValue,
       status: "IN_PROGRESS",
@@ -1057,7 +1057,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
 
   // Aktualisiere Periode
   await prisma.leaseSettlementPeriod.update({
-    where: { id: period.id },
+    where: { id: period.id, tenantId },
     data: {
       settlementDate: invoiceDateValue,
       status: "IN_PROGRESS",

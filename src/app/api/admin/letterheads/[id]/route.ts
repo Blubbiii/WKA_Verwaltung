@@ -118,7 +118,7 @@ export async function PATCH(
     };
 
     const updated = await prisma.letterhead.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
         park: {
@@ -162,7 +162,7 @@ export async function DELETE(
 
     // Soft-delete
     await prisma.letterhead.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: { isActive: false },
     });
 

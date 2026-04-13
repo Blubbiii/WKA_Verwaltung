@@ -31,7 +31,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.notification.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: { isRead: true },
       select: {
         id: true,

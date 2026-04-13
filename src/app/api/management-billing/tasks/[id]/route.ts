@@ -160,7 +160,7 @@ export async function PUT(
     }
 
     const task = await prisma.operationalTask.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data,
       include: {
         park: { select: { id: true, name: true } },
@@ -220,7 +220,7 @@ export async function DELETE(
       return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
-    await prisma.operationalTask.delete({ where: { id } });
+    await prisma.operationalTask.delete({ where: { id, tenantId: check.tenantId!} });
 
     logger.info(
       { taskId: id, tenantId: check.tenantId },

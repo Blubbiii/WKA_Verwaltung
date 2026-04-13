@@ -152,7 +152,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.leaseSettlementPeriod.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
         park: {
@@ -199,7 +199,7 @@ export async function DELETE(
     }
 
     await prisma.leaseSettlementPeriod.delete({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
     });
 
     return NextResponse.json({ message: "Abrechnungsperiode gelöscht" });

@@ -100,7 +100,7 @@ export async function PATCH(
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
     const updated = await prisma.documentTemplate.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
         park: {
@@ -141,7 +141,7 @@ export async function DELETE(
 
     // Soft-delete: nur isActive auf false setzen
     await prisma.documentTemplate.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: { isActive: false },
     });
 

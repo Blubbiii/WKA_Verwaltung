@@ -147,13 +147,13 @@ export async function POST(request: NextRequest) {
     // Update lastActivityAt on linked entity
     const now = new Date();
     if (data.personId) {
-      await prisma.person.update({ where: { id: data.personId }, data: { lastActivityAt: now } });
+      await prisma.person.update({ where: { id: data.personId, tenantId: check.tenantId!}, data: { lastActivityAt: now } });
     }
     if (data.fundId) {
-      await prisma.fund.update({ where: { id: data.fundId }, data: { lastActivityAt: now } });
+      await prisma.fund.update({ where: { id: data.fundId, tenantId: check.tenantId!}, data: { lastActivityAt: now } });
     }
     if (data.leaseId) {
-      await prisma.lease.update({ where: { id: data.leaseId }, data: { lastActivityAt: now } });
+      await prisma.lease.update({ where: { id: data.leaseId, tenantId: check.tenantId!}, data: { lastActivityAt: now } });
     }
 
     logger.info({ tenantId: check.tenantId, activityId: activity.id }, "CRM activity created");

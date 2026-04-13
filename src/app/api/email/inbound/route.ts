@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     if (action === "IGNORE") {
       await prisma.inboundEmail.update({
-        where: { id: inboundEmail.id },
+        where: { id: inboundEmail.id, tenantId },
         data: { status: "IGNORED" },
       });
       return NextResponse.json({ status: "ignored", id: inboundEmail.id });
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
 
     // ── Update status ───────────────────────────────────────────────────
     await prisma.inboundEmail.update({
-      where: { id: inboundEmail.id },
+      where: { id: inboundEmail.id, tenantId },
       data: {
         status: "PROCESSED",
         processingNotes: `${results.length} Anhänge verarbeitet: ${results.map((r) => `${r.filename} → ${r.action}`).join(", ")}`,

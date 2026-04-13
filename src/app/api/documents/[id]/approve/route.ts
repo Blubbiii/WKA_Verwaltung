@@ -147,7 +147,7 @@ export async function POST(
 
     // Update the document
     const updatedDocument = await prisma.document.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
         uploadedBy: {

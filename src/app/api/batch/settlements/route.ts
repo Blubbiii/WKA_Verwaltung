@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
             );
           }
           await prisma.energySettlement.update({
-            where: { id },
+            where: { id, tenantId: check.tenantId!},
             data: { status: "INVOICED", notes: reason || undefined },
           });
           break;
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
             );
           }
           await prisma.energySettlement.update({
-            where: { id },
+            where: { id, tenantId: check.tenantId!},
             data: {
               status: "DRAFT",
               notes: reason ? `Abgelehnt: ${reason}` : "Abgelehnt",

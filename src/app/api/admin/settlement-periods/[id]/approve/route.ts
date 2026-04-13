@@ -58,7 +58,7 @@ export async function POST(
 
     if (action === "approve") {
       const updated = await prisma.leaseSettlementPeriod.update({
-        where: { id },
+        where: { id, tenantId: check.tenantId!},
         data: {
           status: "APPROVED",
           reviewedById: check.userId,
@@ -97,7 +97,7 @@ export async function POST(
       }
 
       const updated = await prisma.leaseSettlementPeriod.update({
-        where: { id },
+        where: { id, tenantId: check.tenantId!},
         data: {
           status: "IN_PROGRESS",
           reviewedById: check.userId,

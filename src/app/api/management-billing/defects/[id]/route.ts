@@ -142,7 +142,7 @@ export async function PUT(
     }
 
     const updated = await prisma.defect.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: {
         ...(title !== undefined && { title }),
         ...(description !== undefined && { description }),
@@ -215,7 +215,7 @@ export async function DELETE(
     }
 
     await prisma.defect.delete({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
     });
 
     logger.info(

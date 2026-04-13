@@ -137,7 +137,7 @@ export async function POST(
 
         // Update invoice: track email send + set status to SENT if currently DRAFT
         await prisma.invoice.update({
-          where: { id: invoice.id },
+          where: { id: invoice.id, tenantId: check.tenantId!},
           data: {
             emailedAt: new Date(),
             emailedById: check.userId,

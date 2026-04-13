@@ -168,7 +168,7 @@ export async function PATCH(request: NextRequest) {
 
     // Update the person record
     const updatedPerson = await prisma.person.update({
-      where: { id: shareholder.personId },
+      where: { id: shareholder.personId, tenantId: session.user.tenantId },
       data: updateData,
     });
 

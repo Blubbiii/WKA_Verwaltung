@@ -99,7 +99,7 @@ export async function POST(
 
     // Rechnung aktualisieren: E-Mail-Tracking + ggf. Status auf SENT setzen
     await prisma.invoice.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: {
         emailedAt: new Date(),
         emailedById: check.userId,

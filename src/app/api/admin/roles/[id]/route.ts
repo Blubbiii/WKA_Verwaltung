@@ -181,7 +181,7 @@ export async function PATCH(
     }
 
     const role = await prisma.role.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
         _count: {
@@ -255,7 +255,7 @@ export async function DELETE(
 
     // Delete role (cascade deletes RolePermissions)
     await prisma.role.delete({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
     });
 
     // Gesamten Cache invalidieren da die Rolle gelöscht wurde

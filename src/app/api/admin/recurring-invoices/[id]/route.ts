@@ -249,7 +249,7 @@ async function patchHandler(
     }
 
     const updated = await prisma.recurringInvoice.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
         createdBy: {
