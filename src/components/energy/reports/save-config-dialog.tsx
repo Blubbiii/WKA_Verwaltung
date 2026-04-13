@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 // =============================================================================
 // Types
@@ -44,6 +45,7 @@ export function SaveConfigDialog({
   onOpenChange,
   config,
 }: SaveConfigDialogProps) {
+  const t = useTranslations("energy.componentToasts");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [portalVisible, setPortalVisible] = useState(false);
@@ -52,7 +54,7 @@ export function SaveConfigDialog({
 
   async function handleSave() {
     if (!name.trim()) {
-      toast.error("Bitte geben Sie einen Namen ein.");
+      toast.error(t("nameRequired"));
       return;
     }
 
@@ -75,14 +77,14 @@ export function SaveConfigDialog({
         throw new Error(data.error || "Fehler beim Speichern");
       }
 
-      toast.success("Konfiguration gespeichert");
+      toast.success(t("configSaved"));
       onOpenChange(false);
       resetForm();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Speichern der Konfiguration"
+          : t("saveError")
       );
     } finally {
       setSaving(false);

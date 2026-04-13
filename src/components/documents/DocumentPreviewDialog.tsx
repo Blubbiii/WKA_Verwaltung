@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useState, useEffect, Suspense } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,7 @@ export function DocumentPreviewDialog({
   onOpenChange,
   document,
 }: DocumentPreviewDialogProps) {
+  const t = useTranslations("documents.preview");
   const [scale, setScale] = useState(1.0);
   const [rotation, setRotation] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -166,7 +168,7 @@ export function DocumentPreviewDialog({
 
   function onDocumentLoadError(_err: Error) {
     setLoading(false);
-    setError("PDF konnte nicht geladen werden");
+    setError(t("pdfLoadError"));
   }
 
   return (
@@ -183,14 +185,14 @@ export function DocumentPreviewDialog({
           <div className="flex items-center justify-between gap-4">
             <DialogTitle className="truncate flex-1">{document.title}</DialogTitle>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={toggleFullscreen} title="Vollbild">
+              <Button variant="ghost" size="icon" onClick={toggleFullscreen} title={t("fullscreen")}>
                 {isFullscreen ? (
                   <Minimize2 className="h-4 w-4" />
                 ) : (
                   <Maximize2 className="h-4 w-4" />
                 )}
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleDownload} title="Herunterladen">
+              <Button variant="ghost" size="icon" onClick={handleDownload} title={t("download")}>
                 <Download className="h-4 w-4" />
               </Button>
             </div>
@@ -202,7 +204,7 @@ export function DocumentPreviewDialog({
           {urlLoading && (
             <div className="flex flex-col items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">URL wird abgerufen...</p>
+              <p className="mt-2 text-sm text-muted-foreground">{t("urlLoading")}</p>
             </div>
           )}
 
@@ -211,7 +213,7 @@ export function DocumentPreviewDialog({
               fallback={
                 <div className="flex flex-col items-center justify-center h-64">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">PDF wird geladen...</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{t("pdfLoading")}</p>
                 </div>
               }
             >
@@ -251,7 +253,7 @@ export function DocumentPreviewDialog({
                 onLoad={() => setLoading(false)}
                 onError={() => {
                   setLoading(false);
-                  setError("Bild konnte nicht geladen werden");
+                  setError(t("imageLoadError"));
                 }}
                 style={{ display: loading ? "none" : "block", width: "auto", height: "auto" }}
                 unoptimized
@@ -262,7 +264,7 @@ export function DocumentPreviewDialog({
                   <p className="text-muted-foreground">{error}</p>
                   <Button variant="outline" className="mt-4" onClick={handleDownload}>
                     <Download className="mr-2 h-4 w-4" />
-                    Bild herunterladen
+                    {t("downloadImage")}
                   </Button>
                 </div>
               )}
@@ -274,23 +276,22 @@ export function DocumentPreviewDialog({
               <div className="flex items-center justify-center gap-2 p-2 border-b bg-background">
                 <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  Office-Dokument: {document.fileName}
+                  {t("officeDocument", { name: document.fileName })}
                 </span>
                 <Button variant="outline" size="sm" onClick={handleDownload}>
                   <Download className="mr-2 h-4 w-4" />
-                  Herunterladen
+                  {t("download")}
                 </Button>
               </div>
               <div className="flex-1 flex flex-col items-center justify-center bg-muted/50 p-8 text-center">
                 <FileSpreadsheet className="h-16 w-16 text-muted-foreground mb-4" />
-                <p className="text-lg font-medium">Office-Vorschau nicht verfügbar</p>
+                <p className="text-lg font-medium">{t("officeUnavailable")}</p>
                 <p className="text-sm text-muted-foreground mt-2 max-w-md">
-                  Office-Dokumente aus dem internen Speicher können nicht direkt
-                  in der Vorschau angezeigt werden. Bitte laden Sie die Datei herunter.
+                  {t("officeUnavailableHint")}
                 </p>
                 <Button variant="default" className="mt-4" onClick={handleDownload}>
                   <Download className="mr-2 h-4 w-4" />
-                  {document.fileName} herunterladen
+                  {t("downloadFile", { name: document.fileName })}
                 </Button>
               </div>
             </div>
@@ -299,7 +300,7 @@ export function DocumentPreviewDialog({
           {!urlLoading && !presignedUrl && error && (
             <div className="flex flex-col items-center justify-center h-64 text-center p-8">
               <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">Fehler beim Laden</p>
+              <p className="text-lg font-medium">{t("loadError")}</p>
               <p className="text-sm text-muted-foreground mt-1">{error}</p>
               <Button
                 variant="default"
@@ -307,7 +308,7 @@ export function DocumentPreviewDialog({
                 onClick={() => window.location.href = `/api/documents/${document.id}/download?redirect=true`}
               >
                 <Download className="mr-2 h-4 w-4" />
-                Trotzdem herunterladen
+                {t("downloadAnyway")}
               </Button>
             </div>
           )}
@@ -315,13 +316,13 @@ export function DocumentPreviewDialog({
           {!urlLoading && presignedUrl && fileType === "unknown" && (
             <div className="flex flex-col items-center justify-center h-64 text-center p-8">
               <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">Vorschau nicht verfügbar</p>
+              <p className="text-lg font-medium">{t("previewUnavailable")}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Für diesen Dateityp ist keine Vorschau moeglich.
+                {t("previewUnavailableHint")}
               </p>
               <Button variant="default" className="mt-4" onClick={handleDownload}>
                 <Download className="mr-2 h-4 w-4" />
-                {document.fileName} herunterladen
+                {t("downloadFile", { name: document.fileName })}
               </Button>
             </div>
           )}

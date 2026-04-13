@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { useState, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 import {
   Upload,
   FileSpreadsheet,
@@ -187,6 +188,7 @@ export function SettlementImportSheet({
   onOpenChange,
   onSuccess,
 }: SettlementImportSheetProps) {
+  const t = useTranslations('energy.componentToasts')
   const [currentStep, setCurrentStep] = useState(0)
 
   // Step 1: Upload
@@ -233,13 +235,13 @@ export function SettlementImportSheet({
     if (parksLoaded) return
     try {
       const res = await fetch('/api/parks?limit=100')
-      if (!res.ok) throw new Error('Fehler beim Laden der Parks')
+      if (!res.ok) throw new Error(t('parksLoadError'))
       const json = await res.json()
       const parkList = (json.data ?? json) as Array<{ id: string; name: string }>
       setParks(parkList)
       setParksLoaded(true)
     } catch {
-      toast.error('Parks konnten nicht geladen werden')
+      toast.error(t('parksLoadError'))
     }
   }, [parksLoaded])
 
@@ -419,7 +421,7 @@ export function SettlementImportSheet({
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Fehler beim Lesen der Datei'
         setParseError(message)
-        toast.error('Fehler beim Lesen der Datei', { description: message })
+        toast.error(t('fileReadError'), { description: message })
       } finally {
         setIsParsing(false)
       }
@@ -551,7 +553,7 @@ export function SettlementImportSheet({
 
       setValidationResults(results)
     } catch {
-      toast.error('Fehler bei der Validierung')
+      toast.error(t('validationError'))
     } finally {
       setIsValidating(false)
     }
@@ -691,13 +693,13 @@ export function SettlementImportSheet({
     setIsImporting(false)
 
     if (imported > 0) {
-      toast.success('Import erfolgreich', {
-        description: `${imported} Abrechnungen importiert`,
+      toast.success(t('importSuccess'), {
+        description: t('importSuccessDesc', { count: imported }),
       })
       onSuccess()
     } else if (errors > 0) {
-      toast.warning('Import mit Fehlern', {
-        description: `${errors} Fehler aufgetreten`,
+      toast.warning(t('importWithErrors'), {
+        description: t('importErrorsDesc', { count: errors }),
       })
     }
   }, [rawData, mapping, parks, validationResults, onSuccess])

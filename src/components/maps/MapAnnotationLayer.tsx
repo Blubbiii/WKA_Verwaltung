@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { GeoJSON } from "react-leaflet";
 import type { FeatureCollection, Geometry } from "geojson";
 import type { PathOptions } from "leaflet";
@@ -72,21 +73,23 @@ const TYPE_STYLES: Record<AnnotationType, PathOptions> = {
   },
 };
 
-const TYPE_LABELS: Record<AnnotationType, string> = {
-  CABLE_ROUTE: "Kabeltrasse",
-  COMPENSATION_AREA: "Ausgleichsfläche",
-  ACCESS_ROAD: "Zuwegung",
-  EXCLUSION_ZONE: "Sperrzone",
-  POOL_AREA: "Poolgebiet",
-  CUSTOM: "Sonstiges",
-};
-
 export function MapAnnotationLayer({
   annotations,
   visible = true,
   onEdit,
   onDelete,
 }: MapAnnotationLayerProps) {
+  const t = useTranslations("maps.annotationLayer");
+
+  const TYPE_LABELS: Record<AnnotationType, string> = {
+    CABLE_ROUTE: t("typeCableRoute"),
+    COMPENSATION_AREA: t("compensationArea"),
+    ACCESS_ROAD: t("typeAccessRoad"),
+    EXCLUSION_ZONE: t("typeExclusionZone"),
+    POOL_AREA: t("typePoolArea"),
+    CUSTOM: t("typeCustom"),
+  };
+
   if (!visible || annotations.length === 0) return null;
 
   const featureCollection: FeatureCollection = {
@@ -125,14 +128,14 @@ export function MapAnnotationLayer({
 
         const popupContent = `
           <div style="min-width: 170px;">
-            <div style="font-weight: 600;">${props?.name || "Annotation"}</div>
+            <div style="font-weight: 600;">${props?.name || t("annotation")}</div>
             <div style="font-size: 12px; color: #6b7280;">${typeLabel}</div>
             ${props?.description ? `<div style="font-size: 12px; margin-top: 4px;">${props.description}</div>` : ""}
-            ${props?.createdByName ? `<div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">von ${props.createdByName}</div>` : ""}
+            ${props?.createdByName ? `<div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">${t("by")} ${props.createdByName}</div>` : ""}
             ${hasActions ? `
             <div style="display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;">
-              ${onEdit ? `<button id="anno-edit-${annotationId}" style="flex:1;padding:3px 8px;font-size:12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:4px;cursor:pointer;">Bearbeiten</button>` : ""}
-              ${onDelete ? `<button id="anno-delete-${annotationId}" style="flex:1;padding:3px 8px;font-size:12px;background:#fee2e2;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;color:#dc2626;">Löschen</button>` : ""}
+              ${onEdit ? `<button id="anno-edit-${annotationId}" style="flex:1;padding:3px 8px;font-size:12px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:4px;cursor:pointer;">${t("edit")}</button>` : ""}
+              ${onDelete ? `<button id="anno-delete-${annotationId}" style="flex:1;padding:3px 8px;font-size:12px;background:#fee2e2;border:1px solid #fca5a5;border-radius:4px;cursor:pointer;color:#dc2626;">${t("delete")}</button>` : ""}
             </div>` : ""}
           </div>
         `;
@@ -161,4 +164,3 @@ export function MapAnnotationLayer({
   );
 }
 
-export { TYPE_LABELS as ANNOTATION_TYPE_LABELS };

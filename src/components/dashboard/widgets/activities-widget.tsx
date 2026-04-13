@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Activity, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ function classifyActivity(action: string, detail: string): ActivityItem["type"] 
 // =============================================================================
 
 export function ActivitiesWidget({ className }: ActivitiesWidgetProps) {
+  const t = useTranslations("dashboard.widgets");
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -150,7 +152,7 @@ export function ActivitiesWidget({ className }: ActivitiesWidgetProps) {
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <Activity className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">Keine Aktivitäten</p>
+          <p className="text-sm">{t("noActivities")}</p>
         </div>
       </div>
     );

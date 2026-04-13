@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FolderClosed, FolderOpen, Calendar, FileText, ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
@@ -151,6 +152,7 @@ function ParkItem({
 }
 
 export function FolderTree({ tree, unassigned, loading, activePath, onSelect }: FolderTreeProps) {
+  const t = useTranslations("documents.explorer");
   if (loading) {
     return (
       <div className="space-y-2 p-2">
@@ -164,7 +166,7 @@ export function FolderTree({ tree, unassigned, loading, activePath, onSelect }: 
   if (tree.length === 0 && !unassigned) {
     return (
       <div className="p-4 text-center text-sm text-muted-foreground">
-        Keine Dokumente vorhanden
+        {t("noDocuments")}
       </div>
     );
   }

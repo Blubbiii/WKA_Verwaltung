@@ -23,12 +23,12 @@ import {
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const ANNOTATION_TYPES = [
-  { value: "CABLE_ROUTE", label: "Kabeltrasse", color: "#eab308" },
-  { value: "COMPENSATION_AREA", label: "Ausgleichsfläche", color: "#22c55e" },
-  { value: "ACCESS_ROAD", label: "Zuwegung", color: "#d97706" },
-  { value: "EXCLUSION_ZONE", label: "Sperrzone", color: "#ef4444" },
-  { value: "CUSTOM", label: "Sonstiges", color: "#6366f1" },
+const ANNOTATION_TYPE_VALUES = [
+  { value: "CABLE_ROUTE", labelKey: "typeCableRoute", color: "#eab308" },
+  { value: "COMPENSATION_AREA", labelKey: "compensationArea", color: "#22c55e" },
+  { value: "ACCESS_ROAD", labelKey: "typeAccessRoad", color: "#d97706" },
+  { value: "EXCLUSION_ZONE", labelKey: "typeExclusionZone", color: "#ef4444" },
+  { value: "CUSTOM", labelKey: "typeCustom", color: "#6366f1" },
 ] as const;
 
 interface AnnotationSaveDialogProps {
@@ -47,6 +47,7 @@ export function AnnotationSaveDialog({
   onSaved,
 }: AnnotationSaveDialogProps) {
   const tToast = useTranslations("maps.toasts");
+  const t = useTranslations("maps.annotation");
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("CUSTOM");
   const [description, setDescription] = useState("");
@@ -94,15 +95,15 @@ export function AnnotationSaveDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Zeichnung speichern</DialogTitle>
+          <DialogTitle>{t("saveTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="anno-name">Name *</Label>
+            <Label htmlFor="anno-name">{t("nameLabel")}</Label>
             <Input
               id="anno-name"
-              placeholder="z.B. Kabeltrasse Nord"
+              placeholder={t("namePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSave()}
@@ -110,20 +111,20 @@ export function AnnotationSaveDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Typ</Label>
+            <Label>{t("typeLabel")}</Label>
             <Select value={type} onValueChange={setType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ANNOTATION_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
+                {ANNOTATION_TYPE_VALUES.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
                     <div className="flex items-center gap-2">
                       <span
                         className="inline-block w-3 h-3 rounded-full"
-                        style={{ backgroundColor: t.color }}
+                        style={{ backgroundColor: opt.color }}
                       />
-                      {t.label}
+                      {t(opt.labelKey)}
                     </div>
                   </SelectItem>
                 ))}
@@ -132,10 +133,10 @@ export function AnnotationSaveDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="anno-desc">Beschreibung</Label>
+            <Label htmlFor="anno-desc">{t("descriptionLabel")}</Label>
             <Textarea
               id="anno-desc"
-              placeholder="Optionale Beschreibung..."
+              placeholder={t("descriptionPlaceholder")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -145,11 +146,11 @@ export function AnnotationSaveDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button onClick={handleSave} disabled={saving || !name.trim()}>
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Speichern
+            {t("save")}
           </Button>
         </DialogFooter>
       </DialogContent>

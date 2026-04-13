@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Card,
@@ -155,6 +156,7 @@ const _DEFAULT_ACCOUNTING_SUB: AccountingSubFlags = {
 // =============================================================================
 
 export function FeatureFlagsTab() {
+  const t = useTranslations("admin.featureFlagsUI");
   const queryClient = useQueryClient();
   const [tenants, setTenants] = useState<TenantWithFlags[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,16 +168,16 @@ export function FeatureFlagsTab() {
       setLoading(true);
       const response = await fetch("/api/admin/feature-flags");
       if (!response.ok) {
-        throw new Error("Fehler beim Laden der Feature-Flags");
+        throw new Error(t("loadError"));
       }
       const data = await response.json();
       setTenants(data.data);
     } catch {
-      toast.error("Fehler beim Laden der Feature-Flags");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchFlags();
@@ -212,22 +214,26 @@ export function FeatureFlagsTab() {
       });
 
       if (!response.ok) {
-        throw new Error("Fehler beim Speichern");
+        throw new Error(t("saveGenericError"));
       }
 
       toast.success(
-        `${FLAG_LABELS[flagKey]} für "${tenant.name}" ${newValue ? "aktiviert" : "deaktiviert"}`
+        t("featureToggled", {
+          label: FLAG_LABELS[flagKey],
+          tenant: tenant.name,
+          state: newValue ? t("stateActivated") : t("stateDeactivated"),
+        })
       );
     } catch {
       // Revert optimistic update
       setTenants((prev) =>
-        prev.map((t) =>
-          t.id === tenantId
-            ? { ...t, features: { ...updatedFlags, [flagKey]: !newValue } }
-            : t
+        prev.map((tn) =>
+          tn.id === tenantId
+            ? { ...tn, features: { ...updatedFlags, [flagKey]: !newValue } }
+            : tn
         )
       );
-      toast.error("Fehler beim Speichern der Feature-Flag");
+      toast.error(t("saveError"));
     } finally {
       setUpdating(null);
     }
@@ -267,23 +273,27 @@ export function FeatureFlagsTab() {
       });
 
       if (!response.ok) {
-        throw new Error("Fehler beim Speichern");
+        throw new Error(t("saveGenericError"));
       }
 
       toast.success(
-        `${MODULE_LABELS[moduleKey]} für "${tenant.name}" ${newValue ? "aktiviert" : "deaktiviert"}`
+        t("featureToggled", {
+          label: MODULE_LABELS[moduleKey],
+          tenant: tenant.name,
+          state: newValue ? t("stateActivated") : t("stateDeactivated"),
+        })
       );
       queryClient.invalidateQueries({ queryKey: ["/api/features"] });
     } catch {
       // Revert optimistic update
       setTenants((prev) =>
-        prev.map((t) =>
-          t.id === tenantId
-            ? { ...t, modules: { ...t.modules, [moduleKey]: !newValue } }
-            : t
+        prev.map((tn) =>
+          tn.id === tenantId
+            ? { ...tn, modules: { ...tn.modules, [moduleKey]: !newValue } }
+            : tn
         )
       );
-      toast.error("Fehler beim Speichern des Modul-Flags");
+      toast.error(t("moduleSaveError"));
     } finally {
       setUpdating(null);
     }
@@ -323,23 +333,27 @@ export function FeatureFlagsTab() {
       });
 
       if (!response.ok) {
-        throw new Error("Fehler beim Speichern");
+        throw new Error(t("saveGenericError"));
       }
 
       toast.success(
-        `${ACCOUNTING_SUB_LABELS[subKey]} für "${tenant.name}" ${newValue ? "aktiviert" : "deaktiviert"}`
+        t("featureToggled", {
+          label: ACCOUNTING_SUB_LABELS[subKey],
+          tenant: tenant.name,
+          state: newValue ? t("stateActivated") : t("stateDeactivated"),
+        })
       );
       queryClient.invalidateQueries({ queryKey: ["/api/features"] });
     } catch {
       // Revert optimistic update
       setTenants((prev) =>
-        prev.map((t) =>
-          t.id === tenantId
-            ? { ...t, accountingSub: { ...t.accountingSub, [subKey]: !newValue } }
-            : t
+        prev.map((tn) =>
+          tn.id === tenantId
+            ? { ...tn, accountingSub: { ...tn.accountingSub, [subKey]: !newValue } }
+            : tn
         )
       );
-      toast.error("Fehler beim Speichern");
+      toast.error(t("saveGenericError"));
     } finally {
       setUpdating(null);
     }
@@ -358,10 +372,10 @@ export function FeatureFlagsTab() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <ToggleLeft className="h-5 w-5" />
-                Feature-Flags
+                {t("title")}
               </CardTitle>
               <CardDescription>
-                Module pro Mandant aktivieren oder deaktivieren
+                {t("description")}
               </CardDescription>
             </div>
             <Button
@@ -373,7 +387,7 @@ export function FeatureFlagsTab() {
               <RefreshCw
                 className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
               />
-              Aktualisieren
+              {t("refresh")}
             </Button>
           </div>
         </CardHeader>
@@ -386,14 +400,14 @@ export function FeatureFlagsTab() {
             </div>
           ) : tenants.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              Keine aktiven Mandanten gefunden
+              {t("empty")}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[180px]">Mandant</TableHead>
+                    <TableHead className="min-w-[180px]">{t("tenant")}</TableHead>
                     {Object.values(FLAG_LABELS).map((label) => (
                       <TableHead key={label} className="text-center min-w-[90px]">
                         {label}
@@ -468,11 +482,10 @@ export function FeatureFlagsTab() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              Buchhaltung — Sub-Module
+              {t("accountingSubTitle")}
             </CardTitle>
             <CardDescription>
-              Einzelne Buchhaltungsbereiche pro Mandant aktivieren oder deaktivieren.
-              Nur sichtbar für Mandanten mit aktivierter Buchhaltung.
+              {t("accountingSubDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -500,7 +513,10 @@ export function FeatureFlagsTab() {
                           {tenant.slug}
                         </Badge>
                         <span className="ml-auto text-xs text-muted-foreground">
-                          {accountingSubKeys.filter((k) => tenant.accountingSub[k]).length} / {accountingSubKeys.length} aktiv
+                          {t("activeCount", {
+                            active: accountingSubKeys.filter((k) => tenant.accountingSub[k]).length,
+                            total: accountingSubKeys.length,
+                          })}
                         </span>
                       </button>
                     </CollapsibleTrigger>

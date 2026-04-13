@@ -4,6 +4,7 @@
 // Integrates with the admin settings page as a tab
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import {
   Card,
@@ -48,6 +49,7 @@ type EditorMode =
   | { type: "edit"; templateId: string; template: InvoiceTemplate };
 
 export function InvoiceTemplateSettings() {
+  const t = useTranslations("admin.settingsUI.invoiceTemplate");
   const { templates, isLoading, isError, mutate } = useInvoiceTemplates();
   const [mode, setMode] = useState<EditorMode>({ type: "list" });
   const [isSaving, setIsSaving] = useState(false);
@@ -64,11 +66,11 @@ export function InvoiceTemplateSettings() {
     try {
       setIsSaving(true);
       await createInvoiceTemplate({ name, layout, isDefault: templateList.length === 0 });
-      toast.success("Rechnungsvorlage erstellt");
+      toast.success(t("created"));
       setMode({ type: "list" });
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Erstellen");
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -79,11 +81,11 @@ export function InvoiceTemplateSettings() {
     try {
       setIsSaving(true);
       await updateInvoiceTemplate(mode.templateId, { name, layout });
-      toast.success("Rechnungsvorlage aktualisiert");
+      toast.success(t("updated"));
       setMode({ type: "list" });
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Aktualisieren");
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -92,10 +94,10 @@ export function InvoiceTemplateSettings() {
   async function handleSetDefault(id: string) {
     try {
       await updateInvoiceTemplate(id, { isDefault: true });
-      toast.success("Standard-Vorlage gesetzt");
+      toast.success(t("setDefault"));
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler");
+      toast.error(error instanceof Error ? error.message : t("setDefaultError"));
     }
   }
 
@@ -106,10 +108,10 @@ export function InvoiceTemplateSettings() {
         layout: template.layout as TemplateLayout,
         isDefault: false,
       });
-      toast.success("Vorlage dupliziert");
+      toast.success(t("duplicated"));
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Duplizieren");
+      toast.error(error instanceof Error ? error.message : t("duplicateError"));
     }
   }
 
@@ -122,10 +124,10 @@ export function InvoiceTemplateSettings() {
     if (!templateToDelete) return;
     try {
       await deleteInvoiceTemplate(templateToDelete);
-      toast.success("Rechnungsvorlage gelöscht");
+      toast.success(t("deleted"));
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
+      toast.error(error instanceof Error ? error.message : t("deleteError"));
     } finally {
       setDeleteDialogOpen(false);
       setTemplateToDelete(null);

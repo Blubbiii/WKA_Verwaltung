@@ -48,6 +48,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,6 +123,7 @@ function getUserDisplayName(user: ArchivedReport["generatedBy"]): string {
 // =============================================================================
 
 export function ReportArchiveTab() {
+  const t = useTranslations("energy.componentToasts");
   const { data: session } = useSession();
   const [reports, setReports] = useState<ArchivedReport[]>([]);
   const [stats, setStats] = useState<ArchiveStats | null>(null);
@@ -186,7 +188,7 @@ export function ReportArchiveTab() {
       link.click();
       document.body.removeChild(link);
     } catch {
-      toast.error("Fehler beim Herunterladen des Reports");
+      toast.error(t("reportDownloadError"));
     } finally {
       setDownloading(null);
     }
@@ -203,7 +205,7 @@ export function ReportArchiveTab() {
       }
       await fetchReports();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Loeschen");
+      toast.error(error instanceof Error ? error.message : t("deleteError"));
     } finally {
       setDeleting(null);
       setDeleteDialogOpen(false);

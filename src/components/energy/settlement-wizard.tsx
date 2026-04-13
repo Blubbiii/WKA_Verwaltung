@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/table";
 import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import {
   monthNames,
@@ -185,6 +186,8 @@ const MONTH_OPTIONS = [
 // =============================================================================
 
 export function SettlementWizard() {
+  const t = useTranslations("energy.componentToasts");
+
   // Step navigation
   const [step, setStep] = useState(0);
 
@@ -234,12 +237,12 @@ export function SettlementWizard() {
     async function loadParks() {
       try {
         const res = await fetch("/api/parks?limit=100");
-        if (!res.ok) throw new Error("Fehler beim Laden der Parks");
+        if (!res.ok) throw new Error(t("parksLoadError"));
         const json = await res.json();
         const data = (json.data ?? json) as ParkOption[];
         setParks(data);
       } catch {
-        toast.error("Parks konnten nicht geladen werden");
+        toast.error(t("parksLoadError"));
       } finally {
         setParksLoading(false);
       }
@@ -260,7 +263,7 @@ export function SettlementWizard() {
     try {
       // Fetch turbine count for this park
       const parkRes = await fetch(`/api/parks/${parkId}`);
-      if (!parkRes.ok) throw new Error("Park konnte nicht geladen werden");
+      if (!parkRes.ok) throw new Error(t("parkLoadError"));
       const parkData = await parkRes.json();
       const totalTurbines =
         parkData.stats?.turbineCount ?? parkData._count?.turbines ?? 0;
@@ -278,7 +281,7 @@ export function SettlementWizard() {
         `/api/energy/productions/for-settlement?${params.toString()}`
       );
       if (!prodRes.ok)
-        throw new Error("Produktionsdaten konnten nicht geladen werden");
+        throw new Error(t("productionLoadError"));
       const prodData = await prodRes.json();
 
       setProductionStatus({
@@ -289,7 +292,7 @@ export function SettlementWizard() {
       });
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler beim Laden des Status"
+        err instanceof Error ? err.message : t("statusLoadError")
       );
       setProductionStatus(null);
     } finally {
@@ -422,10 +425,10 @@ export function SettlementWizard() {
 
       const calcData = await calcRes.json();
       setCalculationResult(calcData);
-      toast.success("Berechnung erfolgreich durchgeführt");
+      toast.success(t("calculationSuccess"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Fehler bei der Berechnung"
+        err instanceof Error ? err.message : t("calculationError")
       );
     } finally {
       setCalculating(false);
@@ -474,7 +477,7 @@ export function SettlementWizard() {
           });
 
           if (approveRes.ok) {
-            toast.success("Gutschriften wurden freigegeben");
+            toast.success(t("invoicesApproved"));
             // Reload settlement to get updated invoice statuses
             const updatedRes = await fetch(
               `/api/energy/settlements/${settlementId}`
@@ -491,10 +494,10 @@ export function SettlementWizard() {
               );
             }
           } else {
-            toast.error("Fehler beim Freigeben der Gutschriften");
+            toast.error(t("invoicesApproveError"));
           }
         } catch {
-          toast.error("Fehler beim Freigeben der Gutschriften");
+          toast.error(t("invoicesApproveError"));
         } finally {
           setApprovingInvoices(false);
         }
@@ -503,7 +506,7 @@ export function SettlementWizard() {
       toast.error(
         err instanceof Error
           ? err.message
-          : "Fehler beim Erstellen der Gutschriften"
+          : t("invoicesCreateError")
       );
     } finally {
       setCreatingInvoices(false);

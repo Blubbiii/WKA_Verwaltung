@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -46,6 +47,7 @@ function SettingsSkeleton() {
 }
 
 export function BusinessThresholds() {
+  const t = useTranslations("admin.settingsUI.businessThresholds");
   const [formData, setFormData] = useState<ThresholdSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -96,21 +98,17 @@ export function BusinessThresholds() {
       formData.availabilityWarning > 100 ||
       formData.availabilityCritical < 0
     ) {
-      toast.error(
-        "Kritische Schwelle muss kleiner als Warnschwelle sein (0–100 %)"
-      );
+      toast.error(t("saveError"));
       return;
     }
 
     if (formData.contractUrgentDays >= formData.contractWarningDays) {
-      toast.error(
-        "Dringend-Schwelle muss kleiner als Warn-Schwelle sein"
-      );
+      toast.error(t("saveError"));
       return;
     }
 
     if (formData.parkHealthLookbackDays < 1 || formData.parkHealthLookbackDays > 90) {
-      toast.error("Analysezeitraum muss zwischen 1 und 90 Tagen liegen");
+      toast.error(t("saveError"));
       return;
     }
 
@@ -125,18 +123,16 @@ export function BusinessThresholds() {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(
-          (err as { error?: string }).error ?? "Fehler beim Speichern"
+          (err as { error?: string }).error ?? t("saveError")
         );
       }
 
       const saved: ThresholdSettings = await res.json();
       setFormData(saved);
       setHasChanges(false);
-      toast.success("Schwellenwerte gespeichert");
+      toast.success(t("saved"));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
-      );
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }

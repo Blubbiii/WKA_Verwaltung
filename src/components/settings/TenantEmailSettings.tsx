@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -53,6 +54,7 @@ function EmailSettingsSkeleton() {
 // =============================================================================
 
 export function TenantEmailSettings() {
+  const t = useTranslations("admin.settingsUI.tenantEmail");
   const { settings, isLoading, isError, updateSettings } =
     useTenantSettings();
   const [formData, setFormData] = useState<EmailFormData | null>(null);
@@ -84,24 +86,22 @@ export function TenantEmailSettings() {
     if (!formData) return;
 
     if (formData.emailFromName && formData.emailFromName.length > 100) {
-      toast.error("Absender-Name darf maximal 100 Zeichen haben");
+      toast.error(t("saveError"));
       return;
     }
 
     if (formData.emailSignature && formData.emailSignature.length > 5000) {
-      toast.error("E-Mail-Signatur darf maximal 5000 Zeichen haben");
+      toast.error(t("saveError"));
       return;
     }
 
     try {
       setIsSaving(true);
       await updateSettings(formData);
-      toast.success("E-Mail-Einstellungen gespeichert");
+      toast.success(t("saved"));
       setHasChanges(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
-      );
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }

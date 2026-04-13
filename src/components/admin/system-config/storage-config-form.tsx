@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Database,
   HardDrive,
@@ -70,6 +71,7 @@ export function StorageConfigForm({
   availableKeys: _availableKeys,
   onSave,
 }: StorageConfigFormProps) {
+  const t = useTranslations("admin.systemConfigUI");
   // Get initial values from configs
   const getConfigValue = (key: string): string => {
     const config = configs.find((c) => c.key === key);
@@ -145,18 +147,16 @@ export function StorageConfigForm({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("storageSaveError"));
       }
 
-      toast.success("Storage-Konfiguration gespeichert");
+      toast.success(t("storageSaved"));
       setS3AccessKey(""); // Clear fields after save
       setS3SecretKey("");
       onSave();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Speichern der Konfiguration"
+        error instanceof Error ? error.message : t("storageSaveError")
       );
     } finally {
       setSaving(false);
@@ -184,17 +184,17 @@ export function StorageConfigForm({
       });
 
       if (data.success) {
-        toast.success(data.message);
+        toast.success(data.message || t("storageTestSuccess"));
       } else {
-        toast.error(data.error || "Test fehlgeschlagen");
+        toast.error(data.error || t("storageTestError"));
       }
     } catch (error) {
       setTestResult({
         success: false,
-        message: "Storage-Test fehlgeschlagen",
+        message: t("storageTestError"),
         details: error instanceof Error ? error.message : undefined,
       });
-      toast.error("Fehler beim Testen der Storage-Verbindung");
+      toast.error(t("storageTestError"));
     } finally {
       setTesting(false);
     }

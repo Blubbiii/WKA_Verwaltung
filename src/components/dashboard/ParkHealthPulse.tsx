@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   PARK_HEALTH_LOOKBACK_DAYS,
@@ -16,6 +17,7 @@ interface ParkStatus {
 }
 
 export function ParkHealthPulse() {
+  const t = useTranslations("dashboard.parkHealth");
   const [parks, setParks] = useState<ParkStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredPark, setHoveredPark] = useState<string | null>(null);
@@ -112,7 +114,7 @@ export function ParkHealthPulse() {
       return {
         bar: "#ef4444",
         glow: "rgba(239,68,68,0.3)",
-        label: "Störung",
+        label: t("statusDisturbance"),
       };
     if (
       park.avgAvailabilityPct !== null &&
@@ -121,12 +123,12 @@ export function ParkHealthPulse() {
       return {
         bar: "#f59e0b",
         glow: "rgba(245,158,11,0.3)",
-        label: "Eingeschränkt",
+        label: t("statusLimited"),
       };
     return {
       bar: "#22c55e",
       glow: "rgba(34,197,94,0.3)",
-      label: "Normal",
+      label: t("statusNormal"),
     };
   }
 
@@ -134,11 +136,11 @@ export function ParkHealthPulse() {
     <div className="mb-5">
       <div className="flex items-center gap-2 mb-1.5">
         <span className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">
-          Park-Status
+          {t("parkStatus")}
         </span>
         <div className="flex-1 h-px bg-border/50" />
         <span className="text-xs text-muted-foreground">
-          {parks.filter((p) => p.activeFaults === 0).length}/{parks.length} OK
+          {t("okCount", { ok: parks.filter((p) => p.activeFaults === 0).length, total: parks.length })}
         </span>
       </div>
       <div className="flex gap-1">
@@ -172,18 +174,18 @@ export function ParkHealthPulse() {
                   </p>
                   <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
                     <p>
-                      Produktion:{" "}
-                      {(park.totalProductionKwh / 1000).toFixed(1)} MWh
+                      {t("production", { value: (park.totalProductionKwh / 1000).toFixed(1) })}
                     </p>
                     {park.avgAvailabilityPct !== null && (
                       <p>
-                        Verfügbarkeit: {park.avgAvailabilityPct.toFixed(1)}%
+                        {t("availability", { pct: park.avgAvailabilityPct.toFixed(1) })}
                       </p>
                     )}
                     {park.activeFaults > 0 && (
                       <p className="text-red-500 font-medium">
-                        {park.activeFaults} aktive Störung
-                        {park.activeFaults !== 1 ? "en" : ""}
+                        {park.activeFaults === 1
+                          ? t("activeFaultSingular", { count: park.activeFaults })
+                          : t("activeFaultPlural", { count: park.activeFaults })}
                       </p>
                     )}
                   </div>
@@ -195,7 +197,7 @@ export function ParkHealthPulse() {
       </div>
       {lastUpdated && (
         <p className="text-xs text-muted-foreground mt-2">
-          Stand: heute, {lastUpdated}
+          {t("lastUpdated", { time: lastUpdated })}
         </p>
       )}
     </div>

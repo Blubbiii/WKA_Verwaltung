@@ -29,6 +29,7 @@ interface TaxExportDialogProps {
 
 export function TaxExportDialog({ parks }: TaxExportDialogProps) {
   const tToast = useTranslations("documents.toasts");
+  const t = useTranslations("documents.explorer");
   const [open, setOpen] = useState(false);
   const [parkId, setParkId] = useState("");
   const [year, setYear] = useState(String(new Date().getFullYear()));
@@ -83,28 +84,28 @@ export function TaxExportDialog({ parks }: TaxExportDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5">
           <Download className="h-3.5 w-3.5" />
-          Steuerberater-Export
+          {t("taxExport")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>Steuerberater-Export</DialogTitle>
+          <DialogTitle>{t("taxExport")}</DialogTitle>
           <DialogDescription>
-            Alle Dokumente und Rechnungen eines Parks für ein Jahr als ZIP herunterladen.
+            {t("taxExportInfo")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Park</label>
+            <label className="text-sm font-medium mb-1.5 block">{t("park")}</label>
             <Select value={parkId} onValueChange={setParkId}>
               <SelectTrigger>
-                <SelectValue placeholder="Park auswählen" />
+                <SelectValue placeholder={t("selectPark")} />
               </SelectTrigger>
               <SelectContent>
                 {parks.map((p) => (
                   <SelectItem key={p.parkId ?? "null"} value={p.parkId ?? ""}>
-                    {p.parkName} ({p.documentCount} Dokumente)
+                    {p.parkName} ({t("documentsCount", { count: p.documentCount })})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -112,7 +113,7 @@ export function TaxExportDialog({ parks }: TaxExportDialogProps) {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Jahr</label>
+            <label className="text-sm font-medium mb-1.5 block">{t("year")}</label>
             <Select value={year} onValueChange={setYear}>
               <SelectTrigger>
                 <SelectValue />
@@ -125,7 +126,7 @@ export function TaxExportDialog({ parks }: TaxExportDialogProps) {
                 ))}
                 {allYears.length === 0 && (
                   <SelectItem value={String(new Date().getFullYear())} disabled>
-                    Keine Daten vorhanden
+                    {t("noDataAvailable")}
                   </SelectItem>
                 )}
               </SelectContent>
@@ -135,11 +136,11 @@ export function TaxExportDialog({ parks }: TaxExportDialogProps) {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button onClick={handleExport} disabled={exporting || !parkId}>
             {exporting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Export starten
+            {t("startExport")}
           </Button>
         </DialogFooter>
       </DialogContent>

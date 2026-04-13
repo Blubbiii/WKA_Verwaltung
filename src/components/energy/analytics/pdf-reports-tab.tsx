@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { ANALYTICS_MODULES } from "@/types/analytics";
 
 // =============================================================================
@@ -91,6 +92,7 @@ const CLASSIC_MODULES_CUSTOM: Record<string, string> = {
 // =============================================================================
 
 export function PdfReportsTab() {
+  const t = useTranslations("energy.componentToasts");
   const [parks, setParks] = useState<Park[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
@@ -151,7 +153,7 @@ export function PdfReportsTab() {
     label: string
   ) {
     if (!parkId) {
-      toast.error("Bitte waehlen Sie einen Windpark aus");
+      toast.error(t("parkSelectRequired"));
       return;
     }
 
@@ -182,10 +184,10 @@ export function PdfReportsTab() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success(`${label} wurde erstellt und heruntergeladen`);
+      toast.success(t("reportCreated", { label }));
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : `Fehler beim Generieren`
+        error instanceof Error ? error.message : t("pdfGenerateError")
       );
     } finally {
       setGenerating(null);

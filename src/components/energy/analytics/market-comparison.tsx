@@ -17,6 +17,7 @@ import {
   Zap, BarChart3, ArrowRightLeft,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { MarketComparisonResponse } from "@/types/market-data";
 
 interface MarketComparisonProps {
@@ -28,6 +29,7 @@ const eurCompact = new Intl.NumberFormat("de-DE", { style: "currency", currency:
 const numFmt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
 
 export function MarketComparison({ parks }: MarketComparisonProps) {
+  const t = useTranslations("energy.componentToasts");
   const [parkId, setParkId] = useState(parks[0]?.id ?? "");
   const [year, setYear] = useState(new Date().getFullYear());
   const [data, setData] = useState<MarketComparisonResponse | null>(null);
@@ -70,7 +72,7 @@ export function MarketComparison({ parks }: MarketComparisonProps) {
       });
       const result = await res.json();
       if (result.error) throw new Error(result.error);
-      toast.success(`Marktdaten synchronisiert: ${result.inserted + result.updated} Monate`);
+      toast.success(t("marketSyncSuccess", { months: result.inserted + result.updated }));
       // Reload comparison
       setLoading(true);
       fetch(`/api/energy/analytics/market-comparison?parkId=${parkId}&year=${year}`)
@@ -78,7 +80,7 @@ export function MarketComparison({ parks }: MarketComparisonProps) {
         .then((d) => { if (!d.error) setData(d); })
         .finally(() => setLoading(false));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sync fehlgeschlagen");
+      toast.error(err instanceof Error ? err.message : t("marketSyncError"));
     } finally {
       setSyncing(false);
     }

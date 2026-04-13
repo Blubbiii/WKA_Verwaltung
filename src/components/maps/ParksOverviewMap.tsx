@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -54,6 +55,7 @@ export function ParksOverviewMap({
   height = "500px",
   className,
 }: ParksOverviewMapProps) {
+  const t = useTranslations("maps.parksOverview");
   // Filter parks with valid coordinates
   const parksWithCoords = useMemo(
     () => parks.filter((p) => p.latitude != null && p.longitude != null),
@@ -71,9 +73,9 @@ export function ParksOverviewMap({
         style={{ height }}
       >
         <div className="text-center text-muted-foreground">
-          <p className="text-sm">Keine Parks mit Koordinaten verfügbar</p>
+          <p className="text-sm">{t("noParksWithCoordinates")}</p>
           <p className="text-xs mt-1">
-            Fügen Sie Koordinaten zu Ihren Parks hinzu
+            {t("addCoordinatesHint")}
           </p>
         </div>
       </div>

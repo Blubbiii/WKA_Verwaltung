@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -155,6 +156,7 @@ function PreferencesSkeleton() {
 // =============================================================================
 
 export function NotificationPreferences() {
+  const t = useTranslations("admin.settingsUI.notificationPreferences");
   const [preferences, setPreferences] =
     useState<EmailPreferences>(DEFAULT_PREFERENCES);
   const [initialPreferences, setInitialPreferences] =
@@ -194,11 +196,9 @@ export function NotificationPreferences() {
       setIsSaving(true);
       await updatePreferences(preferences);
       setInitialPreferences(preferences);
-      toast.success("Benachrichtigungseinstellungen gespeichert");
+      toast.success(t("saved"));
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Fehler beim Speichern"
-      );
+      toast.error(err instanceof Error ? err.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }

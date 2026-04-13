@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { ReportConfig } from "./save-config-dialog";
 
 // =============================================================================
@@ -47,6 +48,7 @@ export function LoadConfigDialog({
   onOpenChange,
   onLoad,
 }: LoadConfigDialogProps) {
+  const t = useTranslations("energy.componentToasts");
   const [configs, setConfigs] = useState<SavedConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -61,11 +63,11 @@ export function LoadConfigDialog({
     setLoading(true);
     try {
       const res = await fetch("/api/energy/reports/configs");
-      if (!res.ok) throw new Error("Fehler beim Laden");
+      if (!res.ok) throw new Error(t("configsLoadError"));
       const data = await res.json();
       setConfigs(data.data ?? data ?? []);
     } catch {
-      toast.error("Fehler beim Laden der Konfigurationen");
+      toast.error(t("configsLoadError"));
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,7 @@ export function LoadConfigDialog({
   function handleLoad(config: SavedConfig) {
     onLoad(config.config);
     onOpenChange(false);
-    toast.success(`Konfiguration "${config.name}" geladen`);
+    toast.success(t("configLoaded", { name: config.name }));
   }
 
   async function handleDelete() {
@@ -84,12 +86,12 @@ export function LoadConfigDialog({
       const res = await fetch(`/api/energy/reports/configs/${deleteId}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Fehler beim Löschen");
+      if (!res.ok) throw new Error(t("deleteError"));
 
       setConfigs((prev) => prev.filter((c) => c.id !== deleteId));
-      toast.success("Konfiguration gelöscht");
+      toast.success(t("configDeleted"));
     } catch {
-      toast.error("Fehler beim Löschen der Konfiguration");
+      toast.error(t("configDeleteError"));
     } finally {
       setDeleteId(null);
     }

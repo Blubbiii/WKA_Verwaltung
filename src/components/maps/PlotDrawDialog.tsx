@@ -63,11 +63,11 @@ function getLessorName(lease: {
     lastName?: string | null;
     companyName?: string | null;
   };
-}): string {
+}, unknownLabel: string): string {
   const l = lease.lessor;
-  if (!l) return "Unbekannt";
-  if (l.personType === "legal") return l.companyName || "Unbekannt";
-  return [l.firstName, l.lastName].filter(Boolean).join(" ") || "Unbekannt";
+  if (!l) return unknownLabel;
+  if (l.personType === "legal") return l.companyName || unknownLabel;
+  return [l.firstName, l.lastName].filter(Boolean).join(" ") || unknownLabel;
 }
 
 export function PlotDrawDialog({
@@ -78,6 +78,7 @@ export function PlotDrawDialog({
   onSaved,
 }: PlotDrawDialogProps) {
   const tToast = useTranslations("leases.toasts");
+  const t = useTranslations("maps.plotDraw");
   const [cadastralDistrict, setCadastralDistrict] = useState("");
   const [fieldNumber, setFieldNumber] = useState("");
   const [plotNumber, setPlotNumber] = useState("");
@@ -97,7 +98,7 @@ export function PlotDrawDialog({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const items = (data.leases ?? data.data ?? []).map((l: any) => ({
           id: l.id,
-          lessorName: getLessorName(l),
+          lessorName: getLessorName(l, t("unknown")),
           status: l.status,
         }));
         setLeases(items);
@@ -105,7 +106,7 @@ export function PlotDrawDialog({
       .catch(() => {
         // Non-critical: proceed without lease list
       });
-  }, [open, parkId]);
+  }, [open, parkId, t]);
 
   const handleSave = async () => {
     if (!cadastralDistrict.trim()) {
@@ -186,13 +187,13 @@ export function PlotDrawDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Flurstück einzeichnen</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           {areaSqm > 0 && (
             <div className="rounded-md bg-muted px-3 py-2 text-sm">
-              <span className="text-muted-foreground">Berechnete Fläche: </span>
+              <span className="text-muted-foreground">{t("calculatedArea")}</span>
               <span className="font-medium">
                 {areaSqm >= 10000
                   ? `${(areaSqm / 10000).toFixed(4)} ha`
@@ -202,10 +203,10 @@ export function PlotDrawDialog({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="plot-district">Gemarkung *</Label>
+            <Label htmlFor="plot-district">{t("districtLabel")}</Label>
             <Input
               id="plot-district"
-              placeholder="z.B. Hohenlohe"
+              placeholder={t("districtPlaceholder")}
               value={cadastralDistrict}
               onChange={(e) => setCadastralDistrict(e.target.value)}
             />
@@ -213,19 +214,19 @@ export function PlotDrawDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="plot-field">Flur</Label>
+              <Label htmlFor="plot-field">{t("fieldLabel")}</Label>
               <Input
                 id="plot-field"
-                placeholder="z.B. 3"
+                placeholder={t("fieldPlaceholder")}
                 value={fieldNumber}
                 onChange={(e) => setFieldNumber(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="plot-number">Flurstück-Nr. *</Label>
+              <Label htmlFor="plot-number">{t("plotNumberLabel")}</Label>
               <Input
                 id="plot-number"
-                placeholder="z.B. 42/1"
+                placeholder={t("plotNumberPlaceholder")}
                 value={plotNumber}
                 onChange={(e) => setPlotNumber(e.target.value)}
               />
@@ -233,13 +234,13 @@ export function PlotDrawDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Pachtvertrag</Label>
+            <Label>{t("leaseLabel")}</Label>
             <Select value={leaseId} onValueChange={setLeaseId}>
               <SelectTrigger>
-                <SelectValue placeholder="Keinem Vertrag zuordnen" />
+                <SelectValue placeholder={t("noLeaseAssign")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Keinem Vertrag zuordnen</SelectItem>
+                <SelectItem value="none">{t("noLeaseAssign")}</SelectItem>
                 {leases.map((l) => (
                   <SelectItem key={l.id} value={l.id}>
                     {l.lessorName}
@@ -257,14 +258,14 @@ export function PlotDrawDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button
             onClick={handleSave}
             disabled={saving || !cadastralDistrict.trim() || !plotNumber.trim()}
           >
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Speichern
+            {t("save")}
           </Button>
         </DialogFooter>
       </DialogContent>

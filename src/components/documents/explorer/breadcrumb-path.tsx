@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ChevronRight, FolderClosed } from "lucide-react";
 import type { FolderPath } from "@/types/document-explorer";
 
@@ -9,22 +10,23 @@ interface BreadcrumbPathProps {
 }
 
 export function BreadcrumbPath({ path, onNavigate }: BreadcrumbPathProps) {
+  const t = useTranslations("documents.explorer");
   if (!path) {
     return (
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground px-1 py-2">
         <FolderClosed className="h-4 w-4" />
-        <span>Wählen Sie einen Ordner aus</span>
+        <span>{t("selectFolder")}</span>
       </div>
     );
   }
 
   return (
-    <nav className="flex items-center gap-1 text-sm px-1 py-2" aria-label="Ordnerpfad">
+    <nav className="flex items-center gap-1 text-sm px-1 py-2" aria-label={t("folderPath")}>
       <button
         onClick={() => onNavigate("root")}
         className="text-muted-foreground hover:text-foreground transition-colors"
       >
-        Dokumente
+        {t("documentsRoot")}
       </button>
 
       <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -51,6 +52,7 @@ export function DocumentPreviewDialogPDF({
   rotate,
   handleDownload,
 }: DocumentPreviewDialogPDFProps) {
+  const t = useTranslations("documents.preview");
   const [workerReady, setWorkerReady] = useState(false);
 
   // Configure PDF.js worker on mount using local file
@@ -65,7 +67,7 @@ export function DocumentPreviewDialogPDF({
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="mt-2 text-sm text-muted-foreground">PDF-Viewer wird initialisiert...</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("pdfViewerInit")}</p>
       </div>
     );
   }
@@ -74,29 +76,30 @@ export function DocumentPreviewDialogPDF({
     <div className="flex flex-col h-full">
       {/* PDF Controls */}
       <div className="flex items-center justify-center gap-2 p-2 border-b bg-background">
-        <Button variant="outline" size="icon" onClick={goToPrevPage} disabled={pageNumber <= 1} aria-label="Vorherige Seite">
+        <Button variant="outline" size="icon" onClick={goToPrevPage} disabled={pageNumber <= 1} aria-label={t("prevPage")}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="text-sm min-w-[100px] text-center">
-          Seite {pageNumber} von {numPages || "..."}
+          {t("pageOf", { current: pageNumber, total: numPages ?? "..." })}
         </span>
         <Button
           variant="outline"
           size="icon"
           onClick={goToNextPage}
           disabled={pageNumber >= (numPages || 1)}
+          aria-label={t("nextPage")}
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
         <div className="w-px h-6 bg-border mx-2" />
-        <Button variant="outline" size="icon" onClick={zoomOut} disabled={scale <= 0.5} aria-label="Verkleinern">
+        <Button variant="outline" size="icon" onClick={zoomOut} disabled={scale <= 0.5} aria-label={t("zoomOut")}>
           <ZoomOut className="h-4 w-4" />
         </Button>
         <span className="text-sm min-w-[60px] text-center">{Math.round(scale * 100)}%</span>
-        <Button variant="outline" size="icon" onClick={zoomIn} disabled={scale >= 3} aria-label="Vergrößern">
+        <Button variant="outline" size="icon" onClick={zoomIn} disabled={scale >= 3} aria-label={t("zoomIn")}>
           <ZoomIn className="h-4 w-4" />
         </Button>
-        <Button variant="outline" size="icon" onClick={rotate} aria-label="Drehen">
+        <Button variant="outline" size="icon" onClick={rotate} aria-label={t("rotate")}>
           <RotateCw className="h-4 w-4" />
         </Button>
       </div>
@@ -106,7 +109,7 @@ export function DocumentPreviewDialogPDF({
         {loading && (
           <div className="flex flex-col items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="mt-2 text-sm text-muted-foreground">PDF wird geladen...</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t("pdfLoading")}</p>
           </div>
         )}
         {error && (
@@ -115,7 +118,7 @@ export function DocumentPreviewDialogPDF({
             <p className="text-muted-foreground">{error}</p>
             <Button variant="outline" className="mt-4" onClick={handleDownload}>
               <Download className="mr-2 h-4 w-4" />
-              Datei herunterladen
+              {t("downloadFileGeneric")}
             </Button>
           </div>
         )}

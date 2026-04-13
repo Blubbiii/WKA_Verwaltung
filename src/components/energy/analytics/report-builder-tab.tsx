@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Download,
   Loader2,
@@ -106,6 +107,7 @@ const TOTAL_MODULE_COUNT =
 // =============================================================================
 
 export function ReportBuilderTab() {
+  const t = useTranslations("energy.componentToasts");
   const [parks, setParks] = useState<Park[]>([]);
   const [templates, setTemplates] = useState<ReportConfig[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
@@ -222,10 +224,10 @@ export function ReportBuilderTab() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success(`${label} heruntergeladen`);
+      toast.success(t("reportDownloaded", { label }));
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : "Fehler beim Generieren"
+        e instanceof Error ? e.message : t("pdfGenerateError")
       );
     } finally {
       setLoading(false);
@@ -238,7 +240,7 @@ export function ReportBuilderTab() {
 
   const handleGenerate = () => {
     if (selectedModules.size === 0) {
-      toast.error("Bitte mindestens ein Modul auswählen");
+      toast.error(t("moduleSelectRequired"));
       return;
     }
     downloadPdf(
@@ -256,11 +258,11 @@ export function ReportBuilderTab() {
 
   const handleSaveTemplate = async () => {
     if (!templateName.trim()) {
-      toast.error("Bitte einen Namen eingeben");
+      toast.error(t("nameRequired"));
       return;
     }
     if (selectedModules.size === 0) {
-      toast.error("Bitte mindestens ein Modul auswählen");
+      toast.error(t("moduleSelectRequired"));
       return;
     }
     setSaving(true);
@@ -276,13 +278,13 @@ export function ReportBuilderTab() {
           portalVisible: false,
         }),
       });
-      if (!res.ok) throw new Error("Fehler beim Speichern");
-      toast.success("Vorlage gespeichert");
+      if (!res.ok) throw new Error(t("saveError"));
+      toast.success(t("templateSaved"));
       setShowSaveForm(false);
       setTemplateName("");
       loadTemplates();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler");
+      toast.error(e instanceof Error ? e.message : t("genericError"));
     } finally {
       setSaving(false);
     }
@@ -311,12 +313,12 @@ export function ReportBuilderTab() {
         `/api/energy/reports/configs/${deleteTarget.id}`,
         { method: "DELETE" }
       );
-      if (!res.ok) throw new Error("Fehler beim Löschen");
-      toast.success(`Vorlage "${deleteTarget.name}" gelöscht`);
+      if (!res.ok) throw new Error(t("deleteError"));
+      toast.success(t("templateDeleted", { name: deleteTarget.name }));
       setDeleteTarget(null);
       loadTemplates();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler");
+      toast.error(e instanceof Error ? e.message : t("genericError"));
     } finally {
       setDeleting(false);
     }

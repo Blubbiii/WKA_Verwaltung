@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Briefcase, Calculator, Wrench, LayoutTemplate } from "lucide-react";
 import {
   Dialog,
@@ -48,6 +49,7 @@ export function TemplatePicker({
   onOpenChange,
   onApply,
 }: TemplatePickerProps) {
+  const t = useTranslations("dashboard.templatePicker");
   const [confirmTemplate, setConfirmTemplate] =
     useState<DashboardTemplate | null>(null);
 
@@ -58,11 +60,10 @@ export function TemplatePicker({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <LayoutTemplate className="h-5 w-5" />
-              Dashboard-Vorlage wählen
+              {t("title")}
             </DialogTitle>
             <DialogDescription>
-              Wähle eine vorgefertigte Vorlage für dein Dashboard. Dein
-              aktuelles Layout wird dabei ersetzt.
+              {t("description")}
             </DialogDescription>
           </DialogHeader>
 
@@ -86,7 +87,7 @@ export function TemplatePicker({
                   </CardHeader>
                   <CardContent>
                     <p className="text-xs text-muted-foreground">
-                      {template.widgets.length} Widgets
+                      {t("widgetCount", { count: template.widgets.length })}
                     </p>
                   </CardContent>
                 </Card>
@@ -104,15 +105,13 @@ export function TemplatePicker({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Vorlage anwenden?</AlertDialogTitle>
+            <AlertDialogTitle>{t("confirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Dein aktuelles Dashboard-Layout wird durch die Vorlage &quot;
-              {confirmTemplate?.name}&quot; ersetzt. Du kannst es danach
-              weiter anpassen.
+              {t("confirmDescription", { name: confirmTemplate?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (confirmTemplate) {
@@ -122,7 +121,7 @@ export function TemplatePicker({
                 }
               }}
             >
-              Anwenden
+              {t("apply")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

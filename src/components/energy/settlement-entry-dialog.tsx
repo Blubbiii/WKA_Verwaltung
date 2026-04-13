@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import {
   Dialog,
@@ -97,6 +98,7 @@ export function SettlementEntryDialog({
   onSuccess,
   editData,
 }: SettlementEntryDialogProps) {
+  const t = useTranslations('energy.componentToasts')
   const isEdit = !!editData
 
   // Form state
@@ -122,12 +124,12 @@ export function SettlementEntryDialog({
     setIsLoadingParks(true)
     try {
       const res = await fetch('/api/parks?limit=100')
-      if (!res.ok) throw new Error('Fehler beim Laden der Parks')
+      if (!res.ok) throw new Error(t('parksLoadError'))
       const json = await res.json()
       const data = (json.data ?? json) as ParkOption[]
       setParks(data)
     } catch {
-      toast.error('Parks konnten nicht geladen werden')
+      toast.error(t('parksLoadError'))
     } finally {
       setIsLoadingParks(false)
     }
@@ -228,7 +230,7 @@ export function SettlementEntryDialog({
           throw new Error(error.details || error.error || `HTTP ${res.status}`)
         }
 
-        toast.success('Abrechnung aktualisiert')
+        toast.success(t('settlementUpdated'))
       } else {
         // POST - create new
         const body: Record<string, unknown> = {
@@ -262,14 +264,14 @@ export function SettlementEntryDialog({
           )
         }
 
-        toast.success('Abrechnung erstellt')
+        toast.success(t('settlementCreated'))
       }
 
       onSuccess()
       onOpenChange(false)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-      toast.error(isEdit ? 'Fehler beim Aktualisieren' : 'Fehler beim Erstellen', {
+      const message = err instanceof Error ? err.message : t('unknownError')
+      toast.error(isEdit ? t('updateError') : t('createError'), {
         description: message,
       })
     } finally {

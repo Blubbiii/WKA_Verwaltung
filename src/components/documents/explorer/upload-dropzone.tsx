@@ -13,6 +13,7 @@ interface UploadDropzoneProps {
 
 export function UploadDropzone({ activePath, onUploadComplete }: UploadDropzoneProps) {
   const tToast = useTranslations("documents.toasts");
+  const t = useTranslations("documents.explorer");
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -76,16 +77,16 @@ export function UploadDropzone({ activePath, onUploadComplete }: UploadDropzoneP
       {uploading ? (
         <div className="flex items-center justify-center gap-2 text-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Wird hochgeladen...</span>
+          <span>{t("uploading")}</span>
         </div>
       ) : (
         <label className="cursor-pointer flex flex-col items-center gap-1">
           <Upload className="h-5 w-5" />
           <span className="text-xs">
-            Dateien hierher ziehen oder <span className="text-primary underline">auswählen</span>
+            {t("dragOrSelect")} <span className="text-primary underline">{t("select")}</span>
           </span>
           <span className="text-[10px]">
-            → wird abgelegt in: {activePath.parkName} / {activePath.year} / {activePath.categoryLabel}
+            {t("filedTo", { park: activePath.parkName, year: activePath.year, category: activePath.categoryLabel })}
           </span>
           <input
             type="file"

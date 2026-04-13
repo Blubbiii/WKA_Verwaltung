@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { FileText, FileSpreadsheet, Image, File, Download, Eye, Receipt, ChevronLeft, ChevronRight, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,7 @@ export function FileList({
   pagination,
   onPageChange,
 }: FileListProps) {
+  const t = useTranslations("documents.explorer");
   if (loading) {
     return (
       <div className="space-y-2">
@@ -75,8 +77,8 @@ export function FileList({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
         <FileText className="h-12 w-12 mb-3 opacity-30" />
-        <p className="text-sm font-medium">Keine Dateien in diesem Ordner</p>
-        <p className="text-xs mt-1">Laden Sie Dateien hoch oder wählen Sie einen anderen Ordner</p>
+        <p className="text-sm font-medium">{t("noFiles")}</p>
+        <p className="text-xs mt-1">{t("uploadOrChooseFolder")}</p>
       </div>
     );
   }
@@ -90,15 +92,15 @@ export function FileList({
         <button
           onClick={allSelected ? onClearSelection : onSelectAll}
           className="shrink-0"
-          aria-label={allSelected ? "Alle abwählen" : "Alle auswählen"}
+          aria-label={allSelected ? t("deselectAll") : t("selectAll")}
         >
           {allSelected ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
         </button>
-        <span className="flex-1">Name</span>
-        <span className="w-32 text-right hidden sm:block">Typ</span>
-        <span className="w-24 text-right hidden md:block">Größe</span>
-        <span className="w-24 text-right hidden md:block">Datum</span>
-        <span className="w-28 text-right hidden lg:block">Betrag</span>
+        <span className="flex-1">{t("name")}</span>
+        <span className="w-32 text-right hidden sm:block">{t("type")}</span>
+        <span className="w-24 text-right hidden md:block">{t("size")}</span>
+        <span className="w-24 text-right hidden md:block">{t("date")}</span>
+        <span className="w-28 text-right hidden lg:block">{t("amount")}</span>
         <span className="w-20"></span>
       </div>
 
@@ -135,7 +137,7 @@ export function FileList({
 
               <div className="w-32 text-right hidden sm:block">
                 <Badge variant="outline" className="text-[10px]">
-                  {file.type === "invoice" ? "Rechnung" : CATEGORY_LABELS[file.category] ?? file.category}
+                  {file.type === "invoice" ? t("invoice") : CATEGORY_LABELS[file.category] ?? file.category}
                 </Badge>
               </div>
 
@@ -160,7 +162,7 @@ export function FileList({
                     e.stopPropagation();
                     onPreview(file);
                   }}
-                  aria-label="Vorschau"
+                  aria-label={t("preview")}
                 >
                   <Eye className="h-3.5 w-3.5" />
                 </Button>
@@ -172,7 +174,7 @@ export function FileList({
                     e.stopPropagation();
                     onDownload(file);
                   }}
-                  aria-label="Herunterladen"
+                  aria-label={t("download")}
                 >
                   <Download className="h-3.5 w-3.5" />
                 </Button>
@@ -186,7 +188,7 @@ export function FileList({
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between px-3 py-2 border-t text-xs text-muted-foreground">
           <span>
-            {pagination.total} Dateien · Seite {pagination.page} von {pagination.totalPages}
+            {t("paginationInfo", { total: pagination.total, page: pagination.page, totalPages: pagination.totalPages })}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -214,14 +216,14 @@ export function FileList({
       {/* Selection bar */}
       {selectedIds.size > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground rounded-full px-4 py-2 text-sm font-medium shadow-lg flex items-center gap-3 z-50">
-          <span>{selectedIds.size} ausgewählt</span>
+          <span>{t("selectedCount", { count: selectedIds.size })}</span>
           <Button
             variant="secondary"
             size="sm"
             className="h-7 text-xs"
             onClick={onClearSelection}
           >
-            Aufheben
+            {t("clear")}
           </Button>
         </div>
       )}

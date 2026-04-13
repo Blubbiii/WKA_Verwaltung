@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 import {
   Dialog,
@@ -106,6 +107,7 @@ export function ProductionEntryDialog({
   onSuccess,
   editData,
 }: ProductionEntryDialogProps) {
+  const t = useTranslations('energy.componentToasts')
   const isEdit = !!editData
 
   // Form state
@@ -132,12 +134,12 @@ export function ProductionEntryDialog({
     setIsLoadingParks(true)
     try {
       const res = await fetch('/api/parks?limit=100')
-      if (!res.ok) throw new Error('Fehler beim Laden der Parks')
+      if (!res.ok) throw new Error(t('parksLoadError'))
       const json = await res.json()
       const data = (json.data ?? json) as ParkOption[]
       setParks(data)
     } catch {
-      toast.error('Parks konnten nicht geladen werden')
+      toast.error(t('parksLoadError'))
     } finally {
       setIsLoadingParks(false)
     }
@@ -155,12 +157,12 @@ export function ProductionEntryDialog({
     setIsLoadingTurbines(true)
     try {
       const res = await fetch(`/api/parks/${selectedParkId}`)
-      if (!res.ok) throw new Error('Fehler beim Laden der Anlagen')
+      if (!res.ok) throw new Error(t('turbinesLoadError'))
       const park = await res.json()
       const turbineList = (park.turbines ?? []) as TurbineOption[]
       setTurbines(turbineList.filter((t) => t.status === 'ACTIVE'))
     } catch {
-      toast.error('Anlagen konnten nicht geladen werden')
+      toast.error(t('turbinesLoadError'))
       setTurbines([])
     } finally {
       setIsLoadingTurbines(false)
@@ -285,13 +287,13 @@ export function ProductionEntryDialog({
       }
 
       toast.success(
-        isEdit ? 'Produktionsdaten aktualisiert' : 'Produktionsdaten gespeichert'
+        isEdit ? t('productionDataUpdated') : t('productionDataSaved')
       )
       onSuccess()
       onOpenChange(false)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-      toast.error(isEdit ? 'Fehler beim Aktualisieren' : 'Fehler beim Speichern', {
+      const message = err instanceof Error ? err.message : t('unknownError')
+      toast.error(isEdit ? t('updateError') : t('saveError'), {
         description: message,
       })
     } finally {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { FileWarning, AlertTriangle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ interface ExpiringContractsWidgetProps {
 // =============================================================================
 
 export function ExpiringContractsWidget({ className }: ExpiringContractsWidgetProps) {
+  const t = useTranslations("dashboard.widgets");
   const [contracts, setContracts] = useState<ExpiringContract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,7 +140,7 @@ export function ExpiringContractsWidget({ className }: ExpiringContractsWidgetPr
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <FileWarning className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">Keine auslaufenden Verträge</p>
+          <p className="text-sm">{t("noExpiringContracts")}</p>
         </div>
       </div>
     );
@@ -155,7 +157,7 @@ export function ExpiringContractsWidget({ className }: ExpiringContractsWidgetPr
             {/* On wider widgets show full title, on narrow truncate */}
             <p className="font-medium text-sm @md:text-base truncate @md:whitespace-normal">{contract.title}</p>
             <p className="text-xs @md:text-sm text-muted-foreground">
-              {contract.type} - Läuft ab am {contract.expiryDate}
+              {t("contractExpires", { type: contract.type, date: contract.expiryDate })}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">

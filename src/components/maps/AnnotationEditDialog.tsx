@@ -24,12 +24,12 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { MapAnnotationData } from "./MapAnnotationLayer";
 
-const ANNOTATION_TYPES = [
-  { value: "CABLE_ROUTE", label: "Kabeltrasse", color: "#eab308" },
-  { value: "COMPENSATION_AREA", label: "Ausgleichsfläche", color: "#22c55e" },
-  { value: "ACCESS_ROAD", label: "Zuwegung", color: "#d97706" },
-  { value: "EXCLUSION_ZONE", label: "Sperrzone", color: "#ef4444" },
-  { value: "CUSTOM", label: "Sonstiges", color: "#6366f1" },
+const ANNOTATION_TYPE_VALUES = [
+  { value: "CABLE_ROUTE", labelKey: "typeCableRoute", color: "#eab308" },
+  { value: "COMPENSATION_AREA", labelKey: "compensationArea", color: "#22c55e" },
+  { value: "ACCESS_ROAD", labelKey: "typeAccessRoad", color: "#d97706" },
+  { value: "EXCLUSION_ZONE", labelKey: "typeExclusionZone", color: "#ef4444" },
+  { value: "CUSTOM", labelKey: "typeCustom", color: "#6366f1" },
 ] as const;
 
 interface AnnotationEditDialogProps {
@@ -48,6 +48,7 @@ export function AnnotationEditDialog({
   onSaved,
 }: AnnotationEditDialogProps) {
   const tToast = useTranslations("maps.toasts");
+  const t = useTranslations("maps.annotation");
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("CUSTOM");
   const [description, setDescription] = useState("");
@@ -103,12 +104,12 @@ export function AnnotationEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Zeichnung bearbeiten</DialogTitle>
+          <DialogTitle>{t("editTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-anno-name">Name *</Label>
+            <Label htmlFor="edit-anno-name">{t("nameLabel")}</Label>
             <Input
               id="edit-anno-name"
               value={name}
@@ -118,20 +119,20 @@ export function AnnotationEditDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Typ</Label>
+            <Label>{t("typeLabel")}</Label>
             <Select value={type} onValueChange={setType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ANNOTATION_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
+                {ANNOTATION_TYPE_VALUES.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
                     <div className="flex items-center gap-2">
                       <span
                         className="inline-block w-3 h-3 rounded-full"
-                        style={{ backgroundColor: t.color }}
+                        style={{ backgroundColor: opt.color }}
                       />
-                      {t.label}
+                      {t(opt.labelKey)}
                     </div>
                   </SelectItem>
                 ))}
@@ -140,10 +141,10 @@ export function AnnotationEditDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-anno-desc">Beschreibung</Label>
+            <Label htmlFor="edit-anno-desc">{t("descriptionLabel")}</Label>
             <Textarea
               id="edit-anno-desc"
-              placeholder="Optionale Beschreibung..."
+              placeholder={t("descriptionPlaceholder")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -153,11 +154,11 @@ export function AnnotationEditDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Abbrechen
+            {t("cancel")}
           </Button>
           <Button onClick={handleSave} disabled={saving || !name.trim()}>
             {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Aktualisieren
+            {t("update")}
           </Button>
         </DialogFooter>
       </DialogContent>

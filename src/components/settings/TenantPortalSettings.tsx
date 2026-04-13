@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -92,6 +93,7 @@ function PortalSettingsSkeleton() {
 // =============================================================================
 
 export function TenantPortalSettings() {
+  const t = useTranslations("admin.settingsUI.tenantPortal");
   const { settings, isLoading, isError, updateSettings } =
     useTenantSettings();
   const [formData, setFormData] = useState<PortalFormData | null>(null);
@@ -137,19 +139,17 @@ export function TenantPortalSettings() {
       formData.portalContactEmail &&
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.portalContactEmail)
     ) {
-      toast.error("Bitte geben Sie eine gültige Kontakt-E-Mail-Adresse ein");
+      toast.error(t("saveError"));
       return;
     }
 
     try {
       setIsSaving(true);
       await updateSettings(formData);
-      toast.success("Portal-Einstellungen gespeichert");
+      toast.success(t("saved"));
       setHasChanges(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
-      );
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }

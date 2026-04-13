@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useParks } from "@/hooks/useParks";
 import {
   ProductionChart,
@@ -239,6 +240,7 @@ function getDefaultTo(): string {
 // =============================================================================
 
 export function EnergyReportBuilder() {
+  const t = useTranslations("energy.componentToasts");
   // ---------------------------------------------------------------------------
   // State: module selection
   // ---------------------------------------------------------------------------
@@ -332,7 +334,7 @@ export function EnergyReportBuilder() {
 
   async function handleGenerate() {
     if (selectedModules.size === 0) {
-      toast.error("Bitte waehlen Sie mindestens ein Modul aus.");
+      toast.error(t("moduleSelectRequired"));
       return;
     }
 
@@ -364,12 +366,12 @@ export function EnergyReportBuilder() {
 
       const data: ReportData = await res.json();
       setReportData(data);
-      toast.success("Bericht erfolgreich generiert");
+      toast.success(t("reportGenerated"));
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Generieren des Berichts"
+          : t("pdfGenerateError")
       );
     } finally {
       setGenerating(false);

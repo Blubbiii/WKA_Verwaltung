@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -101,6 +102,7 @@ const EMPTY_FORM: TemplateFormData = {
 };
 
 export function PositionTemplatesSettings() {
+  const t = useTranslations("admin.settingsUI.positionTemplates");
   const [templates, setTemplates] = useState<PositionTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -118,11 +120,11 @@ export function PositionTemplatesSettings() {
         setTemplates(data.data || []);
       }
     } catch {
-      toast.error("Fehler beim Laden der Vorlagen");
+      toast.error(t("loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchTemplates();
@@ -160,13 +162,13 @@ export function PositionTemplatesSettings() {
         method: "DELETE",
       });
       if (response.ok) {
-        toast.success("Vorlage gelöscht");
+        toast.success(t("deleted"));
         fetchTemplates();
       } else {
-        throw new Error("Fehler beim Löschen");
+        throw new Error(t("deleteError"));
       }
     } catch {
-      toast.error("Fehler beim Löschen der Vorlage");
+      toast.error(t("deleteError"));
     } finally {
       setDeleteDialogOpen(false);
       setTemplateToDelete(null);
@@ -175,11 +177,11 @@ export function PositionTemplatesSettings() {
 
   async function handleSave() {
     if (!formData.name.trim()) {
-      toast.error("Name ist erforderlich");
+      toast.error(t("nameRequired"));
       return;
     }
     if (!formData.description.trim()) {
-      toast.error("Beschreibung ist erforderlich");
+      toast.error(t("nameRequired"));
       return;
     }
 
@@ -207,24 +209,24 @@ export function PositionTemplatesSettings() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
-      toast.success(editingId ? "Vorlage aktualisiert" : "Vorlage erstellt");
+      toast.success(editingId ? t("updated") : t("created"));
       setDialogOpen(false);
       fetchTemplates();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }
   }
 
   // Group templates by category
-  const grouped = templates.reduce<Record<string, PositionTemplate[]>>((acc, t) => {
-    const cat = t.category || "Ohne Kategorie";
+  const grouped = templates.reduce<Record<string, PositionTemplate[]>>((acc, tpl) => {
+    const cat = tpl.category || "Ohne Kategorie";
     if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(t);
+    acc[cat].push(tpl);
     return acc;
   }, {});
 

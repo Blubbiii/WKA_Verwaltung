@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
   BarChart3,
   LayoutGrid,
@@ -72,6 +73,7 @@ export function WidgetSidebar({
   onClose,
   className,
 }: WidgetSidebarProps) {
+  const t = useTranslations("dashboard.sidebar");
   // Get widget IDs that are already in the dashboard
   const currentWidgetIds = useMemo(
     () => new Set(currentWidgets.map((w) => w.widgetId)),
@@ -113,13 +115,13 @@ export function WidgetSidebar({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div>
-          <h2 className="font-semibold">Widgets hinzufügen</h2>
+          <h2 className="font-semibold">{t("heading")}</h2>
           <p className="text-xs text-muted-foreground">
-            {totalAvailable} Widgets verfügbar
+            {t("available", { count: totalAvailable })}
           </p>
         </div>
         {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Schließen">
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("close")}>
             <X className="h-4 w-4" />
           </Button>
         )}
@@ -130,7 +132,7 @@ export function WidgetSidebar({
         {totalAvailable === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <LayoutGrid className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Alle Widgets wurden hinzugefügt</p>
+            <p className="text-sm">{t("allAdded")}</p>
           </div>
         ) : (
           <div className="space-y-6">

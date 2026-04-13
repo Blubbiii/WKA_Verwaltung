@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Briefcase, FileArchive, Mail, BarChart3, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,7 @@ export function FeaturesConfigForm({
   configs,
   onSave,
 }: FeaturesConfigFormProps) {
+  const t = useTranslations("admin.systemConfigUI");
   const getConfigValue = (key: string): string => {
     const config = configs.find((c) => c.key === key);
     return config?.value || "";
@@ -110,16 +112,14 @@ export function FeaturesConfigForm({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("featuresSaveError"));
       }
 
-      toast.success("Feature-Konfiguration gespeichert");
+      toast.success(t("featuresSaved"));
       onSave();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Speichern der Konfiguration"
+        error instanceof Error ? error.message : t("featuresSaveError")
       );
     } finally {
       setSaving(false);

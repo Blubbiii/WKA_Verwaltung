@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Mail,
   Send,
@@ -71,6 +72,7 @@ export function EmailConfigForm({
   availableKeys: _availableKeys,
   onSave,
 }: EmailConfigFormProps) {
+  const t = useTranslations("admin.systemConfigUI");
   // Get initial values from configs
   const getConfigValue = (key: string): string => {
     const config = configs.find((c) => c.key === key);
@@ -132,17 +134,15 @@ export function EmailConfigForm({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("emailSaveError"));
       }
 
-      toast.success("E-Mail-Konfiguration gespeichert");
+      toast.success(t("emailSaved"));
       setSmtpPassword(""); // Clear password field after save
       onSave();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Speichern der Konfiguration"
+        error instanceof Error ? error.message : t("emailSaveError")
       );
     } finally {
       setSaving(false);
@@ -178,17 +178,17 @@ export function EmailConfigForm({
       });
 
       if (data.success) {
-        toast.success(data.message);
+        toast.success(data.message || t("emailTestSuccess"));
       } else {
-        toast.error(data.error || "Test fehlgeschlagen");
+        toast.error(data.error || t("emailTestError"));
       }
     } catch (error) {
       setTestResult({
         success: false,
-        message: "Verbindungstest fehlgeschlagen",
+        message: t("emailTestError"),
         details: error instanceof Error ? error.message : undefined,
       });
-      toast.error("Fehler beim Testen der Verbindung");
+      toast.error(t("emailTestError"));
     } finally {
       setTesting(false);
     }

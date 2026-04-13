@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -25,6 +26,7 @@ const DEFAULT_MESSAGE =
   "Das System befindet sich im Wartungsmodus. Bitte versuchen Sie es später erneut.";
 
 export function MaintenanceModeTab() {
+  const t = useTranslations("admin.maintenanceModeUI");
   const [status, setStatus] = useState<MaintenanceStatus>({
     active: false,
     message: DEFAULT_MESSAGE,
@@ -42,18 +44,18 @@ export function MaintenanceModeTab() {
       setLoading(true);
       const response = await fetch("/api/admin/maintenance");
       if (!response.ok) {
-        throw new Error("Fehler beim Laden");
+        throw new Error(t("loadError"));
       }
       const data: MaintenanceStatus = await response.json();
       setStatus(data);
       setOriginalStatus(data);
       setHasChanges(false);
     } catch {
-      toast.error("Fehler beim Laden des Wartungsmodus-Status");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchStatus();
@@ -83,21 +85,15 @@ export function MaintenanceModeTab() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Fehler beim Speichern");
+        throw new Error(data.error || t("saveError"));
       }
 
       setOriginalStatus(status);
       setHasChanges(false);
-      toast.success(
-        status.active
-          ? "Wartungsmodus aktiviert"
-          : "Wartungsmodus deaktiviert"
-      );
+      toast.success(status.active ? t("enabled") : t("disabled"));
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Speichern des Wartungsmodus"
+        error instanceof Error ? error.message : t("saveError")
       );
     } finally {
       setSaving(false);

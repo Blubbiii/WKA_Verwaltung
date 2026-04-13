@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Cog, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,7 @@ export function GeneralConfigForm({
   availableKeys: _availableKeys,
   onSave,
 }: GeneralConfigFormProps) {
+  const t = useTranslations("admin.systemConfigUI");
   // Get initial values from configs
   const getConfigValue = (key: string): string => {
     const config = configs.find((c) => c.key === key);
@@ -110,16 +112,14 @@ export function GeneralConfigForm({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("generalSaveError"));
       }
 
-      toast.success("Allgemeine Konfiguration gespeichert");
+      toast.success(t("generalSaved"));
       onSave();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Speichern der Konfiguration"
+        error instanceof Error ? error.message : t("generalSaveError")
       );
     } finally {
       setSaving(false);

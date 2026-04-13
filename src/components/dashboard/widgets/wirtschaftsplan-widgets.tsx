@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -59,6 +60,7 @@ function useOverviewData() {
 // =============================================================================
 
 export function BudgetVarianceKPI({ className }: { className?: string }) {
+  const t = useTranslations("dashboard.widgets");
   const { data, isLoading, error } = useOverviewData();
 
   if (isLoading) {
@@ -72,7 +74,7 @@ export function BudgetVarianceKPI({ className }: { className?: string }) {
   if (error || !data) {
     return (
       <div className={cn("flex items-center justify-center h-full text-muted-foreground text-sm", className)}>
-        Keine Daten
+        {t("noData")}
       </div>
     );
   }
@@ -94,10 +96,10 @@ export function BudgetVarianceKPI({ className }: { className?: string }) {
     : "text-blue-500/40 dark:text-blue-400/30";
   const Icon = isOver ? TrendingUp : isUnder ? TrendingDown : Minus;
   const label = isOver
-    ? `+${(utilization! - 100).toFixed(1)}% über Plan`
+    ? t("overPlan", { pct: (utilization! - 100).toFixed(1) })
     : isUnder
-    ? `${(100 - utilization!).toFixed(1)}% unter Plan`
-    : "Im Plan";
+    ? t("underPlan", { pct: (100 - utilization!).toFixed(1) })
+    : t("inPlan");
 
   return (
     <div className={cn("flex items-start gap-3 @md:gap-4", className)}>
@@ -106,10 +108,10 @@ export function BudgetVarianceKPI({ className }: { className?: string }) {
         <p className={cn("text-2xl @md:text-3xl font-bold truncate", color)}>
           {hasBudget ? `${utilization!.toFixed(1)} %` : "–"}
         </p>
-        <p className="text-xs @md:text-sm text-muted-foreground mt-0.5">Kostenauslastung {data.year}</p>
+        <p className="text-xs @md:text-sm text-muted-foreground mt-0.5">{t("costUtilization", { year: data.year })}</p>
         {hasBudget && <p className={cn("text-xs @md:text-sm mt-1", color)}>{label}</p>}
         {!hasBudget && (
-          <p className="text-xs @md:text-sm text-muted-foreground mt-1">Kein Budget hinterlegt</p>
+          <p className="text-xs @md:text-sm text-muted-foreground mt-1">{t("noBudget")}</p>
         )}
       </div>
     </div>
@@ -125,6 +127,7 @@ function formatK(value: number) {
 }
 
 export function WirtschaftsplanPLChart({ className }: { className?: string }) {
+  const t = useTranslations("dashboard.widgets");
   const { data, isLoading, error } = useOverviewData();
 
   if (isLoading) {
@@ -138,26 +141,28 @@ export function WirtschaftsplanPLChart({ className }: { className?: string }) {
   if (error || !data) {
     return (
       <Card className={cn("h-full flex items-center justify-center text-muted-foreground text-sm", className)}>
-        Daten nicht verfügbar
+        {t("dataNotAvailable")}
       </Card>
     );
   }
 
+  const monthLabel = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"][data.currentMonth - 1];
+
   const chartData = [
     {
-      name: "Erlöse",
-      Ist: Math.round(data.totalRevenue / 10) / 100,
-      ...(data.hasBudget ? { Plan: Math.round(data.budgetRevenue / 10) / 100 } : {}),
+      name: t("categoryRevenue"),
+      [t("actualLabel")]: Math.round(data.totalRevenue / 10) / 100,
+      ...(data.hasBudget ? { [t("planLabel")]: Math.round(data.budgetRevenue / 10) / 100 } : {}),
     },
     {
-      name: "Kosten",
-      Ist: Math.round(data.totalCosts / 10) / 100,
-      ...(data.hasBudget ? { Plan: Math.round(data.budgetCosts / 10) / 100 } : {}),
+      name: t("categoryCosts"),
+      [t("actualLabel")]: Math.round(data.totalCosts / 10) / 100,
+      ...(data.hasBudget ? { [t("planLabel")]: Math.round(data.budgetCosts / 10) / 100 } : {}),
     },
     {
-      name: "Ergebnis",
-      Ist: Math.round(data.netPL / 10) / 100,
-      ...(data.hasBudget ? { Plan: Math.round(data.budgetNetPL / 10) / 100 } : {}),
+      name: t("categoryResult"),
+      [t("actualLabel")]: Math.round(data.netPL / 10) / 100,
+      ...(data.hasBudget ? { [t("planLabel")]: Math.round(data.budgetNetPL / 10) / 100 } : {}),
     },
   ];
 
@@ -165,11 +170,12 @@ export function WirtschaftsplanPLChart({ className }: { className?: string }) {
     <Card className={cn("h-full flex flex-col", className)}>
       <CardHeader className="p-4 pb-2">
         <CardTitle className="uppercase tracking-wider text-[11px] font-semibold text-muted-foreground">
-          P&L Jahresverlauf
+          {t("plYearProgress")}
         </CardTitle>
         <CardDescription className="text-xs">
-          YTD {data.year} (Jan–{["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"][data.currentMonth - 1]})
-          {data.hasBudget ? " — Ist vs. Plan" : " — Ist"}
+          {data.hasBudget
+            ? t("ytdActualVsPlan", { year: data.year, month: monthLabel })
+            : t("ytdActual", { year: data.year, month: monthLabel })}
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4 pt-0 flex-1 min-h-0">
@@ -201,9 +207,9 @@ export function WirtschaftsplanPLChart({ className }: { className?: string }) {
               }}
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="Ist" fill="hsl(var(--chart-1))" radius={[2, 2, 0, 0]} />
+            <Bar dataKey={t("actualLabel")} fill="hsl(var(--chart-1))" radius={[2, 2, 0, 0]} />
             {data.hasBudget && (
-              <Bar dataKey="Plan" fill="hsl(var(--chart-2))" radius={[2, 2, 0, 0]} />
+              <Bar dataKey={t("planLabel")} fill="hsl(var(--chart-2))" radius={[2, 2, 0, 0]} />
             )}
           </BarChart>
         </ResponsiveContainer>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -182,6 +183,7 @@ function TemplateList({
 }
 
 export function DocumentTemplatesSettings() {
+  const t = useTranslations("admin.settingsUI.documentTemplates");
   const { templates, isLoading, isError, mutate } = useDocumentTemplates();
   const [showDialog, setShowDialog] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<DocumentTemplate | null>(null);
@@ -220,7 +222,7 @@ export function DocumentTemplatesSettings() {
 
   async function handleSave() {
     if (!formData.name.trim()) {
-      toast.error("Name erforderlich");
+      toast.error(t("saveError"));
       return;
     }
 
@@ -258,7 +260,7 @@ export function DocumentTemplatesSettings() {
           footerText: formData.footerText || null,
           isDefault: formData.isDefault,
         });
-        toast.success("Vorlage aktualisiert");
+        toast.success(t("updated"));
       } else {
         await createDocumentTemplate({
           name: formData.name,
@@ -267,13 +269,13 @@ export function DocumentTemplatesSettings() {
           footerText: formData.footerText || undefined,
           isDefault: formData.isDefault,
         });
-        toast.success("Vorlage erstellt");
+        toast.success(t("created"));
       }
 
       setShowDialog(false);
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -289,10 +291,10 @@ export function DocumentTemplatesSettings() {
 
     try {
       await deleteDocumentTemplate(templateToDelete);
-      toast.success("Vorlage gelöscht");
+      toast.success(t("deleted"));
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Löschen");
+      toast.error(error instanceof Error ? error.message : t("deleteError"));
     } finally {
       setDeleteDialogOpen(false);
       setTemplateToDelete(null);
@@ -302,10 +304,10 @@ export function DocumentTemplatesSettings() {
   async function handleSetDefault(id: string) {
     try {
       await updateDocumentTemplate(id, { isDefault: true });
-      toast.success("Standard-Vorlage gesetzt");
+      toast.success(t("updated"));
       mutate();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler");
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     }
   }
 

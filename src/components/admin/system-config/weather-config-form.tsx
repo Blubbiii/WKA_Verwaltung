@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Cloud,
   Loader2,
@@ -73,6 +74,7 @@ export function WeatherConfigForm({
   availableKeys: _availableKeys,
   onSave,
 }: WeatherConfigFormProps) {
+  const t = useTranslations("admin.systemConfigUI");
   // Get initial values from configs
   const getConfigValue = (key: string): string => {
     const config = configs.find((c) => c.key === key);
@@ -111,16 +113,14 @@ export function WeatherConfigForm({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("weatherSaveError"));
       }
 
-      toast.success("Wetter-Konfiguration gespeichert");
+      toast.success(t("weatherSaved"));
       onSave();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Speichern der Konfiguration"
+        error instanceof Error ? error.message : t("weatherSaveError")
       );
     } finally {
       setSaving(false);
@@ -149,17 +149,17 @@ export function WeatherConfigForm({
       });
 
       if (data.success) {
-        toast.success(data.message);
+        toast.success(data.message || t("weatherTestSuccess"));
       } else {
-        toast.error(data.error || "Test fehlgeschlagen");
+        toast.error(data.error || t("weatherTestError"));
       }
     } catch (error) {
       setTestResult({
         success: false,
-        message: "API-Test fehlgeschlagen",
+        message: t("weatherTestError"),
         details: error instanceof Error ? error.message : undefined,
       });
-      toast.error("Fehler beim Testen der API");
+      toast.error(t("weatherTestError"));
     } finally {
       setTesting(false);
     }

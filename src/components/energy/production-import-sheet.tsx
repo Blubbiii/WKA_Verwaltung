@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { useState, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 import {
   Upload,
   FileSpreadsheet,
@@ -189,6 +190,7 @@ export function ProductionImportSheet({
   onOpenChange,
   onSuccess,
 }: ProductionImportSheetProps) {
+  const t = useTranslations('energy.componentToasts')
   // Wizard state
   const [currentStep, setCurrentStep] = useState(0)
 
@@ -390,7 +392,7 @@ export function ProductionImportSheet({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Fehler beim Lesen der Datei'
       setParseError(message)
-      toast.error('Fehler beim Lesen der Datei', { description: message })
+      toast.error(t('fileReadError'), { description: message })
     } finally {
       setIsParsing(false)
     }
@@ -518,7 +520,7 @@ export function ProductionImportSheet({
 
       setValidationResults(results)
     } catch {
-      toast.error('Fehler bei der Validierung')
+      toast.error(t('validationError'))
     } finally {
       setIsValidating(false)
     }
@@ -607,18 +609,18 @@ export function ProductionImportSheet({
       setImportProgress(100)
 
       if ((result.imported ?? 0) > 0) {
-        toast.success('Import erfolgreich', {
-          description: `${result.imported} Datensaetze importiert`,
+        toast.success(t('importSuccess'), {
+          description: t('importSuccessDesc', { count: result.imported ?? 0 }),
         })
         onSuccess()
       } else if ((result.errors ?? 0) > 0) {
-        toast.warning('Import mit Fehlern abgeschlossen', {
-          description: `${result.errors} Fehler aufgetreten`,
+        toast.warning(t('importWithErrors'), {
+          description: t('importErrorsDesc', { count: result.errors ?? 0 }),
         })
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
-      toast.error('Import fehlgeschlagen', { description: message })
+      const message = err instanceof Error ? err.message : t('unknownError')
+      toast.error(t('importFailed'), { description: message })
       setImportResult({
         imported: 0,
         skipped: 0,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -49,6 +50,7 @@ function SequenceCard({
   sequence,
   onSave,
 }: SequenceCardProps) {
+  const t = useTranslations("admin.settingsUI.invoiceSequences");
   const [format, setFormat] = useState("");
   const [nextNumber, setNextNumber] = useState(1);
   const [digitCount, setDigitCount] = useState(4);
@@ -70,7 +72,7 @@ function SequenceCard({
 
   const handleSave = async () => {
     if (!format.includes("{NUMBER}")) {
-      toast.error("Format muss {NUMBER} enthalten");
+      toast.error(t("saveError"));
       return;
     }
 
@@ -81,13 +83,11 @@ function SequenceCard({
         nextNumber,
         digitCount,
       });
-      toast.success("Nummernkreis gespeichert");
+      toast.success(t("saved"));
       setHasChanges(false);
       onSave();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
-      );
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }

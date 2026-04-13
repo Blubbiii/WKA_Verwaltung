@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -87,6 +88,7 @@ function InvoiceSettingsSkeleton() {
 }
 
 export function TenantInvoiceSettings() {
+  const t = useTranslations("admin.settingsUI.tenantInvoice");
   const { settings, isLoading, isError, updateSettings } =
     useTenantSettings();
   const [formData, setFormData] = useState<InvoiceFormData | null>(null);
@@ -143,39 +145,37 @@ export function TenantInvoiceSettings() {
     if (!formData) return;
 
     if (formData.paymentTermDays < 1 || formData.paymentTermDays > 365) {
-      toast.error("Zahlungsziel muss zwischen 1 und 365 Tagen liegen");
+      toast.error(t("saveError"));
       return;
     }
 
     if (formData.datevRevenueAccount && !/^\d{4,10}$/.test(formData.datevRevenueAccount)) {
-      toast.error("DATEV Erlöskonto muss 4-10 Ziffern enthalten");
+      toast.error(t("saveError"));
       return;
     }
 
     if (formData.datevExpenseAccount && !/^\d{4,10}$/.test(formData.datevExpenseAccount)) {
-      toast.error("DATEV Aufwandskonto muss 4-10 Ziffern enthalten");
+      toast.error(t("saveError"));
       return;
     }
 
     if (formData.gobdRetentionYearsInvoice < 1 || formData.gobdRetentionYearsInvoice > 30) {
-      toast.error("Aufbewahrungsfrist muss zwischen 1 und 30 Jahren liegen");
+      toast.error(t("saveError"));
       return;
     }
 
     if (formData.gobdRetentionYearsContract < 1 || formData.gobdRetentionYearsContract > 30) {
-      toast.error("Aufbewahrungsfrist muss zwischen 1 und 30 Jahren liegen");
+      toast.error(t("saveError"));
       return;
     }
 
     try {
       setIsSaving(true);
       await updateSettings(formData);
-      toast.success("Rechnungseinstellungen gespeichert");
+      toast.success(t("saved"));
       setHasChanges(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
-      );
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }

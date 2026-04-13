@@ -26,6 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Calendar,
   Percent,
@@ -105,6 +106,7 @@ interface RuleFormProps {
 }
 
 export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps) {
+  const t = useTranslations("admin.billingRulesUI");
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!initialData?.id;
@@ -162,16 +164,12 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
       const result = await response.json();
 
-      toast.success(
-        isEditing
-          ? "Abrechnungsregel aktualisiert"
-          : "Abrechnungsregel erstellt"
-      );
+      toast.success(isEditing ? t("updated") : t("created"));
 
       if (onSuccess) {
         onSuccess();
@@ -179,7 +177,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
         router.push(`/admin/billing-rules/${result.id}`);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Fehler beim Speichern");
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSubmitting(false);
     }

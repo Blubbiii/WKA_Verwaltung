@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -91,6 +92,7 @@ function UsageCell({
 }
 
 export function TenantLimitsTab() {
+  const t = useTranslations("admin.tenantLimitsUI");
   const [tenants, setTenants] = useState<TenantWithLimits[]>([]);
   const [loading, setLoading] = useState(true);
   const [editStates, setEditStates] = useState<Record<string, EditState>>({});
@@ -101,7 +103,7 @@ export function TenantLimitsTab() {
       setLoading(true);
       const response = await fetch("/api/admin/tenant-limits");
       if (!response.ok) {
-        throw new Error("Fehler beim Laden");
+        throw new Error(t("loadError"));
       }
       const data = await response.json();
       setTenants(data.data);
@@ -117,11 +119,11 @@ export function TenantLimitsTab() {
       });
       setEditStates(states);
     } catch {
-      toast.error("Fehler beim Laden der Mandanten-Limits");
+      toast.error(t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchLimits();
@@ -162,15 +164,15 @@ export function TenantLimitsTab() {
     const maxParks = parseInt(editState.maxParks, 10);
 
     if (isNaN(maxUsers) || maxUsers < 1) {
-      toast.error("Max. Benutzer muss eine positive Zahl sein");
+      toast.error(t("maxUsersInvalid"));
       return;
     }
     if (isNaN(maxStorageMb) || maxStorageMb < 100) {
-      toast.error("Max. Speicher muss mindestens 100 MB sein");
+      toast.error(t("maxStorageInvalid"));
       return;
     }
     if (isNaN(maxParks) || maxParks < 1) {
-      toast.error("Max. Parks muss eine positive Zahl sein");
+      toast.error(t("maxParksInvalid"));
       return;
     }
 
@@ -185,24 +187,22 @@ export function TenantLimitsTab() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Fehler beim Speichern");
+        throw new Error(data.error || t("saveError"));
       }
 
       // Update local state
       setTenants((prev) =>
-        prev.map((t) =>
-          t.id === tenantId
-            ? { ...t, limits: { maxUsers, maxStorageMb, maxParks } }
-            : t
+        prev.map((tn) =>
+          tn.id === tenantId
+            ? { ...tn, limits: { maxUsers, maxStorageMb, maxParks } }
+            : tn
         )
       );
 
-      toast.success("Mandanten-Limits gespeichert");
+      toast.success(t("saved"));
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Speichern der Limits"
+        error instanceof Error ? error.message : t("saveError")
       );
     } finally {
       setSaving(null);
@@ -216,10 +216,10 @@ export function TenantLimitsTab() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Gauge className="h-5 w-5" />
-              Mandanten-Limits
+              {t("title")}
             </CardTitle>
             <CardDescription>
-              Nutzungsgrenzen pro Mandant verwalten (Benutzer, Speicher, Parks)
+              {t("description")}
             </CardDescription>
           </div>
           <Button
@@ -231,7 +231,7 @@ export function TenantLimitsTab() {
             <RefreshCw
               className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
             />
-            Aktualisieren
+            {t("refresh")}
           </Button>
         </div>
       </CardHeader>
@@ -244,25 +244,25 @@ export function TenantLimitsTab() {
           </div>
         ) : tenants.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            Keine aktiven Mandanten gefunden
+            {t("empty")}
           </p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[180px]">Mandant</TableHead>
+                  <TableHead className="min-w-[180px]">{t("tenant")}</TableHead>
                   <TableHead className="text-center">
-                    Benutzer (aktuell / max)
+                    {t("usersColumn")}
                   </TableHead>
                   <TableHead className="text-center">
-                    Speicher MB (aktuell / max)
+                    {t("storageColumn")}
                   </TableHead>
                   <TableHead className="text-center">
-                    Parks (aktuell / max)
+                    {t("parksColumn")}
                   </TableHead>
                   <TableHead className="text-center w-[80px]">
-                    Aktion
+                    {t("actionColumn")}
                   </TableHead>
                 </TableRow>
               </TableHeader>

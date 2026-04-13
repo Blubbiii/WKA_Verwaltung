@@ -244,6 +244,7 @@ export function ParkMap({
   mapPageUrl,
 }: ParkMapProps) {
   const tToast = useTranslations("maps.toasts");
+  const t = useTranslations("maps.parkMap");
   // Layer visibility state
   const [showTurbines, setShowTurbines] = useState(true);
   const [showPlots, setShowPlots] = useState(true);
@@ -389,9 +390,9 @@ export function ParkMap({
         style={{ height }}
       >
         <div className="text-center text-muted-foreground">
-          <p className="text-sm">Keine Koordinaten verfügbar</p>
+          <p className="text-sm">{t("noCoordinates")}</p>
           <p className="text-xs mt-1">
-            Fuegen Sie Koordinaten hinzu, um die Karte anzuzeigen
+            {t("addCoordsHint")}
           </p>
         </div>
       </div>
@@ -424,7 +425,7 @@ export function ParkMap({
                 } ${size !== "sm" ? "border-l border-gray-200" : ""}`}
                 onClick={() => setMapSize(size)}
               >
-                {size === "sm" ? "Klein" : size === "md" ? "Normal" : "Gross"}
+                {size === "sm" ? t("small") : size === "md" ? t("normal") : t("large")}
               </button>
             ))}
           </div>
@@ -438,7 +439,7 @@ export function ParkMap({
             <button
               className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
               onClick={() => window.open(mapPageUrl, "_blank")}
-              title="In neuem Tab oeffnen"
+              title={t("openInNewTab")}
             >
               <ExternalLink className="h-4 w-4" />
             </button>
@@ -446,7 +447,7 @@ export function ParkMap({
           <button
             className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
             onClick={() => setIsFullscreen(!isFullscreen)}
-            title={isFullscreen ? "Vollbild beenden (Esc)" : "Vollbild"}
+            title={isFullscreen ? t("exitFullscreen") : t("fullscreen")}
           >
             {isFullscreen ? (
               <Minimize2 className="h-4 w-4" />
@@ -558,9 +559,9 @@ export function ParkMap({
                   : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
               }`}
               onClick={() => setDrawMode(drawMode === "annotation" ? "off" : "annotation")}
-              title={drawMode === "annotation" ? "Zeichenmodus beenden" : "Zeichnung hinzufügen"}
+              title={drawMode === "annotation" ? t("exitDrawing") : t("addDrawing")}
             >
-              {drawMode === "annotation" ? "Beenden" : "Zeichnen"}
+              {drawMode === "annotation" ? t("exit") : t("draw")}
             </button>
             <button
               className={`px-3 py-1.5 rounded-md text-xs font-medium shadow-md border transition-colors ${
@@ -569,9 +570,9 @@ export function ParkMap({
                   : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
               }`}
               onClick={() => setDrawMode(drawMode === "plot" ? "off" : "plot")}
-              title={drawMode === "plot" ? "Flurstück-Modus beenden" : "Flurstück einzeichnen"}
+              title={drawMode === "plot" ? t("exitPlotMode") : t("drawPlot")}
             >
-              {drawMode === "plot" ? "Beenden" : "Flurstück"}
+              {drawMode === "plot" ? t("exit") : t("plot")}
             </button>
           </div>
         )}
@@ -648,19 +649,19 @@ export function ParkMap({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Zeichnung löschen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteAnnotationTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Diese Zeichnung wird unwiderruflich gelöscht.
+              {t("deleteAnnotationDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleAnnotationDelete}
               disabled={deleteLoading}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Löschen
+              {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

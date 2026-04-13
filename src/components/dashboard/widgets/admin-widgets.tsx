@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   Server,
@@ -65,15 +66,18 @@ function getStatusIcon(status: "healthy" | "degraded" | "down") {
   }
 }
 
-function getStatusLabel(status: "healthy" | "degraded" | "down") {
-  switch (status) {
-    case "healthy":
-      return "Alle Systeme funktionieren";
-    case "degraded":
-      return "Eingeschraenkte Funktionalitaet";
-    case "down":
-      return "System nicht verfügbar";
-  }
+function useStatusLabel() {
+  const t = useTranslations("dashboard.widgets");
+  return (status: "healthy" | "degraded" | "down") => {
+    switch (status) {
+      case "healthy":
+        return t("systemHealthy");
+      case "degraded":
+        return t("systemDegraded");
+      case "down":
+        return t("systemNotAvailable");
+    }
+  };
 }
 
 function getConnectionIcon(connected: boolean) {
@@ -89,6 +93,8 @@ function getConnectionIcon(connected: boolean) {
 // =============================================================================
 
 export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
+  const t = useTranslations("dashboard.widgets");
+  const getStatusLabel = useStatusLabel();
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,7 +155,7 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">{error || "Status nicht verfügbar"}</p>
+          <p className="text-sm">{error || t("statusNotAvailable")}</p>
         </div>
       </div>
     );
@@ -162,7 +168,7 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
         {getStatusIcon(status.status)}
         <div className="flex-1">
           <p className="font-medium text-sm @md:text-base">{getStatusLabel(status.status)}</p>
-          <p className="text-xs @md:text-sm text-muted-foreground">Version {status.version}</p>
+          <p className="text-xs @md:text-sm text-muted-foreground">{t("version", { version: status.version })}</p>
         </div>
       </div>
 
@@ -170,14 +176,14 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
       <div className="grid grid-cols-2 gap-3">
         <div className="flex items-center gap-2 p-2 @md:p-3 bg-muted/30 rounded">
           <Database className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm @md:text-base">Datenbank</span>
+          <span className="text-sm @md:text-base">{t("database")}</span>
           <span className="ml-auto">
             {getConnectionIcon(status.database === "connected")}
           </span>
         </div>
         <div className="flex items-center gap-2 p-2 @md:p-3 bg-muted/30 rounded">
           <Server className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm @md:text-base">Storage</span>
+          <span className="text-sm @md:text-base">{t("storage")}</span>
           <span className="ml-auto">
             {getConnectionIcon(status.storage === "available")}
           </span>
@@ -186,7 +192,7 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
 
       {/* Uptime */}
       <div className="text-xs @md:text-sm text-muted-foreground">
-        <span>Uptime: {status.uptime}</span>
+        <span>{t("uptime", { value: status.uptime })}</span>
       </div>
     </div>
   );
@@ -197,6 +203,7 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
 // =============================================================================
 
 export function UserStatsWidget({ className }: UserStatsWidgetProps) {
+  const t = useTranslations("dashboard.widgets");
   const [stats, setStats] = useState<UserStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -250,7 +257,7 @@ export function UserStatsWidget({ className }: UserStatsWidgetProps) {
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">{error || "Statistiken nicht verfügbar"}</p>
+          <p className="text-sm">{error || t("statsNotAvailable")}</p>
         </div>
       </div>
     );
@@ -267,29 +274,29 @@ export function UserStatsWidget({ className }: UserStatsWidgetProps) {
         <Users className="h-8 w-8 @md:h-10 @md:w-10 text-primary shrink-0" />
         <div>
           <p className="text-2xl @md:text-3xl font-bold">{stats.totalUsers}</p>
-          <p className="text-xs @md:text-sm text-muted-foreground">Benutzer gesamt</p>
+          <p className="text-xs @md:text-sm text-muted-foreground">{t("totalUsers")}</p>
         </div>
       </div>
 
       {/* Active Today */}
       <div className="space-y-1">
         <div className="flex justify-between text-sm @md:text-base">
-          <span>Aktiv heute</span>
+          <span>{t("activeToday")}</span>
           <span className="font-medium">{stats.activeToday}</span>
         </div>
         <Progress value={activePercentage} className="h-2" />
-        <p className="text-xs @md:text-sm text-muted-foreground">{activePercentage}% der Benutzer</p>
+        <p className="text-xs @md:text-sm text-muted-foreground">{t("pctOfUsers", { pct: activePercentage })}</p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 text-sm @md:text-base">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-muted-foreground" />
-          <span>Neu: {stats.newThisMonth}</span>
+          <span>{t("newCount", { count: stats.newThisMonth })}</span>
         </div>
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
-          <span>Admins: {stats.adminCount}</span>
+          <span>{t("adminsCount", { count: stats.adminCount })}</span>
         </div>
       </div>
     </div>
@@ -322,6 +329,7 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 export function AuditLogWidget({ className }: { className?: string }) {
+  const t = useTranslations("dashboard.widgets");
   const [entries, setEntries] = useState<AuditLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -357,7 +365,7 @@ export function AuditLogWidget({ className }: { className?: string }) {
     return (
       <div className={cn("flex flex-col items-center justify-center h-full gap-2", className)}>
         <ScrollText className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Keine Audit-Einträge</p>
+        <p className="text-sm text-muted-foreground">{t("noAuditEntries")}</p>
       </div>
     );
   }
@@ -391,7 +399,7 @@ export function AuditLogWidget({ className }: { className?: string }) {
         href="/admin/audit-logs"
         className="flex items-center justify-center gap-1 pt-2 mt-2 border-t text-xs text-primary hover:underline"
       >
-        Alle Einträge <ArrowRight className="h-3 w-3" />
+        {t("allEntries")} <ArrowRight className="h-3 w-3" />
       </Link>
     </div>
   );
@@ -425,6 +433,7 @@ interface JobsStatsResponse {
 }
 
 export function BillingJobsWidget({ className }: { className?: string }) {
+  const t = useTranslations("dashboard.widgets");
   const [stats, setStats] = useState<JobsStatsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -460,7 +469,7 @@ export function BillingJobsWidget({ className }: { className?: string }) {
     return (
       <div className={cn("flex flex-col items-center justify-center h-full gap-2", className)}>
         <Clock className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Jobs nicht verfügbar</p>
+        <p className="text-sm text-muted-foreground">{t("jobsNotAvailable")}</p>
       </div>
     );
   }
@@ -474,11 +483,11 @@ export function BillingJobsWidget({ className }: { className?: string }) {
           stats.healthy ? "bg-green-500" : "bg-red-500"
         )} />
         <span className="text-sm font-medium">
-          {stats.healthy ? "Queues gesund" : "Probleme erkannt"}
+          {stats.healthy ? t("queuesHealthy") : t("queuesProblems")}
         </span>
         {stats.totals.failed > 0 && (
           <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0">
-            {stats.totals.failed} fehlgeschlagen
+            {t("failedCount", { count: stats.totals.failed })}
           </Badge>
         )}
       </div>
@@ -491,12 +500,12 @@ export function BillingJobsWidget({ className }: { className?: string }) {
             <div className="flex items-center gap-1.5 shrink-0">
               {queue.active > 0 && (
                 <Badge variant="secondary" className="bg-blue-500/10 text-blue-700 dark:text-blue-400 text-[10px] px-1 py-0">
-                  {queue.active} aktiv
+                  {t("queueActive", { count: queue.active })}
                 </Badge>
               )}
               {queue.waiting > 0 && (
                 <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] px-1 py-0">
-                  {queue.waiting} wartend
+                  {t("queueWaiting", { count: queue.waiting })}
                 </Badge>
               )}
               {queue.failed > 0 && (
@@ -514,8 +523,8 @@ export function BillingJobsWidget({ className }: { className?: string }) {
 
       {/* Totals */}
       <div className="flex items-center justify-between pt-2 mt-2 border-t text-xs text-muted-foreground">
-        <span>{stats.totals.completed} abgeschlossen</span>
-        <span>{stats.totals.total} gesamt</span>
+        <span>{t("completedCount", { count: stats.totals.completed })}</span>
+        <span>{t("totalCount", { count: stats.totals.total })}</span>
       </div>
     </div>
   );
@@ -542,6 +551,7 @@ interface WebhookStatsResponse {
 }
 
 export function WebhookStatusWidget({ className }: { className?: string }) {
+  const t = useTranslations("dashboard.widgets");
   const [stats, setStats] = useState<WebhookStatsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -578,7 +588,7 @@ export function WebhookStatusWidget({ className }: { className?: string }) {
     return (
       <div className={cn("flex flex-col items-center justify-center h-full gap-2", className)}>
         <Webhook className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Webhook-Status nicht verfuegbar</p>
+        <p className="text-sm text-muted-foreground">{t("webhookNotAvailable")}</p>
       </div>
     );
   }
@@ -589,7 +599,7 @@ export function WebhookStatusWidget({ className }: { className?: string }) {
       <div className="grid grid-cols-3 gap-2 mb-3">
         <div className="text-center p-2 bg-muted/30 rounded">
           <p className="text-lg font-bold">{stats.totalDeliveries24h}</p>
-          <p className="text-[10px] text-muted-foreground">Zustellungen (24h)</p>
+          <p className="text-[10px] text-muted-foreground">{t("deliveries24h")}</p>
         </div>
         <div className="text-center p-2 bg-muted/30 rounded">
           <p className={cn(
@@ -600,7 +610,7 @@ export function WebhookStatusWidget({ className }: { className?: string }) {
           )}>
             {stats.successRate}%
           </p>
-          <p className="text-[10px] text-muted-foreground">Erfolgsrate</p>
+          <p className="text-[10px] text-muted-foreground">{t("successRate")}</p>
         </div>
         <div className="text-center p-2 bg-muted/30 rounded">
           <p className={cn(
@@ -609,7 +619,7 @@ export function WebhookStatusWidget({ className }: { className?: string }) {
           )}>
             {stats.failureCount}
           </p>
-          <p className="text-[10px] text-muted-foreground">Fehler</p>
+          <p className="text-[10px] text-muted-foreground">{t("errors")}</p>
         </div>
       </div>
 
@@ -617,7 +627,7 @@ export function WebhookStatusWidget({ className }: { className?: string }) {
       {stats.recentDeliveries.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-2">
           <Webhook className="h-6 w-6 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">Keine Zustellungen vorhanden</p>
+          <p className="text-xs text-muted-foreground">{t("noDeliveries")}</p>
         </div>
       ) : (
         <div className="flex-1 space-y-1 overflow-auto">
@@ -637,7 +647,7 @@ export function WebhookStatusWidget({ className }: { className?: string }) {
                       : "bg-red-500/10 text-red-700 dark:text-red-400"
                   )}
                 >
-                  {delivery.success ? delivery.statusCode || "OK" : delivery.statusCode || "Fehler"}
+                  {delivery.success ? delivery.statusCode || "OK" : delivery.statusCode || t("errorLabel")}
                 </Badge>
                 <span className="font-medium shrink-0">{delivery.event}</span>
                 <span className="truncate text-muted-foreground" title={delivery.url}>
@@ -658,7 +668,7 @@ export function WebhookStatusWidget({ className }: { className?: string }) {
         href="/admin/webhooks"
         className="flex items-center justify-center gap-1 pt-2 mt-2 border-t text-xs text-primary hover:underline"
       >
-        Alle Webhooks <ArrowRight className="h-3 w-3" />
+        {t("allWebhooks")} <ArrowRight className="h-3 w-3" />
       </Link>
     </div>
   );

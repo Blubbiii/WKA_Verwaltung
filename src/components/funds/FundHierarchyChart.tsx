@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Building2, Wind, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -207,6 +208,7 @@ export function FundHierarchyChart({
   childFunds,
   operatedTurbines = [],
 }: FundHierarchyChartProps) {
+  const t = useTranslations("funds.hierarchyChart");
   const router = useRouter();
 
   // ---- Container sizing ----
@@ -427,7 +429,7 @@ export function FundHierarchyChart({
         </div>
         {isCurrent && (
           <span className="text-[10px] text-muted-foreground font-medium mt-1 whitespace-nowrap">
-            Aktuelle Gesellschaft
+            {t("currentCompany")}
           </span>
         )}
       </div>
@@ -440,20 +442,20 @@ export function FundHierarchyChart({
         <div>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Unternehmensstruktur
+            {t("structure")}
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            {parentFunds.length > 0 && `${parentFunds.length} übergeordnete`}
+            {parentFunds.length > 0 && t("parentCount", { count: parentFunds.length })}
             {parentFunds.length > 0 && (childFunds.length > 0 || operatedTurbines.length > 0) && " | "}
-            {childFunds.length > 0 && `${childFunds.length} untergeordnete`}
+            {childFunds.length > 0 && t("childCount", { count: childFunds.length })}
             {childFunds.length > 0 && operatedTurbines.length > 0 && " | "}
-            {operatedTurbines.length > 0 && `${operatedTurbines.length} Anlagen`}
+            {operatedTurbines.length > 0 && t("turbineCount", { count: operatedTurbines.length })}
           </p>
         </div>
         {hasCustomPositions && (
           <Button variant="ghost" size="sm" onClick={resetPositions}>
             <RotateCcw className="mr-2 h-4 w-4" />
-            Zurücksetzen
+            {t("reset")}
           </Button>
         )}
       </CardHeader>

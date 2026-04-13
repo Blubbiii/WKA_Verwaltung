@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -96,6 +97,7 @@ function SettingsSkeleton() {
 }
 
 export function RevenueTypesSettings() {
+  const t = useTranslations("admin.settingsUI.revenueTypes");
   const [revenueTypes, setRevenueTypes] = useState<RevenueType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -113,11 +115,11 @@ export function RevenueTypesSettings() {
         setRevenueTypes(data.data || []);
       }
     } catch {
-      toast.error("Fehler beim Laden der Vergütungsarten");
+      toast.error(t("loadError"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -156,13 +158,13 @@ export function RevenueTypesSettings() {
       );
       if (response.ok) {
         const result = await response.json();
-        toast.success(result.message || "Vergütungsart gelöscht");
+        toast.success(result.message || t("deleted"));
         fetchData();
       } else {
-        throw new Error("Fehler beim Löschen");
+        throw new Error(t("deleteError"));
       }
     } catch {
-      toast.error("Fehler beim Löschen der Vergütungsart");
+      toast.error(t("deleteError"));
     } finally {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
@@ -171,11 +173,11 @@ export function RevenueTypesSettings() {
 
   async function handleSave() {
     if (!formData.name.trim()) {
-      toast.error("Name ist erforderlich");
+      toast.error(t("nameRequired"));
       return;
     }
     if (!formData.code.trim()) {
-      toast.error("Code ist erforderlich");
+      toast.error(t("nameRequired"));
       return;
     }
 
@@ -203,20 +205,14 @@ export function RevenueTypesSettings() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
-      toast.success(
-        editingId
-          ? "Vergütungsart aktualisiert"
-          : "Vergütungsart erstellt"
-      );
+      toast.success(editingId ? t("updated") : t("created"));
       setDialogOpen(false);
       fetchData();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Fehler beim Speichern"
-      );
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setIsSaving(false);
     }

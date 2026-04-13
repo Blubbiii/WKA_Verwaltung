@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Save, X, RotateCcw, Plus, Loader2, LayoutTemplate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -46,6 +47,7 @@ export function DashboardEditor({
   onCancel,
   className,
 }: DashboardEditorProps) {
+  const t = useTranslations("dashboard.editor");
   const {
     config,
     availableWidgets,
@@ -120,10 +122,10 @@ export function DashboardEditor({
       setHasChanges(false);
       onSave?.();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Fehler beim Speichern";
+      const message = err instanceof Error ? err.message : t("saveError");
       setSaveError(message);
     }
-  }, [localWidgets, updateConfig, onSave]);
+  }, [localWidgets, updateConfig, onSave, t]);
 
   // Handle cancel
   const handleCancel = useCallback(() => {
@@ -145,12 +147,12 @@ export function DashboardEditor({
       await resetConfig();
       setHasChanges(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Fehler beim Zurücksetzen";
+      const message = err instanceof Error ? err.message : t("resetError");
       setSaveError(message);
     } finally {
       setResetDialogOpen(false);
     }
-  }, [resetConfig]);
+  }, [resetConfig, t]);
 
   const handleApplyTemplate = useCallback((template: DashboardTemplate) => {
     const newWidgets: DashboardWidget[] = template.widgets.map((w) => ({
@@ -168,7 +170,7 @@ export function DashboardEditor({
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Dashboard wird geladen...</p>
+          <p className="text-muted-foreground">{t("loading")}</p>
         </div>
       </div>
     );
@@ -180,10 +182,10 @@ export function DashboardEditor({
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b mb-4">
         <div className="flex items-center justify-between py-3">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold">Dashboard bearbeiten</h2>
+            <h2 className="text-lg font-semibold">{t("editHeader")}</h2>
             {hasChanges && (
               <span className="text-xs px-2 py-1 bg-yellow-500/10 text-yellow-600 rounded">
-                Ungespeicherte Änderungen
+                {t("unsavedChanges")}
               </span>
             )}
           </div>
@@ -195,7 +197,7 @@ export function DashboardEditor({
               onClick={() => setShowSidebar(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Widget hinzufügen
+              {t("addWidget")}
             </Button>
 
             <Button
@@ -205,7 +207,7 @@ export function DashboardEditor({
               disabled={isSaving}
             >
               <LayoutTemplate className="h-4 w-4 mr-2" />
-              Vorlage
+              {t("template")}
             </Button>
 
             <Button
@@ -215,7 +217,7 @@ export function DashboardEditor({
               disabled={isSaving}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
-              Zurücksetzen
+              {t("reset")}
             </Button>
 
             <div className="w-px h-6 bg-border mx-2" />
@@ -227,7 +229,7 @@ export function DashboardEditor({
               disabled={isSaving}
             >
               <X className="h-4 w-4 mr-2" />
-              Abbrechen
+              {t("cancel")}
             </Button>
 
             <Button
@@ -240,7 +242,7 @@ export function DashboardEditor({
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              Speichern
+              {t("save")}
             </Button>
           </div>
         </div>
@@ -256,9 +258,7 @@ export function DashboardEditor({
       {/* Edit Mode Hint */}
       <div className="mb-4 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
         <p>
-          <strong>Tipp:</strong> Ziehen Sie Widgets um sie neu anzuordnen. Aendern Sie
-          die Größe durch Ziehen an den Ecken. Klicken Sie auf das X um Widgets zu
-          entfernen.
+          <strong>{t("tipLabel")}</strong> {t("tipText")}
         </p>
       </div>
 
@@ -284,20 +284,20 @@ export function DashboardEditor({
       <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Dashboard zurücksetzen</AlertDialogTitle>
+            <AlertDialogTitle>{t("resetDialogTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Möchten Sie das Dashboard wirklich auf die Standardeinstellungen zurücksetzen? Alle individuellen Anpassungen gehen verloren.
+              {t("resetDialogDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 handleConfirmReset();
               }}
             >
-              Zurücksetzen
+              {t("reset")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -323,6 +323,8 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ onEdit, className }: DashboardViewProps) {
+  const t = useTranslations("dashboard.editor");
+  const tDash = useTranslations("dashboard");
   const { config, availableWidgets, isLoading, error, refetch } = useDashboardConfig();
 
   if (isLoading) {
@@ -330,7 +332,7 @@ export function DashboardView({ onEdit, className }: DashboardViewProps) {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Dashboard wird geladen...</p>
+          <p className="text-muted-foreground">{t("loading")}</p>
         </div>
       </div>
     );
@@ -347,7 +349,7 @@ export function DashboardView({ onEdit, className }: DashboardViewProps) {
             onClick={() => refetch()}
             className="ml-2 p-0 h-auto"
           >
-            Erneut versuchen
+            {tDash("retry")}
           </Button>
         </AlertDescription>
       </Alert>
@@ -358,14 +360,14 @@ export function DashboardView({ onEdit, className }: DashboardViewProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed rounded-lg p-8">
         <div className="text-center">
-          <h3 className="text-lg font-semibold mb-2">Dashboard ist leer</h3>
+          <h3 className="text-lg font-semibold mb-2">{t("emptyTitle")}</h3>
           <p className="text-muted-foreground mb-4">
-            Fuegen Sie Widgets hinzu, um Ihr Dashboard zu gestalten.
+            {t("emptyDescription")}
           </p>
           {onEdit && (
             <Button onClick={onEdit}>
               <Plus className="h-4 w-4 mr-2" />
-              Dashboard anpassen
+              {t("customize")}
             </Button>
           )}
         </div>

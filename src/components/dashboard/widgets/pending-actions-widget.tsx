@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -71,6 +72,7 @@ function formatCurrency(amount: number): string {
 // =============================================================================
 
 export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
+  const t = useTranslations("dashboard.widgets");
   const [data, setData] = useState<PendingActionsSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,17 +85,17 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
       const response = await fetch("/api/reminders/pending");
 
       if (!response.ok) {
-        throw new Error("Fehler beim Laden");
+        throw new Error(t("loadError"));
       }
 
       const result = await response.json();
       setData(result);
     } catch {
-      setError("Daten konnten nicht geladen werden");
+      setError(t("loadErrorDetail"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -150,8 +152,8 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
   if (data.overdueInvoices.count > 0) {
     actionItems.push({
       label: data.overdueInvoices.count === 1
-        ? "Rechnung überfällig"
-        : "Rechnungen überfällig",
+        ? t("overdueInvoiceSingle")
+        : t("overdueInvoicePlural"),
       count: data.overdueInvoices.count,
       criticalCount: data.overdueInvoices.criticalCount,
       amount: data.overdueInvoices.totalAmount,
@@ -163,8 +165,8 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
   if (data.expiringContracts.count > 0) {
     actionItems.push({
       label: data.expiringContracts.count === 1
-        ? "Vertrag läuft aus"
-        : "Verträge laufen aus",
+        ? t("contractExpiringSingle")
+        : t("contractExpiringPlural"),
       count: data.expiringContracts.count,
       criticalCount: data.expiringContracts.criticalCount,
       href: "/contracts?status=EXPIRING",
@@ -175,8 +177,8 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
   if (data.openSettlements.count > 0) {
     actionItems.push({
       label: data.openSettlements.count === 1
-        ? "Abrechnung offen"
-        : "Abrechnungen offen",
+        ? t("settlementOpen")
+        : t("settlementOpenPlural"),
       count: data.openSettlements.count,
       criticalCount: data.openSettlements.criticalCount,
       href: "/leases",
@@ -187,8 +189,8 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
   if (data.expiringDocuments.count > 0) {
     actionItems.push({
       label: data.expiringDocuments.count === 1
-        ? "Dokument läuft ab"
-        : "Dokumente laufen ab",
+        ? t("documentExpiring")
+        : t("documentExpiringPlural"),
       count: data.expiringDocuments.count,
       criticalCount: data.expiringDocuments.criticalCount,
       href: "/documents",
@@ -222,8 +224,8 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <p className="text-sm font-medium">Keine offenen Punkte</p>
-          <p className="text-xs mt-1">Alles erledigt</p>
+          <p className="text-sm font-medium">{t("noPendingItems")}</p>
+          <p className="text-xs mt-1">{t("allDone")}</p>
         </div>
       </div>
     );
@@ -235,7 +237,7 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
       {data.hasCritical && (
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-destructive/10 text-destructive text-xs font-medium mb-2">
           <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-          <span>Dringende Punkte erfordern Aufmerksamkeit</span>
+          <span>{t("criticalNote")}</span>
         </div>
       )}
 
@@ -271,7 +273,7 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
                 </p>
                 {item.amount !== undefined && item.amount > 0 && (
                   <p className="text-xs @md:text-sm text-muted-foreground">
-                    Gesamt: {formatCurrency(item.amount)}
+                    {t("totalAmount", { amount: formatCurrency(item.amount) })}
                   </p>
                 )}
               </div>
@@ -279,7 +281,7 @@ export function PendingActionsWidget({ className }: PendingActionsWidgetProps) {
             <div className="flex items-center gap-2 flex-shrink-0">
               {hasCritical && (
                 <span className="text-xs @md:text-sm font-medium px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">
-                  {item.criticalCount} dringend
+                  {t("criticalCount", { count: item.criticalCount })}
                 </span>
               )}
               <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

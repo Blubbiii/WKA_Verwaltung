@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Briefcase, Loader2, ToggleLeft } from "lucide-react";
 import {
   Card,
@@ -26,6 +27,7 @@ interface FeaturesResponse {
 }
 
 export function TenantFeaturesSettings() {
+  const t = useTranslations("admin.settingsUI.tenantFeatures");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [features, setFeatures] = useState<Record<string, boolean>>({});
@@ -37,7 +39,7 @@ export function TenantFeaturesSettings() {
       const response = await fetch("/api/admin/features");
 
       if (!response.ok) {
-        throw new Error("Fehler beim Laden");
+        throw new Error(t("loadError"));
       }
 
       const data: FeaturesResponse = await response.json();
@@ -45,14 +47,12 @@ export function TenantFeaturesSettings() {
       setAvailable(data.available);
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Laden der Feature-Flags"
+        error instanceof Error ? error.message : t("loadError")
       );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadFeatures();
@@ -70,16 +70,12 @@ export function TenantFeaturesSettings() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fehler beim Speichern");
+        throw new Error(error.error || t("saveError"));
       }
 
-      toast.success("Feature-Einstellungen gespeichert");
+      toast.success(t("saved"));
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Speichern"
-      );
+      toast.error(error instanceof Error ? error.message : t("saveError"));
     } finally {
       setSaving(false);
     }

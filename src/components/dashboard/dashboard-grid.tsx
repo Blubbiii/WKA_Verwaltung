@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useCallback, useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import "react-grid-layout/css/styles.css";
 import { WidgetRenderer } from "./widget-renderer";
@@ -337,12 +338,13 @@ interface EmptyDashboardProps {
 }
 
 export function EmptyDashboard({ onAddWidget }: EmptyDashboardProps) {
+  const t = useTranslations("dashboard.editor");
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-border/60 rounded-xl p-8 bg-gradient-to-br from-muted/30 via-transparent to-transparent animate-in fade-in-0 duration-500">
       <div className="text-center">
-        <h3 className="text-lg font-semibold tracking-tight mb-2">Dashboard ist leer</h3>
+        <h3 className="text-lg font-semibold tracking-tight mb-2">{t("emptyTitle")}</h3>
         <p className="text-muted-foreground mb-6 max-w-sm">
-          Fuegen Sie Widgets hinzu, um Ihr Dashboard zu gestalten.
+          {t("emptyDescription")}
         </p>
         {onAddWidget && (
           <button
@@ -363,7 +365,7 @@ export function EmptyDashboard({ onAddWidget }: EmptyDashboardProps) {
               <path d="M5 12h14" />
               <path d="M12 5v14" />
             </svg>
-            Widget hinzufügen
+            {t("addWidget")}
           </button>
         )}
       </div>

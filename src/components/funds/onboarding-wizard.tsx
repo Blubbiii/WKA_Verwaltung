@@ -42,32 +42,36 @@ import {
   type OnboardingResult,
 } from "./onboarding-types";
 
-// Validation helpers
-function validatePersonalData(data: PersonalData): Partial<Record<keyof PersonalData, string>> {
+// Validation helpers — use a translator passed in
+type Translator = (key: string) => string;
+
+function validatePersonalData(data: PersonalData, t: Translator): Partial<Record<keyof PersonalData, string>> {
   const errors: Partial<Record<keyof PersonalData, string>> = {};
-  if (!data.firstName.trim()) errors.firstName = "Vorname ist erforderlich";
-  if (!data.lastName.trim()) errors.lastName = "Nachname ist erforderlich";
+  if (!data.firstName.trim()) errors.firstName = t("firstNameRequired");
+  if (!data.lastName.trim()) errors.lastName = t("lastNameRequired");
   if (!data.email.trim()) {
-    errors.email = "E-Mail ist erforderlich";
+    errors.email = t("emailRequired");
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.email = "Bitte eine gültige E-Mail-Adresse eingeben";
+    errors.email = t("emailInvalid");
   }
   return errors;
 }
 
-function validateParticipation(data: ParticipationData): Partial<Record<keyof ParticipationData, string>> {
+function validateParticipation(data: ParticipationData, t: Translator): Partial<Record<keyof ParticipationData, string>> {
   const errors: Partial<Record<keyof ParticipationData, string>> = {};
-  if (!data.fundId) errors.fundId = "Bitte eine Gesellschaft auswaehlen";
+  if (!data.fundId) errors.fundId = t("fundRequired");
   if (!data.capitalContribution || parseFloat(data.capitalContribution) <= 0) {
-    errors.capitalContribution = "Kapitalanteil muss größer als 0 sein";
+    errors.capitalContribution = t("capitalGreaterZero");
   }
-  if (!data.entryDate) errors.entryDate = "Beitrittsdatum ist erforderlich";
+  if (!data.entryDate) errors.entryDate = t("entryDateRequired");
   return errors;
 }
 
 export function OnboardingWizard() {
   const router = useRouter();
   const tToast = useTranslations("funds.toasts");
+  const t = useTranslations("funds.onboardingWizard");
+  const tValidation = useTranslations("funds.onboardingWizard.validation");
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<OnboardingFormData>(getInitialFormData());
   const [personalErrors, setPersonalErrors] = useState<Partial<Record<keyof PersonalData, string>>>({});
@@ -83,11 +87,11 @@ export function OnboardingWizard() {
   const canGoNext = useCallback(() => {
     switch (currentStep) {
       case 0: {
-        const errors = validatePersonalData(formData.personalData);
+        const errors = validatePersonalData(formData.personalData, tValidation);
         return Object.keys(errors).length === 0;
       }
       case 1: {
-        const errors = validateParticipation(formData.participation);
+        const errors = validateParticipation(formData.participation, tValidation);
         return Object.keys(errors).length === 0;
       }
       case 2:
@@ -105,7 +109,7 @@ export function OnboardingWizard() {
       default:
         return false;
     }
-  }, [currentStep, formData]);
+  }, [currentStep, formData, tValidation]);
 
   function handleNext() {
     setSubmitError(null);
@@ -113,13 +117,13 @@ export function OnboardingWizard() {
     // Validate current step
     switch (currentStep) {
       case 0: {
-        const errors = validatePersonalData(formData.personalData);
+        const errors = validatePersonalData(formData.personalData, tValidation);
         setPersonalErrors(errors);
         if (Object.keys(errors).length > 0) return;
         break;
       }
       case 1: {
-        const errors = validateParticipation(formData.participation);
+        const errors = validateParticipation(formData.participation, tValidation);
         setParticipationErrors(errors);
         if (Object.keys(errors).length > 0) return;
         break;
@@ -325,12 +329,12 @@ export function OnboardingWizard() {
           disabled={currentStep === 0 || isSubmitting}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Zurück
+          {t("back")}
         </Button>
 
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground hidden sm:inline">
-            Schritt {currentStep + 1} von {WIZARD_STEPS.length}
+            {t("step", { current: currentStep + 1, total: WIZARD_STEPS.length })}
           </span>
         </div>
 
@@ -344,11 +348,11 @@ export function OnboardingWizard() {
             ) : (
               <CheckCircle2 className="mr-2 h-4 w-4" />
             )}
-            {isSubmitting ? "Wird angelegt..." : "Gesellschafter anlegen"}
+            {isSubmitting ? t("creating") : t("createShareholder")}
           </Button>
         ) : (
           <Button onClick={handleNext} disabled={!canGoNext()}>
-            Weiter
+            {t("next")}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         )}

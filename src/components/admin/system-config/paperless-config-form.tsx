@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   FileArchive,
   Loader2,
@@ -60,6 +61,7 @@ export function PaperlessConfigForm({
   apiBasePath = "/api/admin/system-config",
   testApiPath = "/api/admin/system-config/test",
 }: PaperlessConfigFormProps) {
+  const t = useTranslations("admin.systemConfigUI");
   const getConfigValue = (key: string): string => {
     const config = configs.find((c) => c.key === key);
     return config?.value || "";
@@ -120,17 +122,15 @@ export function PaperlessConfigForm({
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.detail || errData.details || errData.error || "Fehler beim Speichern");
+        throw new Error(errData.detail || errData.details || errData.error || t("paperlessSaveError"));
       }
 
-      toast.success("Paperless-ngx Konfiguration gespeichert");
+      toast.success(t("paperlessSaved"));
       setToken(""); // Clear token field after save
       onSave();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Fehler beim Speichern der Konfiguration"
+        error instanceof Error ? error.message : t("paperlessSaveError")
       );
     } finally {
       setSaving(false);
@@ -157,16 +157,16 @@ export function PaperlessConfigForm({
       });
 
       if (data.success) {
-        toast.success("Paperless-ngx Verbindung erfolgreich");
+        toast.success(t("paperlessTestSuccess"));
       } else {
-        toast.error(data.details || data.error || "Verbindungstest fehlgeschlagen");
+        toast.error(data.details || data.error || t("paperlessTestError"));
       }
     } catch (error) {
       setTestResult({
         success: false,
-        error: error instanceof Error ? error.message : "Unbekannter Fehler",
+        error: error instanceof Error ? error.message : t("paperlessTestError"),
       });
-      toast.error("Verbindungstest fehlgeschlagen");
+      toast.error(t("paperlessTestError"));
     } finally {
       setTesting(false);
     }

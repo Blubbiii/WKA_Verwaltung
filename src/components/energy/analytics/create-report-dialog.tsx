@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ANALYTICS_MODULES } from "@/types/analytics";
 
 // =============================================================================
@@ -72,6 +73,7 @@ export function CreateReportDialog({
   defaultParkId,
   onSuccess,
 }: CreateReportDialogProps) {
+  const t = useTranslations("energy.componentToasts");
   // Form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -139,11 +141,11 @@ export function CreateReportDialog({
   // Submit
   const handleSubmit = async () => {
     if (!name.trim()) {
-      toast.error("Bitte geben Sie einen Berichtsnamen ein");
+      toast.error(t("reportNameRequired"));
       return;
     }
     if (selectedModules.size === 0) {
-      toast.error("Bitte waehlen Sie mindestens ein Modul aus");
+      toast.error(t("moduleSelectRequired"));
       return;
     }
 
@@ -168,12 +170,12 @@ export function CreateReportDialog({
         throw new Error(err.error || "Fehler beim Erstellen");
       }
 
-      toast.success("Vorlage gespeichert");
+      toast.success(t("templateSaved"));
       onSuccess?.();
       onOpenChange(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Fehler beim Erstellen des Berichts"
+        error instanceof Error ? error.message : t("createError")
       );
     } finally {
       setSaving(false);

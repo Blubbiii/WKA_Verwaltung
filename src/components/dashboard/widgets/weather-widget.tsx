@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Cloud, Sun, CloudRain, Wind, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,7 @@ function getConditionLabel(condition: WeatherData["condition"]) {
 // =============================================================================
 
 export function WeatherWidget({ className }: WeatherWidgetProps) {
+  const t = useTranslations("dashboard.widgets");
   const [weatherData, setWeatherData] = useState<WeatherData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -151,7 +153,7 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <Cloud className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">Keine Wetterdaten verfügbar</p>
+          <p className="text-sm">{t("noWeatherData")}</p>
         </div>
       </div>
     );

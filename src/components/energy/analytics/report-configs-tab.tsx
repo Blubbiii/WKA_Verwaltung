@@ -38,6 +38,7 @@ import {
   Download,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { formatDateTime } from "@/lib/format";
 
 // =============================================================================
@@ -91,6 +92,7 @@ function createdByLabel(
 // =============================================================================
 
 export function ReportConfigsTab({ onCreateReport }: ReportConfigsTabProps) {
+  const t = useTranslations("energy.componentToasts");
   const [configs, setConfigs] = useState<ReportConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -135,11 +137,11 @@ export function ReportConfigsTab({ onCreateReport }: ReportConfigsTabProps) {
         const err = await res.json().catch(() => ({ error: "Unbekannter Fehler" }));
         throw new Error(err.error || "Fehler beim Löschen");
       }
-      toast.success(`Vorlage "${deleteTarget.name}" gelöscht`);
+      toast.success(t("templateDeleted", { name: deleteTarget.name }));
       setDeleteTarget(null);
       fetchConfigs();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler beim Löschen der Vorlage");
+      toast.error(e instanceof Error ? e.message : t("templateDeleteError"));
     } finally {
       setDeleting(false);
     }
@@ -174,9 +176,9 @@ export function ReportConfigsTab({ onCreateReport }: ReportConfigsTabProps) {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast.success(`PDF "${config.name}" wurde erstellt`);
+      toast.success(t("pdfCreated", { name: config.name }));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Fehler beim Generieren");
+      toast.error(e instanceof Error ? e.message : t("pdfGenerateError"));
     } finally {
       setGenerating(null);
     }
