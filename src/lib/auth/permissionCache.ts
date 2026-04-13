@@ -1,6 +1,7 @@
 import type { UserPermissions } from "./permission-types";
 import { cache } from "@/lib/cache";
 import { CACHE_PREFIXES } from "@/lib/cache/types";
+import { bumpPermissionVersion } from "./session-invalidation";
 
 // ============================================================================
 // PERMISSION CACHE MODUL — Redis-backed via shared cache service
@@ -37,14 +38,26 @@ export async function setCachedPermissions(
 }
 
 /**
- * Invalidate cache for a specific user (on role assignment changes)
+ * Invalidate cache for a specific user (on role assignment changes).
+ *
+ * Auch die Permission-Version wird gebumped — die Node-seitige Enforcement
+ * über requirePermission() fetched sofort neue Daten aus der DB.
+ * Der JWT-Token im Browser enthält weiterhin die alte roleHierarchy bis
+ * zum nächsten Session-Refresh, aber das ist rein kosmetisch (UI) — echte
+ * Auth-Checks laufen durch den frisch invalidierten Cache.
  */
 export async function invalidateUser(userId: string): Promise<void> {
   await cache.del(permKey(userId));
+  await bumpPermissionVersion(userId);
 }
 
 /**
- * Invalidate all permission caches (on role definition changes)
+ * Invalidate all permission caches (on role definition changes).
+ *
+ * Bumpt NICHT alle User-Versionen einzeln — bei Role-Definition-Changes
+ * sind alle User betroffen. Nächster Permission-Lookup erzwingt DB-Re-fetch
+ * via geleertem Cache. Für selektive JWT-Invalidation wäre ein Scan über
+ * alle aktiven Sessions nötig, was den Kosten-/Nutzen-Rahmen sprengt.
  */
 export async function invalidateAll(): Promise<void> {
   await cache.delPattern(`${PERMISSION_PREFIX}:*`);
