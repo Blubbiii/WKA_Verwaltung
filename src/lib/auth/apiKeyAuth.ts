@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 /**
  * Validates API key from Authorization header (Bearer token) or X-API-Key header.
@@ -24,10 +25,9 @@ export async function requireApiKey(
     logger.error("SCADA_API_KEY env var is not configured");
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "API key authentication not configured on server" },
-        { status: 500 },
-      ),
+      error: apiError("INTERNAL_ERROR", 500, {
+        message: "API key authentication not configured on server",
+      }),
     };
   }
 
@@ -55,10 +55,9 @@ export async function requireApiKey(
   if (!isValid) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "Unauthorized: Invalid or missing API key" },
-        { status: 401 },
-      ),
+      error: apiError("UNAUTHORIZED", 401, {
+        message: "Unauthorized: Invalid or missing API key",
+      }),
     };
   }
 
@@ -73,10 +72,9 @@ export async function requireApiKey(
       logger.warn({ tenantId: tenantIdHeader }, "requireApiKey: X-Tenant-Id refers to unknown tenant");
       return {
         authorized: false,
-        error: NextResponse.json(
-          { error: "Unauthorized: Unknown tenant" },
-          { status: 401 },
-        ),
+        error: apiError("UNAUTHORIZED", 401, {
+          message: "Unauthorized: Unknown tenant",
+        }),
       };
     }
     return { authorized: true, tenantId: tenant.id };
@@ -91,10 +89,9 @@ export async function requireApiKey(
   if (!tenant) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "No tenant found in database" },
-        { status: 500 },
-      ),
+      error: apiError("INTERNAL_ERROR", 500, {
+        message: "No tenant found in database",
+      }),
     };
   }
 

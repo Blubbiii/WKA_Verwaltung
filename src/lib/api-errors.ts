@@ -125,7 +125,7 @@ export interface ApiErrorBody {
  *
  * @param code - Stable error code
  * @param status - HTTP status (defaults from DEFAULT_STATUS table)
- * @param opts - Optional message override + extra details
+ * @param opts - Optional message override + extra details + custom headers
  *
  * @example
  *   return apiError("NOT_FOUND", 404);
@@ -134,11 +134,18 @@ export interface ApiErrorBody {
  *     message: "Titel darf nicht leer sein",
  *     details: parsed.error.flatten(),
  *   });
+ *   return apiError("RATE_LIMITED", 429, {
+ *     headers: { "Retry-After": "60" },
+ *   });
  */
 export function apiError(
   code: ApiErrorCode,
   status?: number,
-  opts?: { message?: string; details?: unknown }
+  opts?: {
+    message?: string;
+    details?: unknown;
+    headers?: Record<string, string>;
+  }
 ): NextResponse<ApiErrorBody> {
   const httpStatus = status ?? DEFAULT_STATUS[code];
   const body: ApiErrorBody = {
@@ -148,7 +155,10 @@ export function apiError(
   if (opts?.details !== undefined) {
     body.details = opts.details;
   }
-  return NextResponse.json(body, { status: httpStatus });
+  return NextResponse.json(body, {
+    status: httpStatus,
+    ...(opts?.headers ? { headers: opts.headers } : {}),
+  });
 }
 
 /** Get the default German message for an error code (for logging etc.). */

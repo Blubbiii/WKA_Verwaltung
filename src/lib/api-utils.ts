@@ -10,35 +10,34 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 // ---------------------------------------------------------------------------
 // Standardised API Responses
+//
+// All helpers below now return structured `apiError(...)` responses with a
+// stable `code` field for client-side i18n. The German `message` is preserved
+// in the response body as a fallback for curl/Postman users.
 // ---------------------------------------------------------------------------
 
 /** 400 Bad Request */
 export function badRequest(error: string, details?: unknown) {
-  return NextResponse.json(
-    { error, ...(details ? { details } : {}) },
-    { status: 400 },
-  );
+  return apiError("BAD_REQUEST", 400, { message: error, details });
 }
 
 /** 404 Not Found */
 export function notFound(entity = "Ressource") {
-  return NextResponse.json(
-    { error: `${entity} nicht gefunden` },
-    { status: 404 },
-  );
+  return apiError("NOT_FOUND", 404, { message: `${entity} nicht gefunden` });
 }
 
 /** 403 Forbidden */
 export function forbidden(message = "Keine Berechtigung") {
-  return NextResponse.json({ error: message }, { status: 403 });
+  return apiError("FORBIDDEN", 403, { message });
 }
 
 /** 500 Internal Server Error */
 export function serverError(message = "Interner Serverfehler") {
-  return NextResponse.json({ error: message }, { status: 500 });
+  return apiError("INTERNAL_ERROR", 500, { message });
 }
 
 /**
@@ -52,10 +51,10 @@ export function serverError(message = "Interner Serverfehler") {
  */
 export function handleApiError(error: unknown, fallbackMessage: string) {
   if (error instanceof z.ZodError) {
-    return NextResponse.json(
-      { error: "Validierungsfehler", details: error.issues },
-      { status: 400 },
-    );
+    return apiError("VALIDATION_FAILED", 400, {
+      message: "Validierungsfehler",
+      details: error.issues,
+    });
   }
   logger.error({ err: error }, fallbackMessage);
   return serverError(fallbackMessage);

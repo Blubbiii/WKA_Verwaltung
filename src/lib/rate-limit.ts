@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Redis from "ioredis";
 import { apiLogger } from "@/lib/logger";
 import { getBaseRedisOptions } from "@/lib/config/redis";
+import { apiError } from "@/lib/api-errors";
 
 /**
  * Redis-backed sliding window rate limiter for Next.js API routes.
@@ -396,13 +397,8 @@ export function getRateLimitResponse(
     headers["X-RateLimit-Limit"] = String(config.limit);
   }
 
-  return NextResponse.json(
-    {
-      error: "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
-    },
-    {
-      status: 429,
-      headers,
-    }
-  );
+  return apiError("RATE_LIMITED", 429, {
+    message: "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
+    headers,
+  });
 }

@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { auth } from "./index";
 import { apiLogger } from "@/lib/logger";
 import { rateLimit, API_RATE_LIMIT, getRateLimitResponse } from "@/lib/rate-limit";
+import { apiError } from "@/lib/api-errors";
 import {
   hasPermission,
   hasAllPermissions,
@@ -88,10 +89,7 @@ export async function requirePermission(
   if (!session?.user?.id) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "Nicht authentifiziert" },
-        { status: 401 }
-      ),
+      error: apiError("UNAUTHORIZED", 401),
     };
   }
 
@@ -115,10 +113,7 @@ export async function requirePermission(
   if (!Number.isFinite(rawHierarchy) || rawHierarchy < 0 || rawHierarchy > 200) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "Ungültige Sitzungsdaten" },
-        { status: 403 }
-      ),
+      error: apiError("FORBIDDEN", 403, { message: "Ungültige Sitzungsdaten" }),
     };
   }
 
@@ -143,10 +138,7 @@ export async function requirePermission(
   if (!hasRequiredPermission) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "Keine Berechtigung für diese Aktion" },
-        { status: 403 }
-      ),
+      error: apiError("FORBIDDEN", 403, { message: "Keine Berechtigung für diese Aktion" }),
     };
   }
 
@@ -182,10 +174,7 @@ export async function requirePermissionWithResources(
   if (!session?.user?.id) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "Nicht authentifiziert" },
-        { status: 401 }
-      ),
+      error: apiError("UNAUTHORIZED", 401),
     };
   }
 
@@ -206,10 +195,7 @@ export async function requirePermissionWithResources(
   if (!Number.isFinite(rawHierarchy) || rawHierarchy < 0 || rawHierarchy > 200) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "Ungültige Sitzungsdaten" },
-        { status: 403 }
-      ),
+      error: apiError("FORBIDDEN", 403, { message: "Ungültige Sitzungsdaten" }),
     };
   }
 
@@ -223,10 +209,7 @@ export async function requirePermissionWithResources(
   if (!result.hasPermission) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "Keine Berechtigung für diese Aktion" },
-        { status: 403 }
-      ),
+      error: apiError("FORBIDDEN", 403, { message: "Keine Berechtigung für diese Aktion" }),
     };
   }
 
@@ -249,10 +232,7 @@ export async function requireAuth(): Promise<PermissionCheckResult> {
   if (!session?.user?.id) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "Nicht authentifiziert" },
-        { status: 401 }
-      ),
+      error: apiError("UNAUTHORIZED", 401),
     };
   }
 
@@ -282,10 +262,7 @@ export async function requireSuperadmin(): Promise<PermissionCheckResult> {
   if (!session?.user?.id) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "Nicht authentifiziert" },
-        { status: 401 }
-      ),
+      error: apiError("UNAUTHORIZED", 401),
     };
   }
 
@@ -298,7 +275,7 @@ export async function requireSuperadmin(): Promise<PermissionCheckResult> {
 
   return {
     authorized: false,
-    error: NextResponse.json({ error: "Nur für Superadmins zugänglich" }, { status: 403 }),
+    error: apiError("FORBIDDEN", 403, { message: "Nur für Superadmins zugänglich" }),
   };
 }
 
@@ -313,10 +290,7 @@ export async function requireAdmin(): Promise<PermissionCheckResult> {
   if (!session?.user?.id) {
     return {
       authorized: false,
-      error: NextResponse.json(
-        { error: "Nicht authentifiziert" },
-        { status: 401 }
-      ),
+      error: apiError("UNAUTHORIZED", 401),
     };
   }
 
@@ -329,7 +303,7 @@ export async function requireAdmin(): Promise<PermissionCheckResult> {
 
   return {
     authorized: false,
-    error: NextResponse.json({ error: "Nur für Administratoren zugänglich" }, { status: 403 }),
+    error: apiError("FORBIDDEN", 403, { message: "Nur für Administratoren zugänglich" }),
   };
 }
 
