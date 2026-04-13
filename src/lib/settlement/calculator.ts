@@ -932,7 +932,7 @@ async function loadAdvancePayments(
 // HELPER FUNCTIONS
 // ===========================================
 
-interface CalculatePlotAreaParams {
+export interface CalculatePlotAreaParams {
   area: {
     id: string;
     areaType: PlotAreaType;
@@ -979,7 +979,7 @@ interface CalculatePlotAreaParams {
  * - KABEL: lengthM * kabelRate (€/m) — gesonderte Vergütung
  * - compensationFixedAmount auf PlotArea überschreibt immer die automatische Berechnung
  */
-function calculatePlotArea(
+export function calculatePlotArea(
   params: CalculatePlotAreaParams
 ): PlotAreaCalculationResult {
   const {
@@ -1097,7 +1097,7 @@ function calculatePlotArea(
 /**
  * Formatiert die Adresse einer Person
  */
-function formatAddress(person: {
+export function formatAddress(person: {
   street: string | null;
   houseNumber?: string | null;
   postalCode: string | null;
