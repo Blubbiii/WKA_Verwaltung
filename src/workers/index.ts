@@ -21,7 +21,7 @@ import {
   stopAllWorkers,
   getWorkersStatus,
 } from "@/lib/queue/workers";
-import { closeConnections, isRedisHealthy } from "@/lib/queue/connection";
+import { closeConnections, isRedisHealthy, checkRedisMemoryConfig } from "@/lib/queue/connection";
 import { jobLogger } from "@/lib/logger";
 
 // =============================================================================
@@ -214,6 +214,9 @@ async function main(): Promise<void> {
   }
 
   log("info", "Redis connection established");
+
+  // Redis memory config sanity check (warns on unlimited maxmemory / noeviction)
+  await checkRedisMemoryConfig();
 
   // Worker starten
   log("info", "Starting workers...");

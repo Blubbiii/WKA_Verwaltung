@@ -124,6 +124,64 @@ export const isRedisHealthy = async (): Promise<boolean> => {
 };
 
 /**
+ * Inspect Redis server config and warn if the OOM-safety settings are weak.
+ *
+ * WPM stores rate-limit counters, tenant-settings cache, permission cache,
+ * BullMQ job data and dashboard widgets in Redis. Without a `maxmemory` limit
+ * and a sensible eviction policy the server will OOM under load and crash the
+ * entire worker pool.
+ *
+ * Recommended production config:
+ *   maxmemory 256mb (or more, depending on tenant count)
+ *   maxmemory-policy allkeys-lru
+ *
+ * Logs a warning (not error) at startup so the operator can fix it, but the
+ * app keeps running — this is a recommendation, not a hard gate.
+ */
+export const checkRedisMemoryConfig = async (): Promise<void> => {
+  try {
+    const redis = getRedisConnection();
+    // CONFIG GET returns [key, value, key, value, ...] — parse into a map.
+    const raw = (await redis.config("GET", "maxmemory")) as string[];
+    const maxmemory = raw[1] ?? "0";
+    const rawPolicy = (await redis.config("GET", "maxmemory-policy")) as string[];
+    const policy = rawPolicy[1] ?? "noeviction";
+
+    const safePolicies = new Set([
+      "allkeys-lru",
+      "allkeys-lfu",
+      "allkeys-random",
+      "volatile-lru",
+      "volatile-lfu",
+    ]);
+
+    if (maxmemory === "0") {
+      logger.warn(
+        { maxmemory, policy },
+        "[Redis] maxmemory is UNLIMITED — server will OOM under load. Set `maxmemory 256mb` (or more) in redis.conf or via CONFIG SET",
+      );
+    } else if (!safePolicies.has(policy)) {
+      logger.warn(
+        { maxmemory, policy },
+        `[Redis] maxmemory-policy '${policy}' will reject writes when full. Recommended: 'allkeys-lru'`,
+      );
+    } else {
+      logger.info(
+        { maxmemory, policy },
+        "[Redis] Memory config OK",
+      );
+    }
+  } catch (err) {
+    // Some managed Redis services disable CONFIG GET (e.g. Redis Cloud).
+    // In that case we can't verify — log debug and move on.
+    logger.debug(
+      { err: err instanceof Error ? err.message : String(err) },
+      "[Redis] Could not check memory config (CONFIG GET may be disabled on managed Redis)",
+    );
+  }
+};
+
+/**
  * BullMQ connection configuration object
  * Use this when creating new Queue or Worker instances
  */
