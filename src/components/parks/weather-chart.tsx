@@ -384,7 +384,7 @@ export function MultiWeatherChart({
         className="flex items-center justify-center text-muted-foreground"
         style={{ height }}
       >
-        Keine Daten verfügbar
+        {t("noData")}
       </div>
     );
   }

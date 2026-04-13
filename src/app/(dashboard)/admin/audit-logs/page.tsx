@@ -305,7 +305,7 @@ function AuditLogsContent() {
       }
     };
     fetchUsers();
-  }, []);
+  }, [t]);
 
   // Sync filters to URL query params
   useEffect(() => {
@@ -380,7 +380,7 @@ function AuditLogsContent() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, actionFilter, entityTypeFilter, userFilter, startDate, endDate, debouncedSearch]);
+  }, [currentPage, actionFilter, entityTypeFilter, userFilter, startDate, endDate, debouncedSearch, t]);
 
   // Fetch on mount and when filters change
   useEffect(() => {

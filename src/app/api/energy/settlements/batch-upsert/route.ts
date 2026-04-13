@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
-import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
 // =============================================================================

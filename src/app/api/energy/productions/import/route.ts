@@ -5,7 +5,6 @@ import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { ProductionDataSource, ProductionStatus, Prisma } from "@prisma/client";
-import { apiLogger as logger } from "@/lib/logger";
 
 // =============================================================================
 // TYPES & INTERFACES

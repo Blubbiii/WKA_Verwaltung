@@ -80,18 +80,6 @@ const categoryKeys = [
   "OTHER",
 ] as const;
 
-const eventTypeKeys = [
-  "MAINTENANCE",
-  "REPAIR",
-  "INSPECTION",
-  "BLADE_INSPECTION",
-  "GEARBOX_SERVICE",
-  "GENERATOR_SERVICE",
-  "SOFTWARE_UPDATE",
-  "EMERGENCY",
-  "OTHER",
-] as const;
-
 function DocumentUploadForm() {
   const t = useTranslations("documents.upload");
   const tCat = useTranslations("documents.categories");
@@ -222,7 +210,7 @@ function DocumentUploadForm() {
       }
     }
     fetchOptions();
-  }, [preselectedServiceEventId, preselectedTurbineId, preselectedParkId, preselectedFundId, preselectedContractId, preselectedShareholderId]);
+  }, [preselectedServiceEventId, preselectedTurbineId, preselectedParkId, preselectedFundId, preselectedContractId, preselectedShareholderId, t, tCommon]);
 
   // Set preselected values once options are loaded
   useEffect(() => {

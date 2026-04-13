@@ -6,7 +6,6 @@ import { generateCsvBuffer, generateExcel, type ColumnDef } from "@/lib/export";
 import { API_LIMITS } from "@/lib/config/api-limits";
 import { generateAuditLogPdf, type AuditLogPdfData } from "@/lib/pdf/generators/auditLogPdf";
 import { Prisma } from "@prisma/client";
-import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
 

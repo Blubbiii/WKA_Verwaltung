@@ -143,7 +143,7 @@ export function ProductionEntryDialog({
     } finally {
       setIsLoadingParks(false)
     }
-  }, [])
+  }, [t])
 
   // -------------------------------------------------------------------------
   // Load turbines for selected park
@@ -160,14 +160,14 @@ export function ProductionEntryDialog({
       if (!res.ok) throw new Error(t('turbinesLoadError'))
       const park = await res.json()
       const turbineList = (park.turbines ?? []) as TurbineOption[]
-      setTurbines(turbineList.filter((t) => t.status === 'ACTIVE'))
+      setTurbines(turbineList.filter((tu) => tu.status === 'ACTIVE'))
     } catch {
       toast.error(t('turbinesLoadError'))
       setTurbines([])
     } finally {
       setIsLoadingTurbines(false)
     }
-  }, [])
+  }, [t])
 
   // -------------------------------------------------------------------------
   // Initialize form

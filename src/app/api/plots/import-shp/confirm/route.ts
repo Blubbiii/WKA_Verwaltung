@@ -20,7 +20,6 @@ import {
   type PlotMappableField,
   type OwnerMappableField,
 } from "@/lib/shapefile/field-mapping";
-import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
 

@@ -248,7 +248,7 @@ export function SettlementWizard() {
       }
     }
     loadParks();
-  }, []);
+  }, [t]);
 
   // -------------------------------------------------------------------------
   // Load production status when park/year/month changes
@@ -298,7 +298,7 @@ export function SettlementWizard() {
     } finally {
       setProductionStatusLoading(false);
     }
-  }, [parkId, year, month]);
+  }, [parkId, year, month, t]);
 
   useEffect(() => {
     loadProductionStatus();

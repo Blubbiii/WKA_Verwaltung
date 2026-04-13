@@ -120,7 +120,7 @@ export default function AccessReportPage() {
     } catch {
       toast.error(t("loadRolesError"));
     }
-  }, []);
+  }, [t]);
 
   // Fetch report data
   const fetchReport = useCallback(async () => {
@@ -148,7 +148,7 @@ export default function AccessReportPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedRoleId]);
+  }, [selectedRoleId, t]);
 
   useEffect(() => {
     fetchRoles();

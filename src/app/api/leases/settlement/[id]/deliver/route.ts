@@ -21,11 +21,6 @@ const deliverSchema = z.object({
 // - "both": print + email
 // =============================================================================
 
-interface DeliverBody {
-  method: "print" | "email" | "both";
-  invoiceIds?: string[];
-}
-
 interface DeliverResult {
   delivered: number;
   printed: number;

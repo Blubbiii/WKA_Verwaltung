@@ -176,7 +176,7 @@ export default function AdminWebhooksPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchWebhooks();
@@ -195,7 +195,7 @@ export default function AdminWebhooksPage() {
     } finally {
       setDeliveriesLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // -- Handlers -------------------------------------------------------------
 

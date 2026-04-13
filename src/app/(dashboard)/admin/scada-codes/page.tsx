@@ -127,7 +127,7 @@ export default function ScadaCodesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadGroups();
@@ -158,7 +158,7 @@ export default function ScadaCodesPage() {
         setDetailLoading(false);
       }
     },
-    []
+    [t]
   );
 
   // --- Handlers ---

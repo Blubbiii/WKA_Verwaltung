@@ -16,7 +16,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/auth/withPermission';
-import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
 import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";

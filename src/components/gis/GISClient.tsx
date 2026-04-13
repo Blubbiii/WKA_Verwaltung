@@ -317,7 +317,7 @@ export function GISClient() {
     };
     window.addEventListener("gis:center-copied", handleCopied);
     return () => window.removeEventListener("gis:center-copied", handleCopied);
-  }, []);
+  }, [tToast]);
 
   // Listen for area report export event from toolbar
   useEffect(() => {

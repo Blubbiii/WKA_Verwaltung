@@ -117,7 +117,7 @@ export default function DocumentRoutingPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const fetchFunds = useCallback(async () => {
     try {

@@ -25,13 +25,6 @@ interface MonthlyRow {
   t6_total: bigint;
 }
 
-interface ParkAvailRow {
-  parkId: string;
-  parkName: string;
-  t1_total: bigint;
-  t5_total: bigint;
-}
-
 const MONTH_LABELS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 function round(val: number, decimals: number): number {

@@ -396,7 +396,7 @@ export function ProductionImportSheet({
     } finally {
       setIsParsing(false)
     }
-  }, [])
+  }, [t])
 
   const handleFileDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -524,7 +524,7 @@ export function ProductionImportSheet({
     } finally {
       setIsValidating(false)
     }
-  }, [rawData, mapping])
+  }, [rawData, mapping, t])
 
   const validCount = validationResults.filter((r) => r.status === 'success').length
   const warningCount = validationResults.filter((r) => r.status === 'warning').length
@@ -630,7 +630,7 @@ export function ProductionImportSheet({
     } finally {
       setIsImporting(false)
     }
-  }, [rawData, mapping, onSuccess])
+  }, [rawData, mapping, onSuccess, t])
 
   // -------------------------------------------------------------------------
   // Navigation

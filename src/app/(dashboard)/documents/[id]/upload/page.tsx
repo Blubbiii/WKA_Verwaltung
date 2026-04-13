@@ -44,7 +44,7 @@ export default function UploadNewVersionPage() {
       }
     }
     fetchDocument();
-  }, [params.id]);
+  }, [params.id, t]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

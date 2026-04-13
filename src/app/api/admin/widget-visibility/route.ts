@@ -9,11 +9,8 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { WIDGET_REGISTRY } from "@/lib/dashboard/widget-registry";
-import type { UserRole } from "@/types/dashboard";
 import { z } from "zod";
 import { apiError } from "@/lib/api-errors";
-
-const VALID_ROLES: UserRole[] = ["VIEWER", "MANAGER", "ADMIN", "SUPERADMIN"];
 
 const putWidgetVisibilitySchema = z.object({
   widgetId: z.string().min(1),

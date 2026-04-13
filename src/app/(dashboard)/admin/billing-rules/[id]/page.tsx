@@ -174,7 +174,7 @@ export default function BillingRuleDetailPage({
     } finally {
       setIsLoading(false);
     }
-  }, [id, router]);
+  }, [id, router, t]);
 
   // Fetch Executions
   const fetchExecutions = useCallback(async () => {

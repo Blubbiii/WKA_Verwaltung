@@ -38,15 +38,6 @@ export interface ParseResult {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Get cell value as string, handling ExcelJS cell value types */
-function cellToString(cell: ExcelJS.Cell | undefined): string {
-  if (!cell || cell.value === null || cell.value === undefined) return "";
-  if (typeof cell.value === "object" && "result" in cell.value) {
-    return String(cell.value.result ?? "");
-  }
-  return String(cell.value);
-}
-
 /** Get cell value as raw (number or string) */
 function cellRaw(cell: ExcelJS.Cell | undefined): string | number | null {
   if (!cell || cell.value === null || cell.value === undefined) return null;

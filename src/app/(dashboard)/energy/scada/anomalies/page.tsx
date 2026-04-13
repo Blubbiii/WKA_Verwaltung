@@ -233,7 +233,7 @@ export default function ScadaAnomaliesPage() {
       setAnomalies(data.anomalies);
       setTotal(data.total);
       setStats(data.stats);
-    } catch (err) {
+    } catch {
       // Silent — UI shows loading/empty state
     } finally {
       setLoading(false);
@@ -258,7 +258,7 @@ export default function ScadaAnomaliesPage() {
       if (!res.ok) throw new Error("Fehler beim Laden der Konfiguration");
       const data = await res.json();
       setConfig(data.config);
-    } catch (err) {
+    } catch {
       // Silent — config is optional
     } finally {
       setConfigLoading(false);
@@ -290,7 +290,7 @@ export default function ScadaAnomaliesPage() {
       const data = await res.json();
       toast.success(data.message);
       await fetchAnomalies();
-    } catch (err) {
+    } catch {
       // toast.error below handles user feedback
       toast.error("Fehler bei der Anomalie-Erkennung");
     } finally {
@@ -307,7 +307,7 @@ export default function ScadaAnomaliesPage() {
       });
       if (!res.ok) throw new Error("Fehler");
       await fetchAnomalies();
-    } catch (err) {
+    } catch {
       // Silent — non-critical action
     }
   };
@@ -330,7 +330,7 @@ export default function ScadaAnomaliesPage() {
       setSelectedAnomaly(null);
       setNotes("");
       await fetchAnomalies();
-    } catch (err) {
+    } catch {
       // Silent — UI shows saving state
     } finally {
       setSaving(false);
@@ -348,7 +348,7 @@ export default function ScadaAnomaliesPage() {
       });
       if (!res.ok) throw new Error("Fehler");
       await fetchAnomalies();
-    } catch (err) {
+    } catch {
       // Silent — UI shows saving state
     } finally {
       setSaving(false);
@@ -367,7 +367,7 @@ export default function ScadaAnomaliesPage() {
       if (!res.ok) throw new Error("Fehler");
       const data = await res.json();
       setConfig(data.config);
-    } catch (err) {
+    } catch {
       // Silent — UI shows saving state
     } finally {
       setConfigSaving(false);

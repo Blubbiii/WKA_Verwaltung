@@ -4,7 +4,6 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { generatePreview } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
 import { InvoiceType } from "@prisma/client";
-import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 
 const previewSchema = z.object({

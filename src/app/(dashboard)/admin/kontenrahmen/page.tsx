@@ -129,7 +129,7 @@ export default function KontenrahmenPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, filterCategory]);
+  }, [search, filterCategory, t]);
 
   useEffect(() => {
     fetchAccounts();

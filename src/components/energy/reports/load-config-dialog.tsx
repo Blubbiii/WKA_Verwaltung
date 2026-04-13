@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { formatDate } from "@/lib/format";
 import { FolderOpen, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -53,13 +53,7 @@ export function LoadConfigDialog({
   const [loading, setLoading] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open) {
-      fetchConfigs();
-    }
-  }, [open]);
-
-  async function fetchConfigs() {
+  const fetchConfigs = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/energy/reports/configs");
@@ -71,7 +65,13 @@ export function LoadConfigDialog({
     } finally {
       setLoading(false);
     }
-  }
+  }, [t]);
+
+  useEffect(() => {
+    if (open) {
+      fetchConfigs();
+    }
+  }, [open, fetchConfigs]);
 
   function handleLoad(config: SavedConfig) {
     onLoad(config.config);

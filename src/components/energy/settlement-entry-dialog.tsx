@@ -133,7 +133,7 @@ export function SettlementEntryDialog({
     } finally {
       setIsLoadingParks(false)
     }
-  }, [])
+  }, [t])
 
   // -------------------------------------------------------------------------
   // Initialize form

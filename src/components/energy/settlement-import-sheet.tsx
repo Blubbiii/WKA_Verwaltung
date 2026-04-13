@@ -243,7 +243,7 @@ export function SettlementImportSheet({
     } catch {
       toast.error(t('parksLoadError'))
     }
-  }, [parksLoaded])
+  }, [parksLoaded, t])
 
   // -------------------------------------------------------------------------
   // Reset
@@ -426,7 +426,7 @@ export function SettlementImportSheet({
         setIsParsing(false)
       }
     },
-    [loadParks]
+    [loadParks, t]
   )
 
   const handleFileDrop = useCallback(
@@ -557,7 +557,7 @@ export function SettlementImportSheet({
     } finally {
       setIsValidating(false)
     }
-  }, [rawData, mapping, parks])
+  }, [rawData, mapping, parks, t])
 
   const validCount = validationResults.filter((r) => r.status === 'success').length
   const warningCount = validationResults.filter((r) => r.status === 'warning').length
@@ -702,7 +702,7 @@ export function SettlementImportSheet({
         description: t('importErrorsDesc', { count: errors }),
       })
     }
-  }, [rawData, mapping, parks, validationResults, onSuccess])
+  }, [rawData, mapping, parks, validationResults, onSuccess, t])
 
   // -------------------------------------------------------------------------
   // Navigation

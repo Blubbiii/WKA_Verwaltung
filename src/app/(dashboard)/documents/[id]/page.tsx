@@ -166,7 +166,7 @@ export default function DocumentDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [params.id]);
+  }, [params.id, t]);
 
   useEffect(() => {
     fetchDocument();

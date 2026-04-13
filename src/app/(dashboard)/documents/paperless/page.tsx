@@ -201,7 +201,7 @@ export default function PaperlessDocumentsPage() {
     if (flags.paperless) {
       loadDocuments();
     }
-  }, [flags.paperless, page, pageSize, debouncedSearch, tagFilter, typeFilter, correspondentFilter]);
+  }, [flags.paperless, page, pageSize, debouncedSearch, tagFilter, typeFilter, correspondentFilter, t]);
 
   // Reset page on filter change
   useEffect(() => {

@@ -11,7 +11,6 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
-import { OperationalTaskStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
 

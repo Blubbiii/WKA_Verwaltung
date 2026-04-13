@@ -63,6 +63,10 @@ export function VirtualTable<T>({
 }: VirtualTableProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // TanStack Virtual returns functions that React Compiler cannot memoize safely.
+  // This is a known library limitation — values are passed only to dom elements (no
+  // child memoized components), so the warning can be safely suppressed.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: data.length,
     getScrollElement: () => parentRef.current,

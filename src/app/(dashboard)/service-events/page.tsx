@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
@@ -230,7 +230,7 @@ export default function ServiceEventsPage() {
     "/api/parks?limit=100"
   );
 
-  const events = eventsData?.data ?? [];
+  const events = useMemo(() => eventsData?.data ?? [], [eventsData]);
 
   // Batch selection
   const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =

@@ -111,7 +111,7 @@ export async function findNearestStation(
  * or returns an empty array if parsing fails.
  */
 export async function fetchStationObservations(
-  stationId: string
+  _stationId: string
 ): Promise<DwdObservation[]> {
   // DWD provides recent data as ZIP archives — for real implementation,
   // use a ZIP parser. For now, return station metadata confirmation.

@@ -161,7 +161,7 @@ export default function TopologyPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedParkId]);
+  }, [selectedParkId, t]);
 
   useEffect(() => {
     fetchTopology();
@@ -201,7 +201,7 @@ export default function TopologyPage() {
       setHasChanges(true);
       setAddNodeType(null);
     },
-    [addNodeType]
+    [addNodeType, t]
   );
 
   const handleNodeDelete = useCallback((nodeId: string) => {
@@ -332,7 +332,7 @@ export default function TopologyPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [selectedParkId, nodes, connections, fetchTopology]);
+  }, [selectedParkId, nodes, connections, fetchTopology, t]);
 
   // --------------------------------------------------------------------------
   // AUTO LAYOUT
@@ -362,7 +362,7 @@ export default function TopologyPage() {
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedParkId, fetchTopology]);
+  }, [selectedParkId, fetchTopology, t]);
 
   // --------------------------------------------------------------------------
   // ZOOM CONTROLS (handled outside canvas to avoid circular refs)

@@ -86,7 +86,7 @@ export function EditableCell({
     } finally {
       setSaving(false);
     }
-  }, [draft, value, onSave]);
+  }, [draft, value, onSave, t]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
