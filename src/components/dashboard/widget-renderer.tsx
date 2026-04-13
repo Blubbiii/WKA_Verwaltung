@@ -12,13 +12,24 @@ import {
   FolderOpen,
   Vote,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { WidgetWrapper } from "./widget-wrapper";
 import { KPICard, KPI_ACCENT_COLORS, KPI_ICON_COLORS } from "./kpi-card";
-import {
-  MonthlyInvoicesChart,
-  CapitalDevelopmentChart,
-  DocumentsByTypeChart,
-} from "./analytics-charts";
+
+// Lazy-load Recharts-based widgets — Recharts is ~500KB gzipped and only
+// needed when these specific widgets are actually rendered on the dashboard.
+const MonthlyInvoicesChart = dynamic(
+  () => import("./analytics-charts").then((mod) => mod.MonthlyInvoicesChart),
+  { ssr: false }
+);
+const CapitalDevelopmentChart = dynamic(
+  () => import("./analytics-charts").then((mod) => mod.CapitalDevelopmentChart),
+  { ssr: false }
+);
+const DocumentsByTypeChart = dynamic(
+  () => import("./analytics-charts").then((mod) => mod.DocumentsByTypeChart),
+  { ssr: false }
+);
 import {
   DeadlinesWidget,
   ActivitiesWidget,

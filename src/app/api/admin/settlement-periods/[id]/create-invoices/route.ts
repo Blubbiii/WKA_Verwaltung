@@ -770,20 +770,36 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
     });
 
     if (turbines.length > 0) {
+      // Batch-fetch ALL productions for ALL turbines in ONE query (was N+1)
+      const turbineIds = turbines.map((t) => t.id);
+      const allProductions = await prisma.turbineProduction.findMany({
+        where: { turbineId: { in: turbineIds }, year: period.year, tenantId },
+        select: {
+          turbineId: true,
+          productionKwh: true,
+          operatingHours: true,
+          availabilityPct: true,
+        },
+      });
+
+      // Group by turbineId in memory
+      const productionsByTurbine = new Map<string, typeof allProductions>();
+      for (const prod of allProductions) {
+        const list = productionsByTurbine.get(prod.turbineId) ?? [];
+        list.push(prod);
+        productionsByTurbine.set(prod.turbineId, list);
+      }
+
       const entries: TurbineProductionEntry[] = [];
-
       for (const turbine of turbines) {
-        const productions = await prisma.turbineProduction.findMany({
-          where: { turbineId: turbine.id, year: period.year, tenantId },
-        });
-
+        const productions = productionsByTurbine.get(turbine.id) ?? [];
         if (productions.length === 0) continue;
 
         const totalKwh = productions.reduce((s, p) => s + Number(p.productionKwh), 0);
         const totalHours = productions.reduce((s, p) => s + Number(p.operatingHours ?? 0), 0);
-        const avgAvail = productions.filter((p) => p.availabilityPct != null).length > 0
-          ? productions.reduce((s, p) => s + Number(p.availabilityPct ?? 0), 0) /
-            productions.filter((p) => p.availabilityPct != null).length
+        const validAvailCount = productions.filter((p) => p.availabilityPct != null).length;
+        const avgAvail = validAvailCount > 0
+          ? productions.reduce((s, p) => s + Number(p.availabilityPct ?? 0), 0) / validAvailCount
           : null;
 
         entries.push({
