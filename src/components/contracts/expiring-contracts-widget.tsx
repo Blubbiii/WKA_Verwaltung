@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { format, differenceInDays } from "date-fns";
 import { de } from "date-fns/locale";
@@ -46,30 +47,30 @@ interface GroupedContracts {
   notice: ExpiringContract[]; // 61-90 Tage
 }
 
-const typeConfig: Record<string, { label: string }> = {
-  LEASE: { label: "Pacht" },
-  SERVICE: { label: "Service" },
-  INSURANCE: { label: "Versicherung" },
-  GRID_CONNECTION: { label: "Netzanschluss" },
-  MARKETING: { label: "Vermarktung" },
-  OTHER: { label: "Sonstiges" },
+const typeLabelKey: Record<string, string> = {
+  LEASE: "typeLease",
+  SERVICE: "typeService",
+  INSURANCE: "typeInsurance",
+  GRID_CONNECTION: "typeGridConnection",
+  MARKETING: "typeMarketing",
+  OTHER: "typeOther",
 };
 
-const urgencyConfig: Record<UrgencyLevel, { label: string; color: string; bgColor: string; icon: typeof AlertTriangle }> = {
+const urgencyConfig: Record<UrgencyLevel, { color: string; bgColor: string; icon: typeof AlertTriangle; labelKey: string }> = {
   critical: {
-    label: "Kritisch (0-30 Tage)",
+    labelKey: "urgencyCritical",
     color: "text-red-600",
     bgColor: "bg-red-50 border-red-200",
     icon: AlertTriangle,
   },
   warning: {
-    label: "Warnung (31-60 Tage)",
+    labelKey: "urgencyWarning",
     color: "text-orange-600",
     bgColor: "bg-orange-50 border-orange-200",
     icon: Clock,
   },
   notice: {
-    label: "Hinweis (61-90 Tage)",
+    labelKey: "urgencyNotice",
     color: "text-yellow-600",
     bgColor: "bg-yellow-50 border-yellow-200",
     icon: Clock,
@@ -77,6 +78,7 @@ const urgencyConfig: Record<UrgencyLevel, { label: string; color: string; bgColo
 };
 
 export function ExpiringContractsWidget() {
+  const t = useTranslations("contracts.expiring");
   const [contracts, setContracts] = useState<ExpiringContract[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,7 +169,9 @@ export function ExpiringContractsWidget() {
             <div className="flex items-center gap-2">
               <p className="font-medium truncate">{contract.title}</p>
               <Badge variant="outline" className="text-xs shrink-0">
-                {typeConfig[contract.contractType]?.label || contract.contractType}
+                {typeLabelKey[contract.contractType]
+                  ? t(typeLabelKey[contract.contractType])
+                  : contract.contractType}
               </Badge>
             </div>
             <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
@@ -184,7 +188,7 @@ export function ExpiringContractsWidget() {
           </div>
           <div className="text-right shrink-0">
             <p className={`font-semibold ${config.color}`}>
-              {contract.daysUntilEnd} Tage
+              {t("daysLabel", { days: contract.daysUntilEnd })}
             </p>
             <p className="text-xs text-muted-foreground">
               {format(new Date(contract.endDate), "dd.MM.yyyy", { locale: de })}
@@ -194,7 +198,7 @@ export function ExpiringContractsWidget() {
         {hasNoticeDeadline && contract.daysUntilNotice! <= 30 && (
           <div className="mt-2 text-xs text-orange-700 bg-orange-100 rounded px-2 py-1 inline-flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" />
-            Kuendigungsfrist in {contract.daysUntilNotice} Tagen
+            {t("noticeDeadlineIn", { days: contract.daysUntilNotice ?? 0 })}
           </div>
         )}
       </Link>
@@ -211,7 +215,7 @@ export function ExpiringContractsWidget() {
       <div key={level} className="space-y-2">
         <div className={`flex items-center gap-2 ${config.color}`}>
           <Icon className="h-4 w-4" />
-          <span className="text-sm font-medium">{config.label}</span>
+          <span className="text-sm font-medium">{t(config.labelKey)}</span>
           <Badge variant="secondary" className="text-xs">
             {contracts.length}
           </Badge>
@@ -220,7 +224,7 @@ export function ExpiringContractsWidget() {
           {contracts.slice(0, 3).map((c) => renderContractItem(c, level))}
           {contracts.length > 3 && (
             <p className="text-sm text-muted-foreground pl-2">
-              + {contracts.length - 3} weitere
+              {t("moreItems", { count: contracts.length - 3 })}
             </p>
           )}
         </div>
@@ -234,10 +238,10 @@ export function ExpiringContractsWidget() {
         <div>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Auslaufende Verträge
+            {t("widgetTitle")}
           </CardTitle>
           <CardDescription>
-            Verträge die in den nächsten 90 Tagen auslaufen
+            {t("widgetDescription")}
           </CardDescription>
         </div>
         <Button
@@ -261,15 +265,15 @@ export function ExpiringContractsWidget() {
             <AlertTriangle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
             <p className="text-muted-foreground">{error}</p>
             <Button variant="outline" className="mt-4" onClick={fetchExpiringContracts}>
-              Erneut versuchen
+              {t("retry")}
             </Button>
           </div>
         ) : totalCount === 0 ? (
           <div className="py-8 text-center">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />
-            <p className="text-lg font-medium">Keine auslaufenden Verträge</p>
+            <p className="text-lg font-medium">{t("emptyTitle")}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              In den nächsten 90 Tagen laufen keine Verträge aus.
+              {t("emptyDescription")}
             </p>
           </div>
         ) : (
@@ -280,19 +284,19 @@ export function ExpiringContractsWidget() {
                 <p className={`text-2xl font-bold ${grouped.critical.length > 0 ? "text-red-600" : "text-muted-foreground"}`}>
                   {grouped.critical.length}
                 </p>
-                <p className="text-xs text-muted-foreground">Kritisch</p>
+                <p className="text-xs text-muted-foreground">{t("statCritical")}</p>
               </div>
               <div className={`rounded-lg p-2 ${grouped.warning.length > 0 ? "bg-orange-50" : "bg-muted/50"}`}>
                 <p className={`text-2xl font-bold ${grouped.warning.length > 0 ? "text-orange-600" : "text-muted-foreground"}`}>
                   {grouped.warning.length}
                 </p>
-                <p className="text-xs text-muted-foreground">Warnung</p>
+                <p className="text-xs text-muted-foreground">{t("statWarning")}</p>
               </div>
               <div className={`rounded-lg p-2 ${grouped.notice.length > 0 ? "bg-yellow-50" : "bg-muted/50"}`}>
                 <p className={`text-2xl font-bold ${grouped.notice.length > 0 ? "text-yellow-600" : "text-muted-foreground"}`}>
                   {grouped.notice.length}
                 </p>
-                <p className="text-xs text-muted-foreground">Hinweis</p>
+                <p className="text-xs text-muted-foreground">{t("statNotice")}</p>
               </div>
             </div>
 
@@ -310,7 +314,7 @@ export function ExpiringContractsWidget() {
       <CardFooter className="border-t pt-4">
         <Button variant="outline" className="w-full" asChild>
           <Link href="/contracts?status=ACTIVE">
-            Alle Verträge anzeigen
+            {t("showAllContracts")}
             <ChevronRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>

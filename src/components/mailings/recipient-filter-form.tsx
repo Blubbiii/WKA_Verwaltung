@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,6 +40,7 @@ interface RecipientFilterFormProps {
 // =============================================================================
 
 export function RecipientFilterForm({ value, onChange }: RecipientFilterFormProps) {
+  const t = useTranslations("mailings.recipientFilter");
   const [funds, setFunds] = useState<FundOption[]>([]);
   const [parks, setParks] = useState<ParkOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,38 +109,38 @@ export function RecipientFilterForm({ value, onChange }: RecipientFilterFormProp
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="ALL" id="filter-all" />
           <Label htmlFor="filter-all" className="cursor-pointer">
-            Alle Gesellschafter
+            {t("allShareholders")}
           </Label>
         </div>
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="ACTIVE_ONLY" id="filter-active" />
           <Label htmlFor="filter-active" className="cursor-pointer">
-            Nur aktive Gesellschafter (ohne Austritt)
+            {t("activeOnly")}
           </Label>
         </div>
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="BY_FUND" id="filter-fund" />
           <Label htmlFor="filter-fund" className="cursor-pointer">
-            Nach Gesellschaft filtern
+            {t("byFund")}
           </Label>
         </div>
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="BY_PARK" id="filter-park" />
           <Label htmlFor="filter-park" className="cursor-pointer">
-            Nach Windpark filtern
+            {t("byPark")}
           </Label>
         </div>
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="BY_ROLE" id="filter-role" />
           <Label htmlFor="filter-role" className="cursor-pointer">
-            Nur aktive (nach Status)
+            {t("byRole")}
           </Label>
         </div>
       </RadioGroup>
 
       {value.type === "BY_FUND" && (
         <div className="mt-4 space-y-2">
-          <Label>Gesellschaften auswaehlen</Label>
+          <Label>{t("selectFunds")}</Label>
           {loading ? (
             <div className="space-y-2">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -146,7 +148,7 @@ export function RecipientFilterForm({ value, onChange }: RecipientFilterFormProp
               ))}
             </div>
           ) : funds.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine Gesellschaften gefunden.</p>
+            <p className="text-sm text-muted-foreground">{t("noFunds")}</p>
           ) : (
             <div className="max-h-48 overflow-y-auto rounded-md border p-3 space-y-2">
               {funds.map((fund) => (
@@ -165,7 +167,7 @@ export function RecipientFilterForm({ value, onChange }: RecipientFilterFormProp
           )}
           {(value.fundIds?.length ?? 0) > 0 && (
             <Badge variant="secondary" className="text-xs">
-              {value.fundIds!.length} ausgewaehlt
+              {t("selectedCount", { count: value.fundIds!.length })}
             </Badge>
           )}
         </div>
@@ -173,7 +175,7 @@ export function RecipientFilterForm({ value, onChange }: RecipientFilterFormProp
 
       {value.type === "BY_PARK" && (
         <div className="mt-4 space-y-2">
-          <Label>Windparks auswaehlen</Label>
+          <Label>{t("selectParks")}</Label>
           {loading ? (
             <div className="space-y-2">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -181,7 +183,7 @@ export function RecipientFilterForm({ value, onChange }: RecipientFilterFormProp
               ))}
             </div>
           ) : parks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine Windparks gefunden.</p>
+            <p className="text-sm text-muted-foreground">{t("noParks")}</p>
           ) : (
             <div className="max-h-48 overflow-y-auto rounded-md border p-3 space-y-2">
               {parks.map((park) => (
@@ -200,7 +202,7 @@ export function RecipientFilterForm({ value, onChange }: RecipientFilterFormProp
           )}
           {(value.parkIds?.length ?? 0) > 0 && (
             <Badge variant="secondary" className="text-xs">
-              {value.parkIds!.length} ausgewaehlt
+              {t("selectedCount", { count: value.parkIds!.length })}
             </Badge>
           )}
         </div>

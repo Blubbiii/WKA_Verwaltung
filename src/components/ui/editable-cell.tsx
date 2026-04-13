@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -43,6 +44,7 @@ export function EditableCell({
   placeholder = "—",
   formatDisplay,
 }: EditableCellProps) {
+  const t = useTranslations("common.editableCell");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +82,7 @@ export function EditableCell({
       await onSave(trimmed);
       setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
+      setError(err instanceof Error ? err.message : t("saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -113,7 +115,7 @@ export function EditableCell({
               await onSave(val);
               setEditing(false);
             } catch (err) {
-              setError(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
+              setError(err instanceof Error ? err.message : t("saveFailed"));
             } finally {
               setSaving(false);
             }

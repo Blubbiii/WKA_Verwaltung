@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
@@ -108,13 +109,7 @@ function getPresetRange(preset: Preset): { from: string; to: string } {
   }
 }
 
-const PRESET_LABELS: Record<Preset, string> = {
-  today: "Heute",
-  "7d": "7 Tage",
-  "30d": "30 Tage",
-  month: "Akt. Monat",
-  "last-month": "Letzter Monat",
-};
+const PRESET_KEYS: Preset[] = ["today", "7d", "30d", "month", "last-month"];
 
 // =============================================================================
 // Parks Hook
@@ -141,7 +136,16 @@ function useParks() {
 // =============================================================================
 
 export function DailyOverview() {
+  const t = useTranslations("energy.dailyOverview");
   const parks = useParks();
+
+  const presetLabels: Record<Preset, string> = {
+    today: t("presetToday"),
+    "7d": t("preset7d"),
+    "30d": t("preset30d"),
+    month: t("presetMonth"),
+    "last-month": t("presetLastMonth"),
+  };
 
   // Filter state
   const [activePreset, setActivePreset] = useState<Preset | undefined>("30d");
@@ -178,14 +182,14 @@ export function DailyOverview() {
         <CardContent className="flex flex-wrap items-center gap-3 py-3">
           {/* Presets */}
           <div className="flex gap-1">
-            {(Object.keys(PRESET_LABELS) as Preset[]).map((p) => (
+            {PRESET_KEYS.map((p) => (
               <Button
                 key={p}
                 variant={activePreset === p ? "default" : "outline"}
                 size="sm"
                 onClick={() => applyPreset(p)}
               >
-                {PRESET_LABELS[p]}
+                {presetLabels[p]}
               </Button>
             ))}
           </div>
@@ -194,7 +198,7 @@ export function DailyOverview() {
 
           {/* Custom range */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Von:</span>
+            <span className="text-sm text-muted-foreground">{t("from")}</span>
             <Input
               type="date"
               value={from}
@@ -204,7 +208,7 @@ export function DailyOverview() {
               }}
               className="w-[140px] h-8"
             />
-            <span className="text-sm text-muted-foreground">Bis:</span>
+            <span className="text-sm text-muted-foreground">{t("to")}</span>
             <Input
               type="date"
               value={to}
@@ -221,10 +225,10 @@ export function DailyOverview() {
           {/* Park filter */}
           <Select value={parkId} onValueChange={setParkId}>
             <SelectTrigger className="w-[180px] h-8">
-              <SelectValue placeholder="Alle Parks" />
+              <SelectValue placeholder={t("allParks")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle Parks</SelectItem>
+              <SelectItem value="all">{t("allParks")}</SelectItem>
               {parks.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
                   {p.name}
@@ -244,19 +248,19 @@ export function DailyOverview() {
         </div>
       ) : error ? (
         <div className="flex items-center justify-center h-[200px] text-destructive">
-          Fehler beim Laden der Daten
+          {t("loadError")}
         </div>
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-5">
             <KpiCard
-              title="Produktion"
+              title={t("kpiProduction")}
               value={kpis ? formatKwh(kpis.totalProductionKwh) : "–"}
               icon={Zap}
               color="text-blue-500"
             />
             <KpiCard
-              title="Verfügbarkeit"
+              title={t("kpiAvailability")}
               value={
                 kpis?.avgAvailabilityPct != null
                   ? `${kpis.avgAvailabilityPct.toFixed(1)} %`
@@ -279,7 +283,7 @@ export function DailyOverview() {
               }
             />
             <KpiCard
-              title="Störungen"
+              title={t("kpiFaults")}
               value={String(kpis?.activeFaults ?? 0)}
               icon={AlertTriangle}
               color={
@@ -289,7 +293,7 @@ export function DailyOverview() {
               }
             />
             <KpiCard
-              title="Ø Wind"
+              title={t("kpiAvgWind")}
               value={
                 kpis?.avgWindSpeed != null
                   ? `${kpis.avgWindSpeed.toFixed(1)} m/s`
@@ -299,7 +303,7 @@ export function DailyOverview() {
               color="text-amber-500"
             />
             <KpiCard
-              title="Umsatz"
+              title={t("kpiRevenue")}
               value={
                 kpis?.totalRevenueEur != null
                   ? formatEur(kpis.totalRevenueEur)
@@ -312,7 +316,7 @@ export function DailyOverview() {
 
           {/* Daily Production + Wind Chart */}
           <CollapsibleSection
-            title="Produktion & Wind"
+            title={t("sectionProductionWind")}
             icon={TrendingUp}
             defaultOpen
           >
@@ -358,7 +362,7 @@ export function DailyOverview() {
                         const key = String(name ?? "");
                         return [
                           key === "productionKwh" ? formatKwh(num) : `${num.toFixed(1)} m/s`,
-                          key === "productionKwh" ? "Produktion" : "Wind",
+                          key === "productionKwh" ? t("legendProduction") : t("kpiAvgWind"),
                         ];
                       }}
                       labelFormatter={(v) => {
@@ -368,7 +372,7 @@ export function DailyOverview() {
                     />
                     <Legend
                       formatter={(value) =>
-                        value === "productionKwh" ? "Produktion" : "Windgeschwindigkeit"
+                        value === "productionKwh" ? t("legendProduction") : t("legendWind")
                       }
                     />
                     <Bar
@@ -389,14 +393,14 @@ export function DailyOverview() {
               </div>
             ) : (
               <p className="text-muted-foreground text-center py-8">
-                Keine Daten im gewählten Zeitraum
+                {t("noDataInRange")}
               </p>
             )}
           </CollapsibleSection>
 
           {/* Active Faults */}
           <CollapsibleSection
-            title="Störungen"
+            title={t("sectionFaults")}
             icon={AlertTriangle}
             defaultOpen
           >
@@ -404,11 +408,11 @@ export function DailyOverview() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Anlage</TableHead>
-                    <TableHead>Park</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Beginn</TableHead>
-                    <TableHead>Dauer</TableHead>
+                    <TableHead>{t("colTurbine")}</TableHead>
+                    <TableHead>{t("colPark")}</TableHead>
+                    <TableHead>{t("colStatus")}</TableHead>
+                    <TableHead>{t("colStart")}</TableHead>
+                    <TableHead>{t("colDuration")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -431,7 +435,7 @@ export function DailyOverview() {
                       <TableCell>
                         {f.durationHours != null
                           ? `${f.durationHours} h`
-                          : "laufend"}
+                          : t("running")}
                       </TableCell>
                     </TableRow>
                   ))}

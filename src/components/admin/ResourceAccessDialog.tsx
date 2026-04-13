@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import {
   Dialog,
@@ -94,20 +95,20 @@ interface ResourceAccessDialogProps {
 // ============================================================================
 
 const RESOURCE_TYPES = [
-  { value: "PARK", label: "Windpark" },
-  { value: "FUND", label: "Gesellschaft" },
-  { value: "TURBINE", label: "Turbine" },
-  { value: "DOCUMENT", label: "Dokument" },
-  { value: "CONTRACT", label: "Vertrag" },
-  { value: "LEASE", label: "Pachtvertrag" },
-  { value: "INVOICE", label: "Rechnung" },
-  { value: "SHAREHOLDER", label: "Gesellschafter" },
+  { value: "PARK", labelKey: "typePark" },
+  { value: "FUND", labelKey: "typeFund" },
+  { value: "TURBINE", labelKey: "typeTurbine" },
+  { value: "DOCUMENT", labelKey: "typeDocument" },
+  { value: "CONTRACT", labelKey: "typeContract" },
+  { value: "LEASE", labelKey: "typeLease" },
+  { value: "INVOICE", labelKey: "typeInvoice" },
+  { value: "SHAREHOLDER", labelKey: "typeShareholder" },
 ];
 
 const ACCESS_LEVELS = [
-  { value: "READ", label: "Lesen", description: "Nur ansehen", color: "bg-blue-100 text-blue-800" },
-  { value: "WRITE", label: "Schreiben", description: "Ansehen und bearbeiten", color: "bg-green-100 text-green-800" },
-  { value: "ADMIN", label: "Admin", description: "Voller Zugriff", color: "bg-purple-100 text-purple-800" },
+  { value: "READ", labelKey: "levelRead", descriptionKey: "levelReadDesc", color: "bg-blue-100 text-blue-800" },
+  { value: "WRITE", labelKey: "levelWrite", descriptionKey: "levelWriteDesc", color: "bg-green-100 text-green-800" },
+  { value: "ADMIN", labelKey: "levelAdmin", descriptionKey: "levelAdminDesc", color: "bg-purple-100 text-purple-800" },
 ];
 
 // ============================================================================
@@ -123,6 +124,7 @@ export function ResourceAccessDialog({
   mode = "grant",
   onSuccess,
 }: ResourceAccessDialogProps) {
+  const t = useTranslations("admin.resourceAccess");
   // State für Formular
   const [selectedUserId, setSelectedUserId] = useState(preSelectedUserId ?? "");
   const [selectedResourceType, setSelectedResourceType] = useState(preSelectedResourceType ?? "");
@@ -279,8 +281,8 @@ export function ResourceAccessDialog({
   const handleSubmit = async () => {
     if (!selectedUserId || !selectedResourceType || !selectedResourceId) {
       toast({
-        title: "Fehler",
-        description: "Bitte alle Pflichtfelder ausfuellen",
+        title: t("toastErrorTitle"),
+        description: t("toastErrorMissing"),
         variant: "destructive",
       });
       return;
@@ -308,8 +310,8 @@ export function ResourceAccessDialog({
       }
 
       toast({
-        title: "Erfolg",
-        description: "Zugriff erfolgreich gewaehrt",
+        title: t("toastSuccessTitle"),
+        description: t("toastGranted"),
       });
 
       // Reset Form
@@ -332,8 +334,8 @@ export function ResourceAccessDialog({
       }
     } catch (error) {
       toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        title: t("toastErrorTitle"),
+        description: error instanceof Error ? error.message : t("toastUnknownError"),
         variant: "destructive",
       });
     } finally {
@@ -359,16 +361,16 @@ export function ResourceAccessDialog({
       }
 
       toast({
-        title: "Erfolg",
-        description: "Zugriff erfolgreich entzogen",
+        title: t("toastSuccessTitle"),
+        description: t("toastRevoked"),
       });
 
       fetchAccessList();
       setDeleteTarget(null);
     } catch (error) {
       toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        title: t("toastErrorTitle"),
+        description: error instanceof Error ? error.message : t("toastUnknownError"),
         variant: "destructive",
       });
     }
@@ -385,13 +387,14 @@ export function ResourceAccessDialog({
     const config = ACCESS_LEVELS.find((l) => l.value === level);
     return (
       <Badge className={config?.color ?? "bg-gray-100 text-gray-800"}>
-        {config?.label ?? level}
+        {config ? t(config.labelKey) : level}
       </Badge>
     );
   };
 
   const getResourceTypeLabel = (type: string) => {
-    return RESOURCE_TYPES.find((t) => t.value === type)?.label ?? type;
+    const found = RESOURCE_TYPES.find((rt) => rt.value === type);
+    return found ? t(found.labelKey) : type;
   };
 
   // ============================================================================
@@ -456,7 +459,7 @@ export function ResourceAccessDialog({
                   <SelectContent>
                     {RESOURCE_TYPES.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
-                        {type.label}
+                        {t(type.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -498,9 +501,9 @@ export function ResourceAccessDialog({
                   {ACCESS_LEVELS.map((level) => (
                     <SelectItem key={level.value} value={level.value}>
                       <div className="flex flex-col">
-                        <span>{level.label}</span>
+                        <span>{t(level.labelKey)}</span>
                         <span className="text-xs text-muted-foreground">
-                          {level.description}
+                          {t(level.descriptionKey)}
                         </span>
                       </div>
                     </SelectItem>

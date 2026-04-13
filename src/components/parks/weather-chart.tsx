@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { format, parseISO, startOfDay } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -127,6 +128,7 @@ interface CustomTooltipProps {
 }
 
 function CustomTooltip({ active, payload, dataLabel: _dataLabel, unit }: CustomTooltipProps) {
+  const t = useTranslations("parks.weather");
   if (!active || !payload || payload.length === 0) {
     return null;
   }
@@ -140,16 +142,16 @@ function CustomTooltip({ active, payload, dataLabel: _dataLabel, unit }: CustomT
       </p>
       <div className="mt-2 space-y-1 text-sm">
         <p className="text-muted-foreground">
-          Durchschnitt: <span className="font-medium text-foreground">{data.avg} {unit}</span>
+          {t("avg")}: <span className="font-medium text-foreground">{data.avg} {unit}</span>
         </p>
         <p className="text-muted-foreground">
-          Maximum: <span className="font-medium text-green-600">{data.max} {unit}</span>
+          {t("max")}: <span className="font-medium text-green-600">{data.max} {unit}</span>
         </p>
         <p className="text-muted-foreground">
-          Minimum: <span className="font-medium text-orange-600">{data.min} {unit}</span>
+          {t("min")}: <span className="font-medium text-orange-600">{data.min} {unit}</span>
         </p>
         <p className="text-xs text-muted-foreground">
-          Datenpunkte: {data.count}
+          {t("dataPoints")}: {data.count}
         </p>
       </div>
     </div>
@@ -169,6 +171,7 @@ export function WeatherChart({
   showArea = true,
   height = 300,
 }: WeatherChartProps) {
+  const t = useTranslations("parks.weather");
   const chartData = useMemo(() => {
     return aggregateDataByDay(data, dataKey);
   }, [data, dataKey]);
@@ -206,7 +209,7 @@ export function WeatherChart({
         className="flex items-center justify-center text-muted-foreground"
         style={{ height }}
       >
-        Keine Daten verfügbar
+        {t("noData")}
       </div>
     );
   }
@@ -340,6 +343,7 @@ export function MultiWeatherChart({
   metrics,
   height = 300,
 }: MultiWeatherChartProps) {
+  const t = useTranslations("parks.weather");
   const chartData = useMemo(() => {
     // Get all unique dates
     const dates = new Set<string>();

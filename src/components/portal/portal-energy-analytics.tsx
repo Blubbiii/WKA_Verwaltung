@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
@@ -97,6 +98,7 @@ function TrendIcon({ indicator }: { indicator: "green" | "yellow" | "red" }) {
 // =============================================================================
 
 export function PortalEnergyAnalytics() {
+  const t = useTranslations("portal.energyAnalytics");
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
@@ -135,7 +137,7 @@ export function PortalEnergyAnalytics() {
     return (
       <Card>
         <CardContent className="py-16 text-center text-destructive">
-          Fehler beim Laden der Anlagen-Performance
+          {t("errorLoading")}
         </CardContent>
       </Card>
     );
@@ -145,7 +147,7 @@ export function PortalEnergyAnalytics() {
     return (
       <Card>
         <CardContent className="py-16 text-center text-muted-foreground">
-          Keine Daten verfügbar
+          {t("noData")}
         </CardContent>
       </Card>
     );
@@ -160,16 +162,16 @@ export function PortalEnergyAnalytics() {
   }[kpis.trendIndicator];
 
   const statusConfig = {
-    good: { label: "Gut", variant: "default" as const, className: "bg-green-100 text-green-800 hover:bg-green-100" },
-    warning: { label: "Mittel", variant: "secondary" as const, className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
-    poor: { label: "Schwach", variant: "destructive" as const, className: "bg-red-100 text-red-800 hover:bg-red-100" },
+    good: { label: t("statusGood"), variant: "default" as const, className: "bg-green-100 text-green-800 hover:bg-green-100" },
+    warning: { label: t("statusWarning"), variant: "secondary" as const, className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" },
+    poor: { label: t("statusPoor"), variant: "destructive" as const, className: "bg-red-100 text-red-800 hover:bg-red-100" },
   };
 
   return (
     <div className="space-y-6">
       {/* Year Selector */}
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-muted-foreground">Jahr:</span>
+        <span className="text-sm font-medium text-muted-foreground">{t("year")}:</span>
         <Select
           value={String(selectedYear)}
           onValueChange={(v) => setSelectedYear(Number(v))}
@@ -191,7 +193,7 @@ export function PortalEnergyAnalytics() {
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monatsproduktion</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("monthlyProduction")}</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -199,7 +201,7 @@ export function PortalEnergyAnalytics() {
             <div className={`flex items-center gap-1 text-xs ${trendColor}`}>
               <TrendIcon indicator={kpis.trendIndicator} />
               <span>
-                Vorjahr: {fmtNum(kpis.previousYearMonthlyMwh)} MWh
+                {t("previousYear", { value: fmtNum(kpis.previousYearMonthlyMwh) })}
               </span>
             </div>
           </CardContent>
@@ -207,39 +209,39 @@ export function PortalEnergyAnalytics() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Capacity Factor</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("capacityFactor")}</CardTitle>
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fmtNum(kpis.capacityFactor)} %</div>
             <p className="text-xs text-muted-foreground">
-              Auslastung der Nennleistung
+              {t("capacityFactorDesc")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Verfügbarkeit</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("availability")}</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fmtNum(kpis.availabilityPct)} %</div>
             <p className="text-xs text-muted-foreground">
-              Technische Verfügbarkeit
+              {t("availabilityDesc")}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Specific Yield</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("specificYield")}</CardTitle>
             <Wind className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fmtInt(kpis.specificYield)} kWh/kW</div>
             <p className="text-xs text-muted-foreground">
-              Produktion pro installiertem kW
+              {t("specificYieldDesc")}
             </p>
           </CardContent>
         </Card>
@@ -248,15 +250,15 @@ export function PortalEnergyAnalytics() {
       {/* Production Chart: Current Year vs Previous Year */}
       <Card>
         <CardHeader>
-          <CardTitle>Produktion: {selectedYear} vs. {selectedYear - 1}</CardTitle>
+          <CardTitle>{t("productionTitle", { currentYear: selectedYear, previousYear: selectedYear - 1 })}</CardTitle>
           <CardDescription>
-            Monatliche Stromproduktion im Jahresvergleich (kWh)
+            {t("productionDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {productionChart.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Keine Produktionsdaten verfügbar
+              {t("noProductionData")}
             </p>
           ) : (
               <BarChart width="100%" height={320} data={productionChart}>
@@ -290,15 +292,15 @@ export function PortalEnergyAnalytics() {
       {/* Availability Trend */}
       <Card>
         <CardHeader>
-          <CardTitle>Verfügbarkeits-Trend {selectedYear}</CardTitle>
+          <CardTitle>{t("availabilityTrendTitle", { year: selectedYear })}</CardTitle>
           <CardDescription>
-            Monatliche technische Verfügbarkeit (%)
+            {t("availabilityTrendDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {availabilityTrend.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Keine Verfügbarkeitsdaten vorhanden
+              {t("noAvailabilityData")}
             </p>
           ) : (
               <LineChart width="100%" height={250} data={availabilityTrend}>
@@ -308,7 +310,7 @@ export function PortalEnergyAnalytics() {
                 <Tooltip
                   formatter={(value) => {
                     const num = typeof value === "number" ? value : 0;
-                    return [`${fmtNum(num, 2)} %`, "Verfügbarkeit"];
+                    return [`${fmtNum(num, 2)} %`, t("availability")];
                   }}
                 />
                 <Line
@@ -317,7 +319,7 @@ export function PortalEnergyAnalytics() {
                   stroke="#22c55e"
                   strokeWidth={2}
                   dot={{ r: 3 }}
-                  name="Verfügbarkeit"
+                  name={t("availability")}
                 />
               </LineChart>
           )}
@@ -328,23 +330,23 @@ export function PortalEnergyAnalytics() {
         {/* Turbine Overview */}
         <Card>
           <CardHeader>
-            <CardTitle>Anlagen-Übersicht</CardTitle>
-            <CardDescription>Status und Leistung der einzelnen Anlagen</CardDescription>
+            <CardTitle>{t("turbineOverview")}</CardTitle>
+            <CardDescription>{t("turbineOverviewDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             {turbineOverview.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Keine Anlagendaten vorhanden
+                {t("noTurbineData")}
               </p>
             ) : (
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Anlage</TableHead>
-                      <TableHead className="text-right">MWh</TableHead>
-                      <TableHead className="text-right">Verf. %</TableHead>
-                      <TableHead className="text-right">Status</TableHead>
+                      <TableHead>{t("colTurbine")}</TableHead>
+                      <TableHead className="text-right">{t("colMwh")}</TableHead>
+                      <TableHead className="text-right">{t("colAvailability")}</TableHead>
+                      <TableHead className="text-right">{t("colStatus")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -374,19 +376,19 @@ export function PortalEnergyAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Wind className="h-5 w-5" />
-                Wind-Zusammenfassung
+                {t("windSummary")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Mittlere Windgeschwindigkeit</p>
+                  <p className="text-sm text-muted-foreground">{t("avgWindSpeed")}</p>
                   <p className="text-2xl font-bold">
                     {fmtNum(windSummary.avgWindSpeed)} m/s
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Vorherrschende Richtung</p>
+                  <p className="text-sm text-muted-foreground">{t("dominantDirection")}</p>
                   <p className="text-2xl font-bold">{windSummary.dominantDirection}</p>
                 </div>
               </div>
@@ -395,15 +397,15 @@ export function PortalEnergyAnalytics() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Detaillierte Berichte</CardTitle>
+              <CardTitle>{t("detailedReports")}</CardTitle>
               <CardDescription>
-                Umfassende Auswertungen und konfigurierte Energieberichte
+                {t("detailedReportsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full">
                 <Link href="/portal/energy-reports">
-                  Energieberichte anzeigen
+                  {t("showEnergyReports")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -26,11 +27,15 @@ export function DeleteConfirmDialog({
   open,
   onOpenChange,
   onConfirm,
-  title = "Eintrag löschen",
-  description = "Möchten Sie diesen Eintrag wirklich unwiderruflich löschen?",
+  title,
+  description,
   itemName,
 }: DeleteConfirmDialogProps) {
+  const t = useTranslations("common.deleteConfirm");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const dialogTitle = title ?? t("defaultTitle");
+  const dialogDescription = description ?? t("defaultDescription");
 
   async function handleConfirm() {
     setIsDeleting(true);
@@ -50,25 +55,25 @@ export function DeleteConfirmDialog({
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2 text-destructive">
             <Trash2 className="h-5 w-5" />
-            {title}
+            {dialogTitle}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {itemName ? (
-              <>
-                Möchten Sie <span className="font-semibold">{itemName}</span> wirklich
-                unwiderruflich löschen?
-              </>
+              t.rich("namedDescription", {
+                itemName,
+                bold: (chunks) => <span className="font-semibold">{chunks}</span>,
+              })
             ) : (
-              description
+              dialogDescription
             )}
             <br />
             <span className="text-destructive font-medium mt-2 block">
-              Diese Aktion kann nicht rueckgaengig gemacht werden.
+              {t("irreversible")}
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Abbrechen</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
@@ -77,7 +82,7 @@ export function DeleteConfirmDialog({
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isDeleting ? "Löschen..." : "Löschen"}
+            {isDeleting ? t("deleting") : t("delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
   ComposedChart,
   BarChart,
@@ -92,38 +93,41 @@ const dec2Fmt = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maxim
 interface TPayload { name: string; value: number; color: string; dataKey: string }
 
 function ParetoTooltip({ active, payload, label }: { active?: boolean; payload?: TPayload[]; label?: string }) {
+  const t = useTranslations("energy.faultAnalysis");
   if (!active || !payload?.length) return null;
   const bar = payload.find((p) => p.dataKey === "percentage");
   const line = payload.find((p) => p.dataKey === "cumulative");
   return (
     <div className="rounded-lg border bg-background p-3 shadow-lg">
       <p className="font-medium mb-1">{label}</p>
-      {bar && <p className="text-sm">Anteil: {dec2Fmt.format(bar.value)} %</p>}
-      {line && <p className="text-sm text-muted-foreground">Kumulativ: {dec2Fmt.format(line.value)} %</p>}
+      {bar && <p className="text-sm">{t("tooltipShare")}: {dec2Fmt.format(bar.value)} %</p>}
+      {line && <p className="text-sm text-muted-foreground">{t("tooltipCumulative")}: {dec2Fmt.format(line.value)} %</p>}
     </div>
   );
 }
 
 function WarningTrendTooltip({ active, payload, label }: { active?: boolean; payload?: TPayload[]; label?: string }) {
+  const t = useTranslations("energy.faultAnalysis");
   if (!active || !payload?.length) return null;
   const freq = payload.find((p) => p.dataKey === "totalFrequency");
   const dur = payload.find((p) => p.dataKey === "durationHours");
   return (
     <div className="rounded-lg border bg-background p-3 shadow-lg">
       <p className="font-medium mb-1">{label}</p>
-      {freq && <p className="text-sm">Warnungen: {numFmt.format(freq.value)}</p>}
-      {dur && <p className="text-sm text-muted-foreground">Dauer: {dec1Fmt.format(dur.value)} h</p>}
+      {freq && <p className="text-sm">{t("tooltipWarnings")}: {numFmt.format(freq.value)}</p>}
+      {dur && <p className="text-sm text-muted-foreground">{t("tooltipDuration")}: {dec1Fmt.format(dur.value)} h</p>}
     </div>
   );
 }
 
 function TurbineFaultTooltip({ active, payload, label }: { active?: boolean; payload?: TPayload[]; label?: string }) {
+  const t = useTranslations("energy.faultAnalysis");
   if (!active || !payload?.length) return null;
   const bar = payload.find((p) => p.dataKey === "faultHours");
   return (
     <div className="rounded-lg border bg-background p-3 shadow-lg">
       <p className="font-medium mb-1">{label}</p>
-      {bar && <p className="text-sm">Störungszeit: {dec1Fmt.format(bar.value)} h</p>}
+      {bar && <p className="text-sm">{t("tooltipFaultTime")}: {dec1Fmt.format(bar.value)} h</p>}
     </div>
   );
 }
@@ -137,13 +141,14 @@ interface ScatterPayloadItem {
 }
 
 function ScatterTooltip({ active, payload }: { active?: boolean; payload?: ScatterPayloadItem[] }) {
+  const t = useTranslations("energy.faultAnalysis");
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
     <div className="rounded-lg border bg-background p-3 shadow-lg">
       <p className="font-medium mb-1">{d.designation}</p>
-      <p className="text-sm">Störungen: {numFmt.format(d.totalFaultCount)}</p>
-      <p className="text-sm text-muted-foreground">Produktionsverlust: {dec1Fmt.format(d.lossMwh)} MWh</p>
+      <p className="text-sm">{t("tooltipFaults")}: {numFmt.format(d.totalFaultCount)}</p>
+      <p className="text-sm text-muted-foreground">{t("tooltipProductionLoss")}: {dec1Fmt.format(d.lossMwh)} MWh</p>
     </div>
   );
 }
@@ -160,6 +165,7 @@ export function FaultAnalysis({
   parkId,
   year,
 }: FaultAnalysisProps) {
+  const t = useTranslations("energy.faultAnalysis");
   // --- Event table state ---
   const [events, setEvents] = useState<StateEvent[]>([]);
   const [eventsTotal, setEventsTotal] = useState(0);
@@ -222,30 +228,30 @@ export function FaultAnalysis({
 
   const kpis = useMemo(() => [
     {
-      title: "Störungscodes",
+      title: t("kpiFaultCodes"),
       value: numFmt.format(kpiData.uniqueStates),
       icon: AlertTriangle,
-      description: "Verschiedene Zustaende",
+      description: t("kpiFaultCodesDesc"),
     },
     {
-      title: "Gesamte Störungszeit",
+      title: t("kpiTotalFaultTime"),
       value: numFmt.format(Math.round(kpiData.totalFaultHours)) + " h",
       icon: Clock,
-      description: "Alle Anlagen",
+      description: t("kpiTotalFaultTimeDesc"),
     },
     {
-      title: "Warnungen/Monat",
+      title: t("kpiWarningsPerMonth"),
       value: dec1Fmt.format(kpiData.avgWarningsPerMonth),
       icon: Bell,
-      description: "Durchschnittliche Haeufigkeit",
+      description: t("kpiWarningsPerMonthDesc"),
     },
     {
-      title: "Geschaetzter Produktionsverlust",
+      title: t("kpiEstimatedLoss"),
       value: dec1Fmt.format(kpiData.totalLossMwh) + " MWh",
       icon: Zap,
-      description: "Durch Störungen",
+      description: t("kpiEstimatedLossDesc"),
     },
-  ], [kpiData]);
+  ], [kpiData, t]);
 
   // Warning trend data with duration in hours
   const warningTrendData = useMemo(
@@ -282,7 +288,7 @@ export function FaultAnalysis({
     return (
       <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
         <AlertTriangle className="h-8 w-8 mb-2" />
-        <p>Keine Störungsdaten vorhanden</p>
+        <p>{t("noFaultData")}</p>
       </div>
     );
   }
@@ -297,7 +303,7 @@ export function FaultAnalysis({
         {/* Störungen-Pareto */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Störungen-Pareto (Top 20 Zustaende)</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("paretoTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             {statePareto.length > 0 ? (
@@ -335,7 +341,7 @@ export function FaultAnalysis({
                   <Bar
                     yAxisId="pct"
                     dataKey="percentage"
-                    name="Anteil"
+                    name={t("tooltipShare")}
                     fill="#ef4444"
                     radius={[4, 4, 0, 0]}
                   />
@@ -343,14 +349,14 @@ export function FaultAnalysis({
                     yAxisId="cum"
                     type="monotone"
                     dataKey="cumulative"
-                    name="Kumulativ"
+                    name={t("tooltipCumulative")}
                     stroke="hsl(var(--chart-1))"
                     strokeWidth={2}
                     dot={{ r: 3, fill: "hsl(var(--chart-1))" }}
                   />
                 </ComposedChart>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">Keine Störungen erfasst</p>
+              <p className="text-sm text-muted-foreground text-center py-8">{t("noFaultsRecorded")}</p>
             )}
           </CardContent>
         </Card>
@@ -358,7 +364,7 @@ export function FaultAnalysis({
         {/* Warnungs-Trend */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Warnungs-Trend (monatlich)</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("warningTrendTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             {warningTrendData.length > 0 ? (
@@ -390,7 +396,7 @@ export function FaultAnalysis({
                   <Bar
                     yAxisId="freq"
                     dataKey="totalFrequency"
-                    name="Warnungen (Anzahl)"
+                    name={t("warningsCount")}
                     fill="#f59e0b"
                     radius={[4, 4, 0, 0]}
                   />
@@ -398,14 +404,14 @@ export function FaultAnalysis({
                     yAxisId="dur"
                     type="monotone"
                     dataKey="durationHours"
-                    name="Dauer (Stunden)"
+                    name={t("durationHours")}
                     stroke="#8b5cf6"
                     strokeWidth={2}
                     dot={{ r: 3, fill: "#8b5cf6" }}
                   />
                 </ComposedChart>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">Keine Warnungsdaten vorhanden</p>
+              <p className="text-sm text-muted-foreground text-center py-8">{t("noWarningData")}</p>
             )}
           </CardContent>
         </Card>
@@ -416,7 +422,7 @@ export function FaultAnalysis({
         {/* Störungen pro Turbine (horizontal bar) */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Störungszeit pro Anlage</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("turbineFaultTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             {turbineFaultData.length > 0 ? (
@@ -440,13 +446,13 @@ export function FaultAnalysis({
                   <Tooltip content={<TurbineFaultTooltip />} />
                   <Bar
                     dataKey="faultHours"
-                    name="Störungszeit"
+                    name={t("tooltipFaultTime")}
                     fill="#ef4444"
                     radius={[0, 4, 4, 0]}
                   />
                 </BarChart>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">Keine Störungsdaten pro Anlage</p>
+              <p className="text-sm text-muted-foreground text-center py-8">{t("noTurbineFaultData")}</p>
             )}
           </CardContent>
         </Card>
@@ -454,7 +460,7 @@ export function FaultAnalysis({
         {/* Scatter: Fault Count vs Production Loss */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Störungen vs. Produktionsverlust</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("scatterTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             {scatterData.length > 0 ? (
@@ -463,31 +469,31 @@ export function FaultAnalysis({
                   <XAxis
                     type="number"
                     dataKey="totalFaultCount"
-                    name="Störungen"
+                    name={t("tooltipFaults")}
                     tick={{ fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
-                    label={{ value: "Störungen (Anzahl)", position: "insideBottom", offset: -5, fontSize: 11 }}
+                    label={{ value: t("faultsCount"), position: "insideBottom", offset: -5, fontSize: 11 }}
                   />
                   <YAxis
                     type="number"
                     dataKey="lossMwh"
-                    name="Produktionsverlust"
+                    name={t("tooltipProductionLoss")}
                     tick={{ fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(v) => `${dec1Fmt.format(v)}`}
-                    label={{ value: "Verlust (MWh)", angle: -90, position: "insideLeft", offset: 0, fontSize: 11 }}
+                    label={{ value: t("lossLabel"), angle: -90, position: "insideLeft", offset: 0, fontSize: 11 }}
                   />
                   <Tooltip content={<ScatterTooltip />} />
-                  <Scatter name="Anlagen" data={scatterData}>
+                  <Scatter name={t("turbines")} data={scatterData}>
                     {scatterData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill="#ef4444" fillOpacity={0.7} />
                     ))}
                   </Scatter>
                 </ScatterChart>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">Keine Daten für Scatter-Chart</p>
+              <p className="text-sm text-muted-foreground text-center py-8">{t("noScatterData")}</p>
             )}
           </CardContent>
         </Card>
@@ -499,7 +505,7 @@ export function FaultAnalysis({
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <List className="h-4 w-4" />
-              Störungsereignisse
+              {t("eventsTitle")}
               {eventsTotal > 0 && (
                 <span className="text-muted-foreground font-normal">
                   ({numFmt.format(eventsTotal)})
@@ -513,7 +519,7 @@ export function FaultAnalysis({
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <div className="flex items-center gap-2 flex-1 max-w-sm">
               <Input
-                placeholder="Code oder Beschreibung suchen..."
+                placeholder={t("searchPlaceholder")}
                 value={eventsSearch}
                 onChange={(e) => setEventsSearch(e.target.value)}
                 onKeyDown={(e) => {
@@ -537,7 +543,7 @@ export function FaultAnalysis({
               onClick={() => setEventsFaultOnly(!eventsFaultOnly)}
             >
               <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-              Nur Störungen
+              {t("faultsOnly")}
             </Button>
             {(eventsSearchApplied || eventsFaultOnly) && (
               <Button
@@ -550,7 +556,7 @@ export function FaultAnalysis({
                   setEventsFaultOnly(false);
                 }}
               >
-                Filter zurücksetzen
+                {t("resetFilter")}
               </Button>
             )}
           </div>
@@ -564,7 +570,7 @@ export function FaultAnalysis({
             </div>
           ) : events.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Keine Ereignisse gefunden
+              {t("noEventsFound")}
             </p>
           ) : (
             <>
@@ -572,11 +578,11 @@ export function FaultAnalysis({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[160px]">Zeitpunkt</TableHead>
-                      <TableHead className="w-[100px]">Anlage</TableHead>
-                      <TableHead className="w-[80px]">Code</TableHead>
-                      <TableHead>Beschreibung</TableHead>
-                      <TableHead className="w-[70px] text-center">Typ</TableHead>
+                      <TableHead className="w-[160px]">{t("colTime")}</TableHead>
+                      <TableHead className="w-[100px]">{t("colTurbine")}</TableHead>
+                      <TableHead className="w-[80px]">{t("colCode")}</TableHead>
+                      <TableHead>{t("colDescription")}</TableHead>
+                      <TableHead className="w-[70px] text-center">{t("colType")}</TableHead>
                       <TableHead className="w-[80px] text-right">
                         <span className="inline-flex items-center gap-1">
                           <Wind className="h-3 w-3" /> m/s
@@ -620,15 +626,15 @@ export function FaultAnalysis({
                         <TableCell className="text-center">
                           {event.isFault ? (
                             <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                              Störung
+                              {t("badgeFault")}
                             </Badge>
                           ) : event.isService ? (
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              Service
+                              {t("badgeService")}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                              Status
+                              {t("badgeStatus")}
                             </Badge>
                           )}
                         </TableCell>
@@ -647,7 +653,7 @@ export function FaultAnalysis({
               {eventsTotalPages > 1 && (
                 <div className="flex items-center justify-between mt-3">
                   <p className="text-xs text-muted-foreground">
-                    Seite {eventsPage} von {eventsTotalPages}
+                    {t("page", { page: eventsPage, total: eventsTotalPages })}
                   </p>
                   <div className="flex items-center gap-1">
                     <Button

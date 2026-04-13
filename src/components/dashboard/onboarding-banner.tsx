@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -22,6 +23,7 @@ function getInitialDismissed(): boolean {
 }
 
 export function OnboardingBanner() {
+  const t = useTranslations("dashboard.onboardingBanner");
   const [steps, setSteps] = useState<OnboardingStep[] | null>(null);
   const [dismissed, setDismissed] = useState(getInitialDismissed);
 
@@ -34,14 +36,15 @@ export function OnboardingBanner() {
         if (!data?.steps) return;
         const s = data.steps;
         setSteps([
-          { key: "park", label: "Windpark anlegen", description: "Erstellen Sie Ihren ersten Windpark", href: "/parks/new", icon: Wind, completed: !!s.park },
-          { key: "fund", label: "Gesellschaft anlegen", description: "Legen Sie eine Betreibergesellschaft an", href: "/funds/new", icon: Building2, completed: !!s.fund },
-          { key: "turbine", label: "Anlage hinzufuegen", description: "Fuegen Sie Turbinen zu Ihrem Park hinzu", href: "/parks", icon: Zap, completed: !!s.turbine },
-          { key: "scada", label: "Ertragsdaten verbinden", description: "Importieren Sie SCADA- oder Produktionsdaten", href: "/energy/scada", icon: Radio, completed: !!s.scada },
-          { key: "invite", label: "Gesellschafter einladen", description: "Laden Sie weitere Benutzer ein", href: "/admin/roles", icon: Users, completed: !!s.invite },
+          { key: "park", label: t("stepPark"), description: t("stepParkDesc"), href: "/parks/new", icon: Wind, completed: !!s.park },
+          { key: "fund", label: t("stepFund"), description: t("stepFundDesc"), href: "/funds/new", icon: Building2, completed: !!s.fund },
+          { key: "turbine", label: t("stepTurbine"), description: t("stepTurbineDesc"), href: "/parks", icon: Zap, completed: !!s.turbine },
+          { key: "scada", label: t("stepScada"), description: t("stepScadaDesc"), href: "/energy/scada", icon: Radio, completed: !!s.scada },
+          { key: "invite", label: t("stepInvite"), description: t("stepInviteDesc"), href: "/admin/roles", icon: Users, completed: !!s.invite },
         ]);
       })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (dismissed || !steps) return null;
@@ -67,9 +70,9 @@ export function OnboardingBanner() {
               <Shield className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-base">Erste Schritte</CardTitle>
+              <CardTitle className="text-base">{t("title")}</CardTitle>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {completedCount} von {steps.length} abgeschlossen
+                {t("progress", { completed: completedCount, total: steps.length })}
               </p>
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import {
   Upload,
   FileText,
@@ -56,6 +57,7 @@ export function ProxyDocumentUpload({
   className,
   compact = false,
 }: ProxyDocumentUploadProps) {
+  const t = useTranslations("votes.proxyDocumentUpload");
   const [isDragging, setIsDragging] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -70,10 +72,10 @@ export function ProxyDocumentUpload({
   // Validierung der Datei
   const validateFile = (file: File): string | null => {
     if (file.type !== "application/pdf") {
-      return "Nur PDF-Dateien sind erlaubt";
+      return t("onlyPdf");
     }
     if (file.size > MAX_FILE_SIZE) {
-      return "Die Datei darf maximal 10MB gross sein";
+      return t("maxSize");
     }
     return null;
   };
@@ -83,7 +85,7 @@ export function ProxyDocumentUpload({
     const validationError = validateFile(file);
     if (validationError) {
       toast({
-        title: "Fehler",
+        title: t("error"),
         description: validationError,
         variant: "destructive",
       });
@@ -98,15 +100,15 @@ export function ProxyDocumentUpload({
       await uploadWithProgress(`/api/proxies/${proxyId}/document`, formData);
 
       toast({
-        title: "Erfolgreich",
-        description: "Dokument wurde hochgeladen",
+        title: t("success"),
+        description: t("uploaded"),
       });
 
       onUploadSuccess?.();
     } catch (error) {
       toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Fehler beim Hochladen",
+        title: t("error"),
+        description: error instanceof Error ? error.message : t("uploadFailed"),
         variant: "destructive",
       });
     }
@@ -121,7 +123,7 @@ export function ProxyDocumentUpload({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Fehler beim Abrufen");
+        throw new Error(errorData.error || t("fetchFailed"));
       }
 
       const data = await response.json();
@@ -130,8 +132,8 @@ export function ProxyDocumentUpload({
       window.open(data.url, "_blank");
     } catch (error) {
       toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Fehler beim Download",
+        title: t("error"),
+        description: error instanceof Error ? error.message : t("downloadFailed"),
         variant: "destructive",
       });
     } finally {
@@ -150,19 +152,19 @@ export function ProxyDocumentUpload({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Fehler beim Löschen");
+        throw new Error(errorData.error || t("deleteFailed"));
       }
 
       toast({
-        title: "Erfolgreich",
-        description: "Dokument wurde gelöscht",
+        title: t("success"),
+        description: t("deleted"),
       });
 
       onDeleteSuccess?.();
     } catch (error) {
       toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Fehler beim Löschen",
+        title: t("error"),
+        description: error instanceof Error ? error.message : t("deleteFailed"),
         variant: "destructive",
       });
     } finally {
@@ -211,7 +213,7 @@ export function ProxyDocumentUpload({
         <div className={cn("flex items-center gap-2", className)}>
           <Badge variant="secondary" className="bg-green-100 text-green-800">
             <CheckCircle className="mr-1 h-3 w-3" />
-            Dokument
+            {t("compactPresent")}
           </Badge>
           <Button
             variant="ghost"
@@ -219,7 +221,7 @@ export function ProxyDocumentUpload({
             className="h-8 w-8"
             onClick={handleDownload}
             disabled={isDownloading}
-            title="Dokument herunterladen"
+            title={t("downloadDocument")}
           >
             {isDownloading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -235,7 +237,7 @@ export function ProxyDocumentUpload({
       <div className={cn("flex items-center gap-2", className)}>
         <Badge variant="outline" className="text-muted-foreground">
           <AlertCircle className="mr-1 h-3 w-3" />
-          Fehlt
+          {t("compactMissing")}
         </Badge>
         <input
           ref={fileInputRef}
@@ -251,7 +253,7 @@ export function ProxyDocumentUpload({
           className="h-8 w-8"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
-          title="Dokument hochladen"
+          title={t("uploadDocument")}
         >
           {isUploading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -267,9 +269,9 @@ export function ProxyDocumentUpload({
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="text-lg">Vollmachts-Dokument</CardTitle>
+        <CardTitle className="text-lg">{t("title")}</CardTitle>
         <CardDescription>
-          Laden Sie die unterschriebene Vollmacht als PDF hoch (max. 10MB)
+          {t("description")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -282,15 +284,15 @@ export function ProxyDocumentUpload({
                   <FileText className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="font-medium">Vollmacht.pdf</p>
+                  <p className="font-medium">{t("filename")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Dokument hochgeladen
+                    {t("uploadedShort")}
                   </p>
                 </div>
               </div>
               <Badge variant="secondary" className="bg-green-100 text-green-800">
                 <CheckCircle className="mr-1 h-3 w-3" />
-                Vorhanden
+                {t("present")}
               </Badge>
             </div>
 
@@ -306,7 +308,7 @@ export function ProxyDocumentUpload({
                 ) : (
                   <Download className="mr-2 h-4 w-4" />
                 )}
-                Herunterladen
+                {t("download")}
               </Button>
 
               <AlertDialog>
@@ -321,24 +323,23 @@ export function ProxyDocumentUpload({
                     ) : (
                       <Trash2 className="mr-2 h-4 w-4" />
                     )}
-                    Löschen
+                    {t("delete")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Dokument löschen?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("confirmTitle")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Möchten Sie das Vollmachts-Dokument wirklich löschen?
-                      Diese Aktion kann nicht rueckgaengig gemacht werden.
+                      {t("confirmDescription")}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDelete}
                       className="bg-red-600 hover:bg-red-700"
                     >
-                      Löschen
+                      {t("delete")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -363,7 +364,7 @@ export function ProxyDocumentUpload({
                 className="text-muted-foreground"
               >
                 <Upload className="mr-2 h-4 w-4" />
-                Neues Dokument hochladen
+                {t("uploadAgain")}
               </Button>
             </div>
           </div>
@@ -388,7 +389,7 @@ export function ProxyDocumentUpload({
                 <div className="space-y-2">
                   <Progress value={uploadProgress} />
                   <p className="text-sm text-center text-muted-foreground">
-                    Dokument wird hochgeladen... {uploadProgress}%
+                    {t("uploading", { progress: uploadProgress })}
                   </p>
                 </div>
               </div>
@@ -412,10 +413,10 @@ export function ProxyDocumentUpload({
                   </div>
                   <div>
                     <p className="font-medium">
-                      PDF hier ablegen oder klicken zum Auswaehlen
+                      {t("dropOrClick")}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Maximal 10MB, nur PDF-Dateien
+                      {t("hint")}
                     </p>
                   </div>
                 </div>
@@ -424,7 +425,7 @@ export function ProxyDocumentUpload({
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <AlertCircle className="h-4 w-4" />
-              <span>Kein Dokument hochgeladen</span>
+              <span>{t("noDocument")}</span>
             </div>
           </div>
         )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ function ReviewSection({
   onEdit: (step: number) => void;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("funds.onboardingSteps.review");
   return (
     <div className="rounded-lg border p-4">
       <div className="flex items-center justify-between mb-3">
@@ -52,7 +54,7 @@ function ReviewSection({
           className="h-8 gap-1 text-muted-foreground hover:text-foreground"
         >
           <Pencil className="h-3 w-3" />
-          Bearbeiten
+          {t("edit")}
         </Button>
       </div>
       <div className="space-y-2">{children}</div>
@@ -70,6 +72,7 @@ function ReviewRow({ label, value }: { label: string; value: string | React.Reac
 }
 
 export function StepReview({ data, onGoToStep }: StepReviewProps) {
+  const t = useTranslations("funds.onboardingSteps.review");
   const { personalData, participation, portalAccess, documents } = data;
 
   const fullName = [personalData.firstName, personalData.lastName].filter(Boolean).join(" ");
@@ -81,9 +84,9 @@ export function StepReview({ data, onGoToStep }: StepReviewProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold">Zusammenfassung</h3>
+        <h3 className="text-lg font-semibold">{t("title")}</h3>
         <p className="text-sm text-muted-foreground">
-          Prüfen Sie alle Angaben bevor Sie den Gesellschafter anlegen.
+          {t("description")}
         </p>
       </div>
 

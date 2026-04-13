@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -93,17 +94,28 @@ interface ContractDocumentsProps {
   contractId: string;
 }
 
-const categoryConfig: Record<string, { label: string; color: string }> = {
-  CONTRACT: { label: "Vertrag", color: "bg-blue-100 text-blue-800" },
-  PROTOCOL: { label: "Protokoll", color: "bg-purple-100 text-purple-800" },
-  REPORT: { label: "Bericht", color: "bg-green-100 text-green-800" },
-  INVOICE: { label: "Rechnung", color: "bg-orange-100 text-orange-800" },
-  PERMIT: { label: "Genehmigung", color: "bg-pink-100 text-pink-800" },
-  CORRESPONDENCE: { label: "Korrespondenz", color: "bg-yellow-100 text-yellow-800" },
-  OTHER: { label: "Sonstiges", color: "bg-gray-100 text-gray-800" },
+const categoryColors: Record<string, string> = {
+  CONTRACT: "bg-blue-100 text-blue-800",
+  PROTOCOL: "bg-purple-100 text-purple-800",
+  REPORT: "bg-green-100 text-green-800",
+  INVOICE: "bg-orange-100 text-orange-800",
+  PERMIT: "bg-pink-100 text-pink-800",
+  CORRESPONDENCE: "bg-yellow-100 text-yellow-800",
+  OTHER: "bg-gray-100 text-gray-800",
+};
+
+const categoryLabelKey: Record<string, string> = {
+  CONTRACT: "catContract",
+  PROTOCOL: "catProtocol",
+  REPORT: "catReport",
+  INVOICE: "catInvoice",
+  PERMIT: "catPermit",
+  CORRESPONDENCE: "catCorrespondence",
+  OTHER: "catOther",
 };
 
 export function ContractDocuments({ contractId }: ContractDocumentsProps) {
+  const t = useTranslations("contracts.documents");
   const { toast } = useToast();
   const [documents, setDocuments] = useState<ContractDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,13 +150,13 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     } catch {
       toast({
         variant: "destructive",
-        title: "Fehler",
-        description: "Dokumente konnten nicht geladen werden",
+        title: t("toastErrorTitle"),
+        description: t("toastLoadError"),
       });
     } finally {
       setLoading(false);
     }
-  }, [contractId, toast]);
+  }, [contractId, toast, t]);
 
   useEffect(() => {
     fetchDocuments();
@@ -190,8 +202,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       }
 
       toast({
-        title: "Erfolg",
-        description: "Dokument wurde verknuepft",
+        title: t("toastSuccessTitle"),
+        description: t("toastLinked"),
       });
       setAddDialogOpen(false);
       setSelectedDocumentId(null);
@@ -199,8 +211,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Dokument konnte nicht verknuepft werden",
+        title: t("toastErrorTitle"),
+        description: error instanceof Error ? error.message : t("toastLinkError"),
       });
     } finally {
       setLinking(false);
@@ -221,8 +233,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       await uploadWithProgress("/api/documents", formData);
 
       toast({
-        title: "Erfolg",
-        description: "Dokument wurde hochgeladen und verknuepft",
+        title: t("toastSuccessTitle"),
+        description: t("toastUploaded"),
       });
       setAddDialogOpen(false);
       resetUploadForm();
@@ -230,8 +242,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Dokument konnte nicht hochgeladen werden",
+        title: t("toastErrorTitle"),
+        description: error instanceof Error ? error.message : t("toastUploadError"),
       });
     } finally {
       setUploading(false);
@@ -253,8 +265,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       }
 
       toast({
-        title: "Erfolg",
-        description: "Dokument-Verknuepfung wurde entfernt",
+        title: t("toastSuccessTitle"),
+        description: t("toastUnlinked"),
       });
       setUnlinkDialogOpen(false);
       setDocumentToUnlink(null);
@@ -262,8 +274,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Verknuepfung konnte nicht entfernt werden",
+        title: t("toastErrorTitle"),
+        description: error instanceof Error ? error.message : t("toastUnlinkError"),
       });
     }
   }
@@ -306,14 +318,14 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle>Dokumente</CardTitle>
+            <CardTitle>{t("title")}</CardTitle>
             <CardDescription>
-              Mit diesem Vertrag verknuepfte Dokumente
+              {t("description")}
             </CardDescription>
           </div>
           <Button onClick={() => handleDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Dokument hinzufügen
+            {t("addDocument")}
           </Button>
         </CardHeader>
         <CardContent>
@@ -326,9 +338,9 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
           ) : documents.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p className="text-lg font-medium">Keine Dokumente vorhanden</p>
+              <p className="text-lg font-medium">{t("emptyTitle")}</p>
               <p className="text-sm mt-1">
-                Fuegen Sie Dokumente hinzu, um sie mit diesem Vertrag zu verknuepfen.
+                {t("emptyDescription")}
               </p>
             </div>
           ) : (
@@ -336,16 +348,19 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Dokument</TableHead>
-                    <TableHead>Kategorie</TableHead>
-                    <TableHead>Größe</TableHead>
-                    <TableHead>Hochgeladen</TableHead>
-                    <TableHead className="w-[120px]">Aktionen</TableHead>
+                    <TableHead>{t("colDocument")}</TableHead>
+                    <TableHead>{t("colCategory")}</TableHead>
+                    <TableHead>{t("colSize")}</TableHead>
+                    <TableHead>{t("colUploaded")}</TableHead>
+                    <TableHead className="w-[120px]">{t("colActions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {documents.map((doc) => {
-                    const catConfig = categoryConfig[doc.category];
+                    const catColor = categoryColors[doc.category];
+                    const catLabel = categoryLabelKey[doc.category]
+                      ? t(categoryLabelKey[doc.category])
+                      : doc.category;
                     return (
                       <TableRow key={doc.id}>
                         <TableCell>
@@ -360,8 +375,8 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className={catConfig?.color}>
-                            {catConfig?.label || doc.category}
+                          <Badge variant="secondary" className={catColor}>
+                            {catLabel}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
@@ -385,7 +400,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                               variant="ghost"
                               size="icon"
                               onClick={() => setPreviewDocument(doc)}
-                              title="Vorschau"
+                              title={t("actionPreview")}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -398,7 +413,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                                   "_blank"
                                 );
                               }}
-                              title="Herunterladen"
+                              title={t("actionDownload")}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -409,7 +424,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                                 setDocumentToUnlink(doc);
                                 setUnlinkDialogOpen(true);
                               }}
-                              title="Verknuepfung entfernen"
+                              title={t("actionUnlink")}
                               className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             >
                               <X className="h-4 w-4" />
@@ -430,9 +445,9 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       <Dialog open={addDialogOpen} onOpenChange={handleDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Dokument hinzufügen</DialogTitle>
+            <DialogTitle>{t("addDocument")}</DialogTitle>
             <DialogDescription>
-              Verknuepfen Sie ein bestehendes Dokument oder laden Sie ein neues hoch.
+              {t("addDialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -440,11 +455,11 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="link" className="flex items-center gap-2">
                 <LinkIcon className="h-4 w-4" />
-                Bestehendes verknuepfen
+                {t("tabLink")}
               </TabsTrigger>
               <TabsTrigger value="upload" className="flex items-center gap-2">
                 <Upload className="h-4 w-4" />
-                Neues hochladen
+                {t("tabUpload")}
               </TabsTrigger>
             </TabsList>
 
@@ -452,7 +467,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Dokumente suchen..."
+                  placeholder={t("searchPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -466,12 +481,12 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                 {loadingAvailable ? (
                   <div className="p-8 text-center">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-                    <p className="mt-2 text-sm text-muted-foreground">Lade Dokumente...</p>
+                    <p className="mt-2 text-sm text-muted-foreground">{t("loadingDocuments")}</p>
                   </div>
                 ) : availableDocuments.length === 0 ? (
                   <div className="p-8 text-center text-muted-foreground">
                     <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Keine verfügbaren Dokumente gefunden</p>
+                    <p>{t("noAvailable")}</p>
                   </div>
                 ) : (
                   <div className="divide-y">
@@ -493,7 +508,9 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                               <span className="truncate">{doc.fileName}</span>
                               <span>-</span>
                               <Badge variant="secondary" className="text-xs">
-                                {categoryConfig[doc.category]?.label || doc.category}
+                                {categoryLabelKey[doc.category]
+                                  ? t(categoryLabelKey[doc.category])
+                                  : doc.category}
                               </Badge>
                             </div>
                           </div>
@@ -506,14 +523,14 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => handleDialogOpen(false)}>
-                  Abbrechen
+                  {t("cancel")}
                 </Button>
                 <Button
                   onClick={handleLinkDocument}
                   disabled={!selectedDocumentId || linking}
                 >
                   {linking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Verknuepfen
+                  {t("link")}
                 </Button>
               </DialogFooter>
             </TabsContent>
@@ -521,7 +538,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
             <TabsContent value="upload" className="space-y-4 mt-4">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="file">Datei</Label>
+                  <Label htmlFor="file">{t("labelFile")}</Label>
                   <Input
                     id="file"
                     type="file"
@@ -545,26 +562,26 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="title">Titel</Label>
+                  <Label htmlFor="title">{t("labelTitle")}</Label>
                   <Input
                     id="title"
                     value={uploadTitle}
                     onChange={(e) => setUploadTitle(e.target.value)}
-                    placeholder="Dokumenttitel eingeben"
+                    placeholder={t("titlePlaceholder")}
                     disabled={isFileUploading}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category">Kategorie</Label>
+                  <Label htmlFor="category">{t("labelCategory")}</Label>
                   <Select value={uploadCategory} onValueChange={setUploadCategory} disabled={isFileUploading}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(categoryConfig).map(([value, { label }]) => (
+                      {Object.keys(categoryColors).map((value) => (
                         <SelectItem key={value} value={value}>
-                          {label}
+                          {t(categoryLabelKey[value])}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -576,21 +593,21 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
                 <div className="space-y-2">
                   <Progress value={fileUploadProgress} className="h-2" />
                   <p className="text-sm text-muted-foreground text-center">
-                    Wird hochgeladen... {fileUploadProgress}%
+                    {t("uploadingProgress", { progress: fileUploadProgress })}
                   </p>
                 </div>
               )}
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => handleDialogOpen(false)} disabled={isFileUploading}>
-                  Abbrechen
+                  {t("cancel")}
                 </Button>
                 <Button
                   onClick={handleUploadDocument}
                   disabled={!uploadFile || !uploadTitle || uploading || isFileUploading}
                 >
                   {(uploading || isFileUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isFileUploading ? `Wird hochgeladen... ${fileUploadProgress}%` : "Hochladen"}
+                  {isFileUploading ? t("uploadingProgress", { progress: fileUploadProgress }) : t("upload")}
                 </Button>
               </DialogFooter>
             </TabsContent>
@@ -602,16 +619,15 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       <AlertDialog open={unlinkDialogOpen} onOpenChange={setUnlinkDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Verknuepfung entfernen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("unlinkConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Möchten Sie die Verknuepfung des Dokuments &quot;{documentToUnlink?.title}&quot; mit
-              diesem Vertrag wirklich entfernen? Das Dokument selbst wird nicht gelöscht.
+              {t("unlinkConfirmText", { title: documentToUnlink?.title ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleUnlinkDocument}>
-              Entfernen
+              {t("unlinkConfirmAction")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

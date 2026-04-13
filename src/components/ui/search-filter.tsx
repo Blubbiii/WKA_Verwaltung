@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -39,13 +40,14 @@ export function SearchFilter({
   filters,
   children,
 }: SearchFilterProps) {
+  const t = useTranslations("common.searchFilter");
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:flex-wrap">
       {onSearchChange !== undefined && (
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={searchPlaceholder || "Suchen..."}
+            placeholder={searchPlaceholder || t("searchPlaceholder")}
             value={search ?? ""}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-8"
@@ -60,7 +62,7 @@ export function SearchFilter({
         >
           <SelectTrigger className={filter.width ? `w-full sm:${filter.width}` : "w-full sm:w-[180px]"}>
             {filter.icon}
-            <SelectValue placeholder={filter.placeholder || "Filter"} />
+            <SelectValue placeholder={filter.placeholder || t("filterPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {filter.options.map((option) => (

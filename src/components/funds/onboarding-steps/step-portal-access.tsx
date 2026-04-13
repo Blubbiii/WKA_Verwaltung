@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -15,6 +16,7 @@ interface StepPortalAccessProps {
 }
 
 export function StepPortalAccess({ data, personalData, onChange }: StepPortalAccessProps) {
+  const t = useTranslations("funds.onboardingSteps.portalAccess");
   // Auto-generate username from email
   useEffect(() => {
     if (personalData.email && data.createPortalAccess) {
@@ -33,10 +35,9 @@ export function StepPortalAccess({ data, personalData, onChange }: StepPortalAcc
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold">Portal-Zugang</h3>
+        <h3 className="text-lg font-semibold">{t("title")}</h3>
         <p className="text-sm text-muted-foreground">
-          Optionaler Zugang zum Gesellschafterportal. Der Gesellschafter kann dort
-          Dokumente einsehen, an Abstimmungen teilnehmen und Informationen abrufen.
+          {t("description")}
         </p>
       </div>
 
@@ -46,11 +47,11 @@ export function StepPortalAccess({ data, personalData, onChange }: StepPortalAcc
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-muted-foreground" />
             <Label htmlFor="onb-portal-access" className="text-base font-medium cursor-pointer">
-              Portal-Zugang erstellen
+              {t("createAccess")}
             </Label>
           </div>
           <p className="text-sm text-muted-foreground">
-            Ein Benutzerkonto mit temporaerem Passwort wird erstellt.
+            {t("createAccessHint")}
           </p>
         </div>
         <Switch
@@ -67,9 +68,7 @@ export function StepPortalAccess({ data, personalData, onChange }: StepPortalAcc
             <Alert variant="destructive">
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Um einen Portal-Zugang zu erstellen, muss eine E-Mail-Adresse
-                in den Stammdaten hinterlegt sein. Bitte gehen Sie zurück zu
-                Schritt 1 und tragen Sie eine E-Mail-Adresse ein.
+                {t("emailRequired")}
               </AlertDescription>
             </Alert>
           )}

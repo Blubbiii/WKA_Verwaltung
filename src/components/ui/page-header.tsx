@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
@@ -17,6 +20,7 @@ export function PageHeader({
   createLabel,
   actions,
 }: PageHeaderProps) {
+  const t = useTranslations("common.pageHeader");
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -33,7 +37,7 @@ export function PageHeader({
               <Button asChild>
                 <Link href={createHref}>
                   <Plus className="mr-2 h-4 w-4" />
-                  {createLabel || "Erstellen"}
+                  {createLabel || t("create")}
                 </Link>
               </Button>
             )}

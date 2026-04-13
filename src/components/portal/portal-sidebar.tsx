@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -23,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
 interface NavItem {
-  title: string;
+  titleKey: string;
   href: string;
   icon: React.ElementType;
   permission?: string; // Required portal permission name (omit = always visible)
@@ -32,67 +33,67 @@ interface NavItem {
 
 const portalNavItems: NavItem[] = [
   {
-    title: "Übersicht",
+    titleKey: "overview",
     href: "/portal",
     icon: LayoutDashboard,
     // No permission needed - always visible
   },
   {
-    title: "Meine Beteiligungen",
+    titleKey: "participations",
     href: "/portal/participations",
     icon: Building2,
     permission: "portal:participations",
   },
   {
-    title: "Ausschüttungen",
+    titleKey: "distributions",
     href: "/portal/distributions",
     icon: Wallet,
     permission: "portal:distributions",
   },
   {
-    title: "Dokumente",
+    titleKey: "documents",
     href: "/portal/documents",
     icon: FolderOpen,
     permission: "portal:documents",
   },
   {
-    title: "Berichte",
+    titleKey: "reports",
     href: "/portal/reports",
     icon: FileText,
     permission: "portal:reports",
   },
   {
-    title: "Anlagen-Performance",
+    titleKey: "energyAnalytics",
     href: "/portal/energy-analytics",
     icon: Activity,
     permission: "portal:energyReports",
   },
   {
-    title: "Energieberichte",
+    titleKey: "energyReports",
     href: "/portal/energy-reports",
     icon: TrendingUp,
     permission: "portal:energyReports",
   },
   {
-    title: "Abstimmungen",
+    titleKey: "votes",
     href: "/portal/votes",
     icon: Vote,
     permission: "portal:votes",
   },
   {
-    title: "Vollmachten",
+    titleKey: "proxies",
     href: "/portal/proxies",
     icon: Users,
     permission: "portal:proxies",
   },
   {
-    title: "Mein Profil",
+    titleKey: "profile",
     href: "/portal/profile",
     icon: UserCircle,
     // Always visible
   },
   {
-    title: "Einstellungen",
+    titleKey: "settings",
     href: "/portal/settings",
     icon: Settings,
     // Always visible
@@ -100,6 +101,7 @@ const portalNavItems: NavItem[] = [
 ];
 
 export function PortalSidebar() {
+  const t = useTranslations("portal.sidebar");
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [permissions, setPermissions] = useState<string[]>([]);
@@ -136,7 +138,7 @@ export function PortalSidebar() {
         {!collapsed && (
           <Link href="/portal" className="flex items-center gap-2">
             <Wind className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-lg">Anleger-Portal</span>
+            <span className="font-semibold text-lg">{t("brand")}</span>
           </Link>
         )}
         <Button
@@ -160,6 +162,7 @@ export function PortalSidebar() {
             const isActive =
               pathname === item.href ||
               (item.href !== "/portal" && pathname.startsWith(item.href));
+            const title = t(item.titleKey);
             return (
               <li key={item.href}>
                 <Link
@@ -170,12 +173,12 @@ export function PortalSidebar() {
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
                       : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
-                  title={collapsed ? item.title : undefined}
+                  title={collapsed ? title : undefined}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
                   {!collapsed && (
                     <>
-                      <span className="flex-1">{item.title}</span>
+                      <span className="flex-1">{title}</span>
                       {item.badge && (
                         <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
                           {item.badge}
@@ -194,7 +197,7 @@ export function PortalSidebar() {
       <div className="border-t border-sidebar-border py-4 px-2">
         {!collapsed && (
           <p className="px-3 text-xs text-muted-foreground mb-2">
-            Ihr persönliches Anleger-Portal
+            {t("footer")}
           </p>
         )}
       </div>

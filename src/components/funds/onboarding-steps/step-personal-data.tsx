@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,6 +19,7 @@ interface StepPersonalDataProps {
 }
 
 export function StepPersonalData({ data, onChange, errors }: StepPersonalDataProps) {
+  const t = useTranslations("funds.onboardingSteps.personalData");
   function update(field: keyof PersonalData, value: string) {
     onChange({ ...data, [field]: value });
   }
@@ -25,9 +27,9 @@ export function StepPersonalData({ data, onChange, errors }: StepPersonalDataPro
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold">Stammdaten</h3>
+        <h3 className="text-lg font-semibold">{t("title")}</h3>
         <p className="text-sm text-muted-foreground">
-          Geben Sie die persoenlichen Daten des neuen Gesellschafters ein.
+          {t("description")}
         </p>
       </div>
 

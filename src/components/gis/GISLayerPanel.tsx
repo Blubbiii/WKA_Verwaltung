@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, Layers, Settings2 } from "lucide-react";
 import {
   Select,
@@ -79,6 +80,7 @@ export function GISLayerPanel({
   settings,
   onSettingsChange,
 }: GISLayerPanelProps) {
+  const t = useTranslations("gis.layerPanel");
   const [collapsed, setCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -102,8 +104,8 @@ export function GISLayerPanel({
     return (
       <button
         onClick={() => setCollapsed(false)}
-        title="Ebenen einblenden"
-        aria-label="Ebenen einklappen/einblenden"
+        title={t("showLayers")}
+        aria-label={t("toggleLayers")}
         aria-expanded={false}
         className="bg-background/95 backdrop-blur-sm border rounded-lg shadow-lg p-2.5 flex items-center justify-center hover:bg-background transition-colors"
       >
@@ -118,13 +120,13 @@ export function GISLayerPanel({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Ebenen</span>
+          <span className="text-xs font-semibold text-foreground uppercase tracking-wide">{t("layers")}</span>
         </div>
         <button
           onClick={() => setCollapsed(true)}
           className="p-0.5 rounded hover:bg-muted transition-colors"
-          title="Einklappen"
-          aria-label="Ebenen einklappen/einblenden"
+          title={t("collapse")}
+          aria-label={t("toggleLayers")}
           aria-expanded={true}
         >
           <ChevronLeft className="h-4 w-4 text-muted-foreground" />
@@ -133,16 +135,16 @@ export function GISLayerPanel({
 
       {/* Park filter */}
       <div className="mb-2">
-        <label className="text-xs text-muted-foreground mb-1 block">Park</label>
+        <label className="text-xs text-muted-foreground mb-1 block">{t("park")}</label>
         <Select value={parkFilter} onValueChange={onParkFilterChange}>
           <SelectTrigger className="h-7 text-xs">
-            <SelectValue placeholder="Alle Parks" />
+            <SelectValue placeholder={t("allParks")} />
           </SelectTrigger>
           <SelectContent className="z-[2000]">
-            <SelectItem value="all">Alle Parks</SelectItem>
+            <SelectItem value="all">{t("allParks")}</SelectItem>
             {parks.length === 0 && (
               <SelectItem value="_empty" disabled>
-                Keine Parks vorhanden
+                {t("noParks")}
               </SelectItem>
             )}
             {parks.map((park) => (
@@ -162,28 +164,28 @@ export function GISLayerPanel({
           checked={layers.parks}
           onToggle={() => onToggleLayer("parks")}
           dotColor="#335E99"
-          label="Parks"
+          label={t("parks")}
           count={parks.length}
         />
         <LayerCheckbox
           checked={layers.turbines}
           onToggle={() => onToggleLayer("turbines")}
           dotColor="#22c55e"
-          label="Turbinen"
+          label={t("turbines")}
           count={turbineCount}
         />
         <LayerCheckbox
           checked={layers.plots}
           onToggle={() => onToggleLayer("plots")}
           dotColor="#757575"
-          label="Flurstücke"
+          label={t("plots")}
           count={plotCount}
         />
         <LayerCheckbox
           checked={layers.annotations}
           onToggle={() => onToggleLayer("annotations")}
           dotColor="#6366f1"
-          label="Zeichnungen"
+          label={t("annotations")}
           count={annotationCount}
         />
 
@@ -194,19 +196,19 @@ export function GISLayerPanel({
           checked={layers.leaseStatus}
           onToggle={() => onToggleLayer("leaseStatus")}
           dotColor="#22c55e"
-          label="Pachtstatus"
+          label={t("leaseStatus")}
         />
         <LayerCheckbox
           checked={layers.bufferZones}
           onToggle={() => onToggleLayer("bufferZones")}
           dotColor="#335E99"
-          label="Abstandszonen"
+          label={t("bufferZones")}
         />
         <LayerCheckbox
           checked={layers.heatmap}
           onToggle={() => onToggleLayer("heatmap")}
           dotColor="#ef4444"
-          label="Heatmap"
+          label={t("heatmap")}
         />
       </div>
 
@@ -216,7 +218,7 @@ export function GISLayerPanel({
       {layers.leaseStatus && (
         <>
           <div className="mb-3">
-            <p className="text-xs text-muted-foreground mb-1.5">Pachtstatus</p>
+            <p className="text-xs text-muted-foreground mb-1.5">{t("leaseStatus")}</p>
             <div className="space-y-1">
               {LEASE_STATUS_ENTRIES.map(([status, label]) => (
                 <div key={status} className="flex items-center gap-2">
@@ -236,7 +238,7 @@ export function GISLayerPanel({
       {/* Legend: plot area types (when not in lease/heatmap mode) */}
       {!layers.leaseStatus && !layers.heatmap && (
         <div className="mb-3">
-          <p className="text-xs text-muted-foreground mb-1.5">Flächentypen</p>
+          <p className="text-xs text-muted-foreground mb-1.5">{t("areaTypes")}</p>
           <div className="space-y-1">
             {AREA_TYPE_ENTRIES.map(([type, label]) => (
               <div key={type} className="flex items-center gap-2">
@@ -252,14 +254,14 @@ export function GISLayerPanel({
                 className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
                 style={{ background: "#757575" }}
               />
-              <span className="text-xs text-muted-foreground">Ohne Typ</span>
+              <span className="text-xs text-muted-foreground">{t("noType")}</span>
             </div>
             <div className="flex items-center gap-2">
               <span
                 className="inline-block h-2.5 w-2.5 rounded-sm shrink-0 border border-dashed border-red-400"
                 style={{ background: "#ef444430" }}
               />
-              <span className="text-xs text-muted-foreground">Kein Vertrag</span>
+              <span className="text-xs text-muted-foreground">{t("noContract")}</span>
             </div>
           </div>
         </div>
@@ -269,11 +271,11 @@ export function GISLayerPanel({
       {layers.heatmap && (
         <>
           <div className="mb-3">
-            <p className="text-xs text-muted-foreground mb-1.5">Heatmap</p>
+            <p className="text-xs text-muted-foreground mb-1.5">{t("heatmap")}</p>
             <div className="h-2 rounded-full bg-gradient-to-r from-red-100 to-red-600" />
             <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
-              <span>Klein</span>
-              <span>Groß</span>
+              <span>{t("heatmapSmall")}</span>
+              <span>{t("heatmapLarge")}</span>
             </div>
           </div>
           <Separator className="my-2" />
@@ -283,7 +285,7 @@ export function GISLayerPanel({
       {/* Area statistics */}
       {plotCount > 0 && Object.keys(areaStats).length > 0 && (
         <div>
-          <p className="text-xs text-muted-foreground mb-1.5">Flächenstatistik</p>
+          <p className="text-xs text-muted-foreground mb-1.5">{t("areaStats")}</p>
           <div className="space-y-1">
             {AREA_TYPE_ENTRIES.map(([type, label]) => {
               const val = areaStats[type];
@@ -299,7 +301,7 @@ export function GISLayerPanel({
             })}
             {totalArea > 0 && (
               <div className="flex items-center justify-between text-xs pt-1 border-t mt-1">
-                <span className="text-muted-foreground font-medium">Gesamt</span>
+                <span className="text-muted-foreground font-medium">{t("total")}</span>
                 <span className="text-foreground font-semibold">
                   {(totalArea / 10000).toFixed(2)} ha
                 </span>
@@ -315,12 +317,12 @@ export function GISLayerPanel({
       <div>
         <button
           onClick={() => setShowSettings(!showSettings)}
-          aria-label="Einstellungen"
+          aria-label={t("settings")}
           aria-expanded={showSettings}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
         >
           <Settings2 className="h-3.5 w-3.5" />
-          <span className="font-semibold uppercase tracking-wide">Einstellungen</span>
+          <span className="font-semibold uppercase tracking-wide">{t("settings")}</span>
         </button>
 
         {showSettings && (
@@ -328,7 +330,7 @@ export function GISLayerPanel({
             {/* Buffer radius */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Abstandszone</span>
+                <span className="text-muted-foreground">{t("bufferRadius")}</span>
                 <span className="text-foreground font-medium">{settings.bufferRadiusM} m</span>
               </div>
               <input
@@ -338,7 +340,7 @@ export function GISLayerPanel({
                 step="50"
                 value={settings.bufferRadiusM}
                 onChange={(e) => onSettingsChange({ bufferRadiusM: parseInt(e.target.value) })}
-                aria-label="Abstandszone Radius"
+                aria-label={t("bufferRadiusAria")}
                 className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
               />
               <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -350,7 +352,7 @@ export function GISLayerPanel({
             {/* Plot opacity */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Flächen-Deckkraft</span>
+                <span className="text-muted-foreground">{t("plotOpacity")}</span>
                 <span className="text-foreground font-medium">{Math.round(settings.plotOpacity * 100)}%</span>
               </div>
               <input
@@ -360,7 +362,7 @@ export function GISLayerPanel({
                 step="0.05"
                 value={settings.plotOpacity}
                 onChange={(e) => onSettingsChange({ plotOpacity: parseFloat(e.target.value) })}
-                aria-label="Flächen-Deckkraft"
+                aria-label={t("plotOpacity")}
                 className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
               />
             </div>
@@ -368,7 +370,7 @@ export function GISLayerPanel({
             {/* Min plot area */}
             <div>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Mindestfläche</span>
+                <span className="text-muted-foreground">{t("minPlotArea")}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Input

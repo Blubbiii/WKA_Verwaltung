@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Bell, Save, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,14 +26,14 @@ interface ReminderSettingsProps {
   onUpdate?: (reminderDays: number[]) => void;
 }
 
-// Vordefinierte Erinnerungs-Optionen
+// Vordefinierte Erinnerungs-Optionen (label key looked up via i18n)
 const PRESET_REMINDERS = [
-  { days: 14, label: "14 Tage vorher" },
-  { days: 30, label: "30 Tage vorher" },
-  { days: 60, label: "60 Tage vorher" },
-  { days: 90, label: "90 Tage vorher" },
-  { days: 180, label: "6 Monate vorher" },
-  { days: 365, label: "1 Jahr vorher" },
+  { days: 14, labelKey: "preset14" },
+  { days: 30, labelKey: "preset30" },
+  { days: 60, labelKey: "preset60" },
+  { days: 90, labelKey: "preset90" },
+  { days: 180, labelKey: "preset180" },
+  { days: 365, labelKey: "preset365" },
 ];
 
 export function ReminderSettings({
@@ -41,6 +42,7 @@ export function ReminderSettings({
   endDate,
   onUpdate,
 }: ReminderSettingsProps) {
+  const t = useTranslations("contracts.reminderSettings");
   const { toast } = useToast();
   const [selectedDays, setSelectedDays] = useState<number[]>(initialReminderDays);
   const [customDays, setCustomDays] = useState<string>("");
@@ -71,8 +73,8 @@ export function ReminderSettings({
     if (isNaN(days) || days <= 0 || days > 3650) {
       toast({
         variant: "destructive",
-        title: "Ungültige Eingabe",
-        description: "Bitte geben Sie eine Zahl zwischen 1 und 3650 ein",
+        title: t("invalidInputTitle"),
+        description: t("invalidInputDesc"),
       });
       return;
     }
@@ -80,8 +82,8 @@ export function ReminderSettings({
     if (selectedDays.includes(days)) {
       toast({
         variant: "destructive",
-        title: "Bereits vorhanden",
-        description: `${days} Tage ist bereits ausgewaehlt`,
+        title: t("duplicateTitle"),
+        description: t("duplicateDesc", { days }),
       });
       return;
     }
@@ -109,16 +111,16 @@ export function ReminderSettings({
       }
 
       toast({
-        title: "Erfolg",
-        description: "Erinnerungs-Einstellungen wurden gespeichert",
+        title: t("toastSuccessTitle"),
+        description: t("toastSaved"),
       });
 
       onUpdate?.(selectedDays);
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Einstellungen konnten nicht gespeichert werden",
+        title: t("toastErrorTitle"),
+        description: error instanceof Error ? error.message : t("toastSaveError"),
       });
     } finally {
       setSaving(false);
@@ -148,23 +150,21 @@ export function ReminderSettings({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="h-5 w-5" />
-          Erinnerungs-Einstellungen
+          {t("title")}
         </CardTitle>
         <CardDescription>
-          {endDate
-            ? "Konfigurieren Sie, wann Sie an diesen Vertrag erinnert werden möchten."
-            : "Dieser Vertrag hat kein Enddatum. Erinnerungen können trotzdem konfiguriert werden."}
+          {endDate ? t("descWithEnd") : t("descNoEnd")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Vordefinierte Optionen */}
         <div>
-          <Label className="text-base font-medium">Standard-Erinnerungen</Label>
+          <Label className="text-base font-medium">{t("presetHeading")}</Label>
           <p className="text-sm text-muted-foreground mb-4">
-            Waehlen Sie vordefinierte Zeitraeume für Erinnerungen aus.
+            {t("presetHelp")}
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {PRESET_REMINDERS.map(({ days, label }) => {
+            {PRESET_REMINDERS.map(({ days, labelKey }) => {
               const isSelected = selectedDays.includes(days);
               const isPassed = isDatePassed(days);
               const reminderDate = getReminderDate(days);
@@ -189,11 +189,11 @@ export function ReminderSettings({
                       htmlFor={`reminder-${days}`}
                       className="text-sm font-medium cursor-pointer"
                     >
-                      {label}
+                      {t(labelKey)}
                     </Label>
                     {endDate && (
                       <p className={`text-xs ${isPassed ? "text-red-500" : "text-muted-foreground"}`}>
-                        {isPassed ? "Bereits vergangen: " : ""}
+                        {isPassed ? t("passedPrefix") : ""}
                         {reminderDate}
                       </p>
                     )}
@@ -208,9 +208,9 @@ export function ReminderSettings({
 
         {/* Benutzerdefinierte Erinnerung */}
         <div>
-          <Label className="text-base font-medium">Benutzerdefinierte Erinnerung</Label>
+          <Label className="text-base font-medium">{t("customHeading")}</Label>
           <p className="text-sm text-muted-foreground mb-4">
-            Fuegen Sie eine individuelle Erinnerungsfrist hinzu.
+            {t("customHelp")}
           </p>
           <div className="flex gap-2">
             <div className="relative flex-1 max-w-[200px]">
@@ -218,7 +218,7 @@ export function ReminderSettings({
                 type="number"
                 min="1"
                 max="3650"
-                placeholder="Anzahl Tage"
+                placeholder={t("customPlaceholder")}
                 value={customDays}
                 onChange={(e) => setCustomDays(e.target.value)}
                 onKeyDown={(e) => {
@@ -230,7 +230,7 @@ export function ReminderSettings({
               />
             </div>
             <Button variant="outline" onClick={addCustomDays} disabled={!customDays}>
-              Hinzufügen
+              {t("customAdd")}
             </Button>
           </div>
         </div>
@@ -240,11 +240,11 @@ export function ReminderSettings({
         {/* Aktive Erinnerungen */}
         <div>
           <Label className="text-base font-medium mb-4 block">
-            Aktive Erinnerungen ({selectedDays.length})
+            {t("activeHeading", { count: selectedDays.length })}
           </Label>
           {selectedDays.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4">
-              Keine Erinnerungen konfiguriert
+              {t("activeEmpty")}
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
@@ -260,11 +260,11 @@ export function ReminderSettings({
                       isPassed ? "line-through opacity-60" : ""
                     }`}
                   >
-                    {preset?.label || `${days} Tage vorher`}
+                    {preset ? t(preset.labelKey) : t("daysBefore", { days })}
                     <button
                       onClick={() => removeDay(days)}
                       className="ml-2 hover:text-destructive"
-                      title="Entfernen"
+                      title={t("removeReminder")}
                     >
                       x
                     </button>
@@ -285,7 +285,7 @@ export function ReminderSettings({
             ) : (
               <Check className="mr-2 h-4 w-4" />
             )}
-            {saving ? "Speichere..." : hasChanges ? "Speichern" : "Gespeichert"}
+            {saving ? t("saveSaving") : hasChanges ? t("saveButton") : t("saveSaved")}
           </Button>
         </div>
       </CardContent>
