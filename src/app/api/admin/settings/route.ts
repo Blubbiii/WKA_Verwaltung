@@ -159,11 +159,11 @@ export async function PUT(request: NextRequest) {
 
       const currentSettings = (tenant?.settings as Record<string, unknown>) || {};
 
-      // Update with new general settings - use JSON.parse/stringify for clean JSON type
-      const updatedSettings = JSON.parse(JSON.stringify({
+      // Update with new general settings — structuredClone is faster than JSON.parse(JSON.stringify(...))
+      const updatedSettings = structuredClone({
         ...currentSettings,
         general: generalSettings,
-      }));
+      });
 
       await prisma.tenant.update({
         where: { id: check.tenantId },

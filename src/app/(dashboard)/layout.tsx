@@ -18,6 +18,13 @@ export default function DashboardLayout({
   return (
     <KeyboardProvider>
       <OnboardingProvider>
+        {/* Skip link — first focusable element for keyboard/screen-reader users (WCAG 2.4.1, BFSG) */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          Zum Hauptinhalt springen
+        </a>
         <div className="flex h-screen overflow-hidden">
           <OfflineIndicator />
           <CommandPalette />
@@ -30,7 +37,11 @@ export default function DashboardLayout({
           <div className="flex flex-1 flex-col overflow-hidden">
             <MaintenanceBanner />
             <Header />
-            <main className="flex-1 overflow-y-auto overscroll-contain bg-muted/30 p-3 sm:p-4 md:p-6 flex flex-col">
+            <main
+              id="main-content"
+              tabIndex={-1}
+              className="flex-1 overflow-y-auto overscroll-contain bg-muted/30 p-3 sm:p-4 md:p-6 flex flex-col"
+            >
               <Breadcrumb />
               <div className="flex-1">
                 <PageTransition>

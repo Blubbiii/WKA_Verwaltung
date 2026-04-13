@@ -216,6 +216,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
   @@map("accounts")
 }
 
@@ -226,6 +227,7 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("sessions")
 }
 
@@ -3361,6 +3363,8 @@ model IncomingInvoice {
   @@index([status])
   @@index([invoiceDate])
   @@index([dueDate])
+  @@index([deletedAt])
+  @@index([tenantId, deletedAt])
   @@map("incoming_invoices")
 }
 

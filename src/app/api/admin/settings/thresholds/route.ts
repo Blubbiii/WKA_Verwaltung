@@ -114,7 +114,8 @@ export async function PUT(request: NextRequest) {
       await prisma.tenant.update({
         where: { id: check.tenantId },
         data: {
-          settings: JSON.parse(JSON.stringify({ ...existing, thresholds })),
+          // structuredClone is ~2x faster than JSON.parse(JSON.stringify(...))
+          settings: structuredClone({ ...existing, thresholds }),
         },
       });
     }

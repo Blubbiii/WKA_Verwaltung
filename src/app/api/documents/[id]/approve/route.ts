@@ -11,6 +11,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
+import { createNotification, notifyAdmins } from "@/lib/notifications";
 
 // Valid state transitions for the document approval workflow
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -167,39 +168,33 @@ export async function POST(
       }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
     }
 
-    // TODO: Notification integration
-    // When document is submitted for review -> notify admins
-    // When document is approved/rejected -> notify uploader
-    // Use createNotification() from src/lib/notifications.ts when available
-    // Example:
-    // if (action.submit && document.uploadedById) {
-    //   // Notify all admins in the tenant about the pending review
-    //   const admins = await prisma.user.findMany({
-    //     where: { tenantId: check.tenantId, role: { in: ["ADMIN", "SUPERADMIN"] } },
-    //   });
-    //   for (const admin of admins) {
-    //     await createNotification({
-    //       type: "DOCUMENT",
-    //       title: "Dokument zur Prüfung eingereicht",
-    //       message: `"${document.title}" wartet auf Genehmigung`,
-    //       link: `/documents/${document.id}`,
-    //       userId: admin.id,
-    //       tenantId: check.tenantId,
-    //     });
-    //   }
-    // }
-    // if ((action.approve || action.reject) && document.uploadedById) {
-    //   await createNotification({
-    //     type: "DOCUMENT",
-    //     title: action.approve ? "Dokument genehmigt" : "Dokument abgelehnt",
-    //     message: action.approve
-    //       ? `"${document.title}" wurde genehmigt`
-    //       : `"${document.title}" wurde abgelehnt: ${action.notes}`,
-    //     link: `/documents/${document.id}`,
-    //     userId: document.uploadedById,
-    //     tenantId: check.tenantId,
-    //   });
-    // }
+    // Notification integration — non-blocking, errors swallowed inside helpers
+    if (action.submit && targetStatus === "PENDING_REVIEW") {
+      // Notify admins of pending review
+      notifyAdmins({
+        tenantId: check.tenantId!,
+        type: "DOCUMENT",
+        title: "Dokument zur Prüfung eingereicht",
+        message: `"${document.title}" wartet auf Genehmigung`,
+        link: `/documents/${document.id}`,
+      }).catch((err) => logger.warn({ err }, "[Notifications] notifyAdmins failed"));
+    } else if (
+      (action.approve || action.reject) &&
+      document.uploadedBy?.id &&
+      document.uploadedBy.id !== check.userId
+    ) {
+      // Notify uploader of approval/rejection (skip if uploader is the reviewer)
+      createNotification({
+        userId: document.uploadedBy.id,
+        tenantId: check.tenantId!,
+        type: "DOCUMENT",
+        title: action.approve ? "Dokument genehmigt" : "Dokument abgelehnt",
+        message: action.approve
+          ? `"${document.title}" wurde genehmigt`
+          : `"${document.title}" wurde abgelehnt${action.notes ? `: ${action.notes}` : ""}`,
+        link: `/documents/${document.id}`,
+      }).catch((err) => logger.warn({ err }, "[Notifications] createNotification failed"));
+    }
 
     // Log the action in audit trail
     try {
