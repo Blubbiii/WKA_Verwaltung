@@ -6,6 +6,11 @@ Sentry.init({
   // Only enable in production
   enabled: process.env.NODE_ENV === "production",
 
+  // Ties errors to a specific build (injected at build time via NEXT_PUBLIC_APP_VERSION)
+  release: process.env.NEXT_PUBLIC_APP_VERSION
+    ? `windparkmanager@${process.env.NEXT_PUBLIC_APP_VERSION}`
+    : undefined,
+
   // Performance monitoring
   tracesSampleRate: 0.1, // 10% of transactions
 
@@ -22,5 +27,22 @@ Sentry.init({
     "Network request failed",
     "Load failed",
     "ChunkLoadError",
+    "AbortError",
+    "NotAllowedError",
+    // Ignore expected auth redirects
+    "NEXT_REDIRECT",
+    // Browser extensions noise
+    /Extension context invalidated/,
+    /chrome-extension:/,
   ],
+
+  // Scrub PII from client-side error payloads
+  beforeSend(event) {
+    if (event.user) {
+      delete event.user.email;
+      delete event.user.ip_address;
+      delete event.user.username;
+    }
+    return event;
+  },
 });
