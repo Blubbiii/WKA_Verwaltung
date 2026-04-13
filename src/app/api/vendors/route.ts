@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 // POST /api/vendors
 export async function POST(request: NextRequest) {
   try {
-    const check = await requirePermission("vendors:write");
+    const check = await requirePermission("vendors:create");
     if (!check.authorized) return check.error;
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;

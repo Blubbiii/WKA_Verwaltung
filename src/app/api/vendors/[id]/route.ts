@@ -66,7 +66,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requirePermission("vendors:write");
+    const check = await requirePermission("vendors:update");
     if (!check.authorized) return check.error;
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
@@ -87,7 +87,7 @@ export async function PUT(
 
     const d = parsed.data;
     const updated = await prisma.vendor.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: {
         ...(d.name !== undefined && { name: d.name }),
         ...(d.taxId !== undefined && { taxId: d.taxId }),
@@ -120,7 +120,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requirePermission("vendors:write");
+    const check = await requirePermission("vendors:delete");
     if (!check.authorized) return check.error;
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;

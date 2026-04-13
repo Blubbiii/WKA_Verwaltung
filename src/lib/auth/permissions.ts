@@ -432,7 +432,9 @@ export const PERMISSIONS = {
   INBOX_APPROVE: "inbox:approve",
   INBOX_EXPORT: "inbox:export",
   VENDORS_READ: "vendors:read",
-  VENDORS_WRITE: "vendors:write",
+  VENDORS_CREATE: "vendors:create",
+  VENDORS_UPDATE: "vendors:update",
+  VENDORS_DELETE: "vendors:delete",
 
   // Wirtschaftsplan (Business Plan & Cost Centers)
   WIRTSCHAFTSPLAN_READ: "wirtschaftsplan:read",
