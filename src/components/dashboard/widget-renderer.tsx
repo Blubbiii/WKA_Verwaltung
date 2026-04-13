@@ -30,6 +30,25 @@ const DocumentsByTypeChart = dynamic(
   () => import("./analytics-charts").then((mod) => mod.DocumentsByTypeChart),
   { ssr: false }
 );
+// Lazy-load the Recharts-based dashboard widgets — each imports recharts,
+// which is ~200KB gzipped. Without dynamic-splitting, recharts lands in the
+// main dashboard bundle even if the user never uses a chart widget.
+const TurbineStatusChart = dynamic(
+  () => import("./widgets/energy-widgets").then((m) => m.TurbineStatusChart),
+  { ssr: false },
+);
+const ProductionForecastChart = dynamic(
+  () => import("./widgets/energy-widgets").then((m) => m.ProductionForecastChart),
+  { ssr: false },
+);
+const RevenueByParkChart = dynamic(
+  () => import("./widgets/energy-widgets").then((m) => m.RevenueByParkChart),
+  { ssr: false },
+);
+const WirtschaftsplanPLChart = dynamic(
+  () => import("./widgets/wirtschaftsplan-widgets").then((m) => m.WirtschaftsplanPLChart),
+  { ssr: false },
+);
 import {
   DeadlinesWidget,
   ActivitiesWidget,
@@ -46,12 +65,8 @@ import {
   AvailabilityKPI,
   WindSpeedKPI,
   LeaseRevenueKPI,
-  TurbineStatusChart,
-  ProductionForecastChart,
-  RevenueByParkChart,
   LeaseOverviewWidget,
   BudgetVarianceKPI,
-  WirtschaftsplanPLChart,
 } from "./widgets";
 import { RecentlyVisitedWidget } from "./widgets/recently-visited-widget";
 import { useAnalytics, useFormatCurrencyCompact } from "@/hooks/useAnalytics";
