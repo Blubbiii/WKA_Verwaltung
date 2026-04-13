@@ -459,7 +459,7 @@ export function Sidebar() {
     <aside
       data-tour="sidebar"
       className={cn(
-        "flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300",
+        "flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 card-surface",
         collapsed ? "w-16" : "w-64"
       )}
     >

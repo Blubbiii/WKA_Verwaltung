@@ -6,8 +6,13 @@ import { CookieBanner } from "@/components/cookie-banner";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { UiStyleProvider } from "@/components/providers/ui-style-provider";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+
+// Inline script to apply UI style class BEFORE React hydrates.
+// Mirrors what next-themes does for light/dark — prevents flash of unstyled content.
+const uiStyleInitScript = `(function(){try{var s=localStorage.getItem('ui-style');if(s!=='glass'&&s!=='classic')s='classic';document.documentElement.classList.add('ui-'+s);}catch(e){document.documentElement.classList.add('ui-classic');}})();`;
 
 // Self-hosted via next/font — downloaded at build time, no runtime Google request (DSGVO-konform)
 const inter = Inter({
@@ -31,17 +36,22 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: uiStyleInitScript }} />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider>
-          <NextIntlClientProvider messages={messages}>
-            <QueryProvider>
-              <SessionProvider>
-                {children}
-                <Toaster />
-                <CookieBanner />
-              </SessionProvider>
-            </QueryProvider>
-          </NextIntlClientProvider>
+          <UiStyleProvider>
+            <NextIntlClientProvider messages={messages}>
+              <QueryProvider>
+                <SessionProvider>
+                  {children}
+                  <Toaster />
+                  <CookieBanner />
+                </SessionProvider>
+              </QueryProvider>
+            </NextIntlClientProvider>
+          </UiStyleProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -147,7 +147,7 @@ export function Header() {
         </div>
       )}
 
-      <header className="flex items-center justify-between h-16 px-3 sm:px-4 md:px-6 border-b border-border/50 bg-background/85 backdrop-blur-lg shadow-sm sticky top-0 z-30">
+      <header className="flex items-center justify-between h-16 px-3 sm:px-4 md:px-6 border-b border-border/50 bg-background/85 backdrop-blur-lg shadow-sm sticky top-0 z-30 card-surface">
         {/* Left: Mobile hamburger + Tenant branding + Search */}
         <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-xl">
           {/* Mobile hamburger */}

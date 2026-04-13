@@ -5,6 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTheme } from "next-themes";
+import { useUiStyle } from "@/components/providers/ui-style-provider";
+import { Sparkles, Layout } from "lucide-react";
 import {
   User,
   Bell,
@@ -503,10 +505,17 @@ function AppearanceTab({
   onSettingsUpdated: () => void;
 }) {
   const { theme, setTheme: setNextTheme } = useTheme();
+  const { style: uiStyle, setStyle: setUiStyle } = useUiStyle();
+  const [mounted, setMounted] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
   const [pageSize, setPageSize] = useState("25");
   const [startPage, setStartPage] = useState("/dashboard");
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+
+  // Hydration guard — ensures we read the actual current style after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Load preferences from settings (theme is handled by next-themes)
   useEffect(() => {
@@ -634,6 +643,7 @@ function AppearanceTab({
                     type="button"
                     disabled={isSavingTheme}
                     onClick={() => handleThemeChange(option.value)}
+                    data-ui-surface="opaque"
                     className={`flex flex-col items-center gap-2 p-4 border rounded-lg transition-colors ${
                       theme === option.value
                         ? "border-primary bg-primary/5"
@@ -645,6 +655,54 @@ function AppearanceTab({
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* UI Style Selector — Classic vs Glass */}
+          <div>
+            <h4 className="font-medium mb-1">Optik</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Wählen Sie zwischen klassischem und modernem Glas-Look
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setUiStyle("classic")}
+                data-ui-surface="opaque"
+                className={`flex items-start gap-3 p-4 border rounded-lg text-left transition-colors ${
+                  mounted && uiStyle === "classic"
+                    ? "border-primary bg-primary/5"
+                    : "hover:bg-muted"
+                }`}
+              >
+                <Layout className="h-8 w-8 shrink-0 text-primary" />
+                <div className="space-y-1">
+                  <div className="font-medium">Klassisch</div>
+                  <div className="text-xs text-muted-foreground">
+                    Saubere, professionelle Optik mit klaren Cards
+                  </div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setUiStyle("glass")}
+                data-ui-surface="opaque"
+                className={`flex items-start gap-3 p-4 border rounded-lg text-left transition-colors ${
+                  mounted && uiStyle === "glass"
+                    ? "border-primary bg-primary/5"
+                    : "hover:bg-muted"
+                }`}
+              >
+                <Sparkles className="h-8 w-8 shrink-0 text-primary" />
+                <div className="space-y-1">
+                  <div className="font-medium">Glas</div>
+                  <div className="text-xs text-muted-foreground">
+                    Moderne Glasmorphismus-Optik mit Tiefe und Verlauf
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 
