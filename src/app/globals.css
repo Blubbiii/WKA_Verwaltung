@@ -159,8 +159,9 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 215 50% 40%;
     --radius: 0.5rem;
+    /* Chart colors — all tuned for WCAG 2.1 AA contrast ≥3:1 vs white background */
     --chart-1: 215 50% 40%;
-    --chart-2: 40 62% 46%;
+    --chart-2: 35 75% 38%;     /* darkened from 40/62/46 for AA contrast */
     --chart-3: 142 55% 40%;
     --chart-4: 230 52% 54%;
     --chart-5: 0 72% 52%;
