@@ -1,10 +1,18 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import createNextIntlPlugin from "next-intl/plugin";
 import type { NextConfig } from "next";
+import withBundleAnalyzer from "@next/bundle-analyzer";
 // Static import avoids Turbopack tracing the entire project via dynamic require()
 import { version as appVersion } from "./package.json";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+// Bundle analyzer — enable via `ANALYZE=true npm run build`
+// Generates .next/analyze/client.html and .next/analyze/nodejs.html
+const withAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+  openAnalyzer: false,
+});
 
 const nextConfig: NextConfig = {
   env: {
@@ -107,8 +115,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-// Apply next-intl plugin
-const configWithIntl = withNextIntl(nextConfig);
+// Apply next-intl plugin + bundle analyzer
+const configWithIntl = withAnalyzer(withNextIntl(nextConfig));
 
 // Only wrap with Sentry in production builds to avoid dev overhead
 const isDev = process.env.NODE_ENV === "development";
