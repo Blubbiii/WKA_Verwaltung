@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3, CreditCard, Activity, Wrench, LayoutDashboard, Clock, AlertTriangle, Cloud, Sun, Zap, GitCompare, Search, ArrowLeftRight, FileText, Archive, BookMarked } from "lucide-react";
 import { AnalyticsFilterBar } from "@/components/energy/analytics/analytics-filter-bar";
 import { CreateReportDialog } from "@/components/energy/analytics/create-report-dialog";
@@ -24,13 +26,37 @@ import {
   PhaseSymmetryChart,
 } from "@/components/energy/analytics/analytics-dynamic";
 import { useDrillDown } from "@/hooks/useDrillDown";
-import { DataExplorerTab } from "@/components/energy/analytics/data-explorer-tab";
-import { DataComparisonTab } from "@/components/energy/analytics/data-comparison-tab";
-import { PdfReportsTab } from "@/components/energy/analytics/pdf-reports-tab";
-import { ReportArchiveTab } from "@/components/energy/analytics/report-archive-tab";
-import { ReportConfigsTab } from "@/components/energy/analytics/report-configs-tab";
-import { ReportBuilderTab } from "@/components/energy/analytics/report-builder-tab";
 import { Button } from "@/components/ui/button";
+
+// Lazy-load the large tab components (each > 500 LoC) — only the active tab
+// is hydrated. Cuts initial JS bundle significantly on first analytics load.
+const TabSkeleton = () => <Skeleton className="w-full h-[400px]" />;
+const DYNAMIC_OPTS = { ssr: false, loading: () => <TabSkeleton /> };
+
+const DataExplorerTab = dynamic(
+  () => import("@/components/energy/analytics/data-explorer-tab").then((m) => m.DataExplorerTab),
+  DYNAMIC_OPTS,
+);
+const DataComparisonTab = dynamic(
+  () => import("@/components/energy/analytics/data-comparison-tab").then((m) => m.DataComparisonTab),
+  DYNAMIC_OPTS,
+);
+const PdfReportsTab = dynamic(
+  () => import("@/components/energy/analytics/pdf-reports-tab").then((m) => m.PdfReportsTab),
+  DYNAMIC_OPTS,
+);
+const ReportArchiveTab = dynamic(
+  () => import("@/components/energy/analytics/report-archive-tab").then((m) => m.ReportArchiveTab),
+  DYNAMIC_OPTS,
+);
+const ReportConfigsTab = dynamic(
+  () => import("@/components/energy/analytics/report-configs-tab").then((m) => m.ReportConfigsTab),
+  DYNAMIC_OPTS,
+);
+const ReportBuilderTab = dynamic(
+  () => import("@/components/energy/analytics/report-builder-tab").then((m) => m.ReportBuilderTab),
+  DYNAMIC_OPTS,
+);
 import type {
   PerformanceOverviewResponse,
   AvailabilityResponse,
