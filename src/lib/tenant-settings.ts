@@ -118,36 +118,57 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
 /**
  * Load tenant settings from DB, merged with defaults.
  * Safe to call from server-side code (API routes, workers, etc.)
+ *
+ * Cached for 10min via Redis to avoid hot-path DB roundtrips on every
+ * invoice/dunning/billing operation. Cache is invalidated by the
+ * admin-settings PUT handler via invalidateTenantSettings().
  */
 export async function getTenantSettings(tenantId: string): Promise<TenantSettings> {
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId },
-    select: {
-      settings: true,
-      name: true,
-      contactEmail: true,
-      contactPhone: true,
-      address: true,
-      emailFromName: true,
+  const { cache, CACHE_TTL } = await import("@/lib/cache");
+  return cache.getOrSet<TenantSettings>(
+    "tenant-settings",
+    async () => {
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: {
+          settings: true,
+          name: true,
+          contactEmail: true,
+          contactPhone: true,
+          address: true,
+          emailFromName: true,
+        },
+      });
+
+      if (!tenant) {
+        return { ...DEFAULT_TENANT_SETTINGS };
+      }
+
+      const allSettings = (tenant.settings as Record<string, unknown>) || {};
+      const stored = (allSettings.tenantSettings as Record<string, unknown>) || {};
+
+      return {
+        ...DEFAULT_TENANT_SETTINGS,
+        companyName: tenant.name || "",
+        companyEmail: tenant.contactEmail || "",
+        companyPhone: tenant.contactPhone || "",
+        companyAddress: tenant.address || "",
+        emailFromName: tenant.emailFromName || "",
+        ...stored,
+      };
     },
-  });
+    CACHE_TTL.TENANT_SETTINGS,
+    tenantId,
+  );
+}
 
-  if (!tenant) {
-    return { ...DEFAULT_TENANT_SETTINGS };
-  }
-
-  const allSettings = (tenant.settings as Record<string, unknown>) || {};
-  const stored = (allSettings.tenantSettings as Record<string, unknown>) || {};
-
-  return {
-    ...DEFAULT_TENANT_SETTINGS,
-    companyName: tenant.name || "",
-    companyEmail: tenant.contactEmail || "",
-    companyPhone: tenant.contactPhone || "",
-    companyAddress: tenant.address || "",
-    emailFromName: tenant.emailFromName || "",
-    ...stored,
-  };
+/**
+ * Invalidate the cached tenant settings after a write.
+ * MUST be called after any mutation to Tenant.settings or core Tenant fields.
+ */
+export async function invalidateTenantSettings(tenantId: string): Promise<void> {
+  const { cache } = await import("@/lib/cache");
+  await cache.del("tenant-settings", tenantId);
 }
 
 /**

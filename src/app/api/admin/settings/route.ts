@@ -172,6 +172,11 @@ export async function PUT(request: NextRequest) {
         },
       });
 
+      // Invalidate the cached tenant settings so workers + API routes
+      // pick up the new values immediately instead of waiting 10 min.
+      const { invalidateTenantSettings } = await import("@/lib/tenant-settings");
+      await invalidateTenantSettings(check.tenantId!);
+
       return NextResponse.json(generalSettings);
     }
 
