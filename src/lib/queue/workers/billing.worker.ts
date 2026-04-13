@@ -1383,8 +1383,16 @@ export function startBillingWorker(): Worker<BillingJobData, BillingJobResult> {
     concurrency: 5,
     // Kein Sandbox-Modus für Next.js Kompatibilitaet
     useWorkerThreads: false,
-    // Billing kann komplexe Berechnungen haben
-    lockDuration: 180000, // 3 Minuten
+    // Billing kann sehr lange Berechnungen haben (Bulk-Invoice für 1000+ Shareholder).
+    // 10 min Lock damit BullMQ den Job nicht als "stalled" markiert und retried →
+    // würde zu doppelten Rechnungen führen.
+    lockDuration: 600000, // 10 Minuten
+    // stalledInterval prüft alle 60s ob ein Job noch am lock ist — seltener
+    // renewal reduziert Redis-Last bei vielen parallelen Workern.
+    stalledInterval: 60000,
+    // Nach 1 stalled-Event gilt der Job als failed statt retried — verhindert
+    // "doppelte Rechnung durch stall"-Szenarien im Billing.
+    maxStalledCount: 1,
   });
 
   // Event-Handler

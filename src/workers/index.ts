@@ -124,6 +124,18 @@ async function gracefulShutdown(signal: string): Promise<void> {
     await closeConnections();
     log("info", "Redis connections closed");
 
+    // Prisma-Verbindungen schliessen (verhindert Connection-Pool-Leaks)
+    log("info", "Disconnecting Prisma client...");
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      await prisma.$disconnect();
+      log("info", "Prisma client disconnected");
+    } catch (err) {
+      log("warn", "Error disconnecting Prisma", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     log("info", "Graceful shutdown completed");
     process.exit(0);
   } catch (error) {
