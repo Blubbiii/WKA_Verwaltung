@@ -311,6 +311,9 @@ export function startPdfWorker(): Worker<PdfJobData, PdfJobResult> {
       error: error.message,
       attempts: job?.attemptsMade,
     });
+    void import("../dead-letter").then(({ persistFailedJob }) =>
+      persistFailedJob({ queueName: "pdf", job, error }),
+    );
   });
 
   pdfWorker.on("error", (error) => {

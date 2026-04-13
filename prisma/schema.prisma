@@ -125,8 +125,61 @@ model Tenant {
   userTenantMemberships     UserTenantMembership[]
   sidebarLinks              SidebarLink[]
   personTags                PersonTag[]
+  failedJobs                FailedJob[]
+  consentLogs               ConsentLog[]
 
   @@map("tenants")
+}
+
+/// Persistent dead-letter store for BullMQ jobs that failed after all
+/// retries. Without this, failed billing/email/scada jobs are silently
+/// dropped when BullMQ's removeOnFail count is exceeded. Stored with
+/// full payload + error so an operator can investigate or retry manually.
+model FailedJob {
+  id             String    @id @default(uuid())
+  tenantId       String?
+  queueName      String
+  jobName        String
+  jobId          String?
+  payload        Json
+  attemptsMade   Int
+  error          String    @db.Text
+  stackTrace     String?   @db.Text
+  failedAt       DateTime  @default(now())
+  resolved       Boolean   @default(false)
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  resolutionNote String?   @db.Text
+
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, failedAt])
+  @@index([queueName, resolved])
+  @@index([failedAt])
+  @@map("failed_jobs")
+}
+
+/// DSGVO Art. 7 Consent-Log — dokumentiert wann welcher User/Visitor
+/// welchen Consent (Cookies, Marketing, Analytics) gegeben oder widerrufen
+/// hat. Muss auditfähig sein für Datenschutz-Inspektionen.
+model ConsentLog {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  userId      String?
+  sessionId   String?
+  consentType String
+  given       Boolean
+  version     String
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("consent_logs")
 }
 
 model User {

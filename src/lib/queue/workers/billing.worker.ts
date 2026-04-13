@@ -1411,6 +1411,12 @@ export function startBillingWorker(): Worker<BillingJobData, BillingJobResult> {
       error: error.message,
       attempts: job?.attemptsMade,
     });
+    // Persist to FailedJob table so the failed billing job stays
+    // investigable after BullMQ's removeOnFail window expires.
+    // Fire-and-forget: don't block the worker event loop.
+    void import("../dead-letter").then(({ persistFailedJob }) =>
+      persistFailedJob({ queueName: "billing", job, error }),
+    );
   });
 
   billingWorker.on("error", (error) => {

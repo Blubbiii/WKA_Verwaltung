@@ -296,6 +296,9 @@ export function startEmailWorker(): Worker<EmailJobData, EmailJobResult> {
       error: error.message,
       attempts: job?.attemptsMade,
     });
+    void import("../dead-letter").then(({ persistFailedJob }) =>
+      persistFailedJob({ queueName: "email", job, error }),
+    );
   });
 
   emailWorker.on("error", (error) => {
