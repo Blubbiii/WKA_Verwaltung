@@ -18,13 +18,48 @@ export interface DunningCandidate {
   feeAmount: number;
 }
 
+export interface DunningLevel {
+  level: number;
+  minDays: number;
+  fee: number;
+}
+
 /** Build dunning levels from tenant settings */
-function getDunningLevels(s: TenantSettings) {
+export function getDunningLevels(s: TenantSettings): DunningLevel[] {
   return [
     { level: 1, minDays: s.reminderDays1, fee: s.reminderFee1 },
     { level: 2, minDays: s.reminderDays2, fee: s.reminderFee2 },
     { level: 3, minDays: s.reminderDays3, fee: s.reminderFee3 },
   ];
+}
+
+/**
+ * Pure function: given the current dunning level and overdue days,
+ * return the next eligible dunning level (or null if none).
+ *
+ * - Skips levels at or below the current level (no demoting)
+ * - Returns the FIRST level whose minDays threshold is met
+ * - Levels are evaluated in order — assumes input is sorted by level ascending
+ */
+export function selectNextDunningLevel(
+  currentLevel: number,
+  overdueDays: number,
+  levels: DunningLevel[],
+): DunningLevel | null {
+  return (
+    levels.find((l) => l.level > currentLevel && overdueDays >= l.minDays) ??
+    null
+  );
+}
+
+/**
+ * Pure function: compute days overdue for an invoice.
+ * Returns 0 if dueDate is in the future or invalid.
+ */
+export function computeOverdueDays(dueDate: Date, now: Date = new Date()): number {
+  const diffMs = now.getTime() - dueDate.getTime();
+  if (diffMs <= 0) return 0;
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,12 +95,9 @@ async function findDunningCandidatesWithTx(tx: PrismaTransactionClient, tenantId
   return overdueInvoices
     .map((inv: typeof overdueInvoices[0]) => {
       const dueDate = inv.dueDate!;
-      const overdueDays = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      const overdueDays = computeOverdueDays(dueDate, now);
       const currentLevel = inv.dunningItems[0]?.level ?? 0;
-
-      const nextLevel = dunningLevels.find(
-        (l) => l.level > currentLevel && overdueDays >= l.minDays
-      );
+      const nextLevel = selectNextDunningLevel(currentLevel, overdueDays, dunningLevels);
 
       if (!nextLevel) return null;
 

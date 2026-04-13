@@ -46,7 +46,7 @@ export interface GenerateInvoiceResult {
 // ============================================================
 
 /** Round to 2 decimal places (cent precision) */
-function round2(value: number): number {
+export function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
@@ -54,7 +54,7 @@ function round2(value: number): number {
  * Build recipient name from Person record.
  * Prefers companyName, falls back to firstName + lastName.
  */
-function buildRecipientName(person: {
+export function buildRecipientName(person: {
   firstName: string | null;
   lastName: string | null;
   companyName: string | null;
@@ -68,7 +68,7 @@ function buildRecipientName(person: {
  * Build recipient address from Person record.
  * Uses newline-separated format so the PDF template can parse it correctly.
  */
-function buildRecipientAddress(person: {
+export function buildRecipientAddress(person: {
   street: string | null;
   houseNumber?: string | null;
   postalCode: string | null;
@@ -96,7 +96,7 @@ function buildRecipientAddress(person: {
 /**
  * Build recipient name from Fund record.
  */
-function buildFundName(fund: {
+export function buildFundName(fund: {
   name: string;
   legalForm: string | null;
 }): string {
@@ -109,7 +109,7 @@ function buildFundName(fund: {
  * ADVANCE+MONTHLY: e.g. month 3 → Mar 1 - Mar 31
  * FINAL or ADVANCE+YEARLY: full year Jan 1 - Dec 31
  */
-function getServicePeriodDates(
+export function getServicePeriodDates(
   year: number,
   periodType: string,
   advanceInterval: string | null,
@@ -141,7 +141,7 @@ function getServicePeriodDates(
  * ADVANCE+MONTHLY: "Januar 2025"
  * FINAL or ADVANCE+YEARLY: "Jahr 2025"
  */
-function getServicePeriodLabel(
+export function getServicePeriodLabel(
   year: number,
   periodType: string,
   advanceInterval: string | null,
@@ -165,7 +165,7 @@ function getServicePeriodLabel(
  * Build Flurstück reference from plotSummary JSON for invoice line descriptions.
  * Returns e.g. "Flst. 7, Flur 2, Gem. Barenburg" or "Flst. 7 / Flst. 9" for multiple plots.
  */
-function buildPlotDescription(plotSummary: unknown): string {
+export function buildPlotDescription(plotSummary: unknown): string {
   if (!Array.isArray(plotSummary) || plotSummary.length === 0) return "";
 
   const plots = plotSummary as Array<{
