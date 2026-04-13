@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 // =============================================================================
 // TYPES
@@ -116,7 +117,7 @@ function formatDate(dateStr: string | null): string {
 function isDueSoon(dateStr: string): boolean {
   const due = new Date(dateStr);
   const now = new Date();
-  const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+  const diffDays = (due.getTime() - now.getTime()) / MS_PER_DAY;
   return diffDays <= 14 && diffDays >= 0;
 }
 

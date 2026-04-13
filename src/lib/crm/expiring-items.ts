@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 export interface ExpiringLease {
   id: string;
@@ -41,7 +42,7 @@ export interface ExpiringItems {
 
 function daysUntil(date: Date): number {
   const ms = date.getTime() - Date.now();
-  return Math.round(ms / (1000 * 60 * 60 * 24));
+  return Math.round(ms / MS_PER_DAY);
 }
 
 function personName(p: {

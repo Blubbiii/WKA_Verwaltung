@@ -4,6 +4,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 export interface DepreciationScheduleItem {
   periodStart: Date;
@@ -67,7 +68,7 @@ export async function runDepreciation(
     const residualValue = Number(asset.residualValue);
 
     // Calculate months in period (day-based, rounded up)
-    const daysDiff = (periodEnd.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24) + 1;
+    const daysDiff = (periodEnd.getTime() - periodStart.getTime()) / MS_PER_DAY + 1;
     const months = Math.max(1, Math.round(daysDiff / 30.44));
 
     let periodAmount: number;

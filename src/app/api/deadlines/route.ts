@@ -3,6 +3,7 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 export interface DeadlineEvent {
   id: string;
@@ -25,7 +26,7 @@ function getUrgency(daysRemaining: number): DeadlineEvent["urgency"] {
 
 function daysBetween(from: Date, to: Date): number {
   const diffMs = to.getTime() - from.getTime();
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return Math.floor(diffMs / MS_PER_DAY);
 }
 
 // GET /api/deadlines?from=2026-01-01&to=2026-12-31

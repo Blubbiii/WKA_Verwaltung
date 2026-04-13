@@ -10,6 +10,7 @@
  */
 
 import { formatAmountFixed2 as formatAmount, formatDateISO as formatDate } from "@/lib/formatters";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 // ============================================================================
 // TYPES
@@ -373,7 +374,7 @@ export function generateXRechnungXml(data: XRechnungInvoiceData): string {
   // Payment terms section
   let paymentTermsXml = "";
   if (data.dueDate) {
-    const daysUntilDue = Math.max(0, Math.round((new Date(data.dueDate).getTime() - new Date(data.invoiceDate).getTime()) / (1000 * 60 * 60 * 24)));
+    const daysUntilDue = Math.max(0, Math.round((new Date(data.dueDate).getTime() - new Date(data.invoiceDate).getTime()) / MS_PER_DAY));
     paymentTermsXml = `
     <cac:PaymentTerms>
       <cbc:Note>Zahlbar innerhalb von ${daysUntilDue} Tagen</cbc:Note>

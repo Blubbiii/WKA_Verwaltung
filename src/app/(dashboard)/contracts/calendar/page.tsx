@@ -39,6 +39,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 interface ContractEvent {
   id: string;
@@ -95,7 +96,7 @@ export default function ContractsCalendarPage() {
         if (contract.endDate && contract.status !== "TERMINATED") {
           const endDate = new Date(contract.endDate);
           const daysRemaining = Math.ceil(
-            (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+            (endDate.getTime() - now.getTime()) / MS_PER_DAY
           );
 
           if (daysRemaining > -30 && daysRemaining <= 365) {
@@ -114,7 +115,7 @@ export default function ContractsCalendarPage() {
         if (contract.noticeDeadline && contract.status !== "TERMINATED") {
           const noticeDate = new Date(contract.noticeDeadline);
           const daysRemaining = Math.ceil(
-            (noticeDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+            (noticeDate.getTime() - now.getTime()) / MS_PER_DAY
           );
 
           if (daysRemaining > -30 && daysRemaining <= 365) {

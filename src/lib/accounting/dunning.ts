@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getTenantSettings, type TenantSettings } from "@/lib/tenant-settings";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 export interface DunningCandidate {
   invoiceId: string;
@@ -59,7 +60,7 @@ export function selectNextDunningLevel(
 export function computeOverdueDays(dueDate: Date, now: Date = new Date()): number {
   const diffMs = now.getTime() - dueDate.getTime();
   if (diffMs <= 0) return 0;
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return Math.floor(diffMs / MS_PER_DAY);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import type { ParsedTransaction, MatchResult } from "./types";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 /** Maximum days between transaction date and invoice due date for a medium match */
 const MEDIUM_MATCH_MAX_DAYS = 30;
@@ -151,8 +152,7 @@ function findByAmountAndDate(
     // Date proximity check
     if (inv.dueDate) {
       const daysDiff =
-        Math.abs(tx.date.getTime() - inv.dueDate.getTime()) /
-        (1000 * 60 * 60 * 24);
+        Math.abs(tx.date.getTime() - inv.dueDate.getTime()) / MS_PER_DAY;
 
       if (daysDiff <= MEDIUM_MATCH_MAX_DAYS) return inv;
     } else {

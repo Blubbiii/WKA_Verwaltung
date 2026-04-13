@@ -19,6 +19,7 @@ import type {
   PendingActionsSummary,
 } from "./reminder-types";
 import { DEFAULT_REMINDER_CONFIG } from "./reminder-types";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 const logger = jobLogger.child({ component: "reminder-service" });
 
@@ -319,7 +320,7 @@ export async function getPendingActionsSummary(
   const overdueCritical = overdueInvoices.filter((inv) => {
     if (!inv.dueDate) return false;
     const daysDiff = Math.floor(
-      (now.getTime() - inv.dueDate.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - inv.dueDate.getTime()) / MS_PER_DAY
     );
     return daysDiff > 30;
   }).length;
@@ -406,7 +407,7 @@ async function findOverdueInvoices(
     }) => {
       const daysOverdue = inv.dueDate
         ? Math.floor(
-            (now.getTime() - inv.dueDate.getTime()) / (1000 * 60 * 60 * 24)
+            (now.getTime() - inv.dueDate.getTime()) / MS_PER_DAY
           )
         : 0;
 
@@ -481,8 +482,7 @@ async function findExpiringContracts(
     }) => {
       const daysUntilExpiry = contract.endDate
         ? Math.floor(
-            (contract.endDate.getTime() - now.getTime()) /
-              (1000 * 60 * 60 * 24)
+            (contract.endDate.getTime() - now.getTime()) / MS_PER_DAY
           )
         : 0;
 
@@ -549,8 +549,7 @@ async function findOpenSettlements(
       park: { name: string };
     }) => {
       const daysOpen = Math.floor(
-        (now.getTime() - period.createdAt.getTime()) /
-          (1000 * 60 * 60 * 24)
+        (now.getTime() - period.createdAt.getTime()) / MS_PER_DAY
       );
 
       let urgency: ReminderUrgency = "info";

@@ -21,6 +21,7 @@ import { getRedisConnection } from "../connection";
 import { billingLogger } from "@/lib/logger";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { formatDate } from "@/lib/format";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 // =============================================================================
 // Types
@@ -646,7 +647,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
 
   // 4. Calculate days overdue and late fee
   const daysOverdue = invoice.dueDate
-    ? Math.floor((now.getTime() - invoice.dueDate.getTime()) / (1000 * 60 * 60 * 24))
+    ? Math.floor((now.getTime() - invoice.dueDate.getTime()) / MS_PER_DAY)
     : 0;
 
   // Load tenant settings for configurable dunning fees

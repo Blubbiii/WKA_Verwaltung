@@ -11,6 +11,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 type ContactLinkRow = {
   id: string;
@@ -122,7 +123,7 @@ function toNumber(v: Prisma.Decimal | number | null | undefined): number | null 
 function daysUntil(date: Date | null): number | null {
   if (!date) return null;
   const ms = date.getTime() - Date.now();
-  return Math.round(ms / (1000 * 60 * 60 * 24));
+  return Math.round(ms / MS_PER_DAY);
 }
 
 /**

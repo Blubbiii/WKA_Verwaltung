@@ -9,6 +9,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 const contractUpdateSchema = z.object({
   contractType: z
@@ -116,15 +117,14 @@ export async function GET(
     if (contract.endDate) {
       const now = new Date();
       daysUntilEnd = Math.ceil(
-        (contract.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        (contract.endDate.getTime() - now.getTime()) / MS_PER_DAY
       );
     }
 
     if (contract.noticeDeadline) {
       const now = new Date();
       daysUntilNotice = Math.ceil(
-        (contract.noticeDeadline.getTime() - now.getTime()) /
-          (1000 * 60 * 60 * 24)
+        (contract.noticeDeadline.getTime() - now.getTime()) / MS_PER_DAY
       );
     }
 

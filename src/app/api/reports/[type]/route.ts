@@ -5,6 +5,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 // GET /api/reports/[type] - Generate report data for a specific type
 export async function GET(
@@ -343,10 +344,10 @@ async function getExpiringContracts(tenantId: string) {
     },
     contracts: contracts.map((c) => {
       const daysUntilEnd = c.endDate
-        ? Math.ceil((c.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        ? Math.ceil((c.endDate.getTime() - now.getTime()) / MS_PER_DAY)
         : null;
       const daysUntilNotice = c.noticeDeadline
-        ? Math.ceil((c.noticeDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        ? Math.ceil((c.noticeDeadline.getTime() - now.getTime()) / MS_PER_DAY)
         : null;
 
       return {
