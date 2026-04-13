@@ -312,6 +312,8 @@ model Park {
 
   @@index([tenantId])
   @@index([deletedAt])
+  @@index([tenantId, deletedAt])
+  @@index([tenantId, createdAt(sort: Desc)])
   @@map("parks")
 }
 
@@ -502,6 +504,7 @@ model Fund {
   @@index([tenantId])
   @@index([fundCategoryId])
   @@index([deletedAt])
+  @@index([tenantId, deletedAt])
   @@map("funds")
 }
 
@@ -670,6 +673,7 @@ model Lease {
   @@index([status])
   @@index([tenantId])
   @@index([deletedAt])
+  @@index([tenantId, deletedAt])
   @@map("leases")
 }
 
@@ -715,6 +719,7 @@ model Contract {
   @@index([partnerId])
   @@index([status])
   @@index([deletedAt])
+  @@index([tenantId, deletedAt])
   @@map("contracts")
 }
 
@@ -776,6 +781,7 @@ model Document {
   @@index([turbineId])
   @@index([paperlessSyncStatus])
   @@index([deletedAt])
+  @@index([tenantId, deletedAt])
   @@map("documents")
 }
 
