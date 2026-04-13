@@ -4,7 +4,46 @@ All notable changes to WindparkManager.
 
 ## [Unreleased]
 
+### Added — April 2026 Audit-Refactor
+
+- **Structured API errors** (`src/lib/api-errors.ts`) — `apiError(code, status, opts)` helper with 25 stable error codes (NOT_FOUND, FORBIDDEN, VALIDATION_FAILED, etc.). Response format now `{ code, error, details? }` for client-side i18n.
+- **Client-side error translator** (`src/lib/api-error-client.ts`) — `translateApiError(res, t)` parses structured errors and returns localized messages via `useTranslations("apiErrors")`.
+- **Centralized config modules:**
+  - `src/lib/config/redis.ts` — `getBaseRedisOptions()` shared by cache, queue, and rate-limit (no more 3× duplicated URL parsing)
+  - `src/lib/config/pagination.ts` — `PAGE_SIZE_DEFAULT/LARGE/DROPDOWN/CSV_EXPORT/MAX` (env-overridable)
+- **`apiErrors` i18n namespace** — 25 keys in all 3 message files (de, en, de-personal)
+
+### Changed — April 2026 Audit-Refactor
+
+- **All 474 API routes refactored** to use `apiError()` (~1960 replacements, -4756 lines net via collapsing multi-line error returns)
+- **Internal helpers migrated** — `api-utils.ts` (`badRequest`, `notFound`, `forbidden`, `serverError`, `handleApiError`), `auth/withPermission.ts`, `auth/apiKeyAuth.ts`, `rate-limit.ts` all return via `apiError()` internally. Result: 252 indirect callers automatically benefit from structured errors.
+- **`apiError()` extended** with optional `headers` parameter for rate-limit `Retry-After` support.
+- **i18n converted** ~110 components to next-intl in 2 waves (~280 toast calls + dialogs + form labels). All toasts/dialogs/forms/buttons/tables now translated.
+- **i18n converted** ~72 dashboard pages (Contracts, Funds, Documents, Energy, Admin, GIS, Inbox, Portal, Service-Events, etc.). Pages are ~95% i18n-complete; remaining are redirect stubs.
+- **Mahngebühren bug fixed** — `billing.worker.ts` now reads `reminderFee1/2/3` from `TenantSettings` instead of hardcoded 5/10€ (overrode tenant config).
+- **Skonto defaults** in `invoices/new` now load from `TenantSettings.defaultSkontoPercent/Days` instead of hardcoded.
+- **Seed passwords** — `prisma/seed.ts` now reads from `SEED_SUPERADMIN_PASSWORD` / `SEED_DEMO_ADMIN_PASSWORD` env vars (defaults remain for dev).
+- **Backup script hardened** — `scripts/verify-backup.sh` no longer falls back to `devpassword`; requires `POSTGRES_PASSWORD` explicitly.
+
+### Removed — April 2026 Audit-Refactor
+
+- **Dead code** `src/lib/cache/api-cache.ts` (in-memory cache, never imported anywhere)
+- **21 unused imports** across API routes (mostly `apiLogger as logger` left over from API-Refactor, `z` in leases routes, `handleApiError` in onboarding, etc.)
+- **Several unused types/constants** — `DeliverBody`, `OperationalTaskStatus`, `ParkAvailRow`, `VALID_ROLES`, `eventTypeKeys`, `cellToString`
+- **7 unused `(err)` parameters** in catch blocks (anomalies page) — replaced with bare `catch {}`
+
+### Fixed — April 2026 Audit-Refactor
+
+- **All 72 ESLint warnings** — codebase now reports 0 errors, 0 warnings
+  - 32× `t` missing in useCallback/useEffect dep arrays (i18n migration follow-up)
+  - 21× unused vars / imports
+  - `service-events/page.tsx`: `events` array wrapped in `useMemo` (prevented stale dep arrays)
+  - `admin/roles/page.tsx` + `RoleManagement.tsx` + `load-config-dialog.tsx`: `fetchData` converted to `useCallback`
+  - `virtual-table.tsx`: TanStack Virtual library incompatibility suppressed with documented `eslint-disable-next-line`
+- **2 React Compiler errors** in energy import pages — `validateAndSelectFile` `useCallback` dependency missing `t`
+
 ### Added
+
 - **E2E Test Suite** — 247 Playwright tests across 19 files, 3 browsers (Chromium, Firefox, WebKit)
 - **Responsive Design Overhaul** — mobile, tablet, and desktop layouts across the entire application
 - **UX-Paket** — loading skeletons, error boundaries, bulk actions, inline editing

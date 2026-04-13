@@ -30,18 +30,42 @@ AUDIT & FIX      UX & WIZARDS     FINAL POLISH     SHP & KARTE      BF-ABRECHNUN
 Phase 14                                    Phase 15
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
 KOMMUNIKATION & UX                          BUCHHALTUNGS-PAKET
-✅ FERTIG                                   🔜 GEPLANT
+✅ FERTIG                                   ✅ FERTIG (komplett, alle 4 Phasen)
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
-• Benachrichtigungscenter (U2)              • DATEV-Export Enhanced (SKR03)
-• Serienbriefe / Mailing (K2)              • MT940/CAMT.054 Bank-Import
-• Paperless-ngx Integration                • Mahnwesen UI + E-Mail-Versand
-• Onboarding Product Tour (driver.js)      • SKR03 Kontenplan-Mapping
-• Park-Wizard Vereinfachung                 • Cost-Center Reports (Park-P&L)
-• Per-Turbine Pacht-Overrides              • Journal Entries (Manuell)
-• Cookie-Einstellungen                      • Demo-Request /register
-• Dashboard Footer                         • DATEV Enhanced (SKR03)
-• Scrollbar-Theming
-• Error-Detail-Surfacing
+• Benachrichtigungscenter (U2)              • SKR03 Kontenrahmen + Auto-Buchung
+• Serienbriefe / Mailing (K2)              • SuSa, BWA, UStVA, EÜR, GuV
+• Paperless-ngx Integration                • Bankimport (CSV / Multibanking)
+• Onboarding Product Tour (driver.js)      • Mahnwesen UI + E-Mail-Versand
+• Park-Wizard Vereinfachung                 • SKR03 Kontenplan-Mapping
+• Per-Turbine Pacht-Overrides              • Cost-Center Reports (Park-P&L)
+• Cookie-Einstellungen                      • SEPA-XML, AfA, Kassenbuch
+• Dashboard Footer                         • DATEV-Export, Jahresabschluss
+• Scrollbar-Theming                        • Quotes (Angebote→Rechnungen)
+• Error-Detail-Surfacing                   • Liquiditätsplanung, ZM/EU-Meldung
+
+Phase 16                                    Phase 17
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+i18n KOMPLETT-UMSTELLUNG                    AUDIT-REFACTOR + LINT-CLEANUP
+✅ FERTIG (April 2026)                      ✅ FERTIG (April 2026)
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+• ~150 Pages auf next-intl (95% complete)   • Hardcoded-Values-Audit (5 Kategorien)
+• ~110 Components konvertiert (~280 Toasts) • API Errors strukturiert (474 Routes)
+• 3 Locale-Files (de, en, de-personal)      • Mahngebühren-Bug gefixed
+• apiErrors namespace hinzugefügt           • Redis-URL zentralisiert (-3 Duplikate)
+• useTranslations in 162 Components         • Pagination zentralisiert (env-overridable)
+• `t` in useCallback/useEffect deps         • Lint: 72 → 0 Warnings, TypeScript: 0 Errors
+• Build verifiziert ✓ ~38s                  • Internal helpers (api-utils, withPermission) migriert
+
+Phase 18
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+GLASMORPHISMUS-THEME (Personio-Style)
+🚧 IN ARBEIT (April 2026)
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+• Warm Dark Background mit Gradient
+• Card-Component zentral auf Glas umgestellt (~200+ Cards betroffen)
+• Backdrop-Blur via CSS-Variables (--glass-bg, --glass-border, --glass-blur)
+• Sidebar/Header/Dialog/Popover Polish
+• Light/Dark Mode Tuning
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
 ```
 
@@ -51,22 +75,24 @@ KOMMUNIKATION & UX                          BUCHHALTUNGS-PAKET
 
 | Kategorie | Technologie | Version |
 |-----------|-------------|---------|
-| Framework | Next.js (App Router, Turbopack) | 15.5 |
-| Sprache | TypeScript | 5.x |
-| UI | React, Tailwind CSS, shadcn/ui | 19.x |
-| Datenbank | PostgreSQL + Prisma ORM | Prisma 6.x |
-| Auth | NextAuth.js (JWT, Sessions) | 5.x |
+| Framework | Next.js (App Router, Turbopack) | 16.2 |
+| Sprache | TypeScript | 6.x |
+| UI | React, Tailwind CSS, shadcn/ui | React 19, Tailwind 4.2, Radix v2 |
+| Datenbank | PostgreSQL + Prisma ORM | Prisma 7.5 |
+| Auth | NextAuth.js (JWT, Sessions) | 5.x (`AUTH_SECRET`) |
 | Queue | BullMQ + Redis (8 Queues, 8 Worker) | - |
 | Storage | S3/MinIO (Presigned URLs) | - |
 | E-Mail | SMTP/SendGrid/SES (Templates, Queue) | - |
 | PDF | React-PDF (@react-pdf/renderer) | - |
 | Karten | Leaflet + GeoJSON | - |
-| Charts | Recharts (12 CSS-Variablen) | - |
+| Charts | Recharts (12 CSS-Variablen) | 3.x |
 | Monitoring | Pino Logger, Sentry | - |
-| Testing | Vitest (Unit), Playwright (E2E) | - |
-| CI/CD | GitHub Actions | - |
+| Testing | Vitest (Unit), Playwright (E2E) | 247 E2E Tests in 19 Dateien |
+| CI/CD | GitHub Actions | Lint + tsc + Build + Tests |
 | Container | Docker, Traefik, Docker Compose | - |
-| i18n | next-intl (DE/EN) | - |
+| i18n | next-intl | DE (formell), DE (du), EN |
+| Lint/Quality | ESLint + React Compiler | **0 Errors, 0 Warnings** |
+| Node | Node.js | 24 |
 
 ---
 
@@ -699,86 +725,87 @@ prisma/
 
 ## Offene Punkte
 
-### Phase 15: Buchhaltungs-Paket
+### ✅ Phase 15: Buchhaltungs-Paket — KOMPLETT FERTIG (März 2026)
 
-Statt ERPNext zu integrieren, bauen wir die relevanten Buchhaltungsfunktionen
-nativ in WPM — eine Datenbank, kein externer Stack, direkt vermarktbar.
+Phase 15 wurde komplett umgesetzt — ERPNext wurde evaluiert und abgelehnt, alle Features
+sind nativ in WPM gebaut. Implementierung umfasst:
 
-**Strategische Grundlage:**
-ERPNext wurde evaluiert und abgelehnt (Datenbankkonflikt, zu komplex).
-Ideen werden nativ in WPM implementiert. Inspirationsquellen unten.
+- ✅ **SKR03 Kontenrahmen** + Auto-Buchung (Mandanten-konfigurierbar)
+- ✅ **DATEV-Export** mit echten SKR03-Kontonummern, GoBD-konform
+- ✅ **Bankimport** (CSV-Parser, Multibanking, BankAccount CRUD)
+- ✅ **Mahnwesen** mit BullMQ-Cron, 3 Stufen, PDF + E-Mail-Versand (Gebühren aus TenantSettings)
+- ✅ **SKR03 Kontenplan-Mapping** — Pacht→4210, Einspeisung→8400, AfA→4830 etc.
+- ✅ **SuSa, BWA, UStVA** — vollständige Steuerberichte
+- ✅ **EÜR (Cash-Basis)** mit BMF-Kennzahlen
+- ✅ **GuV** (HGB §275, Gesamtkostenverfahren)
+- ✅ **Cost-Center Reports** (Park-P&L, XLSX-Export)
+- ✅ **Budget Soll/Ist-Vergleich**
+- ✅ **Quotes** (Angebote→Rechnungen Workflow: DRAFT→SENT→ACCEPTED→INVOICED)
+- ✅ **Liquiditätsplanung** (Cashflow-Prognose mit recharts)
+- ✅ **SEPA-XML, AfA, Kassenbuch, Jahresabschluss**
+- ✅ **ZM/EU-Meldung** (BZSt-XML-Export)
+- ✅ **OCR Re-Trigger** für Inbox-Dokumente
+- ✅ **Journal Entries** (manuelle Soll/Haben-Buchungen)
 
----
-
-#### Tier 1 — Hoher Wert, ~4–6 Wochen:
-
-- [ ] **DATEV-Export Enhanced** — Buchungssätze mit echten SKR03-Kontonummern, GoBD-konform
-  - Steuerberater bekommt fertige DATEV-Datei statt Rohdaten
-  - **Inspiration:** [Kivitendo](https://github.com/kivitendo/kivitendo-erp) — deutscher Open-Source-ERP,
-    DATEV-Export seit 2003, SKR03 direkt im Source Code studieren (Perl, aber Logik übertragbar)
-  - **Inspiration:** Odoo `l10n_de` Modul — SKR03/SKR04 Kontenplan-Struktur
-  - DATEV-Format: Buchungstext, Kontonummer (4-stellig), Gegenkonto, Betrag, Datum, Belegnummer
-
-- [ ] **MT940/CAMT.054 Bank-Import** — Kontoauszug hochladen → automatisches Payment-Matching
-  - Zahlungseingang → Invoice Status `PAID` automatisch, kein manuelles Abgleichen
-  - **NPM-Paket direkt nutzen:** `npm install mt940js` — parst MT940 → JS-Objekte, kein Parser nötig!
-  - **CAMT.054:** Reines XML → standard Node.js XML-Parser reicht
-  - **UI-Inspiration:** [InvoiceNinja Banking](https://invoiceninja.github.io/en/banking/) —
-    Matched vs. Unmatched Transactions UI, Fuzzy-Matching auf Betrag + Datum + Referenz
-  - Matching-Logik: Betrag exakt + IBAN oder Verwendungszweck enthält Rechnungsnummer
-
-- [ ] **Mahnwesen UI + E-Mail-Versand** — Mahnstufen-Verwaltung, PDF-Mahnschreiben, direkter E-Mail-Versand
-  - Vollständiger Dunning-Workflow ohne externe Tools
-  - **UI-Inspiration:** [InvoiceNinja Reminders](https://invoiceninja.com/invoicing/) —
-    3 Stufen (First/Second/Third + Endless), Tage vor/nach Fälligkeit konfigurierbar
-  - **Design-Inspiration:** [Crater](https://github.com/crater-invoice-inc/crater) — cleane Stage-Cards
-  - WPM-Umsetzung: BullMQ-Cron prüft täglich, erzeugt DunningNotice Model, PDF + E-Mail-Queue
-  - 3 Stufen: Zahlungserinnerung (0€ Gebühr) → 1. Mahnung (5€) → 2. Mahnung (15€ + Verzugszins)
-
-- [ ] **SKR03 Kontenplan-Mapping** — WPM-Transaktionen erhalten echte Kontonummern
-  - Pacht→4210, Einspeisung→8400, AfA→4830 (konfigurierbar je Mandant)
-  - **Quelle:** [Kivitendo SKR03](https://github.com/kivitendo/kivitendo-erp) Source + DATEV-Offizial-Doku
-  - Relevante WPM-Konten: Einspeisung 8400, Direktvermarktung 8338, Pachtaufwand 4210,
-    Wartung/Service 4950, Abschreibung 4830, Verwaltung BF 4120, Vorsteuer 1576, MwSt 1776
+Architektur: Feature-Flag `accounting.enabled`, 8+ Prisma-Models, 30+ API-Routes, 16 granulare
+Feature-Flags für Upselling.
 
 ---
 
-#### Tier 2 — Mittlerer Wert, ~6–8 Wochen nach Tier 1:
+### ✅ Phase 16: i18n-Komplettumstellung (April 2026)
 
-- [ ] **Cost-Center Reports (Park-P&L)** — Einnahmen vs. Ausgaben je Park, exportierbar als XLSX
-  - Windpark-Controller brauchen das täglich
-  - **Inspiration:** [hledger](https://hledger.org/) — Web-UI + JSON-API für Cost-Center-Reports,
-    Einnahmen/Ausgaben-Struktur je Periode und Kostenstelle
-  - WPM: Jeder Park = Cost Center, Buchungen aus Settlements + Invoices + Service-Events
-
-- [ ] **Journal Entries (Manuelle Buchungen)** — Einfache Soll/Haben-Buchungen mit SKR03
-  - Korrekturbuchungen ohne Steuerberater-Software
-  - **Inspiration:** [hledger Web-UI](https://hledger.org/) — minimale Eingabemaske Soll/Haben
-  - **Inspiration:** [LedgerSMB](https://ledgersmb.org/) — wie manuelle GL-Einträge validiert werden
-  - Neues Prisma-Model: `JournalEntry` (date, description, debit_account, credit_account, amount, tenantId)
-
-- [ ] **DATEV Buchungssätze vollständig** — Alle Buchungstypen → vollständige GoBD-DATEV-Übergabe
+- ~150 Dashboard-Pages auf `next-intl` umgestellt (~95% complete, Rest sind Redirect-Stubs)
+- ~110 Components konvertiert (alle Toasts, Dialogs, Forms, Buttons, Tables, Errors durch)
+- 3 Message-Files: `de.json`, `en.json`, `de-personal.json` (du-form)
+- 162 Components nutzen `useTranslations`
+- `apiErrors` Namespace mit 25 Codes für strukturierte Error-Translation
+- Build verifiziert ✓ ~38s
 
 ---
 
-#### Bereits umgesetzt:
+### ✅ Phase 17: Audit-Refactor + Lint-Cleanup (April 2026)
 
-- [x] **Demo-Request `/register`** — Marketing-Formular, POST `/api/demo-request`, Success-State
-  - `src/app/(marketing)/register/page.tsx` + `src/app/api/demo-request/route.ts`
+**Hardcoded-Values-Audit** über die gesamte Codebase, 5 Kategorien geprüft, alle Findings umgesetzt:
+
+**Quick Wins:**
+- Redis-URL parsing zentralisiert in `src/lib/config/redis.ts` (cache, queue, rate-limit)
+- Mahngebühren-Bug gefixed: `billing.worker.ts` nutzt jetzt TenantSettings statt hardcoded
+- Toter Code entfernt: `src/lib/cache/api-cache.ts`
+- Seed-Passwörter via env-vars (`SEED_SUPERADMIN_PASSWORD`, `SEED_DEMO_ADMIN_PASSWORD`)
+- `verify-backup.sh`: insecure devpassword-Fallback entfernt
+- Pagination zentralisiert in `src/lib/config/pagination.ts` (env-overridable)
+- Skonto-Defaults aus TenantSettings statt hardcoded
+
+**API Error Codes Refactor (großer Refactor):**
+- Neue Library `src/lib/api-errors.ts` mit `apiError(code, status, opts)` Helper
+- 25 stable Error-Codes (NOT_FOUND, FORBIDDEN, VALIDATION_FAILED, etc.)
+- Client-Helper `translateApiError(res, t)` für Übersetzung
+- **474 API-Routes refactored**, ~1960 Replacements
+- Internal helpers (api-utils, withPermission, apiKeyAuth, rate-limit) ebenfalls migriert
+- Code-Reduktion: -4756 Zeilen netto
+
+**Lint-Cleanup:**
+- 72 → **0 ESLint Warnings**, 0 Errors
+- 32× `t` zu useCallback/useEffect Dep-Arrays hinzugefügt
+- 21 unused imports/vars entfernt
+- `service-events`: `events` mit `useMemo` gewrappt
+- `RoleManagement` etc.: `fetchData` zu `useCallback` umgestellt
+- Build verifiziert ✓ ~38s
 
 ---
 
-#### Referenz-Links für die Umsetzung:
+### 🚧 Phase 18: Glasmorphismus-Theme (Personio-Style) — IN ARBEIT
 
-| Feature | Tool | Link |
-|---------|------|------|
-| DATEV-Format + SKR03 | Kivitendo (Open Source ERP DE) | https://github.com/kivitendo/kivitendo-erp |
-| MT940 Parser | mt940js (npm) | https://www.npmjs.com/package/mt940js |
-| Bank-Import UI | InvoiceNinja Banking | https://invoiceninja.github.io/en/banking/ |
-| Mahnwesen UI | InvoiceNinja Invoicing | https://invoiceninja.com/invoicing/ |
-| Dunning Design | Crater (Open Source) | https://github.com/crater-invoice-inc/crater |
-| Cost-Center / P&L | hledger | https://hledger.org/ |
-| Journal Entries | hledger + LedgerSMB | https://ledgersmb.org/ |
+Inspiration: Personio-App (warmer dunkler Hintergrund mit Verlauf, halbtransparente Cards mit
+Backdrop-Blur, "schwebende" Optik).
+
+- [ ] **Foundation** (~30 min) — Body-Gradient, CSS-Variables `--glass-bg/border/blur`, `.glass-card` Utility
+- [ ] **Card-Component zentral** (~30 min) — `<Card>` umstellen, betrifft 200+ Cards automatisch
+- [ ] **Layout-Polish** (~1h) — Sidebar, Header, Dialog, Popover, Dropdown auf Glas
+- [ ] **Tuning** (~1h) — Visual Review, Light-Mode anpassen, Performance-Check (`backdrop-blur` ist GPU-intensiv)
+
+**Worauf achten:** Maps/GIS dürfen nicht mit Glas überlagert werden. Form-Inputs brauchen klaren
+Background. Light Mode bleibt subtiler (Glas funktioniert in Dark Mode am besten).
 
 ### Weitere offene Features (Backlog)
 
@@ -857,6 +884,65 @@ Das Rechnungssystem ist funktional komplett mit anpassbaren Vorlagen:
 ---
 
 ## Aenderungshistorie
+
+### 13. April 2026 — Phase 17: Audit-Refactor + Lint-Cleanup
+
+**Hardcoded-Values-Audit (5 Kategorien):**
+- Components mit hardcoded German (~58k Strings, davon Toasts/Dialogs priorisiert)
+- API Error Messages (526 in 467 Routes — alle migriert)
+- Magic Numbers + Business Config (15 kritische, alle gefixt)
+- Hardcoded URLs/IPs/Ports (15 Funde, fast alle mit env-fallback)
+- Secrets/Credentials (3 Medium-Findings, alle behoben)
+
+**API Errors (großer Refactor):**
+- `src/lib/api-errors.ts` mit `apiError()` Helper + 25 stable Codes
+- 474 API-Routes auf strukturierte Errors umgestellt (~1960 Replacements)
+- Response-Format `{ code, error, details? }` für Client-i18n
+- `src/lib/api-error-client.ts` mit `translateApiError(res, t)`
+- Helper in api-utils, withPermission, apiKeyAuth, rate-limit migriert (252 indirekte Aufrufer profitieren)
+- Code-Reduktion: -4756 Zeilen netto
+
+**Quick Wins:**
+- Redis-URL zentralisiert (`src/lib/config/redis.ts`, 3 Duplikate weg)
+- Mahngebühren-Bug: `billing.worker.ts` nutzt jetzt TenantSettings
+- Pagination zentralisiert (env-overridable)
+- Toter Code: `src/lib/cache/api-cache.ts` gelöscht
+- Seed-Passwörter via env-vars
+- `verify-backup.sh` devpassword-Fallback entfernt
+
+**Lint-Cleanup (72 → 0 Warnings):**
+- 32× `t` in useCallback/useEffect Dep-Arrays
+- 21× unused imports (`logger`, `z`, types)
+- 7× unused `(err)` parameters → bare catch
+- `RoleManagement` + `admin/roles`: `fetchData` zu `useCallback`
+- `service-events`: `events` mit `useMemo` gewrappt
+- `virtual-table`: TanStack-Inkompatibilität dokumentiert/suppressed
+
+**Verbindliche Patterns für neue Features:**
+- Siehe `~/.claude/projects/.../memory/feedback_new_feature_patterns.md`
+- ALLE neuen API-Routes MÜSSEN `apiError()` verwenden
+- ALLE neuen Components MÜSSEN i18n von Anfang an haben
+- ALLE neuen Pages MÜSSEN das `useCallback + useEffect`-Pattern für fetchData verwenden
+
+**Verifikation:**
+- Lint: 0 Errors, 0 Warnings
+- TypeScript: 0 Errors
+- Build: ✓ ~38s
+- Commits: e7b12be, 7442326, 65d08c8, 81f25ab, 5717b1d, ead0ef7, 54b7ec2, aa597ab, 58ee448, 29f1f98
+
+### 12. April 2026 — Phase 16: i18n-Komplettumstellung
+
+**i18n in 7 Phasen:**
+- Phase 1-2: CRM, Wirtschaftsplan, Buchhaltung, Leases, Invoices
+- Phase 3: Admin, Energy, Management-Billing, Parks, Portal (28 Seiten)
+- Phase 4: Contracts, Funds, JSON-Fixes
+- Phase 5: Documents, Energy Rest
+- Phase 6: Admin Rest
+- Phase 7: GIS, Inbox, Portal Rest, Sonstige
+- Component-Phase 1+2: ~110 Components, ~280 Toast-Calls, alle Dialogs
+
+**Ergebnis:** ~150 Pages + 162 Components nutzen `useTranslations`, 3 Locale-Files vollständig.
+JSON-Syntaxfehler in de.json + de-personal.json behoben (von parallelen Agents verursacht).
 
 ### 1. März 2026 — Phase 0 & Phase 15 Planung: ERPNext-Analyse + Buchhaltungs-Paket
 
