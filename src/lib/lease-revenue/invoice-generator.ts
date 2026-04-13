@@ -115,23 +115,25 @@ export function getServicePeriodDates(
   advanceInterval: string | null,
   month: number | null
 ): { start: Date; end: Date } {
+  // UTC-based construction: vermeidet off-by-1-hour bei DST-Übergängen und
+  // sorgt für identisches Ergebnis ob der Server in Europe/Berlin oder UTC läuft.
   if (periodType === "ADVANCE" && advanceInterval === "QUARTERLY" && month != null) {
     const quarter = Math.ceil(month / 3);
     const startMonth = (quarter - 1) * 3; // 0-indexed
     return {
-      start: new Date(year, startMonth, 1),
-      end: new Date(year, startMonth + 3, 0), // last day of quarter
+      start: new Date(Date.UTC(year, startMonth, 1)),
+      end: new Date(Date.UTC(year, startMonth + 3, 0)), // last day of quarter
     };
   }
   if (periodType === "ADVANCE" && advanceInterval === "MONTHLY" && month != null) {
     return {
-      start: new Date(year, month - 1, 1),
-      end: new Date(year, month, 0), // last day of month
+      start: new Date(Date.UTC(year, month - 1, 1)),
+      end: new Date(Date.UTC(year, month, 0)), // last day of month
     };
   }
   return {
-    start: new Date(year, 0, 1),
-    end: new Date(year, 11, 31),
+    start: new Date(Date.UTC(year, 0, 1)),
+    end: new Date(Date.UTC(year, 11, 31)),
   };
 }
 

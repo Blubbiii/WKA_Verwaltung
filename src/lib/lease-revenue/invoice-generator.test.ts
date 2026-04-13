@@ -241,70 +241,86 @@ describe("buildFundName", () => {
 // ============================================================
 
 describe("getServicePeriodDates", () => {
+  // Uses Date.UTC construction to be DST-safe and timezone-independent.
+  // Expected dates below are always UTC-anchored (e.g. 2025-01-01T00:00:00Z).
+  const utc = (y: number, m: number, d: number) => new Date(Date.UTC(y, m, d));
+
   it("returns Q1 range for ADVANCE + QUARTERLY month 1-3", () => {
     const q1 = getServicePeriodDates(2025, "ADVANCE", "QUARTERLY", 2);
-    expect(q1.start).toEqual(new Date(2025, 0, 1));
-    expect(q1.end).toEqual(new Date(2025, 2, 31)); // March 31
+    expect(q1.start).toEqual(utc(2025, 0, 1));
+    expect(q1.end).toEqual(utc(2025, 2, 31));
   });
 
   it("returns Q2 range for month 4-6", () => {
     const q2 = getServicePeriodDates(2025, "ADVANCE", "QUARTERLY", 5);
-    expect(q2.start).toEqual(new Date(2025, 3, 1)); // April 1
-    expect(q2.end).toEqual(new Date(2025, 5, 30)); // June 30
+    expect(q2.start).toEqual(utc(2025, 3, 1));
+    expect(q2.end).toEqual(utc(2025, 5, 30));
   });
 
   it("returns Q3 range for month 7-9", () => {
     const q3 = getServicePeriodDates(2025, "ADVANCE", "QUARTERLY", 9);
-    expect(q3.start).toEqual(new Date(2025, 6, 1)); // July 1
-    expect(q3.end).toEqual(new Date(2025, 8, 30)); // September 30
+    expect(q3.start).toEqual(utc(2025, 6, 1));
+    expect(q3.end).toEqual(utc(2025, 8, 30));
   });
 
   it("returns Q4 range for month 10-12", () => {
     const q4 = getServicePeriodDates(2025, "ADVANCE", "QUARTERLY", 12);
-    expect(q4.start).toEqual(new Date(2025, 9, 1)); // October 1
-    expect(q4.end).toEqual(new Date(2025, 11, 31)); // December 31
+    expect(q4.start).toEqual(utc(2025, 9, 1));
+    expect(q4.end).toEqual(utc(2025, 11, 31));
   });
 
   it("handles leap year February correctly (MONTHLY)", () => {
     const feb2024 = getServicePeriodDates(2024, "ADVANCE", "MONTHLY", 2);
-    expect(feb2024.start).toEqual(new Date(2024, 1, 1));
-    expect(feb2024.end).toEqual(new Date(2024, 1, 29)); // leap year
+    expect(feb2024.start).toEqual(utc(2024, 1, 1));
+    expect(feb2024.end).toEqual(utc(2024, 1, 29));
   });
 
   it("handles non-leap year February correctly (MONTHLY)", () => {
     const feb2025 = getServicePeriodDates(2025, "ADVANCE", "MONTHLY", 2);
-    expect(feb2025.start).toEqual(new Date(2025, 1, 1));
-    expect(feb2025.end).toEqual(new Date(2025, 1, 28));
+    expect(feb2025.start).toEqual(utc(2025, 1, 1));
+    expect(feb2025.end).toEqual(utc(2025, 1, 28));
   });
 
   it("returns January range for MONTHLY month 1", () => {
     const jan = getServicePeriodDates(2025, "ADVANCE", "MONTHLY", 1);
-    expect(jan.start).toEqual(new Date(2025, 0, 1));
-    expect(jan.end).toEqual(new Date(2025, 0, 31));
+    expect(jan.start).toEqual(utc(2025, 0, 1));
+    expect(jan.end).toEqual(utc(2025, 0, 31));
   });
 
   it("returns December range for MONTHLY month 12", () => {
     const dec = getServicePeriodDates(2025, "ADVANCE", "MONTHLY", 12);
-    expect(dec.start).toEqual(new Date(2025, 11, 1));
-    expect(dec.end).toEqual(new Date(2025, 11, 31));
+    expect(dec.start).toEqual(utc(2025, 11, 1));
+    expect(dec.end).toEqual(utc(2025, 11, 31));
   });
 
   it("returns full year for FINAL period type", () => {
     const result = getServicePeriodDates(2025, "FINAL", null, null);
-    expect(result.start).toEqual(new Date(2025, 0, 1));
-    expect(result.end).toEqual(new Date(2025, 11, 31));
+    expect(result.start).toEqual(utc(2025, 0, 1));
+    expect(result.end).toEqual(utc(2025, 11, 31));
   });
 
   it("returns full year for ADVANCE + YEARLY", () => {
     const result = getServicePeriodDates(2025, "ADVANCE", "YEARLY", null);
-    expect(result.start).toEqual(new Date(2025, 0, 1));
-    expect(result.end).toEqual(new Date(2025, 11, 31));
+    expect(result.start).toEqual(utc(2025, 0, 1));
+    expect(result.end).toEqual(utc(2025, 11, 31));
   });
 
   it("falls back to full year when month missing for QUARTERLY", () => {
     const result = getServicePeriodDates(2025, "ADVANCE", "QUARTERLY", null);
-    expect(result.start).toEqual(new Date(2025, 0, 1));
-    expect(result.end).toEqual(new Date(2025, 11, 31));
+    expect(result.start).toEqual(utc(2025, 0, 1));
+    expect(result.end).toEqual(utc(2025, 11, 31));
+  });
+
+  it("is timezone-independent (DST transition March 2025)", () => {
+    // 2025-03-30: CET→CEST wechsel. Bei lokaler Zeit würde Q1-Ende um 1h shiften.
+    const q1 = getServicePeriodDates(2025, "ADVANCE", "QUARTERLY", 3);
+    expect(q1.end.toISOString()).toBe("2025-03-31T00:00:00.000Z");
+  });
+
+  it("is timezone-independent (DST transition October 2025)", () => {
+    // 2025-10-26: CEST→CET wechsel.
+    const q4 = getServicePeriodDates(2025, "ADVANCE", "QUARTERLY", 10);
+    expect(q4.start.toISOString()).toBe("2025-10-01T00:00:00.000Z");
   });
 });
 

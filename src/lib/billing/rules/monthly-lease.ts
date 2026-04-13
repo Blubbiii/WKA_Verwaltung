@@ -46,23 +46,28 @@ export function calculateProrationFactor(
   leaseStartDate: Date,
   leaseEndDate: Date | null
 ): number {
-  // First day of the billing month
-  const monthStart = new Date(year, month - 1, 1);
-  // Last day of the billing month (day 0 of next month = last day of current month)
-  const monthEnd = new Date(year, month, 0);
-  const totalDaysInMonth = monthEnd.getDate();
+  // UTC-basierte Konstruktion verhindert DST-Drift und macht das Ergebnis
+  // server-zeitzone-unabhängig (entscheidend für identische Proration
+  // zwischen Docker UTC und lokaler Entwicklung).
+  const monthStart = new Date(Date.UTC(year, month - 1, 1));
+  const monthEnd = new Date(Date.UTC(year, month, 0)); // last day of billing month
+  const totalDaysInMonth = monthEnd.getUTCDate();
 
-  // Normalize lease dates to date-only (strip time component)
+  // Normalize lease dates to UTC date-only (strip time component)
   const leaseStart = new Date(
-    leaseStartDate.getFullYear(),
-    leaseStartDate.getMonth(),
-    leaseStartDate.getDate()
+    Date.UTC(
+      leaseStartDate.getUTCFullYear(),
+      leaseStartDate.getUTCMonth(),
+      leaseStartDate.getUTCDate()
+    )
   );
   const leaseEnd = leaseEndDate
     ? new Date(
-        leaseEndDate.getFullYear(),
-        leaseEndDate.getMonth(),
-        leaseEndDate.getDate()
+        Date.UTC(
+          leaseEndDate.getUTCFullYear(),
+          leaseEndDate.getUTCMonth(),
+          leaseEndDate.getUTCDate()
+        )
       )
     : null;
 
@@ -79,12 +84,12 @@ export function calculateProrationFactor(
   // Determine the effective start day within this month
   // If lease starts before or on the 1st of this month, effective start = 1
   const effectiveStartDay =
-    leaseStart <= monthStart ? 1 : leaseStart.getDate();
+    leaseStart <= monthStart ? 1 : leaseStart.getUTCDate();
 
   // Determine the effective end day within this month
   // If lease has no end date or ends after/on the last day, effective end = last day
   const effectiveEndDay =
-    !leaseEnd || leaseEnd >= monthEnd ? totalDaysInMonth : leaseEnd.getDate();
+    !leaseEnd || leaseEnd >= monthEnd ? totalDaysInMonth : leaseEnd.getUTCDate();
 
   // Calculate billable days (inclusive of both start and end day)
   const billableDays = effectiveEndDay - effectiveStartDay + 1;
