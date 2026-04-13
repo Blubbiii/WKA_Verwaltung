@@ -274,7 +274,7 @@ function FileUploadStep({
     }
 
     onFileSelect(selectedFile);
-  }, [onFileSelect]);
+  }, [onFileSelect, t]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
