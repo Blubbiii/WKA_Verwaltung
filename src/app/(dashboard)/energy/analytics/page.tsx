@@ -30,32 +30,30 @@ import { Button } from "@/components/ui/button";
 
 // Lazy-load the large tab components (each > 500 LoC) — only the active tab
 // is hydrated. Cuts initial JS bundle significantly on first analytics load.
-const TabSkeleton = () => <Skeleton className="w-full h-[400px]" />;
-const DYNAMIC_OPTS = { ssr: false, loading: () => <TabSkeleton /> };
-
+// next/dynamic requires options as an inline object literal (SWC restriction).
 const DataExplorerTab = dynamic(
   () => import("@/components/energy/analytics/data-explorer-tab").then((m) => m.DataExplorerTab),
-  DYNAMIC_OPTS,
+  { ssr: false, loading: () => <Skeleton className="w-full h-[400px]" /> },
 );
 const DataComparisonTab = dynamic(
   () => import("@/components/energy/analytics/data-comparison-tab").then((m) => m.DataComparisonTab),
-  DYNAMIC_OPTS,
+  { ssr: false, loading: () => <Skeleton className="w-full h-[400px]" /> },
 );
 const PdfReportsTab = dynamic(
   () => import("@/components/energy/analytics/pdf-reports-tab").then((m) => m.PdfReportsTab),
-  DYNAMIC_OPTS,
+  { ssr: false, loading: () => <Skeleton className="w-full h-[400px]" /> },
 );
 const ReportArchiveTab = dynamic(
   () => import("@/components/energy/analytics/report-archive-tab").then((m) => m.ReportArchiveTab),
-  DYNAMIC_OPTS,
+  { ssr: false, loading: () => <Skeleton className="w-full h-[400px]" /> },
 );
 const ReportConfigsTab = dynamic(
   () => import("@/components/energy/analytics/report-configs-tab").then((m) => m.ReportConfigsTab),
-  DYNAMIC_OPTS,
+  { ssr: false, loading: () => <Skeleton className="w-full h-[400px]" /> },
 );
 const ReportBuilderTab = dynamic(
   () => import("@/components/energy/analytics/report-builder-tab").then((m) => m.ReportBuilderTab),
-  DYNAMIC_OPTS,
+  { ssr: false, loading: () => <Skeleton className="w-full h-[400px]" /> },
 );
 import type {
   PerformanceOverviewResponse,
