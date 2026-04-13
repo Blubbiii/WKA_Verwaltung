@@ -243,9 +243,9 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Pachtvertrag nicht gefunden" });
     }
 
-    // Perform the deletion
+    // Perform the deletion — scoped to tenantId to prevent TOCTOU
     await prisma.lease.delete({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
     });
 
     // Log the deletion (deferred: runs after response is sent)

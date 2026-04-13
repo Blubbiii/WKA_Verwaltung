@@ -336,9 +336,9 @@ export async function DELETE(
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Park hat noch Verträge und kann nicht gelöscht werden. Bitte zuerst alle Verträge entfernen." });
     }
 
-    // Hard-Delete: Park unwiderruflich löschen
+    // Hard-Delete: Park unwiderruflich löschen — scoped to tenantId
     await prisma.park.delete({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
     });
 
     // Log the deletion for audit trail (deferred: runs after response is sent)

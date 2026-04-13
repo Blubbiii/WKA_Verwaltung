@@ -277,7 +277,7 @@ export async function PUT(
     }
 
     const contract = await prisma.contract.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: updateData,
       include: {
         park: { select: { id: true, name: true } },
@@ -335,9 +335,9 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Vertrag nicht gefunden" });
     }
 
-    // Perform the deletion
+    // Perform the deletion — scoped to tenantId to prevent TOCTOU
     await prisma.contract.delete({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
     });
 
     // Log the deletion (deferred: runs after response is sent)

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
             );
           }
           await prisma.invoice.update({
-            where: { id },
+            where: { id, tenantId: check.tenantId! },
             data: { status: "SENT", sentAt: new Date() },
           });
           break;
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
             );
           }
           await prisma.invoice.update({
-            where: { id },
+            where: { id, tenantId: check.tenantId! },
             data: { status: "SENT", sentAt: new Date() },
           });
           break;
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
             throw new Error("Rechnung ist bereits storniert");
           }
           await prisma.invoice.update({
-            where: { id },
+            where: { id, tenantId: check.tenantId! },
             data: { status: "CANCELLED" },
           });
           break;

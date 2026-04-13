@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
           throw new Error("Dokument ist bereits archiviert");
         }
         await prisma.document.update({
-          where: { id },
+          where: { id, tenantId: check.tenantId! },
           data: { isArchived: true },
         });
       } else if (action === "delete") {
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
           );
         }
         await prisma.document.update({
-          where: { id },
+          where: { id, tenantId: check.tenantId! },
           data: {
             approvalStatus: targetStatus[action] as "APPROVED" | "PUBLISHED",
             reviewedById: check.userId,
