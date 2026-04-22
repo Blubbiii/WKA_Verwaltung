@@ -1294,8 +1294,25 @@ async function processRecurringInvoicesJob(data: ProcessRecurringInvoicesJobData
 
 /**
  * Verarbeitet einen Billing-Job
+ *
+ * Läuft innerhalb eines Request-Context damit alle Logger im Call-Stack
+ * (billingLogger, apiLogger, notifications etc.) automatisch jobId/tenantId
+ * als correlation-IDs mitloggen.
  */
 async function processBillingJob(job: Job<BillingJobData, BillingJobResult>): Promise<BillingJobResult> {
+  const { withRequestContext, generateRequestId } = await import("@/lib/request-context");
+  return withRequestContext(
+    {
+      requestId: generateRequestId(),
+      tenantId: job.data.tenantId,
+      jobId: job.data.jobId || job.id || undefined,
+      queueName: "billing",
+    },
+    () => processBillingJobInner(job),
+  );
+}
+
+async function processBillingJobInner(job: Job<BillingJobData, BillingJobResult>): Promise<BillingJobResult> {
   const { data } = job;
   const jobId = data.jobId || job.id || "unknown";
 

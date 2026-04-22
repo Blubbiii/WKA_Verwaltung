@@ -1,10 +1,30 @@
 import pino from "pino";
+import { getRequestContext } from "./request-context";
 
 const isProduction = process.env.NODE_ENV === "production";
 const logLevel = process.env.LOG_LEVEL || (isProduction ? "info" : "debug");
 
+/**
+ * Pino mixin — runs on every log call and merges the current request
+ * context fields (requestId, tenantId, userId, jobId) into the event.
+ * This means every log line automatically carries correlation IDs
+ * without explicit wiring in each caller.
+ */
+function requestContextMixin() {
+  const ctx = getRequestContext();
+  if (!ctx) return {};
+  return {
+    ...(ctx.requestId && { requestId: ctx.requestId }),
+    ...(ctx.tenantId && { tenantId: ctx.tenantId }),
+    ...(ctx.userId && { userId: ctx.userId }),
+    ...(ctx.jobId && { jobId: ctx.jobId }),
+    ...(ctx.queueName && { queue: ctx.queueName }),
+  };
+}
+
 export const logger = pino({
   level: logLevel,
+  mixin: requestContextMixin,
   ...(isProduction
     ? {
         // Production: compact JSON for Docker/Portainer log aggregation.
