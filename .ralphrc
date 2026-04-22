@@ -10,7 +10,7 @@ PROJECT_TYPE="typescript"
 # If "claude" is not in your PATH, set to your installation:
 #   "npx @anthropic-ai/claude-code"  (uses npx, no global install needed)
 #   "/path/to/claude"                (custom path)
-CLAUDE_CODE_CMD="npx @anthropic-ai/claude-code"
+CLAUDE_CODE_CMD="/c/Users/xept/.vscode/extensions/anthropic.claude-code-2.1.117-win32-x64/resources/native-binary/claude.exe"
 
 # Loop settings
 MAX_CALLS_PER_HOUR=100
