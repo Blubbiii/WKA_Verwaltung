@@ -16,6 +16,22 @@ const eslintConfig = [
       "react-hooks/exhaustive-deps": "warn",
       // prefer-const is a warning
       "prefer-const": "warn",
+
+      // ── React Compiler rules (eslint-plugin-react-hooks v7.1+) ──────────
+      // These rules ship enabled-by-default with eslint-config-next 16.2.6+
+      // and target codebases adopting the React Compiler. WPM runs React 19
+      // WITHOUT the React Compiler, so they produce false-positive noise on
+      // established patterns (e.g. the documented fetchData()→setState() in
+      // useEffect data-loading pattern flags `set-state-in-effect` 180+ times).
+      // Disabled until/unless React Compiler is adopted; re-enable then.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/incompatible-library": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/static-components": "off",
+      "react-hooks/set-state-in-render": "off",
     },
   },
   {

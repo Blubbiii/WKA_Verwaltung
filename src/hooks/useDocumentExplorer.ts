@@ -68,13 +68,13 @@ export function useDocumentExplorer() {
 
   // Load tree on mount
   useEffect(() => {
-    fetchTree(); // eslint-disable-line react-hooks/set-state-in-effect
+    fetchTree();
   }, [fetchTree]);
 
   // Load files when active path changes
   useEffect(() => {
     if (activePath) {
-      fetchFiles(activePath, 1); // eslint-disable-line react-hooks/set-state-in-effect
+      fetchFiles(activePath, 1);
     } else {
       setFiles([]);  
       setPagination({ page: 1, limit: 20, total: 0, totalPages: 0 });  
