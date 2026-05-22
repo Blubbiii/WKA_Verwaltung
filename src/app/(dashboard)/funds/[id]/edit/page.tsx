@@ -336,7 +336,7 @@ export default function EditFundPage({
                             disabled={(date) => date > new Date()}
                             startMonth={new Date(1980, 0)}
                             endMonth={new Date()}
-                            initialFocus
+                            autoFocus
                           />
                         </PopoverContent>
                       </Popover>

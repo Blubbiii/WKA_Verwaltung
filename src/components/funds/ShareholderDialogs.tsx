@@ -601,7 +601,7 @@ function AddShareholderDialog({
                       mode="single"
                       selected={entryDate}
                       onSelect={setEntryDate}
-                      initialFocus
+                      autoFocus
                     />
                   </PopoverContent>
                 </Popover>
@@ -846,7 +846,7 @@ function EditShareholderDialog({
                     mode="single"
                     selected={entryDate}
                     onSelect={setEntryDate}
-                    initialFocus
+                    autoFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -865,7 +865,7 @@ function EditShareholderDialog({
                     mode="single"
                     selected={exitDate}
                     onSelect={setExitDate}
-                    initialFocus
+                    autoFocus
                   />
                 </PopoverContent>
               </Popover>

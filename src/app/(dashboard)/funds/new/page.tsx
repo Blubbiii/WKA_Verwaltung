@@ -220,7 +220,7 @@ export default function NewFundPage() {
                             selected={field.value || undefined}
                             onSelect={field.onChange}
                             disabled={(date) => date > new Date()}
-                            initialFocus
+                            autoFocus
                           />
                         </PopoverContent>
                       </Popover>

@@ -461,7 +461,7 @@ export default function NewProxyPage() {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={field.onChange}
-                                initialFocus
+                                autoFocus
                               />
                             </PopoverContent>
                           </Popover>
@@ -500,7 +500,7 @@ export default function NewProxyPage() {
                                 mode="single"
                                 selected={field.value || undefined}
                                 onSelect={field.onChange}
-                                initialFocus
+                                autoFocus
                               />
                             </PopoverContent>
                           </Popover>

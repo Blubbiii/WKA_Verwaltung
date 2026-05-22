@@ -275,7 +275,7 @@ export default function NewVotePage() {
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            initialFocus
+                            autoFocus
                           />
                         </PopoverContent>
                       </Popover>
@@ -317,7 +317,7 @@ export default function NewVotePage() {
                             disabled={(date) =>
                               form.getValues("startDate") && date < form.getValues("startDate")
                             }
-                            initialFocus
+                            autoFocus
                           />
                         </PopoverContent>
                       </Popover>
