@@ -68,3 +68,4 @@ temp/
 .vercel
 .turbo
 .claude/worktrees/
+.claude/scheduled_tasks.lock

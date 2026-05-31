@@ -5163,12 +5163,11 @@
         "daysRemaining": "Noch {days} Tage"
       },
       "actions": {
-        "amount": "Betrag",
-        "status": "Status",
         "editAria": "Bearbeiten",
         "moreAria": "Weitere Aktionen",
         "delete": "Löschen",
-        "csvExport": "CSV Export"
+        "csvExport": "CSV Export",
+        "detailsAria": "Details anzeigen"
       },
       "csv": {
         "headers": "Vertrag;Verpächter;Grundstück;Park;Jahrespacht;Status",
