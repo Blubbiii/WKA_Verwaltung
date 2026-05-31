@@ -421,6 +421,10 @@ export async function calculateSettlement(
   // 7. Berechne pro Lease
   const leaseMap = new Map<string, LeaseCalculationResult>();
 
+  // Periode-Grenzen für Plausibilitäts-Warning (R-4)
+  const periodStartDate = new Date(Date.UTC(year, 0, 1));
+  const periodEndDate = new Date(Date.UTC(year, 11, 31));
+
   for (const plot of plots) {
     // Finde aktiven Lease für dieses Plot
     const activeLeasePlot = plot.leasePlots.find(
@@ -431,6 +435,29 @@ export async function calculateSettlement(
 
     const lease = activeLeasePlot.lease;
     const lessor = lease.lessor;
+
+    // R-4 — Pachtgeber-Wechsel mid-period:
+    // Aktuell verwendet der Calculator den AKTIVEN Lease für die ganze
+    // Period. Wenn Lease.startDate oder Lease.endDate INNERHALB der
+    // Period liegt, ist das Ergebnis nicht zeitanteilig — der neue
+    // Pachtgeber bekommt den vollen Betrag.
+    //
+    // TODO: Zeit-anteilige Berechnung implementieren (eigene Iteration,
+    // ~3h + Tests). Bis dahin: WARN-Log damit Operatoren manuelle
+    // Korrektur veranlassen können wenn ein Lease in der Period startet
+    // oder endet.
+    const leaseStartsInPeriod =
+      lease.startDate && lease.startDate > periodStartDate && lease.startDate < periodEndDate;
+    const leaseEndsInPeriod =
+      lease.endDate && lease.endDate > periodStartDate && lease.endDate < periodEndDate;
+    if (leaseStartsInPeriod || leaseEndsInPeriod) {
+      console.warn(
+        `[Settlement] Lease ${lease.id} (Pachtgeber ${lessor.firstName ?? ""} ${lessor.lastName ?? lessor.companyName ?? ""}) hat ` +
+        `Start/End-Datum innerhalb Period ${year} (start=${lease.startDate?.toISOString()}, ` +
+        `end=${lease.endDate?.toISOString()}). Zeit-anteilige Berechnung NICHT implementiert — ` +
+        `kompletter Period-Betrag fliesst an diesen Pachtgeber. Manuelle Korrektur evtl. erforderlich.`
+      );
+    }
 
     // Initialisiere LeaseCalculation wenn nicht vorhanden
     if (!leaseMap.has(lease.id)) {
