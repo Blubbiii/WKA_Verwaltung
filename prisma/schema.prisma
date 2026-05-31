@@ -367,6 +367,10 @@ model Park {
   @@index([deletedAt])
   @@index([tenantId, deletedAt])
   @@index([tenantId, createdAt(sort: Desc)])
+  // FK-Indexes (Phase 7 M3): Postgres indiziert FKs nicht automatisch.
+  // Bei Fund DELETE/UPDATE würde sonst seq scan auf Park laufen.
+  @@index([operatorFundId])
+  @@index([billingEntityFundId])
   @@map("parks")
 }
 
@@ -727,6 +731,9 @@ model Lease {
   @@index([tenantId])
   @@index([deletedAt])
   @@index([tenantId, deletedAt])
+  // FK-Indexes (Phase 7 M3) für die zwei Fund-Relations
+  @@index([contractPartnerFundId])
+  @@index([directBillingFundId])
   @@map("leases")
 }
 
@@ -1009,7 +1016,9 @@ model Invoice {
   @@index([settlementPeriodId])
   @@index([shareholderId])
   @@index([tenantId, status, createdAt(sort: Desc)])
-  @@index([dueDate, status])
+  // Composite-Index (Phase 7 M4): Dunning-Filter mit tenantId-Prefix
+  // (vorher [dueDate, status] ohne tenantId = schlechte Selektivität).
+  @@index([tenantId, status, dueDate])
   @@map("invoices")
 }
 
@@ -2321,8 +2330,10 @@ model ScadaMeasurement {
 
   @@id([id, timestamp])
   @@unique([turbineId, timestamp, sourceFile])
-  @@index([tenantId])
-  @@index([tenantId, turbineId])
+  // Index-Cleanup (Phase 7 M2): [tenantId] und [tenantId, turbineId]
+  // entfernt, da durch [tenantId, turbineId, timestamp DESC] als Prefix
+  // abgedeckt. Bei Hypertable mit 100M+ rows: jeder zusätzliche Index
+  // kostet ~30% Insert-Throughput.
   @@index([tenantId, turbineId, timestamp(sort: Desc)])
   @@index([turbineId, timestamp])
   @@index([tenantId, timestamp(sort: Desc)])
@@ -3424,6 +3435,9 @@ model IncomingInvoice {
   @@index([dueDate])
   @@index([deletedAt])
   @@index([tenantId, deletedAt])
+  // Composite-Index (Phase 7 M4): Dunning-Run filtert
+  // WHERE tenantId=? AND status IN (...) AND dueDate < NOW()
+  @@index([tenantId, status, dueDate])
   @@map("incoming_invoices")
 }
 
@@ -4182,6 +4196,8 @@ model OperationalTask {
   @@index([dueDate])
   @@index([assignedToId])
   @@index([taskType])
+  // Composite (Phase 7 M4): "alle überfälligen offenen Tasks dieses Tenants"
+  @@index([tenantId, status, dueDate])
   @@map("operational_tasks")
 }
 
@@ -4270,6 +4286,8 @@ model Defect {
   @@index([status])
   @@index([dueDate])
   @@index([parkId])
+  // Composite (Phase 7 M4): offene Mängel deren Frist abläuft
+  @@index([tenantId, status, dueDate])
   @@map("defects")
 }
 

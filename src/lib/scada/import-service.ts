@@ -44,7 +44,7 @@ import {
   readUqdFile,
   scanLocation,
 } from './dbf-reader';
-import { aggregateMonthlyProduction, writeToTurbineProduction } from './aggregation';
+import { aggregateMonthlyProductionBulk, writeToTurbineProduction } from './aggregation';
 import type {
   WsdRecord,
   UidRecord,
@@ -2034,37 +2034,49 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
     }
 
     // 4. Monatliche Aggregation für alle betroffenen Monate (nur WSD)
+    //
+    // PERF-FIX (Phase 7 H11): Vorher N×M Queries (1 pro Turbine×Monat
+    // mit Decimal-Rows in Node-Heap geladen). Jetzt 1 GROUP-BY-Query
+    // mit DB-seitiger SUM(). Bei 10 Turbinen × 12 Monaten:
+    // 120 Queries → 1 Query, ~50-100× schneller.
     if (fileType === 'WSD' && allAffectedMonths.length > 0) {
-      // Aggregation pro Turbine und Monat
       const turbineIds = Array.from(turbineMappings.values());
 
-      for (const { year, month } of allAffectedMonths) {
-        for (const turbineId of turbineIds) {
-          try {
-            const aggregation = await aggregateMonthlyProduction(
-              turbineId,
-              year,
-              month,
-              tenantId,
-            );
+      try {
+        const aggregations = await aggregateMonthlyProductionBulk(
+          tenantId,
+          turbineIds,
+          allAffectedMonths,
+        );
 
-            // Nur schreiben wenn es Datenpunkte gibt
-            if (aggregation.dataPoints > 0) {
+        // Schreibe pro (Turbine, Monat) sequentiell — TurbineProduction
+        // hat keine Bulk-Upsert-API in Prisma, also Loop. Aber alle Reads
+        // sind bereits in einer Query erledigt.
+        for (const { year, month } of allAffectedMonths) {
+          for (const turbineId of turbineIds) {
+            const key = `${turbineId}:${year}:${month}`;
+            const agg = aggregations.get(key);
+            if (!agg || agg.dataPoints === 0) continue;
+
+            try {
               await writeToTurbineProduction(
                 turbineId,
                 tenantId,
                 year,
                 month,
-                aggregation.totalKwh,
+                agg.totalKwh,
+              );
+            } catch (err) {
+              const errorMsg = err instanceof Error ? err.message : String(err);
+              errors.push(
+                `Schreibfehler für Turbine ${turbineId}, ${year}-${String(month).padStart(2, '0')}: ${errorMsg}`,
               );
             }
-          } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : String(err);
-            errors.push(
-              `Aggregationsfehler für Turbine ${turbineId}, ${year}-${String(month).padStart(2, '0')}: ${errorMsg}`,
-            );
           }
         }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        errors.push(`Bulk-Aggregationsfehler: ${errorMsg}`);
       }
     }
 
