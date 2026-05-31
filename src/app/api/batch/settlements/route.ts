@@ -25,23 +25,16 @@ export async function POST(request: NextRequest) {
 
     const { action, settlementIds, reason } = parsed.data;
 
+    // Scoped by tenantId to prevent ID-enumeration across tenants
     const settlements = await prisma.energySettlement.findMany({
-      where: { id: { in: settlementIds } },
-      select: { id: true, status: true, park: { select: { tenantId: true } } },
+      where: { id: { in: settlementIds }, tenantId: check.tenantId! },
+      select: { id: true, status: true },
     });
 
     const foundIds = new Set(settlements.map((s) => s.id));
     const missingIds = settlementIds.filter((id) => !foundIds.has(id));
     if (missingIds.length > 0) {
       return apiError("NOT_FOUND", 404, { message: `Abrechnungen nicht gefunden: ${missingIds.join(", ")}` });
-    }
-
-    // Tenant check
-    const unauthorized = settlements.filter(
-      (s) => s.park.tenantId !== check.tenantId
-    );
-    if (unauthorized.length > 0) {
-      return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung für einige Abrechnungen" });
     }
 
     const result = await processBatch(settlementIds, async (id) => {

@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireAdmin } from '@/lib/auth/withPermission';
+import { requireSuperadmin } from '@/lib/auth/withPermission';
 import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
 import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
@@ -62,8 +62,10 @@ interface JobListResponse {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Require admin access
-    const check = await requireAdmin();
+    // BullMQ-Queue-Inhalte enthalten Job-Payloads ALLER Tenants (Invoice-IDs,
+    // File-Paths etc.) — ein Tenant-Admin darf sie NICHT sehen können.
+    // Nur Superadmin (System-Owner) hat cross-tenant Sicht.
+    const check = await requireSuperadmin();
     if (!check.authorized) return check.error;
 
     // Parse query parameters

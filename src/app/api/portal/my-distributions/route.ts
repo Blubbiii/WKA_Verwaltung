@@ -13,9 +13,15 @@ export async function GET(_request: NextRequest) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
-    // Find the shareholder linked to this user
-    const shareholder = await prisma.shareholder.findUnique({
-      where: { userId: session.user.id },
+    const tenantId = session.user.tenantId;
+    if (!tenantId) {
+      return apiError("FORBIDDEN", 401, { message: "Mandant nicht gesetzt" });
+    }
+
+    // Find the shareholder linked to this user (tenant-scoped via fund)
+    // Shareholder hat kein direktes tenantId — Filter über fund.tenantId.
+    const shareholder = await prisma.shareholder.findFirst({
+      where: { userId: session.user.id, fund: { tenantId } },
     });
 
     if (!shareholder) {
@@ -25,10 +31,12 @@ export async function GET(_request: NextRequest) {
       });
     }
 
-    // Find all shareholders for the same person
+    // Find all shareholders for the same person — STRICTLY within this tenant
+    // (a Person can theoretically exist across tenants; never leak others)
     const shareholders = await prisma.shareholder.findMany({
       where: {
         personId: shareholder.personId,
+        fund: { tenantId },
       },
       select: { id: true },
     });
@@ -45,6 +53,7 @@ export async function GET(_request: NextRequest) {
     // Find all invoices (credit notes = Gutschriften = distributions) for these shareholders
     const distributions = await prisma.invoice.findMany({
       where: {
+        tenantId,
         shareholderId: { in: shareholderIds },
         invoiceType: "CREDIT_NOTE",
         status: { not: "CANCELLED" },

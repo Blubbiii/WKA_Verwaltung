@@ -8,21 +8,29 @@ import { registry } from "@/lib/metrics/prometheus";
  * Protected by METRICS_TOKEN env var (passed as ?token= query param or
  * Authorization: Bearer <token> header).
  *
- * If METRICS_TOKEN is not set, the endpoint is open (suitable for dev).
+ * Security policy:
+ * - Production: METRICS_TOKEN MUSS gesetzt sein, sonst 503 (fail-closed).
+ *   Verhindert dass eine vergessene env-var den Endpoint öffentlich macht
+ *   (Metrics enthalten tenant-IDs, Queue-Depths, Error-Counts → SSRF/Reco).
+ * - Development: Endpoint offen wenn Token fehlt, für lokales Prometheus-Setup.
  */
 export async function GET(req: NextRequest) {
   const expectedToken = process.env.METRICS_TOKEN;
+  const isProd = process.env.NODE_ENV === "production";
+
+  if (isProd && !expectedToken) {
+    return new NextResponse(
+      "Metrics endpoint requires METRICS_TOKEN in production",
+      { status: 503 },
+    );
+  }
 
   if (expectedToken) {
-    // Check Bearer header
     const authHeader = req.headers.get("authorization") ?? "";
     const bearerToken = authHeader.startsWith("Bearer ")
       ? authHeader.slice(7)
       : null;
-
-    // Also accept ?token= query param (used by Prometheus scrape config)
     const queryToken = req.nextUrl.searchParams.get("token");
-
     const providedToken = bearerToken ?? queryToken;
     if (providedToken !== expectedToken) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -35,7 +43,6 @@ export async function GET(req: NextRequest) {
     status: 200,
     headers: {
       "Content-Type": registry.contentType,
-      // Never cache metrics
       "Cache-Control": "no-store",
     },
   });

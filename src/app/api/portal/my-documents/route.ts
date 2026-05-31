@@ -17,19 +17,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
 
-    // Find the shareholder linked to this user
-    const shareholder = await prisma.shareholder.findUnique({
-      where: { userId: session.user.id },
+    const tenantId = session.user.tenantId;
+    if (!tenantId) {
+      return apiError("FORBIDDEN", 401, { message: "Mandant nicht gesetzt" });
+    }
+
+    // Find the shareholder linked to this user (tenant-scoped via fund)
+    const shareholder = await prisma.shareholder.findFirst({
+      where: { userId: session.user.id, fund: { tenantId } },
     });
 
     if (!shareholder) {
       return NextResponse.json({ data: [], categories: [] });
     }
 
-    // Find all shareholders for the same person
+    // Find all shareholders for the same person — STRICT tenant-scope via fund
     const shareholders = await prisma.shareholder.findMany({
       where: {
         personId: shareholder.personId,
+        fund: { tenantId },
       },
       include: {
         fund: {
@@ -51,9 +57,10 @@ export async function GET(request: NextRequest) {
     // We only show documents in certain categories that make sense for shareholders
     const shareholderCategories = ["REPORT", "PROTOCOL", "CORRESPONDENCE", "OTHER"];
 
-    // Portal only shows PUBLISHED documents
+    // Portal only shows PUBLISHED documents (tenant-scoped)
     const documents = await prisma.document.findMany({
       where: {
+        tenantId,
         approvalStatus: "PUBLISHED",
         OR: [
           // Fund-level documents in certain categories
@@ -87,9 +94,10 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Get distinct categories for filtering (portal: only PUBLISHED)
+    // Get distinct categories for filtering (portal: only PUBLISHED, tenant-scoped)
     const allDocs = await prisma.document.findMany({
       where: {
+        tenantId,
         approvalStatus: "PUBLISHED",
         OR: [
           {

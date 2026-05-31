@@ -76,14 +76,18 @@ export async function aggregateMonthlyProduction(
   turbineId: string,
   year: number,
   month: number,
+  tenantId: string,
 ): Promise<MonthlyAggregationResult> {
   // Zeitraum: erster bis letzter Tag des Monats
   const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
   const endDate = new Date(Date.UTC(year, month, 1, 0, 0, 0)); // Exklusiv
 
-  // Alle WSD-Messwerte mit gültigem Leistungswert für den Monat laden
+  // Alle WSD-Messwerte mit gültigem Leistungswert für den Monat laden.
+  // tenantId-Filter verhindert Cross-Tenant-Aggregation falls Caller mit
+  // turbineId aus User-Input arbeitet (defense-in-depth).
   const measurements = await prisma.scadaMeasurement.findMany({
     where: {
+      tenantId,
       turbineId,
       sourceFile: 'WSD',
       timestamp: {

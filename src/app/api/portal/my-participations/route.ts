@@ -13,17 +13,21 @@ export async function GET(_request: NextRequest) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
 
-    // Find the shareholder linked to this user (one-to-one relation)
-    const shareholder = await prisma.shareholder.findUnique({
-      where: { userId: session.user.id },
+    const tenantId = session.user.tenantId;
+    if (!tenantId) {
+      return apiError("FORBIDDEN", 401, { message: "Mandant nicht gesetzt" });
+    }
+
+    // Find the shareholder linked to this user (tenant-scoped via fund)
+    // Shareholder hat kein direktes tenantId — Filter über fund.tenantId.
+    const shareholder = await prisma.shareholder.findFirst({
+      where: { userId: session.user.id, fund: { tenantId } },
       include: {
         person: true,
       },
     });
 
     if (!shareholder) {
-      // Try to find shareholders by looking at the person the user might be linked to
-      // For now, return empty if no direct shareholder link
       return NextResponse.json({
         data: [],
         summary: { totalParticipations: 0, totalInvestment: 0, totalShares: 0 },
@@ -31,10 +35,11 @@ export async function GET(_request: NextRequest) {
       });
     }
 
-    // Find all shareholders for the same person (user might have multiple fund participations)
+    // Find all shareholders for the same person — STRICT tenant-scope via fund
     const shareholders = await prisma.shareholder.findMany({
       where: {
         personId: shareholder.personId,
+        fund: { tenantId },
         status: { not: "ARCHIVED" },
       },
       include: {

@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/auth/withPermission';
+import { requireSuperadmin } from '@/lib/auth/withPermission';
 import { getAggregatedStats, type AggregatedStats } from '@/lib/queue/registry';
 import { isRedisHealthy } from '@/lib/queue/connection';
 import { apiLogger as logger } from "@/lib/logger";
@@ -28,8 +28,8 @@ interface StatsResponse extends AggregatedStats {
  */
 export async function GET(_request: NextRequest) {
   try {
-    // Require admin access
-    const check = await requireAdmin();
+    // Cross-tenant Queue-Statistik nur für Superadmin (siehe ../route.ts).
+    const check = await requireSuperadmin();
     if (!check.authorized) return check.error;
 
     // Check Redis health first

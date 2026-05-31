@@ -2045,6 +2045,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
               turbineId,
               year,
               month,
+              tenantId,
             );
 
             // Nur schreiben wenn es Datenpunkte gibt

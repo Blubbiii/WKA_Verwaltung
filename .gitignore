@@ -69,3 +69,4 @@ temp/
 .turbo
 .claude/worktrees/
 .claude/scheduled_tasks.lock
+.claude/agents/
