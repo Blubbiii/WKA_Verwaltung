@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
 
 // ============================================================================
 // POST /api/journal-entries/[id]/post
@@ -48,6 +49,19 @@ export async function POST(
 
     if (Math.abs(totalDebit - totalCredit) >= 0.005) {
       return apiError("BAD_REQUEST", 400, { message: `Buchung nicht ausgeglichen: Soll ${totalDebit.toFixed(2)} € ≠ Haben ${totalCredit.toFixed(2)} €` });
+    }
+
+    // P9: GoBD §146 AO — DRAFT → POSTED nur wenn Periode (entryDate) noch offen.
+    try {
+      await assertPeriodOpen(check.tenantId!, entry.entryDate);
+    } catch (err) {
+      if (err instanceof PeriodLockedError) {
+        return apiError("PERIOD_LOCKED", 409, {
+          message: err.message,
+          details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+        });
+      }
+      throw err;
     }
 
     const updated = await prisma.journalEntry.update({

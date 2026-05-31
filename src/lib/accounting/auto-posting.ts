@@ -7,11 +7,14 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { getTenantSettings, type TenantSettings } from "@/lib/tenant-settings";
 import type { Prisma } from "@prisma/client";
+import { assertPeriodOpen, PeriodLockedError } from "./period-lock";
 
 interface AutoPostingResult {
   success: boolean;
   journalEntryId?: string;
   error?: string;
+  /** Set when the failure was due to a locked accounting period. */
+  periodLocked?: { year: number; month: number };
 }
 
 /** Build account map from tenant settings (no more hardcoded accounts) */
@@ -101,6 +104,22 @@ export async function createAutoPosting(
       return { success: false, error: "No invoice items to post" };
     }
 
+    // P9: GoBD §146 AO Period-Gate. Wenn der Buchungs-Monat (= invoice.invoiceDate)
+    // gesperrt ist, darf das Auto-Posting NICHT laufen. Caller (invoice send-Flow)
+    // muss damit umgehen — z.B. Rechnung in offener Periode neu datieren.
+    try {
+      await assertPeriodOpen(invoice.tenantId, invoice.invoiceDate);
+    } catch (err) {
+      if (err instanceof PeriodLockedError) {
+        return {
+          success: false,
+          error: err.message,
+          periodLocked: { year: err.periodYear, month: err.periodMonth },
+        };
+      }
+      throw err;
+    }
+
     // Create the journal entry
     const entry = await prisma.journalEntry.create({
       data: {
@@ -180,10 +199,27 @@ export async function reverseAutoPosting(
       costCenter: line.costCenter,
     }));
 
+    // P9: Storno bucht in den AKTUELLEN Monat (new Date()), nicht in die
+    // Original-Periode. Wenn auch der aktuelle Monat gesperrt ist (Jahresende
+    // im neuen Jahr), kann das Storno nicht laufen → Caller bekommt Fehler.
+    const reversalDate = new Date();
+    try {
+      await assertPeriodOpen(original.tenantId, reversalDate);
+    } catch (err) {
+      if (err instanceof PeriodLockedError) {
+        return {
+          success: false,
+          error: err.message,
+          periodLocked: { year: err.periodYear, month: err.periodMonth },
+        };
+      }
+      throw err;
+    }
+
     const reversal = await prisma.journalEntry.create({
       data: {
         tenantId: original.tenantId,
-        entryDate: new Date(),
+        entryDate: reversalDate,
         description: `Storno: ${original.description}`.slice(0, 200),
         reference: `ST-${original.reference || ""}`,
         status: "POSTED",

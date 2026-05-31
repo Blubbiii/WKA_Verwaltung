@@ -127,6 +127,7 @@ model Tenant {
   personTags                PersonTag[]
   failedJobs                FailedJob[]
   consentLogs               ConsentLog[]
+  accountingPeriodLocks     AccountingPeriodLock[]
 
   @@map("tenants")
 }
@@ -247,6 +248,8 @@ model User {
   insuranceClaimsCreated                                                  InsuranceClaim[]            @relation("InsuranceClaimCreator")
   createdQuotes                                                           Quote[]                    @relation("QuoteCreatedBy")
   userTenantMemberships                                                   UserTenantMembership[]
+  periodsLocked                                                           AccountingPeriodLock[]     @relation("PeriodLocker")
+  periodsUnlocked                                                         AccountingPeriodLock[]     @relation("PeriodUnlocker")
 
   @@index([tenantId])
   @@index([email])
@@ -3205,6 +3208,28 @@ enum PostingSource {
   IMPORT
 }
 
+// P9: Periodensperre §146 AO (GoBD). Geschlossene Monate dürfen
+// keine Buchungen mehr aufnehmen (weder neue Entries noch POST von DRAFTs).
+// Unlock ist möglich, hinterlässt aber Audit-Trail (siehe unlockedAt/unlockedById).
+model AccountingPeriodLock {
+  id           String    @id @default(uuid())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  periodYear   Int
+  periodMonth  Int       // 1-12
+  lockedAt     DateTime  @default(now())
+  lockedById   String
+  lockedBy     User      @relation("PeriodLocker", fields: [lockedById], references: [id], onDelete: Restrict)
+  unlockedAt   DateTime?
+  unlockedById String?
+  unlockedBy   User?     @relation("PeriodUnlocker", fields: [unlockedById], references: [id], onDelete: Restrict)
+  reason       String?   @db.VarChar(500)
+
+  @@unique([tenantId, periodYear, periodMonth])
+  @@index([tenantId, periodYear, periodMonth])
+  @@map("accounting_period_locks")
+}
+
 model JournalEntry {
   id            String             @id @default(uuid())
   tenantId      String
@@ -3224,6 +3249,14 @@ model JournalEntry {
   updatedAt     DateTime           @updatedAt
   deletedAt     DateTime?
   lines         JournalEntryLine[]
+
+  // P9: Storno-Verkettung (Generalumkehr für POSTED Journals).
+  // reversesJournalEntryId: dieser Entry ist die Storno-Buchung von ...
+  // reversedBy: dieser Entry wurde durch ... storniert (Rückrelation, kein eigenes FK-Feld nötig)
+  reversesJournalEntryId String?       @unique
+  reverses               JournalEntry? @relation("JournalReversal", fields: [reversesJournalEntryId], references: [id])
+  reversedBy             JournalEntry? @relation("JournalReversal")
+  reversalReason         String?       @db.VarChar(500)
 
   @@index([tenantId])
   @@index([tenantId, entryDate])

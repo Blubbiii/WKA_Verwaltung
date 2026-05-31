@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
 
 // ============================================================================
 // VALIDATION
@@ -133,10 +134,26 @@ export async function POST(request: NextRequest) {
 
     const { entryDate, description, reference, lines } = parsed.data;
 
+    const entryDateObj = new Date(entryDate);
+
+    // P9: GoBD §146 AO — keine Buchungen in gesperrte Periode.
+    // Auch DRAFT-Erfassung blockieren, damit User nicht erst beim POST stolpert.
+    try {
+      await assertPeriodOpen(check.tenantId, entryDateObj);
+    } catch (err) {
+      if (err instanceof PeriodLockedError) {
+        return apiError("PERIOD_LOCKED", 409, {
+          message: err.message,
+          details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+        });
+      }
+      throw err;
+    }
+
     const entry = await prisma.journalEntry.create({
       data: {
         tenantId: check.tenantId,
-        entryDate: new Date(entryDate),
+        entryDate: entryDateObj,
         description,
         reference: reference || null,
         status: "DRAFT",

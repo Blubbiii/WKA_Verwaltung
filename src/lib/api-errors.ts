@@ -54,7 +54,10 @@ export type ApiErrorCode =
   | "BAD_REQUEST"
   // Auth-specific (reset-password flow)
   | "INVALID_TOKEN"
-  | "USER_INACTIVE";
+  | "USER_INACTIVE"
+  // Accounting period lock (P9)
+  | "PERIOD_LOCKED"
+  | "ALREADY_REVERSED";
 
 /** German fallback messages for error codes (used when client has no translation). */
 const DEFAULT_MESSAGES: Record<ApiErrorCode, string> = {
@@ -85,6 +88,8 @@ const DEFAULT_MESSAGES: Record<ApiErrorCode, string> = {
   BAD_REQUEST: "Ungültige Anfrage",
   INVALID_TOKEN: "Ungültiger oder abgelaufener Token",
   USER_INACTIVE: "Benutzerkonto nicht aktiv",
+  PERIOD_LOCKED: "Buchungsperiode ist gesperrt",
+  ALREADY_REVERSED: "Buchung wurde bereits storniert",
 };
 
 /** Default HTTP status per error code. */
@@ -116,6 +121,8 @@ const DEFAULT_STATUS: Record<ApiErrorCode, number> = {
   BAD_REQUEST: 400,
   INVALID_TOKEN: 400,
   USER_INACTIVE: 400,
+  PERIOD_LOCKED: 409,
+  ALREADY_REVERSED: 409,
 };
 
 export interface ApiErrorBody {

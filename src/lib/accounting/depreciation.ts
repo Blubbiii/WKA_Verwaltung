@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { MS_PER_DAY } from "@/lib/constants/time";
+import { assertPeriodOpen, PeriodLockedError } from "./period-lock";
 
 export interface DepreciationScheduleItem {
   periodStart: Date;
@@ -61,6 +62,21 @@ export async function runDepreciation(
     );
     if (alreadyRun) continue;
 
+    // P9: Wenn Posting verlangt UND Periode gesperrt → ganzes Asset überspringen.
+    // Hintergrund: ein halb-konsistenter Zustand (Schedule-Row angelegt, aber
+    // kein Journal Entry) wäre schwer zu reparieren. Lieber später nachholen
+    // wenn Periode entsperrt wird.
+    if (createPostings && asset.depAccountNumber && asset.accountNumber) {
+      try {
+        await assertPeriodOpen(tenantId, periodEnd);
+      } catch (err) {
+        if (err instanceof PeriodLockedError) {
+          continue;
+        }
+        throw err;
+      }
+    }
+
     const alreadyDepreciated = asset.depreciations.reduce(
       (sum, d) => sum + Number(d.amount), 0
     );
@@ -111,6 +127,7 @@ export async function runDepreciation(
     }
 
     // Optional: create journal entry for the depreciation
+    // (Period-Gate wurde bereits oben am Schleifenanfang geprüft).
     if (createPostings && asset.depAccountNumber && asset.accountNumber) {
       await prisma.journalEntry.create({
         data: {

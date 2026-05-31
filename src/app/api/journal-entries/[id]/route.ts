@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
 
 // ============================================================================
 // VALIDATION
@@ -89,7 +90,7 @@ export async function PUT(
 
     const existing = await prisma.journalEntry.findFirst({
       where: { id, tenantId: check.tenantId, deletedAt: null },
-      select: { id: true, status: true },
+      select: { id: true, status: true, entryDate: true },
     });
 
     if (!existing) {
@@ -108,6 +109,23 @@ export async function PUT(
     }
 
     const { entryDate, description, reference, lines } = parsed.data;
+
+    // P9: Gate gegen Periodensperre. Sowohl ALTE Periode (Snapshot vor Update)
+    // als auch NEUE Periode (falls entryDate geändert) müssen offen sein.
+    try {
+      await assertPeriodOpen(check.tenantId!, existing.entryDate);
+      if (entryDate) {
+        await assertPeriodOpen(check.tenantId!, new Date(entryDate));
+      }
+    } catch (err) {
+      if (err instanceof PeriodLockedError) {
+        return apiError("PERIOD_LOCKED", 409, {
+          message: err.message,
+          details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+        });
+      }
+      throw err;
+    }
 
     const updated = await prisma.$transaction(async (tx) => {
       if (lines !== undefined) {
@@ -162,7 +180,7 @@ export async function DELETE(
 
     const existing = await prisma.journalEntry.findFirst({
       where: { id, tenantId: check.tenantId, deletedAt: null },
-      select: { id: true, status: true },
+      select: { id: true, status: true, entryDate: true },
     });
 
     if (!existing) {
@@ -171,6 +189,18 @@ export async function DELETE(
 
     if (existing.status !== "DRAFT") {
       return apiError("BAD_REQUEST", 400, { message: "Nur Entwürfe können gelöscht werden" });
+    }
+
+    try {
+      await assertPeriodOpen(check.tenantId!, existing.entryDate);
+    } catch (err) {
+      if (err instanceof PeriodLockedError) {
+        return apiError("PERIOD_LOCKED", 409, {
+          message: err.message,
+          details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+        });
+      }
+      throw err;
     }
 
     await prisma.journalEntry.update({
