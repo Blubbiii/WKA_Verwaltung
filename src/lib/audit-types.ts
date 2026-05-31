@@ -37,7 +37,10 @@ export type AuditEntityType =
   | "ParkCostAllocation"
   | "MassCommunication"
   | "ArchivedDocument"
-  | "ArchiveVerification";
+  | "ArchiveVerification"
+  | "IncomingInvoice"
+  | "JournalEntry"
+  | "BankTransaction";
 
 /**
  * Get entity display name for German UI
@@ -70,6 +73,9 @@ export function getEntityDisplayName(entityType: AuditEntityType): string {
     MassCommunication: "Massen-Kommunikation",
     ArchivedDocument: "Archiviertes Dokument",
     ArchiveVerification: "Archiv-Integritaetsprüfung",
+    IncomingInvoice: "Eingangsrechnung",
+    JournalEntry: "Buchung",
+    BankTransaction: "Banktransaktion",
   };
   return displayNames[entityType] || entityType;
 }

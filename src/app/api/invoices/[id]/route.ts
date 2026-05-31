@@ -10,6 +10,8 @@ import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { serializePrisma } from "@/lib/serialize";
 import { apiError } from "@/lib/api-errors";
+import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
+import { headers } from "next/headers";
 
 const invoiceUpdateSchema = z.object({
   invoiceDate: z.string().optional(),
@@ -240,72 +242,98 @@ export async function PATCH(
       }
     }
 
-    const invoice = await prisma.invoice.update({
-      where: { id, tenantId: check.tenantId!},
-      data: {
-        ...(validatedData.invoiceDate && {
-          invoiceDate: new Date(validatedData.invoiceDate),
-        }),
-        ...(validatedData.dueDate !== undefined && {
-          dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-        }),
-        ...(validatedData.recipientType !== undefined && {
-          recipientType: validatedData.recipientType,
-        }),
-        ...(validatedData.recipientName !== undefined && {
-          recipientName: validatedData.recipientName,
-        }),
-        ...(validatedData.recipientAddress !== undefined && {
-          recipientAddress: validatedData.recipientAddress,
-        }),
-        ...(validatedData.serviceStartDate !== undefined && {
-          serviceStartDate: validatedData.serviceStartDate
-            ? new Date(validatedData.serviceStartDate)
-            : null,
-        }),
-        ...(validatedData.serviceEndDate !== undefined && {
-          serviceEndDate: validatedData.serviceEndDate
-            ? new Date(validatedData.serviceEndDate)
-            : null,
-        }),
-        ...(validatedData.paymentReference !== undefined && {
-          paymentReference: validatedData.paymentReference,
-        }),
-        ...(validatedData.notes !== undefined && {
-          notes: validatedData.notes,
-        }),
-        ...(validatedData.fundId !== undefined && {
-          fundId: validatedData.fundId,
-        }),
-        ...(validatedData.shareholderId !== undefined && {
-          shareholderId: validatedData.shareholderId,
-        }),
-        ...(validatedData.leaseId !== undefined && {
-          leaseId: validatedData.leaseId,
-        }),
-        ...(validatedData.parkId !== undefined && {
-          parkId: validatedData.parkId,
-        }),
-        // E-Invoice: Leitweg-ID update (also clear cached XML when Leitweg-ID changes)
-        ...(validatedData.leitwegId !== undefined && {
-          leitwegId: validatedData.leitwegId,
-          einvoiceXml: null, // Invalidate cached XML when Leitweg-ID changes
-          einvoiceFormat: null,
-          einvoiceGeneratedAt: null,
-        }),
-        ...skontoUpdateData,
-      },
-      include: {
-        items: { orderBy: { position: "asc" } },
-      },
-    });
+    const headersList = await headers();
+    const ipAddress = headersList.get("x-forwarded-for")?.split(",")[0] ?? headersList.get("x-real-ip") ?? null;
+    const userAgent = headersList.get("user-agent") ?? null;
 
-    // Invalidate dashboard caches after invoice update
-    invalidate.onInvoiceChange(check.tenantId!, id, 'update').catch((err) => {
-      logger.warn({ err }, '[Invoices] Cache invalidation error after update');
-    });
+    try {
+      // GoBD §147: jede Änderung an Rechnungen mit oldValues/newValues
+      // in einer Transaction mit dem Update protokollieren.
+      const invoice = await updateWithAudit({
+        entityType: "Invoice",
+        entityId: id,
+        userId: check.userId,
+        tenantId: check.tenantId!,
+        ipAddress,
+        userAgent,
+        description: "Rechnung bearbeitet (DRAFT)",
+        loadCurrent: (tx) =>
+          tx.invoice.findFirst({
+            where: { id, tenantId: check.tenantId! },
+          }) as Promise<Record<string, unknown> | null>,
+        applyChange: (tx) =>
+          tx.invoice.update({
+            where: { id, tenantId: check.tenantId! },
+            data: {
+              ...(validatedData.invoiceDate && {
+                invoiceDate: new Date(validatedData.invoiceDate),
+              }),
+              ...(validatedData.dueDate !== undefined && {
+                dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
+              }),
+              ...(validatedData.recipientType !== undefined && {
+                recipientType: validatedData.recipientType,
+              }),
+              ...(validatedData.recipientName !== undefined && {
+                recipientName: validatedData.recipientName,
+              }),
+              ...(validatedData.recipientAddress !== undefined && {
+                recipientAddress: validatedData.recipientAddress,
+              }),
+              ...(validatedData.serviceStartDate !== undefined && {
+                serviceStartDate: validatedData.serviceStartDate
+                  ? new Date(validatedData.serviceStartDate)
+                  : null,
+              }),
+              ...(validatedData.serviceEndDate !== undefined && {
+                serviceEndDate: validatedData.serviceEndDate
+                  ? new Date(validatedData.serviceEndDate)
+                  : null,
+              }),
+              ...(validatedData.paymentReference !== undefined && {
+                paymentReference: validatedData.paymentReference,
+              }),
+              ...(validatedData.notes !== undefined && {
+                notes: validatedData.notes,
+              }),
+              ...(validatedData.fundId !== undefined && {
+                fundId: validatedData.fundId,
+              }),
+              ...(validatedData.shareholderId !== undefined && {
+                shareholderId: validatedData.shareholderId,
+              }),
+              ...(validatedData.leaseId !== undefined && {
+                leaseId: validatedData.leaseId,
+              }),
+              ...(validatedData.parkId !== undefined && {
+                parkId: validatedData.parkId,
+              }),
+              ...(validatedData.leitwegId !== undefined && {
+                leitwegId: validatedData.leitwegId,
+                einvoiceXml: null,
+                einvoiceFormat: null,
+                einvoiceGeneratedAt: null,
+              }),
+              ...skontoUpdateData,
+            },
+            include: {
+              items: { orderBy: { position: "asc" } },
+            },
+          }) as Promise<Record<string, unknown>>,
+      });
 
-    return NextResponse.json(serializePrisma(invoice));
+      // Invalidate dashboard caches after invoice update
+      invalidate.onInvoiceChange(check.tenantId!, id, 'update').catch((err) => {
+        logger.warn({ err }, '[Invoices] Cache invalidation error after update');
+      });
+
+      return NextResponse.json(serializePrisma(invoice));
+    } catch (err) {
+      if (isEntityNotFoundError(err)) {
+        return apiError("NOT_FOUND", 404, { message: "Rechnung nicht gefunden" });
+      }
+      throw err;
+    }
   } catch (error) {
     return handleApiError(error, "Fehler beim Aktualisieren der Rechnung");
   }

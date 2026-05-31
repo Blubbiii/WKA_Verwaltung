@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
+import { getNextInvoiceNumberInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices/skonto";
 import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -169,12 +169,6 @@ async function postHandler(request: NextRequest) {
       };
     });
 
-    // Generiere Rechnungsnummer atomar
-    const { number: invoiceNumber } = await getNextInvoiceNumber(
-      check.tenantId!,
-      validatedData.invoiceType
-    );
-
     // Calculate Skonto fields if both percent and days are provided
     const invoiceDate = new Date(validatedData.invoiceDate);
     let skontoData: {
@@ -195,51 +189,61 @@ async function postHandler(request: NextRequest) {
       };
     }
 
-    // Erstelle Rechnung mit Items in einer Transaktion
-    const invoice = await prisma.invoice.create({
-      data: {
-        invoiceType: validatedData.invoiceType,
-        invoiceNumber,
-        invoiceDate,
-        dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
-        recipientType: validatedData.recipientType,
-        recipientName: validatedData.recipientName,
-        recipientAddress: validatedData.recipientAddress,
-        serviceStartDate: validatedData.serviceStartDate
-          ? new Date(validatedData.serviceStartDate)
-          : null,
-        serviceEndDate: validatedData.serviceEndDate
-          ? new Date(validatedData.serviceEndDate)
-          : null,
-        paymentReference: validatedData.paymentReference || invoiceNumber,
-        netAmount: totalNet,
-        taxRate: 0, // Wird pro Position berechnet
-        taxAmount: totalTax,
-        grossAmount: totalGross,
-        notes: validatedData.notes,
-        status: "DRAFT",
-        tenantId: check.tenantId!,
-        createdById: check.userId,
-        fundId: validatedData.fundId,
-        shareholderId: validatedData.shareholderId,
-        leaseId: validatedData.leaseId,
-        parkId: validatedData.parkId,
-        ...skontoData,
-        items: {
-          create: itemsData,
-        },
-      },
-      include: {
-        items: true,
-        fund: { select: { id: true, name: true } },
-        shareholder: {
-          select: {
-            id: true,
-            person: { select: { firstName: true, lastName: true } },
+    // GoBD-konform: Nummerngenerierung UND Invoice-Insert in EINER
+    // Transaktion. Wenn der Insert failt, wird auch der Sequence-Increment
+    // zurückgerollt → keine Lücken in der lückenlosen Nummerierung.
+    const invoice = await prisma.$transaction(async (tx) => {
+      const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
+        tx,
+        check.tenantId!,
+        validatedData.invoiceType,
+      );
+
+      return tx.invoice.create({
+        data: {
+          invoiceType: validatedData.invoiceType,
+          invoiceNumber,
+          invoiceDate,
+          dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : null,
+          recipientType: validatedData.recipientType,
+          recipientName: validatedData.recipientName,
+          recipientAddress: validatedData.recipientAddress,
+          serviceStartDate: validatedData.serviceStartDate
+            ? new Date(validatedData.serviceStartDate)
+            : null,
+          serviceEndDate: validatedData.serviceEndDate
+            ? new Date(validatedData.serviceEndDate)
+            : null,
+          paymentReference: validatedData.paymentReference || invoiceNumber,
+          netAmount: totalNet,
+          taxRate: 0, // Wird pro Position berechnet
+          taxAmount: totalTax,
+          grossAmount: totalGross,
+          notes: validatedData.notes,
+          status: "DRAFT",
+          tenantId: check.tenantId!,
+          createdById: check.userId,
+          fundId: validatedData.fundId,
+          shareholderId: validatedData.shareholderId,
+          leaseId: validatedData.leaseId,
+          parkId: validatedData.parkId,
+          ...skontoData,
+          items: {
+            create: itemsData,
           },
         },
-        park: { select: { id: true, name: true } },
-      },
+        include: {
+          items: true,
+          fund: { select: { id: true, name: true } },
+          shareholder: {
+            select: {
+              id: true,
+              person: { select: { firstName: true, lastName: true } },
+            },
+          },
+          park: { select: { id: true, name: true } },
+        },
+      });
     });
 
     // Invalidate dashboard caches after invoice creation

@@ -2,6 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { InvoiceType } from "@prisma/client";
 
 /**
+ * Prisma transaction client — inferred from OUR extended prisma client
+ * (with SoftDelete + Encryption extensions). Using Prisma.TransactionClient
+ * directly would not match because the extended client has a different shape.
+ */
+export type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+/**
  * Generiert eine formatierte Rechnungsnummer aus dem Format-String
  *
  * Platzhalter:
@@ -42,75 +49,97 @@ export function generatePreview(
 }
 
 /**
- * Holt die nächste Rechnungsnummer atomar (mit Locking)
- * Verwendet eine Transaktion um Race Conditions zu vermeiden
+ * Internal: get and increment the next invoice number using an existing
+ * Prisma transaction client. Callers should use either `getNextInvoiceNumber`
+ * (creates its own tx, suitable when you don't have one) or
+ * `getNextInvoiceNumberInTx` (composes inside YOUR tx — REQUIRED for GoBD
+ * lückenlose Nummerierung, see below).
+ */
+async function _getNextInvoiceNumberCore(
+  tx: TxClient,
+  tenantId: string,
+  type: InvoiceType,
+): Promise<{ number: string; sequenceId: string }> {
+  const currentYear = new Date().getFullYear();
+
+  let sequence = await tx.invoiceNumberSequence.findUnique({
+    where: { tenantId_type: { tenantId, type } },
+  });
+
+  if (!sequence) {
+    sequence = await tx.invoiceNumberSequence.create({
+      data: {
+        tenantId,
+        type,
+        format: type === "INVOICE" ? "RG-{YEAR}-{NUMBER}" : "GS-{YEAR}-{NUMBER}",
+        currentYear,
+        nextNumber: 1,
+        digitCount: 4,
+      },
+    });
+  }
+
+  if (sequence.currentYear !== currentYear) {
+    sequence = await tx.invoiceNumberSequence.update({
+      where: { id: sequence.id },
+      data: { currentYear, nextNumber: 1 },
+    });
+  }
+
+  const invoiceNumber = generateInvoiceNumber(
+    sequence.format,
+    sequence.nextNumber,
+    sequence.digitCount,
+    sequence.currentYear,
+  );
+
+  await tx.invoiceNumberSequence.update({
+    where: { id: sequence.id },
+    data: { nextNumber: sequence.nextNumber + 1 },
+  });
+
+  return { number: invoiceNumber, sequenceId: sequence.id };
+}
+
+/**
+ * **GoBD-konforme Variante:** Holt die nächste Rechnungsnummer innerhalb
+ * einer BEREITS-laufenden Prisma-Transaktion. Der Caller wrappt sowohl
+ * die Nummerngenerierung als auch die Invoice.create in eine $transaction
+ * — wenn der Insert failt, wird der Sequence-Increment ebenfalls
+ * zurückgerollt → **keine Lücken in der lückenlosen Nummerierung**.
+ *
+ * @example
+ * await prisma.$transaction(async (tx) => {
+ *   const { number, sequenceId } = await getNextInvoiceNumberInTx(tx, tenantId, type);
+ *   return tx.invoice.create({ data: { invoiceNumber: number, sequenceId, ... } });
+ * });
+ */
+export async function getNextInvoiceNumberInTx(
+  tx: TxClient,
+  tenantId: string,
+  type: InvoiceType,
+): Promise<{ number: string; sequenceId: string }> {
+  return _getNextInvoiceNumberCore(tx, tenantId, type);
+}
+
+/**
+ * Holt die nächste Rechnungsnummer atomar (in eigener Transaktion).
+ *
+ * **⚠️ WARNUNG GoBD:** Diese Variante hebt die Nummer in EIGENER Transaktion
+ * ab. Wenn der Caller danach die Invoice.create AUSSERHALB einer Transaktion
+ * macht und der Insert failt, ist die Nummer "verbrannt" → Lücke in der
+ * lückenlosen Nummerierung. **Bevorzuge `getNextInvoiceNumberInTx`** wann
+ * immer möglich.
+ *
+ * Wird weiter genutzt für Bulk-Worker (BullMQ) wo der Invoice-Insert
+ * idempotent ist und die Nummern-Vergabe explizit von der Persistierung
+ * entkoppelt ist.
  */
 export async function getNextInvoiceNumber(
   tenantId: string,
   type: InvoiceType
 ): Promise<{ number: string; sequenceId: string }> {
-  const currentYear = new Date().getFullYear();
-
-  // Atomare Transaktion für die Nummernvergabe
-  const result = await prisma.$transaction(async (tx) => {
-    // Sequence mit Lock holen oder erstellen
-    let sequence = await tx.invoiceNumberSequence.findUnique({
-      where: {
-        tenantId_type: {
-          tenantId,
-          type,
-        },
-      },
-    });
-
-    // Falls keine Sequence existiert, erstelle eine mit Defaults
-    if (!sequence) {
-      sequence = await tx.invoiceNumberSequence.create({
-        data: {
-          tenantId,
-          type,
-          format: type === "INVOICE" ? "RG-{YEAR}-{NUMBER}" : "GS-{YEAR}-{NUMBER}",
-          currentYear,
-          nextNumber: 1,
-          digitCount: 4,
-        },
-      });
-    }
-
-    // Jahr zurücksetzen wenn nötig
-    if (sequence.currentYear !== currentYear) {
-      sequence = await tx.invoiceNumberSequence.update({
-        where: { id: sequence.id },
-        data: {
-          currentYear,
-          nextNumber: 1,
-        },
-      });
-    }
-
-    // Nummer generieren
-    const invoiceNumber = generateInvoiceNumber(
-      sequence.format,
-      sequence.nextNumber,
-      sequence.digitCount,
-      sequence.currentYear
-    );
-
-    // Nächste Nummer inkrementieren
-    await tx.invoiceNumberSequence.update({
-      where: { id: sequence.id },
-      data: {
-        nextNumber: sequence.nextNumber + 1,
-      },
-    });
-
-    return {
-      number: invoiceNumber,
-      sequenceId: sequence.id,
-    };
-  });
-
-  return result;
+  return prisma.$transaction((tx) => _getNextInvoiceNumberCore(tx, tenantId, type));
 }
 
 /**

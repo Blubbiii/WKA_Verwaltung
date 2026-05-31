@@ -6,6 +6,8 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
+import { headers } from "next/headers";
 
 const updateSchema = z.object({
   invoiceType: z.enum(["INVOICE", "CREDIT_NOTE"]).optional(),
@@ -93,6 +95,16 @@ export async function PUT(
       return apiError("NOT_FOUND", 404, { message: "Rechnung nicht gefunden" });
     }
 
+    // GoBD: Eingangsrechnungen sind nach Freigabe revisionssicher.
+    // Edits sind nur in den Prä-Freigabe-Stati INBOX und REVIEW erlaubt.
+    // Nach APPROVED/PAID dürfen Kerndaten nicht mehr geändert werden —
+    // Korrekturen müssen via Storno + Neuanlage erfolgen.
+    if (existing.status !== "INBOX" && existing.status !== "REVIEW") {
+      return apiError("CONFLICT", 409, {
+        message: `Rechnung mit Status ${existing.status} kann nicht mehr bearbeitet werden. Bitte stornieren und neu anlegen.`,
+      });
+    }
+
     const raw = await request.json();
     const parsed = updateSchema.safeParse(raw);
     if (!parsed.success) {
@@ -100,30 +112,59 @@ export async function PUT(
     }
 
     const d = parsed.data;
-    const updated = await prisma.incomingInvoice.update({
-      where: { id },
-      data: {
-        ...(d.invoiceType !== undefined && { invoiceType: d.invoiceType }),
-        ...(d.vendorId !== undefined && { vendorId: d.vendorId }),
-        ...(d.vendorNameFallback !== undefined && { vendorNameFallback: d.vendorNameFallback }),
-        ...(d.invoiceNumber !== undefined && { invoiceNumber: d.invoiceNumber }),
-        ...(d.invoiceDate !== undefined && { invoiceDate: d.invoiceDate ? new Date(d.invoiceDate) : null }),
-        ...(d.dueDate !== undefined && { dueDate: d.dueDate ? new Date(d.dueDate) : null }),
-        ...(d.netAmount !== undefined && { netAmount: d.netAmount }),
-        ...(d.vatAmount !== undefined && { vatAmount: d.vatAmount }),
-        ...(d.grossAmount !== undefined && { grossAmount: d.grossAmount }),
-        ...(d.vatRate !== undefined && { vatRate: d.vatRate }),
-        ...(d.currency !== undefined && { currency: d.currency }),
-        ...(d.iban !== undefined && { iban: d.iban }),
-        ...(d.bic !== undefined && { bic: d.bic }),
-        ...(d.paymentReference !== undefined && { paymentReference: d.paymentReference }),
-        ...(d.recipientFundId !== undefined && { recipientFundId: d.recipientFundId }),
-        ...(d.datevAccount !== undefined && { datevAccount: d.datevAccount }),
-        ...(d.notes !== undefined && { notes: d.notes }),
-      },
-    });
 
-    return NextResponse.json(serializePrisma(updated));
+    const headersList = await headers();
+    const ipAddress = headersList.get("x-forwarded-for")?.split(",")[0] ?? headersList.get("x-real-ip") ?? null;
+    const userAgent = headersList.get("user-agent") ?? null;
+
+    try {
+      // updateWithAudit wrappt Read + Update + AuditLog in EINER Transaction.
+      // GoBD §147: jede Änderung an Belegen ist mit Zeitstempel + User +
+      // Diff dokumentiert.
+      const updated = await updateWithAudit({
+        entityType: "IncomingInvoice",
+        entityId: id,
+        userId: check.userId,
+        tenantId: check.tenantId!,
+        ipAddress,
+        userAgent,
+        description: "Eingangsrechnung bearbeitet",
+        loadCurrent: (tx) =>
+          tx.incomingInvoice.findFirst({
+            where: { id, tenantId: check.tenantId!, deletedAt: null },
+          }) as Promise<Record<string, unknown> | null>,
+        applyChange: (tx) =>
+          tx.incomingInvoice.update({
+            where: { id, tenantId: check.tenantId! },
+            data: {
+              ...(d.invoiceType !== undefined && { invoiceType: d.invoiceType }),
+              ...(d.vendorId !== undefined && { vendorId: d.vendorId }),
+              ...(d.vendorNameFallback !== undefined && { vendorNameFallback: d.vendorNameFallback }),
+              ...(d.invoiceNumber !== undefined && { invoiceNumber: d.invoiceNumber }),
+              ...(d.invoiceDate !== undefined && { invoiceDate: d.invoiceDate ? new Date(d.invoiceDate) : null }),
+              ...(d.dueDate !== undefined && { dueDate: d.dueDate ? new Date(d.dueDate) : null }),
+              ...(d.netAmount !== undefined && { netAmount: d.netAmount }),
+              ...(d.vatAmount !== undefined && { vatAmount: d.vatAmount }),
+              ...(d.grossAmount !== undefined && { grossAmount: d.grossAmount }),
+              ...(d.vatRate !== undefined && { vatRate: d.vatRate }),
+              ...(d.currency !== undefined && { currency: d.currency }),
+              ...(d.iban !== undefined && { iban: d.iban }),
+              ...(d.bic !== undefined && { bic: d.bic }),
+              ...(d.paymentReference !== undefined && { paymentReference: d.paymentReference }),
+              ...(d.recipientFundId !== undefined && { recipientFundId: d.recipientFundId }),
+              ...(d.datevAccount !== undefined && { datevAccount: d.datevAccount }),
+              ...(d.notes !== undefined && { notes: d.notes }),
+            },
+          }) as Promise<Record<string, unknown>>,
+      });
+
+      return NextResponse.json(serializePrisma(updated));
+    } catch (err) {
+      if (isEntityNotFoundError(err)) {
+        return apiError("NOT_FOUND", 404, { message: "Rechnung nicht gefunden" });
+      }
+      throw err;
+    }
   } catch (error) {
     logger.error({ err: error }, "Error updating inbox invoice");
     return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren" });
