@@ -85,7 +85,7 @@
     "exceljs": "^4.4.0",
     "fast-xml-parser": "^5.4.1",
     "framer-motion": "^12.38.0",
-    "ioredis": "^5.9.2",
+    "ioredis": "5.10.1",
     "isomorphic-dompurify": "^3.8.0",
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
