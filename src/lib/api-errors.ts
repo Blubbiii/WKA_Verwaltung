@@ -51,7 +51,10 @@ export type ApiErrorCode =
   // Generic
   | "INTERNAL_ERROR"
   | "RATE_LIMITED"
-  | "BAD_REQUEST";
+  | "BAD_REQUEST"
+  // Auth-specific (reset-password flow)
+  | "INVALID_TOKEN"
+  | "USER_INACTIVE";
 
 /** German fallback messages for error codes (used when client has no translation). */
 const DEFAULT_MESSAGES: Record<ApiErrorCode, string> = {
@@ -80,6 +83,8 @@ const DEFAULT_MESSAGES: Record<ApiErrorCode, string> = {
   INTERNAL_ERROR: "Interner Server-Fehler",
   RATE_LIMITED: "Zu viele Anfragen",
   BAD_REQUEST: "Ungültige Anfrage",
+  INVALID_TOKEN: "Ungültiger oder abgelaufener Token",
+  USER_INACTIVE: "Benutzerkonto nicht aktiv",
 };
 
 /** Default HTTP status per error code. */
@@ -109,6 +114,8 @@ const DEFAULT_STATUS: Record<ApiErrorCode, number> = {
   INTERNAL_ERROR: 500,
   RATE_LIMITED: 429,
   BAD_REQUEST: 400,
+  INVALID_TOKEN: 400,
+  USER_INACTIVE: 400,
 };
 
 export interface ApiErrorBody {

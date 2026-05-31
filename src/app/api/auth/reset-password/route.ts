@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { rateLimit, getClientIp, getRateLimitResponse, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
+import { apiError } from "@/lib/api-errors";
 
 // Validation Schema
 const resetPasswordSchema = z.object({
@@ -33,17 +34,15 @@ export async function POST(request: Request) {
     // Validate input
     const parsed = resetPasswordSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Validierungsfehler",
-          details: parsed.error.issues.map((e) => ({
+      return apiError("VALIDATION_FAILED", 400, {
+        message: "Validierungsfehler",
+        details: {
+          fields: parsed.error.issues.map((e) => ({
             field: e.path.join("."),
             message: e.message,
           })),
         },
-        { status: 400 }
-      );
+      });
     }
 
     const { token, password } = parsed.data;
@@ -60,13 +59,11 @@ export async function POST(request: Request) {
     });
 
     if (claimed.count === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Ungültiger, bereits verwendeter oder abgelaufener Token. Bitte fordern Sie einen neuen Reset-Link an.",
-        },
-        { status: 400 }
-      );
+      // Frontend reset-password/page.tsx checkt explizit auf code === "INVALID_TOKEN"
+      // um eine spezielle Fehlermeldung anzuzeigen.
+      return apiError("INVALID_TOKEN", 400, {
+        message: "Ungültiger, bereits verwendeter oder abgelaufener Token. Bitte fordern Sie einen neuen Reset-Link an.",
+      });
     }
 
     // Fetch token data for user reference (already claimed, safe to read)
@@ -80,13 +77,9 @@ export async function POST(request: Request) {
     });
 
     if (!resetToken || resetToken.user.status !== "ACTIVE") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Dieses Benutzerkonto ist nicht aktiv. Bitte kontaktieren Sie den Administrator.",
-        },
-        { status: 400 }
-      );
+      return apiError("USER_INACTIVE", 400, {
+        message: "Dieses Benutzerkonto ist nicht aktiv. Bitte kontaktieren Sie den Administrator.",
+      });
     }
 
     // Hash new password
@@ -121,13 +114,8 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     logger.error({ err: error }, "Reset password error");
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
-      },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, {
+      message: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
+    });
   }
 }
