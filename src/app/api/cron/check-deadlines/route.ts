@@ -3,8 +3,18 @@ import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { checkDeadlinesAndNotify } from "@/lib/notifications/deadline-checker";
+import { rateLimit, getClientIp, getRateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  // IP-Rate-Limit als Defense-in-Depth gegen CRON_SECRET-Leak.
+  // Cron triggert in der Realität ≤1/min → 10/min/IP ist sehr grosszügig.
+  const ip = getClientIp(request);
+  const rl = await rateLimit(`cron-deadlines:${ip}`, {
+    limit: 10,
+    windowMs: 60_000,
+  });
+  if (!rl.success) return getRateLimitResponse(rl);
+
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     logger.error("CRON_SECRET env var is not set");

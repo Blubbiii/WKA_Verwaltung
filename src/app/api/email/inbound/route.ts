@@ -12,6 +12,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { uploadFile } from "@/lib/storage";
 import { apiLogger as logger } from "@/lib/logger";
+import { rateLimit, getClientIp, getRateLimitResponse } from "@/lib/rate-limit";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -40,6 +41,17 @@ const inboundEmailSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // ── IP-based rate-limit (defense-in-depth gegen API-Key-Leak) ──────
+    // Falls INBOUND_EMAIL_API_KEY kompromittiert wird, soll der Angreifer
+    // nicht unbegrenzt Mails einspeisen können. n8n macht in der Realität
+    // <10 req/min, also ist 60/min/IP grosszügig genug.
+    const ip = getClientIp(request);
+    const rl = await rateLimit(`email-inbound:${ip}`, {
+      limit: 60,
+      windowMs: 60_000,
+    });
+    if (!rl.success) return getRateLimitResponse(rl);
+
     // ── Auth: validate INBOUND_EMAIL_API_KEY ────────────────────────────
     const apiKey = process.env.INBOUND_EMAIL_API_KEY;
     if (!apiKey) {
