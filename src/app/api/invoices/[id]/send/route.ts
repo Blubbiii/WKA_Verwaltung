@@ -5,6 +5,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { createAutoPosting } from "@/lib/accounting/auto-posting";
 import { apiError } from "@/lib/api-errors";
+import { assertSendable, isSendableAssertionError } from "@/lib/invoices/assert-sendable";
 
 // POST /api/invoices/[id]/send - Rechnung als versendet markieren
 export async function POST(
@@ -17,9 +18,12 @@ export async function POST(
 
     const { id } = await params;
 
+    // Load invoice + items + tenant data for §14 UStG validation
     const invoice = await prisma.invoice.findFirst({
       where: { id, tenantId: check.tenantId! },
-      select: { id: true, tenantId: true, status: true },
+      include: {
+        items: { select: { description: true, netAmount: true } },
+      },
     });
 
     if (!invoice) {
@@ -30,13 +34,25 @@ export async function POST(
       return apiError("BAD_REQUEST", undefined, { message: `Rechnung kann nicht versendet werden (Status: ${invoice.status})` });
     }
 
-    // Prüfe ob Positionen vorhanden
-    const itemCount = await prisma.invoiceItem.count({
-      where: { invoiceId: id },
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: check.tenantId! },
+      select: { name: true, taxId: true, vatId: true, address: true, city: true, postalCode: true, street: true },
     });
+    if (!tenant) {
+      return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
+    }
 
-    if (itemCount === 0) {
-      return apiError("BAD_REQUEST", undefined, { message: "Rechnung hat keine Positionen" });
+    // §14 UStG Pflichtangaben-Validierung vor DRAFT→SENT-Transition
+    try {
+      assertSendable(invoice, tenant);
+    } catch (err) {
+      if (isSendableAssertionError(err)) {
+        return apiError("VALIDATION_FAILED", 422, {
+          message: err.message,
+          details: { missing: err.missing },
+        });
+      }
+      throw err;
     }
 
     const updated = await prisma.invoice.update({

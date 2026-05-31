@@ -3843,6 +3843,13 @@ enum BankTxStatus {
   IGNORED
 }
 
+/// Source of the match between a bank transaction and an invoice.
+/// AUTO = matched by auto-matcher (heuristic). MANUAL = matched by user.
+enum BankMatchSource {
+  AUTO
+  MANUAL
+}
+
 model BankTransaction {
   id                String        @id @default(uuid())
   tenantId          String
@@ -3861,6 +3868,12 @@ model BankTransaction {
   matchedInvoiceId  String?
   matchedInvoice    Invoice?      @relation("BankTxMatchedInvoice", fields: [matchedInvoiceId], references: [id])
   matchConfidence   Float?
+  /// GoBD-Audit: woher kommt die Zuordnung (AUTO-Matcher oder User)?
+  matchSource       BankMatchSource?
+  /// Welcher User hat die Zuordnung manuell bestätigt/angepasst?
+  matchedById       String?
+  /// Wann wurde die Zuordnung gesetzt?
+  matchedAt         DateTime?
   importBatchId     String?       @db.VarChar(50)
   importFileName    String?       @db.VarChar(200)
   importedAt        DateTime      @default(now())

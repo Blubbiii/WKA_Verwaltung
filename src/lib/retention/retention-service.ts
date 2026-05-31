@@ -42,6 +42,25 @@ const RETENTION_POLICY = {
   CrmActivity: 6,
 } as const;
 
+/**
+ * Models die KEIN soft-delete kennen (haben kein deletedAt-Feld) und
+ * deshalb nie vom Retention-Service gepurged werden. Sie sind GoBD-Belege
+ * die NIEMALS aus der Datenbank entfernt werden dürfen — auch nach 10
+ * Jahren werden sie nicht hart-gelöscht.
+ *
+ * Falls nach Ablauf der gesetzlichen Frist eine Datenminimierung
+ * gewünscht wird, muss das über einen separaten DBA-Workflow erfolgen
+ * (z.B. Pseudonymisierung der personenbezogenen Felder unter Beibehaltung
+ * der Beleg-Struktur).
+ *
+ * Liste (Stand 2026-05):
+ *   - CashBookEntry (Kassenbuch-Einträge — GoBD §147 10J)
+ *   - BankTransaction (Buchungsbelege — GoBD §147 10J)
+ *   - DunningRun + DunningItem (Mahnverlauf — Beweisbelege, unbefristet)
+ *   - AuditLog (siehe docs/devops/audit-log-hardening.md — separater DB-User)
+ *   - JournalEntryLine (Cascade via parent JournalEntry)
+ */
+
 export interface RetentionRunResult {
   model: string;
   retentionYears: number;

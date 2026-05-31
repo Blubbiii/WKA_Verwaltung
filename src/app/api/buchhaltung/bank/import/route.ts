@@ -53,23 +53,33 @@ export async function POST(request: NextRequest) {
 
     // Persist to DB
     const batchId = randomUUID().slice(0, 8);
+    const now = new Date();
     const created = await prisma.bankTransaction.createMany({
-      data: matches.map((m) => ({
-        tenantId: check.tenantId!,
-        bankAccountIban: iban || "UNKNOWN",
-        bookingDate: m.transaction.date,
-        amount: m.transaction.amount,
-        currency: m.transaction.currency,
-        counterpartName: m.transaction.counterpartName || null,
-        counterpartIban: m.transaction.counterpartIban || null,
-        reference: m.transaction.reference || null,
-        bankReference: m.transaction.bankReference || null,
-        matchStatus: m.confidence === "high" ? "MATCHED" : m.confidence === "medium" ? "SUGGESTED" : "UNMATCHED",
-        matchedInvoiceId: m.matchedInvoiceId,
-        matchConfidence: m.confidence === "high" ? 1.0 : m.confidence === "medium" ? 0.6 : null,
-        importBatchId: batchId,
-        importFileName: file.name,
-      })),
+      data: matches.map((m) => {
+        const wasMatched = m.confidence !== "none" && !!m.matchedInvoiceId;
+        return {
+          tenantId: check.tenantId!,
+          bankAccountIban: iban || "UNKNOWN",
+          bookingDate: m.transaction.date,
+          amount: m.transaction.amount,
+          currency: m.transaction.currency,
+          counterpartName: m.transaction.counterpartName || null,
+          counterpartIban: m.transaction.counterpartIban || null,
+          reference: m.transaction.reference || null,
+          bankReference: m.transaction.bankReference || null,
+          matchStatus: m.confidence === "high" ? "MATCHED" : m.confidence === "medium" ? "SUGGESTED" : "UNMATCHED",
+          matchedInvoiceId: m.matchedInvoiceId,
+          matchConfidence: m.confidence === "high" ? 1.0 : m.confidence === "medium" ? 0.6 : null,
+          // GoBD-Audit: dokumentiert dass der Match vom Auto-Matcher kommt.
+          // Bei nachträglicher User-Korrektur muss matchSource auf MANUAL
+          // gesetzt + matchedById/matchedAt aktualisiert werden.
+          matchSource: wasMatched ? "AUTO" : null,
+          matchedAt: wasMatched ? now : null,
+          // matchedById bleibt null für Auto-Matches (= System-Match)
+          importBatchId: batchId,
+          importFileName: file.name,
+        };
+      }),
     });
 
     return NextResponse.json({
