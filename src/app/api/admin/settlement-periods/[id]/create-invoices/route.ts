@@ -388,9 +388,49 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
   const lessorByLease = new Map(leasesWithLessor.map((l) => [l.id, l.lessor]));
 
   // Filter out leases with negligible total
-  const validLeases = calcResult.leases.filter((l) => l.totalPayment > 0.01);
-  if (validLeases.length === 0) {
+  const allValidLeases = calcResult.leases.filter((l) => l.totalPayment > 0.01);
+  if (allValidLeases.length === 0) {
     return apiError("BAD_REQUEST", undefined, { message: "Keine abrechenbaren Betraege gefunden" });
+  }
+
+  // ── IDEMPOTENZ-CHECK (R-7): Wenn ein Vorlauf bei n von m Invoices
+  // gecrashed ist, würde ein Retry Duplikate erzeugen. Wir filtern alle
+  // Leases raus für die bereits eine non-CANCELLED Invoice in dieser
+  // Period existiert. CANCELLED Invoices werden durch eine neue ersetzt
+  // (typischer Korrektur-Workflow).
+  const existingInvoices = await prisma.invoice.findMany({
+    where: {
+      tenantId,
+      settlementPeriodId: period.id,
+      leaseId: { in: allValidLeases.map((l) => l.leaseId) },
+      invoiceType: "CREDIT_NOTE",
+      status: { not: "CANCELLED" },
+      deletedAt: null,
+    },
+    select: { leaseId: true, status: true, invoiceNumber: true },
+  });
+  const skippedLeases = new Set(existingInvoices.map((inv) => inv.leaseId));
+  const validLeases = allValidLeases.filter((l) => !skippedLeases.has(l.leaseId));
+
+  if (skippedLeases.size > 0) {
+    logger.info(
+      {
+        periodId: period.id,
+        alreadyCreated: existingInvoices.length,
+        toCreate: validLeases.length,
+      },
+      "Skipping leases that already have invoices for this period (idempotency)",
+    );
+  }
+
+  if (validLeases.length === 0) {
+    // Alle Invoices wurden in einem vorherigen Lauf bereits erstellt.
+    return NextResponse.json({
+      message: `Alle ${existingInvoices.length} Gutschriften wurden bereits in einem früheren Lauf erstellt.`,
+      periodType: "ADVANCE",
+      invoices: [],
+      alreadyExists: existingInvoices.length,
+    });
   }
 
   const invoiceDateValue = invoiceDate ? new Date(invoiceDate) : new Date();
@@ -398,7 +438,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
   // Service date range depends on interval
   const { start: serviceStartDate, end: serviceEndDate } = getIntervalServiceDates(interval, period.year, period.month);
 
-  // Batch-generate credit note numbers
+  // Batch-generate credit note numbers (nur für die TATSÄCHLICH zu erstellenden)
   const { numbers: invoiceNumbers } = await getNextInvoiceNumbers(
     tenantId,
     "CREDIT_NOTE",
@@ -820,6 +860,34 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
 
   const invoiceDateValue = invoiceDate ? new Date(invoiceDate) : new Date();
 
+  // ── IDEMPOTENZ-CHECK FINAL: Skip Leases die bereits eine Final-Invoice
+  // in dieser Period haben (R-7 Fix: verhindert Duplikate beim Retry nach
+  // Crash). Wir filtern via Set<leaseId>, analog zum ADVANCE-Pfad.
+  const finalLeaseIds = calcResult.leases
+    .filter((l) => l.totalPayment > 0.01)
+    .map((l) => l.leaseId);
+  const finalExisting = await prisma.invoice.findMany({
+    where: {
+      tenantId,
+      settlementPeriodId: period.id,
+      leaseId: { in: finalLeaseIds },
+      invoiceType: "CREDIT_NOTE",
+      status: { not: "CANCELLED" },
+      deletedAt: null,
+    },
+    select: { leaseId: true },
+  });
+  const finalSkipped = new Set(finalExisting.map((inv) => inv.leaseId));
+  if (finalSkipped.size > 0) {
+    logger.info(
+      {
+        periodId: period.id,
+        alreadyCreated: finalExisting.length,
+      },
+      "FINAL: Skipping leases that already have invoices (idempotency)",
+    );
+  }
+
   // Park rates for WEG/AUSGLEICH/KABEL item details
   const finalParkRates = {
     wegPerSqm: period.park.wegCompensationPerSqm ? Number(period.park.wegCompensationPerSqm) : 0,
@@ -856,6 +924,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
 
   for (const leaseCalc of calcResult.leases) {
     if (leaseCalc.totalPayment <= 0.01) continue;
+    if (finalSkipped.has(leaseCalc.leaseId)) continue; // Idempotenz
 
     const items: typeof prepared[0]["items"] = [];
     let position = 0;

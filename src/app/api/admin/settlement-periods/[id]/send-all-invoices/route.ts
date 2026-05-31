@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requirePermission } from "@/lib/auth/withPermission";
+import { requireAdmin } from "@/lib/auth/withPermission";
 import { generateInvoicePdf } from "@/lib/pdf";
 import { sendEmailSync } from "@/lib/email/sender";
 import { apiLogger as logger } from "@/lib/logger";
@@ -25,7 +25,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requirePermission("invoices:update");
+    // Bulk-Send von Gutschriften nur durch Admin (gewolltes Vier-Augen-
+    // Prinzip-Surrogat: Approve passiert in approve-Route, Send hier
+    // braucht ebenfalls Admin-Rolle).
+    const check = await requireAdmin();
     if (!check.authorized) return check.error;
 
     const { id: periodId } = await params;
@@ -33,7 +36,7 @@ export async function POST(
     // Verify the settlement period exists and belongs to tenant
     const period = await prisma.leaseSettlementPeriod.findUnique({
       where: { id: periodId },
-      select: { id: true, tenantId: true, year: true, month: true, periodType: true },
+      select: { id: true, tenantId: true, year: true, month: true, periodType: true, status: true },
     });
 
     if (!period) {
@@ -44,13 +47,26 @@ export async function POST(
       return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
-    // Load all invoices for this settlement period that are eligible for sending
+    // APPROVAL-GATE (R-3 Fix): Mailversand darf nur nach Genehmigung
+    // passieren. Verhindert dass Gutschriften aus OPEN/IN_PROGRESS-
+    // Periods stillschweigend rausgehen.
+    if (period.status !== "APPROVED" && period.status !== "CLOSED") {
+      return apiError("CONFLICT", 409, {
+        message: `Period hat Status ${period.status} — Mailversand erst nach Approval erlaubt.`,
+      });
+    }
+
+    // R-8 Fix: NUR DRAFT senden, nicht SENT erneut.
+    // Vorher: status IN ["DRAFT","SENT"] — bei Retry wurden bereits
+    // versendete Mails ein zweites Mal verschickt. Jetzt: nur DRAFT,
+    // damit ein Retry nur die wirklich noch ausstehenden bearbeitet.
     const invoices = await prisma.invoice.findMany({
       where: {
         settlementPeriodId: periodId,
         tenantId: check.tenantId!,
         deletedAt: null,
-        status: { in: ["DRAFT", "SENT"] },
+        status: "DRAFT",
+        emailedAt: null,
       },
       include: {
         items: { orderBy: { position: "asc" } },
