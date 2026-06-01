@@ -1,19 +1,20 @@
 /**
- * Tax-Code Einzel-CRUD (Phase 10).
+ * Tenant-Steuerschlüssel Einzel-CRUD (P10, Schicht 2).
  *
- * PATCH  /api/buchhaltung/tax-codes/[id]   — Code editieren
- * DELETE /api/buchhaltung/tax-codes/[id]   — Code löschen (nicht für isSystem)
+ * PATCH  /api/buchhaltung/tax-codes/[id]   — Tenant-Felder editieren
+ *        (code, nameOverride, rateOverride, vatReportBoxOverride,
+ *         taxAccountId, active). Template-Verweis (templateId) ist nicht
+ *         änderbar — wer eine andere Kategorie braucht, legt einen
+ *         eigenen TaxCode an oder nutzt den materialisierten.
  *
- * Wir prüfen vor DELETE, ob der Code irgendwo referenziert wird
- * (Invoice / IncomingInvoice / JournalEntryLine). Ist das der Fall,
- * lehnen wir mit DEPENDENCY_EXISTS ab — die Referenzen würden via
- * onDelete: SetNull stillschweigend verschwinden, was Audit-Trails
- * verfälscht.
+ * DELETE /api/buchhaltung/tax-codes/[id]   — Code löschen
+ *        Nur möglich wenn keine Referenzen aus Invoice/IncomingInvoice/
+ *        JournalEntryLine existieren. Sonst DEPENDENCY_EXISTS.
+ *        Empfohlene Alternative: active=false setzen.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { TaxCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
@@ -21,12 +22,11 @@ import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
 const patchSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  category: z.enum(TaxCategory).optional(),
-  rate: z.number().min(0).max(1).optional(),
-  vatReportBox: z.string().max(10).nullable().optional(),
-  reverseCharge: z.boolean().optional(),
-  taxAccountId: z.string().uuid().nullable().optional(),
+  code: z.string().min(1).max(10).optional(),
+  nameOverride: z.string().max(150).optional().nullable(),
+  rateOverride: z.number().min(0).max(1).optional().nullable(),
+  vatReportBoxOverride: z.string().max(10).optional().nullable(),
+  taxAccountId: z.string().uuid().optional().nullable(),
   active: z.boolean().optional(),
 });
 
@@ -46,7 +46,7 @@ export async function PATCH(
 
     const existing = await prisma.taxCode.findFirst({
       where: { id, tenantId: check.tenantId },
-      select: { id: true, isSystem: true, code: true },
+      select: { id: true },
     });
 
     if (!existing) {
@@ -61,13 +61,6 @@ export async function PATCH(
     if (!parsed.success) {
       return apiError("BAD_REQUEST", 400, {
         message: parsed.error.issues[0]?.message || "Ungültige Eingabedaten",
-      });
-    }
-
-    // System-Codes: Kategorie und Code sind fest, sonst bricht die UStVA-Logik.
-    if (existing.isSystem && parsed.data.category !== undefined) {
-      return apiError("OPERATION_NOT_ALLOWED", 409, {
-        message: "Kategorie von System-Steuerschlüsseln kann nicht geändert werden",
       });
     }
 
@@ -86,12 +79,19 @@ export async function PATCH(
     const updated = await prisma.taxCode.update({
       where: { id },
       data: {
-        ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
-        ...(parsed.data.category !== undefined ? { category: parsed.data.category } : {}),
-        ...(parsed.data.rate !== undefined ? { rate: parsed.data.rate } : {}),
-        ...(parsed.data.vatReportBox !== undefined ? { vatReportBox: parsed.data.vatReportBox } : {}),
-        ...(parsed.data.reverseCharge !== undefined ? { reverseCharge: parsed.data.reverseCharge } : {}),
-        ...(parsed.data.taxAccountId !== undefined ? { taxAccountId: parsed.data.taxAccountId } : {}),
+        ...(parsed.data.code !== undefined ? { code: parsed.data.code } : {}),
+        ...(parsed.data.nameOverride !== undefined
+          ? { nameOverride: parsed.data.nameOverride }
+          : {}),
+        ...(parsed.data.rateOverride !== undefined
+          ? { rateOverride: parsed.data.rateOverride }
+          : {}),
+        ...(parsed.data.vatReportBoxOverride !== undefined
+          ? { vatReportBoxOverride: parsed.data.vatReportBoxOverride }
+          : {}),
+        ...(parsed.data.taxAccountId !== undefined
+          ? { taxAccountId: parsed.data.taxAccountId }
+          : {}),
         ...(parsed.data.active !== undefined ? { active: parsed.data.active } : {}),
       },
     });
@@ -126,7 +126,7 @@ export async function DELETE(
 
     const existing = await prisma.taxCode.findFirst({
       where: { id, tenantId: check.tenantId },
-      select: { id: true, isSystem: true, code: true },
+      select: { id: true, code: true },
     });
 
     if (!existing) {
@@ -135,14 +135,7 @@ export async function DELETE(
       });
     }
 
-    if (existing.isSystem) {
-      return apiError("OPERATION_NOT_ALLOWED", 409, {
-        message: "System-Steuerschlüssel können nicht gelöscht werden. Setze active=false zum Deaktivieren.",
-      });
-    }
-
-    // Referenz-Check: wenn der Code irgendwo verwendet wird, lehnen wir ab
-    // statt SetNull zuzulassen (Audit-Verlust). User muss erst deaktivieren.
+    // Referenz-Check (verhindert silent SetNull → Audit-Verlust).
     const [invoiceRefs, incomingRefs, journalRefs] = await Promise.all([
       prisma.invoice.count({ where: { taxCodeId: id } }),
       prisma.incomingInvoice.count({ where: { taxCodeId: id } }),

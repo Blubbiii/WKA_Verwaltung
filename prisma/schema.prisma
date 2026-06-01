@@ -3155,12 +3155,22 @@ model PositionTaxMapping {
 }
 
 // =============================================================================
-// P10: TaxCode (DATEV-Steuerschlüssel + UStVA-Kennziffer-Mapping)
+// P10: Zwei-Schichten-Steuermodell
 //
-// Ersetzt schrittweise das alte TaxType-Enum (STANDARD/REDUCED/EXEMPT) durch
-// ein vollständiges Modell mit UStVA-Boxen, Reverse-Charge-Flag und tenant-
-// spezifischen DATEV-Steuerschlüsseln. TaxType bleibt parallel bis P11/P12
-// es ablöst (Backwards-Compat).
+// Schicht 1 — TaxCategoryTemplate (GLOBAL, ohne tenantId)
+//   Vom Super-Admin gepflegte gesetzliche Steuer-Kategorien (§12 UStG, §13b,
+//   §4, IGE/IGL, etc.) inkl. Default-Steuersatz und UStVA-Kennzahl.
+//   Beim Tenant-Onboarding werden hieraus die TaxCodes für den Tenant
+//   materialisiert (siehe Lib seedTenantTaxCodes()).
+//
+// Schicht 2 — TaxCode (TENANT-scoped)
+//   Tenant-spezifische Materialisierung eines Templates: hält den DATEV-
+//   Steuerschlüssel (z.B. "9" SKR04), das USt-Konto (z.B. "1776" SKR04)
+//   und optionale Overrides (Name, abweichender Satz).
+//   Wenn Override-Felder null sind, gelten die Template-Defaults.
+//
+// Das alte TaxType-Enum (STANDARD/REDUCED/EXEMPT) bleibt parallel bis
+// P11/P12 es ablöst (Backwards-Compat).
 // =============================================================================
 
 enum TaxCategory {
@@ -3175,41 +3185,71 @@ enum TaxCategory {
   NOT_TAXABLE              // außerhalb USt-Bereich (z.B. Schadensersatz, Innenumsätze)
 }
 
+/// GLOBAL — wird vom Super-Admin gepflegt. Tenants sehen es read-only.
+/// Beim Tenant-Onboarding werden hieraus die TaxCodes materialisiert.
+model TaxCategoryTemplate {
+  id                String      @id @default(uuid())
+  /// Stabiler Identifier für Code-Lookups (z.B. "STANDARD_19").
+  /// Entspricht dem TaxCategory-Enum-Namen.
+  key               String      @unique @db.VarChar(50)
+  category          TaxCategory @unique
+  /// Anzeigename ("USt 19% Regelsteuersatz §12 Abs. 1 UStG").
+  name              String      @db.VarChar(150)
+  description       String?     @db.VarChar(500)
+  /// Gesetzlicher Default-Satz (0.000 - 1.000). 19% = 0.19.
+  defaultRate       Decimal     @db.Decimal(5, 4)
+  /// UStVA-Kennzahl (z.B. "81", "46", "84"). Null bei NOT_TAXABLE / EXPORT.
+  defaultVatReportBox String?   @db.VarChar(10)
+  /// true für §13b + IGE (Leistungsempfänger schuldet USt).
+  reverseCharge     Boolean     @default(false)
+  /// Reihenfolge in UI-Listen.
+  sortOrder         Int         @default(0)
+  /// Aktiv = ist für Tenants nutzbar. Deaktivierte Templates werden bei
+  /// neuem Tenant nicht mehr materialisiert, bestehende TaxCodes bleiben.
+  active            Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  taxCodes          TaxCode[]
+
+  @@index([active, sortOrder])
+  @@map("tax_category_templates")
+}
+
 model TaxCode {
-  id            String      @id @default(uuid())
+  id            String              @id @default(uuid())
   tenantId      String
-  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  /// DATEV-Steuerschlüssel (z.B. "9" = 19%, "8" = 7%, "0" = steuerfrei).
-  /// Pro Tenant + Code UNIQUE — Konflikte mit DATEV-Standardschlüsseln
-  /// dadurch ausgeschlossen.
-  code          String      @db.VarChar(10)
-  /// Anzeigename für UI ("USt 19%", "Reverse Charge §13b EU", ...).
-  name          String      @db.VarChar(100)
-  category      TaxCategory
-  /// Effektiver USt-Satz (0.000 - 1.000). Wird vom UI als Prozent angezeigt.
-  rate          Decimal     @db.Decimal(5, 4)
-  /// UStVA-Kennzahl (z.B. "81" für 19% Umsätze, "41" für IGL, "46" für §13b).
-  /// Null bei NOT_TAXABLE / EXEMPT-Sonderfällen.
-  vatReportBox  String?     @db.VarChar(10)
-  /// true für REVERSE_CHARGE_13B + IGE_INTRA_EU (Leistungsempfänger schuldet USt).
-  reverseCharge Boolean     @default(false)
-  /// SKR03/04 USt-Konto (z.B. "1776" 19% USt SKR04). Optional — wird in P11
-  /// für Auto-Posting verwendet, kann pro TaxCode gesetzt werden.
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// Verweis auf das gesetzliche Template (Source of Truth für Kategorie,
+  /// Default-Satz, UStVA-Box, reverseCharge). Required — wir lassen
+  /// keine "freischwebenden" Codes zu.
+  templateId    String
+  template      TaxCategoryTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  /// DATEV-Steuerschlüssel des Tenants (z.B. "9" SKR04). Pro Tenant + Code UNIQUE.
+  code          String              @db.VarChar(10)
+  /// Tenant-spezifischer Name-Override (null = Template.name verwenden).
+  nameOverride  String?             @db.VarChar(150)
+  /// Tenant-spezifischer Satz-Override (selten, z.B. historische Sätze).
+  /// Null = Template.defaultRate verwenden.
+  rateOverride  Decimal?            @db.Decimal(5, 4)
+  /// Tenant-spezifische UStVA-Kennzahl (null = Template.defaultVatReportBox).
+  vatReportBoxOverride String?      @db.VarChar(10)
+  /// SKR03/04 USt-Konto des Tenants (z.B. "1776" 19% USt SKR04).
   taxAccountId  String?
-  taxAccount    LedgerAccount? @relation("TaxCodeAccount", fields: [taxAccountId], references: [id], onDelete: SetNull)
-  active        Boolean     @default(true)
-  /// System-defined Codes (von Seed angelegt) — UI sollte sie nicht löschen lassen.
-  isSystem      Boolean     @default(false)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  taxAccount    LedgerAccount?      @relation("TaxCodeAccount", fields: [taxAccountId], references: [id], onDelete: SetNull)
+  active        Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   invoices         Invoice[]
   incomingInvoices IncomingInvoice[]
   journalLines     JournalEntryLine[]
 
+  /// Pro Tenant + Template genau EIN Code (Idempotenz beim Materialize).
+  @@unique([tenantId, templateId])
+  /// Pro Tenant Code UNIQUE (DATEV-Schlüssel-Kollision).
   @@unique([tenantId, code])
   @@index([tenantId, active])
-  @@index([tenantId, category])
   @@map("tax_codes")
 }
 

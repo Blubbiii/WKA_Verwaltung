@@ -1,33 +1,40 @@
 /**
- * Tax-Code Verwaltung (Phase 10).
+ * Tenant-Steuerschlüssel-Verwaltung (P10, Schicht 2).
  *
- * GET  /api/buchhaltung/tax-codes        — Alle Codes des Mandanten
- * POST /api/buchhaltung/tax-codes        — Neuen Code anlegen (Admin)
+ * GET  /api/buchhaltung/tax-codes
+ *      Liefert alle TaxCodes des Mandanten inkl. aufgelöster Template-Daten.
+ *      Wenn der Mandant noch keine TaxCodes hat (frischer Tenant), werden
+ *      sie automatisch aus den globalen Templates materialisiert (idempotent).
  *
- * System-Codes (isSystem=true) sind die 8 Default-TaxCodes aus dem Seed
- * — sie können editiert (z.B. Name umbenannt) aber nicht gelöscht werden.
+ * POST /api/buchhaltung/tax-codes
+ *      Legt einen zusätzlichen TaxCode an (z.B. ein zweiter DATEV-Schlüssel
+ *      für dieselbe Kategorie wenn der Mandant mit zwei Konten arbeitet).
+ *      MUSS templateId angeben — wir lassen keine Codes ohne Template zu.
  *
- * Custom-Codes (isSystem=false) sind tenant-spezifische Erweiterungen
- * (z.B. eigene Reverse-Charge-Codes für spezifische Subunternehmer-Konstellationen).
+ * Steuer-KATEGORIEN (TaxCategoryTemplate) sind read-only und werden im
+ * Super-Admin-Bereich gepflegt (siehe /api/superadmin/tax-category-templates).
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { Prisma, TaxCategory } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import {
+  materializeTenantTaxCodes,
+  resolveTaxCode,
+} from "@/lib/accounting/tax-codes";
 
 const createSchema = z.object({
+  templateId: z.string().uuid(),
   code: z.string().min(1).max(10),
-  name: z.string().min(1).max(100),
-  category: z.enum(TaxCategory),
-  rate: z.number().min(0).max(1),
-  vatReportBox: z.string().max(10).nullable().optional(),
-  reverseCharge: z.boolean().optional(),
-  taxAccountId: z.string().uuid().nullable().optional(),
+  nameOverride: z.string().max(150).optional().nullable(),
+  rateOverride: z.number().min(0).max(1).optional().nullable(),
+  vatReportBoxOverride: z.string().max(10).optional().nullable(),
+  taxAccountId: z.string().uuid().optional().nullable(),
   active: z.boolean().optional(),
 });
 
@@ -47,30 +54,64 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get("includeInactive") === "true";
 
+    // Auto-Materialize: wenn dieser Tenant noch keine Codes hat (frischer
+    // Mandant), legen wir sie aus den globalen Templates an. Idempotent.
+    const existingCount = await prisma.taxCode.count({
+      where: { tenantId: check.tenantId },
+    });
+    if (existingCount === 0) {
+      const created = await materializeTenantTaxCodes(prisma, check.tenantId);
+      if (created > 0) {
+        logger.info(
+          { tenantId: check.tenantId, count: created },
+          "Auto-materialized tax codes for fresh tenant",
+        );
+      }
+    }
+
     const codes = await prisma.taxCode.findMany({
       where: {
         tenantId: check.tenantId,
         ...(includeInactive ? {} : { active: true }),
       },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        category: true,
-        rate: true,
-        vatReportBox: true,
-        reverseCharge: true,
-        taxAccountId: true,
-        taxAccount: { select: { accountNumber: true, name: true } },
-        active: true,
-        isSystem: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        template: {
+          select: {
+            id: true,
+            key: true,
+            category: true,
+            name: true,
+            description: true,
+            defaultRate: true,
+            defaultVatReportBox: true,
+            reverseCharge: true,
+            sortOrder: true,
+            active: true,
+          },
+        },
+        taxAccount: { select: { id: true, accountNumber: true, name: true } },
       },
-      orderBy: [{ category: "asc" }, { code: "asc" }],
+      orderBy: { template: { sortOrder: "asc" } },
     });
 
-    return NextResponse.json({ data: serializePrisma(codes) });
+    const resolved = codes.map((c) => ({
+      id: c.id,
+      code: c.code,
+      templateId: c.templateId,
+      template: c.template,
+      nameOverride: c.nameOverride,
+      rateOverride: c.rateOverride,
+      vatReportBoxOverride: c.vatReportBoxOverride,
+      taxAccount: c.taxAccount,
+      taxAccountId: c.taxAccountId,
+      active: c.active,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+      // Berechnete Effektivwerte (aufgelöste Overrides):
+      effective: resolveTaxCode(c),
+    }));
+
+    return NextResponse.json({ data: serializePrisma(resolved) });
   } catch (error) {
     logger.error({ err: error }, "Error fetching tax codes");
     return apiError("FETCH_FAILED", 500, {
@@ -101,7 +142,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Bei taxAccountId: muss dem gleichen Tenant gehören
+    // Template muss existieren UND aktiv sein.
+    const template = await prisma.taxCategoryTemplate.findUnique({
+      where: { id: parsed.data.templateId },
+      select: { id: true, active: true },
+    });
+    if (!template) {
+      return apiError("BAD_REQUEST", 400, {
+        message: "Verknüpftes Steuer-Kategorie-Template existiert nicht",
+      });
+    }
+    if (!template.active) {
+      return apiError("OPERATION_NOT_ALLOWED", 409, {
+        message: "Template ist deaktiviert — keine neuen Codes mehr erlaubt",
+      });
+    }
+
     if (parsed.data.taxAccountId) {
       const acct = await prisma.ledgerAccount.findFirst({
         where: { id: parsed.data.taxAccountId, tenantId: check.tenantId },
@@ -118,15 +174,13 @@ export async function POST(request: NextRequest) {
       const created = await prisma.taxCode.create({
         data: {
           tenantId: check.tenantId,
+          templateId: parsed.data.templateId,
           code: parsed.data.code,
-          name: parsed.data.name,
-          category: parsed.data.category,
-          rate: parsed.data.rate,
-          vatReportBox: parsed.data.vatReportBox ?? null,
-          reverseCharge: parsed.data.reverseCharge ?? false,
+          nameOverride: parsed.data.nameOverride ?? null,
+          rateOverride: parsed.data.rateOverride ?? null,
+          vatReportBoxOverride: parsed.data.vatReportBoxOverride ?? null,
           taxAccountId: parsed.data.taxAccountId ?? null,
           active: parsed.data.active ?? true,
-          isSystem: false,
         },
       });
 
@@ -142,7 +196,7 @@ export async function POST(request: NextRequest) {
         err.code === "P2002"
       ) {
         return apiError("ALREADY_EXISTS", 409, {
-          message: `Steuerschlüssel "${parsed.data.code}" existiert bereits`,
+          message: "Konflikt: DATEV-Schlüssel oder Template-Verknüpfung existiert bereits für diesen Mandanten",
         });
       }
       throw err;
