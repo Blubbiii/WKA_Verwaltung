@@ -32,8 +32,14 @@
 
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
+import { loadGewStConfig, type GewStSystemConfig } from "@/lib/system-settings";
 
-/** Quoten nach §8 Nr 1 GewStG. */
+/**
+ * Quoten nach §8 Nr 1 GewStG — Default-Werte (Rechtsstand 01.06.2026).
+ * Werden überschrieben durch SystemSetting wenn Super-Admin sie ändert.
+ *
+ * @deprecated Verwende loadGewStConfig() für aktuelle Werte
+ */
 export const GEWST_QUOTES = {
   INTEREST: 1.0, // Nr 1a — Schuldzinsen 100%
   RENT_MOVABLE: 0.2, // Nr 1d — 1/5
@@ -43,11 +49,19 @@ export const GEWST_QUOTES = {
 
 export type GewStAddBackKey = keyof typeof GEWST_QUOTES;
 
-/** §8 Nr 1 GewStG Freibetrag. */
+/** @deprecated siehe oben */
 export const GEWST_FREIBETRAG_EUR = 200_000;
-
-/** Hinzurechnungs-Quote auf die Summe nach Freibetrag (= 1/4). */
+/** @deprecated siehe oben */
 export const GEWST_HINZURECHNUNG_QUOTE = 0.25;
+
+function quotesFromConfig(config: GewStSystemConfig): Record<GewStAddBackKey, number> {
+  return {
+    INTEREST: config.quoteInterest,
+    RENT_MOVABLE: config.quoteRentMovable,
+    RENT_IMMOVABLE: config.quoteRentImmovable,
+    LICENSE: config.quoteLicense,
+  };
+}
 
 export interface GewStLine {
   key: GewStAddBackKey;
@@ -99,9 +113,13 @@ function toNum(d: Decimal | null | undefined): number {
 export async function computeGewSt(
   tenantId: string,
   fiscalYear: number,
+  configOverride?: GewStSystemConfig,
 ): Promise<GewStResult> {
   const yearStart = new Date(Date.UTC(fiscalYear, 0, 1, 0, 0, 0));
   const yearEnd = new Date(Date.UTC(fiscalYear, 11, 31, 23, 59, 59));
+
+  const config = configOverride ?? (await loadGewStConfig());
+  const quotes = quotesFromConfig(config);
 
   const [accounts, lines] = await Promise.all([
     prisma.ledgerAccount.findMany({
@@ -136,7 +154,7 @@ export async function computeGewSt(
   // Map: account → key
   const keyByAccount = new Map<string, GewStAddBackKey>();
   for (const acc of accounts) {
-    if (acc.gewStAddBackKey && acc.gewStAddBackKey in GEWST_QUOTES) {
+    if (acc.gewStAddBackKey && acc.gewStAddBackKey in quotes) {
       keyByAccount.set(acc.accountNumber, acc.gewStAddBackKey as GewStAddBackKey);
     }
   }
@@ -176,7 +194,7 @@ export async function computeGewSt(
   const lineKeys: GewStAddBackKey[] = ["INTEREST", "RENT_MOVABLE", "RENT_IMMOVABLE", "LICENSE"];
   const reportLines: GewStLine[] = lineKeys.map((key) => {
     const aufwand = round2(aufwandPerKey.get(key) ?? 0);
-    const quote = GEWST_QUOTES[key];
+    const quote = quotes[key];
     return {
       key,
       label: LABELS[key],
@@ -187,8 +205,8 @@ export async function computeGewSt(
   });
 
   const summeBemessung = round2(reportLines.reduce((s, l) => s + l.bemessung, 0));
-  const ueberFreibetrag = Math.max(0, round2(summeBemessung - GEWST_FREIBETRAG_EUR));
-  const hinzurechnungsBetrag = round2(ueberFreibetrag * GEWST_HINZURECHNUNG_QUOTE);
+  const ueberFreibetrag = Math.max(0, round2(summeBemessung - config.freibetragEur));
+  const hinzurechnungsBetrag = round2(ueberFreibetrag * config.hinzurechnungsQuote);
 
   const warnings: string[] = [];
   if (accounts.length === 0) {
@@ -201,7 +219,7 @@ export async function computeGewSt(
     fiscalYear,
     lines: reportLines,
     summeBemessung,
-    freibetrag: GEWST_FREIBETRAG_EUR,
+    freibetrag: config.freibetragEur,
     ueberFreibetrag,
     hinzurechnungsBetrag,
     contributingAccounts: contributingAccounts.sort(

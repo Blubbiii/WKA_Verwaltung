@@ -253,6 +253,7 @@ model User {
   invoicePaymentsCreated                                                  InvoicePayment[]            @relation("InvoicePaymentCreator")
   valueAdjustmentsCreated                                                 ValueAdjustment[]           @relation("ValueAdjustmentCreator")
   gobdExportsCreated                                                      GobdExport[]                @relation("GobdExportCreator")
+  systemSettingsUpdated                                                   SystemSetting[]             @relation("SystemSettingUpdater")
   mapAnnotations                                                          MapAnnotation[]
   operationalTasksCreated                                                 OperationalTask[]           @relation("OperationalTaskCreator")
   operationalTasksAssigned                                                OperationalTask[]           @relation("OperationalTaskAssignee")
@@ -4328,6 +4329,32 @@ model ValueAdjustment {
   @@index([tenantId, effectiveDate])
   @@index([invoiceId])
   @@map("value_adjustments")
+}
+
+// Audit-A: Globales SystemSetting für gesetzlich vorgegebene Werte.
+// Mandantenunabhängig — wenn der Gesetzgeber z.B. den GWG-Schwellbetrag
+// von 800 € auf 1.000 € ändert, sehen ALLE Tenants gleichzeitig den neuen
+// Wert (kein Code-Deploy nötig).
+//
+// Validitätsbereich (validFrom/validTo) ist optional — er erlaubt es,
+// historisch gültige Werte zu archivieren (z.B. GewSt-Freibetrag war
+// 100k vor 2020, ist 200k seitdem).
+model SystemSetting {
+  key         String    @id @db.VarChar(100)
+  /// Wert als JSON. Konsumenten typen das per Helper getSystemSetting<T>().
+  value       Json
+  /// Logische Gruppe (UI-Filter): "GWG", "GEWST", "VERZUGSZINS", "USTG", "AFA".
+  category    String    @db.VarChar(50)
+  description String?   @db.VarChar(500)
+  validFrom   DateTime?
+  validTo     DateTime?
+  updatedById String
+  updatedBy   User      @relation("SystemSettingUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([category])
+  @@map("system_settings")
 }
 
 // P19: GoBD §147 Abs. 6 AO Datenträgerüberlassung (Z3).

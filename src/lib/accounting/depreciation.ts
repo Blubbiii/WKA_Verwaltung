@@ -20,6 +20,7 @@
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { logger } from "@/lib/logger";
+import { loadAfaConfig } from "@/lib/system-settings";
 import { assertPeriodOpen, PeriodLockedError } from "./period-lock";
 import {
   calculateAfaSchedule,
@@ -67,14 +68,17 @@ export async function runDepreciation(
   userId: string,
   createPostings: boolean = false,
 ): Promise<{ processedCount: number; totalAmount: number; warnings: string[] }> {
-  const assets = await prisma.fixedAsset.findMany({
-    where: { tenantId, status: "ACTIVE" },
-    include: {
-      depreciations: {
-        orderBy: { periodEnd: "asc" },
+  const [assets, afaConfig] = await Promise.all([
+    prisma.fixedAsset.findMany({
+      where: { tenantId, status: "ACTIVE" },
+      include: {
+        depreciations: {
+          orderBy: { periodEnd: "asc" },
+        },
       },
-    },
-  });
+    }),
+    loadAfaConfig(),
+  ]);
 
   let processedCount = 0;
   let totalAmount = 0;
@@ -109,6 +113,7 @@ export async function runDepreciation(
         },
         periodStart,
         periodEnd,
+        afaConfig,
       );
     } catch (err) {
       if (err instanceof DegressiveNotAllowedError) {

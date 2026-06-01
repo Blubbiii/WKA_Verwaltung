@@ -20,6 +20,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
+import type { GewStSystemConfig } from "@/lib/system-settings";
 import {
   GEWST_FREIBETRAG_EUR,
   GEWST_HINZURECHNUNG_QUOTE,
@@ -29,6 +30,16 @@ import {
 
 const mockAccts = prisma.ledgerAccount.findMany as unknown as ReturnType<typeof vi.fn>;
 const mockLines = prisma.journalEntryLine.findMany as unknown as ReturnType<typeof vi.fn>;
+
+/** Default-Config für Tests — entspricht dem Rechtsstand 01.06.2026. */
+const TEST_CONFIG: GewStSystemConfig = {
+  freibetragEur: 200_000,
+  hinzurechnungsQuote: 0.25,
+  quoteInterest: 1.0,
+  quoteRentMovable: 0.2,
+  quoteRentImmovable: 0.5,
+  quoteLicense: 0.25,
+};
 
 beforeEach(() => {
   mockAccts.mockReset();
@@ -57,7 +68,7 @@ describe("computeGewSt — Edge-Cases", () => {
     mockAccts.mockResolvedValue([]);
     mockLines.mockResolvedValue([]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.summeBemessung).toBe(0);
     expect(r.hinzurechnungsBetrag).toBe(0);
     expect(r.warnings).toContain(
@@ -71,7 +82,7 @@ describe("computeGewSt — Edge-Cases", () => {
     ]);
     mockLines.mockResolvedValue([]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.summeBemessung).toBe(0);
     expect(r.hinzurechnungsBetrag).toBe(0);
     expect(r.warnings).toHaveLength(0); // Konto IST markiert, also kein Warning
@@ -87,7 +98,7 @@ describe("computeGewSt — Pacht (Nr 1e, 50%-Quote)", () => {
       { account: "4210", debitAmount: 240_000, creditAmount: 0 },
     ]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.lines.find((l) => l.key === "RENT_IMMOVABLE")!.aufwand).toBe(240_000);
     expect(r.lines.find((l) => l.key === "RENT_IMMOVABLE")!.bemessung).toBe(120_000);
     expect(r.summeBemessung).toBe(120_000);
@@ -103,7 +114,7 @@ describe("computeGewSt — Pacht (Nr 1e, 50%-Quote)", () => {
       { account: "4210", debitAmount: 600_000, creditAmount: 0 },
     ]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.summeBemessung).toBe(300_000);
     expect(r.ueberFreibetrag).toBe(100_000);
     expect(r.hinzurechnungsBetrag).toBe(25_000); // 100k × 25%
@@ -119,7 +130,7 @@ describe("computeGewSt — Pacht (Nr 1e, 50%-Quote)", () => {
       { account: "4211", debitAmount: 100_000, creditAmount: 0 },
     ]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.lines.find((l) => l.key === "RENT_IMMOVABLE")!.aufwand).toBe(200_000);
     expect(r.contributingAccounts).toHaveLength(2);
   });
@@ -134,7 +145,7 @@ describe("computeGewSt — Schuldzinsen (Nr 1a, 100%-Quote)", () => {
       { account: "2110", debitAmount: 50_000, creditAmount: 0 },
     ]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.lines.find((l) => l.key === "INTEREST")!.bemessung).toBe(50_000);
     expect(r.hinzurechnungsBetrag).toBe(0);
   });
@@ -149,7 +160,7 @@ describe("computeGewSt — Mieten bewegliche WG (Nr 1d, 20%-Quote)", () => {
       { account: "4220", debitAmount: 1_000_000, creditAmount: 0 },
     ]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.summeBemessung).toBe(200_000);
     expect(r.ueberFreibetrag).toBe(0);
     expect(r.hinzurechnungsBetrag).toBe(0);
@@ -165,7 +176,7 @@ describe("computeGewSt — Lizenzen (Nr 1f, 25%-Quote)", () => {
       { account: "4910", debitAmount: 800_000, creditAmount: 0 },
     ]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.summeBemessung).toBe(200_000);
     expect(r.hinzurechnungsBetrag).toBe(0);
   });
@@ -178,7 +189,7 @@ describe("computeGewSt — Lizenzen (Nr 1f, 25%-Quote)", () => {
       { account: "4910", debitAmount: 1_200_000, creditAmount: 0 },
     ]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.hinzurechnungsBetrag).toBe(25_000);
   });
 });
@@ -196,7 +207,7 @@ describe("computeGewSt — Kombiniert (alle 4 Positionen)", () => {
       { account: "4910", debitAmount: 80_000, creditAmount: 0 },
     ]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     // Bemessungen: Zinsen 100k (×1.0), Pacht 150k (×0.5), Lizenzen 20k (×0.25)
     // Summe = 270.000 €
     expect(r.summeBemessung).toBe(270_000);
@@ -215,7 +226,7 @@ describe("computeGewSt — Negative/Korrektur-Salden", () => {
       { account: "4210", debitAmount: 0, creditAmount: 100_000 }, // vollständig storniert
     ]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.summeBemessung).toBe(0);
   });
 
@@ -227,7 +238,7 @@ describe("computeGewSt — Negative/Korrektur-Salden", () => {
       { account: "4210", debitAmount: 0, creditAmount: 50_000 },
     ]);
 
-    const r = await computeGewSt("t-1", 2025);
+    const r = await computeGewSt("t-1", 2025, TEST_CONFIG);
     expect(r.summeBemessung).toBe(0);
   });
 });
@@ -241,7 +252,7 @@ describe("computeGewSt — Zeitfilter", () => {
       { account: "4210", debitAmount: 100_000, creditAmount: 0 },
     ]);
 
-    await computeGewSt("t-1", 2025);
+    await computeGewSt("t-1", 2025, TEST_CONFIG);
 
     const where = mockLines.mock.calls[0][0].where;
     const dateFilter = where.journalEntry.entryDate;

@@ -22,6 +22,7 @@ import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { loadUstgConfig } from "@/lib/system-settings";
 import {
   assertVorsteuerCapable,
   VorsteuerCapabilityError,
@@ -84,6 +85,7 @@ export async function POST(
     }
 
     // D6: §14 UStG Pflichtangaben für Vorsteuerabzug.
+    const ustgConfig = await loadUstgConfig();
     try {
       assertVorsteuerCapable(
         {
@@ -98,6 +100,7 @@ export async function POST(
           supplierTaxId: existing.supplierTaxId,
         },
         existing.vendor,
+        ustgConfig,
       );
     } catch (err) {
       if (err instanceof VorsteuerCapabilityError) {

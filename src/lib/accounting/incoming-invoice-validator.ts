@@ -24,6 +24,7 @@
  */
 
 import type { IncomingInvoice } from "@prisma/client";
+import type { UstgSystemConfig } from "@/lib/system-settings";
 
 export class VorsteuerCapabilityError extends Error {
   constructor(public readonly missing: string[]) {
@@ -34,7 +35,11 @@ export class VorsteuerCapabilityError extends Error {
   }
 }
 
-const KLEINBETRAG_THRESHOLD_EUR = 250;
+/** @deprecated Rechtsstand 01.06.2026 — siehe SystemSetting KLEINBETRAG_THRESHOLD_EUR. */
+const DEFAULT_KLEINBETRAG_THRESHOLD_EUR = 250;
+export const DEFAULT_USTG_CONFIG: UstgSystemConfig = {
+  kleinbetragThresholdEur: DEFAULT_KLEINBETRAG_THRESHOLD_EUR,
+};
 
 /** Minimum-Felder die wir vom IncomingInvoice für die Validierung brauchen. */
 export type ValidatableIncomingInvoice = Pick<
@@ -67,10 +72,11 @@ export interface ValidatableVendor {
 export function assertVorsteuerCapable(
   invoice: ValidatableIncomingInvoice,
   vendor: ValidatableVendor | null,
+  config: UstgSystemConfig = DEFAULT_USTG_CONFIG,
 ): void {
   const missing: string[] = [];
   const gross = Number(invoice.grossAmount ?? 0);
-  const isKleinbetrag = gross > 0 && gross <= KLEINBETRAG_THRESHOLD_EUR;
+  const isKleinbetrag = gross > 0 && gross <= config.kleinbetragThresholdEur;
 
   // (1) Lieferant — entweder verknüpfter Vendor mit Namen oder Fallback-Name.
   const vendorName = vendor?.name?.trim() || invoice.vendorNameFallback?.trim();

@@ -31,6 +31,7 @@
  */
 
 import { AfaMethod } from "@prisma/client";
+import type { AfaSystemConfig } from "@/lib/system-settings";
 
 /** Wird geworfen, wenn DECLINING_BALANCE auf ein post-2023-Asset angewandt wird. */
 export class DegressiveNotAllowedError extends Error {
@@ -42,16 +43,30 @@ export class DegressiveNotAllowedError extends Error {
   }
 }
 
-/** GWG_SOFORT Schwellen (§6 Abs. 2 EStG, Werte 2024+). */
+/**
+ * Default-Werte (Rechtsstand 01.06.2026). Werden überschrieben durch
+ * SystemSetting-Werte sobald Super-Admin sie ändert.
+ *
+ * @deprecated Verwende loadAfaConfig() aus @/lib/system-settings für aktuelle Werte
+ */
 export const GWG_SOFORT_THRESHOLD_NET_EUR = 800;
-/** GWG_POOL untere Schwelle (§6 Abs. 2a EStG): unter 250 € → kein Pool, freie Wahl. */
+/** @deprecated siehe oben */
 export const GWG_POOL_LOWER_NET_EUR = 250;
-/** GWG_POOL obere Schwelle (§6 Abs. 2a EStG): 1.000 € netto. */
+/** @deprecated siehe oben */
 export const GWG_POOL_UPPER_NET_EUR = 1000;
-/** GWG-Pool-Laufzeit: 5 Jahre. */
+/** @deprecated siehe oben */
 export const GWG_POOL_YEARS = 5;
-/** Stichtag ab dem degressive AfA für Neuanschaffungen unzulässig ist. */
+/** @deprecated siehe oben */
 export const DEGRESSIVE_CUTOFF = new Date("2023-01-01T00:00:00.000Z");
+
+/** Default-Config für pure-Funktionen — wenn Caller keine SystemConfig übergibt. */
+export const DEFAULT_AFA_CONFIG: AfaSystemConfig = {
+  gwgSofortThresholdEur: GWG_SOFORT_THRESHOLD_NET_EUR,
+  gwgPoolLowerEur: GWG_POOL_LOWER_NET_EUR,
+  gwgPoolUpperEur: GWG_POOL_UPPER_NET_EUR,
+  gwgPoolYears: GWG_POOL_YEARS,
+  degressiveCutoff: DEGRESSIVE_CUTOFF,
+};
 
 export interface AfaInput {
   acquisitionDate: Date;
@@ -127,6 +142,7 @@ export function calculateMonthlyAfa(
   input: AfaInput,
   year: number,
   month: number, // 1-12
+  config: AfaSystemConfig = DEFAULT_AFA_CONFIG,
 ): MonthlyAfaResult {
   const {
     acquisitionDate,
@@ -138,7 +154,7 @@ export function calculateMonthlyAfa(
     disposalDate,
   } = input;
 
-  if (method === AfaMethod.DECLINING_BALANCE && acquisitionDate >= DEGRESSIVE_CUTOFF) {
+  if (method === AfaMethod.DECLINING_BALANCE && acquisitionDate >= config.degressiveCutoff) {
     throw new DegressiveNotAllowedError(acquisitionDate);
   }
 
@@ -180,12 +196,12 @@ export function calculateMonthlyAfa(
     }
 
     case AfaMethod.GWG_POOL: {
-      // Sammelposten: AK / 60 pro Monat, läuft 5 Jahre ab Anschaffung.
+      // Sammelposten: AK / (poolYears * 12) pro Monat, läuft N Jahre ab Anschaffung.
       const monthsSinceAcq = monthDiff(acquisitionDate, new Date(Date.UTC(year, month - 1, 1)));
-      if (monthsSinceAcq < 0 || monthsSinceAcq >= GWG_POOL_YEARS * 12) {
+      if (monthsSinceAcq < 0 || monthsSinceAcq >= config.gwgPoolYears * 12) {
         amount = 0;
       } else {
-        const monthlyPool = (acquisitionCost - residualValue) / (GWG_POOL_YEARS * 12);
+        const monthlyPool = (acquisitionCost - residualValue) / (config.gwgPoolYears * 12);
         amount = Math.min(monthlyPool, available);
       }
       break;
@@ -242,6 +258,7 @@ export function calculateAfaSchedule(
   baseInput: Omit<AfaInput, "alreadyDepreciated"> & { alreadyDepreciated: number },
   periodStart: Date,
   periodEnd: Date,
+  config: AfaSystemConfig = DEFAULT_AFA_CONFIG,
 ): Array<{ year: number; month: number; result: MonthlyAfaResult }> {
   const results: Array<{ year: number; month: number; result: MonthlyAfaResult }> = [];
   let runningDepreciated = baseInput.alreadyDepreciated;
@@ -259,6 +276,7 @@ export function calculateAfaSchedule(
       { ...baseInput, alreadyDepreciated: runningDepreciated },
       year,
       month,
+      config,
     );
     results.push({ year, month, result });
     runningDepreciated = round2(runningDepreciated + result.amount);

@@ -27,6 +27,8 @@
  *   die Praxis bei Verzugszinsen (§§247, 288 BGB sind unspezifisch).
  */
 
+import type { VerzugszinsSystemConfig } from "@/lib/system-settings";
+
 export interface ComputeInterestInput {
   /** Brutto-Forderungsbetrag in EUR (für Zinsberechnung). */
   principal: number;
@@ -65,9 +67,13 @@ export interface ComputeInterestResult {
 }
 
 const MS_PER_DAY_LOCAL = 24 * 60 * 60 * 1000;
-const B2B_LUMP_SUM_EUR = 40;
-const B2B_SURCHARGE_POINTS = 9;
-const B2C_SURCHARGE_POINTS = 5;
+
+/** Default-Werte (Rechtsstand 01.06.2026 — §288 BGB). */
+export const DEFAULT_VERZUGSZINS_CONFIG: VerzugszinsSystemConfig = {
+  b2bLumpSumEur: 40,
+  b2bSurchargePoints: 9,
+  b2cSurchargePoints: 5,
+};
 
 /**
  * Berechnet Tage zwischen Fälligkeit und Stichtag (kalendergenau).
@@ -100,6 +106,7 @@ function daysSince(dueDate: Date, asOf: Date): number {
  */
 export function computeDefaultInterest(
   input: ComputeInterestInput,
+  config: VerzugszinsSystemConfig = DEFAULT_VERZUGSZINS_CONFIG,
 ): ComputeInterestResult {
   const daysOverdue = daysSince(input.dueDate, input.asOf);
 
@@ -115,8 +122,8 @@ export function computeDefaultInterest(
   }
 
   const surcharge = input.isBusinessCustomer
-    ? B2B_SURCHARGE_POINTS
-    : B2C_SURCHARGE_POINTS;
+    ? config.b2bSurchargePoints
+    : config.b2cSurchargePoints;
   const effectiveRatePercent = round3(input.baseRatePercent + surcharge);
 
   // Zinsen = Hauptforderung × Satz/100 × Tage/365
@@ -124,7 +131,7 @@ export function computeDefaultInterest(
   const interestAmount = round2(interest);
 
   const lumpSumEur =
-    input.isBusinessCustomer && !input.lumpSumAlreadyApplied ? B2B_LUMP_SUM_EUR : 0;
+    input.isBusinessCustomer && !input.lumpSumAlreadyApplied ? config.b2bLumpSumEur : 0;
 
   return {
     daysOverdue,
