@@ -1,27 +1,44 @@
 /**
- * Fixed Asset Depreciation (AfA) calculation.
- * Supports linear and declining balance methods.
+ * Fixed Asset Depreciation (AfA) Driver — Phase 14.
+ *
+ * Liest aktive Assets eines Tenants und ruft die Pure-Funktion
+ * calculateAfaSchedule() für jeden Monat im Zeitraum. Persistiert pro
+ * Monat eine FixedAssetDepreciation-Row (statt vorher eine Aggregat-Row
+ * pro Aufruf) und optional eine JournalEntry-Buchung pro Asset+Monat.
+ *
+ * Idempotenz: pro (assetId, periodStart, periodEnd) prüfen wir vorher
+ * gegen bestehende Records — alte Schedules bleiben unangetastet.
+ *
+ * Period-Lock-Gate (P9): wenn createPostings=true UND ein Monat im
+ * Zeitraum gesperrt ist, wird DAS ASSET übersprungen (Schedule-Erstellung
+ * + Posting bleiben atomar pro Asset).
+ *
+ * DECLINING_BALANCE-Check (P14): bei Anschaffungsdatum ≥ 2023-01-01 wirft
+ * calculateMonthlyAfa() DegressiveNotAllowedError → wir loggen + überspringen.
  */
 
 import { prisma } from "@/lib/prisma";
-import { MS_PER_DAY } from "@/lib/constants/time";
+import { Decimal } from "@prisma/client-runtime-utils";
+import { logger } from "@/lib/logger";
 import { assertPeriodOpen, PeriodLockedError } from "./period-lock";
-
-export interface DepreciationScheduleItem {
-  periodStart: Date;
-  periodEnd: Date;
-  amount: number;
-  bookValueAfter: number;
-}
+import {
+  calculateAfaSchedule,
+  DegressiveNotAllowedError,
+  resolveAfaMethod,
+} from "./afa";
 
 /**
- * Calculate monthly linear depreciation for an asset.
+ * Kompatibilitäts-Wrapper für Alt-Aufrufer (z.B. Tests die die alte API
+ * nutzen). Berechnet eine grobe monatliche LINEAR-AfA — neue Aufrufer
+ * sollten calculateMonthlyAfa aus ./afa.ts nutzen.
+ *
+ * @deprecated P14: Nutze calculateMonthlyAfa() aus @/lib/accounting/afa.
  */
 export function calculateLinearDepreciation(
   acquisitionCost: number,
   residualValue: number,
   usefulLifeMonths: number,
-  alreadyDepreciated: number
+  alreadyDepreciated: number,
 ): number {
   if (usefulLifeMonths <= 0) return 0;
   const depreciableAmount = acquisitionCost - residualValue;
@@ -32,126 +49,182 @@ export function calculateLinearDepreciation(
   return Math.min(monthlyAmount, totalRemaining);
 }
 
+export interface DepreciationScheduleItem {
+  periodStart: Date;
+  periodEnd: Date;
+  amount: number;
+  bookValueAfter: number;
+}
+
 /**
  * Run depreciation for all active assets of a tenant for a given period.
- * Creates FixedAssetDepreciation records and optionally JournalEntry postings.
+ * P14: monatsgenaue Iteration — pro Monat im Zeitraum eine Schedule-Row.
  */
 export async function runDepreciation(
   tenantId: string,
   periodStart: Date,
   periodEnd: Date,
   userId: string,
-  createPostings: boolean = false
-): Promise<{ processedCount: number; totalAmount: number }> {
+  createPostings: boolean = false,
+): Promise<{ processedCount: number; totalAmount: number; warnings: string[] }> {
   const assets = await prisma.fixedAsset.findMany({
     where: { tenantId, status: "ACTIVE" },
     include: {
       depreciations: {
-        orderBy: { periodEnd: "desc" },
+        orderBy: { periodEnd: "asc" },
       },
     },
   });
 
   let processedCount = 0;
   let totalAmount = 0;
+  const warnings: string[] = [];
 
   for (const asset of assets) {
-    // Skip if this period was already depreciated for this asset
-    const alreadyRun = asset.depreciations.some(
-      (d) => d.periodStart.getTime() === periodStart.getTime() && d.periodEnd.getTime() === periodEnd.getTime()
+    const acquisitionCost = Number(asset.acquisitionCost);
+    const residualValue = Number(asset.residualValue);
+    const alreadyDepreciated = asset.depreciations.reduce(
+      (sum, d) => sum + Number(d.amount),
+      0,
     );
-    if (alreadyRun) continue;
 
-    // P9: Wenn Posting verlangt UND Periode gesperrt → ganzes Asset überspringen.
-    // Hintergrund: ein halb-konsistenter Zustand (Schedule-Row angelegt, aber
-    // kein Journal Entry) wäre schwer zu reparieren. Lieber später nachholen
-    // wenn Periode entsperrt wird.
+    // P14: Methoden-Auflösung (Backwards-Compat).
+    const method = resolveAfaMethod({
+      afaMethod: asset.afaMethod,
+      depreciationMethod: asset.depreciationMethod,
+    });
+
+    // Schedule für den Zeitraum berechnen (kann throw DegressiveNotAllowedError).
+    let schedule;
+    try {
+      schedule = calculateAfaSchedule(
+        {
+          acquisitionDate: asset.acquisitionDate,
+          acquisitionCost,
+          residualValue,
+          usefulLifeMonths: asset.usefulLifeMonths,
+          method,
+          alreadyDepreciated,
+          disposalDate: asset.disposalDate,
+        },
+        periodStart,
+        periodEnd,
+      );
+    } catch (err) {
+      if (err instanceof DegressiveNotAllowedError) {
+        warnings.push(
+          `Asset ${asset.assetNumber}: degressive AfA seit 2023 unzulässig (Anschaffung ${err.acquisitionDate.toISOString().slice(0, 10)}). Bitte auf LINEAR umstellen.`,
+        );
+        continue;
+      }
+      throw err;
+    }
+
+    // P9: Wenn Posting verlangt und IRGENDEIN Monat im Schedule gesperrt ist,
+    // überspringe das ganze Asset (sonst halb-konsistenter Zustand).
     if (createPostings && asset.depAccountNumber && asset.accountNumber) {
-      try {
-        await assertPeriodOpen(tenantId, periodEnd);
-      } catch (err) {
-        if (err instanceof PeriodLockedError) {
-          continue;
+      let anyLocked = false;
+      for (const { year, month } of schedule) {
+        try {
+          await assertPeriodOpen(tenantId, new Date(Date.UTC(year, month - 1, 28)));
+        } catch (err) {
+          if (err instanceof PeriodLockedError) {
+            anyLocked = true;
+            break;
+          }
+          throw err;
         }
-        throw err;
+      }
+      if (anyLocked) {
+        warnings.push(
+          `Asset ${asset.assetNumber}: mindestens ein Monat im Zeitraum ist gesperrt — Posting übersprungen.`,
+        );
+        continue;
       }
     }
 
-    const alreadyDepreciated = asset.depreciations.reduce(
-      (sum, d) => sum + Number(d.amount), 0
-    );
-    const acquisitionCost = Number(asset.acquisitionCost);
-    const residualValue = Number(asset.residualValue);
+    // Für jeden Monat im Schedule eine Row anlegen (idempotent prüfen).
+    for (const { year, month, result } of schedule) {
+      if (result.amount === 0) continue;
 
-    // Calculate months in period (day-based, rounded up)
-    const daysDiff = (periodEnd.getTime() - periodStart.getTime()) / MS_PER_DAY + 1;
-    const months = Math.max(1, Math.round(daysDiff / 30.44));
+      const monthStart = new Date(Date.UTC(year, month - 1, 1));
+      // Letzter Tag des Monats (Date.UTC mit Tag 0 des Folgemonats).
+      const monthEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59));
 
-    let periodAmount: number;
-    if (asset.depreciationMethod === "LINEAR") {
-      const monthly = calculateLinearDepreciation(
-        acquisitionCost, residualValue, asset.usefulLifeMonths, alreadyDepreciated
+      // Idempotenz: skip wenn für diesen Monat schon ein Schedule existiert.
+      const exists = asset.depreciations.some(
+        (d) =>
+          d.periodStart.getUTCFullYear() === year &&
+          d.periodStart.getUTCMonth() + 1 === month,
       );
-      periodAmount = monthly * months;
-    } else {
-      // Declining balance: 2x linear rate applied to book value
-      if (asset.usefulLifeMonths <= 0) continue;
-      const linearRate = 1 / (asset.usefulLifeMonths / 12);
-      const decliningRate = Math.min(linearRate * 2, 0.3); // max 30%
-      const bookValue = acquisitionCost - alreadyDepreciated;
-      periodAmount = bookValue * decliningRate * (months / 12);
-      // Cannot go below residual value
-      periodAmount = Math.min(periodAmount, bookValue - residualValue);
-    }
+      if (exists) continue;
 
-    if (periodAmount <= 0) continue;
+      let journalEntryId: string | null = null;
 
-    const bookValueAfter = acquisitionCost - alreadyDepreciated - periodAmount;
-
-    await prisma.fixedAssetDepreciation.create({
-      data: {
-        assetId: asset.id,
-        periodStart,
-        periodEnd,
-        amount: periodAmount,
-        bookValue: Math.max(bookValueAfter, residualValue),
-      },
-    });
-
-    // Mark fully depreciated
-    if (bookValueAfter <= residualValue) {
-      await prisma.fixedAsset.update({
-        where: { id: asset.id },
-        data: { status: "FULLY_DEPRECIATED" },
-      });
-    }
-
-    // Optional: create journal entry for the depreciation
-    // (Period-Gate wurde bereits oben am Schleifenanfang geprüft).
-    if (createPostings && asset.depAccountNumber && asset.accountNumber) {
-      await prisma.journalEntry.create({
-        data: {
-          tenantId,
-          entryDate: periodEnd,
-          description: `AfA: ${asset.name} (${periodStart.toISOString().slice(0, 7)} - ${periodEnd.toISOString().slice(0, 7)})`.slice(0, 200),
-          status: "POSTED",
-          source: "AUTO",
-          referenceType: "FixedAsset",
-          referenceId: asset.id,
-          createdById: userId,
-          lines: {
-            create: [
-              { lineNumber: 1, account: asset.depAccountNumber, description: `AfA ${asset.name}`, debitAmount: periodAmount, creditAmount: null },
-              { lineNumber: 2, account: asset.accountNumber, description: `AfA ${asset.name}`, debitAmount: null, creditAmount: periodAmount },
-            ],
+      // Optional: Buchung anlegen.
+      if (createPostings && asset.depAccountNumber && asset.accountNumber) {
+        const je = await prisma.journalEntry.create({
+          data: {
+            tenantId,
+            entryDate: monthEnd,
+            description: `AfA: ${asset.name} ${year}-${String(month).padStart(2, "0")}`.slice(0, 200),
+            status: "POSTED",
+            source: "AUTO",
+            referenceType: "FixedAsset",
+            referenceId: asset.id,
+            createdById: userId,
+            lines: {
+              create: [
+                {
+                  lineNumber: 1,
+                  account: asset.depAccountNumber,
+                  description: `AfA ${asset.name}`,
+                  debitAmount: result.amount,
+                  creditAmount: null,
+                },
+                {
+                  lineNumber: 2,
+                  account: asset.accountNumber,
+                  description: `AfA ${asset.name}`,
+                  debitAmount: null,
+                  creditAmount: result.amount,
+                },
+              ],
+            },
           },
+          select: { id: true },
+        });
+        journalEntryId = je.id;
+      }
+
+      await prisma.fixedAssetDepreciation.create({
+        data: {
+          assetId: asset.id,
+          periodStart: monthStart,
+          periodEnd: monthEnd,
+          amount: new Decimal(result.amount),
+          bookValueBefore: new Decimal(result.bookValueBefore),
+          bookValue: new Decimal(Math.max(result.bookValueAfter, residualValue)),
+          journalEntryId,
         },
       });
-    }
 
-    processedCount++;
-    totalAmount += periodAmount;
+      processedCount++;
+      totalAmount += result.amount;
+
+      // Mark fully depreciated wenn diese Buchung das Asset auf Restwert bringt.
+      if (result.fullyDepreciated && asset.status !== "FULLY_DEPRECIATED") {
+        await prisma.fixedAsset.update({
+          where: { id: asset.id },
+          data: { status: "FULLY_DEPRECIATED" },
+        });
+      }
+    }
   }
 
-  return { processedCount, totalAmount };
+  if (warnings.length > 0) {
+    logger.warn({ warnings }, "Depreciation run completed with warnings");
+  }
+
+  return { processedCount, totalAmount, warnings };
 }

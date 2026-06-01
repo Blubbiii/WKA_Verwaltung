@@ -4236,6 +4236,18 @@ enum DepreciationMethod {
   DECLINING_BALANCE
 }
 
+// P14: §7 EStG AfA-Methoden + §6 EStG GWG-Behandlung.
+// Ersetzt schrittweise das alte DepreciationMethod-Enum (das nur LINEAR/
+// DECLINING_BALANCE kennt). DECLINING_BALANCE ist seit Anschaffungen ab
+// 01.01.2023 unzulässig (§7 Abs. 2 EStG i.V.m. Übergangsregeln) — wird
+// vom Engine bei neuen Assets geblockt.
+enum AfaMethod {
+  LINEAR             // §7 Abs. 1 EStG (Standardfall)
+  GWG_SOFORT         // §6 Abs. 2 EStG — Sofortabzug bis 800 € Netto
+  GWG_POOL           // §6 Abs. 2a EStG — Sammelposten 250-1.000 € über 5 Jahre
+  DECLINING_BALANCE  // §7 Abs. 2 EStG — degressiv (nur für Altanlagen vor 2023)
+}
+
 enum AssetStatus {
   ACTIVE
   DISPOSED
@@ -4253,7 +4265,16 @@ model FixedAsset {
   acquisitionDate     DateTime
   acquisitionCost     Decimal             @db.Decimal(15, 2)
   usefulLifeMonths    Int
+  /// @deprecated P14: Nutze afaMethod stattdessen. Bleibt für Backwards-
+  /// Compat erhalten — bestehende Assets ohne afaMethod werden hieraus
+  /// gemappt (LINEAR → LINEAR, DECLINING_BALANCE → DECLINING_BALANCE).
   depreciationMethod  DepreciationMethod  @default(LINEAR)
+  /// P14: §7/§6 EStG-konforme Methoden inkl. GWG. Nullable während Migration —
+  /// wenn null, fällt der Engine auf depreciationMethod zurück.
+  afaMethod           AfaMethod?
+  /// P14: GWG-Sammelposten-Jahrgang (§6 Abs. 2a EStG). Nur relevant wenn
+  /// afaMethod=GWG_POOL. Jahr des Anschaffungsjahrgangs zur Pool-Identifikation.
+  gwgPoolYear         Int?
   residualValue       Decimal             @default(0) @db.Decimal(15, 2)
   accountNumber       String?             @db.VarChar(10) // SKR03 asset account
   depAccountNumber    String?             @db.VarChar(10) // SKR03 depreciation expense account
@@ -4278,6 +4299,10 @@ model FixedAssetDepreciation {
   periodStart   DateTime
   periodEnd     DateTime
   amount        Decimal    @db.Decimal(15, 2)
+  /// Buchwert VOR dieser AfA-Buchung. P14: Nachträglich nullable hinzugefügt
+  /// — alte Schedule-Rows haben null, neue werden gefüllt. Erlaubt die
+  /// Anlagespiegel-Erstellung (vergleicht book-value-Verlauf).
+  bookValueBefore Decimal? @db.Decimal(15, 2)
   bookValue     Decimal    @db.Decimal(15, 2) // remaining book value after this depreciation
   journalEntryId String?
   createdAt     DateTime   @default(now())
