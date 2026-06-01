@@ -4217,6 +4217,13 @@ model BankTransaction {
   bankAccount       BankAccount?  @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   // P16: Zahlungseingänge die dieser Bank-Transaktion zugeordnet sind.
   invoicePayments   InvoicePayment[]
+  // P18: Match-Diagnostik — Skonto-Anteil und Cent-Differenz zur Rechnung.
+  // Wenn matchedSkontoAmount > 0: die Differenz amount−grossAmount wurde
+  // als gültiger Skonto akzeptiert (innerhalb Skonto-Frist).
+  // matchVariance = |amount − grossAmount| (kann auch ohne Skonto > 0 sein
+  // bei Toleranz-Match z.B. Rundungs-Differenz < 0,02 €).
+  matchedSkontoAmount Decimal?    @db.Decimal(15, 2)
+  matchVariance       Decimal?    @db.Decimal(15, 2)
 
   @@index([tenantId])
   @@index([tenantId, bookingDate])

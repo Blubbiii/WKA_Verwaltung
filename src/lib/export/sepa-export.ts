@@ -3,9 +3,14 @@
  *
  * Generates ISO 20022 SEPA Credit Transfer XML for batch payment of incoming invoices.
  * No external npm package required — pure XML template.
+ *
+ * P18: Vor jedem Export werden ALLE IBANs (Debtor + jeder Creditor) per
+ * Mod-97 validiert. Fehlerhafte IBAN → SepaExportValidationError mit
+ * konkretem Hinweis, statt die Bank das XML später ablehnen zu lassen.
  */
 
 import { formatAmountFixed2 as formatAmount } from "@/lib/formatters";
+import { IbanValidationError, assertValidIban } from "@/lib/iban";
 
 export interface SepaPayment {
   endToEndId: string;
@@ -36,8 +41,55 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
+/**
+ * Wird geworfen wenn vor der XML-Generierung eine ungültige IBAN
+ * gefunden wurde. Caller sollte die Liste an Fehlern dem User anzeigen.
+ */
+export class SepaExportValidationError extends Error {
+  constructor(public readonly errors: Array<{ field: string; reason: string }>) {
+    super(
+      `SEPA-Export-Validierung fehlgeschlagen: ${errors.map((e) => `${e.field}: ${e.reason}`).join("; ")}`,
+    );
+    this.name = "SepaExportValidationError";
+  }
+}
+
 export function generateSepaXml(options: SepaExportOptions): string {
   const { messageId, creationDateTime, debtorName, debtorIban, debtorBic, payments } = options;
+
+  // P18: IBAN-Validierung VOR der teuren XML-Generierung.
+  // Wir sammeln alle Fehler in einem Durchgang, damit der User mehrere
+  // Korrekturen gleichzeitig vornehmen kann.
+  const errors: Array<{ field: string; reason: string }> = [];
+  try {
+    assertValidIban(debtorIban);
+  } catch (err) {
+    if (err instanceof IbanValidationError) {
+      errors.push({
+        field: "debtorIban",
+        reason: `${err.errorCode}: "${debtorIban}"`,
+      });
+    } else {
+      throw err;
+    }
+  }
+  payments.forEach((p, idx) => {
+    try {
+      assertValidIban(p.creditorIban);
+    } catch (err) {
+      if (err instanceof IbanValidationError) {
+        errors.push({
+          field: `payments[${idx}].creditorIban (${p.creditorName})`,
+          reason: `${err.errorCode}: "${p.creditorIban}"`,
+        });
+      } else {
+        throw err;
+      }
+    }
+  });
+  if (errors.length > 0) {
+    throw new SepaExportValidationError(errors);
+  }
 
   const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
   const txCount = payments.length;

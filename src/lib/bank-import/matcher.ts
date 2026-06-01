@@ -1,11 +1,16 @@
 /**
  * Invoice matching logic for bank import.
  * Matches ParsedTransactions against open (SENT) invoices for the tenant.
+ *
+ * P18 (D10): Skonto-Toleranz im Amount-Match. Statt nur exakter Cent-
+ * Übereinstimmung akzeptieren wir auch Zahlungen, deren Differenz dem
+ * Skonto-Betrag entspricht UND die innerhalb der Skonto-Frist eingingen.
  */
 
 import { prisma } from "@/lib/prisma";
 import type { ParsedTransaction, MatchResult } from "./types";
 import { MS_PER_DAY } from "@/lib/constants/time";
+import { evaluateSkontoMatch } from "@/lib/banking/skonto-matcher";
 
 /** Maximum days between transaction date and invoice due date for a medium match */
 const MEDIUM_MATCH_MAX_DAYS = 30;
@@ -24,6 +29,10 @@ interface OpenInvoice {
   grossAmount: number;
   dueDate: Date | null;
   currency: string;
+  /** P18: für Skonto-Match. */
+  skontoDeadline: Date | null;
+  skontoAmount: number | null;
+  skontoPercent: number | null;
 }
 
 /**
@@ -34,11 +43,13 @@ export async function matchTransactions(
   transactions: ParsedTransaction[],
   tenantId: string
 ): Promise<MatchResult[]> {
-  // Load all open (SENT) invoices once
+  // Load all open (SENT/PARTIALLY_PAID) invoices once.
+  // P16: PARTIALLY_PAID gehört auch in den Match-Pool — eine Folgezahlung
+  // könnte sie auf PAID bringen.
   const openInvoices = await prisma.invoice.findMany({
     where: {
       tenantId,
-      status: "SENT",
+      status: { in: ["SENT", "PARTIALLY_PAID"] },
       deletedAt: null,
     },
     select: {
@@ -47,6 +58,9 @@ export async function matchTransactions(
       grossAmount: true,
       dueDate: true,
       currency: true,
+      skontoDeadline: true,
+      skontoAmount: true,
+      skontoPercent: true,
     },
   });
 
@@ -56,6 +70,9 @@ export async function matchTransactions(
     grossAmount: Number(inv.grossAmount),
     dueDate: inv.dueDate,
     currency: inv.currency,
+    skontoDeadline: inv.skontoDeadline,
+    skontoAmount: inv.skontoAmount === null ? null : Number(inv.skontoAmount),
+    skontoPercent: inv.skontoPercent === null ? null : Number(inv.skontoPercent),
   }));
 
   // Track which invoices have already been matched (1:1 matching)
@@ -143,13 +160,20 @@ function findByAmountAndDate(
     if (excludeIds.has(inv.id)) continue;
     if (inv.currency !== tx.currency) continue;
 
-    // Exact amount match (rounded to 2 decimal places)
-    const amountMatches =
-      Math.round(txAmount * 100) === Math.round(inv.grossAmount * 100);
+    // P18 (D10): toleranter Match — exakter Cent ODER Rundungs-Toleranz ODER
+    // valider Skonto-Abzug innerhalb der Frist.
+    const skontoResult = evaluateSkontoMatch({
+      txAmount,
+      txDate: tx.date,
+      grossAmount: inv.grossAmount,
+      skontoDeadline: inv.skontoDeadline,
+      skontoAmount: inv.skontoAmount,
+      skontoPercent: inv.skontoPercent,
+    });
 
-    if (!amountMatches) continue;
+    if (!skontoResult.matches) continue;
 
-    // Date proximity check
+    // Date proximity check (für Toleranz-/Skonto-Matches besonders wichtig).
     if (inv.dueDate) {
       const daysDiff =
         Math.abs(tx.date.getTime() - inv.dueDate.getTime()) / MS_PER_DAY;
