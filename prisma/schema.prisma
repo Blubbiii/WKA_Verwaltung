@@ -130,6 +130,8 @@ model Tenant {
   accountingPeriodLocks     AccountingPeriodLock[]
   taxCodes                  TaxCode[]
   ustAdjustments            UStAdjustment[]
+  openingBalances           OpeningBalance[]
+  balanceSheetSnapshots     BalanceSheetSnapshot[]
 
   @@map("tenants")
 }
@@ -243,6 +245,8 @@ model User {
   cashBookEntriesCreated                                                  CashBookEntry[]             @relation("CashBookEntryCreatedBy")
   incomingInvoicesCreated                                                 IncomingInvoice[]           @relation("IncomingInvoiceCreator")
   incomingInvoicesApproved                                                IncomingInvoice[]           @relation("IncomingInvoiceApprover")
+  openingBalancesCreated                                                  OpeningBalance[]            @relation("OpeningBalanceCreator")
+  balanceSheetSnapshotsCreated                                            BalanceSheetSnapshot[]      @relation("BalanceSheetSnapshotCreator")
   mapAnnotations                                                          MapAnnotation[]
   operationalTasksCreated                                                 OperationalTask[]           @relation("OperationalTaskCreator")
   operationalTasksAssigned                                                OperationalTask[]           @relation("OperationalTaskAssignee")
@@ -4030,6 +4034,20 @@ enum AccountCategory {
   EXPENSE
 }
 
+// P15: HGB §266 Bilanz-Gliederung (granularer als AccountCategory).
+// Wird in der Bilanz-Aggregation pro Konto verwendet — das alte
+// AccountCategory war zu grob (kein Anlagevermögen vs. Umlaufvermögen).
+enum BalanceSheetSection {
+  ASSET_FIXED         // A. Anlagevermögen
+  ASSET_CURRENT       // B. Umlaufvermögen
+  ASSET_DEFERRED      // C. Aktive Rechnungsabgrenzung
+  EQUITY              // A. Eigenkapital
+  PROVISION           // B. Rückstellungen
+  LIABILITY_LONG      // C. Verbindlichkeiten (> 1 Jahr)
+  LIABILITY_SHORT     // C. Verbindlichkeiten (< 1 Jahr)
+  LIABILITY_DEFERRED  // D. Passive Rechnungsabgrenzung
+}
+
 enum TaxBehavior {
   TAXABLE_19
   TAXABLE_7
@@ -4054,6 +4072,16 @@ model LedgerAccount {
   /// P10: Default-Steuerschlüssel für dieses Konto (DATEV-Schlüssel).
   /// Wird vom Auto-Posting (P11) als Vorbelegung verwendet.
   taxKey        String?         @db.VarChar(10)
+  /// P15: HGB §266 Bilanz-Zuordnung. Wenn null, fällt der Bilanz-Generator
+  /// auf SKR04-Range-Heuristik zurück (für Alt-Daten).
+  balanceSheetSection BalanceSheetSection?
+  /// P15: Single-Source-of-Truth für GuV/BWA-Klassifikation (z.B.
+  /// "REVENUE_OPERATING", "EXPENSE_INTEREST"). Ersetzt schrittweise die
+  /// Range-Hardcodes (account.startsWith("8")) in den Reports.
+  category2     String?         @db.VarChar(50)
+  /// P17: Gewerbesteuer-Hinzurechnung §8 GewStG-Schlüssel.
+  /// Z.B. "MIETE_IMMOBILIEN" (1/2 Hinzurechnung), "MIETE_BEWEGLICH" (1/5).
+  gewStAddBackKey String?       @db.VarChar(50)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
@@ -4061,10 +4089,59 @@ model LedgerAccount {
   /// (z.B. TaxCode "USt 19%" → LedgerAccount "1776").
   taxCodesUsing TaxCode[]       @relation("TaxCodeAccount")
 
+  /// P15: Saldenvortrag-Verweis (Eröffnungsbilanz pro Wirtschaftsjahr).
+  openingBalances OpeningBalance[]
+
   @@unique([tenantId, accountNumber])
   @@index([tenantId])
   @@index([tenantId, category])
+  @@index([tenantId, balanceSheetSection])
   @@map("ledger_accounts")
+}
+
+// P15: Saldenvortrag / Eröffnungsbilanz.
+// Pro Wirtschaftsjahr + Konto + Tenant genau eine Zeile mit dem Buch-
+// wert zum Jahreswechsel. Wird vom year-end-close-Job erzeugt und in
+// der Bilanz-Aggregation als Startwert verwendet.
+model OpeningBalance {
+  id              String        @id @default(uuid())
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fiscalYear      Int
+  ledgerAccountId String
+  ledgerAccount   LedgerAccount @relation(fields: [ledgerAccountId], references: [id], onDelete: Restrict)
+  debitAmount     Decimal       @default(0) @db.Decimal(15, 2)
+  creditAmount    Decimal       @default(0) @db.Decimal(15, 2)
+  createdById     String
+  createdBy       User          @relation("OpeningBalanceCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt       DateTime      @default(now())
+
+  @@unique([tenantId, fiscalYear, ledgerAccountId])
+  @@index([tenantId, fiscalYear])
+  @@map("opening_balances")
+}
+
+// P15: Bilanz-Snapshot. Bei jedem Jahresabschluss wird die Bilanz als
+// JSON-Snapshot persistiert (Audit + Reproduzierbarkeit). Bei späteren
+// Aufrufen sieht der User die zum Abschluss-Zeitpunkt gespeicherte
+// Bilanz statt der laufend aktualisierten.
+model BalanceSheetSnapshot {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fiscalYear   Int
+  asOf         DateTime
+  generatedAt  DateTime @default(now())
+  /// {aktiva: [...], passiva: [...], summary: {summeAktiva, summePassiva, differenz}}
+  snapshot     Json
+  /// null = Tenant-weit (Einzel-Bilanz); gesetzt = Fund-spezifisch oder Konsolidiert.
+  fundId       String?
+  createdById  String
+  createdBy    User     @relation("BalanceSheetSnapshotCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, fiscalYear])
+  @@index([tenantId, fundId])
+  @@map("balance_sheet_snapshots")
 }
 
 // =============================================================================
