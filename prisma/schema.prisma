@@ -134,6 +134,7 @@ model Tenant {
   balanceSheetSnapshots     BalanceSheetSnapshot[]
   invoicePayments           InvoicePayment[]
   valueAdjustments          ValueAdjustment[]
+  gobdExports               GobdExport[]
 
   @@map("tenants")
 }
@@ -251,6 +252,7 @@ model User {
   balanceSheetSnapshotsCreated                                            BalanceSheetSnapshot[]      @relation("BalanceSheetSnapshotCreator")
   invoicePaymentsCreated                                                  InvoicePayment[]            @relation("InvoicePaymentCreator")
   valueAdjustmentsCreated                                                 ValueAdjustment[]           @relation("ValueAdjustmentCreator")
+  gobdExportsCreated                                                      GobdExport[]                @relation("GobdExportCreator")
   mapAnnotations                                                          MapAnnotation[]
   operationalTasksCreated                                                 OperationalTask[]           @relation("OperationalTaskCreator")
   operationalTasksAssigned                                                OperationalTask[]           @relation("OperationalTaskAssignee")
@@ -4326,6 +4328,35 @@ model ValueAdjustment {
   @@index([tenantId, effectiveDate])
   @@index([invoiceId])
   @@map("value_adjustments")
+}
+
+// P19: GoBD §147 Abs. 6 AO Datenträgerüberlassung (Z3).
+// Audit der erzeugten Export-ZIPs. Wird bei Betriebsprüfung vorgelegt —
+// daher fileHash + size persistiert. ZIP selbst wird nicht in der DB
+// gespeichert (potentiell mehrere GB), nur Download-Link über fileUrl.
+model GobdExport {
+  id             String   @id @default(uuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  periodFrom     DateTime
+  periodTo       DateTime
+  generatedAt    DateTime @default(now())
+  /// SHA-256 des erzeugten ZIPs (Hex).
+  fileHash       String   @db.VarChar(64)
+  fileSizeBytes  BigInt
+  /// Wieviele Datensätze pro Tabelle exportiert wurden (für Audit-Log + UI).
+  recordCounts   Json
+  /// Optional: Pfad/URL zum gespeicherten ZIP (S3 / Filesystem). Null wenn
+  /// nur im Memory ausgeliefert wurde.
+  fileUrl        String?
+  downloadCount  Int      @default(0)
+  lastDownloadAt DateTime?
+  createdById    String
+  createdBy      User     @relation("GobdExportCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, periodFrom])
+  @@index([tenantId, generatedAt])
+  @@map("gobd_exports")
 }
 
 // §247 BGB Basiszinssatz (Bundesbank). Mandantenunabhängig — wir pflegen
