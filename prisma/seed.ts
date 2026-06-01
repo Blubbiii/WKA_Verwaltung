@@ -173,6 +173,26 @@ const permissionsData = [
   { name: "accounting:create", displayName: "Buchungen erstellen", module: "accounting", action: "create", sortOrder: 231 },
   { name: "accounting:update", displayName: "Buchungen bearbeiten", module: "accounting", action: "update", sortOrder: 232 },
   { name: "accounting:delete", displayName: "Buchungen loeschen", module: "accounting", action: "delete", sortOrder: 233 },
+  // P20: Erweiterte Buchhaltungs-Permissions für HGB-Compliance (P9-P19 + Audit)
+  { name: "accounting:period-lock:create", displayName: "Periode sperren", description: "Buchungsperiode schliessen (GoBD)", module: "accounting", action: "period-lock", sortOrder: 234 },
+  { name: "accounting:period-lock:delete", displayName: "Periode entsperren", description: "Gesperrte Periode wieder oeffnen (Audit-pflichtig)", module: "accounting", action: "period-lock", sortOrder: 235 },
+  { name: "accounting:tax-code:read", displayName: "Steuerschluessel anzeigen", module: "accounting", action: "tax-code-read", sortOrder: 236 },
+  { name: "accounting:tax-code:write", displayName: "Steuerschluessel bearbeiten", module: "accounting", action: "tax-code-write", sortOrder: 237 },
+  { name: "accounting:value-adjustment:create", displayName: "Wertberichtigungen anlegen", description: "EWB/PWB/Forderungsausfall buchen", module: "accounting", action: "value-adjustment", sortOrder: 238 },
+  { name: "accounting:journal:reverse", displayName: "Buchungen stornieren", description: "Generalumkehr fuer POSTED-Journals", module: "accounting", action: "reverse", sortOrder: 239 },
+  { name: "accounting:report:bilanz", displayName: "Bilanz anzeigen", module: "accounting", action: "report-bilanz", sortOrder: 250 },
+  { name: "accounting:report:gewst", displayName: "GewSt-Hinzurechnung anzeigen", module: "accounting", action: "report-gewst", sortOrder: 251 },
+  { name: "accounting:report:susa", displayName: "Summen- und Saldenliste anzeigen", module: "accounting", action: "report-susa", sortOrder: 252 },
+  { name: "accounting:report:kontoblatt", displayName: "Kontoblatt anzeigen", module: "accounting", action: "report-kontoblatt", sortOrder: 253 },
+  { name: "accounting:report:euer", displayName: "EUER §4(3) EStG anzeigen", module: "accounting", action: "report-euer", sortOrder: 254 },
+  { name: "accounting:report:anlagenspiegel", displayName: "Anlagenspiegel anzeigen", module: "accounting", action: "report-anlagenspiegel", sortOrder: 255 },
+  { name: "accounting:year-end-close:execute", displayName: "Jahresabschluss ausfuehren", description: "Saldenvortrag + Bilanz-Snapshot", module: "accounting", action: "year-end-close", sortOrder: 256 },
+  { name: "accounting:gobd-export:create", displayName: "GoBD Z3-Export erstellen", description: "Datentraegeruberlassung fuer Betriebspruefung", module: "accounting", action: "gobd-export", sortOrder: 257 },
+  { name: "accounting:datev-export:create", displayName: "DATEV-Export erstellen", module: "accounting", action: "datev-export", sortOrder: 258 },
+
+  // P20: Super-Admin-Bereich (globale System-Werte)
+  { name: "system:settings:write", displayName: "System-Einstellungen aendern", description: "Gesetzliche Werte (GWG/GewSt/Verzugszinsen) pflegen", module: "system", action: "settings-write", sortOrder: 260 },
+  { name: "system:tax-templates:write", displayName: "Steuer-Templates pflegen", description: "Globale Steuer-Kategorien fuer alle Mandanten", module: "system", action: "tax-templates-write", sortOrder: 261 },
 
   // Management Billing Module (Betriebsfuehrung)
   { name: "management-billing:read", displayName: "BF-Abrechnungen anzeigen", description: "Betriebsfuehrungsvertraege und Abrechnungen einsehen", module: "management-billing", action: "read", sortOrder: 240 },
