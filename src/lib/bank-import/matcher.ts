@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import type { ParsedTransaction, MatchResult } from "./types";
 import { MS_PER_DAY } from "@/lib/constants/time";
 import { evaluateSkontoMatch } from "@/lib/banking/skonto-matcher";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 /** Maximum days between transaction date and invoice due date for a medium match */
 const MEDIUM_MATCH_MAX_DAYS = 30;
@@ -43,6 +44,10 @@ export async function matchTransactions(
   transactions: ParsedTransaction[],
   tenantId: string
 ): Promise<MatchResult[]> {
+  // Audit-B: Bank-Match-Toleranz aus Tenant-Setting (Default 0,02 €).
+  const settings = await getTenantSettings(tenantId);
+  const toleranceEur = settings.bankMatchToleranceEur;
+
   // Load all open (SENT/PARTIALLY_PAID) invoices once.
   // P16: PARTIALLY_PAID gehört auch in den Match-Pool — eine Folgezahlung
   // könnte sie auf PAID bringen.
@@ -98,7 +103,7 @@ export async function matchTransactions(
     }
 
     // Priority 2: medium-confidence match via exact amount + date proximity
-    const mediumMatch = findByAmountAndDate(tx, invoices, matchedInvoiceIds);
+    const mediumMatch = findByAmountAndDate(tx, invoices, matchedInvoiceIds, toleranceEur);
     if (mediumMatch) {
       matchedInvoiceIds.add(mediumMatch.id);
       return {
@@ -152,7 +157,8 @@ function findByInvoiceNumber(
 function findByAmountAndDate(
   tx: ParsedTransaction,
   invoices: OpenInvoice[],
-  excludeIds: Set<string>
+  excludeIds: Set<string>,
+  toleranceEur: number,
 ): OpenInvoice | null {
   const txAmount = Math.abs(tx.amount);
 
@@ -162,6 +168,7 @@ function findByAmountAndDate(
 
     // P18 (D10): toleranter Match — exakter Cent ODER Rundungs-Toleranz ODER
     // valider Skonto-Abzug innerhalb der Frist.
+    // Audit-B: Toleranz aus TenantSettings statt hardcoded 0,02 €.
     const skontoResult = evaluateSkontoMatch({
       txAmount,
       txDate: tx.date,
@@ -169,6 +176,7 @@ function findByAmountAndDate(
       skontoDeadline: inv.skontoDeadline,
       skontoAmount: inv.skontoAmount,
       skontoPercent: inv.skontoPercent,
+      toleranceEur,
     });
 
     if (!skontoResult.matches) continue;

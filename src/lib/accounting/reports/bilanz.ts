@@ -30,6 +30,7 @@
 import { prisma } from "@/lib/prisma";
 import { BalanceSheetSection } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
+import { getTenantSettings } from "@/lib/tenant-settings";
 import {
   BALANCE_SHEET_SECTION_LABELS,
   SECTION_SORT_ORDER,
@@ -94,7 +95,7 @@ export async function computeBilanz(
   fiscalYear: number,
   asOf: Date,
 ): Promise<BilanzResult> {
-  const [accounts, openings, lines] = await Promise.all([
+  const [accounts, openings, lines, settings] = await Promise.all([
     prisma.ledgerAccount.findMany({
       where: { tenantId, isActive: true },
       select: {
@@ -123,6 +124,7 @@ export async function computeBilanz(
         creditAmount: true,
       },
     }),
+    getTenantSettings(tenantId),
   ]);
 
   // Saldo-Map pro Konto aufbauen.
@@ -260,6 +262,7 @@ export async function computeBilanz(
   let summePassiva = round2(passiva.reduce((s, g) => s + g.total, 0));
 
   // Schritt 6: Jahresergebnis ins Eigenkapital einrechnen.
+  // Audit-B: synthetisches Konto kommt aus TenantSettings.
   if (jahresergebnis !== 0) {
     let equityGroup = passiva.find((g) => g.section === BalanceSheetSection.EQUITY);
     if (!equityGroup) {
@@ -275,7 +278,7 @@ export async function computeBilanz(
       );
     }
     equityGroup.accounts.push({
-      accountNumber: "9999",
+      accountNumber: settings.datevAccountAnnualResult,
       accountName:
         jahresergebnis > 0 ? "Jahresüberschuss" : "Jahresfehlbetrag",
       amount: jahresergebnis,
@@ -286,9 +289,11 @@ export async function computeBilanz(
 
   const differenz = round2(summeAktiva - summePassiva);
 
-  if (Math.abs(differenz) > 0.01) {
+  // Audit-B: Toleranz aus TenantSettings (Default 0,01 €).
+  const bilanzTolerance = settings.bilanzToleranceEur;
+  if (Math.abs(differenz) > bilanzTolerance) {
     warnings.push(
-      `Bilanz ist nicht ausgeglichen: Aktiva ${summeAktiva.toFixed(2)} € ≠ Passiva ${summePassiva.toFixed(2)} € (Differenz ${differenz.toFixed(2)} €). Bitte Konten-Klassifikation prüfen.`,
+      `Bilanz ist nicht ausgeglichen: Aktiva ${summeAktiva.toFixed(2)} € ≠ Passiva ${summePassiva.toFixed(2)} € (Differenz ${differenz.toFixed(2)} €, Toleranz ${bilanzTolerance.toFixed(2)} €). Bitte Konten-Klassifikation prüfen.`,
     );
   }
 

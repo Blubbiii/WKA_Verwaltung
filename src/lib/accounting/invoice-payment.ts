@@ -18,6 +18,7 @@
 import { InvoicePaymentMethod } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import type { TxClient } from "@/lib/invoices/numberGenerator";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 export class OverpaymentError extends Error {
   constructor(
@@ -104,11 +105,15 @@ export async function recordPayment(
   const paidBefore = Number(invoice.paidAmount);
   const newPaid = roundCent(paidBefore + params.amount);
 
-  if (newPaid > grossAmount + 0.005) {
+  // Audit-B: Toleranz aus TenantSettings (Default 0,02 €).
+  const settings = await getTenantSettings(params.tenantId);
+  const tolerance = settings.bankMatchToleranceEur;
+
+  if (newPaid > grossAmount + tolerance) {
     throw new OverpaymentError(grossAmount, newPaid);
   }
 
-  const isFullyPaid = newPaid >= grossAmount - 0.005;
+  const isFullyPaid = newPaid >= grossAmount - tolerance;
   const newStatus: "SENT" | "PARTIALLY_PAID" | "PAID" = isFullyPaid
     ? "PAID"
     : "PARTIALLY_PAID";

@@ -73,6 +73,23 @@ export interface TenantSettings {
   // > 0 = nur Rechnungen mit grossAmount > Schwelle brauchen 4-Augen.
   // Auf hohem Wert (z.B. 1.000.000) effektiv deaktiviert.
   fourEyesThresholdEur: number | null;
+  // Audit-B: Cent-Toleranz für Bank-Match (Rundungs-Toleranz beim
+  // automatischen Matchen). Wird AUCH für die Voll-bezahlt-Übergangs-Toleranz
+  // genutzt — wer 0,10 € im Match akzeptiert, akzeptiert auch isFullyPaid bei
+  // -0,10 € Differenz.
+  bankMatchToleranceEur: number;
+  // Audit-B: Toleranz für Bilanz-Identitäts-Check (Aktiva = Passiva).
+  // Bei großen Tenants mit vielen Buchungen können Cent-Rundungs-Summen
+  // schnell ein paar Cent erreichen.
+  bilanzToleranceEur: number;
+  // Audit-B: Konto auf das das Jahresergebnis beim year-end-close vorgetragen
+  // wird. Default "9999" = synthetisches Konto (Vortrag NICHT auto).
+  // Tenants sollten ein echtes EK-Konto setzen (SKR04 z.B. "2010" oder
+  // "2120" Gewinnvortrag).
+  datevAccountAnnualResult: string;
+  // Audit-C: Kontenrahmen-Version. Steuert das Range-Mapping in der
+  // Bilanz (skr04-mapping vs skr03-mapping).
+  chartOfAccountsVersion: "SKR03" | "SKR04";
 }
 
 export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
@@ -134,6 +151,11 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   useTaxSplit: false,
   // P13: 4-Augen-Schwelle Default 1.000 € — übliche Praxis im Mittelstand.
   fourEyesThresholdEur: 1000,
+  // Audit-B Defaults.
+  bankMatchToleranceEur: 0.02,
+  bilanzToleranceEur: 0.01,
+  datevAccountAnnualResult: "9999",
+  chartOfAccountsVersion: "SKR04",
 };
 
 /**

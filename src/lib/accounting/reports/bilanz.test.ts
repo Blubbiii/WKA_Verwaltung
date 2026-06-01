@@ -18,6 +18,12 @@ vi.mock("@/lib/prisma", () => ({
     journalEntryLine: { findMany: vi.fn() },
   },
 }));
+vi.mock("@/lib/tenant-settings", () => ({
+  getTenantSettings: vi.fn().mockResolvedValue({
+    bilanzToleranceEur: 0.01,
+    datevAccountAnnualResult: "9999",
+  }),
+}));
 
 import { prisma } from "@/lib/prisma";
 import { computeBilanz } from "./bilanz";
