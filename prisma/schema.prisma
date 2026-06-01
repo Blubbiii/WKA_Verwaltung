@@ -132,6 +132,8 @@ model Tenant {
   ustAdjustments            UStAdjustment[]
   openingBalances           OpeningBalance[]
   balanceSheetSnapshots     BalanceSheetSnapshot[]
+  invoicePayments           InvoicePayment[]
+  valueAdjustments          ValueAdjustment[]
 
   @@map("tenants")
 }
@@ -247,6 +249,8 @@ model User {
   incomingInvoicesApproved                                                IncomingInvoice[]           @relation("IncomingInvoiceApprover")
   openingBalancesCreated                                                  OpeningBalance[]            @relation("OpeningBalanceCreator")
   balanceSheetSnapshotsCreated                                            BalanceSheetSnapshot[]      @relation("BalanceSheetSnapshotCreator")
+  invoicePaymentsCreated                                                  InvoicePayment[]            @relation("InvoicePaymentCreator")
+  valueAdjustmentsCreated                                                 ValueAdjustment[]           @relation("ValueAdjustmentCreator")
   mapAnnotations                                                          MapAnnotation[]
   operationalTasksCreated                                                 OperationalTask[]           @relation("OperationalTaskCreator")
   operationalTasksAssigned                                                OperationalTask[]           @relation("OperationalTaskAssignee")
@@ -622,6 +626,10 @@ model Person {
   tenant                         Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   shareholders                   Shareholder[]
   contactType                    String?                          @db.VarChar(50)
+  // P16: B2B-Flag für §288 BGB Verzugszinsen (B2B = Basis+9%-Pkt + 40€-Pauschale,
+  // B2C = Basis+5%-Pkt). personType="natural" + isBusinessCustomer=false → B2C.
+  // companyName gesetzt ODER isBusinessCustomer=true → B2B.
+  isBusinessCustomer             Boolean                          @default(false)
   lastActivityAt                 DateTime?
   crmActivities                  CrmActivity[]
   vendorProfiles                 Vendor[]
@@ -980,6 +988,9 @@ model Invoice {
   skontoDeadline                                                                              DateTime?
   skontoAmount                                                                                Decimal?                        @db.Decimal(12, 2)
   skontoPaid                                                                                  Boolean                         @default(false)
+  // P16: Bisher gezahlter Betrag (für Teilzahlungen). Wird vom invoice-payment-Modul
+  // bei jeder Zahlung inkrementiert. Bei status=PAID muss paidAmount = grossAmount sein.
+  paidAmount                                                                                  Decimal                         @default(0) @db.Decimal(15, 2)
   printedAt                                                                                   DateTime?
   printedById                                                                                 String?
   emailedAt                                                                                   DateTime?
@@ -993,6 +1004,10 @@ model Invoice {
   taxCode                                                                                     TaxCode?                       @relation(fields: [taxCodeId], references: [id], onDelete: SetNull)
   // P11: §17 USt-Korrekturen die diese Rechnung referenzieren (z.B. Skonto, Gutschrift).
   ustAdjustments                                                                              UStAdjustment[]                @relation("UStAdjustmentInvoice")
+  // P16: Zahlungseingänge (Teilzahlungen + Vollzahlungen).
+  payments                                                                                    InvoicePayment[]
+  // P16: EWB/PWB/Forderungsausfall-Wertberichtigungen.
+  valueAdjustments                                                                            ValueAdjustment[]
   distributionItems                                                                           DistributionItem?
   energySettlementItems                                                                       EnergySettlementItem[]
   items                                                                                       InvoiceItem[]
@@ -2891,6 +2906,10 @@ enum InvoiceStatus {
   SENT
   PAID
   CANCELLED
+  // P16: Teilzahlung erhalten — Rest noch offen.
+  PARTIALLY_PAID
+  // P16: Uneinbringlich (Forderungsausfall §17 UStG / §253 HGB).
+  WRITTEN_OFF
 }
 
 enum VoteStatus {
@@ -3420,6 +3439,9 @@ model JournalEntry {
 
   // P11: §17 USt-Korrektur die DIESEN Eintrag als Korrekturbuchung verwendet (1:1).
   ustAdjustment          UStAdjustment?
+  // P16: Forderungsmanagement Rückrelationen.
+  invoicePayments        InvoicePayment[] @relation("InvoicePaymentJournal")
+  valueAdjustments       ValueAdjustment[] @relation("ValueAdjustmentJournal")
 
   @@index([tenantId])
   @@index([tenantId, entryDate])
@@ -4193,6 +4215,8 @@ model BankTransaction {
   updatedAt         DateTime      @updatedAt
   bankAccountId     String?
   bankAccount       BankAccount?  @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  // P16: Zahlungseingänge die dieser Bank-Transaktion zugeordnet sind.
+  invoicePayments   InvoicePayment[]
 
   @@index([tenantId])
   @@index([tenantId, bookingDate])
@@ -4232,6 +4256,88 @@ model DunningRun {
   @@map("dunning_runs")
 }
 
+// =============================================================================
+// P16: Forderungsmanagement — Teilzahlungen, Verzugszinsen, Wertberichtigungen
+// =============================================================================
+
+enum InvoicePaymentMethod {
+  BANK
+  CASH
+  SEPA
+  OTHER
+}
+
+model InvoicePayment {
+  id                String                @id @default(uuid())
+  tenantId          String
+  tenant            Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoiceId         String
+  invoice           Invoice               @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  paymentDate       DateTime
+  amount            Decimal               @db.Decimal(15, 2)
+  paymentMethod     InvoicePaymentMethod  @default(BANK)
+  bankTransactionId String?
+  bankTransaction   BankTransaction?      @relation(fields: [bankTransactionId], references: [id], onDelete: SetNull)
+  journalEntryId    String?
+  journalEntry      JournalEntry?         @relation("InvoicePaymentJournal", fields: [journalEntryId], references: [id], onDelete: SetNull)
+  notes             String?               @db.VarChar(500)
+  createdById       String
+  createdBy         User                  @relation("InvoicePaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt         DateTime              @default(now())
+
+  @@index([tenantId, invoiceId])
+  @@index([tenantId, paymentDate])
+  @@map("invoice_payments")
+}
+
+enum ValueAdjustmentType {
+  EWB              // Einzelwertberichtigung §253 HGB (zweifelhafte Forderung)
+  PWB              // Pauschalwertberichtigung §253 HGB
+  DIRECT_WRITEOFF  // Direkter Forderungsausfall §17 UStG
+}
+
+model ValueAdjustment {
+  id              String              @id @default(uuid())
+  tenantId        String
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoiceId       String?
+  invoice         Invoice?            @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  type            ValueAdjustmentType
+  amountEur       Decimal             @db.Decimal(15, 2)
+  reason          String              @db.VarChar(500)
+  /// Wird bei DIRECT_WRITEOFF gesetzt — verweist auf den JournalEntry der
+  /// die Ausbuchung + §17 USt-Korrektur enthält.
+  postedJournalId String?             @unique
+  postedJournal   JournalEntry?       @relation("ValueAdjustmentJournal", fields: [postedJournalId], references: [id], onDelete: Restrict)
+  /// §17 USt-Korrektur (nur bei DIRECT_WRITEOFF mit USt-Bezug).
+  ustAdjustmentId String?             @unique
+  effectiveDate   DateTime
+  createdById     String
+  createdBy       User                @relation("ValueAdjustmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt       DateTime            @default(now())
+
+  @@index([tenantId, effectiveDate])
+  @@index([invoiceId])
+  @@map("value_adjustments")
+}
+
+// §247 BGB Basiszinssatz (Bundesbank). Mandantenunabhängig — wir pflegen
+// die Zeitreihe einmal global. Die effektive Verzugszinsformel ist
+// BaseRate + 5%-Pkt (B2C) oder + 9%-Pkt (B2B).
+model BaseInterestRate {
+  id          String   @id @default(uuid())
+  validFrom   DateTime @db.Date
+  validTo     DateTime? @db.Date
+  ratePercent Decimal  @db.Decimal(6, 3)
+  /// Quelle (z.B. "Bundesbank BBK01.SU0316").
+  source      String   @db.VarChar(200)
+  createdAt   DateTime @default(now())
+
+  @@unique([validFrom])
+  @@index([validFrom, validTo])
+  @@map("base_interest_rates")
+}
+
 model DunningItem {
   id            String     @id @default(uuid())
   dunningRunId  String
@@ -4242,6 +4348,13 @@ model DunningItem {
   overdueDays   Int
   amount        Decimal    @db.Decimal(15, 2)
   feeAmount     Decimal    @default(0) @db.Decimal(15, 2)
+  // P16 §288 BGB Verzugszinsen.
+  // B2B: Basiszinssatz + 9 %-Punkte (Abs. 2). B2C: Basis + 5 %-Punkte (Abs. 1).
+  interestAmount      Decimal @default(0) @db.Decimal(15, 2)
+  interestRatePercent Decimal? @db.Decimal(6, 3)
+  interestDaysOverdue Int?
+  // §288 Abs. 5: 40€-Pauschale für B2B-Forderungen (einmalig pro Forderung).
+  interestLumpSumEur  Decimal @default(0) @db.Decimal(10, 2)
   letterPdfUrl  String?
   emailSentAt   DateTime?
   createdAt     DateTime   @default(now())
