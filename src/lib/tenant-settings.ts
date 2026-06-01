@@ -58,6 +58,11 @@ export interface TenantSettings {
   reminderFee1: number;
   reminderFee2: number;
   reminderFee3: number;
+  // P10: §19 UStG Kleinunternehmer-Status. Wenn true:
+  // - Ausgangsrechnungen ohne USt-Ausweis
+  // - UStVA wird nicht abgegeben
+  // - Tax-Codes mit Kategorie STANDARD_19/REDUCED_7 ergeben 0% effektiv
+  kleinunternehmer: boolean;
 }
 
 export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
@@ -113,6 +118,8 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   reminderFee1: 0,
   reminderFee2: 5,
   reminderFee3: 10,
+  // P10: §19 UStG — Default: Standard-Unternehmer (USt-pflichtig).
+  kleinunternehmer: false,
 };
 
 /**

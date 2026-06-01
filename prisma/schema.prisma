@@ -128,6 +128,7 @@ model Tenant {
   failedJobs                FailedJob[]
   consentLogs               ConsentLog[]
   accountingPeriodLocks     AccountingPeriodLock[]
+  taxCodes                  TaxCode[]
 
   @@map("tenants")
 }
@@ -979,6 +980,10 @@ model Invoice {
   emailedTo                                                                                   String?
   reminderLevel                                                                               Int?
   reminderSentAt                                                                              DateTime?
+  // P10: Tax-Code-Verweis (löst TaxType schrittweise ab).
+  // Nullable während Migration — Backfill durch Phase 11.
+  taxCodeId                                                                                   String?
+  taxCode                                                                                     TaxCode?                       @relation(fields: [taxCodeId], references: [id], onDelete: SetNull)
   distributionItems                                                                           DistributionItem?
   energySettlementItems                                                                       EnergySettlementItem[]
   items                                                                                       InvoiceItem[]
@@ -3149,6 +3154,65 @@ model PositionTaxMapping {
   @@map("position_tax_mappings")
 }
 
+// =============================================================================
+// P10: TaxCode (DATEV-Steuerschlüssel + UStVA-Kennziffer-Mapping)
+//
+// Ersetzt schrittweise das alte TaxType-Enum (STANDARD/REDUCED/EXEMPT) durch
+// ein vollständiges Modell mit UStVA-Boxen, Reverse-Charge-Flag und tenant-
+// spezifischen DATEV-Steuerschlüsseln. TaxType bleibt parallel bis P11/P12
+// es ablöst (Backwards-Compat).
+// =============================================================================
+
+enum TaxCategory {
+  STANDARD_19              // §12 Abs. 1 UStG — Regelsteuersatz
+  REDUCED_7                // §12 Abs. 2 UStG — ermäßigter Satz
+  EXEMPT                   // §4 UStG — generell steuerfrei
+  REVERSE_CHARGE_13B       // §13b UStG — Steuerschuldnerschaft Leistungsempfänger
+  IGE_INTRA_EU             // innergemeinschaftlicher Erwerb (§1a UStG)
+  IGL_INTRA_EU             // innergemeinschaftliche Lieferung (§4 Nr. 1b + §6a UStG)
+  EXPORT                   // Drittlandsausfuhr (§4 Nr. 1a + §6 UStG)
+  KLEINUNTERNEHMER_19      // §19 UStG — kein USt-Ausweis
+  NOT_TAXABLE              // außerhalb USt-Bereich (z.B. Schadensersatz, Innenumsätze)
+}
+
+model TaxCode {
+  id            String      @id @default(uuid())
+  tenantId      String
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// DATEV-Steuerschlüssel (z.B. "9" = 19%, "8" = 7%, "0" = steuerfrei).
+  /// Pro Tenant + Code UNIQUE — Konflikte mit DATEV-Standardschlüsseln
+  /// dadurch ausgeschlossen.
+  code          String      @db.VarChar(10)
+  /// Anzeigename für UI ("USt 19%", "Reverse Charge §13b EU", ...).
+  name          String      @db.VarChar(100)
+  category      TaxCategory
+  /// Effektiver USt-Satz (0.000 - 1.000). Wird vom UI als Prozent angezeigt.
+  rate          Decimal     @db.Decimal(5, 4)
+  /// UStVA-Kennzahl (z.B. "81" für 19% Umsätze, "41" für IGL, "46" für §13b).
+  /// Null bei NOT_TAXABLE / EXEMPT-Sonderfällen.
+  vatReportBox  String?     @db.VarChar(10)
+  /// true für REVERSE_CHARGE_13B + IGE_INTRA_EU (Leistungsempfänger schuldet USt).
+  reverseCharge Boolean     @default(false)
+  /// SKR03/04 USt-Konto (z.B. "1776" 19% USt SKR04). Optional — wird in P11
+  /// für Auto-Posting verwendet, kann pro TaxCode gesetzt werden.
+  taxAccountId  String?
+  taxAccount    LedgerAccount? @relation("TaxCodeAccount", fields: [taxAccountId], references: [id], onDelete: SetNull)
+  active        Boolean     @default(true)
+  /// System-defined Codes (von Seed angelegt) — UI sollte sie nicht löschen lassen.
+  isSystem      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  invoices         Invoice[]
+  incomingInvoices IncomingInvoice[]
+  journalLines     JournalEntryLine[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, active])
+  @@index([tenantId, category])
+  @@map("tax_codes")
+}
+
 // ─── Webhooks ────────────────────────────────────────────
 
 model Webhook {
@@ -3277,6 +3341,15 @@ model JournalEntryLine {
   creditAmount   Decimal?     @db.Decimal(15, 2)
   taxKey         String?      @db.VarChar(10)
   costCenter     String?      @db.VarChar(50)
+
+  // P10: optionaler Tax-Code-Verweis. Wird in P11/P12 für UStVA-Aggregation
+  // genutzt (statt String-Match auf Kontonummer).
+  taxCodeId      String?
+  taxCode        TaxCode?     @relation(fields: [taxCodeId], references: [id], onDelete: SetNull)
+  /// UStVA-Kennzahl direkt auf der Buchungszeile (überschreibt taxCode.vatReportBox
+  /// falls beides gesetzt). Erlaubt Sonderfälle (z.B. Korrekturbuchungen mit
+  /// abweichender Box).
+  ustvaKennzahl  String?      @db.VarChar(10)
 
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -3453,6 +3526,10 @@ model IncomingInvoice {
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
   deletedAt          DateTime?
+
+  // P10: Tax-Code-Verweis (für §13b Reverse-Charge, IGE etc.)
+  taxCodeId          String?
+  taxCode            TaxCode?              @relation(fields: [taxCodeId], references: [id], onDelete: SetNull)
 
   vendor              Vendor?               @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   recipientFund       Fund?                 @relation(fields: [recipientFundId], references: [id], onDelete: SetNull)
@@ -3870,8 +3947,15 @@ model LedgerAccount {
   isSystem      Boolean         @default(false)
   parentNumber  String?         @db.VarChar(10)
   notes         String?
+  /// P10: Default-Steuerschlüssel für dieses Konto (DATEV-Schlüssel).
+  /// Wird vom Auto-Posting (P11) als Vorbelegung verwendet.
+  taxKey        String?         @db.VarChar(10)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+
+  /// Rückrelation: TaxCodes können dieses Konto als USt-Konto referenzieren
+  /// (z.B. TaxCode "USt 19%" → LedgerAccount "1776").
+  taxCodesUsing TaxCode[]       @relation("TaxCodeAccount")
 
   @@unique([tenantId, accountNumber])
   @@index([tenantId])
