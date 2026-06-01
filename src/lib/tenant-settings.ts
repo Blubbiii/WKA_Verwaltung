@@ -63,6 +63,11 @@ export interface TenantSettings {
   // - UStVA wird nicht abgegeben
   // - Tax-Codes mit Kategorie STANDARD_19/REDUCED_7 ergeben 0% effektiv
   kleinunternehmer: boolean;
+  // P11: Feature-Flag für USt-Split im Auto-Posting.
+  // Default false → bestehende 2-Lines-Engine (Brutto auf Erlöskonto).
+  // true → neue 3-Lines-Engine (Netto auf Erlöskonto + USt-Konto separat).
+  // Sanfter Rollout: pro Tenant umschaltbar, nach Validierung Default flippen.
+  useTaxSplit: boolean;
 }
 
 export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
@@ -120,6 +125,8 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   reminderFee3: 10,
   // P10: §19 UStG — Default: Standard-Unternehmer (USt-pflichtig).
   kleinunternehmer: false,
+  // P11: USt-Split Feature-Flag — default OFF während Shadow-Phase.
+  useTaxSplit: false,
 };
 
 /**

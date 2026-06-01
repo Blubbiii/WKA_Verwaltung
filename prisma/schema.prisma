@@ -129,6 +129,7 @@ model Tenant {
   consentLogs               ConsentLog[]
   accountingPeriodLocks     AccountingPeriodLock[]
   taxCodes                  TaxCode[]
+  ustAdjustments            UStAdjustment[]
 
   @@map("tenants")
 }
@@ -251,6 +252,7 @@ model User {
   userTenantMemberships                                                   UserTenantMembership[]
   periodsLocked                                                           AccountingPeriodLock[]     @relation("PeriodLocker")
   periodsUnlocked                                                         AccountingPeriodLock[]     @relation("PeriodUnlocker")
+  ustAdjustmentsCreated                                                   UStAdjustment[]            @relation("UStAdjustmentCreator")
 
   @@index([tenantId])
   @@index([email])
@@ -984,6 +986,8 @@ model Invoice {
   // Nullable während Migration — Backfill durch Phase 11.
   taxCodeId                                                                                   String?
   taxCode                                                                                     TaxCode?                       @relation(fields: [taxCodeId], references: [id], onDelete: SetNull)
+  // P11: §17 USt-Korrekturen die diese Rechnung referenzieren (z.B. Skonto, Gutschrift).
+  ustAdjustments                                                                              UStAdjustment[]                @relation("UStAdjustmentInvoice")
   distributionItems                                                                           DistributionItem?
   energySettlementItems                                                                       EnergySettlementItem[]
   items                                                                                       InvoiceItem[]
@@ -3216,6 +3220,53 @@ model TaxCategoryTemplate {
   @@map("tax_category_templates")
 }
 
+// =============================================================================
+// P11: USt-Korrektur §17 UStG (Skonto, Gutschrift, Forderungsausfall,
+//      Teilzahlung). Wird in §17-Mechanik gebraucht: nach Buchung der
+//      Original-Rechnung müssen bei späteren Korrekturen Erlös + USt-Konto
+//      gegengebucht werden. Audit-Trail über UStAdjustment-Zeile + Verweis
+//      auf den erzeugten JournalEntry.
+// =============================================================================
+
+enum UStAdjustmentReason {
+  SKONTO           // §17 Abs. 1 Nr. 1 UStG — Entgeltminderung durch Skonto
+  CREDIT_NOTE      // §17 Abs. 1 — Rechnungsstorno / Korrekturrechnung
+  WRITE_OFF        // §17 Abs. 2 Nr. 1 — Forderungsausfall (Uneinbringlichkeit)
+  PARTIAL_PAYMENT  // §17 Abs. 2 Nr. 1 — Teil-Uneinbringlichkeit
+  REVERSE_CHARGE   // §13b — Steuerschuldumkehr (Sonderfall, kein klassisches §17)
+}
+
+model UStAdjustment {
+  id                        String              @id @default(uuid())
+  tenantId                  String
+  tenant                    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// Referenz auf die korrigierte Ausgangsrechnung (für Skonto/Gutschrift/Ausfall).
+  originalInvoiceId         String?
+  originalInvoice           Invoice?            @relation("UStAdjustmentInvoice", fields: [originalInvoiceId], references: [id], onDelete: SetNull)
+  /// Referenz auf die korrigierte Eingangsrechnung (z.B. eingehende Gutschrift).
+  originalIncomingInvoiceId String?
+  originalIncomingInvoice   IncomingInvoice?    @relation("UStAdjustmentIncoming", fields: [originalIncomingInvoiceId], references: [id], onDelete: SetNull)
+  reason                    UStAdjustmentReason
+  adjustmentDate            DateTime
+  /// Delta zum Netto-Erlös (negativ bei Minderung, positiv bei Erhöhung).
+  netAmountDelta            Decimal             @db.Decimal(15, 2)
+  /// Delta zur USt-Schuld (Vorzeichen wie netAmountDelta).
+  taxAmountDelta            Decimal             @db.Decimal(15, 2)
+  /// Verweis auf den erzeugten JournalEntry (1:1 — jede Korrektur = eine
+  /// neue Buchung, kein Inplace-Update der Original-Buchung).
+  journalEntryId            String              @unique
+  journalEntry              JournalEntry        @relation(fields: [journalEntryId], references: [id], onDelete: Restrict)
+  notes                     String?             @db.VarChar(500)
+  createdById               String
+  createdBy                 User                @relation("UStAdjustmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt                 DateTime            @default(now())
+
+  @@index([tenantId, adjustmentDate])
+  @@index([originalInvoiceId])
+  @@index([originalIncomingInvoiceId])
+  @@map("ust_adjustments")
+}
+
 model TaxCode {
   id            String              @id @default(uuid())
   tenantId      String
@@ -3361,6 +3412,9 @@ model JournalEntry {
   reverses               JournalEntry? @relation("JournalReversal", fields: [reversesJournalEntryId], references: [id])
   reversedBy             JournalEntry? @relation("JournalReversal")
   reversalReason         String?       @db.VarChar(500)
+
+  // P11: §17 USt-Korrektur die DIESEN Eintrag als Korrekturbuchung verwendet (1:1).
+  ustAdjustment          UStAdjustment?
 
   @@index([tenantId])
   @@index([tenantId, entryDate])
@@ -3570,6 +3624,8 @@ model IncomingInvoice {
   // P10: Tax-Code-Verweis (für §13b Reverse-Charge, IGE etc.)
   taxCodeId          String?
   taxCode            TaxCode?              @relation(fields: [taxCodeId], references: [id], onDelete: SetNull)
+  // P11: §17 USt-Korrekturen die diese Eingangsrechnung referenzieren.
+  ustAdjustments     UStAdjustment[]       @relation("UStAdjustmentIncoming")
 
   vendor              Vendor?               @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   recipientFund       Fund?                 @relation(fields: [recipientFundId], references: [id], onDelete: SetNull)

@@ -1,6 +1,18 @@
 /**
  * Auto-Posting: Creates JournalEntry records automatically when invoice status changes.
- * Maps invoice items to SKR03 accounts from the LedgerAccount table.
+ * Maps invoice items to SKR03/SKR04 accounts from tenant settings.
+ *
+ * P11: Zwei Engines parallel verfügbar.
+ *  - Alt (2-Lines): Brutto auf Erlös-/Aufwand-Konto, Brutto auf Gegenkonto.
+ *    USt wird NICHT separat ausgewiesen → UStVA strukturell unbrauchbar.
+ *  - Neu (3-Lines): Netto auf Erlös-/Aufwand-Konto, USt separat auf
+ *    1776/1771 (Output) bzw. 1576/1571 (Input), Brutto auf Gegenkonto.
+ *
+ * Umschaltung via TenantSettings.useTaxSplit (Default: false). Sanfter
+ * Rollout — Tenants opten ein, nach Validierung wird der Default geflippt.
+ *
+ * Bei Kleinunternehmer (§19 UStG, settings.kleinunternehmer=true) oder
+ * tax=0 fällt die USt-Line weg (es gibt nichts zu splitten).
  */
 
 import { prisma } from "@/lib/prisma";
@@ -26,6 +38,47 @@ function buildAccountMap(s: TenantSettings): Record<string, { debit: string; cre
     SERVICE: { debit: s.datevAccountWartung, credit: s.datevAccountReceivables },
     MANAGEMENT_FEE: { debit: s.datevAccountBF, credit: s.datevAccountReceivables },
   };
+}
+
+/**
+ * Wählt das USt-Konto für eine Item-Line abhängig von der Buchungsrichtung
+ * (Output USt = Verkäufer schuldet, Input Vorsteuer = Käufer kann ziehen)
+ * und vom Steuersatz (19% oder 7%).
+ *
+ * Buchungsrichtung wird heuristisch über die Position des Forderungs-Kontos
+ * erkannt: liegt es auf debit → Standard Outgoing (Tenant verkauft);
+ *          liegt es auf credit → Incoming-Form (z.B. LEASE: Tenant zahlt Pacht).
+ *
+ * @returns USt-Kontonummer ODER null wenn kein Standard-Satz erkannt
+ */
+function pickTaxAccount(
+  s: TenantSettings,
+  taxRate: number,
+  debitAccount: string,
+  creditAccount: string,
+): { account: string; side: "debit" | "credit" } | null {
+  // Toleranz für Decimal-Rundung
+  const isStandard = Math.abs(taxRate - 19) < 0.01;
+  const isReduced = Math.abs(taxRate - 7) < 0.01;
+
+  if (!isStandard && !isReduced) return null;
+
+  const isOutgoing = debitAccount === s.datevAccountReceivables;
+  const isIncoming = creditAccount === s.datevAccountReceivables;
+
+  if (isOutgoing) {
+    return {
+      account: isStandard ? s.datevAccountOutputTax19 : s.datevAccountOutputTax7,
+      side: "credit", // USt-Schuld → Haben
+    };
+  }
+  if (isIncoming) {
+    return {
+      account: isStandard ? s.datevAccountInputTax19 : s.datevAccountInputTax7,
+      side: "debit", // Vorsteuer → Soll
+    };
+  }
+  return null;
 }
 
 /**
@@ -73,31 +126,92 @@ export async function createAutoPosting(
     const lines: Prisma.JournalEntryLineCreateWithoutJournalEntryInput[] = [];
     let lineNumber = 1;
 
+    // P11: Flag entscheidet zwischen alter 2-Lines und neuer 3-Lines Engine.
+    // Bei Kleinunternehmer fällt die USt-Logik weg → alte Engine reicht.
+    const useTaxSplit = settings.useTaxSplit && !settings.kleinunternehmer;
+
     for (const item of invoice.items) {
       const mapping = accountMap[item.referenceType || ""] || accountMap.ENERGY;
       const debitAccount = item.datevKonto || mapping.debit;
       const creditAccount = item.datevGegenkonto || mapping.credit;
-      const amount = item.grossAmount;
+      const gross = item.grossAmount;
+      const net = item.netAmount;
+      const tax = item.taxAmount;
 
-      // Debit line
-      lines.push({
-        lineNumber: lineNumber++,
-        account: debitAccount,
-        description: item.description || invoice.invoiceNumber || "",
-        debitAmount: amount,
-        creditAmount: null,
-        costCenter: item.datevKostenstelle || null,
-      });
+      if (useTaxSplit && Number(tax) > 0) {
+        // ---------- 3-Lines-Engine (Netto + USt + Gegenkonto) ----------
+        const taxRate = Number(item.taxRate);
+        const taxAcct = pickTaxAccount(settings, taxRate, debitAccount, creditAccount);
 
-      // Credit line
-      lines.push({
-        lineNumber: lineNumber++,
-        account: creditAccount,
-        description: item.description || invoice.invoiceNumber || "",
-        debitAmount: null,
-        creditAmount: amount,
-        costCenter: item.datevKostenstelle || null,
-      });
+        // Forderung/Aufwand-Konto (Soll): Brutto
+        lines.push({
+          lineNumber: lineNumber++,
+          account: debitAccount,
+          description: item.description || invoice.invoiceNumber || "",
+          debitAmount: gross,
+          creditAmount: null,
+          costCenter: item.datevKostenstelle || null,
+        });
+
+        // Erlös/Aufwand-Gegenkonto (Haben): Netto
+        lines.push({
+          lineNumber: lineNumber++,
+          account: creditAccount,
+          description: item.description || invoice.invoiceNumber || "",
+          debitAmount: null,
+          creditAmount: net,
+          costCenter: item.datevKostenstelle || null,
+        });
+
+        // USt-Konto: Haben bei Outgoing (Schuld) / Soll bei Incoming (Vorsteuer)
+        if (taxAcct && taxAcct.account) {
+          lines.push({
+            lineNumber: lineNumber++,
+            account: taxAcct.account,
+            description: `USt ${taxRate.toFixed(0)}% — ${item.description || invoice.invoiceNumber || ""}`.slice(0, 200),
+            debitAmount: taxAcct.side === "debit" ? tax : null,
+            creditAmount: taxAcct.side === "credit" ? tax : null,
+            costCenter: null,
+          });
+        } else {
+          // Kein USt-Konto erkennbar (Sonderfall) — Fallback auf 2-Lines.
+          // Buchung bleibt ausgeglichen, aber USt landet implizit im Gegenkonto.
+          // Korrigieren wir, indem wir die Netto-Line auf Brutto erhöhen.
+          // Statt das nachträglich zu fixen: wir loggen + benutzen Brutto auf
+          // dem Gegenkonto.
+          lines.pop(); // letzte Netto-Line entfernen
+          lines.push({
+            lineNumber: lineNumber - 1,
+            account: creditAccount,
+            description: item.description || invoice.invoiceNumber || "",
+            debitAmount: null,
+            creditAmount: gross,
+            costCenter: item.datevKostenstelle || null,
+          });
+          logger.warn(
+            { invoiceId, itemId: item.id, debitAccount, creditAccount, taxRate },
+            "Auto-posting tax-split fallback: USt-Konto nicht erkennbar — Brutto auf Gegenkonto",
+          );
+        }
+      } else {
+        // ---------- 2-Lines-Engine (Brutto/Brutto — bewährtes Verhalten) ----------
+        lines.push({
+          lineNumber: lineNumber++,
+          account: debitAccount,
+          description: item.description || invoice.invoiceNumber || "",
+          debitAmount: gross,
+          creditAmount: null,
+          costCenter: item.datevKostenstelle || null,
+        });
+        lines.push({
+          lineNumber: lineNumber++,
+          account: creditAccount,
+          description: item.description || invoice.invoiceNumber || "",
+          debitAmount: null,
+          creditAmount: gross,
+          costCenter: item.datevKostenstelle || null,
+        });
+      }
     }
 
     if (lines.length === 0) {

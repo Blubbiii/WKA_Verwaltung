@@ -7,6 +7,9 @@ import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
+import { createUStAdjustment } from "@/lib/accounting/ust-adjustment";
+import { getTenantSettings } from "@/lib/tenant-settings";
+import { PeriodLockedError } from "@/lib/accounting/period-lock";
 
 const markPaidSchema = z.object({
   paidAt: z.string().optional(), // ISO date string, defaults to now
@@ -50,6 +53,7 @@ export async function POST(
         skontoDeadline: true,
         skontoAmount: true,
         grossAmount: true,
+        taxCodeId: true,
       },
     });
 
@@ -99,17 +103,68 @@ export async function POST(
       );
     }
 
-    const updated = await prisma.invoice.update({
-      where: { id, tenantId: check.tenantId!},
-      data: {
-        status: "PAID",
-        paidAt,
-        ...(skontoPaid && { skontoPaid: true }),
-      },
-      include: {
-        items: { orderBy: { position: "asc" } },
-      },
+    // P11: §17 USt-Korrektur bei Skonto erzeugen.
+    // Update + Korrekturbuchung in EINER Transaktion, damit beides atomar wird.
+    // Nur ausführen wenn (a) Skonto angewendet wird, (b) TaxCode gesetzt ist
+    // (sonst kein Auto-Split möglich), (c) Tenant nicht §19 Kleinunternehmer
+    // ist (sonst hat die "USt-Korrektur" nichts zu korrigieren).
+    const settings = await getTenantSettings(check.tenantId!);
+    const shouldAdjustUSt =
+      skontoPaid &&
+      !settings.kleinunternehmer &&
+      invoice.taxCodeId !== null &&
+      invoice.skontoAmount !== null &&
+      Number(invoice.skontoAmount) > 0;
+
+    let ustAdjustmentId: string | null = null;
+    const updated = await prisma.$transaction(async (tx) => {
+      const inv = await tx.invoice.update({
+        where: { id, tenantId: check.tenantId!},
+        data: {
+          status: "PAID",
+          paidAt,
+          ...(skontoPaid && { skontoPaid: true }),
+        },
+        include: {
+          items: { orderBy: { position: "asc" } },
+        },
+      });
+
+      if (shouldAdjustUSt) {
+        // Skonto = Entgeltminderung → grossDelta negativ.
+        const skontoGross = Number(invoice.skontoAmount);
+        try {
+          const result = await createUStAdjustment(tx, {
+            tenantId: check.tenantId!,
+            originalInvoiceId: id,
+            reason: "SKONTO",
+            adjustmentDate: paidAt,
+            grossDelta: -skontoGross,
+            userId: check.userId!,
+            revenueAccount: settings.datevAccountEinspeisung,
+            counterAccount: settings.datevAccountReceivables,
+            notes: `Skonto ${invoice.skontoPercent}% auf RG ${id}`,
+          });
+          ustAdjustmentId = result.adjustmentId;
+        } catch (err) {
+          if (err instanceof PeriodLockedError) {
+            // Periode für Zahlungs-/Korrektur-Datum ist gesperrt.
+            // Wir rollen die ganze Transaktion zurück — User muss erst entsperren.
+            throw err;
+          }
+          throw err;
+        }
+      }
+
+      return inv;
     });
+
+    if (ustAdjustmentId) {
+      logger.info(
+        { invoiceId: id, ustAdjustmentId, tenantId: check.tenantId },
+        "§17 UStG Skonto-Korrektur gebucht",
+      );
+    }
 
     // Invalidate dashboard caches after marking invoice as paid
     invalidate.onInvoiceChange(check.tenantId!, id, 'update').catch((err) => {
@@ -126,6 +181,12 @@ export async function POST(
 
     return NextResponse.json(updated);
   } catch (error) {
+    if (error instanceof PeriodLockedError) {
+      return apiError("PERIOD_LOCKED", 409, {
+        message: error.message,
+        details: { periodYear: error.periodYear, periodMonth: error.periodMonth },
+      });
+    }
     logger.error({ err: error }, "Error marking invoice as paid");
     return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Markieren als bezahlt" });
   }
