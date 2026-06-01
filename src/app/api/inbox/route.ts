@@ -98,31 +98,69 @@ export async function POST(request: NextRequest) {
     const invoiceType = (formData.get("invoiceType") as string) || "INVOICE";
     const vendorId = (formData.get("vendorId") as string) || null;
     const recipientFundId = (formData.get("recipientFundId") as string) || null;
+    const invoiceNumber = (formData.get("invoiceNumber") as string)?.trim() || null;
     const notes = (formData.get("notes") as string) || null;
 
     const tenantId = check.tenantId!;
+
+    // P13 (D7): Duplikat-Check VOR Upload — gleicher Lieferant + Rechnungsnummer
+    // ist die Top-1-Quelle für Doppelzahlungen. Auch wenn die Partial-Unique-SQL
+    // im Schema aktiv ist, prüfen wir App-seitig für eine klare Fehlermeldung.
+    // Nur möglich wenn vendorId UND invoiceNumber bei Upload bereits bekannt sind
+    // (per OCR später folgen → dann muss der OCR-Worker erneut prüfen).
+    if (vendorId && invoiceNumber) {
+      const dup = await prisma.incomingInvoice.findFirst({
+        where: {
+          tenantId,
+          vendorId,
+          invoiceNumber,
+          deletedAt: null,
+        },
+        select: { id: true, status: true, invoiceNumber: true },
+      });
+      if (dup) {
+        return apiError("DUPLICATE_INVOICE", 409, {
+          message: `Rechnung ${dup.invoiceNumber} dieses Lieferanten existiert bereits (Status: ${dup.status})`,
+          details: { existingId: dup.id, existingStatus: dup.status },
+        });
+      }
+    }
 
     // Upload to S3
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileUrl = await uploadFile(buffer, file.name, file.type, tenantId);
 
-    // Create DB record
-    const invoice = await prisma.incomingInvoice.create({
-      data: {
-        tenantId,
-        invoiceType: invoiceType as "INVOICE" | "CREDIT_NOTE",
-        status: "INBOX",
-        ocrStatus: "PENDING",
-        fileUrl,
-        fileName: file.name,
-        fileSizeBytes: BigInt(file.size),
-        mimeType: file.type,
-        vendorId,
-        recipientFundId,
-        notes,
-        createdById: check.userId!,
-      },
-    });
+    // Create DB record (Catch P2002 → 409 statt 500 falls Partial-Unique-Index gefeuert hat)
+    let invoice;
+    try {
+      invoice = await prisma.incomingInvoice.create({
+        data: {
+          tenantId,
+          invoiceType: invoiceType as "INVOICE" | "CREDIT_NOTE",
+          status: "INBOX",
+          ocrStatus: "PENDING",
+          fileUrl,
+          fileName: file.name,
+          fileSizeBytes: BigInt(file.size),
+          mimeType: file.type,
+          vendorId,
+          invoiceNumber,
+          recipientFundId,
+          notes,
+          createdById: check.userId!,
+        },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        return apiError("DUPLICATE_INVOICE", 409, {
+          message: `Rechnung ${invoiceNumber} dieses Lieferanten existiert bereits`,
+        });
+      }
+      throw err;
+    }
 
     // Enqueue OCR job
     await enqueueInboxOcrJob({

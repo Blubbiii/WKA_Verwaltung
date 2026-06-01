@@ -57,7 +57,12 @@ export type ApiErrorCode =
   | "USER_INACTIVE"
   // Accounting period lock (P9)
   | "PERIOD_LOCKED"
-  | "ALREADY_REVERSED";
+  | "ALREADY_REVERSED"
+  // Kreditoren-Härtung (P13)
+  | "DUPLICATE_INVOICE"
+  | "APPROVAL_REQUIRED"
+  | "SELF_APPROVAL_FORBIDDEN"
+  | "VAT_DEDUCTION_FAILED";
 
 /** German fallback messages for error codes (used when client has no translation). */
 const DEFAULT_MESSAGES: Record<ApiErrorCode, string> = {
@@ -90,6 +95,10 @@ const DEFAULT_MESSAGES: Record<ApiErrorCode, string> = {
   USER_INACTIVE: "Benutzerkonto nicht aktiv",
   PERIOD_LOCKED: "Buchungsperiode ist gesperrt",
   ALREADY_REVERSED: "Buchung wurde bereits storniert",
+  DUPLICATE_INVOICE: "Doppelte Rechnung (gleicher Lieferant + Rechnungsnummer existiert bereits)",
+  APPROVAL_REQUIRED: "Rechnung muss vor Zahlung freigegeben werden",
+  SELF_APPROVAL_FORBIDDEN: "Eigene Rechnungen können nicht selbst freigegeben werden (4-Augen-Prinzip)",
+  VAT_DEDUCTION_FAILED: "§14 UStG Pflichtangaben fehlen — Vorsteuerabzug nicht möglich",
 };
 
 /** Default HTTP status per error code. */
@@ -123,6 +132,10 @@ const DEFAULT_STATUS: Record<ApiErrorCode, number> = {
   USER_INACTIVE: 400,
   PERIOD_LOCKED: 409,
   ALREADY_REVERSED: 409,
+  DUPLICATE_INVOICE: 409,
+  APPROVAL_REQUIRED: 409,
+  SELF_APPROVAL_FORBIDDEN: 403,
+  VAT_DEDUCTION_FAILED: 422,
 };
 
 export interface ApiErrorBody {

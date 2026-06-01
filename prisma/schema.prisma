@@ -242,6 +242,7 @@ model User {
   sepaPaymentBatchesCreated                                               SepaPaymentBatch[]          @relation("SepaPaymentBatchCreatedBy")
   cashBookEntriesCreated                                                  CashBookEntry[]             @relation("CashBookEntryCreatedBy")
   incomingInvoicesCreated                                                 IncomingInvoice[]           @relation("IncomingInvoiceCreator")
+  incomingInvoicesApproved                                                IncomingInvoice[]           @relation("IncomingInvoiceApprover")
   mapAnnotations                                                          MapAnnotation[]
   operationalTasksCreated                                                 OperationalTask[]           @relation("OperationalTaskCreator")
   operationalTasksAssigned                                                OperationalTask[]           @relation("OperationalTaskAssignee")
@@ -3626,6 +3627,13 @@ model IncomingInvoice {
   taxCode            TaxCode?              @relation(fields: [taxCodeId], references: [id], onDelete: SetNull)
   // P11: §17 USt-Korrekturen die diese Eingangsrechnung referenzieren.
   ustAdjustments     UStAdjustment[]       @relation("UStAdjustmentIncoming")
+  // P13: §14 UStG Pflichtangaben des Lieferanten (Pflicht für Vorsteuerabzug §15).
+  supplierTaxId      String?               @db.VarChar(50)
+  // P13: 4-Augen-Freigabe — approvedById MUSS ≠ createdById sein. Schwelle aus
+  // TenantSettings.fourEyesThresholdEur (Null = keine Schwelle, immer 4-Augen).
+  approvedById       String?
+  approvedBy         User?                 @relation("IncomingInvoiceApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  approvedAt         DateTime?
 
   vendor              Vendor?               @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   recipientFund       Fund?                 @relation(fields: [recipientFundId], references: [id], onDelete: SetNull)

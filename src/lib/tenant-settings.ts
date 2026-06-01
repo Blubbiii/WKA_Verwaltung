@@ -68,6 +68,11 @@ export interface TenantSettings {
   // true → neue 3-Lines-Engine (Netto auf Erlöskonto + USt-Konto separat).
   // Sanfter Rollout: pro Tenant umschaltbar, nach Validierung Default flippen.
   useTaxSplit: boolean;
+  // P13: 4-Augen-Freigabe-Schwelle für Eingangsrechnungen (in EUR).
+  // null = jede Rechnung braucht 4-Augen-Freigabe (createdById ≠ approvedById).
+  // > 0 = nur Rechnungen mit grossAmount > Schwelle brauchen 4-Augen.
+  // Auf hohem Wert (z.B. 1.000.000) effektiv deaktiviert.
+  fourEyesThresholdEur: number | null;
 }
 
 export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
@@ -127,6 +132,8 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   kleinunternehmer: false,
   // P11: USt-Split Feature-Flag — default OFF während Shadow-Phase.
   useTaxSplit: false,
+  // P13: 4-Augen-Schwelle Default 1.000 € — übliche Praxis im Mittelstand.
+  fourEyesThresholdEur: 1000,
 };
 
 /**
