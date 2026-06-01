@@ -35,8 +35,14 @@ import {
   BALANCE_SHEET_SECTION_LABELS,
   SECTION_SORT_ORDER,
   isAssetSection,
-  mapSkr04ToBalanceSheetSection,
 } from "../skr04-mapping";
+import {
+  getAccountMapper,
+  isExpenseAccount,
+  isPnlAccount,
+  isRevenueAccount,
+  type ChartOfAccountsVersion,
+} from "../chart-of-accounts";
 
 export interface BilanzAccountLine {
   accountNumber: string;
@@ -127,6 +133,10 @@ export async function computeBilanz(
     getTenantSettings(tenantId),
   ]);
 
+  // Audit-C: Kontenrahmen-spezifische Mapper aus TenantSettings auflösen.
+  const chartVersion = settings.chartOfAccountsVersion as ChartOfAccountsVersion;
+  const accountMapper = getAccountMapper(chartVersion);
+
   // Saldo-Map pro Konto aufbauen.
   const saldi = new Map<string, AccountSaldo>();
   const warnings: string[] = [];
@@ -140,9 +150,8 @@ export async function computeBilanz(
     if (!acc) continue;
     const key = acc.accountNumber;
     const section =
-      acc.balanceSheetSection ?? mapSkr04ToBalanceSheetSection(acc.accountNumber);
-    const num = parseInt(acc.accountNumber, 10);
-    const isPnl = !isNaN(num) && num >= 4000 && num < 9000 && section === null;
+      acc.balanceSheetSection ?? accountMapper(acc.accountNumber);
+    const isPnl = section === null && isPnlAccount(acc.accountNumber, chartVersion);
 
     saldi.set(key, {
       number: acc.accountNumber,
@@ -161,9 +170,8 @@ export async function computeBilanz(
     if (!entry) {
       const acc = accountByNumber.get(key);
       const section =
-        acc?.balanceSheetSection ?? mapSkr04ToBalanceSheetSection(key);
-      const num = parseInt(key, 10);
-      const isPnl = !isNaN(num) && num >= 4000 && num < 9000 && section === null;
+        acc?.balanceSheetSection ?? accountMapper(key);
+      const isPnl = section === null && isPnlAccount(key, chartVersion);
       entry = {
         number: key,
         name: acc?.name ?? key,
@@ -179,23 +187,21 @@ export async function computeBilanz(
   }
 
   // Schritt 3: Jahresergebnis berechnen (Erlöse - Aufwand).
-  // Erlöse: Haben-Saldo auf 8xxx-Konten. Aufwand: Soll-Saldo auf 4xxx-7xxx.
+  // Audit-C: Kontenrahmen-spezifische PNL-Erkennung.
   let revenueTotal = 0;
   let expenseTotal = 0;
   for (const entry of saldi.values()) {
     if (!entry.isPnl) continue;
-    const num = parseInt(entry.number, 10);
-    if (num >= 8000 && num < 9000) {
+    if (isRevenueAccount(entry.number, chartVersion)) {
       revenueTotal += entry.credit - entry.debit;
-    } else if (num >= 4000 && num < 8000) {
+    } else if (isExpenseAccount(entry.number, chartVersion)) {
       expenseTotal += entry.debit - entry.credit;
     }
   }
-  // Auch 8xxx-Konten ohne PNL-Flag (z.B. wenn manuell als REVENUE markiert).
+  // Auch Erlös-Konten ohne PNL-Flag (z.B. wenn manuell als REVENUE markiert).
   for (const entry of saldi.values()) {
     if (entry.isPnl) continue;
-    const num = parseInt(entry.number, 10);
-    if (num >= 8000 && num < 9000 && entry.section === null) {
+    if (isRevenueAccount(entry.number, chartVersion) && entry.section === null) {
       revenueTotal += entry.credit - entry.debit;
     }
   }
