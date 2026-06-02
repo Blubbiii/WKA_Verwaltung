@@ -57,6 +57,26 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = createEntrySchema.parse(body);
 
+    // P26.2 §146 AO Festschreibung: keine Einträge in gelockte Tage
+    const entryDate = new Date(parsed.entryDate);
+    const dayStart = new Date(entryDate);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const dayEnd = new Date(entryDate);
+    dayEnd.setUTCHours(23, 59, 59, 999);
+    const lockedInDay = await prisma.cashBookEntry.findFirst({
+      where: {
+        tenantId: check.tenantId!,
+        entryDate: { gte: dayStart, lte: dayEnd },
+        lockedAt: { not: null },
+      },
+      select: { id: true },
+    });
+    if (lockedInDay) {
+      return apiError("CONFLICT", 409, {
+        message: "Kassenbuch für diesen Tag bereits abgeschlossen (Festschreibung §146 AO)",
+      });
+    }
+
     // Calculate running balance
     const lastEntry = await prisma.cashBookEntry.findFirst({
       where: { tenantId: check.tenantId! },

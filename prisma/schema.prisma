@@ -136,6 +136,7 @@ model Tenant {
   valueAdjustments          ValueAdjustment[]
   gobdExports               GobdExport[]
   journalAttachments        JournalAttachment[]
+  cashBookDailyCloses       CashBookDailyClose[]
 
   @@map("tenants")
 }
@@ -256,6 +257,8 @@ model User {
   gobdExportsCreated                                                      GobdExport[]                @relation("GobdExportCreator")
   systemSettingsUpdated                                                   SystemSetting[]             @relation("SystemSettingUpdater")
   journalAttachmentsUploaded                                              JournalAttachment[]         @relation("JournalAttachmentUploader")
+  cashBookEntriesLocked                                                   CashBookEntry[]             @relation("CashBookEntryLocker")
+  cashBookDailyCloses                                                     CashBookDailyClose[]        @relation("CashBookDailyClosedBy")
   mapAnnotations                                                          MapAnnotation[]
   operationalTasksCreated                                                 OperationalTask[]           @relation("OperationalTaskCreator")
   operationalTasksAssigned                                                OperationalTask[]           @relation("OperationalTaskAssignee")
@@ -4621,9 +4624,41 @@ model CashBookEntry {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // P26.2 §146 AO Festschreibung — nach Lock keine Änderung mehr möglich.
+  // Locked-Block wird vom CashBookLock-Eintrag referenziert (Tag-genau).
+  lockedAt      DateTime?
+  lockedById    String?
+  lockedBy      User?    @relation("CashBookEntryLocker", fields: [lockedById], references: [id], onDelete: Restrict)
+
   @@unique([tenantId, entryNumber])
   @@index([tenantId, entryDate])
   @@map("cash_book_entries")
+}
+
+/// P26.2 Kassensturz §146 AO — Tagesabschluss mit Soll/Ist-Vergleich.
+/// Hält den tatsächlich gezählten Kassenbestand am Tagesende fest und
+/// vergleicht ihn mit dem rechnerischen Saldo. Differenz muss begründet
+/// werden (z.B. fehlender Beleg).
+model CashBookDailyClose {
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  closeDate       DateTime @db.Date
+  /// Rechnerischer Saldo = letzter runningBalance des Tages.
+  computedBalance Decimal  @db.Decimal(15, 2)
+  /// Tatsächlich gezählter Bargeldbestand.
+  countedBalance  Decimal  @db.Decimal(15, 2)
+  /// Differenz = countedBalance − computedBalance.
+  difference      Decimal  @db.Decimal(15, 2)
+  /// Pflichtfeld bei Differenz ≠ 0.
+  notes           String?  @db.VarChar(500)
+  closedById      String
+  closedBy        User     @relation("CashBookDailyClosedBy", fields: [closedById], references: [id], onDelete: Restrict)
+  closedAt        DateTime @default(now())
+
+  @@unique([tenantId, closeDate])
+  @@index([tenantId, closeDate])
+  @@map("cash_book_daily_closes")
 }
 
 // =============================================================================
