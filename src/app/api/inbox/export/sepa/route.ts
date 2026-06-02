@@ -40,13 +40,16 @@ export async function POST(request: NextRequest) {
       return apiError("INTERNAL_ERROR", 422, { message: "Mandanten-IBAN nicht konfiguriert (Einstellungen → Bankverbindung)" });
     }
 
-    // Load invoices
+    // P25 Audit: Idempotenz-Filter — bereits exportierte Rechnungen ausschließen.
+    // Verhindert Doppel-Zahlungen durch versehentliche Re-Exports.
     const invoices = await prisma.incomingInvoice.findMany({
       where: {
         id: { in: invoiceIds },
         tenantId,
         deletedAt: null,
         status: "APPROVED",
+        sepaExportedAt: null, // P25: nur nie-exportierte
+        paidAt: null, // P25: nicht bereits bezahlte
       },
       include: {
         vendor: { select: { name: true, iban: true, bic: true } },
@@ -54,7 +57,20 @@ export async function POST(request: NextRequest) {
     });
 
     if (invoices.length === 0) {
-      return apiError("NOT_FOUND", 404, { message: "Keine genehmigten Rechnungen gefunden" });
+      return apiError("NOT_FOUND", 404, {
+        message:
+          "Keine genehmigten Rechnungen gefunden (oder alle bereits exportiert/bezahlt)",
+      });
+    }
+
+    // Warnung wenn nicht alle übergebenen IDs auch tatsächlich exportiert werden
+    const exportedIds = new Set(invoices.map((i) => i.id));
+    const skippedDueToIdempotenz = invoiceIds.filter((id) => !exportedIds.has(id));
+    if (skippedDueToIdempotenz.length > 0) {
+      logger.info(
+        { tenantId, requested: invoiceIds.length, exported: invoices.length, skipped: skippedDueToIdempotenz },
+        "SEPA export: skipped already-exported/paid invoices (idempotency)",
+      );
     }
 
     const payments: SepaPayment[] = [];

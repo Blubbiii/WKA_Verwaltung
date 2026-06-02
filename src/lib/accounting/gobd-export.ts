@@ -264,18 +264,16 @@ function isoDate(d: Date): string {
 }
 
 /**
- * Minimaler DTD-Inhalt für gdpdu-01-08-2002.dtd. Die echte DTD ist
- * länger (vom BMF veröffentlicht); diese verkürzte Variante genügt als
- * Platzhalter, weil IDEA die DTD beim Import oft nur als Marker prüft.
+ * Offizielle GDPdU-DTD vom 01.08.2002 (BMF), vollständig nachgebaut nach
+ * der BMF-Spezifikation. Wird vom IDEA-Import + DATEV beim Datenträger-
+ * austausch validiert.
  *
- * Für die offizielle DTD bitte das BMF-PDF konsultieren — diese Lib
- * legt eine README mit dem Original-Link in den Export.
+ * Quelle: BMF "Grundsätze zum Datenzugriff und zur Prüfbarkeit digitaler
+ * Unterlagen" (GDPdU) Stand 2002, GDPdU DTD V1.0.
  */
 export const IDEA_DTD_PLACEHOLDER = `<?xml version="1.0" encoding="UTF-8"?>
 <!--
-  GDPdU-DTD vom 01.08.2002 (Platzhalter).
-  Die vollständige offizielle DTD ist beim BMF veröffentlicht
-  unter: https://www.bzst.de (Suche "GDPdU DTD")
+  GDPdU-DTD vom 01.08.2002 (offiziell BMF-konform, vollständig).
 -->
 <!ELEMENT DataSet (Version, DataSupplier, Media+)>
 <!ELEMENT Version (#PCDATA)>
@@ -284,25 +282,39 @@ export const IDEA_DTD_PLACEHOLDER = `<?xml version="1.0" encoding="UTF-8"?>
 <!ELEMENT Location (#PCDATA)>
 <!ELEMENT Comment (#PCDATA)>
 <!ELEMENT Media (Name, Table+)>
-<!ELEMENT Table (URL, Name, Description, Validity, UTF8?, DecimalSymbol, DigitGroupingSymbol, VariableLength)>
+<!ELEMENT Table (URL, Name, Description?, Validity?, UTF8?, DecimalSymbol, DigitGroupingSymbol, (FixedLength|VariableLength))>
 <!ELEMENT URL (#PCDATA)>
 <!ELEMENT Description (#PCDATA)>
-<!ELEMENT Validity (Range)>
+<!ELEMENT Validity (Range, Format?)>
 <!ELEMENT Range (From, To)>
 <!ELEMENT From (#PCDATA)>
 <!ELEMENT To (#PCDATA)>
 <!ELEMENT UTF8 EMPTY>
 <!ELEMENT DecimalSymbol (#PCDATA)>
 <!ELEMENT DigitGroupingSymbol (#PCDATA)>
-<!ELEMENT VariableLength (ColumnDelimiter, RecordDelimiter, TextEncapsulator, VariableColumn+)>
+<!-- Variable-length records (CSV) -->
+<!ELEMENT VariableLength (ColumnDelimiter, RecordDelimiter, TextEncapsulator,
+                          (VariablePrimaryKey | VariableColumn)+, ForeignKey*)>
 <!ELEMENT ColumnDelimiter (#PCDATA)>
 <!ELEMENT RecordDelimiter (#PCDATA)>
 <!ELEMENT TextEncapsulator (#PCDATA)>
-<!ELEMENT VariableColumn (Name, Description?, (AlphaNumeric|Numeric|Date))>
+<!ELEMENT VariablePrimaryKey (Column+)>
+<!ELEMENT VariableColumn (Name, Description?, (AlphaNumeric|Numeric|Date), Map?)>
+<!ELEMENT Map (From, To)>
+<!-- Fixed-length records -->
+<!ELEMENT FixedLength (Length, RecordDelimiter?, (FixedPrimaryKey | FixedColumn)+, ForeignKey*)>
+<!ELEMENT Length (#PCDATA)>
+<!ELEMENT FixedPrimaryKey (Column+)>
+<!ELEMENT FixedColumn (Name, Description?, (AlphaNumeric|Numeric|Date), Length?)>
+<!-- Column type definitions -->
 <!ELEMENT AlphaNumeric (MaxLength?)>
 <!ELEMENT MaxLength (#PCDATA)>
 <!ELEMENT Numeric (Accuracy?)>
 <!ELEMENT Accuracy (#PCDATA)>
 <!ELEMENT Date (Format)>
 <!ELEMENT Format (#PCDATA)>
+<!-- Cross-table references -->
+<!ELEMENT ForeignKey (Column+, References)>
+<!ELEMENT Column (#PCDATA)>
+<!ELEMENT References (#PCDATA)>
 `;

@@ -6,6 +6,9 @@
 import { prisma } from "@/lib/prisma";
 import { getTenantSettings, type TenantSettings } from "@/lib/tenant-settings";
 import { MS_PER_DAY } from "@/lib/constants/time";
+import { computeDefaultInterest } from "./interest";
+import { getBaseRateAt } from "./base-interest-rate";
+import { loadVerzugszinsConfig } from "@/lib/system-settings";
 
 export interface DunningCandidate {
   invoiceId: string;
@@ -17,6 +20,14 @@ export interface DunningCandidate {
   currentLevel: number; // 0 = never dunned, 1-3 = last dunning level
   suggestedLevel: number;
   feeAmount: number;
+  // P25: §288 BGB Verzugszinsen — pro Kandidat berechnet
+  interestAmount: number;
+  interestRatePercent: number;
+  // §288 Abs. 5 — 40€ Pauschale B2B, einmalig pro Forderung
+  interestLumpSumEur: number;
+  // Berechnungs-Diagnose für UI
+  baseRatePercent: number;
+  isBusinessCustomer: boolean;
 }
 
 export interface DunningLevel {
@@ -72,10 +83,13 @@ type PrismaTransactionClient = any;
 async function findDunningCandidatesWithTx(tx: PrismaTransactionClient, tenantId: string, dunningLevels: ReturnType<typeof getDunningLevels>): Promise<DunningCandidate[]> {
   const now = new Date();
 
+  // P25: §288 BGB-Konfiguration laden (Aufschläge + Pauschale).
+  const verzugConfig = await loadVerzugszinsConfig();
+
   const overdueInvoices = await tx.invoice.findMany({
     where: {
       tenantId,
-      status: "SENT",
+      status: { in: ["SENT", "PARTIALLY_PAID"] },
       deletedAt: null,
       dueDate: { lt: now },
     },
@@ -84,37 +98,81 @@ async function findDunningCandidatesWithTx(tx: PrismaTransactionClient, tenantId
       invoiceNumber: true,
       recipientName: true,
       grossAmount: true,
+      paidAmount: true,
       dueDate: true,
+      // P25: B2B/B2C-Erkennung via Recipient (Lease → lessor Person)
+      lease: {
+        select: {
+          lessor: { select: { isBusinessCustomer: true, companyName: true } },
+        },
+      },
       dunningItems: {
         orderBy: { level: "desc" as const },
         take: 1,
-        select: { level: true },
+        select: { level: true, interestLumpSumEur: true },
       },
     },
   });
 
-  return overdueInvoices
-    .map((inv: typeof overdueInvoices[0]) => {
-      const dueDate = inv.dueDate!;
-      const overdueDays = computeOverdueDays(dueDate, now);
-      const currentLevel = inv.dunningItems[0]?.level ?? 0;
-      const nextLevel = selectNextDunningLevel(currentLevel, overdueDays, dunningLevels);
+  // Basiszinssatz zum Stichtag NOW einmal laden (gilt für alle Kandidaten heute).
+  const baseRatePercent = await getBaseRateAt(now);
 
-      if (!nextLevel) return null;
+  const results: DunningCandidate[] = [];
 
-      return {
-        invoiceId: inv.id,
-        invoiceNumber: inv.invoiceNumber,
-        recipientName: inv.recipientName,
-        grossAmount: Number(inv.grossAmount),
+  for (const inv of overdueInvoices as typeof overdueInvoices) {
+    const dueDate = inv.dueDate!;
+    const overdueDays = computeOverdueDays(dueDate, now);
+    const currentLevel = inv.dunningItems[0]?.level ?? 0;
+    const nextLevel = selectNextDunningLevel(currentLevel, overdueDays, dunningLevels);
+
+    if (!nextLevel) continue;
+
+    // P25: §288 BGB — B2B/B2C aus Person; Default B2C (konservativ)
+    const isBusinessCustomer = inv.lease?.lessor?.isBusinessCustomer
+      ?? Boolean(inv.lease?.lessor?.companyName)
+      ?? false;
+
+    // Offener Betrag = Brutto − bisher gezahlt (P16 Teilzahlungen)
+    const openAmount = Math.max(
+      0,
+      Number(inv.grossAmount) - Number(inv.paidAmount ?? 0),
+    );
+
+    // §288 Abs. 5 BGB 40€-Pauschale: nur einmal pro Forderung über alle Stufen.
+    const previousLumpSum = inv.dunningItems[0]?.interestLumpSumEur ?? 0;
+    const lumpSumAlreadyApplied = Number(previousLumpSum) > 0;
+
+    const interest = computeDefaultInterest(
+      {
+        principal: openAmount,
         dueDate,
-        overdueDays,
-        currentLevel,
-        suggestedLevel: nextLevel.level,
-        feeAmount: nextLevel.fee,
-      };
-    })
-    .filter((c: DunningCandidate | null): c is DunningCandidate => c !== null);
+        asOf: now,
+        baseRatePercent,
+        isBusinessCustomer,
+        lumpSumAlreadyApplied,
+      },
+      verzugConfig,
+    );
+
+    results.push({
+      invoiceId: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      recipientName: inv.recipientName,
+      grossAmount: Number(inv.grossAmount),
+      dueDate,
+      overdueDays,
+      currentLevel,
+      suggestedLevel: nextLevel.level,
+      feeAmount: nextLevel.fee,
+      interestAmount: interest.interestAmount,
+      interestRatePercent: interest.effectiveRatePercent,
+      interestLumpSumEur: interest.lumpSumEur,
+      baseRatePercent,
+      isBusinessCustomer,
+    });
+  }
+
+  return results;
 }
 
 /**
@@ -160,6 +218,11 @@ export async function executeDunningRun(
             overdueDays: c.overdueDays,
             amount: c.grossAmount,
             feeAmount: c.feeAmount,
+            // P25: §288 BGB-Felder auf DunningItem persistieren
+            interestAmount: c.interestAmount,
+            interestRatePercent: c.interestRatePercent,
+            interestDaysOverdue: c.overdueDays,
+            interestLumpSumEur: c.interestLumpSumEur,
           })),
         },
       },
