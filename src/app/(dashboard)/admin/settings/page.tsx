@@ -6,7 +6,8 @@ import { GeneralSettings } from "@/components/settings/GeneralSettings";
 import { TenantPortalSettings } from "@/components/settings/TenantPortalSettings";
 import { TenantEmailSettings } from "@/components/settings/TenantEmailSettings";
 import { BusinessThresholds } from "@/components/settings/BusinessThresholds";
-import { Settings, Globe, Mail, Sliders } from "lucide-react";
+import { HgbComplianceSettings } from "@/components/settings/HgbComplianceSettings";
+import { Settings, Globe, Mail, Sliders, ShieldCheck } from "lucide-react";
 
 // =============================================================================
 // Component
@@ -39,6 +40,10 @@ export default function AdminSettingsPage() {
             <Sliders className="h-4 w-4" />
             {t("tabThresholds")}
           </TabsTrigger>
+          <TabsTrigger value="hgb" className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            HGB-Compliance
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
@@ -55,6 +60,10 @@ export default function AdminSettingsPage() {
 
         <TabsContent value="thresholds" className="space-y-4">
           <BusinessThresholds />
+        </TabsContent>
+
+        <TabsContent value="hgb" className="space-y-4">
+          <HgbComplianceSettings />
         </TabsContent>
       </Tabs>
     </div>

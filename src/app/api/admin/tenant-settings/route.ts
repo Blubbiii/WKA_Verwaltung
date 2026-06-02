@@ -73,6 +73,21 @@ export interface TenantSettings {
   reminderFee1: number;
   reminderFee2: number;
   reminderFee3: number;
+
+  // P10: §19 UStG Kleinunternehmer-Status
+  kleinunternehmer: boolean;
+  // P11: USt-Split Feature-Flag (default OFF während Shadow-Phase)
+  useTaxSplit: boolean;
+  // P13: 4-Augen-Freigabe-Schwelle in EUR (null = immer 4-Augen)
+  fourEyesThresholdEur: number | null;
+  // Audit-B: Cent-Toleranz für Bank-Match + Voll-bezahlt
+  bankMatchToleranceEur: number;
+  // Audit-B: Toleranz für Bilanz-Identitäts-Check (A=P)
+  bilanzToleranceEur: number;
+  // Audit-B: Konto auf das das Jahresergebnis vorgetragen wird
+  datevAccountAnnualResult: string;
+  // Audit-C: Kontenrahmen-Version (steuert Range-Mapping)
+  chartOfAccountsVersion: "SKR03" | "SKR04";
 }
 
 const DEFAULT_TENANT_SETTINGS: TenantSettings = {
@@ -146,6 +161,15 @@ const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   reminderFee1: 0,
   reminderFee2: 5,
   reminderFee3: 10,
+
+  // HGB-Compliance Defaults
+  kleinunternehmer: false,
+  useTaxSplit: false,
+  fourEyesThresholdEur: 1000,
+  bankMatchToleranceEur: 0.02,
+  bilanzToleranceEur: 0.01,
+  datevAccountAnnualResult: "9999",
+  chartOfAccountsVersion: "SKR04",
 };
 
 // =============================================================================
@@ -351,6 +375,31 @@ const tenantSettingsSchema = z.object({
     .min(0, "Mahngebühr darf nicht negativ sein")
     .max(999.99, "Mahngebühr zu hoch")
     .optional(),
+
+  // HGB-Compliance (P10-P19 + Audit B/C)
+  kleinunternehmer: z.boolean().optional(),
+  useTaxSplit: z.boolean().optional(),
+  fourEyesThresholdEur: z
+    .number()
+    .min(0, "Schwelle darf nicht negativ sein")
+    .max(10_000_000, "Schwelle zu hoch")
+    .nullable()
+    .optional(),
+  bankMatchToleranceEur: z
+    .number()
+    .min(0, "Toleranz darf nicht negativ sein")
+    .max(100, "Toleranz zu hoch (max 100€)")
+    .optional(),
+  bilanzToleranceEur: z
+    .number()
+    .min(0, "Toleranz darf nicht negativ sein")
+    .max(100, "Toleranz zu hoch (max 100€)")
+    .optional(),
+  datevAccountAnnualResult: z
+    .string()
+    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
+    .optional(),
+  chartOfAccountsVersion: z.enum(["SKR03", "SKR04"]).optional(),
 });
 
 // =============================================================================
