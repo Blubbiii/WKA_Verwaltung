@@ -12,6 +12,25 @@ const updateAccountSchema = z.object({
   parentNumber: z.string().max(10).nullable().optional(),
   notes: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
+  // P21.3 HGB-Compliance-Felder
+  taxKey: z.string().max(10).nullable().optional(),
+  balanceSheetSection: z
+    .enum([
+      "ASSET_FIXED",
+      "ASSET_CURRENT",
+      "ASSET_DEFERRED",
+      "EQUITY",
+      "PROVISION",
+      "LIABILITY_LONG",
+      "LIABILITY_SHORT",
+      "LIABILITY_DEFERRED",
+    ])
+    .nullable()
+    .optional(),
+  gewStAddBackKey: z
+    .enum(["INTEREST", "RENT_MOVABLE", "RENT_IMMOVABLE", "LICENSE"])
+    .nullable()
+    .optional(),
 });
 
 // PUT /api/buchhaltung/accounts/[id]
