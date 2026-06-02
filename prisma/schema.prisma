@@ -135,6 +135,7 @@ model Tenant {
   invoicePayments           InvoicePayment[]
   valueAdjustments          ValueAdjustment[]
   gobdExports               GobdExport[]
+  journalAttachments        JournalAttachment[]
 
   @@map("tenants")
 }
@@ -254,6 +255,7 @@ model User {
   valueAdjustmentsCreated                                                 ValueAdjustment[]           @relation("ValueAdjustmentCreator")
   gobdExportsCreated                                                      GobdExport[]                @relation("GobdExportCreator")
   systemSettingsUpdated                                                   SystemSetting[]             @relation("SystemSettingUpdater")
+  journalAttachmentsUploaded                                              JournalAttachment[]         @relation("JournalAttachmentUploader")
   mapAnnotations                                                          MapAnnotation[]
   operationalTasksCreated                                                 OperationalTask[]           @relation("OperationalTaskCreator")
   operationalTasksAssigned                                                OperationalTask[]           @relation("OperationalTaskAssignee")
@@ -3412,6 +3414,36 @@ model AccountingPeriodLock {
   @@map("accounting_period_locks")
 }
 
+/// P24.2: GoBD §147 AO Belegablage — Beleg-Dateien mit Hash an Buchung anhängen.
+/// Ein JournalEntry kann mehrere Belege haben (Sammelbuchung) und ein Beleg
+/// kann mehreren Buchungen zugeordnet sein (Beleg-Reuse).
+model JournalAttachment {
+  id              String       @id @default(uuid())
+  tenantId        String
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  journalEntryId  String
+  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  /// Original-Dateiname beim Upload.
+  fileName        String       @db.VarChar(255)
+  /// Storage-Pfad (S3-Key oder lokaler Pfad).
+  fileUrl         String       @db.VarChar(500)
+  /// MIME-Type.
+  mimeType        String       @db.VarChar(100)
+  /// SHA-256 Hex-Digest des Original-Inhalts. Wird beim Upload berechnet
+  /// und niemals geändert — Veränderung des Inhalts erfordert neuen Beleg.
+  fileHash        String       @db.VarChar(64)
+  fileSizeBytes   BigInt
+  /// Optionaler Anzeige-Text (z.B. "Rechnung Müller GmbH 06/2026").
+  description     String?      @db.VarChar(500)
+  uploadedById    String
+  uploadedBy      User         @relation("JournalAttachmentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  uploadedAt      DateTime     @default(now())
+
+  @@index([tenantId, journalEntryId])
+  @@index([fileHash])
+  @@map("journal_attachments")
+}
+
 model JournalEntry {
   id            String             @id @default(uuid())
   tenantId      String
@@ -3442,6 +3474,8 @@ model JournalEntry {
 
   // P11: §17 USt-Korrektur die DIESEN Eintrag als Korrekturbuchung verwendet (1:1).
   ustAdjustment          UStAdjustment?
+  // P24.2: GoBD §147 Beleg-Anhänge (n Beleg-PDFs pro Buchung).
+  attachments            JournalAttachment[]
   // P16: Forderungsmanagement Rückrelationen.
   invoicePayments        InvoicePayment[] @relation("InvoicePaymentJournal")
   valueAdjustments       ValueAdjustment[] @relation("ValueAdjustmentJournal")
