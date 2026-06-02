@@ -48,6 +48,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { PaymentDialog } from "@/components/invoices/PaymentDialog";
+import { WriteOffDialog } from "@/components/invoices/WriteOffDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -113,9 +115,10 @@ interface Invoice {
   taxRate: number;
   taxAmount: number | null;
   grossAmount: number;
-  status: "DRAFT" | "SENT" | "PAID" | "CANCELLED";
+  status: "DRAFT" | "SENT" | "PAID" | "CANCELLED" | "PARTIALLY_PAID" | "WRITTEN_OFF";
   sentAt: string | null;
   paidAt: string | null;
+  paidAmount: number;
   cancelledAt: string | null;
   cancelReason: string | null;
   notes: string | null;
@@ -248,6 +251,9 @@ export default function InvoiceDetailPage({
   const [showPartialCancelDialog, setShowPartialCancelDialog] = useState(false);
   const [showCorrectionDialog, setShowCorrectionDialog] = useState(false);
   const [correctionHistory, setCorrectionHistory] = useState<CorrectionHistory | null>(null);
+  // P23 Payment + Write-Off Dialoge
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showWriteOffDialog, setShowWriteOffDialog] = useState(false);
 
   useEffect(() => {
     fetchInvoice();
@@ -603,8 +609,27 @@ export default function InvoiceDetailPage({
               </Button>
             </>
           )}
-          {(invoice.status === "SENT" || invoice.status === "PAID") && (
+          {(invoice.status === "SENT" || invoice.status === "PAID" || invoice.status === "PARTIALLY_PAID") && (
             <>
+              {/* P23 — Teilzahlung + Forderungsausfall */}
+              {(invoice.status === "SENT" || invoice.status === "PARTIALLY_PAID") && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPaymentDialog(true)}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Zahlung erfassen
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowWriteOffDialog(true)}
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Wertberichtigung
+                  </Button>
+                </>
+              )}
               {invoice.status === "SENT" && (
                 getSkontoStatus(invoice) === "ELIGIBLE" ? (
                   <DropdownMenu>
@@ -1388,6 +1413,28 @@ export default function InvoiceDetailPage({
             router.push(`/invoices/${creditNoteId}`);
           }}
         />
+      )}
+
+      {/* P23 — Payment + Write-Off Dialoge */}
+      {invoice && (
+        <>
+          <PaymentDialog
+            invoiceId={invoice.id}
+            grossAmount={invoice.grossAmount}
+            paidAmount={invoice.paidAmount ?? 0}
+            open={showPaymentDialog}
+            onOpenChange={setShowPaymentDialog}
+            onSuccess={fetchInvoice}
+          />
+          <WriteOffDialog
+            invoiceId={invoice.id}
+            grossAmount={invoice.grossAmount}
+            paidAmount={invoice.paidAmount ?? 0}
+            open={showWriteOffDialog}
+            onOpenChange={setShowWriteOffDialog}
+            onSuccess={fetchInvoice}
+          />
+        </>
       )}
 
     </div>

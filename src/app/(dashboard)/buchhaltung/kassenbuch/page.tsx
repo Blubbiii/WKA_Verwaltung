@@ -25,7 +25,8 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Lock } from "lucide-react";
+import { KassenbuchDailyCloseDialog } from "@/components/buchhaltung/KassenbuchDailyCloseDialog";
 
 interface CashBookEntry {
   id: string;
@@ -37,6 +38,7 @@ interface CashBookEntry {
   account: string | null;
   receiptNumber: string | null;
   createdBy: { firstName: string | null; lastName: string | null };
+  lockedAt?: string | null;
 }
 
 function fmt(n: string | number): string {
@@ -56,6 +58,8 @@ export default function KassenbuchPage() {
     account: "",
     receiptNumber: "",
   });
+  // P26.2 Daily-Close-Dialog
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -118,8 +122,16 @@ export default function KassenbuchPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6 flex items-center justify-center">
-            <Button onClick={() => setDialogOpen(true)}><Plus className="h-4 w-4 mr-2" />{t("newEntry")}</Button>
+          <CardContent className="pt-6 flex flex-col gap-2 items-center justify-center">
+            <Button onClick={() => setDialogOpen(true)} className="w-full"><Plus className="h-4 w-4 mr-2" />{t("newEntry")}</Button>
+            <Button
+              onClick={() => setCloseDialogOpen(true)}
+              variant="outline"
+              className="w-full"
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              Tagesabschluss
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -187,6 +199,16 @@ export default function KassenbuchPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* P26.2 Daily-Close-Dialog */}
+      <KassenbuchDailyCloseDialog
+        open={closeDialogOpen}
+        onOpenChange={setCloseDialogOpen}
+        computedBalance={
+          entries.length > 0 ? Number(entries[entries.length - 1].runningBalance) : 0
+        }
+        onSuccess={fetchData}
+      />
     </div>
   );
 }
