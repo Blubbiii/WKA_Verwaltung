@@ -12,7 +12,10 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import type { ApprovalAction } from "@prisma/client";
+import { executeApprovedAction } from "./executors";
+import { apiLogger as logger } from "@/lib/logger";
 
 /** Default TTL — 7 Tage bis Auto-Expiration. */
 export const APPROVAL_TTL_DAYS = 7;
@@ -25,6 +28,8 @@ export interface CreateApprovalRequestInput {
   amountEur: number;
   requestedById: string;
   requestReason?: string;
+  /** Aktion-spezifische Parameter, die der Executor beim APPROVED-Decide braucht. */
+  actionParams?: Record<string, unknown>;
 }
 
 export async function createApprovalRequest(input: CreateApprovalRequestInput) {
@@ -40,9 +45,31 @@ export async function createApprovalRequest(input: CreateApprovalRequestInput) {
       amountEur: input.amountEur,
       requestedById: input.requestedById,
       requestReason: input.requestReason ?? null,
+      actionParams: input.actionParams
+        ? (input.actionParams as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
       expiresAt,
     },
   });
+}
+
+/**
+ * Falls bereits ein PENDING ApprovalRequest für (entityType, entityId, action)
+ * existiert, gibt diesen zurück. Sonst erzeugt einen neuen. So vermeiden wir
+ * Duplikate wenn der User mehrfach klickt.
+ */
+export async function findOrCreateApprovalRequest(input: CreateApprovalRequestInput) {
+  const existing = await prisma.approvalRequest.findFirst({
+    where: {
+      tenantId: input.tenantId,
+      entityType: input.entityType,
+      entityId: input.entityId,
+      action: input.action,
+      status: "PENDING",
+    },
+  });
+  if (existing) return existing;
+  return createApprovalRequest(input);
 }
 
 export class ApprovalNotFoundError extends Error {
@@ -101,7 +128,8 @@ export async function decideApproval(input: DecideApprovalInput) {
     throw new ApprovalExpiredError();
   }
 
-  return prisma.approvalRequest.update({
+  // Schritt 1: Decision committen.
+  const decided = await prisma.approvalRequest.update({
     where: { id: req.id },
     data: {
       status: input.decision,
@@ -110,6 +138,35 @@ export async function decideApproval(input: DecideApprovalInput) {
       decisionReason: input.decisionReason ?? null,
     },
   });
+
+  // Schritt 2: Bei APPROVED den Executor laufen lassen und Ergebnis zurückschreiben.
+  if (input.decision === "APPROVED") {
+    const executionResult = await executeApprovedAction(decided, input.deciderId);
+    const updated = await prisma.approvalRequest.update({
+      where: { id: decided.id },
+      data: {
+        executionResult: executionResult.resultData
+          ? (executionResult.resultData as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+        executionError: executionResult.error ?? null,
+        executedAt: new Date(),
+      },
+    });
+    if (!executionResult.success) {
+      logger.warn(
+        {
+          approvalId: decided.id,
+          action: decided.action,
+          entityId: decided.entityId,
+          error: executionResult.error,
+        },
+        "ApprovalRequest APPROVED — Execute fehlgeschlagen",
+      );
+    }
+    return updated;
+  }
+
+  return decided;
 }
 
 export async function listPendingForUser(tenantId: string, userId: string) {

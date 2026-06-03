@@ -7,6 +7,7 @@ import { serializePrisma } from "@/lib/serialize";
 import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 import { assertFourEyes, FourEyesViolationError } from "@/lib/auth/four-eyes-check";
+import { findOrCreateApprovalRequest } from "@/lib/approvals/manager";
 
 // ============================================================================
 // POST /api/journal-entries/[id]/post
@@ -54,7 +55,10 @@ export async function POST(
       return apiError("BAD_REQUEST", 400, { message: `Buchung nicht ausgeglichen: Soll ${totalDebit.toFixed(2)} € ≠ Haben ${totalCredit.toFixed(2)} €` });
     }
 
-    // Sprint 3: 4-Augen-Prinzip beim Festschreiben oberhalb Schwellwert.
+    // Sprint 3 Permissions v2: 4-Augen-Prinzip beim Festschreiben.
+    // Bei Verletzung wird die Aktion NICHT mehr hart geblockt — stattdessen
+    // wird ein ApprovalRequest erzeugt, den ein zweiter berechtigter User
+    // entscheidet. Bei APPROVED wird die Buchung durch den Executor gepostet.
     try {
       await assertFourEyes({
         tenantId: check.tenantId!,
@@ -65,10 +69,29 @@ export async function POST(
       });
     } catch (err) {
       if (err instanceof FourEyesViolationError) {
-        return apiError("SELF_APPROVAL_FORBIDDEN", 403, {
-          message: err.message,
-          details: { threshold: err.threshold, amountEur: err.amountEur },
+        const approvalRequest = await findOrCreateApprovalRequest({
+          tenantId: check.tenantId!,
+          action: "JOURNAL_POST",
+          entityType: "JournalEntry",
+          entityId: id,
+          amountEur: totalDebit,
+          requestedById: check.userId!,
+          requestReason: `Festschreiben Buchung ${entry.description}`,
         });
+        return NextResponse.json(
+          {
+            status: "PENDING_APPROVAL",
+            message:
+              "Vier-Augen-Prinzip: ein zweiter berechtigter User muss die Buchung freigeben.",
+            approvalRequest: {
+              id: approvalRequest.id,
+              expiresAt: approvalRequest.expiresAt.toISOString(),
+              threshold: err.threshold,
+              amountEur: err.amountEur,
+            },
+          },
+          { status: 202 },
+        );
       }
       throw err;
     }

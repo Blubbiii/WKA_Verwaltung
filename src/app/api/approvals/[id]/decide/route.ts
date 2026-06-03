@@ -66,6 +66,9 @@ export async function POST(
         id: updated.id,
         status: updated.status,
         decidedAt: updated.decidedAt?.toISOString(),
+        executedAt: updated.executedAt?.toISOString() ?? null,
+        executionResult: updated.executionResult ?? null,
+        executionError: updated.executionError ?? null,
       });
     } catch (err) {
       if (err instanceof ApprovalNotFoundError) {

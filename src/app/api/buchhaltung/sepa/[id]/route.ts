@@ -4,6 +4,11 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import {
+  assertFourEyes,
+  FourEyesViolationError,
+} from "@/lib/auth/four-eyes-check";
+import { findOrCreateApprovalRequest } from "@/lib/approvals/manager";
 
 const patchSepaSchema = z.object({
   status: z.enum(["APPROVED", "EXPORTED", "CANCELLED"]),
@@ -78,6 +83,47 @@ export async function PATCH(
 
     if (!batch) {
       return apiError("NOT_FOUND", 404, { message: "SEPA-Batch nicht gefunden" });
+    }
+
+    // Sprint 3 Permissions v2: 4-Augen-Pflicht beim Übergang DRAFT → APPROVED.
+    // Cancel + Exported brauchen keine zusätzliche Approval.
+    if (status === "APPROVED") {
+      try {
+        await assertFourEyes({
+          tenantId: check.tenantId!,
+          userId: check.userId!,
+          action: "SEPA_RUN",
+          createdById: batch.createdById,
+          amountEur: Number(batch.totalAmount),
+        });
+      } catch (err) {
+        if (err instanceof FourEyesViolationError) {
+          const approvalRequest = await findOrCreateApprovalRequest({
+            tenantId: check.tenantId!,
+            action: "SEPA_RUN",
+            entityType: "SepaPaymentBatch",
+            entityId: id,
+            amountEur: Number(batch.totalAmount),
+            requestedById: check.userId!,
+            requestReason: `SEPA-Lauf ${batch.batchNumber} freigeben`,
+          });
+          return NextResponse.json(
+            {
+              status: "PENDING_APPROVAL",
+              message:
+                "Vier-Augen-Prinzip: SEPA-Lauf muss von zweitem User freigegeben werden.",
+              approvalRequest: {
+                id: approvalRequest.id,
+                expiresAt: approvalRequest.expiresAt.toISOString(),
+                threshold: err.threshold,
+                amountEur: err.amountEur,
+              },
+            },
+            { status: 202 },
+          );
+        }
+        throw err;
+      }
     }
 
     const updated = await prisma.sepaPaymentBatch.update({

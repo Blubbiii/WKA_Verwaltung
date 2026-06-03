@@ -5047,6 +5047,18 @@ model ApprovalRequest {
   entityId        String
   /// Betrag in EUR (für Schwellwert-Logik + Audit).
   amountEur       Decimal?        @db.Decimal(15, 2)
+  /// Aktion-spezifische Parameter (JSON), die der Executor beim Approve
+  /// durchführen muss. Beispiel: reverseReason für Storno, oder die
+  /// debtorIban/-Name für SEPA-Lauf. Leer für simple Aktionen die nur
+  /// entityId brauchen.
+  actionParams    Json?
+  /// Ausführungs-Ergebnis nach APPROVED + erfolgreichem Execute.
+  /// Beispiel: { executedEntityId: "uuid-of-reversal" }
+  executionResult Json?
+  /// Fehler-Message wenn Execute nach APPROVED scheiterte.
+  executionError  String?         @db.VarChar(500)
+  /// Zeitpunkt der Aktion-Ausführung (kann später sein als decidedAt).
+  executedAt      DateTime?
 
   /// Initiator (der die Aktion ausführen will).
   requestedById   String

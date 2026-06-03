@@ -26,6 +26,7 @@ import {
 } from "@/lib/accounting/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 import { assertFourEyes, FourEyesViolationError } from "@/lib/auth/four-eyes-check";
+import { findOrCreateApprovalRequest } from "@/lib/approvals/manager";
 
 const reverseSchema = z.object({
   reason: z.string().min(1, "Storno-Begründung ist Pflicht").max(500),
@@ -93,10 +94,30 @@ export async function POST(
       });
     } catch (err) {
       if (err instanceof FourEyesViolationError) {
-        return apiError("SELF_APPROVAL_FORBIDDEN", 403, {
-          message: err.message,
-          details: { threshold: err.threshold, amountEur: err.amountEur },
+        const approvalRequest = await findOrCreateApprovalRequest({
+          tenantId: check.tenantId!,
+          action: "JOURNAL_REVERSE",
+          entityType: "JournalEntry",
+          entityId: id,
+          amountEur: sumDebit,
+          requestedById: check.userId!,
+          requestReason: reason,
+          actionParams: { reason, reversalDate },
         });
+        return NextResponse.json(
+          {
+            status: "PENDING_APPROVAL",
+            message:
+              "Vier-Augen-Prinzip: ein zweiter berechtigter User muss den Storno freigeben.",
+            approvalRequest: {
+              id: approvalRequest.id,
+              expiresAt: approvalRequest.expiresAt.toISOString(),
+              threshold: err.threshold,
+              amountEur: err.amountEur,
+            },
+          },
+          { status: 202 },
+        );
       }
       throw err;
     }
