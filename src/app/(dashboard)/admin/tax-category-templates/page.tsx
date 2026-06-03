@@ -42,7 +42,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
-  Edit3,
+  Pencil,
   Info,
   Loader2,
   RefreshCw,
@@ -235,7 +235,7 @@ export default function TaxCategoryTemplatesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => openEdit(t)}>
-                        <Edit3 className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>

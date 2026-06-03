@@ -38,7 +38,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
-  Edit3,
+  Pencil,
   Info,
   Loader2,
   RefreshCw,
@@ -263,7 +263,7 @@ export default function HgbSystemSettingsPage() {
                             </Button>
                           )}
                           <Button size="sm" onClick={() => openEdit(row)}>
-                            <Edit3 className="mr-2 h-4 w-4" />
+                            <Pencil className="mr-2 h-4 w-4" />
                             Bearbeiten
                           </Button>
                         </div>

@@ -322,13 +322,14 @@ export default function ApprovalsPage() {
           </DialogHeader>
 
           <div className="space-y-2 py-2">
-            <Label>
+            <Label htmlFor="approval-reason">
               {t("reasonLabel")}{" "}
               {decisionDialog?.decision === "REJECTED"
                 ? t("reasonRecommended")
                 : t("reasonOptional")}
             </Label>
             <Textarea
+              id="approval-reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}

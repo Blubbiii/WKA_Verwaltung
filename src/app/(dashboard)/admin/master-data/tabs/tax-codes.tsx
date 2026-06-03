@@ -42,7 +42,7 @@ import { toast } from "sonner";
 import {
   AlertCircle,
   CheckCircle2,
-  Edit3,
+  Pencil,
   Loader2,
   RefreshCw,
   Save,
@@ -274,7 +274,7 @@ export default function TaxCodesTab() {
                           size="sm"
                           onClick={() => openEdit(c)}
                         >
-                          <Edit3 className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>

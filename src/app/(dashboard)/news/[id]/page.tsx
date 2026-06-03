@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/lib/format";
 import {
   ArrowLeft,
-  Edit,
+  Pencil,
   Trash2,
   Calendar,
   Building2,
@@ -208,7 +208,7 @@ export default function NewsDetailPage({
           )}
           <Link href={`/news/${id}/edit`}>
             <Button variant="outline">
-              <Edit className="mr-2 h-4 w-4" />
+              <Pencil className="mr-2 h-4 w-4" />
               Bearbeiten
             </Button>
           </Link>

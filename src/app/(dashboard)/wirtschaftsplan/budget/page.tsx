@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Plus, FileText, Lock, CheckCircle, Edit3 } from "lucide-react";
+import { Plus, FileText, Lock, CheckCircle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ const fetcher = (url: string) =>
   });
 
 const STATUS_META = {
-  DRAFT: { icon: Edit3, variant: "secondary" as const, key: "statusDraft" },
+  DRAFT: { icon: Pencil, variant: "secondary" as const, key: "statusDraft" },
   APPROVED: {
     icon: CheckCircle,
     variant: "default" as const,

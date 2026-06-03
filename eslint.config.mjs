@@ -42,6 +42,23 @@ const eslintConfig = [
       "jsx-a11y/alt-text": "off",
     },
   },
+  {
+    // API-Routes: enforce apiError() instead of NextResponse.json({error:...}).
+    // WARN (not error) — Migration kann graduell laufen, blockiert keinen Build.
+    // Siehe docs/api-conventions.md fuer das Envelope-Pattern.
+    files: ["src/app/api/**/route.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector:
+            'CallExpression[callee.object.name="NextResponse"][callee.property.name="json"] > ObjectExpression > Property[key.name="error"]',
+          message:
+            "Use apiError() from @/lib/api-errors instead of NextResponse.json({error:...}) for consistent error responses. See docs/api-conventions.md.",
+        },
+      ],
+    },
+  },
 ];
 
 export default eslintConfig;

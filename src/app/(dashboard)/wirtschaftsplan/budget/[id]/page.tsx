@@ -12,7 +12,7 @@ import {
   Loader2,
   Lock,
   CheckCircle,
-  Edit3,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +52,7 @@ const CATEGORY_KEYS = [
 const REVENUE_CATS = ["REVENUE_ENERGY", "REVENUE_OTHER"];
 
 const STATUS_META = {
-  DRAFT: { icon: Edit3, variant: "secondary" as const, key: "statusDraft" },
+  DRAFT: { icon: Pencil, variant: "secondary" as const, key: "statusDraft" },
   APPROVED: { icon: CheckCircle, variant: "default" as const, key: "statusApproved" },
   LOCKED: { icon: Lock, variant: "outline" as const, key: "statusLocked" },
 } as const;

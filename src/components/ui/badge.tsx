@@ -29,11 +29,26 @@ const badgeVariants = cva(
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+    VariantProps<typeof badgeVariants> {
+  /** Optional icon rendered before the badge content (e.g. a lucide icon). */
+  icon?: React.ReactNode
+}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+function Badge({ className, variant, icon, children, ...props }: BadgeProps) {
+  const ariaLabel = props["aria-label"]
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div
+      className={cn(badgeVariants({ variant }), className)}
+      role={ariaLabel ? "status" : undefined}
+      {...props}
+    >
+      {icon ? (
+        <span aria-hidden="true" className="mr-1 inline-flex items-center">
+          {icon}
+        </span>
+      ) : null}
+      {children}
+    </div>
   )
 }
 

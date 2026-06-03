@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { X, GripVertical, AlertTriangle, RefreshCcw } from "lucide-react";
+import { X, GripVertical, AlertTriangle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // =============================================================================
@@ -95,7 +95,7 @@ export function WidgetWrapper({
             <p className="text-xs text-muted-foreground text-center">{error}</p>
             {onRetry && (
               <Button variant="outline" size="sm" onClick={onRetry} className="h-7 text-xs">
-                <RefreshCcw className="h-3 w-3 mr-1" />
+                <RefreshCw className="h-3 w-3 mr-1" />
                 {td("retry")}
               </Button>
             )}

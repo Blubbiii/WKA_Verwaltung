@@ -278,6 +278,7 @@ export function InvoiceTemplateSettings() {
                               })
                             }
                             title="Bearbeiten"
+                            aria-label="Bearbeiten"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -294,6 +295,7 @@ export function InvoiceTemplateSettings() {
                             size="icon"
                             onClick={() => handleDelete(template.id)}
                             title="Löschen"
+                            aria-label="Löschen"
                             disabled={template.isDefault}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />

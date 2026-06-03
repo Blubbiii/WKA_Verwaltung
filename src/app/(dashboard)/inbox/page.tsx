@@ -136,13 +136,22 @@ function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: (
         </DialogHeader>
 
         <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+          role="button"
+          tabIndex={0}
+          aria-label={t("dropText")}
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
             dragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
         >
           <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
@@ -356,8 +365,14 @@ export default function InboxPage() {
           </SelectContent>
         </Select>
 
-        <Button variant="outline" size="icon" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={load}
+          disabled={loading}
+          aria-label="Aktualisieren"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
         </Button>
       </div>
 
@@ -403,8 +418,17 @@ export default function InboxPage() {
                   return (
                     <TableRow
                       key={inv.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      tabIndex={0}
+                      role="link"
+                      aria-label={inv.vendor?.name ?? inv.vendorNameFallback ?? t("table.noVendor")}
+                      className="cursor-pointer hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                       onClick={() => router.push(`/inbox/${inv.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          router.push(`/inbox/${inv.id}`);
+                        }
+                      }}
                     >
                       <TableCell className="font-medium">
                         {inv.vendor?.name ?? inv.vendorNameFallback ?? (
