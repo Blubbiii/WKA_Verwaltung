@@ -3,7 +3,7 @@ import { TaxType } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { getNextInvoiceNumbers, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
+import { getNextInvoiceNumberInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { calculateSettlement } from "@/lib/settlement";
 import type {
   LeaseCalculationResult,
@@ -438,12 +438,9 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
   // Service date range depends on interval
   const { start: serviceStartDate, end: serviceEndDate } = getIntervalServiceDates(interval, period.year, period.month);
 
-  // Batch-generate credit note numbers (nur für die TATSÄCHLICH zu erstellenden)
-  const { numbers: invoiceNumbers } = await getNextInvoiceNumbers(
-    tenantId,
-    "CREDIT_NOTE",
-    validLeases.length
-  );
+  // K-3-Fix: KEINE Batch-Allocation mehr. Pro Iteration wird die Nummer
+  // INNERHALB der per-Invoice-Transaktion gezogen. Crash → Nummer wird
+  // automatisch zurückgerollt → keine Lücken in der Sequenz (§14 UStG).
 
   // Park rates for WEG/AUSGLEICH/KABEL item details
   const parkRates = {
@@ -456,7 +453,6 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
 
   for (let i = 0; i < validLeases.length; i++) {
     const leaseCalc = validLeases[i];
-    const invoiceNumber = invoiceNumbers[i];
     const paymentDay = leasePaymentDays.get(leaseCalc.leaseId) ?? defaultPaymentDay;
     const lessor = lessorByLease.get(leaseCalc.leaseId);
     const dueDateValue = calculateDueDate(invoiceDateValue, paymentDay);
@@ -489,13 +485,15 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
     }> = [];
 
     let position = 0;
-    let totalNet = 0;
-    let totalTax = 0;
-    let totalGross = 0;
+    // K-3-Fix: Decimal-Akkus statt Float (Cent-Drift bei vielen PlotAreas).
+    let totalNetDec = new Decimal(0);
+    let totalTaxDec = new Decimal(0);
+    let totalGrossDec = new Decimal(0);
 
     for (const plotArea of leaseCalc.plotAreas) {
-      const periodAmount = plotArea.calculatedAmount / divisor;
-      if (Math.abs(periodAmount) < 0.01) continue;
+      const periodAmountDec = new Decimal(plotArea.calculatedAmount).dividedBy(divisor).toDecimalPlaces(2);
+      const periodAmount = periodAmountDec.toNumber();
+      if (periodAmountDec.abs().lessThan(0.01)) continue;
 
       position++;
       const artType = articleTypeForArea(plotArea.areaType, false);
@@ -506,9 +504,9 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
       const description = buildPlotAreaDescription(plotArea, article?.label ?? "Mindestnutzungsentgeld");
       const itemDetails = getPlotAreaItemDetails(plotArea, periodAmount, parkRates);
 
-      totalNet += periodAmount;
-      totalTax += tax.taxAmount;
-      totalGross += tax.grossAmount;
+      totalNetDec = totalNetDec.plus(periodAmountDec);
+      totalTaxDec = totalTaxDec.plus(new Decimal(tax.taxAmount));
+      totalGrossDec = totalGrossDec.plus(new Decimal(tax.grossAmount));
 
       itemsData.push({
         position,
@@ -543,6 +541,14 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
     };
 
     const invoice = await prisma.$transaction(async (tx) => {
+      // K-3-Fix: Rechnungsnummer IN dieser TX ziehen — Crash → Rollback
+      // der Nummer-Sequenz → keine Lücke (§14 UStG lückenlose Nummerierung).
+      const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
+        tx,
+        tenantId,
+        "CREDIT_NOTE",
+      );
+
       const inv = await tx.invoice.create({
         data: {
           invoiceType: "CREDIT_NOTE",
@@ -558,10 +564,10 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
           internalReference: `${intervalTypeName} ${period.month ? `${period.month}/` : ""}${period.year}`,
           notes: settlementDetails.introText ?? null,
           calculationDetails: settlementDetails as unknown as Record<string, unknown>,
-          netAmount: new Decimal(totalNet.toFixed(2)),
+          netAmount: totalNetDec.toDecimalPlaces(2),
           taxRate: new Decimal(0),
-          taxAmount: new Decimal(totalTax.toFixed(2)),
-          grossAmount: new Decimal(totalGross.toFixed(2)),
+          taxAmount: totalTaxDec.toDecimalPlaces(2),
+          grossAmount: totalGrossDec.toDecimalPlaces(2),
           status: "DRAFT",
           tenantId,
           createdById: userId,
@@ -1042,18 +1048,12 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
     return apiError("BAD_REQUEST", undefined, { message: "Keine offenen Betraege nach Verrechnung der Vorschüsse" });
   }
 
-  // Batch-generate credit note numbers
-  const { numbers: creditNoteNumbers } = await getNextInvoiceNumbers(
-    tenantId,
-    "CREDIT_NOTE",
-    prepared.length
-  );
+  // K-3-Fix: KEINE Batch-Allocation. Nummer wird pro Iteration IN-TX gezogen.
 
   const createdInvoices = [];
 
   for (let i = 0; i < prepared.length; i++) {
     const { leaseCalc, items, totalNet, totalTax, totalGross, paymentDay, settlementDetails } = prepared[i];
-    const invoiceNumber = creditNoteNumbers[i];
 
     const dueDateValue = calculateDueDate(invoiceDateValue, paymentDay);
     const lessor = lessorByLease.get(leaseCalc.leaseId);
@@ -1065,7 +1065,21 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
     ].filter(Boolean);
     const recipientAddress = addressParts.join(", ") || leaseCalc.lessorAddress || "";
 
+    // K-3-Fix: Decimal-Total statt Float — verwende Math.abs auf Decimal.
+    // (totalNet/totalTax/totalGross sind hier noch numbers aus dem prepared-Array,
+    // wir konvertieren beim Schreiben — keine Vorzeichen-Drift bei abs()).
+    const totalNetAbsDec = new Decimal(totalNet).abs().toDecimalPlaces(2);
+    const totalTaxAbsDec = new Decimal(totalTax).abs().toDecimalPlaces(2);
+    const totalGrossAbsDec = new Decimal(totalGross).abs().toDecimalPlaces(2);
+
     const invoice = await prisma.$transaction(async (tx) => {
+      // K-3-Fix: Rechnungsnummer IN dieser TX ziehen.
+      const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
+        tx,
+        tenantId,
+        "CREDIT_NOTE",
+      );
+
       const inv = await tx.invoice.create({
         data: {
           invoiceType: "CREDIT_NOTE",
@@ -1081,10 +1095,10 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
           internalReference: `Endabrechnung ${period.year}`,
           notes: settlementDetails.introText ?? null,
           calculationDetails: settlementDetails as unknown as Record<string, unknown>,
-          netAmount: new Decimal(Math.abs(totalNet).toFixed(2)),
+          netAmount: totalNetAbsDec,
           taxRate: new Decimal(0),
-          taxAmount: new Decimal(Math.abs(totalTax).toFixed(2)),
-          grossAmount: new Decimal(Math.abs(totalGross).toFixed(2)),
+          taxAmount: totalTaxAbsDec,
+          grossAmount: totalGrossAbsDec,
           status: "DRAFT",
           tenantId,
           createdById: userId,

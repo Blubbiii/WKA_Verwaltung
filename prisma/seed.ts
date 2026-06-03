@@ -173,6 +173,9 @@ const permissionsData = [
   { name: "accounting:create", displayName: "Buchungen erstellen", module: "accounting", action: "create", sortOrder: 231 },
   { name: "accounting:update", displayName: "Buchungen bearbeiten", module: "accounting", action: "update", sortOrder: 232 },
   { name: "accounting:delete", displayName: "Buchungen loeschen", module: "accounting", action: "delete", sortOrder: 233 },
+  // K-4: Dedizierte Permissions fuer Festschreiben + Storno (HGB-Verantwortungstrennung)
+  { name: "accounting:post", displayName: "Buchungen festschreiben", description: "DRAFT-Buchungen in POSTED-Status setzen (§146 AO Unveraenderbarkeit ab da)", module: "accounting", action: "post", sortOrder: 240 },
+  { name: "accounting:reverse", displayName: "Buchungen stornieren", description: "Generalumkehr fuer POSTED-Buchungen — eigene Permission gem. HGB-Verantwortungstrennung", module: "accounting", action: "reverse", sortOrder: 241 },
   // P20: Erweiterte Buchhaltungs-Permissions für HGB-Compliance (P9-P19 + Audit)
   { name: "accounting:period-lock:create", displayName: "Periode sperren", description: "Buchungsperiode schliessen (GoBD)", module: "accounting", action: "period-lock", sortOrder: 234 },
   { name: "accounting:period-lock:delete", displayName: "Periode entsperren", description: "Gesperrte Periode wieder oeffnen (Audit-pflichtig)", module: "accounting", action: "period-lock", sortOrder: 235 },
@@ -264,8 +267,9 @@ const systemRolesData = [
       "reports:read", "reports:create", "reports:export",
       // Mailings - full access
       "mailings:read", "mailings:write", "mailings:send",
-      // Accounting - full access
+      // Accounting - full access (inkl. K-4 neue Permissions post + reverse)
       "accounting:read", "accounting:create", "accounting:update",
+      "accounting:post", "accounting:reverse",
       // Settings - read only
       "settings:read",
     ],

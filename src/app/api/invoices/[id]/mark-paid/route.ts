@@ -10,6 +10,8 @@ import { apiError } from "@/lib/api-errors";
 import { createUStAdjustment } from "@/lib/accounting/ust-adjustment";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { PeriodLockedError } from "@/lib/accounting/period-lock";
+import { recordPayment } from "@/lib/accounting/invoice-payment";
+import { Decimal } from "@prisma/client-runtime-utils";
 
 const markPaidSchema = z.object({
   paidAt: z.string().optional(), // ISO date string, defaults to now
@@ -27,19 +29,27 @@ export async function POST(
 
     const { id } = await params;
 
+    // M-3-Fix: Body-Parsing-Fehler nicht still schlucken — nur "kein Body"
+    // ist OK (Default-Werte), syntaktisch falsches JSON aber als 400 melden.
     let paidAt = new Date();
     let applySkonto = false;
-    try {
-      const body = await request.json();
-      const validated = markPaidSchema.parse(body);
-      if (validated.paidAt) {
-        paidAt = new Date(validated.paidAt);
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && contentLength !== "0") {
+      try {
+        const body = await request.json();
+        const validated = markPaidSchema.parse(body);
+        if (validated.paidAt) {
+          paidAt = new Date(validated.paidAt);
+        }
+        if (validated.applySkonto) {
+          applySkonto = true;
+        }
+      } catch (err) {
+        return apiError("BAD_REQUEST", 400, {
+          message: "Ungültiger Body",
+          details: { error: err instanceof Error ? err.message : String(err) },
+        });
       }
-      if (validated.applySkonto) {
-        applySkonto = true;
-      }
-    } catch {
-      // Body ist optional, verwende Standardwert
     }
 
     const invoice = await prisma.invoice.findUnique({
@@ -53,6 +63,7 @@ export async function POST(
         skontoDeadline: true,
         skontoAmount: true,
         grossAmount: true,
+        paidAmount: true,
         taxCodeId: true,
       },
     });
@@ -116,13 +127,40 @@ export async function POST(
       invoice.skontoAmount !== null &&
       Number(invoice.skontoAmount) > 0;
 
+    // K-2-Fix: recordPayment() statt direkt status=PAID setzen.
+    // Garantiert konsistente paidAmount + InvoicePayment-Audit-Trail.
+    // Bei Skonto: gezahlter Betrag = grossAmount - skontoAmount.
+    const grossDec = new Decimal(invoice.grossAmount);
+    const paidBeforeDec = new Decimal(invoice.paidAmount ?? 0);
+    const skontoDeductionDec =
+      skontoPaid && invoice.skontoAmount
+        ? new Decimal(invoice.skontoAmount)
+        : new Decimal(0);
+    const remainingDec = grossDec.minus(paidBeforeDec).minus(skontoDeductionDec);
+
+    if (remainingDec.lessThanOrEqualTo(0)) {
+      return apiError("BAD_REQUEST", 400, {
+        message: "Rechnung hat keinen offenen Restbetrag mehr",
+      });
+    }
+
     let ustAdjustmentId: string | null = null;
     const updated = await prisma.$transaction(async (tx) => {
+      await recordPayment(tx, {
+        tenantId: check.tenantId!,
+        invoiceId: id,
+        amount: remainingDec.toNumber(),
+        paymentDate: paidAt,
+        userId: check.userId!,
+        notes: skontoPaid
+          ? `Mark as paid mit Skonto ${invoice.skontoPercent}%`
+          : "Mark as paid",
+      });
+
+      // Bei Skonto-Anwendung Skonto-Flag setzen
       const inv = await tx.invoice.update({
-        where: { id, tenantId: check.tenantId!},
+        where: { id, tenantId: check.tenantId! },
         data: {
-          status: "PAID",
-          paidAt,
           ...(skontoPaid && { skontoPaid: true }),
         },
         include: {
@@ -134,7 +172,7 @@ export async function POST(
         // Skonto = Entgeltminderung → grossDelta negativ.
         const skontoGross = Number(invoice.skontoAmount);
         try {
-          const result = await createUStAdjustment(tx, {
+          const adjResult = await createUStAdjustment(tx, {
             tenantId: check.tenantId!,
             originalInvoiceId: id,
             reason: "SKONTO",
@@ -145,7 +183,7 @@ export async function POST(
             counterAccount: settings.datevAccountReceivables,
             notes: `Skonto ${invoice.skontoPercent}% auf RG ${id}`,
           });
-          ustAdjustmentId = result.adjustmentId;
+          ustAdjustmentId = adjResult.adjustmentId;
         } catch (err) {
           if (err instanceof PeriodLockedError) {
             // Periode für Zahlungs-/Korrektur-Datum ist gesperrt.

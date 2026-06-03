@@ -35,7 +35,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const check = await requirePermission("invoices:update");
+    // K-4-Fix: Storno braucht dedizierte Permission (HGB-Verantwortungstrennung).
+    const check = await requirePermission("accounting:reverse");
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {

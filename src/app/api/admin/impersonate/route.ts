@@ -13,22 +13,78 @@ const impersonateSchema = z.object({
   tenantId: z.string().uuid().optional(),
 }).refine(d => d.userId || d.tenantId, { message: "userId oder tenantId erforderlich" });
 
-function signCookieValue(data: object): string {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
-  const payload = JSON.stringify(data);
+/**
+ * K-5-Fix: HMAC-Cookie für Impersonation absichern.
+ *  - Fehlt AUTH_SECRET → throw (kein Fallback auf "")
+ *  - timingSafeEqual nur nach Längen-Check (sonst RangeError → 500 statt 401)
+ *  - exp/iat im Payload für serverseitige Revocation + Ablauf-Check
+ */
+const IMPERSONATION_TTL_SECONDS = 60 * 60 * 4; // 4h
+
+function getAuthSecret(): string {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      "AUTH_SECRET (oder NEXTAUTH_SECRET) muss gesetzt sein — Impersonation aus Sicherheitsgründen deaktiviert",
+    );
+  }
+  return secret;
+}
+
+interface SignedImpersonationPayload {
+  iat: number;
+  exp: number;
+  [key: string]: unknown;
+}
+
+function signCookieValue(data: Record<string, unknown>): string {
+  const secret = getAuthSecret();
+  const now = Math.floor(Date.now() / 1000);
+  const enriched: SignedImpersonationPayload = {
+    ...data,
+    iat: now,
+    exp: now + IMPERSONATION_TTL_SECONDS,
+  };
+  const payload = JSON.stringify(enriched);
   const signature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
   return `${payload}.${signature}`;
 }
 
-function verifyCookieValue(signed: string): object | null {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
+function verifyCookieValue(signed: string): Record<string, unknown> | null {
+  let secret: string;
+  try {
+    secret = getAuthSecret();
+  } catch {
+    return null; // Kein Secret → Cookie kann nicht verifiziert werden
+  }
   const lastDot = signed.lastIndexOf(".");
   if (lastDot === -1) return null;
   const payload = signed.substring(0, lastDot);
   const signature = signed.substring(lastDot + 1);
   const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
-  try { return JSON.parse(payload); } catch { return null; }
+  // Length-Check VOR timingSafeEqual — sonst RangeError bei Längenunterschied
+  if (signature.length !== expected.length) return null;
+  let signatureValid = false;
+  try {
+    signatureValid = crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expected),
+    );
+  } catch {
+    return null;
+  }
+  if (!signatureValid) return null;
+  try {
+    const parsed = JSON.parse(payload) as SignedImpersonationPayload;
+    // Ablauf-Check
+    const now = Math.floor(Date.now() / 1000);
+    if (typeof parsed.exp === "number" && parsed.exp < now) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 // POST /api/admin/impersonate - Start impersonating a user
@@ -155,6 +211,11 @@ const check = await requireSuperadmin();
     });
   } catch (error) {
     logger.error({ err: error }, "Error starting impersonation");
+    if (error instanceof Error && error.message.includes("AUTH_SECRET")) {
+      return apiError("INTERNAL_ERROR", 500, {
+        message: "Impersonation deaktiviert: AUTH_SECRET nicht konfiguriert",
+      });
+    }
     return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Starten der Impersonation" });
   }
 }

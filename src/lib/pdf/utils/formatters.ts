@@ -1,43 +1,35 @@
 /**
  * Formatierungsfunktionen für PDF-Dokumente
+ *
+ * Sprint 1: format/percent/number/date wurden nach src/lib/format.ts
+ * konsolidiert. Diese Datei behält PDF-spezifische Helper (Adresse,
+ * Sender, calculateTotals) und re-exportiert die generischen Formatter.
  */
 
-// Re-export centralized formatCurrency
-export { formatCurrency } from "@/lib/format";
+// Re-export centralized formatters
+export { formatCurrency, formatDate } from "@/lib/format";
+import {
+  formatDate,
+  formatNumber as formatNumberBase,
+  formatPercent as formatPercentBase,
+} from "@/lib/format";
 
 /**
- * Formatiert eine Zahl mit Dezimalstellen
+ * PDF-Standard: formatNumber mit 2 Nachkommastellen als Default (anders als
+ * das generische formatNumber das 0 Default hat).
  */
 export function formatNumber(
   value: number | string | null | undefined,
-  decimals: number = 2
+  decimals: number = 2,
 ): string {
-  const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
-  return new Intl.NumberFormat("de-DE", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(num);
+  return formatNumberBase(value, decimals);
 }
 
 /**
- * Formatiert ein Datum im deutschen Format
- */
-export function formatDate(date: Date | string | null | undefined): string {
-  if (!date) return "";
-  const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(d);
-}
-
-/**
- * Formatiert eine Prozentangabe
+ * PDF-Standard: "X %" mit Leerzeichen, 0 Nachkommastellen.
  */
 export function formatPercent(value: number | string | null | undefined): string {
-  const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
-  return `${formatNumber(num, 0)} %`;
+  return formatPercentBase(value, { decimals: 0, withSpace: true });
 }
 
 /**

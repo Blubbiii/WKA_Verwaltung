@@ -76,13 +76,8 @@ export function safeNumber(val: unknown): number {
   return Number(val);
 }
 
-/**
- * Round a number to specified decimal places.
- */
-export function round(val: number, decimals: number = 2): number {
-  const factor = Math.pow(10, decimals);
-  return Math.round(val * factor) / factor;
-}
+// Sprint 1: round() ist nach @/lib/format umgezogen — hier nur Re-Export.
+export { round } from "@/lib/format";
 
 /**
  * Build Prisma.sql WHERE fragment for turbine IDs.

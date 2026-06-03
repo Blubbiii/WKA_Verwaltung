@@ -46,3 +46,48 @@ export function formatCurrencyCompact(value: number | string | null | undefined)
     maximumFractionDigits: 1,
   }).format(num);
 }
+
+/**
+ * Format a number with German thousands separator + decimal places.
+ * Sprint 1: Konsolidiert die 2 Duplikate aus pdf/utils/formatters und analytics/kpis.
+ */
+export function formatNumber(
+  value: number | string | null | undefined,
+  decimals: number = 0,
+): string {
+  if (value === null || value === undefined) return "0";
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(num)) return "0";
+  return new Intl.NumberFormat("de-DE", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(num);
+}
+
+/**
+ * Format a percentage.
+ * - `decimals`: Nachkommastellen (default 0)
+ * - `withSign`: prefix "+" for positive (default false)
+ * - `withSpace`: " %" statt "%" (default false — kompakt für KPI)
+ */
+export function formatPercent(
+  value: number | string | null | undefined,
+  opts: { decimals?: number; withSign?: boolean; withSpace?: boolean } = {},
+): string {
+  if (value === null || value === undefined) return "0%";
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(num)) return "0%";
+  const decimals = opts.decimals ?? 0;
+  const sign = opts.withSign && num > 0 ? "+" : "";
+  const space = opts.withSpace ? " " : "";
+  return `${sign}${num.toFixed(decimals)}${space}%`;
+}
+
+/**
+ * Round to N decimals (default 2 — Geldbeträge).
+ * Sprint 1: Konsolidiert round + round2 aus analytics/query-helpers + invoice-generator.
+ */
+export function round(value: number, decimals: number = 2): number {
+  const factor = Math.pow(10, decimals);
+  return Math.round(value * factor) / factor;
+}

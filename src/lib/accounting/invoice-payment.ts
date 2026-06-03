@@ -61,6 +61,11 @@ export interface RecordPaymentResult {
 /**
  * Erzeugt eine InvoicePayment-Row und aktualisiert die Invoice atomar.
  * Caller MUSS in einer Transaktion laufen.
+ *
+ * K-1-Fix:
+ *  - SELECT ... FOR UPDATE sperrt die Invoice-Row bis Ende der TX → keine
+ *    Race-Condition zwischen parallelen recordPayment-Calls.
+ *  - Decimal-Arithmetik durchgehend (kein Number() für Beträge).
  */
 export async function recordPayment(
   tx: TxClient,
@@ -68,6 +73,17 @@ export async function recordPayment(
 ): Promise<RecordPaymentResult> {
   if (params.amount <= 0) {
     throw new Error("Zahlbetrag muss > 0 sein");
+  }
+
+  // SELECT FOR UPDATE: blockiert die Row für andere parallele TX bis Commit.
+  // Wir nutzen den Lock zuerst, dann die typsichere findUnique darunter.
+  const locked = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM "invoices" WHERE id = ${params.invoiceId} FOR UPDATE
+  `;
+  if (locked.length === 0) {
+    const err = new Error("Rechnung nicht gefunden");
+    err.name = "EntityNotFoundError";
+    throw err;
   }
 
   const invoice = await tx.invoice.findUnique({
@@ -101,19 +117,23 @@ export async function recordPayment(
     throw new InvoiceNotPayableError(invoice.status);
   }
 
-  const grossAmount = Number(invoice.grossAmount);
-  const paidBefore = Number(invoice.paidAmount);
-  const newPaid = roundCent(paidBefore + params.amount);
+  // Decimal-Arithmetik (kein Number()-Cast für Cent-genaue Berechnung).
+  const grossAmount = new Decimal(invoice.grossAmount);
+  const paidBefore = new Decimal(invoice.paidAmount);
+  const amountDec = new Decimal(params.amount);
+  const newPaidDec = paidBefore.plus(amountDec).toDecimalPlaces(2);
 
   // Audit-B: Toleranz aus TenantSettings (Default 0,02 €).
   const settings = await getTenantSettings(params.tenantId);
-  const tolerance = settings.bankMatchToleranceEur;
+  const toleranceDec = new Decimal(settings.bankMatchToleranceEur);
 
-  if (newPaid > grossAmount + tolerance) {
-    throw new OverpaymentError(grossAmount, newPaid);
+  if (newPaidDec.greaterThan(grossAmount.plus(toleranceDec))) {
+    throw new OverpaymentError(grossAmount.toNumber(), newPaidDec.toNumber());
   }
 
-  const isFullyPaid = newPaid >= grossAmount - tolerance;
+  const isFullyPaid = newPaidDec.greaterThanOrEqualTo(
+    grossAmount.minus(toleranceDec),
+  );
   const newStatus: "SENT" | "PARTIALLY_PAID" | "PAID" = isFullyPaid
     ? "PAID"
     : "PARTIALLY_PAID";
@@ -123,7 +143,7 @@ export async function recordPayment(
       tenantId: params.tenantId,
       invoiceId: params.invoiceId,
       paymentDate: params.paymentDate,
-      amount: new Decimal(params.amount),
+      amount: amountDec,
       paymentMethod: params.paymentMethod ?? "BANK",
       bankTransactionId: params.bankTransactionId ?? null,
       journalEntryId: params.journalEntryId ?? null,
@@ -136,7 +156,7 @@ export async function recordPayment(
   await tx.invoice.update({
     where: { id: params.invoiceId },
     data: {
-      paidAmount: new Decimal(newPaid),
+      paidAmount: newPaidDec,
       status: newStatus,
       paidAt: isFullyPaid ? params.paymentDate : null,
     },
@@ -144,12 +164,8 @@ export async function recordPayment(
 
   return {
     paymentId: payment.id,
-    newPaidAmount: newPaid,
+    newPaidAmount: newPaidDec.toNumber(),
     newStatus,
     isFullyPaid,
   };
-}
-
-function roundCent(v: number): number {
-  return Math.round(v * 100) / 100;
 }

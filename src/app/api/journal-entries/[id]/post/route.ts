@@ -16,7 +16,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requirePermission("invoices:update");
+    // K-4-Fix: Posting (DRAFT → POSTED) braucht dedizierte Permission.
+    const check = await requirePermission("accounting:post");
     if (!check.authorized) return check.error;
 
     const { id } = await params;

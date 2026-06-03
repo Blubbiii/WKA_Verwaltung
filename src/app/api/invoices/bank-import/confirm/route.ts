@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Decimal } from "@prisma/client-runtime-utils";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
+import {
+  recordPayment,
+  OverpaymentError,
+  InvoiceNotPayableError,
+} from "@/lib/accounting/invoice-payment";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -49,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     const { confirmations } = parsed.data;
 
-    // Verify all invoices belong to this tenant and are in SENT status
+    // Verify all invoices belong to this tenant + load paidAmount für Restbetrags-Berechnung
     const invoiceIds = confirmations.map((c) => c.invoiceId);
     const invoices = await prisma.invoice.findMany({
       where: {
@@ -57,7 +63,13 @@ export async function POST(request: NextRequest) {
         tenantId: check.tenantId,
         deletedAt: null,
       },
-      select: { id: true, invoiceNumber: true, status: true, grossAmount: true },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        status: true,
+        grossAmount: true,
+        paidAmount: true,
+      },
     });
 
     const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
@@ -65,7 +77,8 @@ export async function POST(request: NextRequest) {
     let confirmed = 0;
     const errors: string[] = [];
 
-    // Process each confirmation
+    // K-2-Fix: Pro Bestätigung recordPayment() in eigener Transaktion mit Row-Lock.
+    // Schließt UI-State, paidAmount, InvoicePayment-Audit zusammen.
     for (const conf of confirmations) {
       const invoice = invoiceMap.get(conf.invoiceId);
 
@@ -76,21 +89,47 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      if (invoice.status !== "SENT") {
+      // Akzeptierte Status für Bank-Import: SENT, PARTIALLY_PAID
+      if (
+        invoice.status !== "SENT" &&
+        invoice.status !== "PARTIALLY_PAID"
+      ) {
         errors.push(
-          `Rechnung ${invoice.invoiceNumber} hat Status "${invoice.status}" (erwartet: SENT)`
+          `Rechnung ${invoice.invoiceNumber} hat Status "${invoice.status}" (erwartet: SENT/PARTIALLY_PAID)`
+        );
+        continue;
+      }
+
+      // Restbetrag = gross - paidAmount
+      const remaining = new Decimal(invoice.grossAmount)
+        .minus(new Decimal(invoice.paidAmount ?? 0))
+        .toDecimalPlaces(2);
+
+      if (remaining.lessThanOrEqualTo(0)) {
+        errors.push(
+          `Rechnung ${invoice.invoiceNumber}: kein offener Restbetrag`,
         );
         continue;
       }
 
       try {
-        await prisma.invoice.update({
-          where: { id: conf.invoiceId, tenantId: check.tenantId!},
-          data: {
-            status: "PAID",
-            paidAt: new Date(conf.paidAt),
-            paymentReference: conf.paymentReference || null,
-          },
+        await prisma.$transaction(async (tx) => {
+          await recordPayment(tx, {
+            tenantId: check.tenantId!,
+            invoiceId: conf.invoiceId,
+            amount: remaining.toNumber(),
+            paymentDate: new Date(conf.paidAt),
+            paymentMethod: "BANK",
+            userId: check.userId!,
+            notes: `Bank-Import${conf.paymentReference ? ` · Ref: ${conf.paymentReference}` : ""}`,
+          });
+
+          if (conf.paymentReference) {
+            await tx.invoice.update({
+              where: { id: conf.invoiceId, tenantId: check.tenantId! },
+              data: { paymentReference: conf.paymentReference },
+            });
+          }
         });
 
         confirmed++;
@@ -100,17 +139,27 @@ export async function POST(request: NextRequest) {
           invoiceId: conf.invoiceId,
           invoiceNumber: invoice.invoiceNumber,
           paidAt: conf.paidAt,
-          amount: Number(invoice.grossAmount),
+          amount: remaining.toNumber(),
           source: "bank-import",
         }).catch(() => {
           // Webhook errors must not fail the response
         });
-      } catch (updateError) {
-        errors.push(
-          `Fehler bei Rechnung ${invoice.invoiceNumber}: ${
-            updateError instanceof Error ? updateError.message : "Datenbankfehler"
-          }`
-        );
+      } catch (err) {
+        if (err instanceof OverpaymentError) {
+          errors.push(
+            `Rechnung ${invoice.invoiceNumber}: Überzahlung — bitte als Gutschrift abwickeln`,
+          );
+        } else if (err instanceof InvoiceNotPayableError) {
+          errors.push(
+            `Rechnung ${invoice.invoiceNumber}: nicht zahlbar (${err.status})`,
+          );
+        } else {
+          errors.push(
+            `Fehler bei Rechnung ${invoice.invoiceNumber}: ${
+              err instanceof Error ? err.message : "Datenbankfehler"
+            }`,
+          );
+        }
       }
     }
 

@@ -116,24 +116,15 @@ export interface FullAnalyticsResponse {
 // UTILITY FUNCTIONS
 // =============================================================================
 
-// Re-export centralized currency formatting
-export { formatCurrency, formatCurrencyCompact } from "@/lib/format";
+// Re-export centralized formatters (Sprint 1: konsolidiert in @/lib/format)
+export { formatCurrency, formatCurrencyCompact, formatNumber } from "@/lib/format";
+import { formatPercent as formatPercentBase } from "@/lib/format";
 
 /**
- * Formatiert eine Zahl mit Tausender-Trennzeichen
- */
-export function formatNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "0";
-  return new Intl.NumberFormat("de-DE").format(value);
-}
-
-/**
- * Formatiert einen Prozentsatz
+ * Analytics-Standard: Prozent mit 1 Nachkommastelle, ohne Leerzeichen.
  */
 export function formatPercent(value: number | null | undefined, withSign = false): string {
-  if (value === null || value === undefined) return "0%";
-  const sign = withSign && value > 0 ? "+" : "";
-  return `${sign}${value.toFixed(1)}%`;
+  return formatPercentBase(value, { decimals: 1, withSign });
 }
 
 /**
