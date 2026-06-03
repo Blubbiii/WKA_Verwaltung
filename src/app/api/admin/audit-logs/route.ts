@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { handleApiError } from "@/lib/api-utils";
 import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
+import { getAuditEntityHref } from "@/lib/audit-entity-urls";
 
 const querySchema = z.object({
   action: z.string().optional(),
@@ -139,8 +140,14 @@ export async function GET(request: NextRequest) {
       const data = hasMore ? rows.slice(0, params.limit) : rows;
       const nextCursor = hasMore ? data[data.length - 1].id : null;
 
+      // RA-5: Entity-Link pro Eintrag mitliefern
+      const dataWithHref = data.map((row) => ({
+        ...row,
+        href: getAuditEntityHref(row.entityType, row.entityId),
+      }));
+
       return NextResponse.json({
-        data,
+        data: dataWithHref,
         nextCursor,
         pagination: {
           limit: params.limit,
@@ -167,8 +174,14 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(totalCount / params.limit);
 
+    // RA-5: Entity-Link pro Eintrag mitliefern
+    const auditLogsWithHref = auditLogs.map((row) => ({
+      ...row,
+      href: getAuditEntityHref(row.entityType, row.entityId),
+    }));
+
     return NextResponse.json({
-      data: auditLogs,
+      data: auditLogsWithHref,
       pagination: {
         page: params.page,
         limit: params.limit,

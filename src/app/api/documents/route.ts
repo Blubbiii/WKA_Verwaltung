@@ -334,10 +334,25 @@ async function handleFileUpload(
   const parkId = (formData.get("parkId") as string) || null;
   const turbineId = (formData.get("turbineId") as string) || null;
   const fundId = (formData.get("fundId") as string) || null;
-  const contractId = (formData.get("contractId") as string) || null;
+  let contractId = (formData.get("contractId") as string) || null;
   const shareholderId = (formData.get("shareholderId") as string) || null;
   const serviceEventId = (formData.get("serviceEventId") as string) || null;
   const parentId = (formData.get("parentId") as string) || null;
+
+  // WF-4: Auto-Link zu Lease/Contract via parentEntityType + parentEntityId
+  const parentEntityType = (formData.get("parentEntityType") as string) || null;
+  const parentEntityId = (formData.get("parentEntityId") as string) || null;
+  if (parentEntityType && parentEntityId) {
+    if (parentEntityType === "Contract") {
+      contractId = parentEntityId;
+    }
+    // For Lease: no direct FK on Document — use tag as bridge
+    if (parentEntityType === "Lease") {
+      if (!tags.includes(`lease:${parentEntityId}`)) {
+        tags = [...tags, `lease:${parentEntityId}`];
+      }
+    }
+  }
 
   // Validiere Pflichtfelder
   if (!title || !category) {

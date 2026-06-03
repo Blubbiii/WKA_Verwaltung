@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Activity, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,8 @@ interface ActivityItem {
   detail: string;
   time: string;
   type?: "financial" | "warning" | "system";
+  // QW-5: optional link to the entity's detail page (set by API when known)
+  href?: string | null;
 }
 
 interface ActivitiesWidgetProps {
@@ -160,29 +163,53 @@ export function ActivitiesWidget({ className }: ActivitiesWidgetProps) {
 
   return (
     <div className={cn("space-y-4", className)}>
-      {activities.map((activity) => (
-        <div
-          key={activity.id}
-          className="flex items-start gap-3 border-b pb-4 last:border-0 last:pb-0"
-        >
+      {activities.map((activity) => {
+        const dot = (
           <div className={cn(
             "h-2 w-2 mt-2 rounded-full flex-shrink-0",
             activity.type === "financial" ? "bg-emerald-500"
               : activity.type === "warning" ? "bg-amber-500"
               : "bg-primary"
           )} />
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm @md:text-base">{activity.action}</p>
-            {/* Show full detail text on wider widgets, truncate on narrow ones */}
-            <p className="text-xs @md:text-sm text-muted-foreground truncate @md:whitespace-normal @md:line-clamp-2">
-              {activity.detail}
-            </p>
+        );
+        const body = (
+          <>
+            {dot}
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm @md:text-base">{activity.action}</p>
+              {/* Show full detail text on wider widgets, truncate on narrow ones */}
+              <p className="text-xs @md:text-sm text-muted-foreground truncate @md:whitespace-normal @md:line-clamp-2">
+                {activity.detail}
+              </p>
+            </div>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {activity.time}
+            </span>
+          </>
+        );
+
+        // QW-5: render as Link when API supplied an entity href, fall back to
+        // a plain text row otherwise (e.g. User entities).
+        if (activity.href) {
+          return (
+            <Link
+              key={activity.id}
+              href={activity.href}
+              className="flex items-start gap-3 border-b pb-4 last:border-0 last:pb-0 -mx-2 px-2 rounded hover:bg-muted/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {body}
+            </Link>
+          );
+        }
+        return (
+          <div
+            key={activity.id}
+            className="flex items-start gap-3 border-b pb-4 last:border-0 last:pb-0"
+          >
+            {body}
           </div>
-          <span className="text-xs text-muted-foreground whitespace-nowrap">
-            {activity.time}
-          </span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

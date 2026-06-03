@@ -147,30 +147,73 @@ export async function PATCH(request: NextRequest) {
       if (address.country !== undefined) updateData.country = address.country;
     }
 
-    if (bankName !== undefined) {
-      updateData.bankName = bankName;
+    // PF-3 Betrugsschutz: Bankdaten landen in PendingBankUpdate (Approval-Workflow).
+    // Sie werden NICHT direkt in Person geschrieben.
+    const normalizedIban = iban !== undefined && iban ? iban.replace(/\s/g, "").toUpperCase() : iban === null ? null : undefined;
+    const normalizedBic = bic !== undefined && bic ? bic.replace(/\s/g, "").toUpperCase() : bic === null ? null : undefined;
+
+    const hasBankChange =
+      (normalizedIban !== undefined && normalizedIban !== shareholder.person.bankIban) ||
+      (normalizedBic !== undefined && normalizedBic !== shareholder.person.bankBic) ||
+      (bankName !== undefined && bankName !== shareholder.person.bankName);
+
+    let pendingBankUpdateCreated = false;
+    if (hasBankChange) {
+      await prisma.pendingBankUpdate.create({
+        data: {
+          personId: shareholder.personId,
+          tenantId: session.user.tenantId!,
+          requestedIban: normalizedIban !== undefined ? normalizedIban : shareholder.person.bankIban,
+          requestedBic: normalizedBic !== undefined ? normalizedBic : shareholder.person.bankBic,
+          requestedBankName: bankName !== undefined ? bankName : shareholder.person.bankName,
+          previousIban: shareholder.person.bankIban,
+          previousBic: shareholder.person.bankBic,
+          previousBankName: shareholder.person.bankName,
+          requestedByUserId: session.user.id,
+          status: "PENDING",
+        },
+      });
+      pendingBankUpdateCreated = true;
+
+      // Fire-and-forget Admin-Notification (uses existing notification system)
+      import("@/lib/notifications")
+        .then(({ createNotification }) => {
+          // Notify all tenant admins via in-app notification.
+          // Email-Versand kann hier ergänzt werden, siehe TODO unten.
+          return prisma.user
+            .findMany({
+              where: { tenantId: session.user.tenantId, status: "ACTIVE" },
+              select: { id: true },
+            })
+            .then((users) =>
+              Promise.all(
+                users.map((u) =>
+                  createNotification({
+                    tenantId: session.user.tenantId!,
+                    userId: u.id,
+                    type: "SYSTEM",
+                    title: "Neue Bankdaten-Änderung zur Freigabe",
+                    message: `Gesellschafter hat neue Bankdaten beantragt. Bitte prüfen.`,
+                    link: "/admin/bank-update-requests",
+                  }).catch(() => null)
+                )
+              )
+            );
+        })
+        .catch((err) => logger.warn({ err }, "Bank-update admin notification failed"));
     }
 
-    if (iban !== undefined) {
-      // Normalize IBAN: remove spaces, convert to uppercase
-      updateData.bankIban = iban ? iban.replace(/\s/g, "").toUpperCase() : null;
-    }
-
-    if (bic !== undefined) {
-      // Normalize BIC: remove spaces, convert to uppercase
-      updateData.bankBic = bic ? bic.replace(/\s/g, "").toUpperCase() : null;
-    }
-
-    // Check if there's anything to update
-    if (Object.keys(updateData).length === 0) {
+    // Non-bank fields werden direkt persistiert
+    if (Object.keys(updateData).length === 0 && !pendingBankUpdateCreated) {
       return apiError("BAD_REQUEST", undefined, { message: "Keine Felder zum Aktualisieren angegeben" });
     }
 
-    // Update the person record
-    const updatedPerson = await prisma.person.update({
-      where: { id: shareholder.personId, tenantId: session.user.tenantId },
-      data: updateData,
-    });
+    const updatedPerson = Object.keys(updateData).length > 0
+      ? await prisma.person.update({
+          where: { id: shareholder.personId, tenantId: session.user.tenantId },
+          data: updateData,
+        })
+      : shareholder.person;
 
     // Build response with updated data
     const name =
@@ -193,6 +236,7 @@ export async function PATCH(request: NextRequest) {
         email: updatedPerson.email,
         phone: updatedPerson.phone,
         address: updatedAddress,
+        // Bei pending bank change: zeige weiter aktuelle (noch nicht geänderte) Bankdaten
         bankName: updatedPerson.bankName,
         iban: updatedPerson.bankIban,
         bic: updatedPerson.bankBic,
@@ -200,7 +244,10 @@ export async function PATCH(request: NextRequest) {
         shareholderNumber: shareholder.shareholderNumber,
         personType: updatedPerson.personType,
       },
-      message: "Profil erfolgreich aktualisiert",
+      pendingBankUpdate: pendingBankUpdateCreated,
+      message: pendingBankUpdateCreated
+        ? "Profil aktualisiert. Bankdaten-Änderung wartet auf Admin-Freigabe."
+        : "Profil erfolgreich aktualisiert",
     });
   } catch (error) {
     logger.error({ err: error }, "Error updating profile");

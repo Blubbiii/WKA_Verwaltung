@@ -59,6 +59,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
 import { SearchFilter } from "@/components/ui/search-filter";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CalendarExportButton } from "@/components/calendar-export-button";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
 import { CONTRACT_WARNING_DAYS, CONTRACT_CALENDAR_LOOKAHEAD_DAYS } from "@/lib/config/business-thresholds";
 
@@ -299,12 +300,15 @@ export default function ContractsPage() {
         createHref="/contracts/new"
         createLabel={t("list.newContract")}
         actions={
-          <Button variant="outline" asChild>
-            <Link href="/contracts/calendar">
-              <Calendar className="mr-2 h-4 w-4" />
-              {t("list.calendar")}
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <CalendarExportButton type="contracts" />
+            <Button variant="outline" asChild>
+              <Link href="/contracts/calendar">
+                <Calendar className="mr-2 h-4 w-4" />
+                {t("list.calendar")}
+              </Link>
+            </Button>
+          </div>
         }
       />
 

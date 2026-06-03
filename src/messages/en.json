@@ -8158,7 +8158,9 @@
         "newDistribution": "New distribution",
         "newDistributionDesc": "Notification on new distributions",
         "newDocument": "New document",
-        "newDocumentDesc": "Notification on new documents in the portal"
+        "newDocumentDesc": "Notification on new documents in the portal",
+        "saved": "Preference saved",
+        "saveFailed": "Failed to save preference"
       },
       "display": {
         "title": "Display settings",
@@ -8283,6 +8285,7 @@
       "participations": "My participations",
       "distributions": "Distributions",
       "documents": "Documents",
+      "taxDocuments": "Tax documents",
       "reports": "Reports",
       "energyAnalytics": "Plant performance",
       "energyReports": "Energy reports",

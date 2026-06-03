@@ -96,6 +96,7 @@ model Tenant {
   mailingTemplates          MailingTemplate[]
   mailings                  Mailing[]
   journalEntries            JournalEntry[]
+  pendingBankUpdates        PendingBankUpdate[]
   crmActivities             CrmActivity[]
   vendors                   Vendor[]
   incomingInvoices          IncomingInvoice[]
@@ -274,6 +275,8 @@ model User {
   approvalRequestsRequested                                               ApprovalRequest[]          @relation("ApprovalRequester")
   approvalRequestsDecided                                                 ApprovalRequest[]          @relation("ApprovalDecider")
   fundAccess                                                              FundAccess[]
+  bankUpdatesRequested                                                    PendingBankUpdate[]        @relation("BankUpdateRequestedBy")
+  bankUpdatesDecided                                                      PendingBankUpdate[]        @relation("BankUpdateDecidedBy")
 
   @@index([tenantId])
   @@index([email])
@@ -667,10 +670,48 @@ model Person {
   vendorProfiles                 Vendor[]
   contactLinks                   ContactLink[]
   tags                           PersonTag[]                      @relation("PersonToPersonTag")
+  pendingBankUpdates             PendingBankUpdate[]
 
   @@index([tenantId])
   @@index([lastName, firstName])
   @@map("persons")
+}
+
+/// PF-3: Approval-Workflow für Bankdaten-Änderungen (Betrugsschutz).
+/// Portal-User triggern PATCH → erzeugt PendingBankUpdate statt direkten Person-Update.
+/// Admin reviewt + approved/rejected → bei Approve: write to Person + Audit-Log.
+model PendingBankUpdate {
+  id                String                  @id @default(uuid())
+  personId          String
+  tenantId          String
+  requestedIban     String?
+  requestedBic      String?
+  requestedBankName String?
+  previousIban      String?
+  previousBic       String?
+  previousBankName  String?
+  requestedAt       DateTime                @default(now())
+  status            PendingBankUpdateStatus @default(PENDING)
+  decidedById       String?
+  decidedAt         DateTime?
+  decisionNotes     String?
+  requestedByUserId String?
+  person            Person                  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  tenant            Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  decidedBy         User?                   @relation("BankUpdateDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+  requestedByUser   User?                   @relation("BankUpdateRequestedBy", fields: [requestedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status])
+  @@index([personId])
+  @@index([decidedById])
+  @@index([requestedByUserId])
+  @@map("pending_bank_updates")
+}
+
+enum PendingBankUpdateStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model Shareholder {
@@ -1036,6 +1077,11 @@ model Invoice {
   emailedTo                                                                                   String?
   reminderLevel                                                                               Int?
   reminderSentAt                                                                              DateTime?
+  // Mahnwesen: Strittige Rechnungen vom Dunning-Lauf ausschließen.
+  // dunningHold=true → permanenter Stopp; dunningHoldUntil → temporärer Stopp bis Datum.
+  dunningHold                                                                                 Boolean                         @default(false)
+  dunningHoldReason                                                                           String?
+  dunningHoldUntil                                                                            DateTime?
   // §25b UStG: Innergemeinschaftliches Dreiecksgeschäft.
   // Mittlerer Unternehmer (Inland) → Empfänger EU-Land A → Endabnehmer EU-Land B.
   // Triggers triangulation-flag in ZM-XML (BZSt Format: Kennung "T" / <dreiecksgeschaeft>1).

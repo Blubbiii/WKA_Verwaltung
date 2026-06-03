@@ -49,6 +49,10 @@ const WirtschaftsplanPLChart = dynamic(
   () => import("./widgets/wirtschaftsplan-widgets").then((m) => m.WirtschaftsplanPLChart),
   { ssr: false },
 );
+const ParkComparisonWidget = dynamic(
+  () => import("./park-comparison-widget").then((m) => m.ParkComparisonWidget),
+  { ssr: false },
+);
 import {
   DeadlinesWidget,
   ActivitiesWidget,
@@ -574,6 +578,11 @@ export function WidgetRenderer({
 
     if (widgetId === "chart-wirtschaftsplan-pl") {
       return <WirtschaftsplanPLChart />;
+    }
+
+    // Park-Vergleich (eigenständige Card-Struktur)
+    if (widgetId === "chart-park-comparison") {
+      return <ParkComparisonWidget />;
     }
 
     // CPI/Wertsicherungs-Reminder (Standalone-Card-Komponente)

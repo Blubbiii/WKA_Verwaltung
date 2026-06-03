@@ -583,7 +583,11 @@ export default function LeaseDetailPage({
           <CardContent>
             <FileUploadDropzone
               endpoint="/api/documents"
-              additionalFields={{ category: "LEASE" }}
+              additionalFields={{
+                category: "CONTRACT",
+                parentEntityType: "Lease",
+                parentEntityId: lease.id,
+              }}
               onUploadComplete={() => router.refresh()}
               hint={t("upload.hint")}
             />

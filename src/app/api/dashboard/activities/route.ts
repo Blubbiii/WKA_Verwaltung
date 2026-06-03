@@ -17,7 +17,40 @@ const ENTITY_LABELS: Record<string, string> = {
   User: "Benutzer",
   Plot: "Flurstück",
   Fund: "Fonds",
+  Settlement: "Abrechnung",
+  Contract: "Vertrag",
+  ServiceEvent: "Service-Vorgang",
 };
+
+/**
+ * QW-5: Map an audit-log entity to its detail page URL.
+ * Returns null when the entity type has no known detail page — the frontend
+ * falls back to rendering plain text in that case.
+ */
+function buildEntityHref(entityType: string, entityId: string | null): string | null {
+  if (!entityId) return null;
+  switch (entityType) {
+    case "Park":
+      return `/parks/${entityId}`;
+    case "Lease":
+      return `/leases/${entityId}`;
+    case "Invoice":
+      return `/invoices/${entityId}`;
+    case "Plot":
+      return `/plots/${entityId}`;
+    case "Fund":
+      return `/funds/${entityId}`;
+    case "Settlement":
+      return `/buchhaltung/settlements/${entityId}`;
+    case "Contract":
+      return `/contracts/${entityId}`;
+    case "ServiceEvent":
+      return `/service/${entityId}`;
+    // User intentionally omitted (admin-only page, not always permitted).
+    default:
+      return null;
+  }
+}
 
 function relativeTimeGerman(date: Date): string {
   const now = Date.now();
@@ -68,6 +101,9 @@ export async function GET() {
         action,
         detail,
         time: relativeTimeGerman(log.createdAt),
+        href: buildEntityHref(log.entityType, log.entityId),
+        entityType: log.entityType,
+        entityId: log.entityId,
       };
     });
 

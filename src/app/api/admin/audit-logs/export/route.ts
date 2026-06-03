@@ -154,6 +154,33 @@ const auditLogColumns: ColumnDef[] = [
       return "-";
     },
   },
+  // RA-5: Volle JSON-Spalten für forensische Analyse / Excel-Diff
+  {
+    key: "oldValues",
+    header: "Alte Werte (JSON)",
+    width: 60,
+    transform: (value) => {
+      if (!value) return "";
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return "";
+      }
+    },
+  },
+  {
+    key: "newValues",
+    header: "Neue Werte (JSON)",
+    width: 60,
+    transform: (value) => {
+      if (!value) return "";
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return "";
+      }
+    },
+  },
 ];
 
 // ============================================================================

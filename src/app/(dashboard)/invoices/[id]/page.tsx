@@ -79,6 +79,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { InvoicePreviewDialog, PartialCancelDialog, CorrectionDialog, SettlementDetailsCard } from "@/components/invoices";
@@ -129,6 +131,10 @@ interface Invoice {
   skontoDeadline: string | null;
   skontoAmount: number | null;
   skontoPaid: boolean;
+  // Dunning-Hold (Mahnsperre für strittige Rechnungen)
+  dunningHold: boolean;
+  dunningHoldReason: string | null;
+  dunningHoldUntil: string | null;
   // Delivery tracking
   printedAt: string | null;
   printedById: string | null;
@@ -255,6 +261,10 @@ export default function InvoiceDetailPage({
   // P23 Payment + Write-Off Dialoge
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showWriteOffDialog, setShowWriteOffDialog] = useState(false);
+  // Dunning-Hold UI-State
+  const [holdReason, setHoldReason] = useState("");
+  const [holdUntil, setHoldUntil] = useState("");
+  const [holdSaving, setHoldSaving] = useState(false);
 
   useEffect(() => {
     fetchInvoice();
@@ -1384,6 +1394,149 @@ export default function InvoiceDetailPage({
                 {t("zugferdCII")}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Dunning-Hold: Mahnsperre für strittige Rechnungen */}
+      {invoice && invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Mahnsperre</CardTitle>
+            <CardDescription>
+              Strittige Rechnungen vom Mahnlauf ausschließen
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Switch
+                id="dunning-hold-toggle"
+                checked={invoice.dunningHold}
+                disabled={holdSaving}
+                onCheckedChange={async (next) => {
+                  if (!next) {
+                    setHoldSaving(true);
+                    try {
+                      const r = await fetch(
+                        `/api/invoices/${invoice.id}/dunning-hold`,
+                        {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ hold: false }),
+                        },
+                      );
+                      if (!r.ok) throw new Error("Hold konnte nicht aufgehoben werden");
+                      toast.success("Mahnsperre aufgehoben");
+                      setHoldReason("");
+                      setHoldUntil("");
+                      await fetchInvoice();
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Fehler");
+                    } finally {
+                      setHoldSaving(false);
+                    }
+                  } else {
+                    setHoldReason(invoice.dunningHoldReason ?? "");
+                    setHoldUntil(
+                      invoice.dunningHoldUntil
+                        ? invoice.dunningHoldUntil.substring(0, 10)
+                        : "",
+                    );
+                  }
+                }}
+              />
+              <Label htmlFor="dunning-hold-toggle">
+                {invoice.dunningHold
+                  ? "Mahnung gestoppt"
+                  : "Mahnung aktiv (kein Hold)"}
+              </Label>
+            </div>
+
+            {!invoice.dunningHold && (
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="hold-reason">Begründung (Pflicht, min. 3 Zeichen)</Label>
+                  <Textarea
+                    id="hold-reason"
+                    value={holdReason}
+                    onChange={(e) => setHoldReason(e.target.value)}
+                    placeholder="z. B. Reklamation Position 3, Klärung läuft"
+                    rows={2}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hold-until">Stopp bis (optional)</Label>
+                  <Input
+                    id="hold-until"
+                    type="date"
+                    value={holdUntil}
+                    onChange={(e) => setHoldUntil(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Leer = permanenter Stopp bis manuelle Aufhebung
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  disabled={holdSaving || holdReason.trim().length < 3}
+                  onClick={async () => {
+                    setHoldSaving(true);
+                    try {
+                      const r = await fetch(
+                        `/api/invoices/${invoice.id}/dunning-hold`,
+                        {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            hold: true,
+                            reason: holdReason.trim(),
+                            until: holdUntil
+                              ? new Date(holdUntil).toISOString()
+                              : null,
+                          }),
+                        },
+                      );
+                      if (!r.ok) {
+                        const j = await r.json().catch(() => ({}));
+                        throw new Error(
+                          j?.message ?? "Mahnsperre konnte nicht gesetzt werden",
+                        );
+                      }
+                      toast.success("Mahnsperre gesetzt");
+                      await fetchInvoice();
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Fehler");
+                    } finally {
+                      setHoldSaving(false);
+                    }
+                  }}
+                >
+                  {holdSaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Mahnsperre setzen
+                </Button>
+              </div>
+            )}
+
+            {invoice.dunningHold && (
+              <div className="rounded border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800 p-3 text-sm space-y-1">
+                <p>
+                  <strong>Begründung:</strong>{" "}
+                  {invoice.dunningHoldReason ?? "(keine angegeben)"}
+                </p>
+                {invoice.dunningHoldUntil && (
+                  <p>
+                    <strong>Stopp bis:</strong>{" "}
+                    {format(
+                      new Date(invoice.dunningHoldUntil),
+                      "dd.MM.yyyy",
+                      { locale: locale === "de" ? de : enUS },
+                    )}
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

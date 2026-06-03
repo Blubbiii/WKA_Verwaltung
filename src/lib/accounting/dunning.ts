@@ -92,6 +92,11 @@ async function findDunningCandidatesWithTx(tx: PrismaTransactionClient, tenantId
       status: { in: ["SENT", "PARTIALLY_PAID"] },
       deletedAt: null,
       dueDate: { lt: now },
+      // Dunning-Hold: strittige Rechnungen ausschließen (permanent ODER abgelaufener temp-Hold)
+      AND: [
+        { OR: [{ dunningHold: false }, { dunningHold: null }] },
+        { OR: [{ dunningHoldUntil: null }, { dunningHoldUntil: { lt: now } }] },
+      ],
     },
     select: {
       id: true,

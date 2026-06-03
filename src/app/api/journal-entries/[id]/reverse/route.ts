@@ -29,7 +29,10 @@ import { assertFourEyes, FourEyesViolationError } from "@/lib/auth/four-eyes-che
 import { findOrCreateApprovalRequest } from "@/lib/approvals/manager";
 
 const reverseSchema = z.object({
-  reason: z.string().min(1, "Storno-Begründung ist Pflicht").max(500),
+  reason: z
+    .string()
+    .min(10, "Storno-Begründung muss mindestens 10 Zeichen lang sein")
+    .max(500),
   reversalDate: z.string().datetime().optional(),
 });
 
@@ -74,6 +77,7 @@ export async function POST(
         id: true,
         tenantId: true,
         createdById: true,
+        description: true,
         lines: { select: { debitAmount: true, creditAmount: true } },
       },
     });
@@ -154,6 +158,37 @@ export async function POST(
     invalidateReportsCache(check.tenantId!).catch((err) => {
       logger.warn({ err }, "[Reports-Cache] Invalidation failed after STORNO");
     });
+
+    // WF-5: Notify Original-Ersteller über Storno (außer bei Self-Reversal).
+    if (
+      original.createdById &&
+      original.createdById !== check.userId
+    ) {
+      try {
+        const decider = await prisma.user.findUnique({
+          where: { id: check.userId! },
+          select: { firstName: true, lastName: true, email: true },
+        });
+        const deciderName = decider
+          ? [decider.firstName, decider.lastName].filter(Boolean).join(" ").trim()
+          : "";
+        const deciderLabel = deciderName || decider?.email || "ein Kollege";
+        await prisma.notification.create({
+          data: {
+            tenantId: check.tenantId!,
+            userId: original.createdById,
+            type: "SYSTEM",
+            title: "Ihre Buchung wurde storniert",
+            message: `Buchung "${original.description}" wurde von ${deciderLabel} storniert. Begründung: ${reason}`,
+            link: `/journal-entries/${result.reversalId}`,
+            referenceType: "JournalEntry",
+            referenceId: result.reversalId,
+          },
+        });
+      } catch (err) {
+        logger.warn({ err }, "[Storno-Notify] Notification konnte nicht erstellt werden");
+      }
+    }
 
     logger.info(
       {

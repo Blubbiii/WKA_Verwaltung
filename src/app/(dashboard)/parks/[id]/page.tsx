@@ -1,5 +1,9 @@
 "use client";
 
+// TODO(QW-1): Add document upload area to park detail page using the shared
+// `<FileUploadDropzone>` component from `@/components/ui/file-upload-dropzone`.
+// Showcase implementation lives in `src/app/(dashboard)/inbox/page.tsx`.
+
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

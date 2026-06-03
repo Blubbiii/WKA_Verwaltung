@@ -8158,7 +8158,9 @@
         "newDistribution": "Neue Ausschüttung",
         "newDistributionDesc": "Benachrichtigung bei neuen Gutschriften",
         "newDocument": "Neues Dokument",
-        "newDocumentDesc": "Benachrichtigung bei neuen Dokumenten im Portal"
+        "newDocumentDesc": "Benachrichtigung bei neuen Dokumenten im Portal",
+        "saved": "Einstellung gespeichert",
+        "saveFailed": "Speichern fehlgeschlagen"
       },
       "display": {
         "title": "Anzeige-Einstellungen",
@@ -8283,6 +8285,7 @@
       "participations": "Meine Beteiligungen",
       "distributions": "Ausschüttungen",
       "documents": "Dokumente",
+      "taxDocuments": "Steuerunterlagen",
       "reports": "Berichte",
       "energyAnalytics": "Anlagen-Performance",
       "energyReports": "Energieberichte",

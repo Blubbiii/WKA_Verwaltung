@@ -21,6 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -90,6 +91,8 @@ interface AuditLog {
   user: AuditLogUser | null;
   impersonatedBy: AuditLogUser | null;
   tenant: { id: string; name: string } | null;
+  /** RA-5: optional deep-link to the entity's detail page */
+  href?: string | null;
 }
 
 interface Pagination {
@@ -843,9 +846,19 @@ function AuditLogsContent() {
                               {getEntityDisplayName(log.entityType)}
                             </p>
                             {log.entityId && (
-                              <p className="text-xs text-muted-foreground font-mono">
-                                {log.entityId.substring(0, 8)}...
-                              </p>
+                              log.href ? (
+                                <Link
+                                  href={log.href}
+                                  className="text-xs text-primary hover:underline font-mono"
+                                  title={log.entityId}
+                                >
+                                  {log.entityId.substring(0, 8)}...
+                                </Link>
+                              ) : (
+                                <p className="text-xs text-muted-foreground font-mono">
+                                  {log.entityId.substring(0, 8)}...
+                                </p>
+                              )
                             )}
                           </div>
                         </TableCell>
@@ -947,9 +960,18 @@ function AuditLogsContent() {
                     {getEntityDisplayName(selectedLog.entityType)}
                   </p>
                   {selectedLog.entityId && (
-                    <p className="text-xs font-mono text-muted-foreground">
-                      ID: {selectedLog.entityId}
-                    </p>
+                    selectedLog.href ? (
+                      <Link
+                        href={selectedLog.href}
+                        className="text-xs font-mono text-primary hover:underline"
+                      >
+                        ID: {selectedLog.entityId} →
+                      </Link>
+                    ) : (
+                      <p className="text-xs font-mono text-muted-foreground">
+                        ID: {selectedLog.entityId}
+                      </p>
+                    )
                   )}
                 </div>
               </div>

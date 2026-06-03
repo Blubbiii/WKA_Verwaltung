@@ -46,6 +46,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 
 // ============================================================================
 // Types
@@ -90,44 +91,9 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 
 function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: () => void; onUploaded: () => void }) {
   const t = useTranslations("inbox.uploadDialog");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
 
-  const handleFile = (f: File) => {
-    setFile(f);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped) handleFile(dropped);
-  };
-
-  const upload = async () => {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/inbox", { method: "POST", body: fd });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? t("uploadFailed"));
-      }
-      toast.success(t("success", { name: file.name }));
-      setFile(null);
-      onUploaded();
-      onClose();
-    } catch (err) {
-      toast.error(String(err instanceof Error ? err.message : err));
-    } finally {
-      setUploading(false);
-    }
-  };
-
+  // QW-1: Manuelle DropZone durch zentrale FileUploadDropzone-Komponente
+  // ersetzt — gleiche UX, weniger Code, konsistent mit anderen Upload-Stellen.
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
@@ -135,54 +101,21 @@ function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: (
           <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
 
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label={t("dropText")}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-            dragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
-          }`}
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              fileInputRef.current?.click();
-            }
+        <FileUploadDropzone
+          endpoint="/api/inbox"
+          accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif"
+          maxFiles={5}
+          className="p-8"
+          hint={t("formats")}
+          onUploadComplete={() => {
+            onUploaded();
+            onClose();
           }}
-        >
-          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            {t("dropText")}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">{t("formats")}</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.tiff,.tif"
-            className="hidden"
-            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-          />
-        </div>
-
-        {file && (
-          <div className="flex items-center gap-2 p-3 bg-muted rounded-md text-sm">
-            <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-            <span className="truncate">{file.name}</span>
-            <span className="text-muted-foreground shrink-0">
-              ({(file.size / 1024 / 1024).toFixed(1)} MB)
-            </span>
-          </div>
-        )}
+        />
 
         <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={onClose} disabled={uploading}>
+          <Button variant="outline" onClick={onClose}>
             {t("cancel")}
-          </Button>
-          <Button onClick={upload} disabled={!file || uploading}>
-            {uploading ? t("uploading") : t("upload")}
           </Button>
         </div>
       </DialogContent>

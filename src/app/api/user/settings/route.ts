@@ -33,6 +33,10 @@ const updateSettingsSchema = z.object({
           invoices: z.boolean().optional(),
           contracts: z.boolean().optional(),
           votes: z.boolean().optional(),
+          // QW-2: Portal-specific notification preferences (Gesellschafter)
+          newVote: z.boolean().optional(),
+          newDistribution: z.boolean().optional(),
+          newDocument: z.boolean().optional(),
         })
         .optional(),
       defaultPageSize: z.number().min(10).max(100).optional(),

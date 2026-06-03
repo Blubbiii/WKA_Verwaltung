@@ -19,6 +19,7 @@ import {
   Settings,
   TrendingUp,
   Activity,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -54,6 +55,12 @@ const portalNavItems: NavItem[] = [
     titleKey: "documents",
     href: "/portal/documents",
     icon: FolderOpen,
+    permission: "portal:documents",
+  },
+  {
+    titleKey: "taxDocuments",
+    href: "/portal/tax-documents",
+    icon: Receipt,
     permission: "portal:documents",
   },
   {

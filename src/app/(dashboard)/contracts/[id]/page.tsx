@@ -1,5 +1,10 @@
 "use client";
 
+// TODO(QW-1): Migrate the document upload UI here (currently inside
+// `<ContractDocuments />`) to the shared `<FileUploadDropzone>` component
+// from `@/components/ui/file-upload-dropzone` for consistent drag-drop UX.
+// Showcase implementation lives in `src/app/(dashboard)/inbox/page.tsx`.
+
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";

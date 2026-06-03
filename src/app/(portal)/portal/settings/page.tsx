@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { formatDateTime } from "@/lib/format";
 import {
@@ -43,14 +43,76 @@ import { toast } from "sonner";
 
 export default function SettingsPage() {
   const t = useTranslations("portal.settings");
-  // Notification settings (placeholder state - not persisted)
+  // QW-2: Notification settings persisted via /api/user/settings
   const [notifications, setNotifications] = useState({
     newVote: true,
     newDistribution: true,
     newDocument: false,
   });
+  const [loadingPrefs, setLoadingPrefs] = useState(true);
+  const [savingPref, setSavingPref] = useState<keyof typeof notifications | null>(
+    null,
+  );
+  // Skip the first save triggered by the initial fetch hydration.
+  const hydratedRef = useRef(false);
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Load persisted notification prefs on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/user/settings");
+        if (!res.ok) return;
+        const data = await res.json();
+        const n = data?.preferences?.notifications ?? {};
+        if (cancelled) return;
+        setNotifications({
+          newVote: typeof n.newVote === "boolean" ? n.newVote : true,
+          newDistribution:
+            typeof n.newDistribution === "boolean" ? n.newDistribution : true,
+          newDocument: typeof n.newDocument === "boolean" ? n.newDocument : false,
+        });
+      } catch {
+        // silent — keep defaults
+      } finally {
+        if (!cancelled) {
+          setLoadingPrefs(false);
+          hydratedRef.current = true;
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function persistNotificationPref(
+    key: keyof typeof notifications,
+    value: boolean,
+  ) {
+    if (!hydratedRef.current) return;
+    setSavingPref(key);
+    // Optimistic UI: state is already updated by the caller
+    try {
+      const res = await fetch("/api/user/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          preferences: { notifications: { [key]: value } },
+        }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      toast.success(t("notifications.saved"));
+    } catch {
+      // Rollback on error
+      setNotifications((prev) => ({ ...prev, [key]: !value }));
+      toast.error(t("notifications.saveFailed"));
+    } finally {
+      setSavingPref(null);
+    }
+  }
 
   async function handleDataExport() {
     setExporting(true);
@@ -151,10 +213,11 @@ export default function SettingsPage() {
               <Switch
                 id="notify-vote"
                 checked={notifications.newVote}
-                onCheckedChange={(checked) =>
-                  setNotifications((prev) => ({ ...prev, newVote: checked }))
-                }
-                disabled
+                onCheckedChange={(checked) => {
+                  setNotifications((prev) => ({ ...prev, newVote: checked }));
+                  void persistNotificationPref("newVote", checked);
+                }}
+                disabled={loadingPrefs || savingPref === "newVote"}
               />
             </div>
 
@@ -176,10 +239,11 @@ export default function SettingsPage() {
               <Switch
                 id="notify-distribution"
                 checked={notifications.newDistribution}
-                onCheckedChange={(checked) =>
-                  setNotifications((prev) => ({ ...prev, newDistribution: checked }))
-                }
-                disabled
+                onCheckedChange={(checked) => {
+                  setNotifications((prev) => ({ ...prev, newDistribution: checked }));
+                  void persistNotificationPref("newDistribution", checked);
+                }}
+                disabled={loadingPrefs || savingPref === "newDistribution"}
               />
             </div>
 
@@ -201,10 +265,11 @@ export default function SettingsPage() {
               <Switch
                 id="notify-document"
                 checked={notifications.newDocument}
-                onCheckedChange={(checked) =>
-                  setNotifications((prev) => ({ ...prev, newDocument: checked }))
-                }
-                disabled
+                onCheckedChange={(checked) => {
+                  setNotifications((prev) => ({ ...prev, newDocument: checked }));
+                  void persistNotificationPref("newDocument", checked);
+                }}
+                disabled={loadingPrefs || savingPref === "newDocument"}
               />
             </div>
           </div>

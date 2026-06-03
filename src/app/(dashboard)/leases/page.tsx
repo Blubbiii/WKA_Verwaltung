@@ -54,6 +54,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
 import { SearchFilter } from "@/components/ui/search-filter";
+import { CalendarExportButton } from "@/components/calendar-export-button";
 import { LeaseDialogs } from "@/components/leases";
 import { toast } from "sonner";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
@@ -294,6 +295,7 @@ export default function LeasesPage() {
         description={t("description")}
         createHref="/leases/new"
         createLabel={t("newContract")}
+        actions={<CalendarExportButton type="leases" />}
       />
 
       {/* Stats Cards */}
