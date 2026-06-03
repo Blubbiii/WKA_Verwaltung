@@ -64,25 +64,31 @@ export async function POST(
       });
     }
 
-    const updated = await prisma.leaseSettlementPeriod.update({
-      where: { id, tenantId: check.tenantId! },
-      data: { status: "PENDING_REVIEW" },
-    });
-
-    // Sprint 3: ApprovalRequest erzeugen — taucht in /approvals-Inbox auf.
-    // Bei Approve dort läuft der Executor und setzt Status auf APPROVED.
+    // H-2: Settlement-Status und ApprovalRequest in 1 TX — sonst Risiko
+    // dass Status auf PENDING_REVIEW wechselt, aber ApprovalRequest fehlt
+    // (oder umgekehrt) → Approve-Endpoint findet keinen passenden Request.
     const amount =
       Number(period.totalActualRent ?? 0) ||
       Number(period.totalRevenue ?? 0) ||
       0;
-    const approvalRequest = await findOrCreateApprovalRequest({
-      tenantId: check.tenantId!,
-      action: "SETTLEMENT_FINALIZE",
-      entityType: "LeaseSettlementPeriod",
-      entityId: id,
-      amountEur: amount,
-      requestedById: check.userId!,
-      requestReason: "Settlement-Periode zur Freigabe eingereicht",
+    const { updated, approvalRequest } = await prisma.$transaction(async (tx) => {
+      const updated = await tx.leaseSettlementPeriod.update({
+        where: { id, tenantId: check.tenantId! },
+        data: { status: "PENDING_REVIEW" },
+      });
+      const approvalRequest = await findOrCreateApprovalRequest(
+        {
+          tenantId: check.tenantId!,
+          action: "SETTLEMENT_FINALIZE",
+          entityType: "LeaseSettlementPeriod",
+          entityId: id,
+          amountEur: amount,
+          requestedById: check.userId!,
+          requestReason: "Settlement-Periode zur Freigabe eingereicht",
+        },
+        tx,
+      );
+      return { updated, approvalRequest };
     });
 
     logger.info(

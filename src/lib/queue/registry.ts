@@ -19,6 +19,10 @@ import {
   getApprovalsExpiryQueue,
   APPROVALS_EXPIRY_QUEUE_NAME,
 } from './queues/approvals-expiry.queue';
+import {
+  getApprovalsReconcileQueue,
+  APPROVALS_RECONCILE_QUEUE_NAME,
+} from './queues/approvals-reconcile.queue';
 
 /**
  * Queue metadata for registry
@@ -109,6 +113,12 @@ const queueRegistry: QueueInfo[] = [
     displayName: 'Approvals Expiry Queue',
     description: 'Setzt PENDING-Approvals nach Ablauf der expiresAt-Frist auf EXPIRED (alle 6h)',
     getQueue: getApprovalsExpiryQueue as () => Queue,
+  },
+  {
+    name: APPROVALS_RECONCILE_QUEUE_NAME,
+    displayName: 'Approvals Reconcile Queue',
+    description: 'Re-Executor für APPROVED-Approvals deren Executor nicht durchlief (stündlich)',
+    getQueue: getApprovalsReconcileQueue as () => Queue,
   },
 ];
 

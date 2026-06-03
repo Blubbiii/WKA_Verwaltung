@@ -99,6 +99,17 @@ import type {
   ApprovalsExpiryJobResult,
 } from "../queues/approvals-expiry.queue";
 
+import {
+  startApprovalsReconcileWorker,
+  stopApprovalsReconcileWorker,
+  isApprovalsReconcileWorkerRunning,
+  getApprovalsReconcileWorker,
+} from "./approvals-reconcile.worker";
+import type {
+  ApprovalsReconcileJobData,
+  ApprovalsReconcileJobResult,
+} from "../queues/approvals-reconcile.queue";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -117,6 +128,7 @@ export const WORKER_NAMES = {
   PAPERLESS: "paperless",
   INBOX_OCR: "inbox-ocr",
   APPROVALS_EXPIRY: "approvals-expiry",
+  APPROVALS_RECONCILE: "approvals-reconcile",
 } as const;
 
 export type WorkerName = (typeof WORKER_NAMES)[keyof typeof WORKER_NAMES];
@@ -238,6 +250,14 @@ const workerRegistry: WorkerRegistryEntry[] = [
     stop: stopApprovalsExpiryWorker,
     isRunning: isApprovalsExpiryWorkerRunning,
     getWorker: getApprovalsExpiryWorker as () => Worker<unknown, unknown> | null,
+  },
+  {
+    name: WORKER_NAMES.APPROVALS_RECONCILE,
+    displayName: "Approvals Reconcile Worker",
+    start: startApprovalsReconcileWorker as () => Worker<unknown, unknown>,
+    stop: stopApprovalsReconcileWorker,
+    isRunning: isApprovalsReconcileWorkerRunning,
+    getWorker: getApprovalsReconcileWorker as () => Worker<unknown, unknown> | null,
   },
 ];
 
@@ -547,3 +567,12 @@ export {
   getApprovalsExpiryWorker,
 };
 export type { ApprovalsExpiryJobData, ApprovalsExpiryJobResult };
+
+// Approvals Reconcile Worker
+export {
+  startApprovalsReconcileWorker,
+  stopApprovalsReconcileWorker,
+  isApprovalsReconcileWorkerRunning,
+  getApprovalsReconcileWorker,
+};
+export type { ApprovalsReconcileJobData, ApprovalsReconcileJobResult };

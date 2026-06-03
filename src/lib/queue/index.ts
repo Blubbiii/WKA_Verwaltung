@@ -57,6 +57,7 @@ export { REMINDER_QUEUE_NAME } from './queues/reminder.queue';
 export { SCADA_AUTO_IMPORT_QUEUE_NAME } from './queues/scada-auto-import.queue';
 export { WEBHOOK_QUEUE_NAME } from './queues/webhook.queue';
 export { APPROVALS_EXPIRY_QUEUE_NAME } from './queues/approvals-expiry.queue';
+export { APPROVALS_RECONCILE_QUEUE_NAME } from './queues/approvals-reconcile.queue';
 
 /**
  * All queue names as a constant object for easy reference
@@ -71,6 +72,7 @@ export const QUEUE_NAMES = {
   SCADA_AUTO_IMPORT: 'scada-auto-import',
   WEBHOOK: 'webhook',
   APPROVALS_EXPIRY: 'approvals-expiry',
+  APPROVALS_RECONCILE: 'approvals-reconcile',
 } as const;
 
 export type QueueName = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];
@@ -234,6 +236,23 @@ export type {
 } from './queues/approvals-expiry.queue';
 
 // ============================================
+// Approvals Reconcile Queue
+// ============================================
+
+export {
+  getApprovalsReconcileQueue,
+  scheduleApprovalsReconcileCheck,
+  enqueueApprovalsReconcileNow,
+  removeApprovalsReconcileSchedule,
+  closeApprovalsReconcileQueue,
+} from './queues/approvals-reconcile.queue';
+
+export type {
+  ApprovalsReconcileJobData,
+  ApprovalsReconcileJobResult,
+} from './queues/approvals-reconcile.queue';
+
+// ============================================
 // Utility Functions
 // ============================================
 
@@ -251,6 +270,7 @@ export const closeAllQueues = async (): Promise<void> => {
   const { closeScadaAutoImportQueue } = await import('./queues/scada-auto-import.queue');
   const { closeWebhookQueue } = await import('./queues/webhook.queue');
   const { closeApprovalsExpiryQueue } = await import('./queues/approvals-expiry.queue');
+  const { closeApprovalsReconcileQueue } = await import('./queues/approvals-reconcile.queue');
   const { closeConnections } = await import('./connection');
 
   logger.info('[Queue] Closing all queues...');
@@ -266,6 +286,7 @@ export const closeAllQueues = async (): Promise<void> => {
     closeScadaAutoImportQueue(),
     closeWebhookQueue(),
     closeApprovalsExpiryQueue(),
+    closeApprovalsReconcileQueue(),
   ]);
 
   // Then close Redis connections

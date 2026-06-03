@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const from = searchParams.get("from");
     const to = searchParams.get("to");
     const cursor = searchParams.get("cursor");
-    const useCursor = searchParams.has("cursor") || searchParams.get("mode") === "cursor";
+    const useCursor = !!searchParams.get("cursor") || searchParams.get("mode") === "cursor";
     const limit = Math.min(
       Math.max(parseInt(searchParams.get("limit") || "10000") || 10000, 1),
       50000

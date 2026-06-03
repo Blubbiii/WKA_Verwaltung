@@ -8,6 +8,7 @@
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { getCachedReport } from "@/lib/cache/reports";
 
 export interface GuvLine {
   /** HGB §275 position number */
@@ -168,6 +169,18 @@ async function aggregateByPeriod(
 }
 
 export async function generateGuv(
+  tenantId: string,
+  periodStart: Date,
+  periodEnd: Date
+): Promise<GuvResult> {
+  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  const cacheKey = `${periodStart.toISOString()}:${periodEnd.toISOString()}`;
+  return getCachedReport("guv", tenantId, cacheKey, () =>
+    generateGuvUncached(tenantId, periodStart, periodEnd),
+  );
+}
+
+async function generateGuvUncached(
   tenantId: string,
   periodStart: Date,
   periodEnd: Date

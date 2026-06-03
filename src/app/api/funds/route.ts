@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     // Sprint 3 ABAC: User-spezifischer Fund-Whitelist (FundAccess).
     // Intersect mit Role-based resourceRestricted (UserRoleAssignment).
     const abacAllowed = check.userId
-      ? await getAllowedFundIds(check.userId)
+      ? await getAllowedFundIds(check.userId, check.tenantId ?? undefined)
       : null;
     const roleAllowed =
       check.resourceRestricted && check.allowedResourceIds?.length

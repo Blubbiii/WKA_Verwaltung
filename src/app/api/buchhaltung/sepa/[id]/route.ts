@@ -98,14 +98,27 @@ export async function PATCH(
         });
       } catch (err) {
         if (err instanceof FourEyesViolationError) {
-          const approvalRequest = await findOrCreateApprovalRequest({
-            tenantId: check.tenantId!,
-            action: "SEPA_RUN",
-            entityType: "SepaPaymentBatch",
-            entityId: id,
-            amountEur: Number(batch.totalAmount),
-            requestedById: check.userId!,
-            requestReason: `SEPA-Lauf ${batch.batchNumber} freigeben`,
+          // H-7: Status UND ApprovalRequest in 1 TX. Batch wandert nach
+          // PENDING_APPROVAL → UI/Reports zeigen den blockierten Zustand,
+          // statt fälschlich noch DRAFT zu zeigen.
+          const { approvalRequest } = await prisma.$transaction(async (tx) => {
+            await tx.sepaPaymentBatch.update({
+              where: { id, tenantId: check.tenantId! },
+              data: { status: "PENDING_APPROVAL" },
+            });
+            const approvalRequest = await findOrCreateApprovalRequest(
+              {
+                tenantId: check.tenantId!,
+                action: "SEPA_RUN",
+                entityType: "SepaPaymentBatch",
+                entityId: id,
+                amountEur: Number(batch.totalAmount),
+                requestedById: check.userId!,
+                requestReason: `SEPA-Lauf ${batch.batchNumber} freigeben`,
+              },
+              tx,
+            );
+            return { approvalRequest };
           });
           return NextResponse.json(
             {
@@ -126,9 +139,31 @@ export async function PATCH(
       }
     }
 
-    const updated = await prisma.sepaPaymentBatch.update({
-      where: { id, tenantId: check.tenantId! },
-      data: { status },
+    // H-7: Wenn der User den Batch storniert während ein PENDING-Approval
+    // existiert → Approval ebenfalls invalidieren (sonst Geister-Approvals).
+    // Wir nutzen REJECTED (kein CANCELLED-Status im ApprovalStatus-Enum).
+    const updated = await prisma.$transaction(async (tx) => {
+      const u = await tx.sepaPaymentBatch.update({
+        where: { id, tenantId: check.tenantId! },
+        data: { status },
+      });
+      if (status === "CANCELLED") {
+        await tx.approvalRequest.updateMany({
+          where: {
+            tenantId: check.tenantId!,
+            entityType: "SepaPaymentBatch",
+            entityId: id,
+            status: "PENDING",
+          },
+          data: {
+            status: "REJECTED",
+            decidedById: check.userId!,
+            decidedAt: new Date(),
+            decisionReason: "SEPA-Batch storniert — Approval automatisch zurückgewiesen.",
+          },
+        });
+      }
+      return u;
     });
 
     return NextResponse.json({ data: updated });

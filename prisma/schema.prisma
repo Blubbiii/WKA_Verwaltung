@@ -4510,6 +4510,7 @@ model DunningItem {
 
 enum SepaStatus {
   DRAFT
+  PENDING_APPROVAL
   APPROVED
   EXPORTED
   CANCELLED

@@ -6,6 +6,7 @@
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { getCachedReport } from "@/lib/cache/reports";
 
 export interface BwaLine {
   label: string;
@@ -89,6 +90,18 @@ async function aggregateByPeriod(
 }
 
 export async function generateBwa(
+  tenantId: string,
+  periodStart: Date,
+  periodEnd: Date
+): Promise<BwaResult> {
+  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  const cacheKey = `${periodStart.toISOString()}:${periodEnd.toISOString()}`;
+  return getCachedReport("bwa", tenantId, cacheKey, () =>
+    generateBwaUncached(tenantId, periodStart, periodEnd),
+  );
+}
+
+async function generateBwaUncached(
   tenantId: string,
   periodStart: Date,
   periodEnd: Date

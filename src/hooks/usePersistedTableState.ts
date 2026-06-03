@@ -71,6 +71,16 @@ export function usePersistedTableState<T extends StateRecord>(
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialized = useRef(false);
+  // H-10 Fix: searchParams in Ref halten, damit `update`-Callback nicht bei jedem
+  // router.replace() neu erzeugt wird (sonst Endlos-Loop in Children mit [update]-deps).
+  const searchParamsRef = useRef(searchParams);
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
+  const defaultsRef = useRef(defaults);
+  useEffect(() => {
+    defaultsRef.current = defaults;
+  }, [defaults]);
 
   const [state, setState] = useState<T>(() => {
     // Bei SSR: nur Defaults — URL und LocalStorage sind nicht verfügbar
@@ -116,9 +126,13 @@ export function usePersistedTableState<T extends StateRecord>(
         const next = { ...prev, ...patch };
         writeToStorage(tableKey, next);
         // URL sync (kurze Form: nur Werte != Default schreiben)
-        const params = new URLSearchParams(searchParams.toString());
+        // H-10 Fix: aus window.location.search lesen (frisch) statt aus stale searchParams-dep.
+        const currentSearch =
+          typeof window !== "undefined" ? window.location.search : searchParamsRef.current.toString();
+        const params = new URLSearchParams(currentSearch);
+        const currentDefaults = defaultsRef.current;
         for (const [key, value] of Object.entries(next)) {
-          if (value === undefined || value === null || value === "" || value === defaults[key]) {
+          if (value === undefined || value === null || value === "" || value === currentDefaults[key]) {
             params.delete(key);
           } else {
             params.set(key, String(value));
@@ -128,7 +142,7 @@ export function usePersistedTableState<T extends StateRecord>(
         return next;
       });
     },
-    [tableKey, searchParams, defaults, router],
+    [tableKey, router],
   );
 
   return [state, update];

@@ -13,6 +13,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
+import { getCachedReport } from "@/lib/cache/reports";
 
 export interface KontoblattLine {
   /** Belegnummer / Reference. */
@@ -53,6 +54,19 @@ function toNum(d: Decimal | null | undefined): number {
 }
 
 export async function generateKontoblatt(
+  tenantId: string,
+  accountNumber: string,
+  periodStart: Date,
+  periodEnd: Date,
+): Promise<KontoblattResult> {
+  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  const cacheKey = `${accountNumber}:${periodStart.toISOString()}:${periodEnd.toISOString()}`;
+  return getCachedReport("kontoblatt", tenantId, cacheKey, () =>
+    generateKontoblattUncached(tenantId, accountNumber, periodStart, periodEnd),
+  );
+}
+
+async function generateKontoblattUncached(
   tenantId: string,
   accountNumber: string,
   periodStart: Date,

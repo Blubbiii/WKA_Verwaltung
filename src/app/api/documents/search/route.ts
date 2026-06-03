@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     // M-10: optional cursor (UUID). Wenn gesetzt → cursor-Modus.
     // Cursor-Modus erfordert sortBy != "relevance" (relevance wird in JS sortiert).
     const cursor = searchParams.get("cursor");
-    const useCursor = searchParams.has("cursor");
+    const useCursor = !!searchParams.get("cursor") || searchParams.get("mode") === "cursor";
 
     // Sorting
     const sortBy = searchParams.get("sortBy") || "relevance";

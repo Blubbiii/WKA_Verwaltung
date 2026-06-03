@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const faultOnly = searchParams.get("faultOnly") === "true";
     const search = searchParams.get("search")?.trim();
     const cursor = searchParams.get("cursor");
-    const useCursor = searchParams.has("cursor") || searchParams.get("mode") === "cursor";
+    const useCursor = !!searchParams.get("cursor") || searchParams.get("mode") === "cursor";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const pageSize = Math.min(100, Math.max(10, parseInt(searchParams.get("pageSize") || "50", 10)));
 

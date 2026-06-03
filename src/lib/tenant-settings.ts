@@ -96,6 +96,12 @@ export interface TenantSettings {
   // Audit-C: Kontenrahmen-Version. Steuert das Range-Mapping in der
   // Bilanz (skr04-mapping vs skr03-mapping).
   chartOfAccountsVersion: "SKR03" | "SKR04";
+  // K-5: ABAC Default-Verhalten für FundAccess.
+  //  - "allow" (Default): User ohne FundAccess-Einträge sehen ALLE Funds
+  //    (Backward-Kompatibilität, bestehende Tenants).
+  //  - "deny": User ohne FundAccess sehen KEINE Funds (Whitelist-only,
+  //    sichere Default-Konfig für neue Tenants mit strikter ABAC).
+  abacFundAccessDefault: "allow" | "deny";
 }
 
 export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
@@ -167,6 +173,8 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   bilanzToleranceEur: 0.01,
   datevAccountAnnualResult: "9999",
   chartOfAccountsVersion: "SKR04",
+  // K-5: Default "allow" → bestehende Tenants verhalten sich unverändert.
+  abacFundAccessDefault: "allow",
 };
 
 /**

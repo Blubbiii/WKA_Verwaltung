@@ -22,6 +22,17 @@ export function usePendingApprovalsCount(): number {
     async function load() {
       try {
         const res = await fetch("/api/approvals/pending", { cache: "no-store" });
+        // M-1 Fix: Bei 401 (nicht eingeloggt) oder 403 (keine Berechtigung) → Polling stoppen,
+        // sonst Endlos-Request-Loop in der Browser-Konsole.
+        if (res.status === 401 || res.status === 403) {
+          cancelled = true;
+          if (timer) {
+            clearTimeout(timer);
+            timer = null;
+          }
+          // Optional: window.location.assign("/login") — bewusst auskommentiert (zu invasiv).
+          return;
+        }
         if (!res.ok) return;
         const json = await res.json();
         if (!cancelled) setCount(json.total ?? 0);

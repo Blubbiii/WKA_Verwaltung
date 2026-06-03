@@ -43,14 +43,15 @@ export async function requireApiKey(
     providedKey = request.headers.get("x-api-key");
   }
 
-  // Timing-safe comparison to prevent timing side-channel attacks
+  // Timing-safe comparison to prevent timing side-channel attacks.
+  // Byte-length check (NOT string length) — multibyte chars (Umlaute, Emoji)
+  // could otherwise reach timingSafeEqual with mismatched buffer sizes → RangeError.
+  const providedBuf = providedKey !== null ? Buffer.from(providedKey, "utf8") : null;
+  const expectedBuf = Buffer.from(expectedKey, "utf8");
   const isValid =
-    providedKey !== null &&
-    providedKey.length === expectedKey.length &&
-    crypto.timingSafeEqual(
-      Buffer.from(providedKey, "utf8"),
-      Buffer.from(expectedKey, "utf8"),
-    );
+    providedBuf !== null &&
+    providedBuf.length === expectedBuf.length &&
+    crypto.timingSafeEqual(providedBuf, expectedBuf);
 
   if (!isValid) {
     return {

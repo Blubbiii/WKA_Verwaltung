@@ -5,6 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
+import { getCachedReport } from "@/lib/cache/reports";
 
 export interface SuSaRow {
   accountNumber: string;
@@ -37,8 +38,23 @@ export async function generateSuSa(
   periodStart: Date,
   periodEnd: Date
 ): Promise<SuSaResult> {
+  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  const cacheKey = `${periodStart.toISOString()}:${periodEnd.toISOString()}`;
+  return getCachedReport("susa", tenantId, cacheKey, () =>
+    generateSuSaUncached(tenantId, periodStart, periodEnd),
+  );
+}
+
+async function generateSuSaUncached(
+  tenantId: string,
+  periodStart: Date,
+  periodEnd: Date
+): Promise<SuSaResult> {
+  // H-5: Saldenvortrag aus OpeningBalance des Wirtschaftsjahres laden.
+  const fiscalYear = periodStart.getUTCFullYear();
+
   // P-1 Sprint 2: 2 SQL-groupBy statt JS-Aggregation aller Lines mit Join.
-  const [openingBuckets, periodBuckets, accounts] = await Promise.all([
+  const [openingBuckets, periodBuckets, accounts, openings] = await Promise.all([
     prisma.journalEntryLine.groupBy({
       by: ["account"],
       where: {
@@ -65,11 +81,16 @@ export async function generateSuSa(
     }),
     prisma.ledgerAccount.findMany({
       where: { tenantId, isActive: true },
-      select: { accountNumber: true, name: true, category: true },
+      select: { id: true, accountNumber: true, name: true, category: true },
+    }),
+    prisma.openingBalance.findMany({
+      where: { tenantId, fiscalYear },
+      select: { ledgerAccountId: true, debitAmount: true, creditAmount: true },
     }),
   ]);
 
   const accountMap = new Map(accounts.map((a) => [a.accountNumber, a]));
+  const accountById = new Map(accounts.map((a) => [a.id, a]));
 
   const aggregation = new Map<string, {
     name: string;
@@ -95,6 +116,16 @@ export async function generateSuSa(
     return aggregation.get(acc)!;
   }
 
+  // H-5: 1. Saldenvortrag aus OpeningBalance (Vortrag des laufenden FY).
+  for (const ob of openings) {
+    const acc = accountById.get(ob.ledgerAccountId);
+    if (!acc) continue;
+    const entry = ensureEntry(acc.accountNumber);
+    entry.openingDebit += toNum(ob.debitAmount);
+    entry.openingCredit += toNum(ob.creditAmount);
+  }
+
+  // 2. POSTED-Lines vor periodStart kommen ZUSÄTZLICH zum Saldenvortrag.
   for (const b of openingBuckets) {
     const entry = ensureEntry(b.account);
     entry.openingDebit += toNum(b._sum.debitAmount);

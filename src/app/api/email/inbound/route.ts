@@ -68,13 +68,14 @@ export async function POST(request: NextRequest) {
       providedKey = request.headers.get("x-api-key");
     }
 
+    // Byte-length check (NOT string length) — multibyte chars (Umlaute, Emoji)
+    // could otherwise reach timingSafeEqual with mismatched buffer sizes → RangeError.
+    const providedBuf = providedKey !== null ? Buffer.from(providedKey, "utf8") : null;
+    const expectedBuf = Buffer.from(apiKey, "utf8");
     const isValid =
-      providedKey !== null &&
-      providedKey.length === apiKey.length &&
-      crypto.timingSafeEqual(
-        Buffer.from(providedKey, "utf8"),
-        Buffer.from(apiKey, "utf8"),
-      );
+      providedBuf !== null &&
+      providedBuf.length === expectedBuf.length &&
+      crypto.timingSafeEqual(providedBuf, expectedBuf);
 
     if (!isValid) {
       return apiError("UNAUTHORIZED", 401, { message: "Unauthorized" });

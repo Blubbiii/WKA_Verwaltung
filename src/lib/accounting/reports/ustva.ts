@@ -36,6 +36,7 @@ import { Decimal } from "@prisma/client-runtime-utils";
 import { TaxCategory } from "@prisma/client";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { isKleinunternehmer } from "@/lib/accounting/kleinunternehmer";
+import { getCachedReport } from "@/lib/cache/reports";
 
 export interface UstvaLine {
   /** ELSTER-Kennzahl (z.B. "81", "46"). */
@@ -129,6 +130,18 @@ function getBucket(map: Map<string, Bucket>, kz: string): Bucket {
 }
 
 export async function generateUstva(
+  tenantId: string,
+  periodStart: Date,
+  periodEnd: Date,
+): Promise<UstvaResult> {
+  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  const cacheKey = `${periodStart.toISOString()}:${periodEnd.toISOString()}`;
+  return getCachedReport("ustva", tenantId, cacheKey, () =>
+    generateUstvaUncached(tenantId, periodStart, periodEnd),
+  );
+}
+
+async function generateUstvaUncached(
   tenantId: string,
   periodStart: Date,
   periodEnd: Date,

@@ -8,6 +8,7 @@
  * Encrypted models and fields:
  * - Person: bankIban, bankBic, bankName
  * - Tenant: iban, bic, bankName
+ * - Webhook: secret
  *
  * Uses the existing AES-256-GCM encryption from @/lib/email/encryption.
  * Implemented as a Prisma Client Extension (compatible with Prisma v5+/v6+).
@@ -23,6 +24,7 @@ import { dbLogger } from "@/lib/logger";
 
 const PERSON_ENCRYPTED_FIELDS = ["bankIban", "bankBic", "bankName"] as const;
 const TENANT_ENCRYPTED_FIELDS = ["iban", "bic", "bankName"] as const;
+const WEBHOOK_ENCRYPTED_FIELDS = ["secret"] as const;
 
 // ---------------------------------------------------------------------------
 // Helper: encrypt a single field value
@@ -242,6 +244,7 @@ export function withEncryption(prisma: PrismaClient) {
     query: {
       person: buildModelQueryHooks(PERSON_ENCRYPTED_FIELDS) as unknown as Record<string, (params: { args: Prisma.Args<typeof prisma.person, "findFirst">; query: (args: unknown) => Promise<unknown> }) => Promise<unknown>>,
       tenant: buildModelQueryHooks(TENANT_ENCRYPTED_FIELDS) as unknown as Record<string, (params: { args: Prisma.Args<typeof prisma.tenant, "findFirst">; query: (args: unknown) => Promise<unknown> }) => Promise<unknown>>,
+      webhook: buildModelQueryHooks(WEBHOOK_ENCRYPTED_FIELDS) as unknown as Record<string, (params: { args: Prisma.Args<typeof prisma.webhook, "findFirst">; query: (args: unknown) => Promise<unknown> }) => Promise<unknown>>,
     },
   });
 }

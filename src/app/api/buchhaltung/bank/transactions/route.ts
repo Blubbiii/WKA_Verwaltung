@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const batchId = searchParams.get("batchId");
     const cursor = searchParams.get("cursor");
-    const useCursor = searchParams.has("cursor") || searchParams.get("mode") === "cursor";
+    const useCursor = !!searchParams.get("cursor") || searchParams.get("mode") === "cursor";
     const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || String(PAGE_SIZE_MAX)) || PAGE_SIZE_MAX, 1), 500);
     const offset = Math.max(parseInt(searchParams.get("offset") || "0") || 0, 0);
 

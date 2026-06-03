@@ -31,6 +31,7 @@ import { prisma } from "@/lib/prisma";
 import { computeBilanz } from "./bilanz";
 import { generateGuv } from "./guv";
 import { Decimal } from "@prisma/client-runtime-utils";
+import { getCachedReport } from "@/lib/cache/reports";
 
 function toNum(d: Decimal | null | undefined): number {
   if (!d) return 0;
@@ -64,8 +65,9 @@ export interface CashflowResult {
   cashStart: number;
   /** Finanzmittelbestand am Periodenende (= cashStart + netChange). */
   cashEnd: number;
-  /** Plausibilitäts-Differenz (Bilanz-cashEnd vs. berechneter cashEnd, ideal 0). */
-  validationDifference: number;
+  /** Plausibilitäts-Differenz (Bilanz-cashEnd vs. berechneter cashEnd, ideal 0).
+   *  null wenn Vorjahresdaten fehlen — Validierung dann nicht aussagekräftig. */
+  validationDifference: number | null;
   /** Sortierte Posten für UI/PDF. */
   lines: CashflowLine[];
   warnings: string[];
@@ -140,11 +142,38 @@ export async function generateCashflow(
   tenantId: string,
   fiscalYear: number,
 ): Promise<CashflowResult> {
+  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  const cacheKey = `${fiscalYear}`;
+  return getCachedReport("cashflow", tenantId, cacheKey, () =>
+    generateCashflowUncached(tenantId, fiscalYear),
+  );
+}
+
+async function generateCashflowUncached(
+  tenantId: string,
+  fiscalYear: number,
+): Promise<CashflowResult> {
   const yearStart = new Date(Date.UTC(fiscalYear, 0, 1));
   const yearEnd = new Date(Date.UTC(fiscalYear, 11, 31, 23, 59, 59));
+  const prevYearStart = new Date(Date.UTC(fiscalYear - 1, 0, 1));
   const prevYearEnd = new Date(Date.UTC(fiscalYear - 1, 11, 31, 23, 59, 59));
 
   const warnings: string[] = [];
+
+  // K-4: Prüfe ob Vorjahresdaten existieren. Wenn nicht: Cashflow nur informativ.
+  const [prevYearOpenings, prevYearPosted] = await Promise.all([
+    prisma.openingBalance.count({
+      where: { tenantId, fiscalYear: fiscalYear - 1 },
+    }),
+    prisma.journalEntry.count({
+      where: {
+        tenantId,
+        status: "POSTED",
+        entryDate: { gte: prevYearStart, lte: prevYearEnd },
+      },
+    }),
+  ]);
+  const prevYearHasData = prevYearOpenings > 0 || prevYearPosted > 0;
 
   const [
     bilanzCurrent,
@@ -152,11 +181,15 @@ export async function generateCashflow(
     guv,
     afaSum,
     investments,
-    disposals,
+    disposalAssets,
+    disposalAfaSum,
     distributions,
   ] = await Promise.all([
     computeBilanz(tenantId, fiscalYear, yearEnd),
-    computeBilanz(tenantId, fiscalYear - 1, prevYearEnd),
+    // K-4: Vorjahres-Bilanz nur wenn Daten vorhanden, sonst Stub-Werte (0).
+    prevYearHasData
+      ? computeBilanz(tenantId, fiscalYear - 1, prevYearEnd)
+      : Promise.resolve(null),
     generateGuv(tenantId, yearStart, yearEnd),
     // AfA des Jahres aus FixedAssetDepreciation-Tabelle
     prisma.fixedAssetDepreciation.aggregate({
@@ -174,13 +207,26 @@ export async function generateCashflow(
       },
       _sum: { acquisitionCost: true },
     }),
-    // Abgänge = AHK aller im Jahr veräußerten Assets
-    prisma.fixedAsset.aggregate({
+    // H-8: Abgänge = Buchwert (AHK − cumAfa), nicht reine AHK.
+    // Lade alle im Jahr abgegangenen Assets mit ihrer AHK.
+    prisma.fixedAsset.findMany({
       where: {
         tenantId,
         disposalDate: { gte: yearStart, lte: yearEnd },
       },
-      _sum: { acquisitionCost: true },
+      select: { id: true, acquisitionCost: true },
+    }),
+    // H-8: Kumulierte AfA bis disposalDate pro abgegangenem Asset.
+    prisma.fixedAssetDepreciation.groupBy({
+      by: ["assetId"],
+      where: {
+        asset: {
+          tenantId,
+          disposalDate: { gte: yearStart, lte: yearEnd },
+        },
+        periodEnd: { lte: yearEnd },
+      },
+      _sum: { amount: true },
     }),
     // Ausschüttungen (nur EXECUTED zählen als Cash-Out)
     prisma.distribution.aggregate({
@@ -193,23 +239,48 @@ export async function generateCashflow(
     }),
   ]);
 
+  // K-4: Warnung wenn Vorjahresdaten fehlen.
+  if (!prevYearHasData) {
+    warnings.push(
+      "Vorjahresdaten unvollständig — Cashflow nur informativ. Eröffnungsbilanz und Vorjahres-Buchungen prüfen.",
+    );
+  }
+
   const jahresergebnis = guv.netIncome;
   const afaAmount = toNum(afaSum._sum.amount);
   const investAmount = toNum(investments._sum.acquisitionCost);
-  const disposalAmount = toNum(disposals._sum.acquisitionCost);
+
+  // H-8: disposalAmount = Σ Buchwerte (AHK − cumAfa), nicht reine AHK.
+  const disposalAfaByAsset = new Map<string, number>();
+  for (const row of disposalAfaSum) {
+    disposalAfaByAsset.set(row.assetId, toNum(row._sum.amount));
+  }
+  let disposalAmount = 0;
+  for (const asset of disposalAssets) {
+    const ahk = toNum(asset.acquisitionCost);
+    const cumAfa = disposalAfaByAsset.get(asset.id) ?? 0;
+    const bookValue = Math.max(0, ahk - cumAfa);
+    disposalAmount += bookValue;
+  }
+  if (disposalAssets.length > 0) {
+    warnings.push(
+      "disposalAmount = Buchwert (AHK − kumulierte AfA), ohne Veräußerungsgewinn/-verlust.",
+    );
+  }
+
   const distributionAmount = toNum(distributions._sum.totalAmount);
 
-  // Cash-Bestände
-  const cashStart = getCashFromBilanz(bilanzPrev.aktiva);
+  // K-4: Wenn keine Vorjahresdaten, alle Start-Werte = 0 (Bilanz-Diff nicht aussagekräftig).
+  const cashStart = bilanzPrev ? getCashFromBilanz(bilanzPrev.aktiva) : 0;
   const cashEndBilanz = getCashFromBilanz(bilanzCurrent.aktiva);
 
   // Working Capital — Veränderungen
-  const receivablesStart = getReceivablesFromBilanz(bilanzPrev.aktiva);
+  const receivablesStart = bilanzPrev ? getReceivablesFromBilanz(bilanzPrev.aktiva) : 0;
   const receivablesEnd = getReceivablesFromBilanz(bilanzCurrent.aktiva);
   const receivablesDelta = receivablesEnd - receivablesStart;
   // Forderungs-ZUNAHME = Cash-DECREASE → negativ in CFO
 
-  const payablesStart = getPayablesFromBilanz(bilanzPrev.passiva);
+  const payablesStart = bilanzPrev ? getPayablesFromBilanz(bilanzPrev.passiva) : 0;
   const payablesEnd = getPayablesFromBilanz(bilanzCurrent.passiva);
   const payablesDelta = payablesEnd - payablesStart;
   // Verbindlichkeits-ZUNAHME = Cash-INCREASE → positiv in CFO
@@ -218,7 +289,8 @@ export async function generateCashflow(
   function getProvisions(passiva: typeof bilanzCurrent.passiva): number {
     return passiva.find((g: { section: string; total: number }) => g.section === "PROVISION")?.total ?? 0;
   }
-  const provisionsDelta = getProvisions(bilanzCurrent.passiva) - getProvisions(bilanzPrev.passiva);
+  const provisionsStart = bilanzPrev ? getProvisions(bilanzPrev.passiva) : 0;
+  const provisionsDelta = getProvisions(bilanzCurrent.passiva) - provisionsStart;
 
   // CFO (indirekte Methode)
   const cfo = round2(
@@ -230,7 +302,7 @@ export async function generateCashflow(
   );
 
   // CFI: Investitionen sind Auszahlungen (negativ), Abgänge Einzahlungen (positiv)
-  // Buchwert der Abgänge müsste genau betrachtet werden — wir nutzen AHK als Näherung
+  // H-8: disposalAmount = Buchwert (AHK − cumAfa), ohne Veräußerungsgewinn/-verlust.
   const cfi = round2(-investAmount + disposalAmount);
 
   // CFF: Ausschüttungen sind Auszahlungen (negativ)
@@ -239,9 +311,12 @@ export async function generateCashflow(
 
   const netChange = round2(cfo + cfi + cff);
   const cashEndComputed = round2(cashStart + netChange);
-  const validationDifference = round2(cashEndBilanz - cashEndComputed);
+  // K-4: Ohne Vorjahresdaten ist validationDifference nicht aussagekräftig → null.
+  const validationDifference = prevYearHasData
+    ? round2(cashEndBilanz - cashEndComputed)
+    : null;
 
-  if (Math.abs(validationDifference) > 1) {
+  if (validationDifference !== null && Math.abs(validationDifference) > 1) {
     warnings.push(
       `Kapitalfluss-Validierung: berechneter Endbestand ${cashEndComputed.toFixed(2)} € weicht von Bilanz-Endbestand ${cashEndBilanz.toFixed(2)} € um ${validationDifference.toFixed(2)} € ab. Mögliche Ursachen: nicht erfasste Eigenkapital-Bewegungen, Darlehen, oder Kontorange-Mapping.`,
     );

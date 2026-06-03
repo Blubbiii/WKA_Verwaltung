@@ -22,6 +22,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { getCachedReport } from "@/lib/cache/reports";
 
 export interface AnlagenspiegelRow {
   category: string;
@@ -57,6 +58,17 @@ function round2(v: number): number {
  * Berechnet den Anlagenspiegel für einen Mandanten + Wirtschaftsjahr.
  */
 export async function computeAnlagenspiegel(
+  tenantId: string,
+  fiscalYear: number,
+): Promise<AnlagenspiegelResult> {
+  // H-4: Redis-Cache. Anlagespiegel basiert auf POSTED-Daten → safe to cache.
+  const cacheKey = `${fiscalYear}`;
+  return getCachedReport("anlagenspiegel", tenantId, cacheKey, () =>
+    computeAnlagenspiegelUncached(tenantId, fiscalYear),
+  );
+}
+
+async function computeAnlagenspiegelUncached(
   tenantId: string,
   fiscalYear: number,
 ): Promise<AnlagenspiegelResult> {

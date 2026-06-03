@@ -9,6 +9,7 @@
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { getCachedReport } from "@/lib/cache/reports";
 
 export interface EuerLine {
   /** BMF Kennzahl (row number in Anlage EÜR) */
@@ -143,6 +144,18 @@ async function aggregateByPeriod(
 }
 
 export async function generateEuer(
+  tenantId: string,
+  periodStart: Date,
+  periodEnd: Date
+): Promise<EuerResult> {
+  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  const cacheKey = `${periodStart.toISOString()}:${periodEnd.toISOString()}`;
+  return getCachedReport("euer", tenantId, cacheKey, () =>
+    generateEuerUncached(tenantId, periodStart, periodEnd),
+  );
+}
+
+async function generateEuerUncached(
   tenantId: string,
   periodStart: Date,
   periodEnd: Date
