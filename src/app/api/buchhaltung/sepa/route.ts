@@ -4,7 +4,10 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
-import { generateSepaXml } from "@/lib/export/sepa-export";
+import {
+  generateSepaXml,
+  checkSepaAwvWarnings,
+} from "@/lib/export/sepa-export";
 import { z } from "zod";
 
 const createBatchSchema = z.object({
@@ -89,6 +92,31 @@ export async function POST(request: NextRequest) {
 
     const totalAmount = items.reduce((s, i) => s + i.amount, 0);
 
+    // C-2: AWV-Meldepflicht prüfen (§11 AWG, §67 AWV). Warnungen, keine Errors.
+    const awvWarnings = checkSepaAwvWarnings(
+      items.map((i) => ({
+        endToEndId: i.endToEndId,
+        amount: i.amount,
+        currency: "EUR",
+        creditorName: i.creditorName,
+        creditorIban: i.creditorIban,
+        creditorBic: i.creditorBic || undefined,
+        remittanceInfo: i.remittanceInfo,
+        requestedExecutionDate: parsed.executionDate,
+      })),
+    );
+    if (awvWarnings.length > 0) {
+      logger.warn(
+        {
+          tenantId: check.tenantId,
+          batchNumber,
+          awvWarningCount: awvWarnings.length,
+          totalReportable: awvWarnings.reduce((s, w) => s + w.amount, 0),
+        },
+        "AWV-Meldepflicht erkannt im SEPA-Lauf",
+      );
+    }
+
     // Generate XML
     const xml = generateSepaXml({
       messageId: batchNumber,
@@ -127,7 +155,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ data: batch });
+    return NextResponse.json({
+      data: batch,
+      awvWarnings: awvWarnings.map((w) => ({
+        endToEndId: w.endToEndId,
+        creditorName: w.creditorName,
+        amount: w.amount,
+        country: w.awv.detectedCountry,
+        reason: w.awv.reason,
+        reportingForm: w.awv.reportingForm,
+      })),
+    });
   } catch (error) {
     return handleApiError(error, "Fehler beim Erstellen des SEPA-Batch");
   }

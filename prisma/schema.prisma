@@ -137,6 +137,7 @@ model Tenant {
   gobdExports               GobdExport[]
   journalAttachments        JournalAttachment[]
   cashBookDailyCloses       CashBookDailyClose[]
+  approvalRequests          ApprovalRequest[]
 
   @@map("tenants")
 }
@@ -270,6 +271,8 @@ model User {
   periodsLocked                                                           AccountingPeriodLock[]     @relation("PeriodLocker")
   periodsUnlocked                                                         AccountingPeriodLock[]     @relation("PeriodUnlocker")
   ustAdjustmentsCreated                                                   UStAdjustment[]            @relation("UStAdjustmentCreator")
+  approvalRequestsRequested                                               ApprovalRequest[]          @relation("ApprovalRequester")
+  approvalRequestsDecided                                                 ApprovalRequest[]          @relation("ApprovalDecider")
 
   @@index([tenantId])
   @@index([email])
@@ -5003,4 +5006,74 @@ model InboundEmail {
   @@index([toAddress])
   @@index([status])
   @@map("inbound_emails")
+}
+
+// =============================================================================
+// Permissions v2 (Sprint 3) — Approval-Workflow für 4-Augen-pflichtige Aktionen
+// =============================================================================
+
+/// Status einer Approval-Anfrage.
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+/// Aktion die genehmigt werden soll.
+enum ApprovalAction {
+  JOURNAL_POST
+  JOURNAL_REVERSE
+  SETTLEMENT_FINALIZE
+  SEPA_RUN
+  TENANT_SETTINGS_UPDATE
+  USER_ROLE_ASSIGN
+}
+
+/// Approval-Request für 4-Augen-Prinzip. Wird erzeugt wenn der initiierende
+/// User die Aktion nicht alleine ausführen darf (Self-Approval-Verbot oder
+/// betraglicher Schwellwert überschritten). Ein zweiter berechtigter User
+/// approved/rejected das Request. Beim Approve wird die ursprüngliche
+/// Aktion durchgeführt (idempotent: gleiche Entity, gleiche Daten).
+model ApprovalRequest {
+  id              String          @id @default(uuid())
+  tenantId        String
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  action          ApprovalAction
+  /// Entity die genehmigt wird (z.B. "JournalEntry", "SepaPaymentBatch").
+  entityType      String          @db.VarChar(50)
+  /// Entity-Primärschlüssel.
+  entityId        String
+  /// Betrag in EUR (für Schwellwert-Logik + Audit).
+  amountEur       Decimal?        @db.Decimal(15, 2)
+
+  /// Initiator (der die Aktion ausführen will).
+  requestedById   String
+  requestedBy     User            @relation("ApprovalRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  requestedAt     DateTime        @default(now())
+  /// Begründung für die Aktion (frei).
+  requestReason   String?         @db.VarChar(500)
+
+  status          ApprovalStatus  @default(PENDING)
+
+  /// Genehmigender User (NULL solange PENDING).
+  decidedById     String?
+  decidedBy       User?           @relation("ApprovalDecider", fields: [decidedById], references: [id], onDelete: Restrict)
+  decidedAt       DateTime?
+  /// Bei REJECTED: Begründung des Genehmigers.
+  decisionReason  String?         @db.VarChar(500)
+
+  /// Approval läuft nach 7 Tagen aus (cron setzt auf EXPIRED).
+  expiresAt       DateTime
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([tenantId, status])
+  @@index([entityType, entityId])
+  @@index([requestedById])
+  @@index([decidedById])
+  @@index([expiresAt])
+  @@map("approval_requests")
 }

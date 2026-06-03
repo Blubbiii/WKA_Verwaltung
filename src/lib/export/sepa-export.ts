@@ -11,6 +11,11 @@
 
 import { formatAmountFixed2 as formatAmount } from "@/lib/formatters";
 import { IbanValidationError, assertValidIban } from "@/lib/iban";
+import {
+  checkAwvReportable,
+  AWV_THRESHOLD_EUR,
+  type AwvCheckResult,
+} from "@/lib/accounting/awv-check";
 
 export interface SepaPayment {
   endToEndId: string;
@@ -53,6 +58,48 @@ export class SepaExportValidationError extends Error {
     this.name = "SepaExportValidationError";
   }
 }
+
+/**
+ * C-2 Sprint 5: Prüft die SEPA-Zahlungen auf AWV-Meldepflicht (§11 AWG / §67 AWV).
+ * Erzeugt KEINE Errors — nur Warnungen für die UI/Audit-Log.
+ *
+ * Ein Lauf-Total kann meldepflichtig sein auch wenn keine einzelne Zahlung
+ * darüber liegt (Aggregations-Regel pro Mitteilungszeitraum), daher wird
+ * zusätzlich das Gesamt-Volumen pro Ziel-Land aggregiert.
+ */
+export function checkSepaAwvWarnings(payments: SepaPayment[]): Array<{
+  endToEndId: string;
+  creditorName: string;
+  amount: number;
+  awv: AwvCheckResult;
+}> {
+  const warnings: Array<{
+    endToEndId: string;
+    creditorName: string;
+    amount: number;
+    awv: AwvCheckResult;
+  }> = [];
+
+  for (const p of payments) {
+    const awv = checkAwvReportable({
+      amountEur: p.amount,
+      iban: p.creditorIban,
+      bic: p.creditorBic,
+    });
+    if (awv.reportable) {
+      warnings.push({
+        endToEndId: p.endToEndId,
+        creditorName: p.creditorName,
+        amount: p.amount,
+        awv,
+      });
+    }
+  }
+
+  return warnings;
+}
+
+export { AWV_THRESHOLD_EUR };
 
 export function generateSepaXml(options: SepaExportOptions): string {
   const { messageId, creationDateTime, debtorName, debtorIban, debtorBic, payments } = options;
