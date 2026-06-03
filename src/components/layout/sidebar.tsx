@@ -55,6 +55,7 @@ import { useState, useCallback, useMemo, useId } from "react";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useSidebarOrder } from "@/hooks/useSidebarOrder";
 import { useSidebarLinks } from "@/hooks/useSidebarLinks";
+import { usePendingApprovalsCount } from "@/hooks/usePendingApprovalsCount";
 import type { NavChild, NavItem, NavGroup } from "@/config/nav-config";
 import { navGroups } from "@/config/nav-config";
 
@@ -129,6 +130,7 @@ export function Sidebar() {
   const { isFeatureEnabled } = useFeatureFlags();
   const { groupOrder, updateOrder, resetOrder, isDefault } = useSidebarOrder();
   const customLinks = useSidebarLinks();
+  const pendingApprovalsCount = usePendingApprovalsCount();
 
   const tenantLogoUrl = session?.user?.tenantLogoUrl;
   const tenantName = session?.user?.tenantName;
@@ -355,6 +357,12 @@ export function Sidebar() {
                 {item.badge && (
                   <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
                     {item.badge}
+                  </span>
+                )}
+                {/* Sprint 3: dynamische PENDING-Approvals-Anzahl auf /approvals */}
+                {item.href === "/approvals" && pendingApprovalsCount > 0 && (
+                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+                    {pendingApprovalsCount}
                   </span>
                 )}
               </>

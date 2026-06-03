@@ -57,6 +57,7 @@ import {
   Map,
   Database,
   CheckSquare,
+  ShieldCheck,
 } from "lucide-react";
 
 // Re-export icons so sidebar.tsx can import them from here for SIDEBAR_LINK_ICONS
@@ -117,6 +118,7 @@ export {
   Code2,
   Link2,
   Map,
+  ShieldCheck,
 };
 
 // ---------------------------------------------------------------------------
@@ -245,6 +247,13 @@ export const navGroups: NavGroup[] = [
         icon: Building2,
         permission: "vendors:read",
         featureFlag: "inbox" as const,
+      },
+      {
+        title: "Genehmigungen",
+        titleKey: "approvals",
+        href: "/approvals",
+        icon: ShieldCheck,
+        permission: "accounting:read",
       },
     ],
   },

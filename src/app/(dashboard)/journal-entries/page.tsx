@@ -12,6 +12,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  ShieldCheck,
   Trash2,
   X,
 } from "lucide-react";
@@ -132,6 +133,17 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
   const [lines, setLines] = useState<JournalLine[]>([emptyLine(1), emptyLine(2)]);
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
+  // Sprint 3: 4-Augen-Schwelle für Posting (aus TenantSettings).
+  const [postingThreshold, setPostingThreshold] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/tenant-settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) setPostingThreshold(d.postingApprovalThresholdEur ?? null);
+      })
+      .catch(() => {});
+  }, []);
 
   // Populate form when editing
   useEffect(() => {
@@ -246,6 +258,14 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
       // Then post
       const postRes = await fetch(`/api/journal-entries/${id}/post`, { method: "POST" });
       const postData = await postRes.json();
+      // Sprint 3: 202 → PENDING_APPROVAL (4-Augen-Workflow)
+      if (postRes.status === 202 && postData?.status === "PENDING_APPROVAL") {
+        toast.info(
+          "Vier-Augen-Prinzip: Anfrage angelegt. Ein zweiter berechtigter User muss in /approvals freigeben.",
+        );
+        onSaved();
+        return;
+      }
       if (!postRes.ok) { toast.error(postData.error || t("dialog.postError")); return; }
       toast.success(t("dialog.postedSuccess"));
       onSaved();
@@ -418,6 +438,22 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
               {balanced ? "  ✓" : `  ${t("dialog.notBalanced")}`}
             </span>
           </div>
+
+          {/* Sprint 3: 4-Augen-Hinweis */}
+          {!isReadOnly && postingThreshold !== null && totalDebit > postingThreshold && (
+            <div className="flex items-start gap-2 rounded-md border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-700 dark:border-orange-900/40 dark:bg-orange-900/20 dark:text-orange-300">
+              <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                <strong>Vier-Augen-Prinzip:</strong> Beträge über{" "}
+                {postingThreshold.toLocaleString("de-DE", {
+                  style: "currency",
+                  currency: "EUR",
+                })}{" "}
+                müssen von einer anderen Person freigegeben werden. Beim Festschreiben
+                wird ggf. eine Anfrage erzeugt — Status danach in /approvals einsehbar.
+              </div>
+            </div>
+          )}
 
           {/* P24.2 Belegablage — nur für gespeicherte Entries */}
           {editing && (
