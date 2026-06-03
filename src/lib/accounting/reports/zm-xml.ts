@@ -49,6 +49,11 @@ export function generateZmXml(data: ZmResult, options: ZmXmlOptions): string {
     xml += `      <UStIdNr>${escapeXml(recipientVatClean)}</UStIdNr>\n`;
     xml += `      <Betrag>${line.amount}</Betrag>\n`;
     xml += `      <Art>${line.type === "L" ? "L" : "S"}</Art>\n`;
+    // §25b UStG Dreiecksgeschäft (BZSt-Format-Kennung).
+    // "1" = Dreiecksgeschäft, weglassen wenn regulär.
+    if (line.triangulation) {
+      xml += `      <Dreiecksgeschaeft>1</Dreiecksgeschaeft>\n`;
+    }
     xml += `    </ZmAngabe>\n`;
   }
 

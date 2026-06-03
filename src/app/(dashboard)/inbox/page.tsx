@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+// R3 Perf: Direkt-Pfad-Import für besseres Tree-Shaking (date-fns).
+import { format } from "date-fns/format";
+import { de } from "date-fns/locale/de";
 import {
   Inbox,
   Upload,

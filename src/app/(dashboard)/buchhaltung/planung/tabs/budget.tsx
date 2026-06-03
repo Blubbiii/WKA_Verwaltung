@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -119,21 +119,29 @@ export default function BudgetContent() {
     loadBudgets();
   }, [t]);
 
+  // H-9: AbortController um stale Requests bei Budget/Range-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchComparison = useCallback(async () => {
     if (!selectedBudget) return;
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
       const [fromMonth, toMonth] = monthRange.split("-");
       const res = await fetch(
-        `/api/buchhaltung/budget-vergleich?budgetId=${selectedBudget}&fromMonth=${fromMonth}&toMonth=${toMonth}`
+        `/api/buchhaltung/budget-vergleich?budgetId=${selectedBudget}&fromMonth=${fromMonth}&toMonth=${toMonth}`,
+        { signal: ac.signal }
       );
       if (!res.ok) throw new Error();
       const json = await res.json();
-      setData(json.data || null);
-    } catch {
+      if (!ac.signal.aborted) setData(json.data || null);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("toastCompareError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [selectedBudget, monthRange, t]);
 

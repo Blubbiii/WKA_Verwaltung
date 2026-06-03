@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -75,15 +76,6 @@ interface PendingApproval {
   expiresAt: string;
 }
 
-const ACTION_LABELS: Record<PendingApproval["action"], string> = {
-  JOURNAL_POST: "Buchung festschreiben",
-  JOURNAL_REVERSE: "Buchung stornieren",
-  SETTLEMENT_FINALIZE: "Settlement finalisieren",
-  SEPA_RUN: "SEPA-Lauf freigeben",
-  TENANT_SETTINGS_UPDATE: "Mandanten-Einstellungen ändern",
-  USER_ROLE_ASSIGN: "Rolle zuweisen",
-};
-
 function fmtEur(n: number | null): string {
   if (n === null) return "—";
   return n.toLocaleString("de-DE", {
@@ -104,13 +96,14 @@ function fmtDate(iso: string): string {
   });
 }
 
-function fmtName(p: PendingApproval["requestedBy"]): string {
+function fmtName(p: PendingApproval["requestedBy"], fallback: string): string {
   return (
-    `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || p.email || "Unbekannt"
+    `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || p.email || fallback
   );
 }
 
 export default function ApprovalsPage() {
+  const t = useTranslations("approvals.inbox");
   const [items, setItems] = useState<PendingApproval[]>([]);
   const [loading, setLoading] = useState(true);
   const [decisionDialog, setDecisionDialog] = useState<{
@@ -131,16 +124,16 @@ export default function ApprovalsPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/approvals/pending", { signal: ac.signal });
-      if (!res.ok) throw new Error("Laden fehlgeschlagen");
+      if (!res.ok) throw new Error(t("loadFailed"));
       const json = await res.json();
       if (!ac.signal.aborted) setItems(json.data ?? []);
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
-      toast.error(err instanceof Error ? err.message : "Fehler");
+      toast.error(err instanceof Error ? err.message : t("genericError"));
     } finally {
       if (!ac.signal.aborted) setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -166,22 +159,22 @@ export default function ApprovalsPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message ?? "Decide fehlgeschlagen");
+        throw new Error(err.message ?? t("decideFailed"));
       }
       const json = await res.json();
       if (decisionDialog.decision === "APPROVED" && json.executionError) {
-        toast.warning(`Genehmigt — Ausführung fehlgeschlagen: ${json.executionError}`);
+        toast.warning(t("approvedExecutionFailed", { error: json.executionError }));
       } else {
         toast.success(
           decisionDialog.decision === "APPROVED"
-            ? "Genehmigt und ausgeführt"
-            : "Abgelehnt",
+            ? t("approvedAndExecuted")
+            : t("rejected"),
         );
       }
       setDecisionDialog(null);
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler");
+      toast.error(err instanceof Error ? err.message : t("genericError"));
     } finally {
       setSubmitting(false);
     }
@@ -190,21 +183,21 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Genehmigungen"
-        description="Vier-Augen-Prinzip — Anfragen die du als zweiter Berechtigter entscheiden kannst"
+        title={t("title")}
+        description={t("description")}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
               <Link href="/approvals/history">
                 <History className="h-4 w-4 mr-2" />
-                Verlauf
+                {t("history")}
               </Link>
             </Button>
             <Button variant="outline" size="sm" onClick={load} disabled={loading}>
               <RefreshCw
                 className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
               />
-              Aktualisieren
+              {t("refresh")}
             </Button>
           </div>
         }
@@ -214,11 +207,10 @@ export default function ApprovalsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <ShieldCheck className="h-4 w-4" />
-            Offene Anfragen ({items.length})
+            {t("openRequestsTitle", { count: items.length })}
           </CardTitle>
           <CardDescription>
-            Pro Anfrage prüfe Aktion, Betrag, Initiator. Bei Genehmigung wird
-            die Aktion automatisch ausgeführt.
+            {t("openRequestsDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -231,21 +223,21 @@ export default function ApprovalsPage() {
           ) : items.length === 0 ? (
             <Alert>
               <ShieldCheck className="h-4 w-4" />
-              <AlertTitle>Keine offenen Anfragen</AlertTitle>
+              <AlertTitle>{t("emptyTitle")}</AlertTitle>
               <AlertDescription>
-                Aktuell wartet nichts auf deine Entscheidung.
+                {t("emptyDescription")}
               </AlertDescription>
             </Alert>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Aktion</TableHead>
-                  <TableHead>Initiator</TableHead>
-                  <TableHead className="text-right">Betrag</TableHead>
-                  <TableHead>Angefragt</TableHead>
-                  <TableHead>Läuft ab</TableHead>
-                  <TableHead className="text-right">Entscheidung</TableHead>
+                  <TableHead>{t("colAction")}</TableHead>
+                  <TableHead>{t("colInitiator")}</TableHead>
+                  <TableHead className="text-right">{t("colAmount")}</TableHead>
+                  <TableHead>{t("colRequested")}</TableHead>
+                  <TableHead>{t("colExpires")}</TableHead>
+                  <TableHead className="text-right">{t("colDecision")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -255,14 +247,14 @@ export default function ApprovalsPage() {
                   return (
                     <TableRow key={it.id}>
                       <TableCell>
-                        <div className="font-medium">{ACTION_LABELS[it.action]}</div>
+                        <div className="font-medium">{t(`actions.${it.action}`)}</div>
                         {it.requestReason && (
                           <div className="text-xs text-muted-foreground truncate max-w-xs">
                             {it.requestReason}
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>{fmtName(it.requestedBy)}</TableCell>
+                      <TableCell>{fmtName(it.requestedBy, t("unknownRequester"))}</TableCell>
                       <TableCell className="text-right font-mono">
                         {fmtEur(it.amountEur)}
                       </TableCell>
@@ -283,7 +275,7 @@ export default function ApprovalsPage() {
                             onClick={() => openDialog(it, "APPROVED")}
                           >
                             <Check className="h-3 w-3 mr-1" />
-                            Genehmigen
+                            {t("approve")}
                           </Button>
                           <Button
                             size="sm"
@@ -291,7 +283,7 @@ export default function ApprovalsPage() {
                             onClick={() => openDialog(it, "REJECTED")}
                           >
                             <X className="h-3 w-3 mr-1" />
-                            Ablehnen
+                            {t("reject")}
                           </Button>
                         </div>
                       </TableCell>
@@ -316,14 +308,14 @@ export default function ApprovalsPage() {
               ) : (
                 <AlertTriangle className="h-5 w-5 text-orange-600" />
               )}
-              {decisionDialog?.decision === "APPROVED" ? "Genehmigen" : "Ablehnen"}
+              {decisionDialog?.decision === "APPROVED" ? t("approve") : t("reject")}
             </DialogTitle>
             <DialogDescription>
               {decisionDialog && (
                 <>
-                  {ACTION_LABELS[decisionDialog.item.action]} ·{" "}
-                  {fmtEur(decisionDialog.item.amountEur)} · Initiator{" "}
-                  {fmtName(decisionDialog.item.requestedBy)}
+                  {t(`actions.${decisionDialog.item.action}`)} ·{" "}
+                  {fmtEur(decisionDialog.item.amountEur)} · {t("colInitiator")}{" "}
+                  {fmtName(decisionDialog.item.requestedBy, t("unknownRequester"))}
                 </>
               )}
             </DialogDescription>
@@ -331,8 +323,10 @@ export default function ApprovalsPage() {
 
           <div className="space-y-2 py-2">
             <Label>
-              Begründung{" "}
-              {decisionDialog?.decision === "REJECTED" ? "(empfohlen)" : "(optional)"}
+              {t("reasonLabel")}{" "}
+              {decisionDialog?.decision === "REJECTED"
+                ? t("reasonRecommended")
+                : t("reasonOptional")}
             </Label>
             <Textarea
               value={reason}
@@ -340,8 +334,8 @@ export default function ApprovalsPage() {
               rows={3}
               placeholder={
                 decisionDialog?.decision === "APPROVED"
-                  ? "z.B. Beleg geprüft, Vertragslage ok"
-                  : "z.B. Beleg fehlt, Betrag nicht plausibel"
+                  ? t("reasonApprovePlaceholder")
+                  : t("reasonRejectPlaceholder")
               }
             />
           </div>
@@ -350,9 +344,7 @@ export default function ApprovalsPage() {
             <Alert>
               <ShieldCheck className="h-4 w-4" />
               <AlertDescription>
-                Bei Genehmigung wird die Aktion sofort durchgeführt. Bei Scheitern
-                bleibt die Genehmigung gültig, aber der Initiator muss manuell
-                korrigieren.
+                {t("executionNotice")}
               </AlertDescription>
             </Alert>
           )}
@@ -363,7 +355,7 @@ export default function ApprovalsPage() {
               onClick={() => setDecisionDialog(null)}
               disabled={submitting}
             >
-              Abbrechen
+              {t("cancel")}
             </Button>
             <Button
               onClick={() => void submitDecision()}
@@ -379,7 +371,7 @@ export default function ApprovalsPage() {
               ) : (
                 <X className="h-4 w-4 mr-2" />
               )}
-              {decisionDialog?.decision === "APPROVED" ? "Genehmigen" : "Ablehnen"}
+              {decisionDialog?.decision === "APPROVED" ? t("approve") : t("reject")}
             </Button>
           </DialogFooter>
         </DialogContent>

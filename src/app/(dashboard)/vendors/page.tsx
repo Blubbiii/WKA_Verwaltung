@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Building2, Plus, Search, Pencil, Trash2, Download } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { EditableCell } from "@/components/ui/editable-cell";
@@ -252,27 +252,37 @@ export default function VendorsPage() {
   const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =
     useBatchSelection({ items: vendors });
 
+  // H-9: AbortController um stale Requests bei rascher Suche zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
       const params = new URLSearchParams({ limit: "200" });
       if (search) params.set("q", search);
-      const res = await fetch(`/api/vendors?${params}`);
+      const res = await fetch(`/api/vendors?${params}`, { signal: ac.signal });
       if (res.ok) {
         const data = await res.json();
-        setVendors(data.data ?? []);
+        if (!ac.signal.aborted) setVendors(data.data ?? []);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error("Fehler beim Laden");
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [search]);
 
   useEffect(() => {
     if (!flagsLoading && flags.inbox) {
       const t = setTimeout(load, 300);
-      return () => clearTimeout(t);
+      return () => {
+        clearTimeout(t);
+        abortRef.current?.abort();
+      };
     }
   }, [flags.inbox, flagsLoading, load, search]);
 

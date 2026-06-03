@@ -7,6 +7,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { cn } from "@/lib/utils";
+import { formatCapacity } from "@/lib/format";
 import { EditableCell } from "@/components/ui/editable-cell";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { BatchActionBar } from "@/components/ui/batch-action-bar";
@@ -225,13 +226,6 @@ export default function ParksPage() {
   function handleConfirmArchive() {
     if (!parkToArchive) return;
     archiveMutation.mutate(parkToArchive);
-  }
-
-  function formatCapacity(kw: number): string {
-    if (kw >= 1000) {
-      return `${(kw / 1000).toFixed(1)} MW`;
-    }
-    return `${kw.toFixed(0)} kW`;
   }
 
   // Berechne Gesamtstatistiken (defensive: stats may be missing on error)

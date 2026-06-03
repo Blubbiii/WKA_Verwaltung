@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+// R3 Perf: Direkt-Pfad-Import für besseres Tree-Shaking.
+import { format } from "date-fns/format";
+import { de } from "date-fns/locale/de";
 import {
   FileText,
   Search,
@@ -336,8 +337,14 @@ function AuditLogsContent() {
     router,
   ]);
 
+  // H-9: AbortController um stale Requests bei rascher Filter-/Page-Änderung zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   // Fetch audit logs
   const fetchAuditLogs = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     try {
       setLoading(true);
       setError(null);
@@ -365,7 +372,7 @@ function AuditLogsContent() {
         params.set("search", debouncedSearch);
       }
 
-      const response = await fetch(`/api/admin/audit-logs?${params.toString()}`);
+      const response = await fetch(`/api/admin/audit-logs?${params.toString()}`, { signal: ac.signal });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -373,18 +380,22 @@ function AuditLogsContent() {
       }
 
       const data = await response.json();
-      setAuditLogs(data.data);
-      setPagination(data.pagination);
+      if (!ac.signal.aborted) {
+        setAuditLogs(data.data);
+        setPagination(data.pagination);
+      }
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : "Unbekannter Fehler");
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [currentPage, actionFilter, entityTypeFilter, userFilter, startDate, endDate, debouncedSearch, t]);
 
   // Fetch on mount and when filters change
   useEffect(() => {
     fetchAuditLogs();
+    return () => abortRef.current?.abort();
   }, [fetchAuditLogs]);
 
   // Reset page when filters change (but not when page itself changes)

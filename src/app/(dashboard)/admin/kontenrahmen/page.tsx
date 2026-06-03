@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -115,24 +115,32 @@ export default function KontenrahmenPage() {
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
+  // H-9: AbortController um stale Requests bei Filter-/Search-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchAccounts = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     try {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
       if (filterCategory !== "ALL") params.set("category", filterCategory);
-      const res = await fetch(`/api/buchhaltung/accounts?${params}`);
+      const res = await fetch(`/api/buchhaltung/accounts?${params}`, { signal: ac.signal });
       if (!res.ok) throw new Error("Fehler beim Laden");
       const json = await res.json();
-      setAccounts(json.data || []);
-    } catch {
+      if (!ac.signal.aborted) setAccounts(json.data || []);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("loadError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [search, filterCategory, t]);
 
   useEffect(() => {
     fetchAccounts();
+    return () => abortRef.current?.abort();
   }, [fetchAccounts]);
 
   function openCreate() {

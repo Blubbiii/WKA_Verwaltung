@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { format } from "date-fns";
@@ -116,7 +116,13 @@ export default function LeasePaymentsPage() {
   // Available years (current year +/- 2)
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
+  // H-9: AbortController um stale Requests bei rascher Filter-Änderung zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchPayments = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -125,16 +131,19 @@ export default function LeasePaymentsPage() {
         ...(statusFilter !== "all" && { status: statusFilter }),
       });
 
-      const response = await fetch(`/api/leases/payments?${params}`);
+      const response = await fetch(`/api/leases/payments?${params}`, { signal: ac.signal });
       if (!response.ok) throw new Error(t("loadError"));
 
       const data = await response.json();
-      setPayments(data.data);
-      setSummary(data.summary);
-    } catch {
+      if (!ac.signal.aborted) {
+        setPayments(data.data);
+        setSummary(data.summary);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("loadErrorToast"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [year, parkFilter, statusFilter, t]);
 
@@ -151,6 +160,7 @@ export default function LeasePaymentsPage() {
 
   useEffect(() => {
     fetchPayments();
+    return () => abortRef.current?.abort();
   }, [fetchPayments]);
 
   useEffect(() => {

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   RefreshCw,
   AlertTriangle,
@@ -14,16 +15,34 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KPICard } from "@/components/dashboard/kpi-card";
-import {
-  MonthlyInvoicesChart,
-  CapitalDevelopmentChart,
-  DocumentsByTypeChart,
-} from "@/components/dashboard/analytics-charts";
-import {
-  TurbineStatusChart,
-  ProductionForecastChart,
-  RevenueByParkChart,
-} from "@/components/dashboard/widgets/energy-widgets";
+
+// R3 Perf: Recharts-Charts dynamisch importieren — recharts ist ein ~120kB
+// schwerer Bundle und sollte nicht im initial JS-Payload landen. SSR off,
+// da Charts ohnehin Client-Only interaktiv sind.
+const MonthlyInvoicesChart = dynamic(
+  () => import("@/components/dashboard/analytics-charts").then((m) => m.MonthlyInvoicesChart),
+  { ssr: false }
+);
+const CapitalDevelopmentChart = dynamic(
+  () => import("@/components/dashboard/analytics-charts").then((m) => m.CapitalDevelopmentChart),
+  { ssr: false }
+);
+const DocumentsByTypeChart = dynamic(
+  () => import("@/components/dashboard/analytics-charts").then((m) => m.DocumentsByTypeChart),
+  { ssr: false }
+);
+const TurbineStatusChart = dynamic(
+  () => import("@/components/dashboard/widgets/energy-widgets").then((m) => m.TurbineStatusChart),
+  { ssr: false }
+);
+const ProductionForecastChart = dynamic(
+  () => import("@/components/dashboard/widgets/energy-widgets").then((m) => m.ProductionForecastChart),
+  { ssr: false }
+);
+const RevenueByParkChart = dynamic(
+  () => import("@/components/dashboard/widgets/energy-widgets").then((m) => m.RevenueByParkChart),
+  { ssr: false }
+);
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useEnergyDashboard } from "@/hooks/useEnergyDashboard";
 import { formatCurrency } from "@/lib/format";

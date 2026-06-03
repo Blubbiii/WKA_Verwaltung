@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -156,20 +156,28 @@ export default function DocumentDetailPage() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectNotes, setRejectNotes] = useState("");
 
+  // H-9: AbortController um stale Requests bei id-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchDocument = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     try {
-      const response = await fetch(`/api/documents/${params.id}`);
+      const response = await fetch(`/api/documents/${params.id}`, { signal: ac.signal });
       if (!response.ok) throw new Error(t("statusChangeError"));
       const data = await response.json();
-      setDocument(data);
-    } catch {
+      if (!ac.signal.aborted) setDocument(data);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [params.id, t]);
 
   useEffect(() => {
     fetchDocument();
+    return () => abortRef.current?.abort();
   }, [fetchDocument]);
 
   async function handleConfirmArchive() {

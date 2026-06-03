@@ -133,18 +133,26 @@ export default function ScadaCodesPage() {
     loadGroups();
   }, [loadGroups]);
 
+  // H-9: AbortController um stale Detail-Requests bei rascher Search-/Type-Änderung zu cancelln.
+  const detailAbortRef = useRef<AbortController | null>(null);
+
   // --- Load detail ---
   const loadDetail = useCallback(
     async (controllerType: string, search?: string) => {
+      detailAbortRef.current?.abort();
+      const ac = new AbortController();
+      detailAbortRef.current = ac;
       try {
         setDetailLoading(true);
         const params = new URLSearchParams();
         if (search) params.set("search", search);
         const res = await fetch(
-          `/api/admin/scada-codes/${encodeURIComponent(controllerType)}?${params}`
+          `/api/admin/scada-codes/${encodeURIComponent(controllerType)}?${params}`,
+          { signal: ac.signal }
         );
         if (!res.ok) throw new Error(t("loadError"));
         const json = await res.json();
+        if (ac.signal.aborted) return;
         setDetailGroups(json.groups || []);
         setDetailTotal(json.totalCodes || 0);
         // Expand all groups by default
@@ -152,10 +160,11 @@ export default function ScadaCodesPage() {
           (json.groups || []).map((g: CodeGroupDetail) => g.mainCode)
         );
         setExpandedGroups(allMains);
-      } catch {
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
         toast.error(t("loadDetailError"));
       } finally {
-        setDetailLoading(false);
+        if (!ac.signal.aborted) setDetailLoading(false);
       }
     },
     [t]

@@ -486,6 +486,52 @@ export const PERMISSIONS = {
   // Energy (granular)
   ENERGY_SCADA_IMPORT: "energy:scada:import",
   ENERGY_SETTLEMENTS_FINALIZE: "energy:settlements:finalize",
+
+  // Accounting (granular — HGB/GoBD)
+  ACCOUNTING_PERIOD_LOCK_CREATE: "accounting:period-lock:create",
+  ACCOUNTING_PERIOD_LOCK_DELETE: "accounting:period-lock:delete",
+  ACCOUNTING_JOURNAL_REVERSE: "accounting:journal:reverse",
+  ACCOUNTING_TAX_CODE_READ: "accounting:tax-code:read",
+  ACCOUNTING_TAX_CODE_WRITE: "accounting:tax-code:write",
+  ACCOUNTING_VALUE_ADJUSTMENT_CREATE: "accounting:value-adjustment:create",
+  ACCOUNTING_YEAR_END_CLOSE_EXECUTE: "accounting:year-end-close:execute",
+  ACCOUNTING_GOBD_EXPORT_CREATE: "accounting:gobd-export:create",
+  ACCOUNTING_DATEV_EXPORT_CREATE: "accounting:datev-export:create",
+
+  // Accounting Reports
+  ACCOUNTING_REPORT_BILANZ: "accounting:report:bilanz",
+  ACCOUNTING_REPORT_GEWST: "accounting:report:gewst",
+  ACCOUNTING_REPORT_SUSA: "accounting:report:susa",
+  ACCOUNTING_REPORT_KONTOBLATT: "accounting:report:kontoblatt",
+  ACCOUNTING_REPORT_EUER: "accounting:report:euer",
+  ACCOUNTING_REPORT_ANLAGENSPIEGEL: "accounting:report:anlagenspiegel",
+
+  // Admin (granular tenant-level)
+  ADMIN_EMAIL: "admin:email",
+  ADMIN_BILLING_RULES: "admin:billing-rules",
+  ADMIN_SETTLEMENT_PERIODS: "admin:settlement-periods",
+  ADMIN_ACCESS_REPORT: "admin:access-report",
+  ADMIN_MASS_COMMUNICATION: "admin:mass-communication",
+  ADMIN_INVOICE_SETTINGS: "admin:invoice-settings",
+  ADMIN_TEMPLATES: "admin:templates",
+
+  // System (Superadmin, cross-tenant)
+  SYSTEM_TENANTS: "system:tenants",
+  SYSTEM_SETTINGS: "system:settings",
+  SYSTEM_SETTINGS_WRITE: "system:settings:write",
+  SYSTEM_TAX_TEMPLATES_WRITE: "system:tax-templates:write",
+  SYSTEM_HEALTH: "system:health",
+  SYSTEM_CONFIG: "system:config",
+  SYSTEM_AUDIT: "system:audit",
+  SYSTEM_BACKUP: "system:backup",
+
+  // Management Billing (Betriebsführung)
+  MANAGEMENT_BILLING_READ: "management-billing:read",
+  MANAGEMENT_BILLING_CREATE: "management-billing:create",
+  MANAGEMENT_BILLING_UPDATE: "management-billing:update",
+  MANAGEMENT_BILLING_DELETE: "management-billing:delete",
+  MANAGEMENT_BILLING_CALCULATE: "management-billing:calculate",
+  MANAGEMENT_BILLING_INVOICE: "management-billing:invoice",
 } as const;
 
 export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ interface ZmLine {
   recipientName: string;
   type: "L" | "S";
   amount: number;
+  triangulation: boolean;
 }
 
 interface ZmResult {
@@ -84,24 +85,32 @@ export default function ZmContent() {
 
   const [selectedQuarter, setSelectedQuarter] = useState(quarterOptions[0]?.value || "");
 
+  // H-9: AbortController um stale Requests bei Quarter-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchData = useCallback(async () => {
     if (!selectedQuarter) return;
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
       const [from, to] = selectedQuarter.split("|");
-      const res = await fetch(`/api/buchhaltung/zm?from=${from}&to=${to}`);
+      const res = await fetch(`/api/buchhaltung/zm?from=${from}&to=${to}`, { signal: ac.signal });
       if (!res.ok) throw new Error();
       const json = await res.json();
-      setData(json.data || null);
-    } catch {
+      if (!ac.signal.aborted) setData(json.data || null);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("toastLoadError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [selectedQuarter, t]);
 
   useEffect(() => {
     fetchData();
+    return () => abortRef.current?.abort();
   }, [fetchData]);
 
   async function downloadXml() {
@@ -168,9 +177,20 @@ export default function ZmContent() {
                       <TableCell className="font-mono text-sm">{line.vatId}</TableCell>
                       <TableCell>{line.recipientName}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {line.type === "L" ? t("typeDelivery") : t("typeService")}
-                        </Badge>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline">
+                            {line.type === "L" ? t("typeDelivery") : t("typeService")}
+                          </Badge>
+                          {line.triangulation && (
+                            <Badge
+                              variant="outline"
+                              className="border-[hsl(215_50%_40%)] text-[hsl(215_50%_40%)] dark:border-[hsl(215_55%_58%)] dark:text-[hsl(215_55%_58%)]"
+                              title="§25b UStG Dreiecksgeschäft"
+                            >
+                              {t("typeTriangulation")}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right font-mono">{fmt(line.amount)}</TableCell>
                     </TableRow>

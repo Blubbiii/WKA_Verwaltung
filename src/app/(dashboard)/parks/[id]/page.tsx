@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatCapacity } from "@/lib/format";
 import { de } from "date-fns/locale";
 import {
   ArrowLeft,
@@ -830,13 +830,6 @@ export default function ParkDetailsPage({
     } finally {
       setAssigningLeases(false);
     }
-  }
-
-  function formatCapacity(kw: number): string {
-    if (kw >= 1000) {
-      return `${(kw / 1000).toFixed(1)} MW`;
-    }
-    return `${kw.toFixed(0)} kW`;
   }
 
   if (loading) {

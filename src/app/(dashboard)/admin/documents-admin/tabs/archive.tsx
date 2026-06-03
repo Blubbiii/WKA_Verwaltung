@@ -8,7 +8,7 @@
  * wrapped in Suspense here.
  */
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -191,7 +191,13 @@ function ArchiveContent() {
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear - i);
 
+  // H-9: AbortController um stale Requests bei Filter-/Page-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchDocuments = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     try {
       setLoading(true);
       setError(null);
@@ -208,19 +214,21 @@ function ArchiveContent() {
         params.set("dateTo", `${yearFilter}-12-31`);
       }
 
-      const response = await fetch(`/api/admin/archive?${params.toString()}`);
+      const response = await fetch(`/api/admin/archive?${params.toString()}`, { signal: ac.signal });
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || "Fehler beim Laden");
       }
 
       const data = await response.json();
+      if (ac.signal.aborted) return;
       setDocuments(data.data);
       setPagination(data.pagination);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : "Unbekannter Fehler");
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [currentPage, typeFilter, debouncedSearch, yearFilter]);
 
@@ -236,7 +244,10 @@ function ArchiveContent() {
     }
   }, []);
 
-  useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
+  useEffect(() => {
+    fetchDocuments();
+    return () => abortRef.current?.abort();
+  }, [fetchDocuments]);
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => { setCurrentPage(1); }, [typeFilter, debouncedSearch, yearFilter]);
 

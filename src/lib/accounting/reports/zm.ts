@@ -16,6 +16,12 @@ export interface ZmLine {
   type: "L" | "S";
   /** Net amount in EUR, rounded to full euros */
   amount: number;
+  /**
+   * §25b UStG: Innergemeinschaftliches Dreiecksgeschäft.
+   * BZSt-XML-Kennung "T" (in Art-Element oder separates Element).
+   * Aggregiert: true, wenn mind. eine Rechnung in der Aggregation triangulation=true hatte.
+   */
+  triangulation: boolean;
 }
 
 export interface ZmResult {
@@ -60,11 +66,16 @@ export async function generateZm(
       recipientVatId: true,
       recipientName: true,
       netAmount: true,
+      isTriangulationDeal: true,
     },
   });
 
-  // Aggregate by country + vatId
-  const aggregation = new Map<string, { name: string; amount: number }>();
+  // Aggregate by country + vatId + triangulation-flag.
+  // Triangulation-deals need separate ZM-lines (different Art/Kennung).
+  const aggregation = new Map<
+    string,
+    { name: string; amount: number; triangulation: boolean }
+  >();
 
   for (const inv of invoices) {
     const country = inv.recipientCountry?.toUpperCase();
@@ -73,7 +84,8 @@ export async function generateZm(
     const vatId = inv.recipientVatId?.replace(/\s/g, "");
     if (!vatId) continue;
 
-    const key = `${country}::${vatId}`;
+    const triangulation = inv.isTriangulationDeal === true;
+    const key = `${country}::${vatId}::${triangulation ? "T" : "N"}`;
     const existing = aggregation.get(key);
     const amount = toNum(inv.netAmount);
 
@@ -83,6 +95,7 @@ export async function generateZm(
       aggregation.set(key, {
         name: inv.recipientName || vatId,
         amount,
+        triangulation,
       });
     }
   }
@@ -103,11 +116,17 @@ export async function generateZm(
       recipientName: data.name,
       type: "S", // Default to services (sonstige Leistungen) for windpark business
       amount: roundedAmount,
+      triangulation: data.triangulation,
     });
   }
 
-  // Sort by country then vatId
-  lines.sort((a, b) => a.countryCode.localeCompare(b.countryCode) || a.vatId.localeCompare(b.vatId));
+  // Sort by country, then vatId, then triangulation (regular first)
+  lines.sort(
+    (a, b) =>
+      a.countryCode.localeCompare(b.countryCode) ||
+      a.vatId.localeCompare(b.vatId) ||
+      Number(a.triangulation) - Number(b.triangulation),
+  );
 
   // Determine quarter
   const quarter = Math.ceil((periodStart.getMonth() + 1) / 3);

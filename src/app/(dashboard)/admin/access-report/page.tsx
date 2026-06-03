@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Shield,
   ChevronDown,
@@ -122,8 +122,14 @@ export default function AccessReportPage() {
     }
   }, [t]);
 
+  // H-9: AbortController um stale Requests bei Role-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   // Fetch report data
   const fetchReport = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     setError(null);
 
@@ -134,7 +140,7 @@ export default function AccessReportPage() {
       }
 
       const url = `/api/admin/access-report${params.toString() ? `?${params}` : ""}`;
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: ac.signal });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -142,11 +148,12 @@ export default function AccessReportPage() {
       }
 
       const data: AccessReportResponse = await response.json();
-      setReportData(data);
+      if (!ac.signal.aborted) setReportData(data);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : t("unknownError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [selectedRoleId, t]);
 
@@ -156,6 +163,7 @@ export default function AccessReportPage() {
 
   useEffect(() => {
     fetchReport();
+    return () => abortRef.current?.abort();
   }, [fetchReport]);
 
   // Toggle user expansion

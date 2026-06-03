@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,16 +24,14 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { RefreshCw, Download } from "lucide-react";
-import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+// R3 Perf: Liquiditäts-Chart in separate Datei extrahiert und dynamisch
+// geladen (ssr off). Recharts ist ~120kB und bleibt damit aus initial JS.
+const LiquidityForecastChart = dynamic(
+  () => import("./liquiditaet-chart").then((m) => m.LiquidityForecastChart),
+  { ssr: false }
+);
 
 interface LiquidityPeriod {
   label: string;
@@ -101,7 +99,13 @@ export default function LiquiditaetContent() {
     loadBudgets();
   }, []);
 
+  // H-9: AbortController um stale Requests bei Parameter-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchForecast = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -111,14 +115,15 @@ export default function LiquiditaetContent() {
       });
       if (budgetId) params.set("budgetId", budgetId);
 
-      const res = await fetch(`/api/buchhaltung/liquiditaet?${params}`);
+      const res = await fetch(`/api/buchhaltung/liquiditaet?${params}`, { signal: ac.signal });
       if (!res.ok) throw new Error();
       const json = await res.json();
-      setData(json.data || null);
-    } catch {
+      if (!ac.signal.aborted) setData(json.data || null);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("toastLoadError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [months, granularity, startingBalance, budgetId, t]);
 
@@ -248,22 +253,14 @@ export default function LiquiditaetContent() {
 
             {/* Chart */}
             <div className="h-[300px] mb-6">
-                <ComposedChart width="100%" height={300} data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} />
-                  <Tooltip
-                    formatter={(value, name) => {
-                      const num = typeof value === "number" ? value : 0;
-                      return [fmt(Math.abs(num)) + " €", String(name ?? "")];
-                    }}
-                    labelStyle={{ fontWeight: "bold" }}
-                  />
-                  <Legend />
-                  <Bar dataKey={chartInflowsLabel} fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey={chartOutflowsLabel} fill="hsl(0, 84%, 60%)" radius={[2, 2, 0, 0]} />
-                  <Line type="monotone" dataKey={chartCumulativeLabel} stroke="hsl(215, 50%, 40%)" strokeWidth={2} dot={{ r: 3 }} />
-                </ComposedChart>
+              <LiquidityForecastChart
+                data={chartData}
+                inflowsLabel={chartInflowsLabel}
+                outflowsLabel={chartOutflowsLabel}
+                cumulativeLabel={chartCumulativeLabel}
+                fmtTick={fmtShort}
+                fmtTooltip={fmt}
+              />
             </div>
 
             {/* Data Table */}

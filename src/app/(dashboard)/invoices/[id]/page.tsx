@@ -3,8 +3,9 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { de, enUS } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { de } from "date-fns/locale/de";
+import { enUS } from "date-fns/locale/en-US";
 import { useLocale, useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import {

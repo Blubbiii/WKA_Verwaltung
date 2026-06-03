@@ -7,8 +7,9 @@ import { useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
-import { format, differenceInDays } from "date-fns";
-import { de } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { differenceInDays } from "date-fns/differenceInDays";
+import { de } from "date-fns/locale/de";
 import {
   FileText,
   AlertTriangle,

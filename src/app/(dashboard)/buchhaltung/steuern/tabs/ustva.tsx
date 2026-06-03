@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
@@ -126,21 +126,31 @@ export default function UstvaContent() {
   const [steuernummer, setSteuernummer] = useState("");
   const [berichtigt, setBerichtigt] = useState(false);
 
+  // H-9: AbortController um stale Requests bei Date-Range-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchData = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
-      const res = await fetch(`/api/buchhaltung/ustva?from=${from}&to=${to}`);
+      const res = await fetch(`/api/buchhaltung/ustva?from=${from}&to=${to}`, { signal: ac.signal });
       if (!res.ok) throw new Error();
       const json = await res.json();
-      setData(json.data || null);
-    } catch {
+      if (!ac.signal.aborted) setData(json.data || null);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("toastLoadError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [from, to, t]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+    return () => abortRef.current?.abort();
+  }, [fetchData]);
 
   const runElsterPrep = async () => {
     if (!steuernummer.trim()) {

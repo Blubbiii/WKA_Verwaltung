@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState, useCallback } from "react";
+import { use, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -126,21 +126,30 @@ export default function CrmContactDetailPage({
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
 
+  // H-9: AbortController um stale Requests bei id-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
-      const res = await fetch(`/api/crm/contacts/${id}`);
+      const res = await fetch(`/api/crm/contacts/${id}`, { signal: ac.signal });
       if (!res.ok) throw new Error();
-      setContact(await res.json());
-    } catch {
+      const data = await res.json();
+      if (!ac.signal.aborted) setContact(data);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("loadError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [id, t]);
 
   useEffect(() => {
     load();
+    return () => abortRef.current?.abort();
   }, [load]);
 
   const handleContactTypeChange = async (value: string) => {

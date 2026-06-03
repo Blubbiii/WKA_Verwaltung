@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -39,6 +40,7 @@ interface CpiDueResponse {
 }
 
 export function CpiReminderWidget({ horizonDays = 90 }: { horizonDays?: number }) {
+  const t = useTranslations("cpi");
   const [data, setData] = useState<CpiDueResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function CpiReminderWidget({ horizonDays = 90 }: { horizonDays?: number }
     setLoading(true);
     fetch(`/api/leases/cpi-due?horizonDays=${horizonDays}`)
       .then((r) => {
-        if (!r.ok) throw new Error("Fehler beim Laden");
+        if (!r.ok) throw new Error(t("loadError"));
         return r.json();
       })
       .then((d) => {
@@ -57,7 +59,7 @@ export function CpiReminderWidget({ horizonDays = 90 }: { horizonDays?: number }
       })
       .catch((e) => {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Unbekannter Fehler");
+        setError(e instanceof Error ? e.message : t("unknownError"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -65,17 +67,17 @@ export function CpiReminderWidget({ horizonDays = 90 }: { horizonDays?: number }
     return () => {
       cancelled = true;
     };
-  }, [horizonDays]);
+  }, [horizonDays, t]);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Calendar className="h-4 w-4" />
-          Wertsicherungs-Anpassungen
+          {t("title")}
         </CardTitle>
         <CardDescription className="text-xs">
-          Fällige CPI-Anpassungen nach §9 PrKG (Horizont: {horizonDays} Tage)
+          {t("subtitle", { days: horizonDays })}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -92,7 +94,7 @@ export function CpiReminderWidget({ horizonDays = 90 }: { horizonDays?: number }
           </Alert>
         ) : !data || data.total === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-4">
-            Keine fälligen Anpassungen
+            {t("noneDue")}
           </div>
         ) : (
           <div className="space-y-3">
@@ -100,8 +102,7 @@ export function CpiReminderWidget({ horizonDays = 90 }: { horizonDays?: number }
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  {data.overdueCount} überfällige{" "}
-                  {data.overdueCount === 1 ? "Anpassung" : "Anpassungen"}
+                  {t("overdueAlert", { count: data.overdueCount })}
                 </AlertDescription>
               </Alert>
             )}
@@ -117,15 +118,17 @@ export function CpiReminderWidget({ horizonDays = 90 }: { horizonDays?: number }
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{row.lessorName}</div>
                       <div className="text-xs text-muted-foreground">
-                        Intervall: {row.cpiAdjustmentMonths} Mon. ·{" "}
+                        {t("intervalMonths", { months: row.cpiAdjustmentMonths })} ·{" "}
                         {row.cpiLastAdjustedAt
-                          ? `zuletzt ${new Date(row.cpiLastAdjustedAt).toLocaleDateString("de-DE")}`
-                          : "nie angepasst"}
+                          ? t("lastAdjusted", {
+                              date: new Date(row.cpiLastAdjustedAt).toLocaleDateString("de-DE"),
+                            })
+                          : t("neverAdjusted")}
                       </div>
                     </div>
                     <Badge variant={overdue ? "destructive" : "default"}>
                       {overdue
-                        ? `${row.daysOverdue}d überfällig`
+                        ? t("overdueBadge", { days: row.daysOverdue })
                         : new Date(row.nextDueDate).toLocaleDateString("de-DE")}
                     </Badge>
                   </Link>
@@ -138,7 +141,7 @@ export function CpiReminderWidget({ horizonDays = 90 }: { horizonDays?: number }
                 className="flex items-center gap-2 text-xs text-primary hover:underline"
               >
                 <FileText className="h-3 w-3" />
-                Alle {data.total} anzeigen
+                {t("viewAll", { count: data.total })}
               </Link>
             )}
           </div>

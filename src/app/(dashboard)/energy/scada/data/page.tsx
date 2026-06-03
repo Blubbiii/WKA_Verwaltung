@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
-import { de, enUS } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { de } from "date-fns/locale/de";
+import { enUS } from "date-fns/locale/en-US";
 import { useLocale, useTranslations } from "next-intl";
 import {
   Activity,

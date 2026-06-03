@@ -204,6 +204,45 @@ const permissionsData = [
   { name: "management-billing:delete", displayName: "BF-Vertraege loeschen", description: "Betriebsfuehrungsvertraege entfernen", module: "management-billing", action: "delete", sortOrder: 243 },
   { name: "management-billing:calculate", displayName: "BF-Abrechnungen berechnen", description: "Abrechnungen fuer Betriebsfuehrung kalkulieren", module: "management-billing", action: "calculate", sortOrder: 244 },
   { name: "management-billing:invoice", displayName: "BF-Rechnungen generieren", description: "Rechnungen aus BF-Abrechnungen erstellen", module: "management-billing", action: "invoice", sortOrder: 245 },
+
+  // ============================================================================
+  // Drift-Fix: bisher nur in PERMISSIONS-const, nun auch seeded
+  // ============================================================================
+
+  // Admin (granular)
+  { name: "admin:tenants", displayName: "Mandanten verwalten (Admin)", description: "Tenant-Konfiguration und Mitgliederverwaltung", module: "admin", action: "tenants", sortOrder: 270 },
+  { name: "admin:system", displayName: "System-Administration", description: "Tenant-übergreifende System-Settings", module: "admin", action: "system", sortOrder: 271 },
+  { name: "admin:audit", displayName: "Audit-Logs anzeigen (Admin)", description: "Zugriff auf Audit-Trail", module: "admin", action: "audit", sortOrder: 272 },
+
+  // CRM Module
+  { name: "crm:read", displayName: "CRM anzeigen", module: "crm", action: "read", sortOrder: 280 },
+  { name: "crm:create", displayName: "CRM-Einträge erstellen", module: "crm", action: "create", sortOrder: 281 },
+  { name: "crm:update", displayName: "CRM-Einträge bearbeiten", module: "crm", action: "update", sortOrder: 282 },
+  { name: "crm:delete", displayName: "CRM-Einträge löschen", module: "crm", action: "delete", sortOrder: 283 },
+
+  // Energy granular
+  { name: "energy:scada:import", displayName: "SCADA-Daten importieren", description: "Enercon WSD/UID-Dateien einlesen", module: "energy", action: "scada-import", sortOrder: 290 },
+  { name: "energy:settlements:finalize", displayName: "Energie-Abrechnungen finalisieren", description: "EnergySettlement von DRAFT → FINAL setzen", module: "energy", action: "settlements-finalize", sortOrder: 291 },
+
+  // Inbox (Eingangsrechnungen)
+  { name: "inbox:read", displayName: "Eingangsrechnungen anzeigen", module: "inbox", action: "read", sortOrder: 300 },
+  { name: "inbox:create", displayName: "Eingangsrechnungen erstellen", module: "inbox", action: "create", sortOrder: 301 },
+  { name: "inbox:update", displayName: "Eingangsrechnungen bearbeiten", module: "inbox", action: "update", sortOrder: 302 },
+  { name: "inbox:delete", displayName: "Eingangsrechnungen löschen", module: "inbox", action: "delete", sortOrder: 303 },
+  { name: "inbox:approve", displayName: "Eingangsrechnungen freigeben", description: "Approval-Workflow für Eingangsrechnungen", module: "inbox", action: "approve", sortOrder: 304 },
+  { name: "inbox:export", displayName: "Eingangsrechnungen exportieren", module: "inbox", action: "export", sortOrder: 305 },
+
+  // Vendors (Kreditoren)
+  { name: "vendors:read", displayName: "Lieferanten anzeigen", module: "vendors", action: "read", sortOrder: 310 },
+  { name: "vendors:create", displayName: "Lieferanten erstellen", module: "vendors", action: "create", sortOrder: 311 },
+  { name: "vendors:update", displayName: "Lieferanten bearbeiten", module: "vendors", action: "update", sortOrder: 312 },
+  { name: "vendors:delete", displayName: "Lieferanten löschen", module: "vendors", action: "delete", sortOrder: 313 },
+
+  // Wirtschaftsplan (Business Plan)
+  { name: "wirtschaftsplan:read", displayName: "Wirtschaftsplan anzeigen", module: "wirtschaftsplan", action: "read", sortOrder: 320 },
+  { name: "wirtschaftsplan:create", displayName: "Wirtschaftsplan erstellen", module: "wirtschaftsplan", action: "create", sortOrder: 321 },
+  { name: "wirtschaftsplan:update", displayName: "Wirtschaftsplan bearbeiten", module: "wirtschaftsplan", action: "update", sortOrder: 322 },
+  { name: "wirtschaftsplan:delete", displayName: "Wirtschaftsplan löschen", module: "wirtschaftsplan", action: "delete", sortOrder: 323 },
 ];
 
 // ============================================================================

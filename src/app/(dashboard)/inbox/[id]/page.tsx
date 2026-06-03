@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { de } from "date-fns/locale/de";
 import {
   ArrowLeft,
   CheckCircle2,

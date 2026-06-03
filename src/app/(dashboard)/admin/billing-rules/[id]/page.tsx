@@ -5,7 +5,7 @@
  * /admin/billing-rules/[id]
  */
 
-import { useState, useEffect, useCallback, use } from "react";
+import { useState, useEffect, useCallback, useRef, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDateTime } from "@/lib/format";
@@ -153,10 +153,16 @@ export default function BillingRuleDetailPage({
   } | null>(null);
 
   // Fetch Rule Details
+  // H-9: AbortController um stale Requests bei Rule-Wechsel zu cancelln.
+  const ruleAbortRef = useRef<AbortController | null>(null);
+
   const fetchRule = useCallback(async () => {
+    ruleAbortRef.current?.abort();
+    const ac = new AbortController();
+    ruleAbortRef.current = ac;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/admin/billing-rules/${id}`);
+      const response = await fetch(`/api/admin/billing-rules/${id}`, { signal: ac.signal });
       if (!response.ok) {
         if (response.status === 404) {
           toast.error(t("notFound"));
@@ -167,12 +173,14 @@ export default function BillingRuleDetailPage({
       }
 
       const data = await response.json();
+      if (ac.signal.aborted) return;
       setRule(data);
       setExecutions(data.recentExecutions || []);
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("loadRuleError"));
     } finally {
-      setIsLoading(false);
+      if (!ac.signal.aborted) setIsLoading(false);
     }
   }, [id, router, t]);
 

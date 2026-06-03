@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { de } from "date-fns/locale/de";
 import { formatCurrency } from "@/lib/format";
 import { useTranslations } from "next-intl";
 import {

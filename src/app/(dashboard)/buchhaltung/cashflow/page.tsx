@@ -4,7 +4,8 @@
  * C-1 Sprint 5: Kapitalflussrechnung DRS 21.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,40 +52,49 @@ function fmt(n: number): string {
 }
 
 export default function CashflowPage() {
+  const t = useTranslations("cashflow");
   const [data, setData] = useState<CashflowResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [fiscalYear, setFiscalYear] = useState(new Date().getFullYear());
 
+  // H-9: AbortController um stale Requests bei FiscalYear-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchData = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
-      const res = await fetch(`/api/buchhaltung/cashflow?fiscalYear=${fiscalYear}`);
+      const res = await fetch(`/api/buchhaltung/cashflow?fiscalYear=${fiscalYear}`, { signal: ac.signal });
       if (!res.ok) throw new Error();
       const json = await res.json();
-      setData(json.data || null);
-    } catch {
-      toast.error("Kapitalflussrechnung konnte nicht geladen werden");
+      if (!ac.signal.aborted) setData(json.data || null);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      toast.error(t("loadError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
-  }, [fiscalYear]);
+  }, [fiscalYear, t]);
 
   useEffect(() => {
     fetchData();
+    return () => abortRef.current?.abort();
   }, [fetchData]);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Kapitalflussrechnung"
-        description="DRS 21 — indirekte Methode (HGB §264 Abs. 1)"
+        title={t("title")}
+        description={t("description")}
       />
 
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
             <div className="space-y-1">
-              <Label>Wirtschaftsjahr</Label>
+              <Label>{t("fiscalYear")}</Label>
               <Input
                 type="number"
                 min="2000"
@@ -96,7 +106,7 @@ export default function CashflowPage() {
             </div>
             <Button variant="outline" onClick={fetchData} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-              Aktualisieren
+              {t("refresh")}
             </Button>
           </div>
 
@@ -108,14 +118,14 @@ export default function CashflowPage() {
             </div>
           ) : !data ? (
             <div className="text-center text-muted-foreground py-12">
-              Keine Daten verfügbar
+              {t("noData")}
             </div>
           ) : (
             <>
               {data.warnings.length > 0 && (
                 <Alert variant="default" className="mb-4">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Hinweise zur Berechnung</AlertTitle>
+                  <AlertTitle>{t("warningsTitle")}</AlertTitle>
                   <AlertDescription>
                     <ul className="list-disc pl-4 mt-1">
                       {data.warnings.map((w, i) => (
@@ -130,7 +140,7 @@ export default function CashflowPage() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      CFO (Operativ)
+                      {t("cfo")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -144,7 +154,7 @@ export default function CashflowPage() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      CFI (Investitionen)
+                      {t("cfi")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -158,7 +168,7 @@ export default function CashflowPage() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium text-muted-foreground">
-                      CFF (Finanzierung)
+                      {t("cff")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -204,7 +214,7 @@ export default function CashflowPage() {
 
               <div className="mt-4 flex justify-end gap-3 text-sm">
                 <Badge variant="outline">
-                  Plausibilitäts-Differenz: {fmt(data.validationDifference)} €
+                  {t("validationDifference", { amount: fmt(data.validationDifference) })}
                 </Badge>
               </div>
             </>

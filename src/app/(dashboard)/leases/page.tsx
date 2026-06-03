@@ -8,8 +8,10 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { usePersistedTableState } from "@/hooks/usePersistedTableState";
-import { format, differenceInDays } from "date-fns";
-import { de, enUS } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { differenceInDays } from "date-fns/differenceInDays";
+import { de } from "date-fns/locale/de";
+import { enUS } from "date-fns/locale/en-US";
 import {
   MapPin,
   Calendar,

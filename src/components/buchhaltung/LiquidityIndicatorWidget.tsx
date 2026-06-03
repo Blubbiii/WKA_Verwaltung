@@ -16,6 +16,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -77,7 +78,7 @@ function evaluateLight(forecast: LiquidityForecastResult): LightResult {
 const STATUS_META: Record<
   LightStatus,
   {
-    label: string;
+    labelKey: "statusGreen" | "statusYellow" | "statusRed";
     badgeVariant: "default" | "destructive" | "outline" | "secondary";
     Icon: typeof CheckCircle2;
     iconClass: string;
@@ -85,21 +86,21 @@ const STATUS_META: Record<
   }
 > = {
   green: {
-    label: "Liquidität gesichert",
+    labelKey: "statusGreen",
     badgeVariant: "default",
     Icon: CheckCircle2,
     iconClass: "text-emerald-600 dark:text-emerald-400",
     dotClass: "bg-emerald-500",
   },
   yellow: {
-    label: "Engpass in 4-12 Mon.",
+    labelKey: "statusYellow",
     badgeVariant: "secondary",
     Icon: TrendingDown,
     iconClass: "text-amber-600 dark:text-amber-400",
     dotClass: "bg-amber-500",
   },
   red: {
-    label: "Akuter Engpass <3 Mon.",
+    labelKey: "statusRed",
     badgeVariant: "destructive",
     Icon: AlertTriangle,
     iconClass: "text-red-600 dark:text-red-400",
@@ -125,6 +126,7 @@ export function LiquidityIndicatorWidget({
   months = 12,
   startingBalance = 0,
 }: Props) {
+  const t = useTranslations("liquidity");
   const [data, setData] = useState<LiquidityForecastResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +146,7 @@ export function LiquidityIndicatorWidget({
       signal: ac.signal,
     })
       .then((r) => {
-        if (!r.ok) throw new Error("Fehler beim Laden");
+        if (!r.ok) throw new Error(t("loadError"));
         return r.json();
       })
       .then((json: { data: LiquidityForecastResult }) => {
@@ -152,24 +154,24 @@ export function LiquidityIndicatorWidget({
       })
       .catch((e: unknown) => {
         if (e instanceof Error && e.name === "AbortError") return;
-        setError(e instanceof Error ? e.message : "Unbekannter Fehler");
+        setError(e instanceof Error ? e.message : t("unknownError"));
       })
       .finally(() => {
         setLoading(false);
       });
 
     return () => ac.abort();
-  }, [months, startingBalance]);
+  }, [months, startingBalance, t]);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Droplets className="h-4 w-4" />
-          Liquiditäts-Ampel
+          {t("title")}
         </CardTitle>
         <CardDescription className="text-xs">
-          {months}-Monats-Prognose (Forderungen, Verbindlichkeiten, Budget)
+          {t("subtitle", { months })}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -185,7 +187,7 @@ export function LiquidityIndicatorWidget({
           </Alert>
         ) : !data || data.periods.length === 0 ? (
           <div className="text-sm text-muted-foreground text-center py-4">
-            Keine Prognosedaten verfügbar
+            {t("noData")}
           </div>
         ) : (
           (() => {
@@ -208,10 +210,10 @@ export function LiquidityIndicatorWidget({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <Badge variant={meta.badgeVariant}>{meta.label}</Badge>
+                      <Badge variant={meta.badgeVariant}>{t(meta.labelKey)}</Badge>
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      Endsaldo nach {data.periods.length} Mon.:{" "}
+                      {t("endingBalance", { months: data.periods.length })}{" "}
                       <span className="font-mono">
                         {fmtEur(data.endingBalance)}
                       </span>
@@ -227,34 +229,33 @@ export function LiquidityIndicatorWidget({
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
                       <div className="font-medium">
-                        Erster Engpass: {result.firstShortfall.label}
+                        {t("firstShortfall", { label: result.firstShortfall.label })}
                       </div>
                       <div className="text-xs mt-1">
-                        Kumulierter Saldo:{" "}
+                        {t("cumulativeBalance")}{" "}
                         <span className="font-mono">
                           {fmtEur(result.firstShortfall.cumulativeBalance)}
                         </span>{" "}
-                        · in {result.monthsUntilShortfall}{" "}
-                        {result.monthsUntilShortfall === 1 ? "Monat" : "Monaten"}
+                        · {t("inMonths", { n: result.monthsUntilShortfall ?? 0 })}
                       </div>
                     </AlertDescription>
                   </Alert>
                 ) : (
                   <div className="text-xs text-muted-foreground">
-                    Alle {data.periods.length} Monate weisen positive Salden auf.
+                    {t("allPositive", { months: data.periods.length })}
                   </div>
                 )}
 
                 {/* Mini-Summary */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded border p-2">
-                    <div className="text-muted-foreground">Zuflüsse gesamt</div>
+                    <div className="text-muted-foreground">{t("totalInflows")}</div>
                     <div className="font-mono font-medium text-emerald-700 dark:text-emerald-400">
                       {fmtEur(data.totalInflows)}
                     </div>
                   </div>
                   <div className="rounded border p-2">
-                    <div className="text-muted-foreground">Abflüsse gesamt</div>
+                    <div className="text-muted-foreground">{t("totalOutflows")}</div>
                     <div className="font-mono font-medium text-red-700 dark:text-red-400">
                       {fmtEur(data.totalOutflows)}
                     </div>
@@ -265,7 +266,7 @@ export function LiquidityIndicatorWidget({
                   href="/buchhaltung/planung?tab=liquiditaet"
                   className="block text-xs text-primary hover:underline"
                 >
-                  Detailansicht Liquiditätsplanung →
+                  {t("detailLink")}
                 </Link>
               </div>
             );

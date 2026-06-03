@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, use } from "react";
+import { useState, useEffect, useCallback, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
@@ -212,11 +212,17 @@ export default function SettlementDetailPage({
   // ---------------------------------------------------------------------------
   // Data loading
   // ---------------------------------------------------------------------------
+  // H-9: AbortController um stale Settlement-Requests bei id-Wechsel zu cancelln.
+  const settlementAbortRef = useRef<AbortController | null>(null);
+
   const loadSettlement = useCallback(async () => {
+    settlementAbortRef.current?.abort();
+    const ac = new AbortController();
+    settlementAbortRef.current = ac;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/leases/settlement/${id}`);
+      const res = await fetch(`/api/leases/settlement/${id}`, { signal: ac.signal });
       if (!res.ok) {
         const err = await res
           .json()
@@ -224,11 +230,12 @@ export default function SettlementDetailPage({
         throw new Error(err.error || `HTTP ${res.status}`);
       }
       const data = await res.json();
-      setSettlement(data.settlement);
+      if (!ac.signal.aborted) setSettlement(data.settlement);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : t("loadErrorDetail"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

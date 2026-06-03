@@ -8,6 +8,11 @@ import { apiError } from "@/lib/api-errors";
 // =============================================================================
 // GET /api/energy/scada/measurements - SCADA-Messdaten abfragen
 // Liefert Zeitreihen-Daten für Analyse-Charts im Frontend
+//
+// M-10 Perf: Cursor-Pagination unterstützt (Default-Modus: alte Charts mit
+// take=10000 weiterhin funktionsfähig). Bei `?cursor=<id>` wird Cursor-Modus
+// aktiviert: take: limit+1, deterministisches OrderBy auf (timestamp, id),
+// Response enthält `nextCursor`.
 // =============================================================================
 
 export async function GET(request: NextRequest) {
@@ -21,6 +26,12 @@ export async function GET(request: NextRequest) {
     const turbineId = searchParams.get("turbineId");
     const from = searchParams.get("from");
     const to = searchParams.get("to");
+    const cursor = searchParams.get("cursor");
+    const useCursor = searchParams.has("cursor") || searchParams.get("mode") === "cursor";
+    const limit = Math.min(
+      Math.max(parseInt(searchParams.get("limit") || "10000") || 10000, 1),
+      50000
+    );
 
     // --- Validierung ---
 
@@ -72,7 +83,50 @@ export async function GET(request: NextRequest) {
       where.timestamp = timestampFilter;
     }
 
-    // Daten abfragen mit Limit - only select needed fields for performance
+    if (useCursor) {
+      // Cursor-Modus — ScadaMeasurement hat Composite PK (id, timestamp).
+      // Cursor-Format: "<id>|<timestamp-iso>" damit Prisma die Composite-ID
+      // findet. take: limit+1 um hasMore zu erkennen.
+      let cursorClause: Prisma.ScadaMeasurementFindManyArgs["cursor"];
+      if (cursor) {
+        const [cId, cTs] = cursor.split("|");
+        if (cId && cTs) {
+          const ts = new Date(cTs);
+          if (!isNaN(ts.getTime())) {
+            cursorClause = { id_timestamp: { id: cId, timestamp: ts } };
+          }
+        }
+      }
+
+      const rows = await prisma.scadaMeasurement.findMany({
+        where,
+        select: {
+          id: true,
+          timestamp: true,
+          powerW: true,
+          windSpeedMs: true,
+          rotorRpm: true,
+          windDirection: true,
+        },
+        orderBy: [{ timestamp: "asc" }, { id: "asc" }],
+        take: limit + 1,
+        ...(cursorClause ? { cursor: cursorClause, skip: 1 } : {}),
+      });
+
+      const hasMore = rows.length > limit;
+      const data = hasMore ? rows.slice(0, limit) : rows;
+      const last = data[data.length - 1];
+      const nextCursor =
+        hasMore && last ? `${last.id}|${last.timestamp.toISOString()}` : null;
+
+      return NextResponse.json({
+        data,
+        count: data.length,
+        nextCursor,
+      });
+    }
+
+    // Backward-Compat: klassische Variante (alte Charts/Frontend).
     const measurements = await prisma.scadaMeasurement.findMany({
       where,
       select: {
@@ -85,7 +139,7 @@ export async function GET(request: NextRequest) {
       orderBy: {
         timestamp: "asc",
       },
-      take: 10000,
+      take: limit,
     });
 
     return NextResponse.json({

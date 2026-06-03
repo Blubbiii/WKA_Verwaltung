@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -192,7 +192,13 @@ export default function BillingsPage() {
   >(null);
 
   // Fetch billings
+  // H-9: AbortController um stale Requests bei Filter-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchBillings = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     try {
       setIsLoading(true);
       const params = new URLSearchParams();
@@ -201,21 +207,24 @@ export default function BillingsPage() {
       if (statusFilter !== "all") params.set("status", statusFilter);
 
       const response = await fetch(
-        `/api/management-billing/billings?${params}`
+        `/api/management-billing/billings?${params}`,
+        { signal: ac.signal }
       );
       if (!response.ok) throw new Error("Fehler beim Laden");
 
       const data = await response.json();
-      setBillings(data.billings || []);
-    } catch {
+      if (!ac.signal.aborted) setBillings(data.billings || []);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error("Fehler beim Laden der Abrechnungen");
     } finally {
-      setIsLoading(false);
+      if (!ac.signal.aborted) setIsLoading(false);
     }
   }, [yearFilter, monthFilter, statusFilter]);
 
   useEffect(() => {
     fetchBillings();
+    return () => abortRef.current?.abort();
   }, [fetchBillings]);
 
   // Batch calculation

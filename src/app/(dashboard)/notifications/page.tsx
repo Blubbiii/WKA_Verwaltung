@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Bell, CheckCheck, Loader2, Info, Filter, CalendarClock } from "lucide-react";
@@ -61,6 +61,9 @@ function NotificationsPageInner() {
 
   const limit = 20;
 
+  // H-9: AbortController um stale Fetches bei schneller Seiten-Navigation zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const setTab = (value: string) => {
     router.replace(`/notifications?tab=${value}`, { scroll: false });
   };
@@ -70,22 +73,28 @@ function NotificationsPageInner() {
   // ---------------------------------------------------------------------------
 
   const fetchNotifications = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
       });
-      const res = await fetch(`/api/notifications?${params}`);
+      const res = await fetch(`/api/notifications?${params}`, { signal: ac.signal });
       if (res.ok) {
         const data = await res.json();
-        setNotifications(data.data ?? []);
-        setTotalPages(data.pagination?.totalPages ?? 1);
+        if (!ac.signal.aborted) {
+          setNotifications(data.data ?? []);
+          setTotalPages(data.pagination?.totalPages ?? 1);
+        }
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       // Silently ignore
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [page]);
 
@@ -119,6 +128,7 @@ function NotificationsPageInner() {
   useEffect(() => {
     fetchNotifications();
     fetchUnreadCount();
+    return () => abortRef.current?.abort();
   }, [fetchNotifications, fetchUnreadCount]);
 
   // Fetch deadlines when tab switches to fristen

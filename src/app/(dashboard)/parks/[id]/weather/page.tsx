@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use, useCallback } from "react";
+import { useState, useEffect, use, useCallback, useRef } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -204,19 +204,27 @@ export default function ParkWeatherPage({
     [parkId]
   );
 
+  // H-9: AbortController um stale Requests bei Period-Wechsel zu cancelln.
+  const historicalAbortRef = useRef<AbortController | null>(null);
+
   // Fetch historical data
   const fetchHistorical = useCallback(async () => {
+    historicalAbortRef.current?.abort();
+    const ac = new AbortController();
+    historicalAbortRef.current = ac;
     try {
       const response = await fetch(
-        `/api/weather/${parkId}/history?period=${historyPeriod}&limit=500`
+        `/api/weather/${parkId}/history?period=${historyPeriod}&limit=500`,
+        { signal: ac.signal }
       );
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || "Fehler beim Laden");
       }
       const data = await response.json();
-      setHistorical(data);
-    } catch {
+      if (!ac.signal.aborted) setHistorical(data);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
     }
   }, [parkId, historyPeriod]);
 

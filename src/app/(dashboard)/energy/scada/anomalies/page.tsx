@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { de } from "date-fns/locale/de";
 import {
   AlertTriangle,
   AlertCircle,
@@ -205,7 +205,13 @@ export default function ScadaAnomaliesPage() {
 
   // ---- Data Fetching ----
 
+  // H-9: AbortController um stale Requests bei Filter-/Page-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchAnomalies = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -226,17 +232,19 @@ export default function ScadaAnomaliesPage() {
         params.set("resolved", "true");
       }
 
-      const res = await fetch(`/api/energy/scada/anomalies?${params}`);
+      const res = await fetch(`/api/energy/scada/anomalies?${params}`, { signal: ac.signal });
       if (!res.ok) throw new Error("Fehler beim Laden");
 
       const data = await res.json();
+      if (ac.signal.aborted) return;
       setAnomalies(data.anomalies);
       setTotal(data.total);
       setStats(data.stats);
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       // Silent — UI shows loading/empty state
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [page, filterParkId, filterType, filterSeverity, filterStatus]);
 
@@ -267,6 +275,7 @@ export default function ScadaAnomaliesPage() {
 
   useEffect(() => {
     fetchAnomalies();
+    return () => abortRef.current?.abort();
   }, [fetchAnomalies]);
 
   useEffect(() => {

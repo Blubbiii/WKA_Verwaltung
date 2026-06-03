@@ -7,7 +7,7 @@
  * per Checkbox einschränken. Leere Auswahl = User sieht ALLE Funds.
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -79,18 +79,27 @@ export default function FundAccessPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // H-9: AbortController um stale Requests bei User-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const loadAccess = useCallback(async (userId: string) => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoadingAccess(true);
     try {
-      const res = await fetch(`/api/admin/users/${userId}/fund-access`);
+      const res = await fetch(`/api/admin/users/${userId}/fund-access`, { signal: ac.signal });
       if (!res.ok) throw new Error();
       const json = (await res.json()) as AccessResponse;
-      setAccess(json);
-      setSelectedFundIds(new Set(json.allowedFunds.map((f) => f.id)));
-    } catch {
+      if (!ac.signal.aborted) {
+        setAccess(json);
+        setSelectedFundIds(new Set(json.allowedFunds.map((f) => f.id)));
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error("Zugriffsdaten konnten nicht geladen werden");
     } finally {
-      setLoadingAccess(false);
+      if (!ac.signal.aborted) setLoadingAccess(false);
     }
   }, []);
 
@@ -100,6 +109,7 @@ export default function FundAccessPage() {
       setAccess(null);
       setSelectedFundIds(new Set());
     }
+    return () => abortRef.current?.abort();
   }, [selectedUserId, loadAccess]);
 
   const toggleFund = (fundId: string) => {

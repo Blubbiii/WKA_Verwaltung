@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   FileText,
@@ -171,20 +171,27 @@ export default function PPAPage() {
   const [deletePpa, setDeletePpa] = useState<PPA | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // H-9: AbortController um stale Requests bei Filter-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (statusFilter !== "ALL") params.set("status", statusFilter);
-      const res = await fetch(`/api/ppa?${params}`);
+      const res = await fetch(`/api/ppa?${params}`, { signal: ac.signal });
       if (res.ok) {
         const data = await res.json();
-        setPpas(data.ppas ?? []);
+        if (!ac.signal.aborted) setPpas(data.ppas ?? []);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("loadError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [statusFilter, t]);
 
@@ -192,6 +199,7 @@ export default function PPAPage() {
     if (!flagsLoading) {
       load();
     }
+    return () => abortRef.current?.abort();
   }, [flagsLoading, load]);
 
   // Client-side search filter

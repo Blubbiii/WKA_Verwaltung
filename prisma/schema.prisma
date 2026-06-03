@@ -1036,6 +1036,10 @@ model Invoice {
   emailedTo                                                                                   String?
   reminderLevel                                                                               Int?
   reminderSentAt                                                                              DateTime?
+  // §25b UStG: Innergemeinschaftliches Dreiecksgeschäft.
+  // Mittlerer Unternehmer (Inland) → Empfänger EU-Land A → Endabnehmer EU-Land B.
+  // Triggers triangulation-flag in ZM-XML (BZSt Format: Kennung "T" / <dreiecksgeschaeft>1).
+  isTriangulationDeal                                                                         Boolean                         @default(false)
   // P10: Tax-Code-Verweis (löst TaxType schrittweise ab).
   // Nullable während Migration — Backfill durch Phase 11.
   taxCodeId                                                                                   String?

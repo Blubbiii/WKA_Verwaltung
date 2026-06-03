@@ -44,6 +44,12 @@ const invoiceCreateSchema = z.object({
   // Skonto (early payment discount) - both optional
   skontoPercent: z.number().min(0.01).max(99.99).optional().nullable(),
   skontoDays: z.number().int().min(1).max(365).optional().nullable(),
+  // §25b UStG Dreiecksgeschäft (innergemeinschaftliche Lieferkette).
+  isTriangulationDeal: z.boolean().optional().default(false),
+  // EU-Empfänger-Felder (für ZM-Meldung). Sind optional auf Schema-Ebene,
+  // werden aber vom EU-Detection-Code in ZM nur genutzt wenn beide gesetzt.
+  recipientCountry: z.string().length(2).optional().nullable(),
+  recipientVatId: z.string().min(4).max(50).optional().nullable(),
   items: z.array(invoiceItemSchema).min(1, "Mindestens eine Position erforderlich"),
 });
 
@@ -227,6 +233,9 @@ async function postHandler(request: NextRequest) {
           shareholderId: validatedData.shareholderId,
           leaseId: validatedData.leaseId,
           parkId: validatedData.parkId,
+          recipientCountry: validatedData.recipientCountry ?? null,
+          recipientVatId: validatedData.recipientVatId ?? null,
+          isTriangulationDeal: validatedData.isTriangulationDeal ?? false,
           ...skontoData,
           items: {
             create: itemsData,

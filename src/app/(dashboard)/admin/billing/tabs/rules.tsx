@@ -5,7 +5,7 @@
  * Moved from admin/billing-rules/page.tsx
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { formatDateTime } from "@/lib/format";
 import {
   AlertDialog,
@@ -140,8 +140,14 @@ export default function BillingRulesTab() {
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [ruleToDeactivate, setRuleToDeactivate] = useState<string | null>(null);
 
+  // H-9: AbortController um stale Requests bei Filter-/Page-Wechsel zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   // Fetch Rules
   const fetchRules = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -159,20 +165,22 @@ export default function BillingRulesTab() {
         params.append("isActive", statusFilter);
       }
 
-      const response = await fetch(`/api/admin/billing-rules?${params}`);
+      const response = await fetch(`/api/admin/billing-rules?${params}`, { signal: ac.signal });
       if (!response.ok) throw new Error("Fehler beim Laden");
 
       const data = await response.json();
+      if (ac.signal.aborted) return;
       setRules(data.data);
       setPagination((prev) => ({
         ...prev,
         total: data.pagination.total,
         totalPages: data.pagination.totalPages,
       }));
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error("Fehler beim Laden der Abrechnungsregeln");
     } finally {
-      setIsLoading(false);
+      if (!ac.signal.aborted) setIsLoading(false);
     }
   }, [pagination.page, pagination.limit, ruleTypeFilter, frequencyFilter, statusFilter]);
 
