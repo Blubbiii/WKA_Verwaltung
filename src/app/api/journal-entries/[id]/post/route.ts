@@ -6,6 +6,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
+import { assertFourEyes, FourEyesViolationError } from "@/lib/auth/four-eyes-check";
 
 // ============================================================================
 // POST /api/journal-entries/[id]/post
@@ -51,6 +52,25 @@ export async function POST(
 
     if (Math.abs(totalDebit - totalCredit) >= 0.005) {
       return apiError("BAD_REQUEST", 400, { message: `Buchung nicht ausgeglichen: Soll ${totalDebit.toFixed(2)} € ≠ Haben ${totalCredit.toFixed(2)} €` });
+    }
+
+    // Sprint 3: 4-Augen-Prinzip beim Festschreiben oberhalb Schwellwert.
+    try {
+      await assertFourEyes({
+        tenantId: check.tenantId!,
+        userId: check.userId!,
+        action: "POSTING",
+        createdById: entry.createdById,
+        amountEur: totalDebit,
+      });
+    } catch (err) {
+      if (err instanceof FourEyesViolationError) {
+        return apiError("SELF_APPROVAL_FORBIDDEN", 403, {
+          message: err.message,
+          details: { threshold: err.threshold, amountEur: err.amountEur },
+        });
+      }
+      throw err;
     }
 
     // P9: GoBD §146 AO — DRAFT → POSTED nur wenn Periode (entryDate) noch offen.

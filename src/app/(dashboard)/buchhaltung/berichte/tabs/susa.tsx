@@ -159,6 +159,16 @@ export default function SuSaContent() {
             <Download className="h-4 w-4 mr-2" />
             {t("exportBtn")}
           </Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              window.open(`/api/buchhaltung/susa/export/excel?from=${from}&to=${to}`, "_blank")
+            }
+            disabled={!data || data.rows.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Excel
+          </Button>
         </div>
 
         {loading ? (

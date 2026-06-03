@@ -25,6 +25,7 @@ import {
   PeriodLockedError,
 } from "@/lib/accounting/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
+import { assertFourEyes, FourEyesViolationError } from "@/lib/auth/four-eyes-check";
 
 const reverseSchema = z.object({
   reason: z.string().min(1, "Storno-Begründung ist Pflicht").max(500),
@@ -63,6 +64,42 @@ export async function POST(
     }
 
     const { reason, reversalDate } = bodyParsed.data;
+
+    // Sprint 3: 4-Augen-Prinzip beim Storno.
+    // Wir lesen die Original-Buchung um createdById + Summe zu kennen.
+    const original = await prisma.journalEntry.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        tenantId: true,
+        createdById: true,
+        lines: { select: { debitAmount: true } },
+      },
+    });
+    if (!original || original.tenantId !== check.tenantId) {
+      return apiError("NOT_FOUND", 404, { message: "Buchung nicht gefunden" });
+    }
+    const sumDebit = original.lines.reduce(
+      (s, l) => s + Number(l.debitAmount ?? 0),
+      0,
+    );
+    try {
+      await assertFourEyes({
+        tenantId: check.tenantId!,
+        userId: check.userId!,
+        action: "REVERSE",
+        createdById: original.createdById,
+        amountEur: sumDebit,
+      });
+    } catch (err) {
+      if (err instanceof FourEyesViolationError) {
+        return apiError("SELF_APPROVAL_FORBIDDEN", 403, {
+          message: err.message,
+          details: { threshold: err.threshold, amountEur: err.amountEur },
+        });
+      }
+      throw err;
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       return reverseJournalEntry(tx, {

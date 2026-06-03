@@ -73,6 +73,12 @@ export interface TenantSettings {
   // > 0 = nur Rechnungen mit grossAmount > Schwelle brauchen 4-Augen.
   // Auf hohem Wert (z.B. 1.000.000) effektiv deaktiviert.
   fourEyesThresholdEur: number | null;
+  // Sprint 3 Permissions v2: 4-Augen-Schwellen für weitere kritische Aktionen.
+  // null = immer 4-Augen, hoher Wert = effektiv deaktiviert.
+  postingApprovalThresholdEur: number | null;     // Festschreiben (DRAFT → POSTED)
+  reverseApprovalThresholdEur: number | null;     // Storno (Generalumkehr)
+  settlementApprovalThresholdEur: number | null;  // Settlement-Finalize
+  sepaApprovalThresholdEur: number | null;        // SEPA-Zahllauf
   // Audit-B: Cent-Toleranz für Bank-Match (Rundungs-Toleranz beim
   // automatischen Matchen). Wird AUCH für die Voll-bezahlt-Übergangs-Toleranz
   // genutzt — wer 0,10 € im Match akzeptiert, akzeptiert auch isFullyPaid bei
@@ -151,6 +157,11 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   useTaxSplit: false,
   // P13: 4-Augen-Schwelle Default 1.000 € — übliche Praxis im Mittelstand.
   fourEyesThresholdEur: 1000,
+  // Sprint 3: 4-Augen für weitere kritische Aktionen — Defaults konservativ.
+  postingApprovalThresholdEur: 5000,
+  reverseApprovalThresholdEur: 0,  // jeder Storno braucht 4-Augen (Default null würde "immer" bedeuten — 0 = immer)
+  settlementApprovalThresholdEur: 0,  // jedes Settlement-Finalize
+  sepaApprovalThresholdEur: 10000,  // SEPA-Läufe über 10.000 €
   // Audit-B Defaults.
   bankMatchToleranceEur: 0.02,
   bilanzToleranceEur: 0.01,

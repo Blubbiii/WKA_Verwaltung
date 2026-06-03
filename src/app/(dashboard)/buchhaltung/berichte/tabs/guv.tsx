@@ -92,6 +92,26 @@ export default function GuvContent() {
           <div className="space-y-1"><Label>{t("to")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
           <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}</Button>
           <Button variant="outline" onClick={exportCsv} disabled={!data}><Download className="h-4 w-4 mr-2" />{t("exportBtn")}</Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              window.open(`/api/buchhaltung/guv/export/excel?from=${from}&to=${to}`, "_blank")
+            }
+            disabled={!data}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Excel
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              window.open(`/api/buchhaltung/guv/export/pdf?from=${from}&to=${to}`, "_blank")
+            }
+            disabled={!data}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
         </div>
 
         {loading ? (
