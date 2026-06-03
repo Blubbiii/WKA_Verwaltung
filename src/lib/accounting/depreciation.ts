@@ -22,6 +22,7 @@ import { Decimal } from "@prisma/client-runtime-utils";
 import { logger } from "@/lib/logger";
 import { loadAfaConfig } from "@/lib/system-settings";
 import { assertPeriodOpen, PeriodLockedError } from "./period-lock";
+import { invalidateReportsCache } from "@/lib/cache/reports";
 import {
   calculateAfaSchedule,
   DegressiveNotAllowedError,
@@ -82,6 +83,7 @@ export async function runDepreciation(
 
   let processedCount = 0;
   let totalAmount = 0;
+  let postingsCreated = 0;
   const warnings: string[] = [];
 
   for (const asset of assets) {
@@ -200,6 +202,7 @@ export async function runDepreciation(
           select: { id: true },
         });
         journalEntryId = je.id;
+        postingsCreated++;
       }
 
       await prisma.fixedAssetDepreciation.create({
@@ -229,6 +232,18 @@ export async function runDepreciation(
 
   if (warnings.length > 0) {
     logger.warn({ warnings }, "Depreciation run completed with warnings");
+  }
+
+  // K-1-Fix: Wenn AfA-Buchungen erzeugt wurden (createPostings=true und mind.
+  // ein Asset mit Konten), Reports-Cache invalidieren — Bilanz/GuV/Anlagenspiegel
+  // ändern sich. Fire-and-forget.
+  if (postingsCreated > 0) {
+    invalidateReportsCache(tenantId).catch((err) => {
+      logger.warn(
+        { err, tenantId, postingsCreated },
+        "[Reports-Cache] Invalidation failed after depreciation run",
+      );
+    });
   }
 
   return { processedCount, totalAmount, warnings };

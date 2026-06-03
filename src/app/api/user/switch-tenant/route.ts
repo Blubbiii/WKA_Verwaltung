@@ -109,7 +109,11 @@ export async function POST(request: NextRequest) {
     sameSite: "lax",
     path: "/",
     maxAge: COOKIE_MAX_AGE,
-    secure: process.env.NEXTAUTH_URL?.startsWith("https://") ?? false,
+    // Sicherer Default: in Production immer secure (auch bei Edge-TLS-Termination).
+    // Opt-out nur für lokale HTTP-Setups via FORCE_INSECURE_COOKIES=true.
+    secure:
+      process.env.NODE_ENV === "production" &&
+      process.env.FORCE_INSECURE_COOKIES !== "true",
   });
 
   return NextResponse.json({

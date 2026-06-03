@@ -20,6 +20,7 @@ import {
   writeOffReceivable,
 } from "@/lib/accounting/write-off";
 import { PeriodLockedError } from "@/lib/accounting/period-lock";
+import { invalidateReportsCache } from "@/lib/cache/reports";
 
 const schema = z.object({
   type: z.enum(ValueAdjustmentType),
@@ -102,6 +103,19 @@ export async function POST(
       },
       "Value adjustment posted",
     );
+
+    // K-1-Fix: Bei DIRECT_WRITEOFF wurde optional eine §17-USt-Korrekturbuchung
+    // (POSTED JournalEntry) erzeugt; zudem ändert die Wertberichtigung selbst
+    // (auch EWB/PWB folgend per JournalEntry-Manager) die Saldi. Reports-Cache
+    // invalidieren — fire-and-forget.
+    if (result.ustAdjustmentId || parsed.data.type === ValueAdjustmentType.DIRECT_WRITEOFF) {
+      invalidateReportsCache(check.tenantId!).catch((err) => {
+        logger.warn(
+          { err, invoiceId: id },
+          "[Reports-Cache] Invalidation failed after write-off",
+        );
+      });
+    }
 
     return NextResponse.json({ data: serializePrisma(result) }, { status: 201 });
   } catch (error) {

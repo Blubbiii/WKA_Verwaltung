@@ -24,6 +24,7 @@ import {
   OpeningBalanceAlreadyExistsError,
   carryForward,
 } from "@/lib/accounting/year-end-close";
+import { invalidateReportsCache } from "@/lib/cache/reports";
 
 const closeSchema = z.object({
   fiscalYear: z.number().int().min(2000).max(2100),
@@ -53,6 +54,11 @@ export async function POST(request: NextRequest) {
         userId: check.userId!,
         allowUnbalanced: parsed.data.allowUnbalanced ?? false,
       });
+    });
+
+    // K-1: Reports-Cache invalidieren — Saldenvortrag ändert Bilanz/SuSa Folgejahr.
+    invalidateReportsCache(check.tenantId!).catch((err) => {
+      logger.warn({ err }, "[Reports-Cache] Invalidation nach Year-End-Close fehlgeschlagen");
     });
 
     logger.info(

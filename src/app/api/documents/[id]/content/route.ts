@@ -138,12 +138,35 @@ export async function GET(
 
       // Bei NoSuchKey: Versuche lokalen Fallback (alte Uploads)
       if (errorName === "NoSuchKey" || errorMessage.includes("NoSuchKey")) {
-        // Versuche Datei lokal zu laden (Fallback für alte Uploads)
-        const publicDir = path.resolve(process.cwd(), "public");
-        const localPath = path.resolve(publicDir, document.fileUrl);
+        // P1-3 Fix: Strict-Whitelist VOR path.resolve gegen Path-Traversal.
+        // Admin könnte via UPDATE auf Document.fileUrl `..\..\.env` setzen.
+        // Verbiete: ".." Segmente, absolute Pfade, Drive-Letter (Windows).
+        const rawFileUrl = document.fileUrl ?? "";
+        if (
+          rawFileUrl.includes("..") ||
+          rawFileUrl.startsWith("/") ||
+          rawFileUrl.startsWith("\\") ||
+          /^[a-zA-Z]:/.test(rawFileUrl) ||
+          rawFileUrl.includes("\0")
+        ) {
+          logger.warn(
+            { documentId: id, fileUrl: rawFileUrl },
+            "[SECURITY] Path-Traversal-Versuch in Document.fileUrl abgewehrt",
+          );
+          return apiError("VALIDATION_FAILED", undefined, {
+            message: "Ungültiger Dateipfad",
+          });
+        }
 
-        // Security: Prevent path traversal outside public/ directory
+        const publicDir = path.resolve(process.cwd(), "public");
+        const localPath = path.resolve(publicDir, rawFileUrl);
+
+        // Defense-in-Depth: zusätzlich Resolved-Path-Check
         if (!localPath.startsWith(publicDir + path.sep)) {
+          logger.warn(
+            { documentId: id, localPath, publicDir },
+            "[SECURITY] Resolved-Path außerhalb publicDir",
+          );
           return apiError("VALIDATION_FAILED", undefined, { message: "Ungültiger Dateipfad" });
         }
 

@@ -20,6 +20,7 @@ import { logger } from "@/lib/logger";
 import { getTenantSettings, type TenantSettings } from "@/lib/tenant-settings";
 import type { Prisma } from "@prisma/client";
 import { assertPeriodOpen, PeriodLockedError } from "./period-lock";
+import { invalidateReportsCache } from "@/lib/cache/reports";
 
 interface AutoPostingResult {
   success: boolean;
@@ -259,6 +260,15 @@ export async function createAutoPosting(
       "Auto-posting created for invoice"
     );
 
+    // K-1-Fix: Reports-Cache invalidieren — neue POSTED-Buchung ändert Saldi
+    // (Bilanz/GuV/BWA/SuSa/UStVA). Fire-and-forget, damit Caller nicht blockt.
+    invalidateReportsCache(invoice.tenantId).catch((err) => {
+      logger.warn(
+        { err, invoiceId },
+        "[Reports-Cache] Invalidation failed after auto-posting create",
+      );
+    });
+
     return { success: true, journalEntryId: entry.id };
   } catch (error) {
     logger.error({ err: error, invoiceId }, "Auto-posting failed");
@@ -354,6 +364,15 @@ export async function reverseAutoPosting(
       { invoiceId, journalEntryId: reversal.id },
       "Auto-posting reversal created"
     );
+
+    // K-1-Fix: Reports-Cache invalidieren — Storno ändert Saldi genauso wie
+    // die Original-Buchung. Fire-and-forget, damit Caller nicht blockt.
+    invalidateReportsCache(original.tenantId).catch((err) => {
+      logger.warn(
+        { err, invoiceId },
+        "[Reports-Cache] Invalidation failed after auto-posting reverse",
+      );
+    });
 
     return { success: true, journalEntryId: reversal.id };
   } catch (error) {

@@ -121,22 +121,28 @@ export const authConfig: NextAuthConfig = {
         session.user.tenantSlug = (token.tenantSlug as string | null | undefined) ?? "";
         session.user.tenantLogoUrl = (token.tenantLogoUrl as string | null | undefined) ?? null;
 
-        // Override with active tenant context if the user switched tenants
+        // P2-10 Fix: Tenant-Override aus HMAC-Cookie verifizieren — NICHT
+        // aus Request-Header lesen. Bei API-Direct-Calls (außerhalb des
+        // Middleware-Matchers) könnte sonst ein Angreifer mit gestohlenem
+        // JWT den x-active-tenant-id-Header injizieren → Cross-Tenant-Zugriff.
         const req = params.request as Request | undefined;
-        const activeTenantId = req?.headers?.get("x-active-tenant-id");
-        const activeTenantName = req?.headers?.get("x-active-tenant-name");
-        const activeTenantSlug = req?.headers?.get("x-active-tenant-slug");
-        const activeTenantLogoUrl = req?.headers?.get("x-active-tenant-logo-url");
-        const activeRoleHierarchy = req?.headers?.get("x-active-role-hierarchy");
-
-        if (activeTenantId) {
-          session.user.tenantId = activeTenantId;
-          if (activeTenantName) session.user.tenantName = activeTenantName;
-          if (activeTenantSlug) session.user.tenantSlug = activeTenantSlug;
-          session.user.tenantLogoUrl = activeTenantLogoUrl ?? null;
-          if (activeRoleHierarchy) {
-            const parsed = parseInt(activeRoleHierarchy, 10);
-            session.user.roleHierarchy = Number.isFinite(parsed) ? parsed : 0;
+        const cookieHeader = req?.headers?.get("cookie") ?? "";
+        const cookieMatch = cookieHeader.match(/wpm-active-tenant=([^;]+)/);
+        if (cookieMatch) {
+          const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
+          const { verifyActiveTenantCookie } = await import("./active-tenant-cookie");
+          const data = await verifyActiveTenantCookie(
+            decodeURIComponent(cookieMatch[1]),
+            secret,
+          );
+          if (data) {
+            session.user.tenantId = data.activeTenantId;
+            session.user.tenantName = data.tenantName;
+            session.user.tenantSlug = data.tenantSlug;
+            session.user.tenantLogoUrl = data.tenantLogoUrl;
+            if (typeof data.roleHierarchy === "number") {
+              session.user.roleHierarchy = data.roleHierarchy;
+            }
           }
         }
       }
@@ -155,8 +161,12 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        // Secure cookies only when explicitly using HTTPS (local network runs on HTTP)
-        secure: process.env.NEXTAUTH_URL?.startsWith("https://") ?? false,
+        // Sicherer Default: in Production immer secure (auch wenn TLS am Edge/Reverse-Proxy
+        // terminiert und NEXTAUTH_URL intern auf http:// zeigt). Opt-out nur für lokale
+        // HTTP-Setups via FORCE_INSECURE_COOKIES=true.
+        secure:
+          process.env.NODE_ENV === "production" &&
+          process.env.FORCE_INSECURE_COOKIES !== "true",
       },
     },
   },

@@ -6,6 +6,8 @@ export async function register() {
 
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("../sentry.server.config");
+    const { checkAuditLogTrigger } = await import("./lib/audit-trigger-check");
+    await checkAuditLogTrigger();
   }
 
   if (process.env.NEXT_RUNTIME === "edge") {

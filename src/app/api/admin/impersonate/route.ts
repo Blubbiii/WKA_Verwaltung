@@ -18,8 +18,11 @@ const impersonateSchema = z.object({
  *  - Fehlt AUTH_SECRET → throw (kein Fallback auf "")
  *  - timingSafeEqual nur nach Längen-Check (sonst RangeError → 500 statt 401)
  *  - exp/iat im Payload für serverseitige Revocation + Ablauf-Check
+ *
+ * P1-5-Fix: EINE Konstante für Cookie-MaxAge UND HMAC-Payload-exp — beides
+ * stammt aus AUTH_CONFIG.impersonationTtlSeconds.
  */
-const IMPERSONATION_TTL_SECONDS = 60 * 60 * 4; // 4h
+const IMPERSONATION_TTL_SECONDS = AUTH_CONFIG.impersonationTtlSeconds;
 
 function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
@@ -177,9 +180,13 @@ const check = await requireSuperadmin();
     const cookieStore = await cookies();
     cookieStore.set("impersonation", signCookieValue(impersonationData), {
       httpOnly: true,
-      secure: process.env.NEXTAUTH_URL?.startsWith("https://") ?? false,
+      // Sicherer Default: in Production immer secure (auch bei Edge-TLS-Termination).
+      // Opt-out nur für lokale HTTP-Setups via FORCE_INSECURE_COOKIES=true.
+      secure:
+        process.env.NODE_ENV === "production" &&
+        process.env.FORCE_INSECURE_COOKIES !== "true",
       sameSite: "lax",
-      maxAge: AUTH_CONFIG.impersonationMaxAge,
+      maxAge: AUTH_CONFIG.impersonationTtlSeconds,
       path: "/",
     });
 

@@ -11,6 +11,7 @@ import { createUStAdjustment } from "@/lib/accounting/ust-adjustment";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { PeriodLockedError } from "@/lib/accounting/period-lock";
 import { recordPayment } from "@/lib/accounting/invoice-payment";
+import { invalidateReportsCache } from "@/lib/cache/reports";
 import { Decimal } from "@prisma/client-runtime-utils";
 
 const markPaidSchema = z.object({
@@ -202,6 +203,13 @@ export async function POST(
         { invoiceId: id, ustAdjustmentId, tenantId: check.tenantId },
         "§17 UStG Skonto-Korrektur gebucht",
       );
+      // K-1-Fix: §17-Korrekturbuchung ist POSTED → Reports-Cache invalidieren.
+      invalidateReportsCache(check.tenantId!).catch((err) => {
+        logger.warn(
+          { err, invoiceId: id },
+          "[Reports-Cache] Invalidation failed after §17 UStG Skonto-Korrektur",
+        );
+      });
     }
 
     // Invalidate dashboard caches after marking invoice as paid

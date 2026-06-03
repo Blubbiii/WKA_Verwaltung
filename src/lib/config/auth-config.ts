@@ -23,8 +23,16 @@ export const AUTH_CONFIG = {
   /** Maximum password length */
   passwordMaxLength: envInt("PASSWORD_MAX_LENGTH", 128),
 
-  /** Impersonation session duration in seconds (default: 1 hour) */
-  impersonationMaxAge: envInt("IMPERSONATION_MAX_AGE", 60 * 60),
+  /**
+   * Impersonation session duration in seconds (default: 4 hours).
+   * EINE Quelle für Cookie-MaxAge UND HMAC-Payload-exp — beides MUSS synchron sein,
+   * sonst gibt es Inkonsistenzen (Cookie noch da, Payload abgelaufen oder umgekehrt).
+   * Backward-Compat: liest auch noch IMPERSONATION_MAX_AGE als Fallback.
+   */
+  impersonationTtlSeconds: envInt(
+    "IMPERSONATION_TTL_SECONDS",
+    envInt("IMPERSONATION_MAX_AGE", 60 * 60 * 4),
+  ),
 
   /** Password reset token validity in hours (default: 24h — gives users time to find the email) */
   passwordResetTokenExpiryHours: envInt("PASSWORD_RESET_TOKEN_EXPIRY_HOURS", 24),

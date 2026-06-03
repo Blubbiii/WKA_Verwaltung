@@ -73,8 +73,11 @@ export interface AssertFourEyesParams {
 export async function assertFourEyes(params: AssertFourEyesParams): Promise<void> {
   const settings = await getTenantSettings(params.tenantId);
   const threshold = getThreshold(params.action, settings);
+  // K-3-Fix: Betrag IMMER absolut vergleichen. Reverse-Lines können nur Credit
+  // gesetzt haben (debitAmount=null/0) — ohne abs() würde sumDebit=0 sein und
+  // der 4-Augen-Check durchgelassen werden (Bypass über Stornos > Schwellwert).
   const requireFourEyes =
-    threshold === null || params.amountEur > threshold;
+    threshold === null || Math.abs(params.amountEur) > threshold;
 
   if (!requireFourEyes) return;
 

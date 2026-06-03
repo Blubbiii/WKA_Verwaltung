@@ -74,23 +74,33 @@ export async function POST(
         id: true,
         tenantId: true,
         createdById: true,
-        lines: { select: { debitAmount: true } },
+        lines: { select: { debitAmount: true, creditAmount: true } },
       },
     });
     if (!original || original.tenantId !== check.tenantId) {
       return apiError("NOT_FOUND", 404, { message: "Buchung nicht gefunden" });
     }
+    // K-3-Fix: Absolutbetrag einer Buchungsseite verwenden.
+    // Eine ausgeglichene Buchung hat Soll-Summe = Haben-Summe, also reicht
+    // eine Seite. ABER: Reverse-Lines können debitAmount=null haben (nur Credit
+    // gesetzt) — ohne abs() + Fallback wäre sumDebit=0 und der 4-Augen-Check
+    // würde Stornos > Schwellwert durchlassen (Bypass durch Initiator selbst).
     const sumDebit = original.lines.reduce(
-      (s, l) => s + Number(l.debitAmount ?? 0),
+      (s, l) => s + Math.abs(Number(l.debitAmount ?? 0)),
       0,
     );
+    const sumCredit = original.lines.reduce(
+      (s, l) => s + Math.abs(Number(l.creditAmount ?? 0)),
+      0,
+    );
+    const totalAmount = sumDebit > 0 ? sumDebit : sumCredit;
     try {
       await assertFourEyes({
         tenantId: check.tenantId!,
         userId: check.userId!,
         action: "REVERSE",
         createdById: original.createdById,
-        amountEur: sumDebit,
+        amountEur: totalAmount,
       });
     } catch (err) {
       if (err instanceof FourEyesViolationError) {
@@ -99,7 +109,7 @@ export async function POST(
           action: "JOURNAL_REVERSE",
           entityType: "JournalEntry",
           entityId: id,
-          amountEur: sumDebit,
+          amountEur: totalAmount,
           requestedById: check.userId!,
           requestReason: reason,
           actionParams: { reason, reversalDate },

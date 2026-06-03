@@ -1,5 +1,11 @@
 # AuditLog Append-Only Constraint
 
+**STATUS:** Migration vorhanden unter `prisma/migrations/manual/audit_log_hardening.sql`. Deploy via:
+```sh
+docker exec -i windparkmanager-postgres-1 psql -U wpm -d windparkmanager < prisma/migrations/manual/audit_log_hardening.sql
+```
+Boot-Check: `src/lib/audit-trigger-check.ts` wird via `src/instrumentation.ts` automatisch beim Server-Start ausgeführt und loggt einen Warning, falls die Trigger fehlen.
+
 ## Ziel
 Die Tabelle `audit_logs` darf in Produktion **niemals** UPDATE oder DELETE
 erfahren — auch nicht versehentlich durch Devs mit DB-Direktzugriff oder
