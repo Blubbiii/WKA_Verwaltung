@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { version as appVersion } from "./package.json";
+import { maskEmail, maskIp } from "./src/lib/observability/pii";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
@@ -21,4 +22,13 @@ Sentry.init({
     "UNAUTHORIZED",
     "CredentialsSignin",
   ],
+
+  beforeSend(event) {
+    if (event.user) {
+      if (event.user.email) event.user.email = maskEmail(event.user.email);
+      if (event.user.ip_address) event.user.ip_address = maskIp(event.user.ip_address);
+      delete event.user.username;
+    }
+    return event;
+  },
 });

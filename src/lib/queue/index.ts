@@ -253,6 +253,23 @@ export type {
 } from './queues/approvals-reconcile.queue';
 
 // ============================================
+// Retention Cron Queue (DSGVO + GoBD)
+// ============================================
+
+export {
+  getRetentionCronQueue,
+  scheduleRetentionCron,
+  enqueueRetentionSweepNow,
+  removeRetentionCronSchedule,
+  closeRetentionCronQueue,
+} from './queues/retention-cron.queue';
+
+export type {
+  RetentionCronJobData,
+  RetentionCronJobResult,
+} from './queues/retention-cron.queue';
+
+// ============================================
 // Utility Functions
 // ============================================
 

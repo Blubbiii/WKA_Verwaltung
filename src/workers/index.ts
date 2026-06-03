@@ -242,6 +242,23 @@ async function main(): Promise<void> {
     });
   }
 
+  // Retention Cron registrieren (täglich 03:00 — DSGVO + GoBD)
+  try {
+    const { scheduleRetentionCron } = await import(
+      "@/lib/queue/queues/retention-cron.queue"
+    );
+    await scheduleRetentionCron();
+    const dryRun = process.env.RETENTION_DRY_RUN !== "false";
+    log(
+      "info",
+      `Retention cron scheduled (daily 03:00, mode: ${dryRun ? "DRY-RUN" : "LIVE"})`,
+    );
+  } catch (err) {
+    log("warn", "Failed to schedule retention cron", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   // Health-Check starten
   startHealthCheck();
 

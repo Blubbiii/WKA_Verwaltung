@@ -110,6 +110,17 @@ import type {
   ApprovalsReconcileJobResult,
 } from "../queues/approvals-reconcile.queue";
 
+import {
+  startRetentionCronWorker,
+  stopRetentionCronWorker,
+  isRetentionCronWorkerRunning,
+  getRetentionCronWorker,
+} from "./retention-cron.worker";
+import type {
+  RetentionCronJobData,
+  RetentionCronJobResult,
+} from "../queues/retention-cron.queue";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -129,6 +140,7 @@ export const WORKER_NAMES = {
   INBOX_OCR: "inbox-ocr",
   APPROVALS_EXPIRY: "approvals-expiry",
   APPROVALS_RECONCILE: "approvals-reconcile",
+  RETENTION_CRON: "retention-cron",
 } as const;
 
 export type WorkerName = (typeof WORKER_NAMES)[keyof typeof WORKER_NAMES];
@@ -258,6 +270,14 @@ const workerRegistry: WorkerRegistryEntry[] = [
     stop: stopApprovalsReconcileWorker,
     isRunning: isApprovalsReconcileWorkerRunning,
     getWorker: getApprovalsReconcileWorker as () => Worker<unknown, unknown> | null,
+  },
+  {
+    name: WORKER_NAMES.RETENTION_CRON,
+    displayName: "Retention Cron Worker",
+    start: startRetentionCronWorker as () => Worker<unknown, unknown>,
+    stop: stopRetentionCronWorker,
+    isRunning: isRetentionCronWorkerRunning,
+    getWorker: getRetentionCronWorker as () => Worker<unknown, unknown> | null,
   },
 ];
 
@@ -576,3 +596,12 @@ export {
   getApprovalsReconcileWorker,
 };
 export type { ApprovalsReconcileJobData, ApprovalsReconcileJobResult };
+
+// Retention Cron Worker (DSGVO Art. 5(1)(e) + §147 AO)
+export {
+  startRetentionCronWorker,
+  stopRetentionCronWorker,
+  isRetentionCronWorkerRunning,
+  getRetentionCronWorker,
+};
+export type { RetentionCronJobData, RetentionCronJobResult };

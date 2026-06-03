@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { maskEmail, maskIp } from "./src/lib/observability/pii";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -39,8 +40,8 @@ Sentry.init({
   // Scrub PII from client-side error payloads
   beforeSend(event) {
     if (event.user) {
-      delete event.user.email;
-      delete event.user.ip_address;
+      if (event.user.email) event.user.email = maskEmail(event.user.email);
+      if (event.user.ip_address) event.user.ip_address = maskIp(event.user.ip_address);
       delete event.user.username;
     }
     return event;
