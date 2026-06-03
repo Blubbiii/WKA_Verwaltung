@@ -15,7 +15,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     ledgerAccount: { findMany: vi.fn() },
     openingBalance: { findMany: vi.fn() },
-    journalEntryLine: { findMany: vi.fn() },
+    journalEntryLine: { groupBy: vi.fn() },
   },
 }));
 vi.mock("@/lib/tenant-settings", () => ({
@@ -24,13 +24,33 @@ vi.mock("@/lib/tenant-settings", () => ({
     datevAccountAnnualResult: "9999",
   }),
 }));
+// P-3 Sprint 2: Reports-Cache (Redis) — in Tests no-op machen, sonst
+// kann der Cache stale Werte aus früheren Test-Runs liefern.
+vi.mock("@/lib/cache/reports", () => ({
+  getCachedReport: <T,>(_name: string, _tenantId: string, _key: string, fetchFn: () => Promise<T>) => fetchFn(),
+  invalidateReportsCache: vi.fn(),
+}));
 
 import { prisma } from "@/lib/prisma";
 import { computeBilanz } from "./bilanz";
 
 const mockAccts = prisma.ledgerAccount.findMany as unknown as ReturnType<typeof vi.fn>;
 const mockOpenings = prisma.openingBalance.findMany as unknown as ReturnType<typeof vi.fn>;
-const mockLines = prisma.journalEntryLine.findMany as unknown as ReturnType<typeof vi.fn>;
+// P-1 Sprint 2: code nutzt jetzt prisma.journalEntryLine.groupBy statt findMany.
+// Buckets haben Shape: { account, _sum: { debitAmount, creditAmount } }
+const mockLines = prisma.journalEntryLine.groupBy as unknown as ReturnType<typeof vi.fn>;
+
+function toBuckets(lines: Array<{ account: string; debitAmount: number; creditAmount: number }>) {
+  // Aggregiert pro Account (entspricht prisma.groupBy({ by: ['account'], _sum })).
+  const sums = new Map<string, { debitAmount: number; creditAmount: number }>();
+  for (const l of lines) {
+    const cur = sums.get(l.account) ?? { debitAmount: 0, creditAmount: 0 };
+    cur.debitAmount += l.debitAmount;
+    cur.creditAmount += l.creditAmount;
+    sums.set(l.account, cur);
+  }
+  return Array.from(sums.entries()).map(([account, _sum]) => ({ account, _sum }));
+}
 
 const ASOF = new Date("2025-12-31T23:59:59Z");
 
@@ -72,10 +92,10 @@ describe("Bilanz — Identitätsgarantie summeAktiva = summePassiva", () => {
         balanceSheetSection: BalanceSheetSection.EQUITY,
       },
     ]);
-    mockLines.mockResolvedValue([
+    mockLines.mockResolvedValue(toBuckets([
       { account: "1800", debitAmount: 10000, creditAmount: 0 },
       { account: "2000", debitAmount: 0, creditAmount: 10000 },
-    ]);
+    ]));
     const r = await computeBilanz("t-1", 2025, ASOF);
     expect(r.summeAktiva).toBe(10000);
     expect(r.summePassiva).toBe(10000);
@@ -101,10 +121,10 @@ describe("Bilanz — Identitätsgarantie summeAktiva = summePassiva", () => {
     mockOpenings.mockResolvedValue([
       { ledgerAccountId: "a-2", debitAmount: 5000, creditAmount: 0 },
     ]);
-    mockLines.mockResolvedValue([
+    mockLines.mockResolvedValue(toBuckets([
       { account: "0500", debitAmount: 5000, creditAmount: 0 },
       { account: "1800", debitAmount: 0, creditAmount: 5000 },
-    ]);
+    ]));
     const r = await computeBilanz("t-1", 2025, ASOF);
     // Maschinen 5000, Bank 0 → Aktiva 5000
     // Keine Passiva-Bewegung → Passiva 0
@@ -163,10 +183,10 @@ describe("Bilanz — Range-Fallback", () => {
         balanceSheetSection: null,
       },
     ]);
-    mockLines.mockResolvedValue([
+    mockLines.mockResolvedValue(toBuckets([
       { account: "1200", debitAmount: 1000, creditAmount: 0 },
       { account: "2000", debitAmount: 0, creditAmount: 1000 },
-    ]);
+    ]));
     const r = await computeBilanz("t-1", 2025, ASOF);
     expect(r.summeAktiva).toBe(1000);
     expect(r.summePassiva).toBe(1000);
@@ -197,12 +217,12 @@ describe("Bilanz — Jahresergebnis fließt ins EK", () => {
       { id: "a-3", accountNumber: "8400", name: "Erlöse", balanceSheetSection: null },
       { id: "a-4", accountNumber: "6710", name: "Aufwand", balanceSheetSection: null },
     ]);
-    mockLines.mockResolvedValue([
+    mockLines.mockResolvedValue(toBuckets([
       { account: "1800", debitAmount: 1000, creditAmount: 0 },
       { account: "8400", debitAmount: 0, creditAmount: 1000 },
       { account: "1800", debitAmount: 0, creditAmount: 600 },
       { account: "6710", debitAmount: 600, creditAmount: 0 },
-    ]);
+    ]));
     const r = await computeBilanz("t-1", 2025, ASOF);
     // Aktiva: Bank 400€
     // Passiva: EK = Jahresüberschuss 400€
@@ -227,9 +247,9 @@ describe("Bilanz — Warnings", () => {
         balanceSheetSection: null,
       },
     ]);
-    mockLines.mockResolvedValue([
+    mockLines.mockResolvedValue(toBuckets([
       { account: "abc", debitAmount: 100, creditAmount: 0 },
-    ]);
+    ]));
     const r = await computeBilanz("t-1", 2025, ASOF);
     expect(r.warnings.some((w) => w.includes("abc"))).toBe(true);
   });
