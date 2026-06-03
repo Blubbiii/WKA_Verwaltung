@@ -47,6 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { JournalAttachmentsList } from "@/components/buchhaltung/JournalAttachmentsList";
 
 // ============================================================================
 // TYPES
@@ -417,6 +418,14 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
               {balanced ? "  ✓" : `  ${t("dialog.notBalanced")}`}
             </span>
           </div>
+
+          {/* P24.2 Belegablage — nur für gespeicherte Entries */}
+          {editing && (
+            <JournalAttachmentsList
+              journalEntryId={editing.id}
+              readOnly={isReadOnly}
+            />
+          )}
         </div>
 
         <DialogFooter>

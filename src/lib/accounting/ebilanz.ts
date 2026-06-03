@@ -16,6 +16,13 @@
  */
 
 import { computeBilanz, type BilanzResult } from "./reports/bilanz";
+import { getTenantSettings } from "@/lib/tenant-settings";
+import {
+  GCD_SECTION_ELEMENTS,
+  GCD_BS_TOTALS,
+  mapAccountToGcdElement,
+} from "./gcd-taxonomy";
+import type { ChartOfAccountsVersion } from "./chart-of-accounts";
 
 export interface EbilanzInput {
   tenantId: string;
@@ -47,20 +54,10 @@ export interface EbilanzResult {
   ebilanzReady: boolean;
 }
 
-/**
- * Mapping BalanceSheetSection → XBRL-Element-Name (Kerntaxonomie-Subset).
- * Vollständige Taxonomie hat ~5000 Konten — wir nutzen die Aggregations-Ebene.
- */
-const XBRL_ELEMENTS: Record<string, string> = {
-  ASSET_FIXED: "de-gcd:bs.ass.fixedAssets",
-  ASSET_CURRENT: "de-gcd:bs.ass.currentAssets",
-  ASSET_DEFERRED: "de-gcd:bs.ass.prepaidExpenses",
-  EQUITY: "de-gcd:bs.eqLiab.equity",
-  PROVISION: "de-gcd:bs.eqLiab.provisions",
-  LIABILITY_LONG: "de-gcd:bs.eqLiab.liabilities.longterm",
-  LIABILITY_SHORT: "de-gcd:bs.eqLiab.liabilities.shortterm",
-  LIABILITY_DEFERRED: "de-gcd:bs.eqLiab.deferredIncome",
-};
+// Aggregat-Mapping (BalanceSheetSection → GCD-Element). Wird als Fallback
+// genutzt, wenn keine granulare Position aus dem Konten-Range gemappt
+// werden kann. Detail-Map: src/lib/accounting/gcd-taxonomy.ts
+const XBRL_ELEMENTS = GCD_SECTION_ELEMENTS;
 
 function escapeXml(s: string): string {
   return s
@@ -114,21 +111,60 @@ export async function generateEbilanz(input: EbilanzInput): Promise<EbilanzResul
     new Date(Date.UTC(input.fiscalYear, 0, 1)),
   );
 
-  // Positionen aufbauen (Aktiva + Passiva)
-  const positions: Array<{ element: string; amount: number }> = [];
+  // P26.7: Granulares GCD-Mapping pro Account.
+  // Aggregiert dann auf XBRL-Element-Ebene, sodass mehrere Konten auf das
+  // selbe GCD-Element addiert werden (z.B. mehrere Forderungs-Konten
+  // → eine "de-gcd:bs.ass.currentAssets.receivables.tradeReceivables").
+  const settings = await getTenantSettings(input.tenantId);
+  const chartVersion =
+    (settings.chartOfAccountsVersion as ChartOfAccountsVersion) ?? "SKR03";
+
+  const aggregated = new Map<string, number>();
 
   for (const group of bilanz.aktiva) {
-    const xbrlEl = XBRL_ELEMENTS[group.section];
-    if (xbrlEl) {
-      positions.push({ element: xbrlEl, amount: group.total });
+    for (const acc of group.accounts) {
+      const element = mapAccountToGcdElement(
+        acc.accountNumber,
+        group.section,
+        chartVersion,
+      );
+      if (element) {
+        aggregated.set(element, (aggregated.get(element) ?? 0) + acc.amount);
+      }
+    }
+    // Wenn die Group keine Konten hat (z.B. nur Aggregat), liefern wir
+    // dennoch das Aggregat-Element für die XBRL-Validierung.
+    if (group.accounts.length === 0 && group.total !== 0) {
+      const fallback = XBRL_ELEMENTS[group.section];
+      if (fallback) {
+        aggregated.set(fallback, (aggregated.get(fallback) ?? 0) + group.total);
+      }
     }
   }
   for (const group of bilanz.passiva) {
-    const xbrlEl = XBRL_ELEMENTS[group.section];
-    if (xbrlEl) {
-      positions.push({ element: xbrlEl, amount: group.total });
+    for (const acc of group.accounts) {
+      const element = mapAccountToGcdElement(
+        acc.accountNumber,
+        group.section,
+        chartVersion,
+      );
+      if (element) {
+        aggregated.set(element, (aggregated.get(element) ?? 0) + acc.amount);
+      }
+    }
+    if (group.accounts.length === 0 && group.total !== 0) {
+      const fallback = XBRL_ELEMENTS[group.section];
+      if (fallback) {
+        aggregated.set(fallback, (aggregated.get(fallback) ?? 0) + group.total);
+      }
     }
   }
+
+  const positions: Array<{ element: string; amount: number }> = Array.from(
+    aggregated.entries(),
+  )
+    .filter(([, amount]) => Math.abs(amount) >= 0.005) // sub-cent rauswerfen
+    .map(([element, amount]) => ({ element, amount }));
 
   // Jahresergebnis als separate Position
   if (bilanz.jahresergebnis !== 0) {
@@ -197,10 +233,10 @@ export async function generateEbilanz(input: EbilanzInput): Promise<EbilanzResul
 
   // Bilanzsumme als Kontroll-Position
   lines.push(
-    `  <de-gcd:bs.ass.totalAssets contextRef="ctx-instant" unitRef="EUR" decimals="2">${fmtAmount(bilanz.summeAktiva)}</de-gcd:bs.ass.totalAssets>`,
+    `  <${GCD_BS_TOTALS.totalAssets} contextRef="ctx-instant" unitRef="EUR" decimals="2">${fmtAmount(bilanz.summeAktiva)}</${GCD_BS_TOTALS.totalAssets}>`,
   );
   lines.push(
-    `  <de-gcd:bs.eqLiab.totalEquityLiabilities contextRef="ctx-instant" unitRef="EUR" decimals="2">${fmtAmount(bilanz.summePassiva)}</de-gcd:bs.eqLiab.totalEquityLiabilities>`,
+    `  <${GCD_BS_TOTALS.totalEquityLiabilities} contextRef="ctx-instant" unitRef="EUR" decimals="2">${fmtAmount(bilanz.summePassiva)}</${GCD_BS_TOTALS.totalEquityLiabilities}>`,
   );
 
   lines.push("</xbrl>");

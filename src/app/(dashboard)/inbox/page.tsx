@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -12,6 +13,8 @@ import {
   CheckCircle2,
   Eye,
   AlertCircle,
+  ShieldCheck,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
@@ -59,6 +62,11 @@ interface IncomingInvoice {
   vendorNameFallback: string | null;
   fileName: string;
   createdAt: string;
+  // P13: 4-Augen-Tracking
+  createdById?: string | null;
+  approvedById?: string | null;
+  approvedAt?: string | null;
+  createdBy?: { id: string; firstName: string | null; lastName: string | null } | null;
 }
 
 // ============================================================================
@@ -178,12 +186,15 @@ function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: (
 export default function InboxPage() {
   const t = useTranslations("inbox");
   const router = useRouter();
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
   const { flags, loading: flagsLoading } = useFeatureFlags();
   const [invoices, setInvoices] = useState<IncomingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -206,6 +217,40 @@ export default function InboxPage() {
   useEffect(() => {
     if (!flagsLoading && flags.inbox) load();
   }, [flags.inbox, flagsLoading, load]);
+
+  const handleApprove = useCallback(
+    async (invoiceId: string) => {
+      setApprovingId(invoiceId);
+      try {
+        const res = await fetch(`/api/inbox/${invoiceId}/approve`, {
+          method: "POST",
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          if (res.status === 403 && err?.code === "SELF_APPROVAL_FORBIDDEN") {
+            toast.error(err.message ?? "Vier-Augen-Prinzip verletzt");
+          } else if (res.status === 422 && err?.code === "VAT_DEDUCTION_FAILED") {
+            const missing = Array.isArray(err?.details?.missing)
+              ? err.details.missing.join(", ")
+              : "";
+            toast.error(`§14 UStG fehlende Pflichtangaben: ${missing}`);
+          } else if (res.status === 409) {
+            toast.error(err.message ?? "Status erlaubt keine Freigabe");
+          } else {
+            toast.error(err.message ?? "Freigabe fehlgeschlagen");
+          }
+          return;
+        }
+        toast.success("Rechnung freigegeben");
+        await load();
+      } catch {
+        toast.error("Netzwerkfehler bei Freigabe");
+      } finally {
+        setApprovingId(null);
+      }
+    },
+    [load],
+  );
 
   if (flagsLoading) return null;
 
@@ -317,6 +362,7 @@ export default function InboxPage() {
                   <TableHead>{t("table.due")}</TableHead>
                   <TableHead className="text-right">{t("table.gross")}</TableHead>
                   <TableHead>{t("table.status")}</TableHead>
+                  <TableHead className="text-right">Aktion</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -365,6 +411,32 @@ export default function InboxPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={variant}>{statusLabel}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        {(inv.status === "INBOX" || inv.status === "REVIEW") && (() => {
+                          const isSelf = currentUserId && inv.createdById === currentUserId;
+                          const isApproving = approvingId === inv.id;
+                          return (
+                            <Button
+                              size="sm"
+                              variant={isSelf ? "outline" : "default"}
+                              onClick={() => void handleApprove(inv.id)}
+                              disabled={isApproving}
+                              title={
+                                isSelf
+                                  ? "Eigene Rechnung — Vier-Augen-Prinzip wird ggf. blockieren"
+                                  : "Rechnung freigeben"
+                              }
+                            >
+                              {isApproving ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <ShieldCheck className="h-3 w-3" />
+                              )}
+                              <span className="ml-1">Freigeben</span>
+                            </Button>
+                          );
+                        })()}
                       </TableCell>
                     </TableRow>
                   );
