@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -191,7 +192,15 @@ export default function SuSaContent() {
                 <TableBody>
                   {data.rows.map((row) => (
                     <TableRow key={row.accountNumber}>
-                      <TableCell className="font-mono font-semibold">{row.accountNumber}</TableCell>
+                      <TableCell className="font-mono font-semibold">
+                        <Link
+                          href={`/buchhaltung/kontoblatt?account=${encodeURIComponent(row.accountNumber)}&from=${from}&to=${to}`}
+                          className="text-primary underline-offset-4 hover:underline"
+                          title="Zum Kontoblatt"
+                        >
+                          {row.accountNumber}
+                        </Link>
+                      </TableCell>
                       <TableCell>{row.accountName}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="text-xs">

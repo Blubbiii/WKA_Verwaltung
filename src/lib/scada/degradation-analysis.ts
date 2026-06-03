@@ -93,6 +93,63 @@ export async function analyzeDegradation(
   const now = new Date();
   const from = new Date(Date.UTC(now.getFullYear(), now.getMonth() - months, 1));
   const to = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
+  const turbineIds = turbines.map((t) => t.id);
+
+  // P-5 Sprint 2: N+1 → 2 Batch-Queries.
+  // Vorher: 60 Round-Trips (2 pro Turbine bei 30 Turbinen).
+  // Nachher: 2 Round-Trips, danach in-memory-Gruppierung.
+  const [allProductions, allWindData] = await Promise.all([
+    prisma.turbineProduction.findMany({
+      where: {
+        turbineId: { in: turbineIds },
+        tenantId,
+        year: { gte: from.getFullYear() },
+      },
+      orderBy: [{ year: "asc" }, { month: "asc" }],
+      select: {
+        turbineId: true,
+        year: true,
+        month: true,
+        productionKwh: true,
+      },
+    }),
+    prisma.$queryRaw<Array<{ turbineId: string; month_start: Date; avg_wind: number | null }>>`
+      SELECT
+        "turbineId",
+        date_trunc('month', "timestamp") AS month_start,
+        AVG("windSpeedMs")::float AS avg_wind
+      FROM scada_measurements
+      WHERE "tenantId" = ${tenantId}
+        AND "turbineId" = ANY(${turbineIds}::text[])
+        AND "timestamp" >= ${from}
+        AND "timestamp" < ${to}
+        AND "windSpeedMs" IS NOT NULL
+        AND "windSpeedMs" > 0
+        AND "windSpeedMs" < 50
+      GROUP BY "turbineId", date_trunc('month', "timestamp")
+      ORDER BY "turbineId", month_start
+    `,
+  ]);
+
+  // Pro Turbine in Maps gruppieren
+  const productionsByTurbine = new Map<string, typeof allProductions>();
+  for (const p of allProductions) {
+    const list = productionsByTurbine.get(p.turbineId) ?? [];
+    list.push(p);
+    productionsByTurbine.set(p.turbineId, list);
+  }
+
+  const windByTurbine = new Map<string, Map<string, number>>();
+  for (const w of allWindData) {
+    let m = windByTurbine.get(w.turbineId);
+    if (!m) {
+      m = new Map<string, number>();
+      windByTurbine.set(w.turbineId, m);
+    }
+    const d = new Date(w.month_start);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    m.set(key, w.avg_wind ?? 0);
+  }
 
   const results: DegradationResult[] = [];
 
@@ -100,41 +157,8 @@ export async function analyzeDegradation(
     const ratedKw = Number(turbine.ratedPowerKw ?? 0);
     if (ratedKw <= 0) continue;
 
-    // Get monthly production data
-    const productions = await prisma.turbineProduction.findMany({
-      where: {
-        turbineId: turbine.id,
-        tenantId,
-        year: { gte: from.getFullYear() },
-      },
-      orderBy: [{ year: "asc" }, { month: "asc" }],
-      select: { year: true, month: true, productionKwh: true },
-    });
-
-    // Get monthly wind speed averages from SCADA
-    interface WindRow { month_start: Date; avg_wind: number | null }
-    const windData = await prisma.$queryRaw<WindRow[]>`
-      SELECT
-        date_trunc('month', "timestamp") AS month_start,
-        AVG("windSpeedMs")::float AS avg_wind
-      FROM scada_measurements
-      WHERE "tenantId" = ${tenantId}
-        AND "turbineId" = ${turbine.id}
-        AND "timestamp" >= ${from}
-        AND "timestamp" < ${to}
-        AND "windSpeedMs" IS NOT NULL
-        AND "windSpeedMs" > 0
-        AND "windSpeedMs" < 50
-      GROUP BY date_trunc('month', "timestamp")
-      ORDER BY month_start
-    `;
-
-    const windMap = new Map<string, number>();
-    for (const w of windData) {
-      const d = new Date(w.month_start);
-      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-      windMap.set(key, w.avg_wind ?? 0);
-    }
+    const productions = productionsByTurbine.get(turbine.id) ?? [];
+    const windMap = windByTurbine.get(turbine.id) ?? new Map<string, number>();
 
     const dataPoints: DegradationPoint[] = [];
     const regressionPoints: { x: number; y: number }[] = [];

@@ -37,36 +37,40 @@ export async function generateSuSa(
   periodStart: Date,
   periodEnd: Date
 ): Promise<SuSaResult> {
-  // Get all posted journal entry lines for this tenant up to periodEnd
-  const allLines = await prisma.journalEntryLine.findMany({
-    where: {
-      journalEntry: {
-        tenantId,
-        status: "POSTED",
-        deletedAt: null,
-        entryDate: { lte: periodEnd },
+  // P-1 Sprint 2: 2 SQL-groupBy statt JS-Aggregation aller Lines mit Join.
+  const [openingBuckets, periodBuckets, accounts] = await Promise.all([
+    prisma.journalEntryLine.groupBy({
+      by: ["account"],
+      where: {
+        journalEntry: {
+          tenantId,
+          status: "POSTED",
+          deletedAt: null,
+          entryDate: { lt: periodStart },
+        },
       },
-    },
-    select: {
-      account: true,
-      accountName: true,
-      debitAmount: true,
-      creditAmount: true,
-      journalEntry: {
-        select: { entryDate: true },
+      _sum: { debitAmount: true, creditAmount: true },
+    }),
+    prisma.journalEntryLine.groupBy({
+      by: ["account"],
+      where: {
+        journalEntry: {
+          tenantId,
+          status: "POSTED",
+          deletedAt: null,
+          entryDate: { gte: periodStart, lte: periodEnd },
+        },
       },
-    },
-  });
-
-  // Load ledger accounts for category info
-  const accounts = await prisma.ledgerAccount.findMany({
-    where: { tenantId, isActive: true },
-    select: { accountNumber: true, name: true, category: true },
-  });
+      _sum: { debitAmount: true, creditAmount: true },
+    }),
+    prisma.ledgerAccount.findMany({
+      where: { tenantId, isActive: true },
+      select: { accountNumber: true, name: true, category: true },
+    }),
+  ]);
 
   const accountMap = new Map(accounts.map((a) => [a.accountNumber, a]));
 
-  // Aggregate per account
   const aggregation = new Map<string, {
     name: string;
     category: string;
@@ -76,12 +80,11 @@ export async function generateSuSa(
     periodCredit: number;
   }>();
 
-  for (const line of allLines) {
-    const acc = line.account;
+  function ensureEntry(acc: string) {
     if (!aggregation.has(acc)) {
       const ledger = accountMap.get(acc);
       aggregation.set(acc, {
-        name: ledger?.name || line.accountName || acc,
+        name: ledger?.name || acc,
         category: ledger?.category || "EXPENSE",
         openingDebit: 0,
         openingCredit: 0,
@@ -89,21 +92,18 @@ export async function generateSuSa(
         periodCredit: 0,
       });
     }
+    return aggregation.get(acc)!;
+  }
 
-    const entry = aggregation.get(acc)!;
-    const debit = toNum(line.debitAmount);
-    const credit = toNum(line.creditAmount);
-    const entryDate = line.journalEntry.entryDate;
-
-    if (entryDate < periodStart) {
-      // Opening balance (before period)
-      entry.openingDebit += debit;
-      entry.openingCredit += credit;
-    } else {
-      // Period movement
-      entry.periodDebit += debit;
-      entry.periodCredit += credit;
-    }
+  for (const b of openingBuckets) {
+    const entry = ensureEntry(b.account);
+    entry.openingDebit += toNum(b._sum.debitAmount);
+    entry.openingCredit += toNum(b._sum.creditAmount);
+  }
+  for (const b of periodBuckets) {
+    const entry = ensureEntry(b.account);
+    entry.periodDebit += toNum(b._sum.debitAmount);
+    entry.periodCredit += toNum(b._sum.creditAmount);
   }
 
   // Build rows

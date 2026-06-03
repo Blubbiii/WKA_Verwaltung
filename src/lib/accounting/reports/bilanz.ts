@@ -31,6 +31,7 @@ import { prisma } from "@/lib/prisma";
 import { BalanceSheetSection } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { getCachedReport } from "@/lib/cache/reports";
 import {
   BALANCE_SHEET_SECTION_LABELS,
   SECTION_SORT_ORDER,
@@ -101,6 +102,19 @@ export async function computeBilanz(
   fiscalYear: number,
   asOf: Date,
 ): Promise<BilanzResult> {
+  // P-3: Redis-Cache. POSTED-Journale sind unveränderlich → safe to cache.
+  // Invalidation erfolgt in journal-entries/[id]/post + reverse.
+  const cacheKey = `${fiscalYear}:${asOf.toISOString().slice(0, 10)}`;
+  return getCachedReport("bilanz", tenantId, cacheKey, () =>
+    computeBilanzUncached(tenantId, fiscalYear, asOf),
+  );
+}
+
+async function computeBilanzUncached(
+  tenantId: string,
+  fiscalYear: number,
+  asOf: Date,
+): Promise<BilanzResult> {
   const [accounts, openings, lines, settings] = await Promise.all([
     prisma.ledgerAccount.findMany({
       where: { tenantId, isActive: true },
@@ -115,7 +129,10 @@ export async function computeBilanz(
       where: { tenantId, fiscalYear },
       select: { ledgerAccountId: true, debitAmount: true, creditAmount: true },
     }),
-    prisma.journalEntryLine.findMany({
+    // P-1 Sprint 2: SQL-groupBy statt JS-Aggregation.
+    // Skaliert konstant statt linear mit Lines-Anzahl.
+    prisma.journalEntryLine.groupBy({
+      by: ["account"],
       where: {
         journalEntry: {
           tenantId,
@@ -124,8 +141,7 @@ export async function computeBilanz(
           entryDate: { lte: asOf },
         },
       },
-      select: {
-        account: true,
+      _sum: {
         debitAmount: true,
         creditAmount: true,
       },
@@ -163,9 +179,9 @@ export async function computeBilanz(
     });
   }
 
-  // Schritt 2: JournalEntryLines aufaddieren.
-  for (const line of lines) {
-    const key = line.account;
+  // Schritt 2: groupBy-Buckets aufaddieren (1 Bucket pro Konto, nicht 1 pro Line).
+  for (const bucket of lines) {
+    const key = bucket.account;
     let entry = saldi.get(key);
     if (!entry) {
       const acc = accountByNumber.get(key);
@@ -182,8 +198,8 @@ export async function computeBilanz(
       };
       saldi.set(key, entry);
     }
-    entry.debit += toNum(line.debitAmount);
-    entry.credit += toNum(line.creditAmount);
+    entry.debit += toNum(bucket._sum.debitAmount);
+    entry.credit += toNum(bucket._sum.creditAmount);
   }
 
   // Schritt 3: Jahresergebnis berechnen (Erlöse - Aufwand).

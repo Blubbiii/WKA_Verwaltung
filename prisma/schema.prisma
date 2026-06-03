@@ -735,6 +735,12 @@ model Lease {
   paymentDay                                Int?
   directBillingFundId                       String?
   notes                                     String?
+  // F-2 Sprint 4: Wertsicherungsklausel (CPI/§9 PrKG) — optional.
+  // Wenn gesetzt, wird via Cron geprüft ob die nächste Indexierung fällig ist.
+  cpiAdjustmentMonths                       Int?                             // Intervall in Monaten (z.B. 24 = alle 2 Jahre)
+  cpiLastAdjustedAt                         DateTime?                        // letztes Anpassungs-Datum
+  cpiBasisYear                              Int?                             // Bezugsjahr für Index-Berechnung
+  cpiClauseDescription                      String?                          // Vertrags-Wortlaut der Klausel
   createdAt                                 DateTime                         @default(now())
   updatedAt                                 DateTime                         @updatedAt
   deletedAt                                 DateTime?
@@ -3516,6 +3522,10 @@ model JournalEntryLine {
   updatedAt           DateTime  @updatedAt
 
   @@index([journalEntryId])
+  // P-2 Sprint 2: Index für Account-basierte Reports (Kontoblatt, Bilanz, GuV, SuSa).
+  // Vorher: Seq-Scan über alle Lines. Nachher: Index-Lookup pro Konto.
+  @@index([account])
+  @@index([account, journalEntryId])
   @@map("journal_entry_lines")
 }
 

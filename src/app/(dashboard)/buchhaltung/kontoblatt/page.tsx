@@ -4,7 +4,8 @@
  * P22: Kontoblatt / Kontoausdruck — Steuerberater-Standardreport.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -63,10 +64,12 @@ export default function KontoblattPage() {
   const now = new Date();
   const yearStart = `${now.getFullYear()}-01-01`;
   const today = now.toISOString().slice(0, 10);
+  const searchParams = useSearchParams();
 
-  const [account, setAccount] = useState("");
-  const [from, setFrom] = useState(yearStart);
-  const [to, setTo] = useState(today);
+  // F-8: Drilldown aus SuSa via Query-Params (?account=8000&from=...&to=...)
+  const [account, setAccount] = useState(searchParams.get("account") ?? "");
+  const [from, setFrom] = useState(searchParams.get("from") ?? yearStart);
+  const [to, setTo] = useState(searchParams.get("to") ?? today);
   const [data, setData] = useState<KontoblattResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -89,6 +92,14 @@ export default function KontoblattPage() {
       setIsLoading(false);
     }
   };
+
+  // F-8: Auto-Load wenn via Drilldown-URL geöffnet
+  useEffect(() => {
+    if (account && !data) {
+      void load();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-6">

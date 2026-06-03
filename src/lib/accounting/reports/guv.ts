@@ -72,7 +72,9 @@ async function aggregateByPeriod(
   start: Date,
   end: Date
 ): Promise<GuvAggregation> {
-  const lines = await prisma.journalEntryLine.findMany({
+  // P-1 Sprint 2: SQL-groupBy statt JS-Aggregation aller Lines.
+  const buckets = await prisma.journalEntryLine.groupBy({
+    by: ["account"],
     where: {
       journalEntry: {
         tenantId,
@@ -81,8 +83,7 @@ async function aggregateByPeriod(
         entryDate: { gte: start, lte: end },
       },
     },
-    select: {
-      account: true,
+    _sum: {
       debitAmount: true,
       creditAmount: true,
     },
@@ -106,10 +107,10 @@ async function aggregateByPeriod(
     otherTax: 0,
   };
 
-  for (const line of lines) {
-    const acc = line.account;
-    const credit = toNum(line.creditAmount);
-    const debit = toNum(line.debitAmount);
+  for (const bucket of buckets) {
+    const acc = bucket.account;
+    const credit = toNum(bucket._sum.creditAmount);
+    const debit = toNum(bucket._sum.debitAmount);
     const income = credit - debit; // positive = revenue/income
     const expense = debit - credit; // positive = cost
 

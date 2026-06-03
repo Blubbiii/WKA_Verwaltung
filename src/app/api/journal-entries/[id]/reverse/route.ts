@@ -24,6 +24,7 @@ import {
   reverseJournalEntry,
   PeriodLockedError,
 } from "@/lib/accounting/period-lock";
+import { invalidateReportsCache } from "@/lib/cache/reports";
 
 const reverseSchema = z.object({
   reason: z.string().min(1, "Storno-Begründung ist Pflicht").max(500),
@@ -79,6 +80,11 @@ export async function POST(
         lines: { orderBy: { lineNumber: "asc" } },
         reverses: { select: { id: true, description: true, entryDate: true } },
       },
+    });
+
+    // P-3: Reports-Cache invalidieren — Storno ändert Saldi.
+    invalidateReportsCache(check.tenantId!).catch((err) => {
+      logger.warn({ err }, "[Reports-Cache] Invalidation failed after STORNO");
     });
 
     logger.info(

@@ -41,7 +41,9 @@ async function aggregateByPeriod(
   start: Date,
   end: Date
 ): Promise<AccountAggregation> {
-  const lines = await prisma.journalEntryLine.findMany({
+  // P-1 Sprint 2: SQL-groupBy statt JS-Aggregation.
+  const buckets = await prisma.journalEntryLine.groupBy({
+    by: ["account"],
     where: {
       journalEntry: {
         tenantId,
@@ -50,8 +52,7 @@ async function aggregateByPeriod(
         entryDate: { gte: start, lte: end },
       },
     },
-    select: {
-      account: true,
+    _sum: {
       debitAmount: true,
       creditAmount: true,
     },
@@ -63,20 +64,22 @@ async function aggregateByPeriod(
   let depreciation = 0;
   let other = 0;
 
-  for (const line of lines) {
-    const net = toNum(line.creditAmount) - toNum(line.debitAmount);
-    const acc = line.account;
+  for (const bucket of buckets) {
+    const debit = toNum(bucket._sum.debitAmount);
+    const credit = toNum(bucket._sum.creditAmount);
+    const net = credit - debit;
+    const acc = bucket.account;
 
     if (acc.startsWith("8")) {
       revenue += net;
     } else if (acc.startsWith("480") || acc.startsWith("481") || acc.startsWith("482") || acc.startsWith("483") || acc.startsWith("485") || acc.startsWith("488")) {
       // SKR03: 48xx = AfA (Abschreibungen auf Sachanlagen)
-      depreciation += toNum(line.debitAmount) - toNum(line.creditAmount);
+      depreciation += debit - credit;
     } else if (acc.startsWith("7")) {
-      interest += toNum(line.debitAmount) - toNum(line.creditAmount);
+      interest += debit - credit;
     } else if (acc.startsWith("4") || acc.startsWith("3")) {
       // SKR03: 4xxx = Betriebliche Aufwendungen, 3xxx = Wareneingang/Material
-      expense += toNum(line.debitAmount) - toNum(line.creditAmount);
+      expense += debit - credit;
     } else {
       other += net;
     }

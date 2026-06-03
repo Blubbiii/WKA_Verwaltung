@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 // Searches Parks, Invoices, Contacts, Contracts, Funds via Prisma ILIKE
 
 interface SearchResult {
-  type: "park" | "invoice" | "contact" | "contract" | "fund";
+  type: "park" | "invoice" | "contact" | "contract" | "fund" | "journal";
   id: string;
   title: string;
   subtitle: string;
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ results: [] });
     }
 
-    const [parks, invoices, contacts, contracts, funds] = await Promise.all([
+    const [parks, invoices, contacts, contracts, funds, journals] = await Promise.all([
       prisma.park.findMany({
         where: {
           tenantId,
@@ -95,6 +95,28 @@ export async function GET(request: NextRequest) {
         select: { id: true, name: true, legalForm: true },
         take: limit,
       }),
+
+      // F-5: Volltextsuche in Buchungstexten (JournalEntry.description + Lines.description)
+      prisma.journalEntry.findMany({
+        where: {
+          tenantId,
+          deletedAt: null,
+          OR: [
+            { description: { contains: q, mode: "insensitive" } },
+            { reference: { contains: q, mode: "insensitive" } },
+            { lines: { some: { description: { contains: q, mode: "insensitive" } } } },
+          ],
+        },
+        select: {
+          id: true,
+          entryDate: true,
+          description: true,
+          reference: true,
+          status: true,
+        },
+        orderBy: { entryDate: "desc" },
+        take: limit,
+      }),
     ]);
 
     const results: SearchResult[] = [
@@ -132,6 +154,17 @@ export async function GET(request: NextRequest) {
         title: f.name,
         subtitle: f.legalForm || "",
         href: `/funds/${f.id}`,
+      })),
+      ...journals.map((j: { id: string; entryDate: Date; description: string; reference: string | null; status: string }) => ({
+        type: "journal" as const,
+        id: j.id,
+        title: j.description || j.reference || "Buchung",
+        subtitle: [
+          j.entryDate.toISOString().slice(0, 10),
+          j.reference,
+          j.status,
+        ].filter(Boolean).join(" · "),
+        href: `/journal-entries?id=${j.id}`,
       })),
     ];
 

@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
+import { invalidateReportsCache } from "@/lib/cache/reports";
 
 // ============================================================================
 // POST /api/journal-entries/[id]/post
@@ -69,6 +70,11 @@ export async function POST(
       where: { id },
       data: { status: "POSTED" },
       include: { lines: { orderBy: { lineNumber: "asc" } } },
+    });
+
+    // P-3: Reports-Cache invalidieren — neue POSTED-Buchung ändert Saldi.
+    invalidateReportsCache(check.tenantId!).catch((err) => {
+      logger.warn({ err }, "[Reports-Cache] Invalidation failed after POST");
     });
 
     logger.info(
