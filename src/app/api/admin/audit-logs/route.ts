@@ -15,6 +15,9 @@ const querySchema = z.object({
   endDate: z.string().optional(),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(PAGE_SIZE_ADMIN),
+  // M-10: optionaler cursor (UUID-String). Wenn gesetzt → cursor-Modus,
+  // sonst klassisches skip/take (backward-kompat für bestehende UIs).
+  cursor: z.string().optional(),
 });
 
 // GET /api/admin/audit-logs - Audit-Logs laden
@@ -36,6 +39,7 @@ export async function GET(request: NextRequest) {
       endDate: searchParams.get("endDate") || undefined,
       page: searchParams.get("page") || 1,
       limit: searchParams.get("limit") || PAGE_SIZE_ADMIN,
+      cursor: searchParams.get("cursor") || undefined,
     });
 
     // Build where clause
@@ -95,37 +99,63 @@ export async function GET(request: NextRequest) {
       where.tenantId = check.tenantId;
     }
 
-    // Calculate pagination
+    const include = {
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+      impersonatedBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
+      tenant: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    } as const;
+
+    // M-10: cursor-Modus für tiefe Pagination ohne Full-Scan.
+    if (params.cursor !== undefined) {
+      const rows = await prisma.auditLog.findMany({
+        where,
+        include,
+        // Sekundär-Sort auf id für deterministische Reihenfolge (createdAt nicht unique).
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: params.limit + 1,
+        ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+      });
+
+      const hasMore = rows.length > params.limit;
+      const data = hasMore ? rows.slice(0, params.limit) : rows;
+      const nextCursor = hasMore ? data[data.length - 1].id : null;
+
+      return NextResponse.json({
+        data,
+        nextCursor,
+        pagination: {
+          limit: params.limit,
+          hasNextPage: hasMore,
+        },
+      });
+    }
+
+    // Backward-Compat: klassisches skip/take + Total-Count.
     const skip = (params.page - 1) * params.limit;
 
-    // Fetch audit logs with user relation
     const [auditLogs, totalCount] = await Promise.all([
       prisma.auditLog.findMany({
         where,
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          impersonatedBy: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          tenant: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
+        include,
         orderBy: {
           createdAt: "desc",
         },
@@ -135,7 +165,6 @@ export async function GET(request: NextRequest) {
       prisma.auditLog.count({ where }),
     ]);
 
-    // Calculate pagination metadata
     const totalPages = Math.ceil(totalCount / params.limit);
 
     return NextResponse.json({

@@ -493,7 +493,12 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
     for (const plotArea of leaseCalc.plotAreas) {
       const periodAmountDec = new Decimal(plotArea.calculatedAmount).dividedBy(divisor).toDecimalPlaces(2);
       const periodAmount = periodAmountDec.toNumber();
-      if (periodAmountDec.abs().lessThan(0.01)) continue;
+      // H-10-Fix: Schwelle von 0.01 auf 0.001 abgesenkt. Bei MONTHLY-Abrechnung
+      // (divisor=12) entstehen Cent-Beträge nahe 0.01 € pro Position; bei vielen
+      // PlotAreas führt das alte `< 0.01 continue` zu Cent-Drift gegen die
+      // Jahressumme. Wir akkumulieren jetzt auch Cent-Beträge mit, und skippen
+      // nur echte Null-Positionen (gerundet auf 2 Dezimalstellen = 0.00).
+      if (periodAmountDec.abs().lessThan(0.001)) continue;
 
       position++;
       const artType = articleTypeForArea(plotArea.areaType, false);

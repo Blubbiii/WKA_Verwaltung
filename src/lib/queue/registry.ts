@@ -15,6 +15,10 @@ import { getReminderQueue, REMINDER_QUEUE_NAME } from './queues/reminder.queue';
 import { getScadaAutoImportQueue, SCADA_AUTO_IMPORT_QUEUE_NAME } from './queues/scada-auto-import.queue';
 import { getPaperlessQueue, PAPERLESS_QUEUE_NAME } from './queues/paperless.queue';
 import { getInboxOcrQueue, INBOX_OCR_QUEUE_NAME } from './queues/inbox-ocr.queue';
+import {
+  getApprovalsExpiryQueue,
+  APPROVALS_EXPIRY_QUEUE_NAME,
+} from './queues/approvals-expiry.queue';
 
 /**
  * Queue metadata for registry
@@ -99,6 +103,12 @@ const queueRegistry: QueueInfo[] = [
     displayName: 'Inbox OCR Queue',
     description: 'Verarbeitet hochgeladene Eingangsrechnungen per OCR (pdfjs + tesseract)',
     getQueue: getInboxOcrQueue as () => Queue,
+  },
+  {
+    name: APPROVALS_EXPIRY_QUEUE_NAME,
+    displayName: 'Approvals Expiry Queue',
+    description: 'Setzt PENDING-Approvals nach Ablauf der expiresAt-Frist auf EXPIRED (alle 6h)',
+    getQueue: getApprovalsExpiryQueue as () => Queue,
   },
 ];
 

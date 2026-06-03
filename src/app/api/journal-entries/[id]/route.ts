@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Decimal } from "@prisma/client-runtime-utils";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -127,6 +128,21 @@ export async function PUT(
       throw err;
     }
 
+    // H-2-Fix: Soll=Haben-Validierung auch bei DRAFT-Update (Decimal, Toleranz 0.005).
+    if (lines !== undefined) {
+      let totalDebitDec = new Decimal(0);
+      let totalCreditDec = new Decimal(0);
+      for (const l of lines) {
+        totalDebitDec = totalDebitDec.plus(l.debitAmount ?? 0);
+        totalCreditDec = totalCreditDec.plus(l.creditAmount ?? 0);
+      }
+      if (totalDebitDec.minus(totalCreditDec).abs().greaterThanOrEqualTo(0.005)) {
+        return apiError("BAD_REQUEST", 400, {
+          message: `Buchung nicht ausgeglichen: Soll ${totalDebitDec.toFixed(2)} € ≠ Haben ${totalCreditDec.toFixed(2)} €`,
+        });
+      }
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       if (lines !== undefined) {
         // Replace all lines
@@ -146,8 +162,9 @@ export async function PUT(
         });
       }
 
+      // H-2-Fix: tenantId in where (TOCTOU-Schutz, consistent zur DELETE-Variante).
       return tx.journalEntry.update({
-        where: { id },
+        where: { id, tenantId: check.tenantId! },
         data: {
           ...(entryDate ? { entryDate: new Date(entryDate) } : {}),
           ...(description !== undefined ? { description } : {}),

@@ -8,7 +8,8 @@
  * der Workflow durchgezogen, bei APPROVED läuft der Executor automatisch.
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -43,6 +44,7 @@ import {
   AlertTriangle,
   Check,
   Clock,
+  History,
   Loader2,
   RefreshCw,
   ShieldCheck,
@@ -118,22 +120,31 @@ export default function ApprovalsPage() {
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // H-9: AbortController gegen Race-Conditions
+  const abortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     setLoading(true);
     try {
-      const res = await fetch("/api/approvals/pending");
+      const res = await fetch("/api/approvals/pending", { signal: ac.signal });
       if (!res.ok) throw new Error("Laden fehlgeschlagen");
       const json = await res.json();
-      setItems(json.data ?? []);
+      if (!ac.signal.aborted) setItems(json.data ?? []);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(err instanceof Error ? err.message : "Fehler");
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     load();
+    return () => abortRef.current?.abort();
   }, [load]);
 
   const openDialog = (item: PendingApproval, decision: "APPROVED" | "REJECTED") => {
@@ -182,10 +193,20 @@ export default function ApprovalsPage() {
         title="Genehmigungen"
         description="Vier-Augen-Prinzip — Anfragen die du als zweiter Berechtigter entscheiden kannst"
         actions={
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Aktualisieren
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/approvals/history">
+                <History className="h-4 w-4 mr-2" />
+                Verlauf
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+              />
+              Aktualisieren
+            </Button>
+          </div>
         }
       />
 

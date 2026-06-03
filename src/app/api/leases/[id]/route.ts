@@ -140,9 +140,9 @@ export async function PATCH(
 
     // Update in transaction if plots are being updated
     const lease = await prisma.$transaction(async (tx) => {
-      // Update lease data
+      // H-5-Fix: tenantId in where (TOCTOU-Schutz, consistent zur DELETE-Variante).
       await tx.lease.update({
-        where: { id },
+        where: { id, tenantId: check.tenantId! },
         data: updateData,
       });
 

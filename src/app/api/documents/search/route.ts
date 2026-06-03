@@ -47,6 +47,10 @@ export async function GET(request: NextRequest) {
     const limitParam = parseInt(searchParams.get("limit") || "20", 10);
     const limit = Math.min(Math.max(limitParam, 1), 100);
     const offset = parseInt(searchParams.get("offset") || "0", 10);
+    // M-10: optional cursor (UUID). Wenn gesetzt → cursor-Modus.
+    // Cursor-Modus erfordert sortBy != "relevance" (relevance wird in JS sortiert).
+    const cursor = searchParams.get("cursor");
+    const useCursor = searchParams.has("cursor");
 
     // Sorting
     const sortBy = searchParams.get("sortBy") || "relevance";
@@ -80,53 +84,64 @@ export async function GET(request: NextRequest) {
       ],
     };
 
-    // Determine order by
+    // Determine order by — Sekundär-Sort auf id für deterministische Cursor-Pagination.
     let orderBy: Prisma.DocumentOrderByWithRelationInput | Prisma.DocumentOrderByWithRelationInput[];
 
     switch (sortBy) {
       case "date":
-        orderBy = { createdAt: sortOrder };
+        orderBy = [{ createdAt: sortOrder }, { id: sortOrder }];
         break;
       case "title":
-        orderBy = { title: sortOrder };
+        orderBy = [{ title: sortOrder }, { id: sortOrder }];
         break;
       case "relevance":
       default:
         // For relevance, we prioritize title matches, then description, then fileName
         // Since Prisma doesn't support scoring, we use createdAt as secondary sort
-        orderBy = [
-          { createdAt: "desc" as const },
-        ];
+        orderBy = [{ createdAt: "desc" as const }, { id: "desc" as const }];
         break;
     }
 
-    // Execute search query
-    const [documents, total] = await Promise.all([
-      prisma.document.findMany({
+    const include = {
+      park: { select: { id: true, name: true, shortName: true } },
+      fund: { select: { id: true, name: true } },
+      turbine: { select: { id: true, designation: true } },
+      contract: { select: { id: true, title: true } },
+      uploadedBy: { select: { firstName: true, lastName: true } },
+    } as const;
+
+    // M-10: cursor-Modus überspringt count() komplett (teurer bei großen Tabellen
+    // mit OR-Filter und ILIKE) und nutzt take: limit+1 für hasMore-Erkennung.
+    let documents: Prisma.DocumentGetPayload<{ include: typeof include }>[];
+    let total: number | null = null;
+    let nextCursor: string | null = null;
+
+    if (useCursor) {
+      const rows = await prisma.document.findMany({
         where: whereConditions,
-        include: {
-          park: {
-            select: { id: true, name: true, shortName: true },
-          },
-          fund: {
-            select: { id: true, name: true },
-          },
-          turbine: {
-            select: { id: true, designation: true },
-          },
-          contract: {
-            select: { id: true, title: true },
-          },
-          uploadedBy: {
-            select: { firstName: true, lastName: true },
-          },
-        },
+        include,
         orderBy,
-        skip: offset,
-        take: limit,
-      }),
-      prisma.document.count({ where: whereConditions }),
-    ]);
+        take: limit + 1,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+
+      const hasMore = rows.length > limit;
+      documents = hasMore ? rows.slice(0, limit) : rows;
+      nextCursor = hasMore ? documents[documents.length - 1].id : null;
+    } else {
+      const [docs, count] = await Promise.all([
+        prisma.document.findMany({
+          where: whereConditions,
+          include,
+          orderBy,
+          skip: offset,
+          take: limit,
+        }),
+        prisma.document.count({ where: whereConditions }),
+      ]);
+      documents = docs;
+      total = count;
+    }
 
     // Calculate relevance scores and highlight matches
     const results = documents.map((doc) => {
@@ -212,16 +227,25 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // M-10: Cursor-Modus liefert nextCursor statt total/totalPages.
+    const pagination = useCursor
+      ? {
+          limit,
+          nextCursor,
+          hasMore: nextCursor !== null,
+        }
+      : {
+          limit,
+          offset,
+          total: total ?? 0,
+          totalPages: total !== null ? Math.ceil(total / limit) : 0,
+          hasMore: total !== null ? offset + limit < total : false,
+        };
+
     return NextResponse.json({
       data: results,
       query,
-      pagination: {
-        limit,
-        offset,
-        total,
-        totalPages: Math.ceil(total / limit),
-        hasMore: offset + limit < total,
-      },
+      pagination,
       filters: {
         category,
         parkId,

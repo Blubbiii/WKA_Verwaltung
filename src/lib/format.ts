@@ -91,3 +91,27 @@ export function round(value: number, decimals: number = 2): number {
   const factor = Math.pow(10, decimals);
   return Math.round(value * factor) / factor;
 }
+
+/**
+ * Format turbine capacity (kW → MW above 1000).
+ * Examples: 800 → "800 kW", 3500 → "3.5 MW"
+ */
+export function formatCapacity(kw: number): string {
+  if (kw >= 1000) {
+    return `${(kw / 1000).toFixed(1)} MW`;
+  }
+  return `${kw.toFixed(0)} kW`;
+}
+
+/**
+ * Format a duration in milliseconds as human-readable string.
+ * Examples: 45000 → "45s", 125000 → "2m 5s"
+ */
+export function formatDuration(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined) return "-";
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}m ${remainingSeconds}s`;
+}

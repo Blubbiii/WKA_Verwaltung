@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -138,33 +138,45 @@ export default function TopologyPage() {
   // FETCH TOPOLOGY
   // --------------------------------------------------------------------------
 
+  // H-9: AbortController gegen Race-Conditions bei Park-Wechsel.
+  const topologyAbortRef = useRef<AbortController | null>(null);
+
   const fetchTopology = useCallback(async () => {
     if (!selectedParkId) return;
+
+    topologyAbortRef.current?.abort();
+    const ac = new AbortController();
+    topologyAbortRef.current = ac;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/energy/topology?parkId=${selectedParkId}`);
+      const res = await fetch(`/api/energy/topology?parkId=${selectedParkId}`, {
+        signal: ac.signal,
+      });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || t("loadError"));
       }
 
       const data: TopologyData = await res.json();
+      if (ac.signal.aborted) return;
       const state = apiToState(data);
       setNodes(state.nodes);
       setConnections(state.connections);
       setHasChanges(false);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       setError(err instanceof Error ? err.message : t("unknownError"));
     } finally {
-      setIsLoading(false);
+      if (!ac.signal.aborted) setIsLoading(false);
     }
   }, [selectedParkId, t]);
 
   useEffect(() => {
     fetchTopology();
+    return () => topologyAbortRef.current?.abort();
   }, [fetchTopology]);
 
   // --------------------------------------------------------------------------

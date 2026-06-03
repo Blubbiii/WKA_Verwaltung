@@ -69,6 +69,7 @@ import {
   BudgetVarianceKPI,
 } from "./widgets";
 import { RecentlyVisitedWidget } from "./widgets/recently-visited-widget";
+import { CpiReminderWidget } from "@/components/leases/CpiReminderWidget";
 import { useAnalytics, useFormatCurrencyCompact } from "@/hooks/useAnalytics";
 import type { AvailableWidget } from "@/hooks/useDashboardConfig";
 
@@ -119,6 +120,7 @@ const WIDGET_TITLE_KEYS: Record<string, string> = {
   "list-recently-visited": "recentlyVisited",
   "kpi-budget-variance": "budgetVariance",
   "chart-wirtschaftsplan-pl": "wirtschaftsplanPL",
+  "cpi-reminders": "cpiReminders",
 };
 
 // =============================================================================
@@ -574,6 +576,11 @@ export function WidgetRenderer({
       return <WirtschaftsplanPLChart />;
     }
 
+    // CPI/Wertsicherungs-Reminder (Standalone-Card-Komponente)
+    if (widgetId === "cpi-reminders") {
+      return <CpiReminderWidget />;
+    }
+
     // Unknown Widget
     return (
       <WidgetWrapper
@@ -588,8 +595,12 @@ export function WidgetRenderer({
   };
 
   // For KPI and Chart widgets that already have their own card structure,
-  // we wrap them differently based on edit mode
-  const isStandaloneWidget = widgetId.startsWith("kpi-") || widgetId.startsWith("chart-");
+  // we wrap them differently based on edit mode.
+  // cpi-reminders bringt ebenfalls eine eigene Card-Struktur mit.
+  const isStandaloneWidget =
+    widgetId.startsWith("kpi-") ||
+    widgetId.startsWith("chart-") ||
+    widgetId === "cpi-reminders";
 
   // Show error state for analytics-dependent widgets when the API fails
   if (error && !isLoading && isStandaloneWidget) {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Decimal } from "@prisma/client-runtime-utils";
 import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -42,18 +43,23 @@ export async function POST(
       return apiError("BAD_REQUEST", 400, { message: "Mindestens 2 Buchungszeilen erforderlich" });
     }
 
-    // Validate debit = credit
-    let totalDebit = 0;
-    let totalCredit = 0;
+    // H-1-Fix: Decimal-Arithmetik statt Number() (Float-Rundungsfehler bei
+    // vielen Buchungszeilen kann sonst zu falscher Soll=Haben-Validierung führen).
+    let totalDebitDec = new Decimal(0);
+    let totalCreditDec = new Decimal(0);
 
     for (const line of entry.lines) {
-      totalDebit += Number(line.debitAmount ?? 0);
-      totalCredit += Number(line.creditAmount ?? 0);
+      totalDebitDec = totalDebitDec.plus(line.debitAmount ?? 0);
+      totalCreditDec = totalCreditDec.plus(line.creditAmount ?? 0);
     }
 
-    if (Math.abs(totalDebit - totalCredit) >= 0.005) {
-      return apiError("BAD_REQUEST", 400, { message: `Buchung nicht ausgeglichen: Soll ${totalDebit.toFixed(2)} € ≠ Haben ${totalCredit.toFixed(2)} €` });
+    // Toleranz 0.005 € (halber Cent) für Decimal(15,2)-Felder.
+    if (totalDebitDec.minus(totalCreditDec).abs().greaterThanOrEqualTo(0.005)) {
+      return apiError("BAD_REQUEST", 400, { message: `Buchung nicht ausgeglichen: Soll ${totalDebitDec.toFixed(2)} € ≠ Haben ${totalCreditDec.toFixed(2)} €` });
     }
+
+    const totalDebit = totalDebitDec.toNumber();
+    const totalCredit = totalCreditDec.toNumber();
 
     // Sprint 3 Permissions v2: 4-Augen-Prinzip beim Festschreiben.
     // Bei Verletzung wird die Aktion NICHT mehr hart geblockt — stattdessen

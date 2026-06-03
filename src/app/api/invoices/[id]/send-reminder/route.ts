@@ -91,9 +91,14 @@ export async function POST(
       return apiError("BAD_REQUEST", undefined, { message: `Mahnungen können nur für versendete Rechnungen erstellt werden (Status: ${invoice.status})` });
     }
 
-    // Guard: reminderLevel must not go backwards
-    if (invoice.reminderLevel && reminderLevel < invoice.reminderLevel) {
-      return apiError("BAD_REQUEST", undefined, { message: `Mahnstufe kann nicht zurückgesetzt werden (aktuell: ${invoice.reminderLevel}, neu: ${reminderLevel})` });
+    // H-6-Fix: Guard verhindert auch identische Mahnstufe (Idempotenz —
+    // verhindert doppelten Versand derselben Mahnung).
+    if (invoice.reminderLevel && reminderLevel <= invoice.reminderLevel) {
+      const message =
+        reminderLevel === invoice.reminderLevel
+          ? `Mahnstufe ${reminderLevel} wurde bereits versendet`
+          : `Mahnstufe kann nicht zurückgesetzt werden (aktuell: ${invoice.reminderLevel}, neu: ${reminderLevel})`;
+      return apiError("BAD_REQUEST", undefined, { message });
     }
 
     // Determine lateFee: explicit override > TenantSettings

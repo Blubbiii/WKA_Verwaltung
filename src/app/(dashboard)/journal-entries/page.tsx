@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
@@ -511,23 +511,35 @@ export default function JournalEntriesPage() {
   const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =
     useBatchSelection({ items: entries });
 
+  // H-9: AbortController gegen Race-Conditions bei schnellem Filter-Wechsel.
+  const abortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (yearFilter) params.set("year", yearFilter);
-      const res = await fetch(`/api/journal-entries?${params}`);
+      const res = await fetch(`/api/journal-entries?${params}`, { signal: ac.signal });
       if (res.ok) {
         const json = await res.json();
-        setEntries(json.data ?? []);
+        if (!ac.signal.aborted) setEntries(json.data ?? []);
       }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [statusFilter, yearFilter]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    return () => abortRef.current?.abort();
+  }, [load]);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);

@@ -1,6 +1,3 @@
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
-
 // Shared types for SCADA components
 
 export interface ScadaMapping {
@@ -140,20 +137,5 @@ export const DEFAULT_SCAN_PATH_FALLBACK = process.env.NEXT_PUBLIC_SCADA_BASE_PAT
 // Helper Functions
 // =============================================================================
 
-export function formatDuration(ms: number | null): string {
-  if (ms === null || ms === undefined) return "-";
-  const seconds = Math.floor(ms / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}m ${remainingSeconds}s`;
-}
-
-export function formatDateTime(dateStr: string | null): string {
-  if (!dateStr) return "-";
-  try {
-    return format(new Date(dateStr), "dd.MM.yyyy HH:mm", { locale: de });
-  } catch {
-    return "-";
-  }
-}
+// formatDuration + formatDateTime moved to @/lib/format — re-export for backward compat
+export { formatDuration, formatDateTime } from "@/lib/format";

@@ -153,9 +153,5 @@ export function formatDateInput(date: Date | undefined): string {
   return date ? format(date, "dd.MM.yyyy", { locale: de }) : "";
 }
 
-export function formatCapacity(kw: number): string {
-  if (kw >= 1000) {
-    return `${(kw / 1000).toFixed(1)} MW`;
-  }
-  return `${kw.toFixed(0)} kW`;
-}
+// formatCapacity moved to @/lib/format — re-export for backward compatibility
+export { formatCapacity } from "@/lib/format";

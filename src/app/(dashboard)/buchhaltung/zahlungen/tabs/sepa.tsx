@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +16,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Download } from "lucide-react";
+import { Download, AlertTriangle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AwvWarningsAlert,
+  type AwvWarning,
+} from "@/components/buchhaltung/AwvWarningsAlert";
 
 interface SepaBatch {
   id: string;
@@ -46,6 +58,7 @@ export default function SepaContent() {
   const t = useTranslations("buchhaltung.zahlungenSepa");
   const [batches, setBatches] = useState<SepaBatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [awvWarnings, setAwvWarnings] = useState<AwvWarning[] | null>(null);
 
   const statusLabel = useCallback(
     (status: string): string => {
@@ -60,21 +73,47 @@ export default function SepaContent() {
     [t]
   );
 
+  // H-9: AbortController gegen Race-Conditions bei Tab-Wechsel.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchData = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     setLoading(true);
     try {
-      const res = await fetch("/api/buchhaltung/sepa");
+      const res = await fetch("/api/buchhaltung/sepa", { signal: ac.signal });
       if (!res.ok) throw new Error();
       const json = await res.json();
-      setBatches(json.data || []);
-    } catch {
+      if (!ac.signal.aborted) setBatches(json.data || []);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("toastLoadError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [t]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+    return () => abortRef.current?.abort();
+  }, [fetchData]);
+
+  // AWV-Warnungen werden via Custom-Event publiziert. Andere Komponenten
+  // (z.B. SEPA-Create-Dialog) feuern `wpm:sepa:awv-warnings` mit detail =
+  // AwvWarning[] nach erfolgreichem POST /api/buchhaltung/sepa. Hier wird
+  // der Dialog zur Anzeige automatisch geöffnet.
+  useEffect(() => {
+    function handler(e: Event) {
+      const detail = (e as CustomEvent<AwvWarning[]>).detail;
+      if (Array.isArray(detail) && detail.length > 0) {
+        setAwvWarnings(detail);
+      }
+    }
+    window.addEventListener("wpm:sepa:awv-warnings", handler);
+    return () => window.removeEventListener("wpm:sepa:awv-warnings", handler);
+  }, []);
 
   async function downloadXml(id: string, batchNumber: string) {
     try {
@@ -93,6 +132,7 @@ export default function SepaContent() {
   }
 
   return (
+    <>
     <Card>
       <CardContent className="pt-6">
         {loading ? (
@@ -140,5 +180,32 @@ export default function SepaContent() {
         )}
       </CardContent>
     </Card>
+
+    <Dialog
+      open={awvWarnings !== null && awvWarnings.length > 0}
+      onOpenChange={(o) => !o && setAwvWarnings(null)}
+    >
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
+            AWV-Meldepflicht erkannt
+          </DialogTitle>
+          <DialogDescription>
+            Der SEPA-Lauf enthält meldepflichtige Auslandszahlungen.
+            Eine manuelle Meldung an die Bundesbank ist erforderlich.
+          </DialogDescription>
+        </DialogHeader>
+        {awvWarnings && (
+          <AwvWarningsAlert warnings={awvWarnings} asCard={false} />
+        )}
+        <DialogFooter>
+          <Button onClick={() => setAwvWarnings(null)}>
+            Verstanden
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

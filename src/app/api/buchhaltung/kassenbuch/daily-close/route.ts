@@ -44,11 +44,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const closeDate = new Date(parsed.data.closeDate);
-    const dayStart = new Date(closeDate);
-    dayStart.setUTCHours(0, 0, 0, 0);
-    const dayEnd = new Date(closeDate);
-    dayEnd.setUTCHours(23, 59, 59, 999);
+    // H-3-Fix: Timezone-Bug — `new Date("YYYY-MM-DD")` parst als UTC-Mitternacht,
+    // `setUTCHours(0,0,0,0)` ist dann zwar No-Op, liegt aber in Berlin um 01:00/02:00
+    // (Sommer-/Winterzeit) → Einträge des Vortags würden fälschlich mit-gesperrt.
+    // Wir konstruieren stattdessen lokale Berliner Mitternacht (Container läuft mit
+    // TZ=Europe/Berlin) und verwenden diese als Tagesgrenze.
+    const [yStr, mStr, dStr] = parsed.data.closeDate.split("-");
+    const year = Number(yStr);
+    const month = Number(mStr);
+    const day = Number(dStr);
+    const dayStart = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const dayEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
 
     // Letzten Eintrag des Tages laden
     const lastEntry = await prisma.cashBookEntry.findFirst({

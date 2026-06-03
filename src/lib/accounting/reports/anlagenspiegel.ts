@@ -64,15 +64,37 @@ export async function computeAnlagenspiegel(
   const yearEnd = new Date(Date.UTC(fiscalYear, 11, 31, 23, 59, 59));
   const yearBeforeEnd = new Date(Date.UTC(fiscalYear - 1, 11, 31, 23, 59, 59));
 
-  // Alle Assets des Mandanten mit Depreciations laden.
-  const assets = await prisma.fixedAsset.findMany({
-    where: { tenantId },
-    include: {
-      depreciations: {
-        orderBy: { periodEnd: "asc" },
+  // M-6 Perf: statt ALLE Depreciations zu laden, nur:
+  //  - Depreciations dieses + vorigen Jahres (für afaJahr + cumAfaEnd-Diff)
+  //  - groupBy für cumAfaStart (Summe aller AfA-Zeilen mit periodEnd < yearStart)
+  // Vorher: 100 Assets × 10 Jahre = 1000 Rows. Jetzt: ~100 Rows + 1 groupBy.
+  const [assets, cumAfaStartAgg] = await Promise.all([
+    prisma.fixedAsset.findMany({
+      where: { tenantId },
+      include: {
+        depreciations: {
+          where: {
+            periodEnd: { gte: yearStart, lte: yearEnd },
+          },
+          orderBy: { periodEnd: "asc" },
+        },
       },
-    },
-  });
+    }),
+    prisma.fixedAssetDepreciation.groupBy({
+      by: ["assetId"],
+      where: {
+        asset: { tenantId },
+        periodEnd: { lt: yearStart },
+      },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  // Lookup-Map: assetId → kumulierte AfA bis Jahresbeginn.
+  const cumAfaStartByAsset = new Map<string, number>();
+  for (const row of cumAfaStartAgg) {
+    cumAfaStartByAsset.set(row.assetId, Number(row._sum.amount ?? 0));
+  }
 
   // Pro Kategorie aggregieren
   const byCategory = new Map<string, AnlagenspiegelRow>();
@@ -135,21 +157,17 @@ export async function computeAnlagenspiegel(
     }
 
     // ------- AfA-Bewegungen -------
-    let cumAfaStart = 0; // bis Jahresbeginn
+    // M-6 Perf: cumAfaStart kommt aus dem groupBy (alle Zeilen < yearStart),
+    // asset.depreciations enthält nur noch das aktuelle Jahr (yearStart..yearEnd).
+    const cumAfaStart = cumAfaStartByAsset.get(asset.id) ?? 0; // bis Jahresbeginn
     let afaThisYear = 0; // im Jahr gebucht
-    let cumAfaEnd = 0; // bis Jahresende
 
     for (const dep of asset.depreciations) {
-      const amount = Number(dep.amount);
-      if (dep.periodEnd < yearStart) {
-        cumAfaStart += amount;
-        cumAfaEnd += amount;
-      } else if (dep.periodEnd <= yearEnd) {
-        afaThisYear += amount;
-        cumAfaEnd += amount;
-      }
-      // dep.periodEnd > yearEnd ignorieren
+      // Filter im DB-Query stellt sicher: periodEnd ∈ [yearStart, yearEnd]
+      afaThisYear += Number(dep.amount);
     }
+
+    const cumAfaEnd = cumAfaStart + afaThisYear; // bis Jahresende
 
     row.afaKumBeginn += cumAfaStart;
     row.afaJahr += afaThisYear;

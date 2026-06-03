@@ -229,6 +229,19 @@ async function main(): Promise<void> {
 
   log("info", `Started ${startedWorkers.length} workers: ${startedWorkers.join(", ")}`);
 
+  // Approvals-Expiry Cron registrieren (idempotent — kann wiederholt gerufen werden)
+  try {
+    const { scheduleApprovalsExpiryCheck } = await import(
+      "@/lib/queue/queues/approvals-expiry.queue"
+    );
+    await scheduleApprovalsExpiryCheck();
+    log("info", "Approvals-expiry cron scheduled (every 6h)");
+  } catch (err) {
+    log("warn", "Failed to schedule approvals-expiry cron", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   // Health-Check starten
   startHealthCheck();
 

@@ -8,6 +8,7 @@ import { formatCurrency } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
+import { usePersistedTableState } from "@/hooks/usePersistedTableState";
 import { format } from "date-fns";
 import { de, enUS } from "date-fns/locale";
 import {
@@ -149,10 +150,19 @@ export default function InvoicesPage() {
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
-  const [search, setSearch] = useState("");
+  // F-6: Persistent Filter-State (URL + LocalStorage)
+  const [tableState, setTableState] = usePersistedTableState("invoices", {
+    status: "all",
+    type: "all",
+    search: "",
+  });
+  const statusFilter = tableState.status;
+  const typeFilter = tableState.type;
+  const search = tableState.search;
+  const setSearch = (s: string) => setTableState({ search: s });
+  const setStatusFilter = (s: string) => setTableState({ status: s });
+  const setTypeFilter = (s: string) => setTableState({ type: s });
   const debouncedSearch = useDebounce(search, 300);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDatevExport, setShowDatevExport] = useState(false);
   const [sortField, setSortField] = useState<SortField>("invoiceDate");

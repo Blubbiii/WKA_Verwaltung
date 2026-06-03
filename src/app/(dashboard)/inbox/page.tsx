@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { usePersistedTableState } from "@/hooks/usePersistedTableState";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -191,31 +192,48 @@ export default function InboxPage() {
   const { flags, loading: flagsLoading } = useFeatureFlags();
   const [invoices, setInvoices] = useState<IncomingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
+  // F-6: Persistent Filter-State (URL + LocalStorage)
+  const [tableState, setTableState] = usePersistedTableState("inbox", {
+    status: "all",
+    type: "all",
+  });
+  const statusFilter = tableState.status;
+  const typeFilter = tableState.type;
+  const setStatusFilter = (s: string) => setTableState({ status: s });
+  const setTypeFilter = (s: string) => setTableState({ type: s });
   const [uploadOpen, setUploadOpen] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
+  // H-9: AbortController ref damit der vorherige Fetch beim schnellen
+  // Filter-Wechsel abgebrochen wird (Race-Condition-Schutz).
+  const abortRef = useRef<AbortController | null>(null);
+
   const load = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     setLoading(true);
     try {
       const params = new URLSearchParams({ limit: "100" });
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (typeFilter !== "all") params.set("type", typeFilter);
-      const res = await fetch(`/api/inbox?${params}`);
+      const res = await fetch(`/api/inbox?${params}`, { signal: ac.signal });
       if (res.ok) {
         const data = await res.json();
-        setInvoices(data.data ?? []);
+        if (!ac.signal.aborted) setInvoices(data.data ?? []);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("loadError"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [statusFilter, typeFilter, t]);
 
   useEffect(() => {
     if (!flagsLoading && flags.inbox) load();
+    return () => abortRef.current?.abort();
   }, [flags.inbox, flagsLoading, load]);
 
   const handleApprove = useCallback(

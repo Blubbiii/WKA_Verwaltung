@@ -466,7 +466,7 @@ export async function calculateSettlement(
         `${lessor.firstName || ""} ${lessor.lastName || ""}`.trim() ||
         "Unbekannt";
 
-      const lessorAddress = formatAddress(lessor);
+      const lessorAddress = formatPersonAddressInline(lessor);
 
       leaseMap.set(lease.id, {
         leaseId: lease.id,
@@ -789,7 +789,7 @@ export async function calculateMonthlyAdvance(
         leaseId: lease.id,
         lessorId: lessor.id,
         lessorName,
-        lessorAddress: formatAddress(lessor),
+        lessorAddress: formatPersonAddressInline(lessor),
         lessorBankIban: lessor.bankIban,
         lessorBankBic: lessor.bankBic,
         lessorBankName: lessor.bankName,
@@ -905,7 +905,9 @@ async function loadAdvancePayments(
   year: number,
   tenantId: string
 ): Promise<AdvancePaymentInfo[]> {
-  // Lade alle ADVANCE Periods für dieses Jahr mit ihren Invoices
+  // M-9 Perf: vorher 1 + N Queries (1 für Periods + 1 pro Period für Invoices).
+  // Jetzt: 2 Queries — alle Periods + ALLE zugehörigen Invoices via `in: ids`.
+  // Anschließend Group-by-period in JS.
   const advancePeriods = await prisma.leaseSettlementPeriod.findMany({
     where: {
       parkId,
@@ -914,28 +916,49 @@ async function loadAdvancePayments(
       periodType: "ADVANCE",
     },
     orderBy: { month: "asc" },
+    select: { id: true, month: true },
   });
 
-  const advancePayments: AdvancePaymentInfo[] = [];
+  if (advancePeriods.length === 0) return [];
 
+  const periodIds = advancePeriods
+    .filter((p) => p.month !== null)
+    .map((p) => p.id);
+
+  if (periodIds.length === 0) return [];
+
+  // Batch-Lade ALLE Invoices über alle Periods auf einmal.
+  const allInvoices = await prisma.invoice.findMany({
+    where: {
+      settlementPeriodId: { in: periodIds },
+      status: { in: ["SENT", "PAID"] },
+    },
+    select: {
+      id: true,
+      invoiceNumber: true,
+      grossAmount: true,
+      paidAt: true,
+      settlementPeriodId: true,
+    },
+  });
+
+  // In-Memory-Gruppierung: settlementPeriodId → Invoices[].
+  const invoicesByPeriod = new Map<string, typeof allInvoices>();
+  for (const inv of allInvoices) {
+    if (!inv.settlementPeriodId) continue;
+    let bucket = invoicesByPeriod.get(inv.settlementPeriodId);
+    if (!bucket) {
+      bucket = [];
+      invoicesByPeriod.set(inv.settlementPeriodId, bucket);
+    }
+    bucket.push(inv);
+  }
+
+  const advancePayments: AdvancePaymentInfo[] = [];
   for (const period of advancePeriods) {
     if (period.month === null) continue;
+    const invoices = invoicesByPeriod.get(period.id) ?? [];
 
-    // Lade Invoices für diese Settlement Period separat
-    const invoices = await prisma.invoice.findMany({
-      where: {
-        settlementPeriodId: period.id,
-        status: { in: ["SENT", "PAID"] },
-      },
-      select: {
-        id: true,
-        invoiceNumber: true,
-        grossAmount: true, // Bruttobetrag (inkl. MwSt)
-        paidAt: true,
-      },
-    });
-
-    // Summe aller Invoices für diese Periode
     const periodTotal = invoices.reduce(
       (sum: number, inv) => sum + (inv.grossAmount ? Number(inv.grossAmount) : 0),
       0
@@ -1122,9 +1145,12 @@ export function calculatePlotArea(
 }
 
 /**
- * Formatiert die Adresse einer Person
+ * Formatiert die Adresse einer Person als einzeiligen, komma-getrennten String
+ * für UI-Display in Lessor-Listen. Unterscheidet sich bewusst von:
+ *  - pdf/utils/formatters.ts#formatAddress (Tuple-Args, newline-getrennt, für PDF)
+ *  - lease-revenue/invoice-generator.ts#buildRecipientAddress (newline-getrennt, für Rechnungs-Empfänger)
  */
-export function formatAddress(person: {
+export function formatPersonAddressInline(person: {
   street: string | null;
   houseNumber?: string | null;
   postalCode: string | null;
@@ -1147,6 +1173,9 @@ export function formatAddress(person: {
 
   return parts.length > 0 ? parts.join(", ") : null;
 }
+
+/** @deprecated Use formatPersonAddressInline. Alias kept for backward-compat with existing tests/imports. */
+export const formatAddress = formatPersonAddressInline;
 
 // ===========================================
 // PERSISTENCE

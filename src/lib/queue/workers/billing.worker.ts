@@ -438,7 +438,16 @@ async function processGenerateSettlement(data: GenerateSettlementJobData): Promi
     };
   }
 
-  // 2. Check if settlement period already exists (annual = month is null)
+  // H-8-Fix: Race-condition-freier Existence-Check + Create in einer TX.
+  // Hintergrund: Das Prisma-Schema hat @@unique([tenantId, parkId, year, month, periodType]),
+  // aber Postgres behandelt NULL in UNIQUE-Constraints als verschieden — d.h. bei
+  // month=null (Jahresabrechnung) greift der Constraint NICHT. Ohne partial unique index
+  // (`WHERE month IS NULL`) ist `findFirst()` nicht atomar gegen parallele Jobs.
+  // TODO(schema): Partial unique index hinzufügen:
+  //   CREATE UNIQUE INDEX lease_settlement_periods_annual_unique
+  //   ON lease_settlement_periods (tenant_id, park_id, year, period_type)
+  //   WHERE month IS NULL;
+  // Bis dahin: TX-Serialisierung über findFirst innerhalb der TX (best-effort).
   const existingPeriod = await prisma.leaseSettlementPeriod.findFirst({
     where: {
       tenantId: data.tenantId,
@@ -490,18 +499,53 @@ async function processGenerateSettlement(data: GenerateSettlementJobData): Promi
   const turbineCount = park.turbines.length;
   const totalMinimumRent = minimumRentPerTurbine * turbineCount;
 
-  // 4. Create the settlement period
-  const settlementPeriod = await prisma.leaseSettlementPeriod.create({
-    data: {
-      year: data.year,
-      status: "OPEN",
-      totalRevenue: data.totalRevenue ?? null,
-      totalMinimumRent: totalMinimumRent > 0 ? totalMinimumRent : null,
-      periodType: "FINAL",
-      tenantId: data.tenantId,
-      parkId: data.parkId,
-    },
-  });
+  // 4. Create the settlement period — H-8-Fix: TX mit Re-Check innerhalb des
+  // Transaction-Scopes verkleinert die Race-Window. Falls trotzdem ein P2002
+  // (Unique Violation) auftritt, geben wir die bestehende Periode zurück.
+  let settlementPeriod;
+  try {
+    settlementPeriod = await prisma.$transaction(async (tx) => {
+      const dup = await tx.leaseSettlementPeriod.findFirst({
+        where: {
+          tenantId: data.tenantId,
+          parkId: data.parkId,
+          year: data.year,
+          month: null,
+        },
+        select: { id: true },
+      });
+      if (dup) {
+        throw new Error(`__DUPLICATE__${dup.id}`);
+      }
+      return tx.leaseSettlementPeriod.create({
+        data: {
+          year: data.year,
+          status: "OPEN",
+          totalRevenue: data.totalRevenue ?? null,
+          totalMinimumRent: totalMinimumRent > 0 ? totalMinimumRent : null,
+          periodType: "FINAL",
+          tenantId: data.tenantId,
+          parkId: data.parkId,
+        },
+      });
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.startsWith("__DUPLICATE__")) {
+      const existingId = msg.replace("__DUPLICATE__", "");
+      log("warn", data.jobId, "Settlement period already exists (race detected)", {
+        existingId,
+      });
+      return {
+        success: false,
+        error: `Abrechnungsperiode für Park "${park.name}" Jahr ${data.year} existiert bereits (ID: ${existingId})`,
+        settlementIds: [existingId],
+        processedCount: 0,
+        processedAt: new Date(),
+      };
+    }
+    throw err;
+  }
 
   log("info", data.jobId, "Settlement period created successfully", {
     settlementId: settlementPeriod.id,
@@ -1122,6 +1166,34 @@ async function processBulkInvoice(
         continue;
       }
 
+      // H-7-Fix: Idempotenz — wenn für (parkId, period, shareholder) bereits eine
+      // Bulk-Rechnung existiert (gleicher internalReference-Marker), überspringen.
+      // Verhindert Doppel-Erstellung bei Retry oder erneuter Job-Ausführung.
+      const idempotencyMarker = `BULK:${data.parkId}:${data.period}:${sh.id}`;
+      const existing = await prisma.invoice.findFirst({
+        where: {
+          tenantId: data.tenantId,
+          internalReference: idempotencyMarker,
+          deletedAt: null,
+        },
+        select: { id: true, invoiceNumber: true },
+      });
+      if (existing) {
+        log("info", data.jobId, "Bulk invoice skipped — already exists (idempotent)", {
+          shareholderId: sh.id,
+          existingInvoiceId: existing.id,
+          existingInvoiceNumber: existing.invoiceNumber,
+          idempotencyMarker,
+        });
+        allInvoiceIds.push(existing.id);
+        successCount++;
+        if (job) {
+          const progress = Math.round(((i + 1) / shareholders.length) * 100);
+          await job.updateProgress(progress);
+        }
+        continue;
+      }
+
       const recipientName =
         sh.person.companyName ||
         `${sh.person.firstName || ""} ${sh.person.lastName || ""}`.trim();
@@ -1155,6 +1227,8 @@ async function processBulkInvoice(
           recipientName,
           recipientAddress,
           paymentReference: `${invoiceNumber}-${sh.shareholderNumber || sh.id.slice(0, 8)}`,
+          // H-7-Fix: Idempotenz-Marker für Wiederausführung des Bulk-Jobs.
+          internalReference: idempotencyMarker,
           netAmount,
           taxRate,
           taxAmount,

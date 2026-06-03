@@ -56,6 +56,7 @@ export { REPORT_QUEUE_NAME } from './queues/report.queue';
 export { REMINDER_QUEUE_NAME } from './queues/reminder.queue';
 export { SCADA_AUTO_IMPORT_QUEUE_NAME } from './queues/scada-auto-import.queue';
 export { WEBHOOK_QUEUE_NAME } from './queues/webhook.queue';
+export { APPROVALS_EXPIRY_QUEUE_NAME } from './queues/approvals-expiry.queue';
 
 /**
  * All queue names as a constant object for easy reference
@@ -69,6 +70,7 @@ export const QUEUE_NAMES = {
   REMINDER: 'reminder',
   SCADA_AUTO_IMPORT: 'scada-auto-import',
   WEBHOOK: 'webhook',
+  APPROVALS_EXPIRY: 'approvals-expiry',
 } as const;
 
 export type QueueName = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];
@@ -215,6 +217,23 @@ export type {
 } from './queues/webhook.queue';
 
 // ============================================
+// Approvals Expiry Queue
+// ============================================
+
+export {
+  getApprovalsExpiryQueue,
+  scheduleApprovalsExpiryCheck,
+  enqueueApprovalsExpiryNow,
+  removeApprovalsExpirySchedule,
+  closeApprovalsExpiryQueue,
+} from './queues/approvals-expiry.queue';
+
+export type {
+  ApprovalsExpiryJobData,
+  ApprovalsExpiryJobResult,
+} from './queues/approvals-expiry.queue';
+
+// ============================================
 // Utility Functions
 // ============================================
 
@@ -231,6 +250,7 @@ export const closeAllQueues = async (): Promise<void> => {
   const { closeReminderQueue } = await import('./queues/reminder.queue');
   const { closeScadaAutoImportQueue } = await import('./queues/scada-auto-import.queue');
   const { closeWebhookQueue } = await import('./queues/webhook.queue');
+  const { closeApprovalsExpiryQueue } = await import('./queues/approvals-expiry.queue');
   const { closeConnections } = await import('./connection');
 
   logger.info('[Queue] Closing all queues...');
@@ -245,6 +265,7 @@ export const closeAllQueues = async (): Promise<void> => {
     closeReminderQueue(),
     closeScadaAutoImportQueue(),
     closeWebhookQueue(),
+    closeApprovalsExpiryQueue(),
   ]);
 
   // Then close Redis connections

@@ -95,6 +95,22 @@ export async function DELETE(
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Systemkonten koennen nicht geloescht werden" });
     }
 
+    // H-4-Fix: GoBD-konformer Lösch-Schutz — Konto darf nicht gelöscht werden,
+    // wenn bereits Buchungszeilen darauf existieren (Audit-Trail-Erhalt).
+    const usageCount = await prisma.journalEntryLine.count({
+      where: {
+        account: account.accountNumber,
+        journalEntry: { tenantId: check.tenantId! },
+      },
+    });
+
+    if (usageCount > 0) {
+      return apiError("CONFLICT", 409, {
+        message: `Konto kann nicht gelöscht werden — es existieren ${usageCount} Buchungszeilen. Deaktivieren Sie das Konto stattdessen.`,
+        details: { usageCount },
+      });
+    }
+
     await prisma.ledgerAccount.delete({ where: { id, tenantId: check.tenantId! } });
 
     return NextResponse.json({ message: "Konto geloescht" });

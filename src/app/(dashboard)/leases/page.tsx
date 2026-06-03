@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
+import { usePersistedTableState } from "@/hooks/usePersistedTableState";
 import { format, differenceInDays } from "date-fns";
 import { de, enUS } from "date-fns/locale";
 import {
@@ -94,9 +95,16 @@ export default function LeasesPage() {
   const t = useTranslations("leases.list");
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
-  const [search, setSearch] = useState("");
+  // F-6: Persistent Filter-State (URL + LocalStorage)
+  const [tableState, setTableState] = usePersistedTableState("leases", {
+    status: "all",
+    search: "",
+  });
+  const statusFilter = tableState.status;
+  const search = tableState.search;
+  const setSearch = (s: string) => setTableState({ search: s });
+  const setStatusFilter = (s: string) => setTableState({ status: s });
   const debouncedSearch = useDebounce(search, 300);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Dialog state
   const [isDetailOpen, setIsDetailOpen] = useState(false);

@@ -91,35 +91,37 @@ export async function createAutoPosting(
   tenantId: string
 ): Promise<AutoPostingResult> {
   try {
-    // Check if auto-entry already exists
-    const existing = await prisma.journalEntry.findFirst({
-      where: {
-        tenantId,
-        referenceType: "Invoice",
-        referenceId: invoiceId,
-        source: "AUTO",
-      },
-    });
+    // M-9 Perf: existing-Check + invoice-Load + tenant-Settings parallelisieren
+    // (vorher 3 sequenzielle awaits). Kosten bei early-exit (existing!=null):
+    // 2 unnötige Queries — Optimierung nur wenn der Normalfall ist, dass kein
+    // auto-entry existiert, was hier zutrifft (erste Postings beim Send-Flow).
+    const [existing, invoice, settings] = await Promise.all([
+      prisma.journalEntry.findFirst({
+        where: {
+          tenantId,
+          referenceType: "Invoice",
+          referenceId: invoiceId,
+          source: "AUTO",
+        },
+      }),
+      prisma.invoice.findUnique({
+        where: { id: invoiceId },
+        include: {
+          items: true,
+          fund: { select: { name: true } },
+        },
+      }),
+      getTenantSettings(tenantId),
+    ]);
 
     if (existing) {
       return { success: true, journalEntryId: existing.id };
     }
 
-    // Load invoice with items
-    const invoice = await prisma.invoice.findUnique({
-      where: { id: invoiceId },
-      include: {
-        items: true,
-        fund: { select: { name: true } },
-      },
-    });
-
     if (!invoice) {
       return { success: false, error: "Invoice not found" };
     }
 
-    // Load tenant-specific account mappings
-    const settings = await getTenantSettings(tenantId);
     const accountMap = buildAccountMap(settings);
 
     // Build journal entry lines from invoice items
@@ -274,30 +276,31 @@ export async function reverseAutoPosting(
   tenantId: string
 ): Promise<AutoPostingResult> {
   try {
-    const original = await prisma.journalEntry.findFirst({
-      where: {
-        tenantId,
-        referenceType: "Invoice",
-        referenceId: invoiceId,
-        source: "AUTO",
-        deletedAt: null,
-      },
-      include: { lines: true },
-    });
+    // M-9 Perf: original + existingReversal parallel (waren 2 sequenzielle Queries)
+    const [original, existingReversal] = await Promise.all([
+      prisma.journalEntry.findFirst({
+        where: {
+          tenantId,
+          referenceType: "Invoice",
+          referenceId: invoiceId,
+          source: "AUTO",
+          deletedAt: null,
+        },
+        include: { lines: true },
+      }),
+      prisma.journalEntry.findFirst({
+        where: {
+          tenantId,
+          referenceType: "InvoiceReversal",
+          referenceId: invoiceId,
+          source: "AUTO",
+        },
+      }),
+    ]);
 
     if (!original) {
       return { success: true }; // Nothing to reverse
     }
-
-    // Check if reversal already exists
-    const existingReversal = await prisma.journalEntry.findFirst({
-      where: {
-        tenantId,
-        referenceType: "InvoiceReversal",
-        referenceId: invoiceId,
-        source: "AUTO",
-      },
-    });
 
     if (existingReversal) {
       return { success: true, journalEntryId: existingReversal.id };

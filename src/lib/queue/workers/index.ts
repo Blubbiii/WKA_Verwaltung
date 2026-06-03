@@ -88,6 +88,17 @@ import {
 } from "./inbox-ocr.worker";
 import type { InboxOcrJobData, InboxOcrJobResult } from "../queues/inbox-ocr.queue";
 
+import {
+  startApprovalsExpiryWorker,
+  stopApprovalsExpiryWorker,
+  isApprovalsExpiryWorkerRunning,
+  getApprovalsExpiryWorker,
+} from "./approvals-expiry.worker";
+import type {
+  ApprovalsExpiryJobData,
+  ApprovalsExpiryJobResult,
+} from "../queues/approvals-expiry.queue";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -105,6 +116,7 @@ export const WORKER_NAMES = {
   SCADA_AUTO_IMPORT: "scada-auto-import",
   PAPERLESS: "paperless",
   INBOX_OCR: "inbox-ocr",
+  APPROVALS_EXPIRY: "approvals-expiry",
 } as const;
 
 export type WorkerName = (typeof WORKER_NAMES)[keyof typeof WORKER_NAMES];
@@ -218,6 +230,14 @@ const workerRegistry: WorkerRegistryEntry[] = [
     stop: stopInboxOcrWorker,
     isRunning: isInboxOcrWorkerRunning,
     getWorker: getInboxOcrWorker as () => Worker<unknown, unknown> | null,
+  },
+  {
+    name: WORKER_NAMES.APPROVALS_EXPIRY,
+    displayName: "Approvals Expiry Worker",
+    start: startApprovalsExpiryWorker as () => Worker<unknown, unknown>,
+    stop: stopApprovalsExpiryWorker,
+    isRunning: isApprovalsExpiryWorkerRunning,
+    getWorker: getApprovalsExpiryWorker as () => Worker<unknown, unknown> | null,
   },
 ];
 
@@ -518,3 +538,12 @@ export {
   getInboxOcrWorker,
 };
 export type { InboxOcrJobData, InboxOcrJobResult };
+
+// Approvals Expiry Worker
+export {
+  startApprovalsExpiryWorker,
+  stopApprovalsExpiryWorker,
+  isApprovalsExpiryWorkerRunning,
+  getApprovalsExpiryWorker,
+};
+export type { ApprovalsExpiryJobData, ApprovalsExpiryJobResult };

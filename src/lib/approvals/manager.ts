@@ -198,3 +198,24 @@ export async function listMyRequests(tenantId: string, userId: string) {
     take: 50,
   });
 }
+
+/**
+ * Liefert alle Requests, die der User entschieden (APPROVED/REJECTED) hat.
+ * Genutzt für die Approval-History-Page ("Meine Entscheidungen").
+ */
+export async function listMyDecisions(tenantId: string, userId: string) {
+  return prisma.approvalRequest.findMany({
+    where: {
+      tenantId,
+      decidedById: userId,
+      status: { in: ["APPROVED", "REJECTED"] },
+    },
+    include: {
+      requestedBy: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
+    },
+    orderBy: { decidedAt: "desc" },
+    take: 50,
+  });
+}
