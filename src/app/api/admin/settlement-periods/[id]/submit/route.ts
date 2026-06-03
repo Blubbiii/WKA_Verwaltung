@@ -20,6 +20,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
+import { findOrCreateApprovalRequest } from "@/lib/approvals/manager";
 
 // POST /api/admin/settlement-periods/[id]/submit
 // IN_PROGRESS → PENDING_REVIEW
@@ -37,7 +38,14 @@ export async function POST(
 
     const period = await prisma.leaseSettlementPeriod.findUnique({
       where: { id },
-      select: { id: true, tenantId: true, status: true },
+      select: {
+        id: true,
+        tenantId: true,
+        status: true,
+        createdById: true,
+        totalActualRent: true,
+        totalRevenue: true,
+      },
     });
 
     if (!period) {
@@ -61,12 +69,39 @@ export async function POST(
       data: { status: "PENDING_REVIEW" },
     });
 
+    // Sprint 3: ApprovalRequest erzeugen — taucht in /approvals-Inbox auf.
+    // Bei Approve dort läuft der Executor und setzt Status auf APPROVED.
+    const amount =
+      Number(period.totalActualRent ?? 0) ||
+      Number(period.totalRevenue ?? 0) ||
+      0;
+    const approvalRequest = await findOrCreateApprovalRequest({
+      tenantId: check.tenantId!,
+      action: "SETTLEMENT_FINALIZE",
+      entityType: "LeaseSettlementPeriod",
+      entityId: id,
+      amountEur: amount,
+      requestedById: check.userId!,
+      requestReason: "Settlement-Periode zur Freigabe eingereicht",
+    });
+
     logger.info(
-      { periodId: id, submittedBy: check.userId, tenantId: check.tenantId },
-      "Settlement period submitted for review",
+      {
+        periodId: id,
+        submittedBy: check.userId,
+        tenantId: check.tenantId,
+        approvalRequestId: approvalRequest.id,
+      },
+      "Settlement period submitted for review + ApprovalRequest erstellt",
     );
 
-    return NextResponse.json(updated);
+    return NextResponse.json({
+      ...updated,
+      approvalRequest: {
+        id: approvalRequest.id,
+        expiresAt: approvalRequest.expiresAt.toISOString(),
+      },
+    });
   } catch (error) {
     return handleApiError(error, "Fehler beim Einreichen zur Prüfung");
   }

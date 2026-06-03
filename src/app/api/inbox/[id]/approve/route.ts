@@ -27,6 +27,7 @@ import {
   assertVorsteuerCapable,
   VorsteuerCapabilityError,
 } from "@/lib/accounting/incoming-invoice-validator";
+import { findOrCreateApprovalRequest } from "@/lib/approvals/manager";
 
 export async function POST(
   _req: NextRequest,
@@ -75,13 +76,34 @@ export async function POST(
     const requireFourEyes = threshold === null || gross > threshold;
 
     if (requireFourEyes && existing.createdById === check.userId) {
-      return apiError("SELF_APPROVAL_FORBIDDEN", 403, {
-        message:
-          threshold === null
-            ? "Vier-Augen-Prinzip: eigene Rechnungen können nicht selbst freigegeben werden."
-            : `Vier-Augen-Prinzip: Rechnungen über ${threshold.toFixed(2)} € müssen von einer anderen Person freigegeben werden.`,
-        details: { grossAmount: gross, threshold },
+      // Sprint 3 Permissions v2: statt 403 → ApprovalRequest erzeugen,
+      // taucht in /approvals-Inbox auf. Bei Decide-APPROVED läuft Executor
+      // executeIncomingInvoiceApprove und setzt status=APPROVED.
+      const approvalRequest = await findOrCreateApprovalRequest({
+        tenantId: check.tenantId!,
+        action: "INCOMING_INVOICE_APPROVE",
+        entityType: "IncomingInvoice",
+        entityId: id,
+        amountEur: gross,
+        requestedById: check.userId!,
+        requestReason: `Eigene Eingangsrechnung freigeben (Brutto ${gross.toFixed(2)} €)`,
       });
+      return NextResponse.json(
+        {
+          status: "PENDING_APPROVAL",
+          message:
+            threshold === null
+              ? "Vier-Augen-Prinzip: ein zweiter berechtigter User muss freigeben."
+              : `Vier-Augen-Prinzip: Rechnungen über ${threshold.toFixed(2)} € müssen von einem anderen User freigegeben werden.`,
+          approvalRequest: {
+            id: approvalRequest.id,
+            expiresAt: approvalRequest.expiresAt.toISOString(),
+            threshold,
+            grossAmount: gross,
+          },
+        },
+        { status: 202 },
+      );
     }
 
     // D6: §14 UStG Pflichtangaben für Vorsteuerabzug.

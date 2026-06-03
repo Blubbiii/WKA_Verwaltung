@@ -13,6 +13,7 @@ import { uploadFile } from "@/lib/storage";
 import { generateInvoicePdf } from "@/lib/pdf/generators/invoicePdf";
 import { generateVoteResultPdf } from "@/lib/pdf/generators/voteResultPdf";
 import { generateSettlementReportPdf } from "@/lib/pdf/generators/settlementReportPdf";
+import { generateAnnualReportPdf } from "@/lib/pdf/generators/annualReportPdf";
 import { jobLogger } from "@/lib/logger";
 
 // =============================================================================
@@ -22,7 +23,11 @@ import { jobLogger } from "@/lib/logger";
 /**
  * PDF-Typen die generiert werden können
  */
-export type PdfType = "invoice" | "vote-result" | "settlement-report";
+export type PdfType =
+  | "invoice"
+  | "vote-result"
+  | "settlement-report"
+  | "annual-report";
 
 /**
  * Basis-Interface für alle PDF-Jobs
@@ -70,9 +75,32 @@ export interface SettlementReportPdfJobData extends BasePdfJobData {
 }
 
 /**
+ * Job-Daten für Jahresbericht-PDF (Annual Report).
+ * P-4 Sprint 2: ausgelagert in Queue da react-pdf renderToBuffer
+ * den Event-Loop bis zu 30s blockieren kann.
+ */
+export interface AnnualReportPdfJobData extends BasePdfJobData {
+  type: "annual-report";
+  parkId: string;
+  year: number;
+  sections?: {
+    topology?: boolean;
+    kpis?: boolean;
+    monthlyTrend?: boolean;
+    turbinePerformance?: boolean;
+    financial?: boolean;
+    service?: boolean;
+  };
+}
+
+/**
  * Union-Typ für alle PDF-Job-Daten
  */
-export type PdfJobData = InvoicePdfJobData | VoteResultPdfJobData | SettlementReportPdfJobData;
+export type PdfJobData =
+  | InvoicePdfJobData
+  | VoteResultPdfJobData
+  | SettlementReportPdfJobData
+  | AnnualReportPdfJobData;
 
 /**
  * Ergebnis nach PDF-Generierung
@@ -162,6 +190,31 @@ async function generateSettlementReport(data: SettlementReportPdfJobData): Promi
   return buffer;
 }
 
+/**
+ * Generiert ein Jahresbericht-PDF.
+ */
+async function generateAnnualReport(data: AnnualReportPdfJobData): Promise<Buffer> {
+  log("info", data.jobId, `Generating annual report PDF`, {
+    parkId: data.parkId,
+    year: data.year,
+  });
+
+  const buffer = await generateAnnualReportPdf(
+    data.parkId,
+    data.year,
+    data.tenantId,
+    data.sections,
+  );
+
+  log("info", data.jobId, `Annual report PDF generated`, {
+    parkId: data.parkId,
+    year: data.year,
+    sizeBytes: buffer.length,
+  });
+
+  return buffer;
+}
+
 // =============================================================================
 // Job Processor
 // =============================================================================
@@ -212,6 +265,16 @@ async function processPdfJob(job: Job<PdfJobData, PdfJobResult>): Promise<PdfJob
         }
         pdfBuffer = await generateSettlementReport(settlementData);
         defaultFilename = `settlement_report_${settlementData.periodId}`;
+        break;
+      }
+
+      case "annual-report": {
+        const annualData = data as AnnualReportPdfJobData;
+        if (!annualData.parkId || !annualData.year) {
+          throw new Error("Missing required field: parkId or year");
+        }
+        pdfBuffer = await generateAnnualReport(annualData);
+        defaultFilename = `annual_report_${annualData.parkId}_${annualData.year}`;
         break;
       }
 

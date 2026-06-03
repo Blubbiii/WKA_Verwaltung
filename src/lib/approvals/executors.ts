@@ -168,6 +168,47 @@ const executeSettlementFinalize: Executor = async (request) => {
 };
 
 /**
+ * Eingangsrechnung freigeben: setzt IncomingInvoice auf APPROVED + approvedById.
+ */
+const executeIncomingInvoiceApprove: Executor = async (request, deciderId) => {
+  try {
+    const invoice = await prisma.incomingInvoice.findFirst({
+      where: {
+        id: request.entityId,
+        tenantId: request.tenantId,
+        deletedAt: null,
+      },
+    });
+    if (!invoice) {
+      return { success: false, error: "Eingangsrechnung nicht mehr vorhanden" };
+    }
+    if (invoice.status !== "REVIEW" && invoice.status !== "INBOX") {
+      return {
+        success: false,
+        error: `Rechnung ist im Status "${invoice.status}" — Approve nicht mehr möglich`,
+      };
+    }
+    const updated = await prisma.incomingInvoice.update({
+      where: { id: invoice.id },
+      data: {
+        status: "APPROVED",
+        approvedById: deciderId,
+        approvedAt: new Date(),
+      },
+    });
+    return {
+      success: true,
+      resultData: { invoiceId: updated.id, status: updated.status },
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Unbekannter Fehler",
+    };
+  }
+};
+
+/**
  * SEPA-Lauf finalisieren: setzt SepaPaymentBatch auf APPROVED → SENT-bereit.
  */
 const executeSepaRun: Executor = async (request) => {
@@ -208,6 +249,7 @@ const EXECUTORS: Partial<Record<ApprovalAction, Executor>> = {
   JOURNAL_REVERSE: executeJournalReverse,
   SETTLEMENT_FINALIZE: executeSettlementFinalize,
   SEPA_RUN: executeSepaRun,
+  INCOMING_INVOICE_APPROVE: executeIncomingInvoiceApprove,
 };
 
 /**

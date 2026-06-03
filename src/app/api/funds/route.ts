@@ -7,6 +7,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { apiError } from "@/lib/api-errors";
+import { getAllowedFundIds } from "@/lib/auth/fund-access";
 
 const fundCreateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
@@ -44,12 +45,27 @@ export async function GET(request: NextRequest) {
       maxLimit: 100,
     });
 
+    // Sprint 3 ABAC: User-spezifischer Fund-Whitelist (FundAccess).
+    // Intersect mit Role-based resourceRestricted (UserRoleAssignment).
+    const abacAllowed = check.userId
+      ? await getAllowedFundIds(check.userId)
+      : null;
+    const roleAllowed =
+      check.resourceRestricted && check.allowedResourceIds?.length
+        ? check.allowedResourceIds
+        : null;
+    let combinedAllowed: string[] | null = null;
+    if (abacAllowed && roleAllowed) {
+      combinedAllowed = abacAllowed.filter((id) => roleAllowed.includes(id));
+    } else if (abacAllowed) {
+      combinedAllowed = abacAllowed;
+    } else if (roleAllowed) {
+      combinedAllowed = roleAllowed;
+    }
+
     const where = {
       tenantId: check.tenantId!,
-      // Resource-level filtering: only show funds the user has access to
-      ...(check.resourceRestricted && check.allowedResourceIds?.length && {
-        id: { in: check.allowedResourceIds },
-      }),
+      ...(combinedAllowed && { id: { in: combinedAllowed } }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: "insensitive" as const } },

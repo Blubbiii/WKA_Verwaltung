@@ -225,19 +225,28 @@ export default function InboxPage() {
         const res = await fetch(`/api/inbox/${invoiceId}/approve`, {
           method: "POST",
         });
+        const data = await res.json().catch(() => ({}));
+
+        // Sprint 3: 202 PENDING_APPROVAL = ApprovalRequest wurde erzeugt
+        if (res.status === 202 && data?.status === "PENDING_APPROVAL") {
+          toast.info(
+            data.message ??
+              "Vier-Augen-Prinzip: Anfrage angelegt. /approvals zur Freigabe.",
+          );
+          await load();
+          return;
+        }
+
         if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          if (res.status === 403 && err?.code === "SELF_APPROVAL_FORBIDDEN") {
-            toast.error(err.message ?? "Vier-Augen-Prinzip verletzt");
-          } else if (res.status === 422 && err?.code === "VAT_DEDUCTION_FAILED") {
-            const missing = Array.isArray(err?.details?.missing)
-              ? err.details.missing.join(", ")
+          if (res.status === 422 && data?.code === "VAT_DEDUCTION_FAILED") {
+            const missing = Array.isArray(data?.details?.missing)
+              ? data.details.missing.join(", ")
               : "";
             toast.error(`§14 UStG fehlende Pflichtangaben: ${missing}`);
           } else if (res.status === 409) {
-            toast.error(err.message ?? "Status erlaubt keine Freigabe");
+            toast.error(data.message ?? "Status erlaubt keine Freigabe");
           } else {
-            toast.error(err.message ?? "Freigabe fehlgeschlagen");
+            toast.error(data.message ?? "Freigabe fehlgeschlagen");
           }
           return;
         }

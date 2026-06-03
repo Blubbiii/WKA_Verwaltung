@@ -273,6 +273,7 @@ model User {
   ustAdjustmentsCreated                                                   UStAdjustment[]            @relation("UStAdjustmentCreator")
   approvalRequestsRequested                                               ApprovalRequest[]          @relation("ApprovalRequester")
   approvalRequestsDecided                                                 ApprovalRequest[]          @relation("ApprovalDecider")
+  fundAccess                                                              FundAccess[]
 
   @@index([tenantId])
   @@index([email])
@@ -583,12 +584,32 @@ model Fund {
   documentRoutingRules                                  DocumentRoutingRule[]
   quotes                                                Quote[]
   bankAccounts                                          BankAccount[]
+  // Sprint 3 ABAC: pro-User Whitelist (M:N). Leer = ALLE User dürfen, kein Filter.
+  userAccess                                            FundAccess[]
 
   @@index([tenantId])
   @@index([fundCategoryId])
   @@index([deletedAt])
   @@index([tenantId, deletedAt])
   @@map("funds")
+}
+
+/// Sprint 3 ABAC: User-spezifischer Fund-Whitelist-Eintrag.
+/// Wenn FundAccess-Einträge für einen User existieren, kann der User NUR
+/// die dort gelisteten Funds sehen. Wenn keine FundAccess-Einträge → keine
+/// Restriktion (Default = Backward-Kompatibilität).
+model FundAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fundId    String
+  fund      Fund     @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, fundId])
+  @@index([userId])
+  @@index([fundId])
+  @@map("fund_access")
 }
 
 model FundPark {
@@ -5028,6 +5049,7 @@ enum ApprovalAction {
   SEPA_RUN
   TENANT_SETTINGS_UPDATE
   USER_ROLE_ASSIGN
+  INCOMING_INVOICE_APPROVE
 }
 
 /// Approval-Request für 4-Augen-Prinzip. Wird erzeugt wenn der initiierende

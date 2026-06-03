@@ -188,6 +188,53 @@ export const enqueueVoteResultPdf = async (
 };
 
 /**
+ * P-4 Sprint 2: Annual-Report-PDF async generieren.
+ *
+ * Worker erwartet das volle Format (parkId, year, sections) — wir
+ * casten hier auf Queue<unknown> um die Inkompatibilität zwischen
+ * PdfJobData (Queue) und PdfJobData (Worker) zu umgehen, bis die
+ * Schemas in einer Folge-Session vereinheitlicht werden.
+ */
+export const enqueueAnnualReportPdfAsync = async (
+  parkId: string,
+  year: number,
+  tenantId: string,
+  options?: {
+    requestedBy?: string;
+    sections?: {
+      topology?: boolean;
+      kpis?: boolean;
+      monthlyTrend?: boolean;
+      turbinePerformance?: boolean;
+      financial?: boolean;
+      service?: boolean;
+    };
+  },
+) => {
+  const queue = getPdfQueue() as unknown as import("bullmq").Queue<Record<string, unknown>>;
+  const jobId = `pdf-annual-report-${parkId}-${year}-${tenantId}`;
+  const job = await queue.add(
+    "annual-report",
+    {
+      jobId,
+      type: "annual-report",
+      tenantId,
+      parkId,
+      year,
+      sections: options?.sections,
+      saveToStorage: true,
+    },
+    { jobId },
+  );
+
+  logger.info(
+    `[Queue:${PDF_QUEUE_NAME}] Job ${job.id} added: annual-report park=${parkId} year=${year}`,
+  );
+
+  return job;
+};
+
+/**
  * Enqueue multiple PDF generation jobs in bulk
  */
 export const enqueuePdfBulk = async (
