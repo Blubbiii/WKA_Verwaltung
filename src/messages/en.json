@@ -263,6 +263,16 @@
     "editMode": "Edit",
     "addWidget": "Add Widget",
     "resetLayout": "Reset Layout",
+    "hero": {
+      "activeParks": "Active Wind Farms",
+      "shareholdersSuffix": "shareholders",
+      "fundsSuffix": "funds",
+      "openInvoices": "Invoices",
+      "activeContracts": "Active Contracts",
+      "expiringSoon": "Expiring 90 d",
+      "activityHeader": "Recent Activity",
+      "noActivities": "No activity today yet."
+    },
     "widget": {
       "parks": "Wind Farms",
       "turbines": "Turbines",

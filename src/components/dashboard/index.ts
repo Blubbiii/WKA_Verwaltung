@@ -34,6 +34,9 @@ export { DashboardEditor, DashboardView } from "./dashboard-editor";
 // Onboarding
 export { OnboardingBanner } from "./onboarding-banner";
 
+// Redesign 2026-06 R-6: Hero-Komposition
+export { DashboardHero } from "./DashboardHero";
+
 // Widget Components
 export {
   DeadlinesWidget,

@@ -7,7 +7,7 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { DashboardEditor, DashboardView, OnboardingBanner } from "@/components/dashboard";
+import { DashboardEditor, DashboardView, OnboardingBanner, DashboardHero } from "@/components/dashboard";
 import { ParkHealthPulse } from "@/components/dashboard/ParkHealthPulse";
 import { DashboardGreeting } from "@/components/dashboard/greeting";
 import { useDashboardConfig } from "@/hooks/useDashboardConfig";
@@ -94,6 +94,8 @@ export default function DashboardPage() {
         <DashboardEditor onSave={handleSaveComplete} onCancel={handleStopEditing} />
       ) : (
         <>
+          {/* Redesign 2026-06 R-6: Story-driven Hero über dem Widget-Grid */}
+          <DashboardHero />
           <ParkHealthPulse />
           <DashboardView onEdit={() => setIsEditing(true)} />
         </>

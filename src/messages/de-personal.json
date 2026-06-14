@@ -263,6 +263,16 @@
     "editMode": "Anpassen",
     "addWidget": "Widget hinzufügen",
     "resetLayout": "Layout zurücksetzen",
+    "hero": {
+      "activeParks": "Deine Windparks",
+      "shareholdersSuffix": "Gesellschafter",
+      "fundsSuffix": "Beteiligungen",
+      "openInvoices": "Rechnungen",
+      "activeContracts": "Aktive Verträge",
+      "expiringSoon": "Fristen 90 Tage",
+      "activityHeader": "Letzte Aktivitäten",
+      "noActivities": "Heute war noch nichts los."
+    },
     "widget": {
       "parks": "Deine Windparks",
       "turbines": "Deine Anlagen",
