@@ -277,12 +277,30 @@ export default function RolesPage() {
     if (!selectedRoleFull) return;
     try {
       setIsSubmitting(true);
-      const payload = {
-        name: editName,
-        description: editDescription,
-        color: editColor,
-        permissions: selectedPermissions,
-      };
+      // Sende nur die Felder die sich gegenüber dem Original geändert haben.
+      // Wenn der User eine System-Rolle nur "ansieht" (kein Edit erlaubt) und
+      // ein anderer State-Effekt isDirty kurzzeitig setzt, würden sonst die
+      // Original-Werte versehentlich zurückgeschrieben (No-Op, aber API-Aufruf
+      // gegen Permission-Check). Saubere Payload-Berechnung verhindert das.
+      const payload: Record<string, unknown> = {};
+      if (editName !== selectedRoleFull.name) payload.name = editName;
+      if (editDescription !== (selectedRoleFull.description || "")) {
+        payload.description = editDescription || null;
+      }
+      if (editColor !== (selectedRoleFull.color || "#2563eb")) {
+        payload.color = editColor;
+      }
+      const permChanged =
+        selectedPermissions.length !== originalPermissions.length ||
+        !selectedPermissions.every((p) => originalPermissions.includes(p));
+      if (permChanged) payload.permissions = selectedPermissions;
+
+      if (Object.keys(payload).length === 0) {
+        // Nichts zu speichern — nur isDirty zurücksetzen
+        setIsDirty(false);
+        return;
+      }
+
       const res = await fetch(`/api/admin/roles/${selectedRoleFull.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -290,12 +308,29 @@ export default function RolesPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || t("saveError"));
+        throw new Error(err.message || err.error || t("saveError"));
       }
+      const updated = (await res.json()) as Role;
       toast.success(t("roleUpdated"));
-      await fetchData();
-      setOriginalPermissions(selectedPermissions);
+
+      // BUG-FIX (Post-R-10): selectedRoleFull muss nach Save auf den neuen
+      // Server-Stand. Vorher wurde nur originalPermissions/setIsDirty(false)
+      // zurückgesetzt, aber selectedRoleFull blieb auf dem ALTEN Name/Description/
+      // Color. Der isDirty-useEffect verglich dann neue Inputs gegen alte
+      // selectedRoleFull-Felder und sprang sofort wieder auf true — der User
+      // sah "Ungespeicherte Änderungen" trotz erfolgreich gespeichert.
+      const newPerms =
+        updated.permissions?.map((p) => p.permission.name) ?? selectedPermissions;
+      setSelectedRoleFull(updated);
+      setSelectedPermissions(newPerms);
+      setOriginalPermissions(newPerms);
+      setEditName(updated.name);
+      setEditDescription(updated.description || "");
+      setEditColor(updated.color || "#2563eb");
       setIsDirty(false);
+
+      // Liste asynchron neu laden für Counts/Sortierung — nicht blockierend
+      void fetchData();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("saveError"));
     } finally {

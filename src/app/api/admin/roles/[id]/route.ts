@@ -180,8 +180,15 @@ export async function PATCH(
       permissionsChanged = true;
     }
 
+    // Bug-Fix (Audit Berechtigungs-Mgmt): vorher war hier
+    //   where: { id, tenantId: check.tenantId! }
+    // — das schlug für System-Rollen (tenantId = null) IMMER fehl, weil der
+    // Tenant des Aufrufers nicht null ist. Der Tenant-Scope wurde bereits oben
+    // korrekt geprüft (existingRole.isSystem || existingRole.tenantId === check.tenantId
+    // oder Superadmin-Override) — der zweite Check im WHERE-Filter war doppelt
+    // gemoppelt und für System-Rollen falsch.
     const role = await prisma.role.update({
-      where: { id, tenantId: check.tenantId!},
+      where: { id },
       data: updateData,
       include: {
         _count: {
@@ -253,9 +260,11 @@ export async function DELETE(
       return apiError("BAD_REQUEST", undefined, { message: `Rolle ist noch ${existingRole._count.userAssignments} Benutzern zugewiesen` });
     }
 
-    // Delete role (cascade deletes RolePermissions)
+    // Delete role (cascade deletes RolePermissions).
+    // Tenant-Scope wurde oben bereits geprüft — Filter im WHERE nur auf id.
+    // System-Rollen sind oben ohnehin schon abgewiesen.
     await prisma.role.delete({
-      where: { id, tenantId: check.tenantId!},
+      where: { id },
     });
 
     // Gesamten Cache invalidieren da die Rolle gelöscht wurde
