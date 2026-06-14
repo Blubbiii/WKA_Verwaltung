@@ -12,6 +12,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { MS_PER_DAY } from "@/lib/constants/time";
+import { PAGE_SIZE_LARGE, PAGE_SIZE_DROPDOWN } from "@/lib/config/pagination";
 
 type ContactLinkRow = {
   id: string;
@@ -308,7 +309,7 @@ export async function loadContact360(
             leaseId: true,
           },
           orderBy: { invoiceDate: "desc" },
-          take: 50,
+          take: PAGE_SIZE_LARGE,
         })
       : Promise.resolve([]),
     shareholderIds.length
@@ -328,7 +329,7 @@ export async function loadContact360(
             shareholderId: true,
           },
           orderBy: { invoiceDate: "desc" },
-          take: 50,
+          take: PAGE_SIZE_LARGE,
         })
       : Promise.resolve([]),
     contractIds.length || fundIds.length || parkRoleIds.length || shareholderIds.length
@@ -355,7 +356,7 @@ export async function loadContact360(
             shareholderId: true,
           },
           orderBy: { createdAt: "desc" },
-          take: 100,
+          take: PAGE_SIZE_DROPDOWN,
         })
       : Promise.resolve([]),
   ]);

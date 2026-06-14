@@ -9,6 +9,7 @@ import { parsePaginationParams } from "@/lib/api-utils";
 import { serializePrisma } from "@/lib/serialize";
 import { uploadFile } from "@/lib/storage";
 import { enqueueInboxOcrJob } from "@/lib/queue/queues/inbox-ocr.queue";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 async function checkInbox(tenantId: string) {
   if (!await getConfigBoolean("inbox.enabled", tenantId, false)) {
@@ -90,8 +91,8 @@ export async function POST(request: NextRequest) {
       return apiError("BAD_REQUEST", 400, { message: "Nur PDF und Bilddateien (JPEG, PNG, TIFF) erlaubt" });
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      return apiError("BAD_REQUEST", 400, { message: "Datei zu groß (max. 50 MB)" });
+    if (file.size > UPLOAD_LIMITS.inboxAttachment) {
+      return apiError("BAD_REQUEST", 400, { message: `Datei zu groß (max. ${UPLOAD_LIMITS.inboxAttachment / (1024 * 1024)} MB)` });
     }
 
     // Optional metadata from form

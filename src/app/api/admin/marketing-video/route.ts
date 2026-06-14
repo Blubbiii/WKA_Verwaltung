@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { uploadFile, deleteFile, getSignedUrl } from "@/lib/storage";
 import { apiError } from "@/lib/api-errors";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 interface TenantSettings {
   marketingVideoUrl?: string;
@@ -17,7 +18,7 @@ interface TenantSettings {
   [key: string]: unknown;
 }
 
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB
+const MAX_VIDEO_SIZE = UPLOAD_LIMITS.marketingVideo;
 const ALLOWED_TYPES = ["video/mp4", "video/webm"];
 
 // POST /api/admin/marketing-video — Upload marketing video

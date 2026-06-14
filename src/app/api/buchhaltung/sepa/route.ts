@@ -8,6 +8,7 @@ import {
   generateSepaXml,
   checkSepaAwvWarnings,
 } from "@/lib/export/sepa-export";
+import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 import { z } from "zod";
 
 const createBatchSchema = z.object({
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest) {
     const batches = await prisma.sepaPaymentBatch.findMany({
       where: { tenantId: check.tenantId! },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: PAGE_SIZE_LARGE,
       include: {
         createdBy: { select: { firstName: true, lastName: true } },
         _count: { select: { items: true } },

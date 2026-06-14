@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useDebounce } from "@/hooks/useDebounce";
 import { formatDateTime } from "@/lib/format";
+import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 import {
   Newspaper,
   Search,
@@ -99,7 +100,7 @@ export default function NewsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: PAGE_SIZE_DEFAULT,
     total: 0,
     totalPages: 0,
   });

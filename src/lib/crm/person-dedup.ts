@@ -8,6 +8,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 
 export interface PersonDedupInput {
   personType?: string | null;
@@ -83,7 +84,7 @@ export async function findMatchingPerson(
       city: true,
       email: true,
     },
-    take: 20,
+    take: PAGE_SIZE_DEFAULT,
   });
 
   const wantedCompany = norm(input.companyName);

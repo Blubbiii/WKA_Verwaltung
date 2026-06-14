@@ -7,6 +7,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { MS_PER_DAY } from "@/lib/constants/time";
+import { PAGE_SIZE_DROPDOWN } from "@/lib/config/pagination";
 
 export interface ExpiringLease {
   id: string;
@@ -95,7 +96,7 @@ export async function getExpiringItems(
         },
       },
       orderBy: { endDate: "asc" },
-      take: 100,
+      take: PAGE_SIZE_DROPDOWN,
     }),
 
     prisma.contract.findMany({
@@ -126,7 +127,7 @@ export async function getExpiringItems(
         fund: { select: { name: true } },
       },
       orderBy: { endDate: "asc" },
-      take: 100,
+      take: PAGE_SIZE_DROPDOWN,
     }),
   ]);
 

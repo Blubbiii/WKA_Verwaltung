@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -95,9 +96,8 @@ export function GISToolbar({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // File size limit check (20 MB)
-    const MAX_IMPORT_SIZE = 20 * 1024 * 1024;
-    if (file.size > MAX_IMPORT_SIZE) {
+    // File size limit check (default 20 MB, env-überschreibbar UPLOAD_LIMIT_GIS_IMPORT_MB)
+    if (file.size > UPLOAD_LIMITS.gisImport) {
       toast.error(tToast("fileTooLarge", { size: (file.size / 1024 / 1024).toFixed(1) }));
       e.target.value = "";
       return;

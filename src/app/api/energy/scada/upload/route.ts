@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { startImport, isValidFileType, type ScadaFileType } from "@/lib/scada/import-service";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 // All supported SCADA file extensions
 const SCADA_EXTENSIONS = new Set([
@@ -17,10 +18,10 @@ const SCADA_EXTENSIONS = new Set([
   "wsr", "wsw", "wsm", "wsy",
 ]);
 
-// Max upload: 500 MB total (SCADA archives can be large)
-const MAX_TOTAL_SIZE = 500 * 1024 * 1024;
-// Max size per individual file (prevents single oversized uploads)
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB per file
+// Max upload: 500 MB total (SCADA archives can be large). Env-override via
+// UPLOAD_LIMIT_SCADA_TOTAL_MB; single-file via UPLOAD_LIMIT_SCADA_SINGLE_MB.
+const MAX_TOTAL_SIZE = UPLOAD_LIMITS.scadaTotal;
+const MAX_FILE_SIZE = UPLOAD_LIMITS.scadaSingleFile;
 
 // =============================================================================
 // POST /api/energy/scada/upload

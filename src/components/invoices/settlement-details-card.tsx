@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import { BarChart3, Calculator, FileText, Wind } from "lucide-react";
 
 // ============================================================================
@@ -98,14 +98,14 @@ interface SettlementPdfDetails {
 // ============================================================================
 
 function formatNumber(value: number, decimals: number = 1): string {
-  return value.toLocaleString("de-DE", {
+  return value.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
 }
 
 function formatPercent(value: number, decimals: number = 2): string {
-  return value.toLocaleString("de-DE", {
+  return value.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }) + " %";

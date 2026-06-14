@@ -10,6 +10,7 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getRedisConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
+import { HTTP_TIMEOUTS } from "@/lib/config/api-limits";
 import type {
   WebhookJobData,
   WebhookJobResult,
@@ -36,7 +37,7 @@ async function processWebhookJob(
 
   // HTTP POST with 5-second timeout
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeout = setTimeout(() => controller.abort(), HTTP_TIMEOUTS.webhookFetchMs);
 
   const startTime = Date.now();
 

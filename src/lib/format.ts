@@ -1,11 +1,23 @@
 /**
+ * Audit 6F: Zentrale Locale-Konstanten gegen LOCALE_DE-Hardcoding-Verteilung.
+ *
+ * `LOCALE_DE` ist der Default für Formatierungs-Calls in WPM. Für die
+ * Mehrsprachigkeit (EN-Anteile in CRM-Aktivitäten etc.) gibt es zusätzlich
+ * `LOCALE_EN`. UI-Komponenten sollen NICHT mehr LOCALE_DE inline schreiben —
+ * stattdessen aus diesem Modul importieren.
+ */
+export const LOCALE_DE = "de-DE";
+export const LOCALE_EN = "en-US";
+export const CURRENCY_EUR = "EUR";
+
+/**
  * Format date as dd.MM.yyyy (German standard)
  */
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "–";
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return "–";
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return d.toLocaleDateString(LOCALE_DE, { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 /**
@@ -15,7 +27,7 @@ export function formatDateTime(date: Date | string | null | undefined): string {
   if (!date) return "–";
   const d = typeof date === "string" ? new Date(date) : date;
   if (isNaN(d.getTime())) return "–";
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString(LOCALE_DE, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 /**
@@ -26,9 +38,9 @@ export function formatCurrency(value: number | string | null | undefined): strin
   if (value === null || value === undefined) return "-";
   const num = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(num)) return "-";
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     style: "currency",
-    currency: "EUR",
+    currency: CURRENCY_EUR,
   }).format(num);
 }
 
@@ -39,9 +51,9 @@ export function formatCurrencyCompact(value: number | string | null | undefined)
   if (value === null || value === undefined) return "-";
   const num = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(num)) return "-";
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     style: "currency",
-    currency: "EUR",
+    currency: CURRENCY_EUR,
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(num);
@@ -58,7 +70,7 @@ export function formatNumber(
   if (value === null || value === undefined) return "0";
   const num = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(num)) return "0";
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(num);

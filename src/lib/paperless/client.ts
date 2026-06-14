@@ -6,6 +6,7 @@
  */
 
 import { logger } from "@/lib/logger";
+import { HTTP_TIMEOUTS } from "@/lib/config/api-limits";
 import type {
   PaperlessDocument,
   PaperlessDocumentList,
@@ -165,7 +166,7 @@ export class PaperlessClient {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s for uploads
+    const timeout = setTimeout(() => controller.abort(), HTTP_TIMEOUTS.paperlessUploadMs);
 
     try {
       const response = await fetch(
@@ -230,7 +231,7 @@ export class PaperlessClient {
     contentType: string;
     contentLength: string | null;
   }> {
-    return this.requestStream(`/api/documents/${id}/download/`, 30000);
+    return this.requestStream(`/api/documents/${id}/download/`, HTTP_TIMEOUTS.paperlessUploadMs);
   }
 
   async getPreview(id: number): Promise<{

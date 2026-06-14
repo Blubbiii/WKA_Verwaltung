@@ -31,3 +31,19 @@ export const API_LIMITS = {
   gisMaxFeaturesPerLayer: envInt("GIS_MAX_FEATURES_PER_LAYER", 5000),
   gisMaxFileSize: envInt("GIS_MAX_FILE_SIZE_MB", 50) * 1024 * 1024,
 };
+
+/**
+ * Audit 6G: HTTP-Timeouts zentral, env-überschreibbar.
+ *
+ * Vorher waren 5000 ms / 30 000 ms / 2000 ms in einzelnen Files hardcoded
+ * (webhook.worker, paperless.client, system/status). Defaults entsprechen
+ * den bisherigen Werten — Verhalten unverändert, nur Override-fähig.
+ */
+export const HTTP_TIMEOUTS = {
+  /** Outbound Webhook-Fetch (5 s) — Abort-Controller-Timeout */
+  webhookFetchMs: envInt("WEBHOOK_FETCH_TIMEOUT_MS", 5_000),
+  /** Paperless-Upload (30 s) — bei großen PDFs */
+  paperlessUploadMs: envInt("PAPERLESS_UPLOAD_TIMEOUT_MS", 30_000),
+  /** Health-Check Probe (2 s) — DB/Redis-Ping */
+  healthCheckMs: envInt("HEALTH_CHECK_TIMEOUT_MS", 2_000),
+};

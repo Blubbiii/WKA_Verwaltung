@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
+import { HTTP_TIMEOUTS } from "@/lib/config/api-limits";
 
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86400);
@@ -24,7 +25,7 @@ async function checkStorage(): Promise<"available" | "unavailable"> {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
+    const timeout = setTimeout(() => controller.abort(), HTTP_TIMEOUTS.healthCheckMs);
 
     const res = await fetch(`${endpoint}/${bucket}`, {
       method: "HEAD",

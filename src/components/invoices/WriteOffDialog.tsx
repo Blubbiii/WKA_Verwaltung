@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
+import { LOCALE_DE } from "@/lib/format";
 import { AlertTriangle, Loader2, ShieldX } from "lucide-react";
 
 export interface WriteOffDialogProps {
@@ -39,7 +40,7 @@ export interface WriteOffDialogProps {
 }
 
 function formatEur(n: number): string {
-  return n.toLocaleString("de-DE", {
+  return n.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

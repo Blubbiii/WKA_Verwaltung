@@ -14,6 +14,7 @@ import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { uploadFile } from "@/lib/storage";
 import { serializePrisma } from "@/lib/serialize";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
 const ALLOWED_MIME_TYPES = [
   "application/pdf",
@@ -23,7 +24,7 @@ const ALLOWED_MIME_TYPES = [
   "image/webp",
 ];
 
-const MAX_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
+const MAX_SIZE_BYTES = UPLOAD_LIMITS.journalAttachment;
 
 export async function GET(
   _request: NextRequest,

@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 import { useTranslations } from "next-intl";
 import { Progress } from "@/components/ui/progress";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
@@ -199,7 +200,7 @@ export function LetterheadSettings() {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > UPLOAD_LIMITS.headerImage) {
       toast.error(t("imageTooLarge"));
       return;
     }
@@ -226,7 +227,7 @@ export function LetterheadSettings() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > UPLOAD_LIMITS.letterheadPdf) {
       toast.error(t("pdfTooLarge"));
       return;
     }

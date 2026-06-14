@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { FolderNode, ExplorerFile, FolderPath } from "@/types/document-explorer";
+import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 
 interface Pagination {
   page: number;
@@ -22,7 +23,7 @@ export function useDocumentExplorer() {
   // Files state
   const [files, setFiles] = useState<ExplorerFile[]>([]);
   const [filesLoading, setFilesLoading] = useState(false);
-  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20, total: 0, totalPages: 0 });
+  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: PAGE_SIZE_DEFAULT, total: 0, totalPages: 0 });
 
   // Selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -77,7 +78,7 @@ export function useDocumentExplorer() {
       fetchFiles(activePath, 1);
     } else {
       setFiles([]);  
-      setPagination({ page: 1, limit: 20, total: 0, totalPages: 0 });  
+      setPagination({ page: 1, limit: PAGE_SIZE_DEFAULT, total: 0, totalPages: 0 });  
     }
   }, [activePath, fetchFiles]);
 
