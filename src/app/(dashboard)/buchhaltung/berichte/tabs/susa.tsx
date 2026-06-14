@@ -191,26 +191,30 @@ export default function SuSaContent() {
           </div>
         ) : (
           <>
-            <div className="rounded-md border overflow-auto">
-              <Table>
+            {/* Redesign 2026-06 R-7: SuSa Saldenliste — tabular-currency,
+             * sticky-header, Status-Token statt rohe Farben für Balance-Vorzeichen.
+             * SuSa ist pro-Konto (flach), nicht hierarchisch — daher keine
+             * Indent/Subtotal-Logik wie bei GuV/BWA. */}
+            <div className="rounded-lg border bg-card overflow-x-auto">
+              <Table className="table-sticky-header">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[80px]">{t("colAccount")}</TableHead>
-                    <TableHead>{t("colName")}</TableHead>
-                    <TableHead className="w-[100px]">{t("colCategory")}</TableHead>
-                    <TableHead className="text-right w-[100px]">{t("colOpeningDebit")}</TableHead>
-                    <TableHead className="text-right w-[100px]">{t("colOpeningCredit")}</TableHead>
-                    <TableHead className="text-right w-[100px]">{t("colDebit")}</TableHead>
-                    <TableHead className="text-right w-[100px]">{t("colCredit")}</TableHead>
-                    <TableHead className="text-right w-[110px]">{t("colClosingDebit")}</TableHead>
-                    <TableHead className="text-right w-[110px]">{t("colClosingCredit")}</TableHead>
-                    <TableHead className="text-right w-[100px]">{t("colBalance")}</TableHead>
+                  <TableRow className="border-b-2 border-border">
+                    <TableHead className="w-[80px] text-xs uppercase tracking-wider text-muted-foreground/80">{t("colAccount")}</TableHead>
+                    <TableHead className="text-xs uppercase tracking-wider text-muted-foreground/80">{t("colName")}</TableHead>
+                    <TableHead className="w-[100px] text-xs uppercase tracking-wider text-muted-foreground/80">{t("colCategory")}</TableHead>
+                    <TableHead className="text-right w-[100px] text-xs uppercase tracking-wider text-muted-foreground/80 border-l border-border/40">{t("colOpeningDebit")}</TableHead>
+                    <TableHead className="text-right w-[100px] text-xs uppercase tracking-wider text-muted-foreground/80">{t("colOpeningCredit")}</TableHead>
+                    <TableHead className="text-right w-[100px] text-xs uppercase tracking-wider text-muted-foreground/80 border-l border-border/40">{t("colDebit")}</TableHead>
+                    <TableHead className="text-right w-[100px] text-xs uppercase tracking-wider text-muted-foreground/80">{t("colCredit")}</TableHead>
+                    <TableHead className="text-right w-[110px] text-xs uppercase tracking-wider text-muted-foreground/80 border-l border-border/40">{t("colClosingDebit")}</TableHead>
+                    <TableHead className="text-right w-[110px] text-xs uppercase tracking-wider text-muted-foreground/80">{t("colClosingCredit")}</TableHead>
+                    <TableHead className="text-right w-[100px] text-xs uppercase tracking-wider text-muted-foreground/80 border-l-2 border-border">{t("colBalance")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.rows.map((row) => (
-                    <TableRow key={row.accountNumber}>
-                      <TableCell className="font-mono font-semibold">
+                    <TableRow key={row.accountNumber} className="border-b border-border/30 hover:bg-muted/20">
+                      <TableCell className="font-mono font-semibold align-top pt-3">
                         <Link
                           href={`/buchhaltung/kontoblatt?account=${encodeURIComponent(row.accountNumber)}&from=${from}&to=${to}`}
                           className="text-primary underline-offset-4 hover:underline"
@@ -219,29 +223,34 @@ export default function SuSaContent() {
                           {row.accountNumber}
                         </Link>
                       </TableCell>
-                      <TableCell>{row.accountName}</TableCell>
-                      <TableCell>
+                      <TableCell className="align-top pt-3">{row.accountName}</TableCell>
+                      <TableCell className="align-top pt-3">
                         <Badge variant="secondary" className="text-xs">
                           {categoryLabel(row.category)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-mono text-sm">{fmt(row.openingDebit)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{fmt(row.openingCredit)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{fmt(row.periodDebit)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{fmt(row.periodCredit)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{fmt(row.closingDebit)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">{fmt(row.closingCredit)}</TableCell>
-                      <TableCell className={`text-right font-mono text-sm font-semibold ${row.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                        {fmt(row.balance)}
+                      <TableCell className="text-right tabular-currency text-sm align-top pt-3 border-l border-border/40">{fmt(row.openingDebit)}</TableCell>
+                      <TableCell className="text-right tabular-currency text-sm align-top pt-3">{fmt(row.openingCredit)}</TableCell>
+                      <TableCell className="text-right tabular-currency text-sm align-top pt-3 border-l border-border/40">{fmt(row.periodDebit)}</TableCell>
+                      <TableCell className="text-right tabular-currency text-sm align-top pt-3">{fmt(row.periodCredit)}</TableCell>
+                      <TableCell className="text-right tabular-currency text-sm align-top pt-3 border-l border-border/40">{fmt(row.closingDebit)}</TableCell>
+                      <TableCell className="text-right tabular-currency text-sm align-top pt-3">{fmt(row.closingCredit)}</TableCell>
+                      <TableCell
+                        className={`text-right tabular-currency text-sm font-semibold align-top pt-3 border-l-2 border-border ${
+                          row.balance >= 0 ? "text-success" : "text-destructive"
+                        }`}
+                      >
+                        {fmt(Math.abs(row.balance))}
+                        <span className="text-xs text-muted-foreground/70 ml-1">{row.balance >= 0 ? "S" : "H"}</span>
                       </TableCell>
                     </TableRow>
                   ))}
-                  {/* Totals row */}
-                  <TableRow className="font-bold border-t-2">
-                    <TableCell colSpan={5} className="text-right">{t("sumMovements")}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(data.totalDebit)}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(data.totalCredit)}</TableCell>
-                    <TableCell colSpan={3} />
+                  {/* Totals row mit Double-Border */}
+                  <TableRow className="font-bold border-t-2 border-double border-foreground/40 bg-muted/40">
+                    <TableCell colSpan={5} className="text-right uppercase text-xs tracking-wider align-top pt-3 border-l border-border/40">{t("sumMovements")}</TableCell>
+                    <TableCell className="text-right tabular-currency align-top pt-3 border-l border-border/40">{fmt(data.totalDebit)}</TableCell>
+                    <TableCell className="text-right tabular-currency align-top pt-3">{fmt(data.totalCredit)}</TableCell>
+                    <TableCell colSpan={3} className="border-l border-border/40" />
                   </TableRow>
                 </TableBody>
               </Table>

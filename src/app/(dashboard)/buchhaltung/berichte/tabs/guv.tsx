@@ -53,6 +53,18 @@ function fmt(n: number): string {
   return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/**
+ * Redesign 2026-06 R-7: Currency-Display für Financial Statements.
+ * Negative Beträge in Klammern (DIN-EN-1862 / Buchhaltungs-Konvention),
+ * Positive ohne Vorzeichen, Null bleibt "0,00".
+ * Farbliche Codierung NUR auf Summen-Zeilen (Jahresergebnis), nicht auf
+ * jeder Detail-Position — sonst wird die GuV bunt und unlesbar.
+ */
+function fmtAccounting(n: number): string {
+  if (n < 0) return `(${fmt(Math.abs(n))})`;
+  return fmt(n);
+}
+
 function currentYear(): { from: string; to: string } {
   const y = new Date().getFullYear();
   return { from: `${y}-01-01`, to: `${y}-12-31` };
@@ -244,51 +256,70 @@ export default function GuvContent() {
             <div className="text-center text-muted-foreground py-12">{t("emptyState")}</div>
           ) : (
             <>
-              <div className="rounded-md border overflow-auto">
-                <Table>
+              {/* Redesign 2026-06 R-7: Financial-Statement-Layout.
+               * - Zweispaltiges Currency-Setup (aktuelle Periode | Vorjahres-Periode)
+               * - tabular-currency statt font-mono (Inter mit tnum/ss01 ist ruhiger)
+               * - Negativ-Beträge in Klammern statt rotem Vorzeichen
+               * - Subtotal-Rows: dezenter Border-Top + Bold
+               * - Status-Tokens (text-success/destructive) nur auf finalem Ergebnis
+               * - Sticky-Header via Backdrop-Blur, damit Header beim Scrollen bleibt
+               */}
+              <div className="rounded-lg border bg-card overflow-x-auto">
+                <Table className="table-sticky-header">
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">{t("colNumber")}</TableHead>
-                      <TableHead>{t("colPosition")}</TableHead>
-                      <TableHead className="text-right">{t("colCurrentPeriod")}</TableHead>
-                      <TableHead className="text-right">{t("colPreviousPeriod")}</TableHead>
+                    <TableRow className="border-b-2 border-border">
+                      <TableHead className="w-14 text-xs uppercase tracking-wider text-muted-foreground/80">{t("colNumber")}</TableHead>
+                      <TableHead className="text-xs uppercase tracking-wider text-muted-foreground/80">{t("colPosition")}</TableHead>
+                      <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground/80">{t("colCurrentPeriod")}</TableHead>
+                      <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground/80 border-l border-border/50">{t("colPreviousPeriod")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.lines.map((line, i) => (
                       <TableRow
                         key={i}
-                        className={line.isSummary ? "font-bold border-t-2 bg-muted/30" : ""}
+                        className={
+                          line.isSummary
+                            ? "font-semibold border-t border-border bg-muted/25 hover:bg-muted/30"
+                            : "border-b border-border/30 hover:bg-muted/20"
+                        }
                       >
-                        <TableCell className="text-muted-foreground font-mono text-xs">
+                        <TableCell className="text-muted-foreground/70 font-mono text-xs align-top pt-3">
                           {line.position || ""}
                         </TableCell>
                         <TableCell className={line.indent ? "pl-8" : ""}>
                           {line.label}
                         </TableCell>
-                        <TableCell className={`text-right font-mono ${line.currentPeriod < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
-                          {fmt(line.currentPeriod)}
+                        <TableCell className="text-right tabular-currency align-top pt-3">
+                          {fmtAccounting(line.currentPeriod)}
                         </TableCell>
-                        <TableCell className="text-right font-mono text-muted-foreground">
-                          {fmt(line.previousPeriod)}
+                        <TableCell className="text-right tabular-currency text-muted-foreground align-top pt-3 border-l border-border/40">
+                          {fmtAccounting(line.previousPeriod)}
                         </TableCell>
                       </TableRow>
                     ))}
+                    {/* Jahresergebnis-Footer mit Double-Border (Buchhaltungs-Konvention)
+                     * statt nur als Summary-Row. Trennt visuell vom Detail-Bereich. */}
+                    <TableRow className="border-t-2 border-double border-foreground/40 bg-muted/40 font-bold">
+                      <TableCell />
+                      <TableCell className="uppercase text-xs tracking-wider">
+                        {t("netIncomeLabel").replace(":", "")}
+                      </TableCell>
+                      <TableCell
+                        className={`text-right tabular-currency text-base ${
+                          data.netIncome < 0
+                            ? "text-destructive"
+                            : "text-success"
+                        }`}
+                      >
+                        {fmtAccounting(data.netIncome)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-currency text-muted-foreground border-l border-border/40 text-base">
+                        {fmtAccounting(data.previousNetIncome)}
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
-              </div>
-
-              <div className="mt-4 flex justify-end gap-6 text-sm">
-                <div>
-                  <span className="text-muted-foreground">{t("netIncomeLabel")} </span>
-                  <span className={`font-bold font-mono ${data.netIncome < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-                    {fmt(data.netIncome)} EUR
-                  </span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">{t("previousLabel")} </span>
-                  <span className="font-mono text-muted-foreground">{fmt(data.previousNetIncome)} EUR</span>
-                </div>
               </div>
             </>
           )
@@ -296,14 +327,20 @@ export default function GuvContent() {
           <div className="text-center text-muted-foreground py-12">{t("emptyState")}</div>
         ) : (
           <>
-            <div className="rounded-md border overflow-auto">
-              <Table>
+            {/* Mehrjahres-Trend: gleicher Financial-Statement-Style mit N Spalten */}
+            <div className="rounded-lg border bg-card overflow-x-auto">
+              <Table className="table-sticky-header">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">{t("colNumber")}</TableHead>
-                    <TableHead>{t("colPosition")}</TableHead>
-                    {multiData.years.map((y) => (
-                      <TableHead key={y} className="text-right">{y}</TableHead>
+                  <TableRow className="border-b-2 border-border">
+                    <TableHead className="w-14 text-xs uppercase tracking-wider text-muted-foreground/80">{t("colNumber")}</TableHead>
+                    <TableHead className="text-xs uppercase tracking-wider text-muted-foreground/80">{t("colPosition")}</TableHead>
+                    {multiData.years.map((y, idx) => (
+                      <TableHead
+                        key={y}
+                        className={`text-right text-xs uppercase tracking-wider text-muted-foreground/80 ${idx > 0 ? "border-l border-border/40" : ""}`}
+                      >
+                        {y}
+                      </TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
@@ -311,37 +348,47 @@ export default function GuvContent() {
                   {multiData.rows.map((row, i) => (
                     <TableRow
                       key={i}
-                      className={row.isSummary ? "font-bold border-t-2 bg-muted/30" : ""}
+                      className={
+                        row.isSummary
+                          ? "font-semibold border-t border-border bg-muted/25 hover:bg-muted/30"
+                          : "border-b border-border/30 hover:bg-muted/20"
+                      }
                     >
-                      <TableCell className="text-muted-foreground font-mono text-xs">
+                      <TableCell className="text-muted-foreground/70 font-mono text-xs align-top pt-3">
                         {row.position || ""}
                       </TableCell>
                       <TableCell className={row.indent ? "pl-8" : ""}>{row.label}</TableCell>
-                      {row.values.map((v) => (
+                      {row.values.map((v, idx) => (
                         <TableCell
                           key={v.year}
-                          className={`text-right font-mono ${v.amount < 0 ? "text-red-600 dark:text-red-400" : ""}`}
+                          className={`text-right tabular-currency align-top pt-3 ${idx > 0 ? "border-l border-border/40" : ""} ${idx === 0 ? "" : "text-muted-foreground"}`}
                         >
-                          {fmt(v.amount)}
+                          {fmtAccounting(v.amount)}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))}
+                  {/* Footer-Row: Jahresergebnis pro Jahr */}
+                  <TableRow className="border-t-2 border-double border-foreground/40 bg-muted/40 font-bold">
+                    <TableCell />
+                    <TableCell className="uppercase text-xs tracking-wider">
+                      {t("netIncomeLabel").replace(":", "")}
+                    </TableCell>
+                    {multiData.netIncomeByYear.map((n, idx) => (
+                      <TableCell
+                        key={n.year}
+                        className={`text-right tabular-currency text-base ${idx > 0 ? "border-l border-border/40" : ""} ${
+                          n.amount < 0
+                            ? "text-destructive"
+                            : "text-success"
+                        }`}
+                      >
+                        {fmtAccounting(n.amount)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
                 </TableBody>
               </Table>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-6 text-sm flex-wrap">
-              {multiData.netIncomeByYear.map((n) => (
-                <div key={n.year}>
-                  <span className="text-muted-foreground">{n.year}: </span>
-                  <span
-                    className={`font-bold font-mono ${n.amount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
-                  >
-                    {fmt(n.amount)} EUR
-                  </span>
-                </div>
-              ))}
             </div>
           </>
         )}

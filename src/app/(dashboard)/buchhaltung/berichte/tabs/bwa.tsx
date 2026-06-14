@@ -38,6 +38,12 @@ function fmt(n: number): string {
   return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** Redesign 2026-06 R-7: Klammer-Notation für negative Beträge (Buchhaltung). */
+function fmtAccounting(n: number): string {
+  if (n < 0) return `(${fmt(Math.abs(n))})`;
+  return fmt(n);
+}
+
 function currentMonth(): { from: string; to: string } {
   const now = new Date();
   const y = now.getFullYear();
@@ -123,27 +129,41 @@ export default function BwaContent() {
         ) : !data ? (
           <div className="text-center text-muted-foreground py-12">{t("emptyState")}</div>
         ) : (
-          <div className="rounded-md border overflow-auto">
-            <Table>
+          // Redesign 2026-06 R-7: BWA Financial-Statement-Layout — gleiche Sprache wie GuV.
+          // Vier Currency-Spalten (Aktuell/Vorperiode | YTD/VorYTD) durch Border getrennt,
+          // tabular-currency, Klammern für negative Beträge, keine Farb-Kodierung außer
+          // auf Summary-Rows (BOLD_LINES).
+          <div className="rounded-lg border bg-card overflow-x-auto">
+            <Table className="table-sticky-header">
               <TableHeader>
-                <TableRow>
-                  <TableHead>{t("colPosition")}</TableHead>
-                  <TableHead className="text-right">{t("colCurrentPeriod")}</TableHead>
-                  <TableHead className="text-right">{t("colPreviousPeriod")}</TableHead>
-                  <TableHead className="text-right">{t("colYtd")}</TableHead>
-                  <TableHead className="text-right">{t("colPreviousYtd")}</TableHead>
+                <TableRow className="border-b-2 border-border">
+                  <TableHead className="text-xs uppercase tracking-wider text-muted-foreground/80">{t("colPosition")}</TableHead>
+                  <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground/80">{t("colCurrentPeriod")}</TableHead>
+                  <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground/80 border-l border-border/40">{t("colPreviousPeriod")}</TableHead>
+                  <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground/80 border-l-2 border-border">{t("colYtd")}</TableHead>
+                  <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground/80 border-l border-border/40">{t("colPreviousYtd")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.lines.map((line, i) => (
-                  <TableRow key={i} className={BOLD_LINES.has(line.label) ? "font-bold border-t-2" : ""}>
-                    <TableCell>{line.label}</TableCell>
-                    <TableCell className={`text-right font-mono ${line.currentPeriod < 0 ? "text-red-600 dark:text-red-400" : ""}`}>{fmt(line.currentPeriod)}</TableCell>
-                    <TableCell className="text-right font-mono text-muted-foreground">{fmt(line.previousPeriod)}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(line.ytd)}</TableCell>
-                    <TableCell className="text-right font-mono text-muted-foreground">{fmt(line.previousYtd)}</TableCell>
-                  </TableRow>
-                ))}
+                {data.lines.map((line, i) => {
+                  const isSummary = BOLD_LINES.has(line.label);
+                  return (
+                    <TableRow
+                      key={i}
+                      className={
+                        isSummary
+                          ? "font-semibold border-t border-border bg-muted/25 hover:bg-muted/30"
+                          : "border-b border-border/30 hover:bg-muted/20"
+                      }
+                    >
+                      <TableCell className="align-top pt-3">{line.label}</TableCell>
+                      <TableCell className="text-right tabular-currency align-top pt-3">{fmtAccounting(line.currentPeriod)}</TableCell>
+                      <TableCell className="text-right tabular-currency text-muted-foreground align-top pt-3 border-l border-border/40">{fmtAccounting(line.previousPeriod)}</TableCell>
+                      <TableCell className="text-right tabular-currency align-top pt-3 border-l-2 border-border">{fmtAccounting(line.ytd)}</TableCell>
+                      <TableCell className="text-right tabular-currency text-muted-foreground align-top pt-3 border-l border-border/40">{fmtAccounting(line.previousYtd)}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

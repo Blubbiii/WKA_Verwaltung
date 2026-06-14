@@ -19,9 +19,8 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -32,19 +31,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { toast } from "sonner";
 import {
   AlertTriangle,
   Check,
-  Clock,
   History,
   Loader2,
   RefreshCw,
@@ -52,6 +42,8 @@ import {
   X,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { ApprovalCard } from "@/components/ui/approval-card";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface PendingApproval {
   id: string;
@@ -83,16 +75,6 @@ function fmtEur(n: number | null): string {
     maximumFractionDigits: 2,
     style: "currency",
     currency: "EUR",
-  });
-}
-
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -215,83 +197,39 @@ export default function ApprovalsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-32 w-full" />
               ))}
             </div>
           ) : items.length === 0 ? (
-            <Alert>
-              <ShieldCheck className="h-4 w-4" />
-              <AlertTitle>{t("emptyTitle")}</AlertTitle>
-              <AlertDescription>
-                {t("emptyDescription")}
-              </AlertDescription>
-            </Alert>
+            // Redesign 2026-06 R-4: EmptyState first-time-Variante für gepflegte
+            // Inbox — "keine offenen Anträge" ist ein gut Zeichen, kein Loch.
+            <EmptyState
+              kind="first-time"
+              icon={ShieldCheck}
+              title={t("emptyTitle")}
+              description={t("emptyDescription")}
+            />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("colAction")}</TableHead>
-                  <TableHead>{t("colInitiator")}</TableHead>
-                  <TableHead className="text-right">{t("colAmount")}</TableHead>
-                  <TableHead>{t("colRequested")}</TableHead>
-                  <TableHead>{t("colExpires")}</TableHead>
-                  <TableHead className="text-right">{t("colDecision")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((it) => {
-                  const expiringSoon =
-                    new Date(it.expiresAt).getTime() - Date.now() < 24 * 60 * 60 * 1000;
-                  return (
-                    <TableRow key={it.id}>
-                      <TableCell>
-                        <div className="font-medium">{t(`actions.${it.action}`)}</div>
-                        {it.requestReason && (
-                          <div className="text-xs text-muted-foreground truncate max-w-xs">
-                            {it.requestReason}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>{fmtName(it.requestedBy, t("unknownRequester"))}</TableCell>
-                      <TableCell className="text-right font-mono">
-                        {fmtEur(it.amountEur)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {fmtDate(it.requestedAt)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={expiringSoon ? "destructive" : "outline"}>
-                          <Clock className="h-3 w-3 mr-1" />
-                          {fmtDate(it.expiresAt)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() => openDialog(it, "APPROVED")}
-                          >
-                            <Check className="h-3 w-3 mr-1" />
-                            {t("approve")}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openDialog(it, "REJECTED")}
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            {t("reject")}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            // Redesign 2026-06: Approval-Inbox als Karten-Liste statt Tabelle.
+            // Avatar + "Wer will Was" + Begründung + 3-Klick-Aktionen lesen sich
+            // in unter 2 s pro Item — die Tabelle brauchte 5+ s.
+            <div className="space-y-3">
+              {items.map((it) => (
+                <ApprovalCard
+                  key={it.id}
+                  requesterName={fmtName(it.requestedBy, t("unknownRequester"))}
+                  actionText={t(`actions.${it.action}`)}
+                  amount={it.amountEur !== null ? fmtEur(it.amountEur) : undefined}
+                  reason={it.requestReason ?? undefined}
+                  requestedAt={new Date(it.requestedAt)}
+                  expiresAt={new Date(it.expiresAt)}
+                  onApprove={() => openDialog(it, "APPROVED")}
+                  onReject={() => openDialog(it, "REJECTED")}
+                />
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

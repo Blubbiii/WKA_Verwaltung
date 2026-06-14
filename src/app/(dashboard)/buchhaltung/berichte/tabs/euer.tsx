@@ -38,6 +38,12 @@ function fmt(n: number): string {
   return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** Redesign 2026-06 R-7: Klammer-Notation für negative Beträge. */
+function fmtAccounting(n: number): string {
+  if (n < 0) return `(${fmt(Math.abs(n))})`;
+  return fmt(n);
+}
+
 function currentYear(): { from: string; to: string } {
   const y = new Date().getFullYear();
   return { from: `${y}-01-01`, to: `${y}-12-31` };
@@ -109,49 +115,55 @@ export default function EuerContent() {
           <div className="text-center text-muted-foreground py-12">{t("emptyState")}</div>
         ) : (
           <>
-            <div className="rounded-md border overflow-auto">
-              <Table>
+            {/* Redesign 2026-06 R-7: EÜR Financial-Statement-Layout — gleiche Sprache wie GuV/BWA. */}
+            <div className="rounded-lg border bg-card overflow-x-auto">
+              <Table className="table-sticky-header">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">{t("colKennzahl")}</TableHead>
-                    <TableHead>{t("colPosition")}</TableHead>
-                    <TableHead className="text-right">{t("colCurrentPeriod")}</TableHead>
-                    <TableHead className="text-right">{t("colPreviousPeriod")}</TableHead>
+                  <TableRow className="border-b-2 border-border">
+                    <TableHead className="w-16 text-xs uppercase tracking-wider text-muted-foreground/80">{t("colKennzahl")}</TableHead>
+                    <TableHead className="text-xs uppercase tracking-wider text-muted-foreground/80">{t("colPosition")}</TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground/80">{t("colCurrentPeriod")}</TableHead>
+                    <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground/80 border-l border-border/40">{t("colPreviousPeriod")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.lines.map((line, i) => (
                     <TableRow
                       key={i}
-                      className={line.isSummary ? "font-bold border-t-2 bg-muted/30" : ""}
+                      className={
+                        line.isSummary
+                          ? "font-semibold border-t border-border bg-muted/25 hover:bg-muted/30"
+                          : "border-b border-border/30 hover:bg-muted/20"
+                      }
                     >
-                      <TableCell className="text-muted-foreground font-mono text-xs">
+                      <TableCell className="text-muted-foreground/70 font-mono text-xs align-top pt-3">
                         {line.kennzahl || ""}
                       </TableCell>
-                      <TableCell>{line.label}</TableCell>
-                      <TableCell className={`text-right font-mono ${line.currentPeriod < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
-                        {fmt(line.currentPeriod)}
+                      <TableCell className="align-top pt-3">{line.label}</TableCell>
+                      <TableCell className="text-right tabular-currency align-top pt-3">
+                        {fmtAccounting(line.currentPeriod)}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-muted-foreground">
-                        {fmt(line.previousPeriod)}
+                      <TableCell className="text-right tabular-currency text-muted-foreground align-top pt-3 border-l border-border/40">
+                        {fmtAccounting(line.previousPeriod)}
                       </TableCell>
                     </TableRow>
                   ))}
+                  <TableRow className="border-t-2 border-double border-foreground/40 bg-muted/40 font-bold">
+                    <TableCell />
+                    <TableCell className="uppercase text-xs tracking-wider">{t("resultLabel").replace(":", "")}</TableCell>
+                    <TableCell
+                      className={`text-right tabular-currency text-base ${
+                        data.profit < 0 ? "text-destructive" : "text-success"
+                      }`}
+                    >
+                      {fmtAccounting(data.profit)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-currency text-muted-foreground border-l border-border/40 text-base">
+                      {fmtAccounting(data.previousProfit)}
+                    </TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-6 text-sm">
-              <div>
-                <span className="text-muted-foreground">{t("resultLabel")} </span>
-                <span className={`font-bold font-mono ${data.profit < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-                  {fmt(data.profit)} EUR
-                </span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">{t("previousLabel")} </span>
-                <span className="font-mono text-muted-foreground">{fmt(data.previousProfit)} EUR</span>
-              </div>
             </div>
           </>
         )}
