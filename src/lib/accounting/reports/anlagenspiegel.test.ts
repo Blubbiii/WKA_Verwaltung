@@ -13,6 +13,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { prisma } from "@/lib/prisma";
+import { cache } from "@/lib/cache";
 import { computeAnlagenspiegel } from "./anlagenspiegel";
 
 interface TestAsset {
@@ -58,10 +59,14 @@ function setupAssetsForYear(assets: TestAsset[], fiscalYear: number): void {
   mockGroupBy.mockResolvedValue(groupBuckets);
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   mockAssets.mockReset();
   mockGroupBy.mockReset();
   mockGroupBy.mockResolvedValue([]);
+  // computeAnlagenspiegel ist mit getCachedReport gewrappt. Ohne Redis im Test-
+  // Umfeld fällt der Cache auf In-Memory zurück, der zwischen Tests persistiert.
+  // Erster Test setzt evtl. ein leeres Result, alle folgenden bekommen es.
+  await cache.clearTenant("t-1");
 });
 
 describe("computeAnlagenspiegel — leeres Anlagevermögen", () => {

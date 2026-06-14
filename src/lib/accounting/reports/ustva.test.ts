@@ -38,6 +38,7 @@ vi.mock("@/lib/accounting/kleinunternehmer", () => ({
 import { prisma } from "@/lib/prisma";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { isKleinunternehmer } from "@/lib/accounting/kleinunternehmer";
+import { cache } from "@/lib/cache";
 import { generateUstva } from "./ustva";
 
 const mockLines = prisma.journalEntryLine.findMany as unknown as ReturnType<
@@ -60,7 +61,7 @@ const SETTINGS = {
 const PERIOD_START = new Date("2026-01-01");
 const PERIOD_END = new Date("2026-03-31");
 
-beforeEach(() => {
+beforeEach(async () => {
   mockLines.mockReset();
   mockAccts.mockReset();
   mockSettings.mockReset();
@@ -68,6 +69,10 @@ beforeEach(() => {
   mockKleinunt.mockResolvedValue(false);
   mockSettings.mockResolvedValue(SETTINGS);
   mockAccts.mockResolvedValue([]);
+  // generateUstva ist mit getCachedReport gewrappt. Ohne Redis im Test-Umfeld
+  // fällt der Cache auf In-Memory zurück, der zwischen Tests persistiert →
+  // Pfad-3-Tests bekämen das Kleinunternehmer-Empty-Result des ersten Tests.
+  await cache.clearTenant("t-1");
 });
 
 // =============================================================================
