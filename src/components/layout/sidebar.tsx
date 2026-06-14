@@ -56,6 +56,8 @@ import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useSidebarOrder } from "@/hooks/useSidebarOrder";
 import { useSidebarLinks } from "@/hooks/useSidebarLinks";
 import { usePendingApprovalsCount } from "@/hooks/usePendingApprovalsCount";
+import { useSidebarCounts } from "@/hooks/useSidebarCounts";
+import { BADGE_TONE_BY_KEY, type SidebarBadgeTone } from "@/lib/sidebar-counts";
 import type { NavChild, NavItem, NavGroup } from "@/config/nav-config";
 import { navGroups } from "@/config/nav-config";
 
@@ -85,6 +87,45 @@ const SIDEBAR_LINK_ICONS: Record<string, React.ElementType> = {
 
 function getSidebarLinkIcon(name: string): React.ElementType {
   return SIDEBAR_LINK_ICONS[name] ?? Globe;
+}
+
+// ---------------------------------------------------------------------------
+// Badge-Token-Mapping für die drei Tone-Stufen aus sidebar-counts.ts.
+// Tones liegen auf semantischen Tokens (warning/destructive) statt rohen
+// Hex-Farben — passt sich Dark/Light automatisch an.
+// ---------------------------------------------------------------------------
+
+const BADGE_TONE_CLASSES: Record<SidebarBadgeTone, string> = {
+  default: "bg-primary/15 text-primary",
+  warning: "bg-warning/20 text-warning border border-warning/30",
+  destructive: "bg-destructive/15 text-destructive border border-destructive/30",
+};
+
+/**
+ * Sidebar-Badge. Rendert nur wenn count > 0; bei > 99 wird "99+" gezeigt
+ * damit das Layout nicht bricht.
+ */
+function SidebarBadge({
+  count,
+  tone = "default",
+}: {
+  count: number;
+  tone?: SidebarBadgeTone;
+}) {
+  if (count <= 0) return null;
+  const label = count > 99 ? "99+" : String(count);
+  return (
+    <span
+      className={cn(
+        "ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-[1.125rem] px-1.5 rounded-full",
+        "text-[10px] font-semibold tabular-nums leading-none",
+        BADGE_TONE_CLASSES[tone],
+      )}
+      aria-label={`${count} offen`}
+    >
+      {label}
+    </span>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -131,6 +172,10 @@ export function Sidebar() {
   const { groupOrder, updateOrder, resetOrder, isDefault } = useSidebarOrder();
   const customLinks = useSidebarLinks();
   const pendingApprovalsCount = usePendingApprovalsCount();
+  // Sidebar-Badge-Counts: ein Polling-Hook für alle Sidebar-Items mit
+  // badgeKey. Pendingapprovals bleibt als Fallback erhalten falls der
+  // Sidebar-Counts-Endpoint stiller fail't.
+  const sidebarCounts = useSidebarCounts();
 
   const tenantLogoUrl = session?.user?.tenantLogoUrl;
   const tenantName = session?.user?.tenantName;
@@ -350,6 +395,12 @@ export function Sidebar() {
                           <ChildIcon className={cn("h-4 w-4 shrink-0 transition-colors", isChildItemActive ? "text-primary" : "text-sidebar-foreground/55 group-hover:text-sidebar-foreground/75")} />
                         )}
                         <span className="truncate">{childTitle}</span>
+                        {child.badgeKey && (
+                          <SidebarBadge
+                            count={sidebarCounts[child.badgeKey]}
+                            tone={BADGE_TONE_BY_KEY[child.badgeKey]}
+                          />
+                        )}
                       </Link>
                     </li>
                   );
@@ -373,16 +424,24 @@ export function Sidebar() {
             {!collapsed && (
               <>
                 <span className="flex-1">{itemTitle}</span>
+                {/* Statische Badge (nav-config.badge) — z.B. Onboarding-Hinweise */}
                 {item.badge && (
                   <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
                     {item.badge}
                   </span>
                 )}
-                {/* Sprint 3: dynamische PENDING-Approvals-Anzahl auf /approvals */}
-                {item.href === "/approvals" && pendingApprovalsCount > 0 && (
-                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
-                    {pendingApprovalsCount}
-                  </span>
+                {/* Dynamische Badge (nav-config.badgeKey) — Count aus /api/sidebar/counts.
+                 * Fallback: für /approvals war historisch usePendingApprovalsCount
+                 * im Einsatz; falls Sidebar-Counts-Endpoint scheitert, nutzt der
+                 * Approvals-Eintrag den alten Single-Endpoint-Wert. */}
+                {item.badgeKey && (
+                  <SidebarBadge
+                    count={
+                      sidebarCounts[item.badgeKey] ||
+                      (item.badgeKey === "approvals" ? pendingApprovalsCount : 0)
+                    }
+                    tone={BADGE_TONE_BY_KEY[item.badgeKey]}
+                  />
                 )}
               </>
             )}

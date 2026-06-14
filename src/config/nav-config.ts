@@ -131,6 +131,8 @@ export interface NavChild {
   titleKey?: string;
   href: string;
   icon?: React.ElementType;
+  /** Dynamische Badge-Zahl aus /api/sidebar/counts. Wert 0 → kein Badge. */
+  badgeKey?: import("@/lib/sidebar-counts").SidebarCountKey;
   /** Feature flag that must be enabled for this child to be visible */
   featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "gis" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing"
     | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
@@ -148,6 +150,8 @@ export interface NavItem {
   href: string;
   icon: React.ElementType;
   badge?: number;
+  /** Dynamische Badge-Zahl aus /api/sidebar/counts. Wert 0 → kein Badge. */
+  badgeKey?: import("@/lib/sidebar-counts").SidebarCountKey;
   children?: NavChild[];
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
@@ -239,6 +243,7 @@ export const navGroups: NavGroup[] = [
         icon: Inbox,
         permission: "inbox:read",
         featureFlag: "inbox" as const,
+        badgeKey: "inbox" as const,
       },
       {
         title: "Lieferanten",
@@ -254,6 +259,7 @@ export const navGroups: NavGroup[] = [
         href: "/approvals",
         icon: ShieldCheck,
         permission: "accounting:read",
+        badgeKey: "approvals" as const,
       },
     ],
   },
@@ -378,8 +384,8 @@ export const navGroups: NavGroup[] = [
           { title: "Angebote", titleKey: "accountingQuotes", href: "/buchhaltung/angebote", icon: FileText, featureFlag: "accounting.quotes" },
           { title: "Versandübersicht", titleKey: "invoiceDispatch", href: "/invoices/dispatch", icon: Send },
           { title: "Zahlungs-Abgleich", titleKey: "reconciliation", href: "/invoices/reconciliation", icon: Scale },
-          { title: "Bank-Import", titleKey: "bankImport", href: "/invoices/bank-import", icon: Landmark },
-          { title: "Mahnwesen", titleKey: "reminders", href: "/invoices/reminders", icon: Bell },
+          { title: "Bank-Import", titleKey: "bankImport", href: "/invoices/bank-import", icon: Landmark, badgeKey: "bankUnmatched" as const },
+          { title: "Mahnwesen", titleKey: "reminders", href: "/invoices/reminders", icon: Bell, badgeKey: "mahnwesen" as const },
           { title: "Buchungsjournal", titleKey: "journalEntries", href: "/journal-entries", icon: BookOpen },
           { title: "PPA-Verträge", titleKey: "ppa", href: "/invoices/ppa", icon: Zap, featureFlag: "ppa-management" },
         ],
@@ -390,6 +396,7 @@ export const navGroups: NavGroup[] = [
         href: "/contracts",
         icon: FileText,
         permission: "contracts:read",
+        badgeKey: "expiringContracts" as const,
       },
       {
         title: "Beteiligungen",
