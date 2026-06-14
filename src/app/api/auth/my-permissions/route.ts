@@ -14,7 +14,12 @@ export async function GET() {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return apiError("INTERNAL_ERROR", undefined, { message: "Nicht authentifiziert" });
+      // Bug-Fix: war vorher INTERNAL_ERROR (500), was im DevTools wie ein
+      // Server-Crash aussieht und das ganze Sidebar/Layout in eine Fehler-
+      // schlaufe schickt. Korrekt ist UNAUTHORIZED (401) — andere Endpoints
+      // werfen das auch bei abgelaufener Session, der Client interpretiert
+      // 401 sauber als "Login nötig" statt als Crash.
+      return apiError("UNAUTHORIZED", 401, { message: "Nicht authentifiziert" });
     }
 
     const [userPerms, roleHierarchy] = await Promise.all([
