@@ -70,3 +70,9 @@ temp/
 .claude/worktrees/
 .claude/scheduled_tasks.lock
 .claude/agents/
+
+# Skills (reproducible via `npx skills add`)
+.agents/skills/
+.claude/skills/
+.github/skills/
+.impeccable/

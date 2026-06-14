@@ -4,10 +4,24 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import {
+  DEFAULT_TENANT_SETTINGS as CANONICAL_DEFAULTS,
+  type TenantSettings as CanonicalTenantSettings,
+} from "@/lib/tenant-settings";
 
 // =============================================================================
 // TYPES & DEFAULTS
 // =============================================================================
+//
+// Audit-6A (A-4): Defaults werden aus `src/lib/tenant-settings.ts` re-exportiert.
+// Vorher waren sie hier dupliziert — bei Schema-Erweiterungen (z.B. neue
+// Approval-Thresholds aus Sprint 3) wurde nur eine Stelle gepflegt und die
+// Admin-UI lief auf einem veralteten Defaults-Set.
+//
+// Das hier stehende `TenantSettings`-Interface bleibt als lokale Variante
+// erhalten — es repräsentiert das _über die Admin-UI verwaltbare_ Subset.
+// Felder wie `postingApprovalThresholdEur` und `abacFundAccessDefault` werden
+// separat verwaltet und sind hier bewusst nicht aufgeführt.
 
 export interface TenantSettings {
   // Invoicing
@@ -90,87 +104,12 @@ export interface TenantSettings {
   chartOfAccountsVersion: "SKR03" | "SKR04";
 }
 
-const DEFAULT_TENANT_SETTINGS: TenantSettings = {
-  // Invoicing
-  paymentTermDays: 30,
-  defaultTaxRate: 19,
-  taxExempt: false,
-  taxExemptNote: "Steuerfrei gem. \u00a74 Nr.12 UStG",
-  invoicePaymentText: "Bitte überweisen Sie den Betrag bis zum {dueDate} auf das unten angegebene Konto. Geben Sie als Verwendungszweck bitte die Rechnungsnummer {invoiceNumber} an.",
-  creditNotePaymentText: "Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto überwiesen. Referenz: Gutschriftsnummer {invoiceNumber}.",
+// Audit-6A (A-4): Defaults werden aus dem kanonischen Settings-Modul übernommen.
+// `CANONICAL_DEFAULTS` enthält ein Superset; das `as` projiziert auf das hier
+// gepflegte (Admin-UI-bezogene) Subset. Schema-Bewegungen (neue Felder oben
+// im Interface) sind damit unmittelbar in den Defaults sichtbar.
+const DEFAULT_TENANT_SETTINGS: TenantSettings = CANONICAL_DEFAULTS as unknown as TenantSettings;
 
-  // Skonto defaults
-  defaultSkontoPercent: 2,
-  defaultSkontoDays: 7,
-
-  // Portal
-  portalEnabled: true,
-  portalWelcomeText: "",
-  portalContactEmail: "",
-  portalContactPhone: "",
-  portalVisibleSections: [
-    "distributions",
-    "documents",
-    "votes",
-    "reports",
-    "proxies",
-  ],
-
-  // Email
-  emailSignature: "",
-  emailFromName: "",
-
-  // Branding / Company Info
-  companyName: "",
-  companyAddress: "",
-  companyPhone: "",
-  companyEmail: "",
-  companyWebsite: "",
-
-  // DATEV Export (SKR03 defaults)
-  datevRevenueAccount: "8400",
-  datevExpenseAccount: "8000",
-  datevDebtorStart: 10000,
-  datevCreditorStart: 70000,
-
-  // SKR03 Kontenrahmen-Defaults
-  datevAccountEinspeisung: "8400",
-  datevAccountDirektvermarktung: "8338",
-  datevAccountPachtEinnahmen: "8210",
-  datevAccountPachtAufwand: "4210",
-  datevAccountWartung: "4950",
-  datevAccountBF: "4120",
-  datevAccountReceivables: "1200",
-  datevAccountOutputTax19: "1776",
-  datevAccountOutputTax7: "1771",
-  datevAccountInputTax19: "1576",
-  datevAccountInputTax7: "1571",
-
-  // Geschaeftsjahr
-  fiscalYearStartMonth: 1,
-
-  // GoBD Aufbewahrung (§147 AO)
-  gobdRetentionYearsInvoice: 10,
-  gobdRetentionYearsContract: 10,
-
-  // Mahnwesen defaults
-  reminderEnabled: true,
-  reminderDays1: 7,
-  reminderDays2: 21,
-  reminderDays3: 42,
-  reminderFee1: 0,
-  reminderFee2: 5,
-  reminderFee3: 10,
-
-  // HGB-Compliance Defaults
-  kleinunternehmer: false,
-  useTaxSplit: false,
-  fourEyesThresholdEur: 1000,
-  bankMatchToleranceEur: 0.02,
-  bilanzToleranceEur: 0.01,
-  datevAccountAnnualResult: "9999",
-  chartOfAccountsVersion: "SKR04",
-};
 
 // =============================================================================
 // ZOD VALIDATION SCHEMA

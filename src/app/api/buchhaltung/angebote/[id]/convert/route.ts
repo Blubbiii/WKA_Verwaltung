@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextInvoiceNumber } from "@/lib/invoices/numberGenerator";
 import { apiLogger as logger } from "@/lib/logger";
+import { getTenantSettings, calculateDueDate } from "@/lib/tenant-settings";
 
 // POST /api/buchhaltung/angebote/[id]/convert — ACCEPTED → INVOICED + creates Invoice
 export async function POST(
@@ -31,6 +32,11 @@ export async function POST(
     // Atomic: create invoice + update quote
     const { number: invoiceNumber } = await getNextInvoiceNumber(check.tenantId!, "INVOICE");
 
+    // Audit-A: dueDate aus TenantSettings.paymentTermDays statt hardcoded 30 Tage.
+    const settings = await getTenantSettings(check.tenantId!);
+    const invoiceDate = new Date();
+    const dueDate = calculateDueDate(invoiceDate, settings.paymentTermDays);
+
     const result = await prisma.$transaction(async (tx) => {
       // Create invoice from quote data
       const invoice = await tx.invoice.create({
@@ -38,8 +44,8 @@ export async function POST(
           tenantId: check.tenantId!,
           invoiceType: "INVOICE",
           invoiceNumber,
-          invoiceDate: new Date(),
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 days
+          invoiceDate,
+          dueDate,
           recipientType: quote.recipientType,
           recipientName: quote.recipientName,
           recipientAddress: quote.recipientAddress,

@@ -193,31 +193,40 @@
   }
 
   .dark {
-    --background: 222 28% 9%;
-    --foreground: 210 40% 98%;
-    --card: 222 25% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 215 55% 58%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --info: 215 55% 58%;
-    --info-foreground: 0 0% 100%;
-    --success: 142 55% 45%;
+    /* Redesign 2026-06: Dark-Mode-Token-Polish.
+     * Vorher waren --secondary, --muted, --accent, --border, --input ALLE identisch
+     * (217 33% 17%), wodurch die ganze Oberfläche eine Stufe lang war und Karten,
+     * Buttons und Trennlinien optisch ineinanderschmolzen. Neue Token-Stufen geben
+     * der UI eine echte Tiefenstaffel:
+     *   surface < card < muted < border < secondary
+     * Außerdem mit minimal warmer Tinte (-Hue um 220-222 statt 217) für mehr Charakter
+     * und gegen den generischen SaaS-Dark-Look.
+     */
+    --background: 220 22% 8%;
+    --foreground: 210 30% 97%;
+    --card: 222 22% 12%;
+    --card-foreground: 210 30% 97%;
+    --popover: 222 24% 11%;
+    --popover-foreground: 210 30% 97%;
+    --primary: 215 60% 62%;
+    --primary-foreground: 222 30% 8%;
+    --secondary: 218 18% 19%;
+    --secondary-foreground: 210 30% 97%;
+    --muted: 220 18% 14%;
+    --muted-foreground: 215 14% 62%;
+    --accent: 220 22% 17%;
+    --accent-foreground: 210 30% 97%;
+    --destructive: 0 65% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --info: 215 60% 62%;
+    --info-foreground: 222 30% 8%;
+    --success: 142 50% 50%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 0 0% 0%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 215 55% 58%;
+    --warning: 38 90% 58%;
+    --warning-foreground: 38 80% 10%;
+    --border: 220 16% 19%;
+    --input: 220 18% 17%;
+    --ring: 215 60% 62%;
     --chart-1: 215 55% 60%;
     --chart-2: 38 68% 58%;
     --chart-3: 142 52% 55%;
@@ -240,14 +249,14 @@
     --m-accent: 38 92% 60%;
     --m-border: 220 13% 18%;
 
-    --sidebar-background: 220 30% 7%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 215 55% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 25% 14%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 25% 15%;
-    --sidebar-ring: 215 55% 58%;
+    --sidebar-background: 220 26% 7%;
+    --sidebar-foreground: 210 30% 95%;
+    --sidebar-primary: 215 60% 62%;
+    --sidebar-primary-foreground: 222 30% 8%;
+    --sidebar-accent: 220 22% 13%;
+    --sidebar-accent-foreground: 210 30% 97%;
+    --sidebar-border: 220 18% 14%;
+    --sidebar-ring: 215 60% 62%;
   }
 }
 
@@ -527,4 +536,65 @@
     backdrop-filter: blur(4px);
     box-shadow: inset 0 -1px 0 hsl(var(--border));
   }
+
+  /* ============================================================================
+   * Redesign 2026-06 R-2: Currency-Typography
+   * ----------------------------------------------------------------------------
+   * Geldbeträge brauchen:
+   *  - tabular-nums (gleiche Spalten-Ausrichtung)
+   *  - feature ss01/cv11 (Inter-Fix für die "1", die sonst zu schmal ist)
+   *  - leicht negatives tracking (-0.01em) damit lange Beträge ruhig wirken
+   *  - right-align (Buchhaltungs-Konvention) — als Helper-Variante
+   * Inter mit tabular-nums liest besser als font-mono in Tabellen.
+   * ============================================================================ */
+  .tabular-currency,
+  [data-currency] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "ss01" 1, "cv11" 1;
+    letter-spacing: -0.005em;
+  }
+
+  .tabular-currency-right {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "ss01" 1, "cv11" 1;
+    letter-spacing: -0.005em;
+    text-align: right;
+    font-feature-settings: "tnum";
+  }
+
+  /* Negativ-Beträge in Klammern (DIN-EN 1862 / Buchhaltungs-Konvention) */
+  .currency-negative::before {
+    content: "(";
+  }
+  .currency-negative::after {
+    content: ")";
+  }
+}
+
+/* ============================================================================
+ * Redesign 2026-06 R-5: Reduced-Motion-Schutz
+ * ----------------------------------------------------------------------------
+ * Pflicht für alle Animations- und Transition-Konsumenten. Nutzer mit
+ * `prefers-reduced-motion: reduce` (vestibular disorders, Migräne, Fokus-Settings)
+ * dürfen keine wackelnden Inhalte sehen. Wir setzen *alle* Animation/Transition
+ * Durations auf 0ms zurück und brechen Infinite-Loops nach einer Iteration ab.
+ * Ein Crossfade über opacity bleibt zumutbar, ein bouncender Counter nicht.
+ * ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Phantom layer to balance the previous @layer utilities block */
+@layer utilities {
+  /* Sentinel — keep this layer non-empty so subsequent additions parse cleanly. */
+  .__redesign_sentinel { display: contents; }
 }

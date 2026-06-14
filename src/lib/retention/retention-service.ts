@@ -21,16 +21,23 @@
 import { prisma } from "@/lib/prisma";
 import { jobLogger } from "@/lib/logger";
 import { MS_PER_DAY } from "@/lib/constants/time";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 const logger = jobLogger.child({ component: "retention" });
 
 const YEARS_TO_MS = (years: number) => years * 365.25 * MS_PER_DAY;
 
 /**
- * Retention-Schwellen pro Model. Records deren `deletedAt`
- * älter als diese Frist ist, werden hart gelöscht.
+ * Retention-Schwellen pro Model (DEFAULT — Audit-A: pro Tenant überschreibbar
+ * via TenantSettings.gobdRetentionYearsInvoice / .gobdRetentionYearsContract).
+ *
+ * Records deren `deletedAt` älter als diese Frist ist, werden hart gelöscht.
+ *
+ * Hinweis: Dies sind nur Default-Werte für Stand-alone-Tests und Tenants ohne
+ * eigene Settings. Im normalen Lauf werden die Werte über
+ * `getRetentionPolicy(tenantId)` aus den TenantSettings geladen.
  */
-const RETENTION_POLICY = {
+const RETENTION_POLICY_DEFAULT = {
   // 10 Jahre — GoBD Buchführungs- und Aufzeichnungspflichten
   Invoice: 10,
   IncomingInvoice: 10,
@@ -41,6 +48,36 @@ const RETENTION_POLICY = {
   Document: 6,
   CrmActivity: 6,
 } as const;
+
+/** Models with 10-year retention (GoBD Buchführungs-/Aufzeichnungspflichten). */
+type InvoiceRetentionModel = "Invoice" | "IncomingInvoice" | "JournalEntry" | "Quote";
+/** Models with 6-year retention (Geschäftsbriefe + operative Verträge). */
+type ContractRetentionModel = "Contract" | "Document" | "CrmActivity";
+
+export type RetentionModel = InvoiceRetentionModel | ContractRetentionModel;
+
+export type RetentionPolicy = Record<RetentionModel, number>;
+
+/**
+ * Audit-A: Lädt die effektive Retention-Policy für einen Tenant.
+ *
+ * Die Defaults aus RETENTION_POLICY_DEFAULT werden mit den TenantSettings
+ * überschrieben:
+ *  - gobdRetentionYearsInvoice → Invoice / IncomingInvoice / JournalEntry / Quote
+ *  - gobdRetentionYearsContract → Contract / Document / CrmActivity
+ */
+export async function getRetentionPolicy(tenantId: string): Promise<RetentionPolicy> {
+  const settings = await getTenantSettings(tenantId);
+  return {
+    Invoice: settings.gobdRetentionYearsInvoice,
+    IncomingInvoice: settings.gobdRetentionYearsInvoice,
+    JournalEntry: settings.gobdRetentionYearsInvoice,
+    Quote: settings.gobdRetentionYearsInvoice,
+    Contract: settings.gobdRetentionYearsContract,
+    Document: settings.gobdRetentionYearsContract,
+    CrmActivity: settings.gobdRetentionYearsContract,
+  };
+}
 
 /**
  * Models die KEIN soft-delete kennen (haben kein deletedAt-Feld) und
@@ -71,12 +108,14 @@ export interface RetentionRunResult {
 
 /**
  * Führt den Retention-Purge für ein einzelnes Model aus.
+ * Wenn tenantId gesetzt, wird der Tenant-Scope auf das Model-Filter angewendet.
  */
 async function purgeModel(
-  model: keyof typeof RETENTION_POLICY,
+  model: RetentionModel,
+  retentionYears: number,
+  tenantId?: string,
 ): Promise<RetentionRunResult> {
-  const years = RETENTION_POLICY[model];
-  const cutoffDate = new Date(Date.now() - YEARS_TO_MS(years));
+  const cutoffDate = new Date(Date.now() - YEARS_TO_MS(retentionYears));
 
   try {
     // Prisma deleteMany auf dem entsprechenden Model. Der Model-Accessor
@@ -90,32 +129,33 @@ async function purgeModel(
       throw new Error(`Prisma delegate not found for ${model}`);
     }
 
-    const result = await delegate.deleteMany({
-      where: {
-        deletedAt: { not: null, lt: cutoffDate },
-      },
-    });
+    const where: Record<string, unknown> = {
+      deletedAt: { not: null, lt: cutoffDate },
+    };
+    if (tenantId) where.tenantId = tenantId;
+
+    const result = await delegate.deleteMany({ where });
 
     logger.info(
-      { model, retentionYears: years, cutoffDate, deletedCount: result.count },
+      { model, retentionYears, cutoffDate, tenantId, deletedCount: result.count },
       `Retention purge completed for ${model}`,
     );
 
     return {
       model,
-      retentionYears: years,
+      retentionYears,
       cutoffDate,
       deletedCount: result.count,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     logger.error(
-      { err: message, model, retentionYears: years, cutoffDate },
+      { err: message, model, retentionYears, cutoffDate, tenantId },
       `Retention purge FAILED for ${model}`,
     );
     return {
       model,
-      retentionYears: years,
+      retentionYears,
       cutoffDate,
       deletedCount: 0,
       error: message,
@@ -127,27 +167,34 @@ async function purgeModel(
  * Führt den Retention-Purge für alle konfigurierten Modelle aus.
  * Idempotent — mehrfache Ausführung ist safe.
  *
+ * - Mit tenantId: pürgt nur diesen Tenant mit dessen Settings-Policy
+ *   (gobdRetentionYearsInvoice / .gobdRetentionYearsContract).
+ * - Ohne tenantId: pürgt global mit Default-Policy (Backward-Kompatibilität,
+ *   gleiche Schwellen für alle Tenants).
+ *
  * Aufgerufen aus:
- * - Scheduled Job (reminder/retention worker cron)
- * - Admin-API (manuelles Aufräumen)
+ * - Scheduled Job (retention-cron worker — siehe retention-cron.worker.ts)
+ * - Admin-API (/api/admin/retention/run — manuelles Aufräumen)
  */
-export async function runRetentionPurge(): Promise<{
+export async function runRetentionPurge(tenantId?: string): Promise<{
   results: RetentionRunResult[];
   totalDeleted: number;
 }> {
-  logger.info("Starting retention purge run");
+  logger.info({ tenantId: tenantId ?? "all" }, "Starting retention purge run");
+
+  const policy: RetentionPolicy = tenantId
+    ? await getRetentionPolicy(tenantId)
+    : RETENTION_POLICY_DEFAULT;
 
   const results: RetentionRunResult[] = [];
-  for (const model of Object.keys(RETENTION_POLICY) as Array<
-    keyof typeof RETENTION_POLICY
-  >) {
-    results.push(await purgeModel(model));
+  for (const model of Object.keys(policy) as RetentionModel[]) {
+    results.push(await purgeModel(model, policy[model], tenantId));
   }
 
   const totalDeleted = results.reduce((sum, r) => sum + r.deletedCount, 0);
 
   logger.info(
-    { totalDeleted, modelResults: results.length },
+    { totalDeleted, modelResults: results.length, tenantId: tenantId ?? "all" },
     "Retention purge run completed",
   );
 

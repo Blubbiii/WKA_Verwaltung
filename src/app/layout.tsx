@@ -14,6 +14,12 @@ import { getLocale, getMessages } from "next-intl/server";
 // Mirrors what next-themes does for light/dark — prevents flash of unstyled content.
 const uiStyleInitScript = `(function(){try{var s=localStorage.getItem('ui-style');if(s!=='glass'&&s!=='classic')s='classic';document.documentElement.classList.add('ui-'+s);}catch(e){document.documentElement.classList.add('ui-classic');}})();`;
 
+// Redesign 2026-06: Dark als Default. Wir setzen die `dark`-Klasse hier inline (vor next-themes
+// hydratisiert), damit es bei Erstbesuch + bei jeder SSR-Antwort KEIN sichtbares Flash-of-Light-Theme
+// gibt. next-themes übernimmt dann den persistierten User-Choice; nur wenn der User nichts gewählt
+// hat, bleibt der Dark-Default bestehen.
+const themeInitScript = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.classList.add(t);}catch(e){document.documentElement.classList.add('dark');}})();`;
+
 // Self-hosted via next/font — downloaded at build time, no runtime Google request (DSGVO-konform)
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
@@ -37,6 +43,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: uiStyleInitScript }} />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>

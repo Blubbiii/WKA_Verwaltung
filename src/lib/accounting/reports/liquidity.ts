@@ -10,6 +10,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
+import { getTenantSettings } from "@/lib/tenant-settings";
+import { MS_PER_DAY } from "@/lib/constants/time";
 
 export interface LiquidityPeriod {
   label: string;
@@ -104,6 +106,10 @@ export async function generateLiquidityForecast(
 ): Promise<LiquidityForecastResult> {
   const periods = buildPeriods(startDate, endDate, granularity);
 
+  // Audit-A: Zahlungsziel-Fallback aus TenantSettings statt hardcoded 30 Tage.
+  const settings = await getTenantSettings(tenantId);
+  const paymentTermMs = settings.paymentTermDays * MS_PER_DAY;
+
   // Load open outgoing invoices (receivables)
   const receivables = await prisma.invoice.findMany({
     where: {
@@ -162,7 +168,7 @@ export async function generateLiquidityForecast(
 
   // Bin receivables into periods
   for (const inv of receivables) {
-    const date = inv.dueDate || new Date(inv.invoiceDate.getTime() + 30 * 86400000);
+    const date = inv.dueDate || new Date(inv.invoiceDate.getTime() + paymentTermMs);
     const amount = toNum(inv.grossAmount);
     for (const p of periodData) {
       if (dateFallsInPeriod(date, p.start, p.end)) {
@@ -174,7 +180,7 @@ export async function generateLiquidityForecast(
 
   // Bin payables into periods
   for (const inv of payables) {
-    const date = inv.dueDate || (inv.invoiceDate ? new Date(inv.invoiceDate.getTime() + 30 * 86400000) : new Date());
+    const date = inv.dueDate || (inv.invoiceDate ? new Date(inv.invoiceDate.getTime() + paymentTermMs) : new Date());
     const amount = toNum(inv.grossAmount);
     for (const p of periodData) {
       if (dateFallsInPeriod(date, p.start, p.end)) {

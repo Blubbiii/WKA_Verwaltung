@@ -306,7 +306,12 @@ export function Sidebar() {
               )}
             </button>
             {!collapsed && itemExpanded && (
-              <ul className="mt-1 ml-4 space-y-1">
+              // Redesign 2026-06 R-3: Connector-Line für Nested-Items.
+              // Vorher: einfacher ml-4 Indent ohne sichtbare Verbindung.
+              // Jetzt: 1px Border-Left visualisiert die Hierarchie als Tree.
+              // Active-Child bekommt seinen 3px Primary-Stripe darüber gelegt
+              // (negative margin), sodass aktiver Pfad bis zum Parent durchläuft.
+              <ul className="mt-1 ml-[18px] pl-3 border-l border-sidebar-border/70 space-y-0.5">
                 {item.children!
                   .filter((child) => !child.featureFlag || isFeatureEnabled(child.featureFlag))
                   .map((child) => {
@@ -316,21 +321,35 @@ export function Sidebar() {
                   const ChildIcon = child.icon;
                   const childTitle = getTitle(child);
                   return (
-                    <li key={child.href}>
+                    <li key={child.href} className="relative">
+                      {/* Verbindungs-Stub vom Tree-Line zum Item — subtle T-Connector */}
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "absolute left-[-12px] top-[18px] h-px w-2 bg-sidebar-border/70",
+                          isChildItemActive && "bg-primary/60"
+                        )}
+                      />
                       <Link
                         href={child.href}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200",
+                          "group flex items-center gap-2.5 pl-2 pr-3 py-2 rounded-md text-[13px] font-medium transition-colors duration-150 relative",
                           isChildItemActive
-                            ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
-                            : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
+                            ? "bg-primary/10 text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
                         )}
                         aria-current={isChildItemActive ? "page" : undefined}
                       >
-                        {ChildIcon && (
-                          <ChildIcon className={cn("h-4 w-4 shrink-0", isChildItemActive ? "text-primary" : "text-sidebar-foreground/65")} />
+                        {isChildItemActive && (
+                          <span
+                            aria-hidden
+                            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[2px] bg-primary rounded-r-sm"
+                          />
                         )}
-                        <span>{childTitle}</span>
+                        {ChildIcon && (
+                          <ChildIcon className={cn("h-4 w-4 shrink-0 transition-colors", isChildItemActive ? "text-primary" : "text-sidebar-foreground/55 group-hover:text-sidebar-foreground/75")} />
+                        )}
+                        <span className="truncate">{childTitle}</span>
                       </Link>
                     </li>
                   );
