@@ -161,12 +161,21 @@ export const authConfig: NextAuthConfig = {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        // Sicherer Default: in Production immer secure (auch wenn TLS am Edge/Reverse-Proxy
-        // terminiert und NEXTAUTH_URL intern auf http:// zeigt). Opt-out nur für lokale
-        // HTTP-Setups via FORCE_INSECURE_COOKIES=true.
+        // Cookie-Secure-Logik:
+        // - In Development: nie secure (HTTP localhost).
+        // - In Production: secure, ABER wir respektieren zwei Opt-Outs:
+        //   1. FORCE_INSECURE_COOKIES=true → explizites Opt-Out via env.
+        //   2. NEXTAUTH_URL beginnt mit http:// → Production-Container ist via
+        //      HTTP erreichbar (lokales Netzwerk, kein TLS). secure=true würde
+        //      hier dazu führen, dass der Browser das Cookie NIE sendet, weil
+        //      `secure` nur über HTTPS gilt — der User bekäme auf jedem Endpoint
+        //      einen 401 ohne dass es offensichtlich wäre warum.
+        //   Aus historischen Gründen wird trotzdem geloggt wenn Auto-Opt-Out
+        //   greift, damit Operator das in Production bemerken kann.
         secure:
           process.env.NODE_ENV === "production" &&
-          process.env.FORCE_INSECURE_COOKIES !== "true",
+          process.env.FORCE_INSECURE_COOKIES !== "true" &&
+          !(process.env.NEXTAUTH_URL ?? "").startsWith("http://"),
       },
     },
   },
