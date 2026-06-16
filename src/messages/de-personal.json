@@ -27,6 +27,12 @@
     "BAD_REQUEST": "Ungültige Anfrage"
   },
   "common": {
+    "lastEdit": {
+      "lastChanged": "Zuletzt geändert",
+      "history": "Verlauf",
+      "viewHistory": "Verlauf anzeigen",
+      "noEntries": "Keine Änderungshistorie verfügbar"
+    },
     "save": "Speichern",
     "cancel": "Abbrechen",
     "delete": "Löschen",
@@ -93,6 +99,27 @@
     },
     "pageHeader": {
       "create": "Neu anlegen"
+    },
+    "savedFilters": {
+      "dropdown": "Deine Filter",
+      "saveCurrent": "Aktuellen Filter speichern",
+      "saveDescription": "Speichere deine aktuelle Filter-Auswahl unter einem Namen — so kannst du sie jederzeit mit einem Klick wieder aufrufen.",
+      "nameLabel": "Name",
+      "namePlaceholder": "z.B. Meine offenen Mahnungen über 1000€",
+      "setDefault": "Als Standard",
+      "empty": "Du hast noch keine Filter gespeichert",
+      "confirmDelete": "Filter '{name}' wirklich löschen?",
+      "deleteTitle": "Filter löschen",
+      "deleteHint": "Filter löschen",
+      "save": "Speichern",
+      "saving": "Speichere…",
+      "cancel": "Abbrechen",
+      "delete": "Löschen",
+      "savedToast": "Filter '{name}' gespeichert",
+      "deletedToast": "Filter '{name}' gelöscht",
+      "saveError": "Dein Filter konnte nicht gespeichert werden",
+      "updateError": "Dein Filter konnte nicht aktualisiert werden",
+      "deleteError": "Dein Filter konnte nicht gelöscht werden"
     }
   },
   "nav": {
@@ -257,6 +284,28 @@
     "switchToGerman": "Zu Deutsch wechseln",
     "language": "Sprache"
   },
+  "commandPalette": {
+    "placeholder": "Was suchst du?",
+    "empty": "Nichts gefunden",
+    "shortcutHint": "⌘K · Esc schliesst",
+    "sections": {
+      "navigation": "Navigation",
+      "quickActions": "Schnellaktionen",
+      "recent": "Zuletzt besucht"
+    },
+    "actions": {
+      "newInvoice": "Neue Rechnung erstellen",
+      "uploadInboxInvoice": "Eingangsrechnung hochladen",
+      "openGuv": "GuV öffnen",
+      "openBwa": "BWA öffnen",
+      "parkComparison": "Park-Vergleich",
+      "startBankImport": "Bank-Import starten",
+      "newContract": "Neuer Vertrag",
+      "checkApprovals": "Genehmigungen prüfen",
+      "runReminders": "Mahnlauf",
+      "openDashboard": "Dashboard"
+    }
+  },
   "dashboard": {
     "title": "Deine Übersicht",
     "welcome": "Willkommen zurück!",
@@ -319,9 +368,26 @@
       "recentlyVisited": "Zuletzt besucht",
       "budgetVariance": "Budgetabweichung",
       "wirtschaftsplanPL": "Wirtschaftsplan GuV",
+      "todayFocus": "Heute zu erledigen",
       "notFound": "Widget \"{widgetId}\" nicht gefunden",
       "loadError": "Ups, das hat nicht geklappt",
-      "remove": "Entfernen"
+      "loadErrorDetail": "Konnte die Aufgaben gerade nicht laden.",
+      "remove": "Entfernen",
+      "focus": {
+        "header": "Was heute ansteht",
+        "approvalsLabel": "{count, plural, one {# Genehmigung wartet auf dich} other {# Genehmigungen warten auf dich}}",
+        "approvalsCta": "Jetzt prüfen",
+        "dunningLabel": "{count, plural, one {# überfällige Rechnung} other {# überfällige Rechnungen}}",
+        "dunningCta": "Mahnlauf starten",
+        "inboxLabel": "{count, plural, one {# neuer Beleg im Eingang} other {# neue Belege im Eingang}}",
+        "inboxCta": "Eingang prüfen",
+        "contractsLabel": "{count, plural, one {# Vertrag läuft bald aus} other {# Verträge laufen bald aus}}",
+        "contractsCta": "Verträge ansehen",
+        "criticalDotLabel": "Kritisch — läuft in unter 24 Stunden ab",
+        "emptyTitle": "Heute ist alles erledigt",
+        "emptySubtitle": "Mach was Schönes, hier ist Ruhe.",
+        "unauthorizedHint": "Du hast keine Berechtigung für die anstehenden Aktionen."
+      }
     },
     "editTitle": "Dashboard anpassen",
     "editDescription": "Widgets hinzufügen, entfernen und anordnen",
@@ -9434,6 +9500,16 @@
         "TENANT_SETTINGS_UPDATE": "Mandanten-Einstellungen ändern",
         "USER_ROLE_ASSIGN": "Rolle zuweisen"
       }
+    },
+    "diff": {
+      "showDetails": "Details ansehen",
+      "hideDetails": "Details ausblenden",
+      "loading": "Lädt...",
+      "noDiff": "Keine Vorschau verfügbar",
+      "colLabel": "Position",
+      "colBefore": "Vorher",
+      "colAfter": "Nachher",
+      "colDelta": "Δ"
     }
   },
   "liquidity": {

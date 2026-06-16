@@ -27,6 +27,12 @@
     "BAD_REQUEST": "Bad request"
   },
   "common": {
+    "lastEdit": {
+      "lastChanged": "Last changed",
+      "history": "History",
+      "viewHistory": "View history",
+      "noEntries": "No change history available"
+    },
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -93,6 +99,27 @@
     },
     "pageHeader": {
       "create": "Create"
+    },
+    "savedFilters": {
+      "dropdown": "Saved filters",
+      "saveCurrent": "Save current filter",
+      "saveDescription": "Save the current filter selection under a name so you can quickly recall it later.",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. My open dunnings over 1000€",
+      "setDefault": "Set as default",
+      "empty": "No saved filters yet",
+      "confirmDelete": "Really delete filter '{name}'?",
+      "deleteTitle": "Delete filter",
+      "deleteHint": "Delete filter",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "savedToast": "Filter '{name}' saved",
+      "deletedToast": "Filter '{name}' deleted",
+      "saveError": "Failed to save filter",
+      "updateError": "Failed to update filter",
+      "deleteError": "Failed to delete filter"
     }
   },
   "nav": {
@@ -257,6 +284,28 @@
     "switchToGerman": "Zu Deutsch wechseln",
     "language": "Language"
   },
+  "commandPalette": {
+    "placeholder": "Search command...",
+    "empty": "No matches",
+    "shortcutHint": "⌘K · Esc to close",
+    "sections": {
+      "navigation": "Navigation",
+      "quickActions": "Quick actions",
+      "recent": "Recent"
+    },
+    "actions": {
+      "newInvoice": "Create new invoice",
+      "uploadInboxInvoice": "Upload incoming invoice",
+      "openGuv": "Open P&L",
+      "openBwa": "Open BWA",
+      "parkComparison": "Park comparison",
+      "startBankImport": "Start bank import",
+      "newContract": "New contract",
+      "checkApprovals": "Review approvals",
+      "runReminders": "Run reminders",
+      "openDashboard": "Dashboard"
+    }
+  },
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome back",
@@ -319,9 +368,26 @@
       "recentlyVisited": "Recently Visited",
       "budgetVariance": "Budget Variance",
       "wirtschaftsplanPL": "Budget P&L",
+      "todayFocus": "Today's focus",
       "notFound": "Widget \"{widgetId}\" not found",
       "loadError": "Failed to load",
-      "remove": "Remove"
+      "loadErrorDetail": "Could not load focus items.",
+      "remove": "Remove",
+      "focus": {
+        "header": "What's on for today",
+        "approvalsLabel": "{count, plural, one {# approval pending} other {# approvals pending}}",
+        "approvalsCta": "Review now",
+        "dunningLabel": "{count, plural, one {# overdue invoice} other {# overdue invoices}}",
+        "dunningCta": "Start dunning run",
+        "inboxLabel": "{count, plural, one {# new document in inbox} other {# new documents in inbox}}",
+        "inboxCta": "Review inbox",
+        "contractsLabel": "{count, plural, one {# contract expires soon} other {# contracts expire soon}}",
+        "contractsCta": "View contracts",
+        "criticalDotLabel": "Critical — expires in under 24 hours",
+        "emptyTitle": "Everything's done for today",
+        "emptySubtitle": "Nice. No open items.",
+        "unauthorizedHint": "No permission to view focus items."
+      }
     },
     "editTitle": "Customize dashboard",
     "editDescription": "Add, remove and arrange widgets",
@@ -9432,6 +9498,16 @@
         "TENANT_SETTINGS_UPDATE": "Change tenant settings",
         "USER_ROLE_ASSIGN": "Assign role"
       }
+    },
+    "diff": {
+      "showDetails": "Show details",
+      "hideDetails": "Hide details",
+      "loading": "Loading...",
+      "noDiff": "No diff preview available",
+      "colLabel": "Field",
+      "colBefore": "Before",
+      "colAfter": "After",
+      "colDelta": "Δ"
     }
   },
   "liquidity": {

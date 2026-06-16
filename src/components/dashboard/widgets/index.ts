@@ -17,3 +17,4 @@ export {
   LeaseOverviewWidget,
 } from "./energy-widgets";
 export { BudgetVarianceKPI, WirtschaftsplanPLChart } from "./wirtschaftsplan-widgets";
+export { TodayFocusWidget } from "./today-focus-widget";

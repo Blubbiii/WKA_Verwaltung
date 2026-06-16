@@ -261,6 +261,22 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     resizable: true,
   },
 
+  {
+    id: "today-focus",
+    name: "Heute zu erledigen",
+    description: "Anstehende Aktionen: Genehmigungen, Mahnungen, Verträge",
+    category: "list",
+    minRole: "VIEWER",
+    defaultWidth: 6,
+    defaultHeight: 4,
+    minWidth: 4,
+    minHeight: 3,
+    maxWidth: 12,
+    maxHeight: 8,
+    icon: "Target",
+    resizable: true,
+  },
+
   // ===========================================
   // UTILITY WIDGETS - Standard: 3x2 (120px height) = 1x1 Kachel
   // ===========================================
@@ -307,6 +323,25 @@ export const WIDGET_REGISTRY: WidgetDefinition[] = [
     minHeight: 3,
     maxWidth: 6,
     maxHeight: 8,
+    icon: "Clock",
+    resizable: true,
+  },
+
+  // Opt-in: A3 — "Seit deinem letzten Besuch"
+  // Bewusst NICHT in default-layouts.ts aufgenommen, User aktiviert sich diese
+  // Kachel selbst aus dem Widget-Picker.
+  {
+    id: "since-last-visit",
+    name: "Seit deinem letzten Besuch",
+    description: "Neue Vorgänge die seit deinem letzten Login dazugekommen sind",
+    category: "list",
+    minRole: "VIEWER",
+    defaultWidth: 6,
+    defaultHeight: 4,
+    minWidth: 4,
+    minHeight: 3,
+    maxWidth: 12,
+    maxHeight: 6,
     icon: "Clock",
     resizable: true,
   },

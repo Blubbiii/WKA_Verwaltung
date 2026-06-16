@@ -4,11 +4,12 @@ import { Header } from "@/components/layout/header";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { DashboardFooter } from "@/components/layout/dashboard-footer";
 import { MaintenanceBanner } from "@/components/layout/maintenance-banner";
+import { TabTitleSync } from "@/components/layout/tab-title-sync";
 import { KeyboardProvider } from "@/components/providers/keyboard-provider";
 import { OnboardingProvider } from "@/components/providers/onboarding-provider";
 import { OfflineIndicator } from "@/components/providers/offline-indicator";
 import { PageTransition } from "@/components/providers/page-transition";
-import { CommandPalette } from "@/components/ui/command-palette";
+import { CommandPalette } from "@/components/global/command-palette";
 
 export default function DashboardLayout({
   children,
@@ -28,6 +29,7 @@ export default function DashboardLayout({
         <div className="flex h-screen overflow-hidden">
           <OfflineIndicator />
           <CommandPalette />
+          <TabTitleSync />
           {/* Desktop sidebar */}
           <div className="hidden md:block">
             <Sidebar />

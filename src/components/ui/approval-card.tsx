@@ -1,12 +1,28 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Clock, Check, X, Info } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Clock,
+  Check,
+  X,
+  Info,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { de, enUS } from "date-fns/locale";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import type { ApprovalDiff } from "@/lib/approvals/compute-diff";
 
 /**
  * Redesign 2026-06 — Phase 2: ApprovalCard
@@ -51,6 +67,12 @@ export interface ApprovalCardProps {
   onDetails?: () => void;
   /** Pending state — disabled buttons während Action läuft */
   isPending?: boolean;
+  /**
+   * ApprovalRequest-ID — wenn gesetzt, wird die Diff-Vorschau via
+   * GET /api/approvals/[id]/diff lazy nachgeladen, sobald der User
+   * "Details anzeigen" klickt.
+   */
+  approvalId?: string;
   className?: string;
 }
 
@@ -74,10 +96,41 @@ export function ApprovalCard({
   onReject,
   onDetails,
   isPending = false,
+  approvalId,
   className,
 }: ApprovalCardProps) {
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
+  const tDiff = useTranslations("approvals.diff");
+
+  // Diff-Vorschau: lazy-loaded beim Öffnen via approvalId
+  const [diffOpen, setDiffOpen] = useState(false);
+  const [diff, setDiff] = useState<ApprovalDiff | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
+  const diffFetched = useRef(false);
+
+  const loadDiff = useCallback(async () => {
+    if (!approvalId || diffFetched.current) return;
+    diffFetched.current = true;
+    setDiffLoading(true);
+    try {
+      const res = await fetch(`/api/approvals/${approvalId}/diff`);
+      if (res.ok) {
+        const json = (await res.json()) as { diff: ApprovalDiff | null };
+        setDiff(json.diff);
+      }
+    } catch {
+      // silent — UI zeigt "noDiff" wenn diff null bleibt
+    } finally {
+      setDiffLoading(false);
+    }
+  }, [approvalId]);
+
+  useEffect(() => {
+    if (diffOpen) {
+      void loadDiff();
+    }
+  }, [diffOpen, loadDiff]);
   const timeAgo = formatDistanceToNow(requestedAt, {
     addSuffix: true,
     locale: dateLocale,
@@ -146,6 +199,122 @@ export function ApprovalCard({
             {reason}
           </p>
         </div>
+      )}
+
+      {/* Diff-Vorschau (B7) — collapsible, lazy-loaded.
+          Zeigt strukturierte Vorher/Nachher-Werte damit der Decider sieht
+          *was sich verändern wird*. Nur sichtbar wenn approvalId gesetzt ist. */}
+      {approvalId && (
+        <Collapsible
+          open={diffOpen}
+          onOpenChange={setDiffOpen}
+          className="mx-4 mb-3"
+        >
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between rounded-md border border-border/60 bg-background px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground transition-colors"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <Eye className="h-3.5 w-3.5" aria-hidden />
+                {diffOpen ? tDiff("hideDetails") : tDiff("showDetails")}
+              </span>
+              {diffOpen ? (
+                <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+              )}
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+            <div className="mt-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2.5">
+              {diffLoading ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  {tDiff("loading")}
+                </div>
+              ) : !diff || diff.changes.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {diff?.summary ?? tDiff("noDiff")}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {diff.title && (
+                    <p className="text-sm font-medium text-foreground">
+                      {diff.title}
+                    </p>
+                  )}
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-muted-foreground">
+                        <th className="font-normal pb-1.5 pr-2">
+                          {tDiff("colLabel")}
+                        </th>
+                        <th className="font-normal pb-1.5 px-2 text-right">
+                          {tDiff("colBefore")}
+                        </th>
+                        <th className="font-normal pb-1.5 px-2 text-right">
+                          {tDiff("colAfter")}
+                        </th>
+                        <th className="font-normal pb-1.5 pl-2 text-right">
+                          {tDiff("colDelta")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {diff.changes.map((c, idx) => {
+                        const toneClass =
+                          c.tone === "destructive"
+                            ? "text-destructive"
+                            : c.tone === "warning"
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-foreground/90";
+                        return (
+                          <tr
+                            key={idx}
+                            className="border-t border-border/40"
+                          >
+                            <td className="py-1.5 pr-2 align-top text-foreground/80">
+                              {c.label}
+                            </td>
+                            <td
+                              className={cn(
+                                "tabular-currency py-1.5 px-2 text-right align-top text-muted-foreground",
+                              )}
+                            >
+                              {c.before ?? ""}
+                            </td>
+                            <td
+                              className={cn(
+                                "tabular-currency py-1.5 px-2 text-right align-top",
+                                toneClass,
+                              )}
+                            >
+                              {c.after ?? ""}
+                            </td>
+                            <td
+                              className={cn(
+                                "tabular-currency py-1.5 pl-2 text-right align-top",
+                                toneClass,
+                              )}
+                            >
+                              {c.delta ?? ""}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {diff.summary && (
+                    <p className="text-xs text-muted-foreground pt-1 border-t border-border/40">
+                      {diff.summary}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {/* Action row */}

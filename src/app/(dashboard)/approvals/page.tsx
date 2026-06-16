@@ -219,6 +219,7 @@ export default function ApprovalsPage() {
               {items.map((it) => (
                 <ApprovalCard
                   key={it.id}
+                  approvalId={it.id}
                   requesterName={fmtName(it.requestedBy, t("unknownRequester"))}
                   actionText={t(`actions.${it.action}`)}
                   amount={it.amountEur !== null ? fmtEur(it.amountEur) : undefined}

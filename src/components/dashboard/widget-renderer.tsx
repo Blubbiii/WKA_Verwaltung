@@ -71,6 +71,7 @@ import {
   LeaseRevenueKPI,
   LeaseOverviewWidget,
   BudgetVarianceKPI,
+  TodayFocusWidget,
 } from "./widgets";
 import { RecentlyVisitedWidget } from "./widgets/recently-visited-widget";
 import { CpiReminderWidget } from "@/components/leases/CpiReminderWidget";
@@ -108,6 +109,7 @@ const WIDGET_TITLE_KEYS: Record<string, string> = {
   "list-deadlines": "deadlines",
   "list-activities": "activities",
   "list-pending-actions": "pendingActions",
+  "today-focus": "todayFocus",
   "weather-widget": "weather",
   "quick-actions": "quickActions",
   "admin-system-status": "systemStatus",
@@ -404,6 +406,19 @@ export function WidgetRenderer({
           onRemove={onRemove}
         >
           <PendingActionsWidget />
+        </WidgetWrapper>
+      );
+    }
+
+    // Today's Focus Widget (opt-in, nicht in Default-Layouts)
+    if (widgetId === "today-focus") {
+      return (
+        <WidgetWrapper
+          title={widgetTitle}
+          isEditing={isEditing}
+          onRemove={onRemove}
+        >
+          <TodayFocusWidget />
         </WidgetWrapper>
       );
     }

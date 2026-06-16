@@ -69,6 +69,7 @@ import {
   type AuditEntityType,
 } from "@/lib/audit-types";
 import { useTranslations } from "next-intl";
+import { SavedFilterPicker } from "@/components/ui/saved-filter-picker";
 
 // Types
 interface AuditLogUser {
@@ -422,6 +423,27 @@ function AuditLogsContent() {
     setCurrentPage(1);
   };
 
+  // B6: Current filter payload — used by SavedFilterPicker
+  const currentFilterPayload = {
+    action: actionFilter,
+    entityType: entityTypeFilter,
+    userId: userFilter,
+    startDate,
+    endDate,
+    search: searchText,
+  };
+
+  // B6: Apply a saved filter payload back into the local state
+  const applySavedFilter = (payload: Record<string, unknown>) => {
+    setActionFilter(typeof payload.action === "string" ? payload.action : "ALL");
+    setEntityTypeFilter(typeof payload.entityType === "string" ? payload.entityType : "ALL");
+    setUserFilter(typeof payload.userId === "string" ? payload.userId : "ALL");
+    setStartDate(typeof payload.startDate === "string" ? payload.startDate : "");
+    setEndDate(typeof payload.endDate === "string" ? payload.endDate : "");
+    setSearchText(typeof payload.search === "string" ? payload.search : "");
+    setCurrentPage(1);
+  };
+
   // Remove a single filter
   const removeFilter = (filterKey: string) => {
     switch (filterKey) {
@@ -510,12 +532,19 @@ function AuditLogsContent() {
                   )}
                 </button>
               </CollapsibleTrigger>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X className="mr-2 h-4 w-4" />
-                  {t("clearFilters")}
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                <SavedFilterPicker
+                  surface="auditLogs"
+                  currentFilters={currentFilterPayload}
+                  onApply={applySavedFilter}
+                />
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    <X className="mr-2 h-4 w-4" />
+                    {t("clearFilters")}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Active filter badges - always visible even when collapsed */}

@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
+import { LastEditStrip } from "@/components/ui/last-edit-strip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
@@ -553,6 +554,12 @@ export default function ContractDetailPage() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Feature A4: Last-Edit-Strip — zeigt den letzten AuditLog-Eintrag für
+       * diesen Vertrag plus History-Popover über die letzten 10 Änderungen.
+       * Rendert sich selbst nur wenn Einträge vorhanden sind und der User
+       * `admin:audit` hat — sonst silent fail. */}
+      <LastEditStrip entityType="Contract" entityId={contract.id} className="mt-6" />
     </div>
   );
 }
