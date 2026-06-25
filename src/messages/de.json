@@ -95,7 +95,10 @@
       "filterPlaceholder": "Filter"
     },
     "editableCell": {
-      "saveFailed": "Speichern fehlgeschlagen"
+      "saveFailed": "Speichern fehlgeschlagen",
+      "savedWithUndo": "Gespeichert",
+      "undo": "Rückgängig",
+      "undoFailed": "Rückgängig machen fehlgeschlagen"
     },
     "pageHeader": {
       "create": "Erstellen"

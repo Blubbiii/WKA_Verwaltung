@@ -47,6 +47,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
+import { EditableCell } from "@/components/ui/editable-cell";
 
 // ============================================================================
 // Types
@@ -64,6 +65,7 @@ interface IncomingInvoice {
   vendor: { id: string; name: string } | null;
   vendorNameFallback: string | null;
   fileName: string;
+  notes: string | null;
   createdAt: string;
   // P13: 4-Augen-Tracking
   createdById?: string | null;
@@ -338,6 +340,7 @@ export default function InboxPage() {
                   <TableHead>{t("table.due")}</TableHead>
                   <TableHead className="text-right">{t("table.gross")}</TableHead>
                   <TableHead>{t("table.status")}</TableHead>
+                  <TableHead className="max-w-[200px]">Notiz</TableHead>
                   <TableHead className="text-right">Aktion</TableHead>
                 </TableRow>
               </TableHeader>
@@ -348,6 +351,8 @@ export default function InboxPage() {
                     try { return t(`status.${inv.status}` as "status.INBOX"); }
                     catch { return inv.status; }
                   })();
+                  // Inline-Edit nur in Prä-Freigabe-Stati (siehe PUT-Guard in API-Route)
+                  const isEditable = inv.status === "INBOX" || inv.status === "REVIEW";
                   return (
                     <TableRow
                       key={inv.id}
@@ -363,9 +368,28 @@ export default function InboxPage() {
                         }
                       }}
                     >
-                      <TableCell className="font-medium">
-                        {inv.vendor?.name ?? inv.vendorNameFallback ?? (
-                          <span className="text-muted-foreground italic">{t("table.noVendor")}</span>
+                      <TableCell className="font-medium" onClick={(e) => e.stopPropagation()}>
+                        {inv.vendor?.name ? (
+                          inv.vendor.name
+                        ) : (
+                          <EditableCell
+                            value={inv.vendorNameFallback}
+                            placeholder={t("table.noVendor")}
+                            disabled={!isEditable}
+                            onSave={async (val) => {
+                              const res = await fetch(`/api/inbox/${inv.id}`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ vendorNameFallback: val || null }),
+                              });
+                              if (!res.ok) {
+                                const data = await res.json().catch(() => ({}));
+                                throw new Error(data.message ?? data.error ?? "Fehler beim Speichern");
+                              }
+                              toast.success("Gespeichert");
+                              await load();
+                            }}
+                          />
                         )}
                       </TableCell>
                       <TableCell>
@@ -396,6 +420,26 @@ export default function InboxPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={variant}>{statusLabel}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[200px]" onClick={(e) => e.stopPropagation()}>
+                        <EditableCell
+                          value={inv.notes}
+                          placeholder="—"
+                          disabled={!isEditable}
+                          onSave={async (val) => {
+                            const res = await fetch(`/api/inbox/${inv.id}`, {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ notes: val || null }),
+                            });
+                            if (!res.ok) {
+                              const data = await res.json().catch(() => ({}));
+                              throw new Error(data.message ?? data.error ?? "Fehler beim Speichern");
+                            }
+                            toast.success("Gespeichert");
+                            await load();
+                          }}
+                        />
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         {(inv.status === "INBOX" || inv.status === "REVIEW") && (() => {

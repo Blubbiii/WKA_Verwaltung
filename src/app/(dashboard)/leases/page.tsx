@@ -58,6 +58,7 @@ import { CalendarExportButton } from "@/components/calendar-export-button";
 import { LeaseDialogs } from "@/components/leases";
 import { toast } from "sonner";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
+import { EditableCell } from "@/components/ui/editable-cell";
 
 interface Plot {
   id: string;
@@ -79,6 +80,7 @@ interface Lease {
   endDate: string | null;
   annualRent: number | null;
   status: string;
+  notes: string | null;
   plots: Plot[];
   lessor: {
     id: string;
@@ -350,6 +352,7 @@ export default function LeasesPage() {
                   <TableHead>{t("table.term")}</TableHead>
                   <TableHead className="text-right">{t("table.annualRent")}</TableHead>
                   <TableHead>{t("table.status")}</TableHead>
+                  <TableHead className="max-w-[180px]">Notiz</TableHead>
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -357,7 +360,7 @@ export default function LeasesPage() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 9 }).map((_, j) => (
+                      {Array.from({ length: 10 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-5 w-20" />
                         </TableCell>
@@ -366,7 +369,7 @@ export default function LeasesPage() {
                   ))
                 ) : filteredLeases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
                       {t("table.emptyText")}
                     </TableCell>
                   </TableRow>
@@ -423,6 +426,25 @@ export default function LeasesPage() {
                           <Badge variant="secondary" className={getStatusBadge(CONTRACT_STATUS, lease.status).className}>
                             {getStatusBadge(CONTRACT_STATUS, lease.status).label}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[180px]" onClick={(e) => e.stopPropagation()}>
+                          <EditableCell
+                            value={lease.notes}
+                            placeholder="—"
+                            onSave={async (val) => {
+                              const res = await fetch(`/api/leases/${lease.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ notes: val || null }),
+                              });
+                              if (!res.ok) {
+                                const data = await res.json().catch(() => ({}));
+                                throw new Error(data.message ?? data.error ?? "Fehler beim Speichern");
+                              }
+                              toast.success("Gespeichert");
+                              invalidate(["leases"]);
+                            }}
+                          />
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">

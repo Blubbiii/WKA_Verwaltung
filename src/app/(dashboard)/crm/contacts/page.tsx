@@ -59,6 +59,7 @@ import {
   DERIVED_LABEL_KEYS,
   isDerivedLabel,
 } from "@/lib/crm/label-constants";
+import { EditableCell } from "@/components/ui/editable-cell";
 
 // ============================================================================
 // Types
@@ -85,6 +86,7 @@ interface CrmContact {
   city: string | null;
   contactType: string | null;
   status: string;
+  notes: string | null;
   lastActivityAt: string | null;
   _count: { crmActivities: number };
   labels: string[];
@@ -450,7 +452,7 @@ export default function CrmContactsPage() {
     );
   }
 
-  const columnCount = 5 + (showLeaseColumn ? 1 : 0) + (showShareholderColumn ? 2 : 0);
+  const columnCount = 6 + (showLeaseColumn ? 1 : 0) + (showShareholderColumn ? 2 : 0);
 
   return (
     <div className="space-y-6">
@@ -572,6 +574,9 @@ export default function CrmContactsPage() {
                 <TableHead className="hidden lg:table-cell">
                   {t("tablePhone")}
                 </TableHead>
+                <TableHead className="hidden xl:table-cell max-w-[200px]">
+                  Notiz
+                </TableHead>
                 {showLeaseColumn && (
                   <TableHead className="text-right">
                     {t("tableLeases")}
@@ -653,11 +658,71 @@ export default function CrmContactsPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                      {c.email ?? "—"}
+                    <TableCell
+                      className="hidden md:table-cell text-sm text-muted-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <EditableCell
+                        value={c.email}
+                        placeholder="—"
+                        onSave={async (val) => {
+                          const res = await fetch(`/api/crm/contacts/${c.id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email: val || null }),
+                          });
+                          if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error(err.message ?? err.error ?? "Fehler beim Speichern");
+                          }
+                          toast.success("Gespeichert");
+                          load();
+                        }}
+                      />
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                      {c.phone ?? c.mobile ?? "—"}
+                    <TableCell
+                      className="hidden lg:table-cell text-sm text-muted-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <EditableCell
+                        value={c.phone ?? c.mobile}
+                        placeholder="—"
+                        onSave={async (val) => {
+                          const res = await fetch(`/api/crm/contacts/${c.id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ phone: val || null }),
+                          });
+                          if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error(err.message ?? err.error ?? "Fehler beim Speichern");
+                          }
+                          toast.success("Gespeichert");
+                          load();
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell
+                      className="hidden xl:table-cell max-w-[200px] text-sm text-muted-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <EditableCell
+                        value={c.notes}
+                        placeholder="—"
+                        onSave={async (val) => {
+                          const res = await fetch(`/api/crm/contacts/${c.id}`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ notes: val || null }),
+                          });
+                          if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error(err.message ?? err.error ?? "Fehler beim Speichern");
+                          }
+                          toast.success("Gespeichert");
+                          load();
+                        }}
+                      />
                     </TableCell>
                     {showLeaseColumn && (
                       <TableCell className="text-right">

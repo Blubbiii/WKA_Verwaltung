@@ -96,6 +96,7 @@ export async function GET(request: NextRequest) {
           city: true,
           contactType: true,
           status: true,
+          notes: true,
           lastActivityAt: true,
           _count: {
             select: { crmActivities: { where: { deletedAt: null } } },

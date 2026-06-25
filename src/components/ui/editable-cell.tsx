@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -18,16 +20,36 @@ interface SelectOption {
   label: string;
 }
 
+type CellValue = string | number | null | undefined;
+
 interface EditableCellProps {
-  value: string | number | null | undefined;
+  value: CellValue;
   onSave: (newValue: string) => Promise<void>;
-  type?: "text" | "number" | "select";
+  type?: "text" | "number" | "select" | "date" | "textarea";
   options?: SelectOption[];
   disabled?: boolean;
   className?: string;
   placeholder?: string;
   /** Format function for display (e.g. currency formatting) */
-  formatDisplay?: (value: string | number | null | undefined) => string;
+  formatDisplay?: (value: CellValue) => string;
+  /**
+   * If true (default), display value switches immediately after save() resolves
+   * and rolls back on error. Set false to keep waiting on the Promise without
+   * an optimistic flip.
+   */
+  optimistic?: boolean;
+  /**
+   * If provided, a "Saved" toast with an Undo button appears after a successful
+   * save. Clicking Undo invokes this callback with the previous value.
+   */
+  onUndo?: (previousValue: CellValue) => Promise<void>;
+  /**
+   * If true, always show a short "Saved" toast after success (no Undo button
+   * unless onUndo is also set). Default false to avoid spamming existing tables.
+   */
+  showSaveToast?: boolean;
+  /** Tooltip shown when the cell is disabled — explains why it's not editable. */
+  tooltipDisabled?: string;
 }
 
 /**
@@ -43,52 +65,150 @@ export function EditableCell({
   className,
   placeholder = "—",
   formatDisplay,
+  optimistic = true,
+  onUndo,
+  showSaveToast = false,
+  tooltipDisabled,
 }: EditableCellProps) {
   const t = useTranslations("common.editableCell");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  // Holds an optimistic value that overrides `value` until parent state catches up.
+  // `hasOptimistic=false` means "no override".
+  const [optimistic_, setOptimistic_] = useState<{ has: boolean; v: CellValue }>({
+    has: false,
+    v: null,
+  });
   const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Reset the optimistic override once the incoming prop matches it (parent re-fetched).
+  useEffect(() => {
+    if (optimistic_.has && (value ?? "").toString() === (optimistic_.v ?? "").toString()) {
+      setOptimistic_({ has: false, v: null });
+    }
+  }, [value, optimistic_]);
+
+  // Normalize a value into the ISO date string (YYYY-MM-DD) for <input type="date">.
+  const toDateString = useCallback((v: CellValue | Date): string => {
+    if (v === null || v === undefined || v === "") return "";
+    if (v instanceof Date) {
+      return v.toISOString().slice(0, 10);
+    }
+    const s = v.toString();
+    // Already a date-only ISO string?
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // Try parsing more general strings (e.g. full ISO timestamp).
+    const parsed = new Date(s);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+    return s;
+  }, []);
+
+  const effectiveValue: CellValue = optimistic_.has ? optimistic_.v : value;
 
   const displayValue = formatDisplay
-    ? formatDisplay(value)
-    : (value ?? "").toString();
+    ? formatDisplay(effectiveValue)
+    : type === "date"
+      ? toDateString(effectiveValue)
+      : (effectiveValue ?? "").toString();
 
   const startEditing = useCallback(() => {
     if (disabled || saving) return;
-    setDraft((value ?? "").toString());
+    const initial =
+      type === "date"
+        ? toDateString(effectiveValue)
+        : (effectiveValue ?? "").toString();
+    setDraft(initial);
     setError(null);
     setEditing(true);
-    // Focus input after render
-    setTimeout(() => inputRef.current?.focus(), 0);
-  }, [disabled, saving, value]);
+    // Focus input/textarea after render
+    setTimeout(() => {
+      if (type === "textarea") textareaRef.current?.focus();
+      else inputRef.current?.focus();
+    }, 0);
+  }, [disabled, saving, effectiveValue, type, toDateString]);
 
   const cancel = useCallback(() => {
     setEditing(false);
     setError(null);
   }, []);
 
-  const save = useCallback(async () => {
-    const trimmed = draft.trim();
-    // Skip save if value unchanged
-    if (trimmed === (value ?? "").toString()) {
-      setEditing(false);
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      await onSave(trimmed);
-      setEditing(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("saveFailed"));
-    } finally {
-      setSaving(false);
-    }
-  }, [draft, value, onSave, t]);
+  const runSave = useCallback(
+    async (rawValue: string) => {
+      // Skip save if value unchanged compared to the currently-effective value.
+      const baselineString =
+        type === "date"
+          ? toDateString(effectiveValue)
+          : (effectiveValue ?? "").toString();
+      const next = type === "textarea" ? rawValue : rawValue.trim();
+      if (next === baselineString) {
+        setEditing(false);
+        return;
+      }
 
-  const handleKeyDown = useCallback(
+      const previousValue = value; // capture original prop value for undo / rollback
+      setSaving(true);
+      setError(null);
+
+      if (optimistic) {
+        // Flip display immediately, then close editor.
+        setOptimistic_({ has: true, v: next });
+        setEditing(false);
+      }
+
+      try {
+        await onSave(next);
+        if (!optimistic) {
+          setEditing(false);
+        }
+
+        if (onUndo) {
+          toast.success(t("savedWithUndo"), {
+            duration: 5000,
+            action: {
+              label: t("undo"),
+              onClick: () => {
+                void (async () => {
+                  try {
+                    // Optimistically revert display while the undo runs.
+                    if (optimistic) setOptimistic_({ has: true, v: previousValue });
+                    await onUndo(previousValue);
+                  } catch (undoErr) {
+                    if (optimistic) setOptimistic_({ has: true, v: next }); // restore failed-undo state
+                    toast.error(
+                      undoErr instanceof Error ? undoErr.message : t("undoFailed"),
+                    );
+                  }
+                })();
+              },
+            },
+          });
+        } else if (showSaveToast) {
+          toast.success(t("savedWithUndo"), { duration: 2500 });
+        }
+      } catch (err) {
+        // Rollback optimistic flip
+        if (optimistic) setOptimistic_({ has: false, v: null });
+        const msg = err instanceof Error ? err.message : t("saveFailed");
+        setError(msg);
+        if (optimistic) {
+          // Editor was already closed — surface failure via toast since inline error UI is gone.
+          toast.error(msg);
+        }
+      } finally {
+        setSaving(false);
+      }
+    },
+    [effectiveValue, value, type, optimistic, onSave, onUndo, showSaveToast, t, toDateString],
+  );
+
+  const save = useCallback(() => runSave(draft), [runSave, draft]);
+
+  const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -98,7 +218,21 @@ export function EditableCell({
         cancel();
       }
     },
-    [save, cancel]
+    [save, cancel],
+  );
+
+  const handleTextareaKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        save();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        cancel();
+      }
+      // Plain Enter → newline (default behavior, not prevented)
+    },
+    [save, cancel],
   );
 
   // Select type
@@ -107,18 +241,9 @@ export function EditableCell({
       <div className={cn("relative min-w-[120px]", className)}>
         <Select
           value={draft}
-          onValueChange={async (val) => {
+          onValueChange={(val) => {
             setDraft(val);
-            setSaving(true);
-            setError(null);
-            try {
-              await onSave(val);
-              setEditing(false);
-            } catch (err) {
-              setError(err instanceof Error ? err.message : t("saveFailed"));
-            } finally {
-              setSaving(false);
-            }
+            void runSave(val);
           }}
         >
           <SelectTrigger className="h-8 text-sm">
@@ -132,29 +257,63 @@ export function EditableCell({
             ))}
           </SelectContent>
         </Select>
-        {saving && <Loader2 className="absolute right-8 top-2 h-4 w-4 animate-spin text-muted-foreground" />}
+        {saving && (
+          <Loader2 className="absolute right-8 top-2 h-4 w-4 animate-spin text-muted-foreground" />
+        )}
       </div>
     );
   }
 
-  // Text/Number input
+  // Textarea type
+  if (editing && type === "textarea") {
+    return (
+      <div className={cn("relative min-w-[200px]", className)}>
+        <Textarea
+          ref={textareaRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={handleTextareaKeyDown}
+          onBlur={save}
+          disabled={saving}
+          className={cn(
+            "min-h-[60px] text-sm",
+            error && "border-destructive focus-visible:ring-destructive",
+          )}
+        />
+        {saving && (
+          <Loader2 className="absolute right-2 top-2 h-4 w-4 animate-spin text-muted-foreground" />
+        )}
+        {error && (
+          <p className="absolute -bottom-5 left-0 text-[11px] text-destructive whitespace-nowrap">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Text / Number / Date input
   if (editing) {
+    const htmlType =
+      type === "number" ? "number" : type === "date" ? "date" : "text";
     return (
       <div className={cn("relative min-w-[100px]", className)}>
         <Input
           ref={inputRef}
-          type={type === "number" ? "number" : "text"}
+          type={htmlType}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onKeyDown={handleInputKeyDown}
           onBlur={save}
           disabled={saving}
           className={cn(
             "h-8 text-sm",
-            error && "border-destructive focus-visible:ring-destructive"
+            error && "border-destructive focus-visible:ring-destructive",
           )}
         />
-        {saving && <Loader2 className="absolute right-2 top-2 h-4 w-4 animate-spin text-muted-foreground" />}
+        {saving && (
+          <Loader2 className="absolute right-2 top-2 h-4 w-4 animate-spin text-muted-foreground" />
+        )}
         {error && (
           <p className="absolute -bottom-5 left-0 text-[11px] text-destructive whitespace-nowrap">
             {error}
@@ -165,22 +324,28 @@ export function EditableCell({
   }
 
   // Display mode
+  const tooltip = disabled && tooltipDisabled ? tooltipDisabled : undefined;
   return (
     <div
       className={cn(
         "group/cell inline-flex items-center gap-1 min-h-[32px] px-1 -mx-1 rounded",
         !disabled && "cursor-pointer hover:bg-muted/60 transition-colors",
-        className
+        className,
       )}
       onClick={startEditing}
       role={disabled ? undefined : "button"}
       tabIndex={disabled ? undefined : 0}
-      onKeyDown={disabled ? undefined : (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          startEditing();
-        }
-      }}
+      title={tooltip}
+      onKeyDown={
+        disabled
+          ? undefined
+          : (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                startEditing();
+              }
+            }
+      }
     >
       <span className={cn(!displayValue && "text-muted-foreground")}>
         {displayValue || placeholder}
