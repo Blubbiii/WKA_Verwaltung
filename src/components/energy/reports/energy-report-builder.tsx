@@ -57,6 +57,7 @@ import {
   type ReportConfig,
 } from "@/components/energy/reports/save-config-dialog";
 import { LoadConfigDialog } from "@/components/energy/reports/load-config-dialog";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Constants
@@ -127,12 +128,12 @@ const INTERVAL_OPTIONS: { value: Interval; label: string }[] = [
 // Number formatters
 // =============================================================================
 
-const fmtInt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
-const fmtDec1 = new Intl.NumberFormat("de-DE", {
+const fmtInt = new Intl.NumberFormat(LOCALE_DE, { maximumFractionDigits: 0 });
+const fmtDec1 = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
-const fmtPercent = new Intl.NumberFormat("de-DE", {
+const fmtPercent = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });

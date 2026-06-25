@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { Printer, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { LOCALE_DE } from "@/lib/format";
 
 interface AnlagenspiegelRow {
   category: string;
@@ -51,7 +52,7 @@ interface AnlagenspiegelResult {
 
 function formatEur(n: number): string {
   if (n === 0) return "—";
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 2 });
+  return n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2 });
 }
 
 export default function AnlagenspiegelPage() {

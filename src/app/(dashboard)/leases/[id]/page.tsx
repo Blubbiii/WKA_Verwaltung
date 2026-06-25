@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { format, differenceInDays } from "date-fns";
 import { de, enUS } from "date-fns/locale";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import {
   ArrowLeft,
   Trash2,
@@ -121,7 +121,7 @@ export default function LeaseDetailPage({
   const t = useTranslations("leases.detail");
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
-  const numberLocale = locale === "en" ? "en-US" : "de-DE";
+  const numberLocale = locale === "en" ? "en-US" : LOCALE_DE;
   const BILLING_INTERVAL_LABELS: Record<string, string> = {
     MONTHLY: t("billingIntervals.MONTHLY"),
     QUARTERLY: t("billingIntervals.QUARTERLY"),

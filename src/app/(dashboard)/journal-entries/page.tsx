@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/format";
+import { formatDate, LOCALE_DE } from "@/lib/format";
 import {
   BookOpen,
   CheckCircle2,
@@ -94,7 +94,7 @@ function formatCurrency(n: string | number | null | undefined): string {
   if (n === null || n === undefined) return "";
   const val = typeof n === "string" ? parseFloat(n) : n;
   if (isNaN(val) || val === 0) return "";
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(val);
+  return new Intl.NumberFormat(LOCALE_DE, { style: "currency", currency: "EUR" }).format(val);
 }
 
 function parseAmount(s: string): number {
@@ -423,14 +423,14 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
             <span>
               {t("dialog.sumDebit")}{" "}
               <strong>
-                {new Intl.NumberFormat("de-DE", {
+                {new Intl.NumberFormat(LOCALE_DE, {
                   style: "currency",
                   currency: "EUR",
                 }).format(totalDebit)}
               </strong>
               {"  |  "}{t("dialog.sumCredit")}{" "}
               <strong>
-                {new Intl.NumberFormat("de-DE", {
+                {new Intl.NumberFormat(LOCALE_DE, {
                   style: "currency",
                   currency: "EUR",
                 }).format(totalCredit)}
@@ -445,7 +445,7 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
               <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" />
               <div>
                 <strong>Vier-Augen-Prinzip:</strong> Beträge über{" "}
-                {postingThreshold.toLocaleString("de-DE", {
+                {postingThreshold.toLocaleString(LOCALE_DE, {
                   style: "currency",
                   currency: "EUR",
                 })}{" "}

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { LOCALE_DE } from "@/lib/format";
 
 /**
  * Redesign 2026-06 — Phase 2: AmountInput
@@ -95,7 +96,7 @@ function formatGermanAmount(
   negativeInParens: boolean,
 ): string {
   const abs = Math.abs(value);
-  const formatted = abs.toLocaleString("de-DE", {
+  const formatted = abs.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });

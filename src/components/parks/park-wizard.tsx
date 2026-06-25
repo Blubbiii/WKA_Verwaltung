@@ -51,6 +51,7 @@ import {
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import { LOCALE_DE } from "@/lib/format";
 
 // Types
 type ParkStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
@@ -133,14 +134,14 @@ export function ParkWizard() {
   function formatCurrency(value: string): string {
     const num = parseFloat(value);
     if (isNaN(num)) return "-";
-    return num.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+    return num.toLocaleString(LOCALE_DE, { style: "currency", currency: "EUR" });
   }
 
   // Helper: format percentage
   function formatPercent(value: string): string {
     const num = parseFloat(value);
     if (isNaN(num)) return "-";
-    return `${num.toLocaleString("de-DE")} %`;
+    return `${num.toLocaleString(LOCALE_DE)} %`;
   }
 
   // Compute share sum warning
@@ -478,7 +479,7 @@ export function ParkWizard() {
               <span>
                 WEA-Anteil + Pool-Anteil ={" "}
                 <span className="font-medium">
-                  {isNaN(shareSum) ? "-" : `${shareSum.toLocaleString("de-DE")} %`}
+                  {isNaN(shareSum) ? "-" : `${shareSum.toLocaleString(LOCALE_DE)} %`}
                 </span>
                 {shareSumWarning
                   ? " -- Die Summe sollte 100% ergeben."
@@ -631,7 +632,7 @@ export function ParkWizard() {
                   )}
                   {totalCapacityKw && (
                     <span>
-                      Leistung: {parseFloat(totalCapacityKw).toLocaleString("de-DE")} kW
+                      Leistung: {parseFloat(totalCapacityKw).toLocaleString(LOCALE_DE)} kW
                     </span>
                   )}
                 </div>

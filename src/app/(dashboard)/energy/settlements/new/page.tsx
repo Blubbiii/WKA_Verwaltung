@@ -31,6 +31,7 @@ import {
   monthNames,
   type ProductionForSettlement,
 } from "@/hooks/useEnergySettlements";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // CONSTANTS
@@ -416,7 +417,7 @@ export default function NewSettlementPage() {
                       <div key={t.turbineId} className="flex justify-between text-xs font-mono">
                         <span>{t.designation}</span>
                         <span>
-                          {new Intl.NumberFormat("de-DE", {
+                          {new Intl.NumberFormat(LOCALE_DE, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           }).format(t.totalKwh)}{" "}

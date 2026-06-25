@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ExplorerFile } from "@/types/document-explorer";
 import { CATEGORY_LABELS } from "@/types/document-explorer";
+import { LOCALE_DE } from "@/lib/format";
 
 interface FileListProps {
   files: ExplorerFile[];
@@ -38,7 +39,7 @@ function formatFileSize(bytes: number | null): string {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("de-DE", {
+  return new Date(dateStr).toLocaleDateString(LOCALE_DE, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -47,7 +48,7 @@ function formatDate(dateStr: string): string {
 
 function formatCurrency(amount: number | undefined): string {
   if (amount === undefined) return "";
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(amount);
+  return new Intl.NumberFormat(LOCALE_DE, { style: "currency", currency: "EUR" }).format(amount);
 }
 
 export function FileList({

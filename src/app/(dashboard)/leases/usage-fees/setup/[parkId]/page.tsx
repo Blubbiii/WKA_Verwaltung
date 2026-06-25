@@ -50,6 +50,7 @@ import {
   type ParkSetupData,
   type LeaseSetupInfo,
 } from "@/types/billing";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // CONSTANTS & HELPERS
@@ -83,7 +84,7 @@ export default function UsageFeeSetupPage({
   const t = useTranslations("leases.usageFeesSetup");
   const tMode = useTranslations("billing.settlementMode");
   const locale = useLocale();
-  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+  const intlLocale = locale === "en" ? "en-US" : LOCALE_DE;
 
   const fetcher = (url: string) =>
     fetch(url).then((res) => {

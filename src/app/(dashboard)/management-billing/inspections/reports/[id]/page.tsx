@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -152,7 +153,7 @@ function toInputDate(dateStr: string | null): string {
 
 function formatCurrency(value: number | null): string {
   if (value === null || value === undefined) return "-";
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     style: "currency",
     currency: "EUR",
   }).format(value);

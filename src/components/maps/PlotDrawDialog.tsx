@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { LOCALE_DE } from "@/lib/format";
 
 interface Lease {
   id: string;
@@ -197,7 +198,7 @@ export function PlotDrawDialog({
               <span className="font-medium">
                 {areaSqm >= 10000
                   ? `${(areaSqm / 10000).toFixed(4)} ha`
-                  : `${areaSqm.toLocaleString("de-DE")} m²`}
+                  : `${areaSqm.toLocaleString(LOCALE_DE)} m²`}
               </span>
             </div>
           )}

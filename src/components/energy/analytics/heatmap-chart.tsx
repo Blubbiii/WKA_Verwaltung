@@ -17,6 +17,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import type { HeatmapData } from "@/types/analytics";
 import { MONTH_LABELS } from "@/types/analytics";
+import { LOCALE_DE } from "@/lib/format";
 
 type ColorScale = "green" | "blue" | "red";
 
@@ -48,7 +49,7 @@ function getCellColor(normalized: number, scale: ColorScale): string {
 }
 
 function defaultFormatter(value: number): string {
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     maximumFractionDigits: 1,
   }).format(value);
 }

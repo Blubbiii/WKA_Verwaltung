@@ -35,6 +35,7 @@ import {
   Loader2,
   Save,
 } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface DunningSettings {
   reminderEnabled: boolean;
@@ -64,7 +65,7 @@ const DEFAULTS: DunningSettings = {
 };
 
 function formatEur(n: number): string {
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 2 });
+  return n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2 });
 }
 
 export function DunningStagesSettings() {

@@ -25,6 +25,7 @@ import type {
   AvailabilityTarget,
 } from "@/types/analytics";
 import { T_CATEGORIES } from "@/types/analytics";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -49,8 +50,8 @@ interface AvailabilityChartProps {
 // Formatters
 // =============================================================================
 
-const numFmt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
-const dec2Fmt = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const numFmt = new Intl.NumberFormat(LOCALE_DE, { maximumFractionDigits: 0 });
+const dec2Fmt = new Intl.NumberFormat(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function formatHours(seconds: number): string {
   return numFmt.format(Math.round(seconds / 3600)) + " h";

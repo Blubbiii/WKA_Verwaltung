@@ -21,6 +21,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, FileWarning } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 export interface AwvWarning {
   endToEndId: string;
@@ -32,7 +33,7 @@ export interface AwvWarning {
 }
 
 function fmtEur(n: number): string {
-  return n.toLocaleString("de-DE", {
+  return n.toLocaleString(LOCALE_DE, {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,

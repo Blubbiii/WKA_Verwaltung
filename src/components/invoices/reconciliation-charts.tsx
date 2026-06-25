@@ -21,7 +21,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Chart colors
@@ -168,7 +168,7 @@ export function MonthlyComparisonChart({
             <YAxis
               tick={{ fontSize: 12 }}
               tickFormatter={(val: number) =>
-                new Intl.NumberFormat("de-DE", {
+                new Intl.NumberFormat(LOCALE_DE, {
                   notation: "compact",
                   maximumFractionDigits: 0,
                 }).format(val)

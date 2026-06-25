@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Euro, Zap, TrendingUp, AlertTriangle } from "lucide-react";
 import { AnalyticsKpiRow } from "./kpi-row";
 import type { MonthlyRevenuePoint } from "@/types/analytics";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -41,19 +42,19 @@ interface FinancialAnalysisProps {
 // Formatters
 // =============================================================================
 
-const eurFmt = new Intl.NumberFormat("de-DE", {
+const eurFmt = new Intl.NumberFormat(LOCALE_DE, {
   style: "currency",
   currency: "EUR",
 });
 
-const numFmt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
+const numFmt = new Intl.NumberFormat(LOCALE_DE, { maximumFractionDigits: 0 });
 
-const dec1Fmt = new Intl.NumberFormat("de-DE", {
+const dec1Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
 
-const dec2Fmt = new Intl.NumberFormat("de-DE", {
+const dec2Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });

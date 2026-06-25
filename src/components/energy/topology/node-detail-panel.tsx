@@ -5,6 +5,7 @@ import { NODE_TYPE_CONFIG, NODE_STATUS_LABELS, NODE_STATUS_COLORS } from "@/type
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -91,7 +92,7 @@ export function NodeDetailPanel({ node, onClose }: NodeDetailPanelProps) {
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">Nennleistung</p>
               <p className="text-sm font-mono">
-                {Number(node.turbine.ratedPowerKw).toLocaleString("de-DE")} kW
+                {Number(node.turbine.ratedPowerKw).toLocaleString(LOCALE_DE)} kW
               </p>
             </div>
           )}

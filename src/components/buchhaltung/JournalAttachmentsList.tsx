@@ -27,6 +27,7 @@ import {
   Paperclip,
   Upload,
 } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface Attachment {
   id: string;
@@ -54,7 +55,7 @@ function fmtSize(bytes: string | number): string {
 }
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString("de-DE", {
+  return new Date(iso).toLocaleString(LOCALE_DE, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

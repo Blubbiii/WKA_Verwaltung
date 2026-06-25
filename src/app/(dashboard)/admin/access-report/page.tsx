@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslations } from "next-intl";
+import { LOCALE_DE } from "@/lib/format";
 
 // Types for the access report
 interface RoleData {
@@ -561,7 +562,7 @@ export default function AccessReportPage() {
       {/* Generated At Footer */}
       {reportData && (
         <p className="text-xs text-muted-foreground text-center">
-          {t("reportGeneratedAt", { date: new Date(reportData.generatedAt).toLocaleString("de-DE"), tenant: reportData.tenantName })}
+          {t("reportGeneratedAt", { date: new Date(reportData.generatedAt).toLocaleString(LOCALE_DE), tenant: reportData.tenantName })}
         </p>
       )}
     </div>

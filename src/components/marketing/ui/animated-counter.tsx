@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface AnimatedCounterProps {
   end: number;
@@ -62,7 +63,7 @@ export function AnimatedCounter({
   return (
     <span ref={ref} className={className}>
       {prefix}
-      {value.toLocaleString("de-DE")}
+      {value.toLocaleString(LOCALE_DE)}
       {suffix}
     </span>
   );

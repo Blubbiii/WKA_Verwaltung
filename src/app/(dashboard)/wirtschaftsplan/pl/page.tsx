@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { LOCALE_DE } from "@/lib/format";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -48,7 +49,7 @@ const YEARS = Array.from({ length: 8 }, (_, i) => CURRENT_YEAR - i);
 
 function useCurrencyFormatter() {
   const locale = useLocale();
-  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+  const intlLocale = locale === "en" ? "en-US" : LOCALE_DE;
   const formatEur = (val: number | undefined): string => {
     if (val === undefined || val === null) return "–";
     return new Intl.NumberFormat(intlLocale, {

@@ -45,7 +45,7 @@ const RevenueByParkChart = dynamic(
 );
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useEnergyDashboard } from "@/hooks/useEnergyDashboard";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Component
@@ -93,7 +93,7 @@ export function AnalyticsDashboard() {
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
           {analytics.data?.generatedAt &&
-            `Stand: ${new Date(analytics.data.generatedAt).toLocaleString("de-DE")}`}
+            `Stand: ${new Date(analytics.data.generatedAt).toLocaleString(LOCALE_DE)}`}
         </span>
         <div className="flex gap-2">
           <Button

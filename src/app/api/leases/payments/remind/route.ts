@@ -8,6 +8,7 @@ import { sendEmail } from "@/lib/email";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { apiError } from "@/lib/api-errors";
+import { LOCALE_DE } from "@/lib/format";
 
 // Validation schema for remind request
 const remindSchema = z.object({
@@ -24,7 +25,7 @@ const remindSchema = z.object({
  * Format a number as EUR currency string (German locale)
  */
 function formatCurrencyForEmail(value: number): string {
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     style: "currency",
     currency: "EUR",
   }).format(value);

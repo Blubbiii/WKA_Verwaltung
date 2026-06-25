@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { RefreshCw, Download } from "lucide-react";
 import dynamic from "next/dynamic";
+import { LOCALE_DE } from "@/lib/format";
 
 // R3 Perf: Liquiditäts-Chart in separate Datei extrahiert und dynamisch
 // geladen (ssr off). Recharts ist ~120kB und bleibt damit aus initial JS.
@@ -65,7 +66,7 @@ interface BudgetSummary {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function fmtShort(n: number): string {

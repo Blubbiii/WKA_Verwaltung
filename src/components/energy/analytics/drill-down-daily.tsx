@@ -25,6 +25,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnalyticsKpiRow } from "./kpi-row";
 import { Zap, Wind, Clock, Gauge } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Daily Drill-Down View
@@ -60,12 +61,12 @@ interface ProductionsResponse {
   };
 }
 
-const numFmt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
-const dec1Fmt = new Intl.NumberFormat("de-DE", {
+const numFmt = new Intl.NumberFormat(LOCALE_DE, { maximumFractionDigits: 0 });
+const dec1Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
-const dec2Fmt = new Intl.NumberFormat("de-DE", {
+const dec2Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });

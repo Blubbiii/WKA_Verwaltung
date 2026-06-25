@@ -54,7 +54,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import {
   type LeaseRevenueSettlementResponse,
   type LeaseRevenueSettlementItemResponse,
@@ -134,7 +134,7 @@ export default function UsageFeeDetailPage({
   const tStatus = useTranslations("billing.settlementStatus");
   const tAllocStatus = useTranslations("billing.allocationStatus");
   const locale = useLocale();
-  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+  const intlLocale = locale === "en" ? "en-US" : LOCALE_DE;
 
   const fetcher = async (url: string) => {
     const res = await fetch(url);

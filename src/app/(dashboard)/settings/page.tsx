@@ -60,6 +60,7 @@ import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { ToggleLeft, FileArchive } from "lucide-react";
 import { toast } from "sonner";
 import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -981,7 +982,7 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
               {settings?.lastLoginAt && (
                 <p className="text-sm text-muted-foreground">
                   Letzte Anmeldung:{" "}
-                  {new Date(settings.lastLoginAt).toLocaleString("de-DE", {
+                  {new Date(settings.lastLoginAt).toLocaleString(LOCALE_DE, {
                     dateStyle: "medium",
                     timeStyle: "short",
                   })}

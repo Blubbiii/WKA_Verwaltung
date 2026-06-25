@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, LOCALE_DE } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -180,7 +180,7 @@ export default function SettlementDetailPage({
   const tInterval = useTranslations("billing.advanceInterval");
   const tAllocStatus = useTranslations("billing.allocationStatus");
   const locale = useLocale();
-  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+  const intlLocale = locale === "en" ? "en-US" : LOCALE_DE;
 
   // ---------------------------------------------------------------------------
   // State

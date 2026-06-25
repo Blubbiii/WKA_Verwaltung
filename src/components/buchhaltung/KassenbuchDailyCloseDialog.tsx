@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, Loader2, Lock } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 export interface KassenbuchDailyCloseDialogProps {
   open: boolean;
@@ -34,7 +35,7 @@ export interface KassenbuchDailyCloseDialogProps {
 }
 
 function formatEur(n: number): string {
-  return n.toLocaleString("de-DE", {
+  return n.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

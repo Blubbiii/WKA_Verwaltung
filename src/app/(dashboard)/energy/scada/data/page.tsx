@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -78,7 +79,7 @@ interface ScadaRecord {
 export default function ScadaDataPage() {
   const t = useTranslations("energy.scadaData");
   const locale = useLocale();
-  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+  const intlLocale = locale === "en" ? "en-US" : LOCALE_DE;
   const dateFnsLocale = locale === "en" ? enUS : de;
 
   const formatDecimal = (value: number | null, decimals = 2): string => {

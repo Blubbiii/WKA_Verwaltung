@@ -9,6 +9,7 @@
  */
 
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+import { LOCALE_DE } from "@/lib/format";
 
 export interface KapEStPdfRow {
   shareholderName: string;
@@ -131,14 +132,14 @@ const styles = StyleSheet.create({
 });
 
 function fmt(n: number): string {
-  return n.toLocaleString("de-DE", {
+  return n.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
 
 function fmtPct(n: number): string {
-  return (n * 100).toLocaleString("de-DE", {
+  return (n * 100).toLocaleString(LOCALE_DE, {
     minimumFractionDigits: 1,
     maximumFractionDigits: 2,
   });
@@ -147,7 +148,7 @@ function fmtPct(n: number): string {
 function fmtDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("de-DE");
+  return d.toLocaleDateString(LOCALE_DE);
 }
 
 export function KapEStTemplate({ data }: { data: KapEStPdfData }) {
@@ -246,7 +247,7 @@ export function KapEStTemplate({ data }: { data: KapEStPdfData }) {
         </View>
 
         <Text style={styles.footer} fixed>
-          Erzeugt mit WindparkManager · {new Date().toLocaleDateString("de-DE")}
+          Erzeugt mit WindparkManager · {new Date().toLocaleDateString(LOCALE_DE)}
         </Text>
       </Page>
     </Document>

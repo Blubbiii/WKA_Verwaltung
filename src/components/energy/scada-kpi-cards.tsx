@@ -9,6 +9,7 @@ import {
   KPICardGridSkeleton,
 } from "@/components/dashboard/kpi-card";
 import { Card, CardContent } from "@/components/ui/card";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // SCADA KPI Cards for Energy Overview
@@ -40,17 +41,17 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-const dec1Fmt = new Intl.NumberFormat("de-DE", {
+const dec1Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
 
-const dec2Fmt = new Intl.NumberFormat("de-DE", {
+const dec2Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
-const numFmt = new Intl.NumberFormat("de-DE", {
+const numFmt = new Intl.NumberFormat(LOCALE_DE, {
   maximumFractionDigits: 0,
 });
 
@@ -61,7 +62,7 @@ export function ScadaKpiCards({ parkId }: ScadaKpiCardsProps) {
     if (!ts) return t("noData");
     try {
       const date = new Date(ts);
-      return t("stand", { time: date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) });
+      return t("stand", { time: date.toLocaleTimeString(LOCALE_DE, { hour: "2-digit", minute: "2-digit" }) });
     } catch {
       return t("noData");
     }

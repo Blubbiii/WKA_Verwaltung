@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import {
   ArrowLeft,
   Pencil,
@@ -154,7 +154,7 @@ const billingStatusColors: Record<string, string> = {
 
 function formatPercent(value: number): string {
   return (
-    new Intl.NumberFormat("de-DE", {
+    new Intl.NumberFormat(LOCALE_DE, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value) + " %"

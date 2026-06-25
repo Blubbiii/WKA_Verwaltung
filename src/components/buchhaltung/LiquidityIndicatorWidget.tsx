@@ -33,6 +33,7 @@ import {
   Droplets,
   TrendingDown,
 } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface LiquidityPeriod {
   label: string;
@@ -109,7 +110,7 @@ const STATUS_META: Record<
 };
 
 function fmtEur(n: number): string {
-  return n.toLocaleString("de-DE", {
+  return n.toLocaleString(LOCALE_DE, {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 0,

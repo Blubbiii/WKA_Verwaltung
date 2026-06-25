@@ -44,6 +44,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { ApprovalCard } from "@/components/ui/approval-card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LOCALE_DE } from "@/lib/format";
 
 interface PendingApproval {
   id: string;
@@ -70,7 +71,7 @@ interface PendingApproval {
 
 function fmtEur(n: number | null): string {
   if (n === null) return "—";
-  return n.toLocaleString("de-DE", {
+  return n.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
     style: "currency",

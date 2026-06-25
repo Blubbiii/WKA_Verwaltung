@@ -23,6 +23,7 @@ import type {
   PhasePowersMonthly,
   PhaseSymmetrySummary,
 } from "@/types/analytics";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -40,17 +41,17 @@ interface PhaseSymmetryChartProps {
 // Formatters
 // =============================================================================
 
-const dec1Fmt = new Intl.NumberFormat("de-DE", {
+const dec1Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
 
-const dec2Fmt = new Intl.NumberFormat("de-DE", {
+const dec2Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
-const numFmt = new Intl.NumberFormat("de-DE", {
+const numFmt = new Intl.NumberFormat(LOCALE_DE, {
   maximumFractionDigits: 0,
 });
 

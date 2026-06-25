@@ -19,14 +19,15 @@ import {
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import type { MarketComparisonResponse } from "@/types/market-data";
+import { LOCALE_DE } from "@/lib/format";
 
 interface MarketComparisonProps {
   parks: { id: string; name: string; shortName: string | null }[];
 }
 
-const eurFmt = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
-const eurCompact = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-const numFmt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
+const eurFmt = new Intl.NumberFormat(LOCALE_DE, { style: "currency", currency: "EUR" });
+const eurCompact = new Intl.NumberFormat(LOCALE_DE, { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+const numFmt = new Intl.NumberFormat(LOCALE_DE, { maximumFractionDigits: 1 });
 
 export function MarketComparison({ parks }: MarketComparisonProps) {
   const t = useTranslations("energy.componentToasts");
@@ -130,7 +131,7 @@ export function MarketComparison({ parks }: MarketComparisonProps) {
 
         {data?.meta.lastSyncAt && (
           <span className="text-xs text-muted-foreground">
-            Letzte Aktualisierung: {new Date(data.meta.lastSyncAt).toLocaleDateString("de-DE")}
+            Letzte Aktualisierung: {new Date(data.meta.lastSyncAt).toLocaleDateString(LOCALE_DE)}
           </span>
         )}
       </div>

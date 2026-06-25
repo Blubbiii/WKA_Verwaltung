@@ -74,6 +74,7 @@ import {
   formatDuration,
   formatDateTime,
 } from "./types";
+import { LOCALE_DE } from "@/lib/format";
 
 const SCADA_EXTENSIONS = [
   ".wsd", ".uid",
@@ -1141,7 +1142,7 @@ export default function ScadaImportTab() {
                           )}
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {group.fileCount.toLocaleString("de-DE")}
+                          {group.fileCount.toLocaleString(LOCALE_DE)}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
@@ -1268,12 +1269,12 @@ export default function ScadaImportTab() {
                           </TableCell>
                           <TableCell className="font-mono">
                             {plant.sampleWindSpeed != null
-                              ? plant.sampleWindSpeed.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+                              ? plant.sampleWindSpeed.toLocaleString(LOCALE_DE, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
                               : "-"}
                           </TableCell>
                           <TableCell className="font-mono">
                             {plant.samplePower != null
-                              ? plant.samplePower.toLocaleString("de-DE")
+                              ? plant.samplePower.toLocaleString(LOCALE_DE)
                               : "-"}
                           </TableCell>
 
@@ -1507,7 +1508,7 @@ export default function ScadaImportTab() {
                               {result.locationCode}
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                              {result.fileCount.toLocaleString("de-DE")}
+                              {result.fileCount.toLocaleString(LOCALE_DE)}
                             </TableCell>
                             <TableCell>
                               {result.fileTypes.length > 0
@@ -1579,7 +1580,7 @@ export default function ScadaImportTab() {
                 </CardTitle>
                 <CardDescription>
                   {t("previewMeta", {
-                    fileCount: preview.fileCount.toLocaleString("de-DE"),
+                    fileCount: preview.fileCount.toLocaleString(LOCALE_DE),
                     fileTypes: preview.fileTypes.join(", "),
                     dateRange: preview.dateRange
                       ? `${preview.dateRange.from} - ${preview.dateRange.to}`
@@ -1624,12 +1625,12 @@ export default function ScadaImportTab() {
                           </TableCell>
                           <TableCell className="font-mono">
                             {plant.sampleWindSpeed != null
-                              ? plant.sampleWindSpeed.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+                              ? plant.sampleWindSpeed.toLocaleString(LOCALE_DE, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
                               : "-"}
                           </TableCell>
                           <TableCell className="font-mono">
                             {plant.samplePower != null
-                              ? plant.samplePower.toLocaleString("de-DE")
+                              ? plant.samplePower.toLocaleString(LOCALE_DE)
                               : "-"}
                           </TableCell>
                           <TableCell>{plant.mapping?.parkName ?? "-"}</TableCell>
@@ -1692,12 +1693,12 @@ export default function ScadaImportTab() {
                             </TableCell>
                             <TableCell className="font-mono">
                               {plant.sampleWindSpeed != null
-                                ? plant.sampleWindSpeed.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+                                ? plant.sampleWindSpeed.toLocaleString(LOCALE_DE, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
                                 : "-"}
                             </TableCell>
                             <TableCell className="font-mono">
                               {plant.samplePower != null
-                                ? plant.samplePower.toLocaleString("de-DE")
+                                ? plant.samplePower.toLocaleString(LOCALE_DE)
                                 : "-"}
                             </TableCell>
 
@@ -1845,8 +1846,8 @@ export default function ScadaImportTab() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>
-                  Gesamt: {totalFilesProcessed.toLocaleString("de-DE")} /{" "}
-                  {totalFilesTotal.toLocaleString("de-DE")} Dateien verarbeitet
+                  Gesamt: {totalFilesProcessed.toLocaleString(LOCALE_DE)} /{" "}
+                  {totalFilesTotal.toLocaleString(LOCALE_DE)} Dateien verarbeitet
                 </span>
                 <span className="font-mono">{overallProgress}%</span>
               </div>
@@ -1874,7 +1875,7 @@ export default function ScadaImportTab() {
                       {STATUS_LABELS[job.status] || job.status}
                     </Badge>
                     <span className="font-mono text-xs w-20 text-right">
-                      {(job.recordsImported ?? 0).toLocaleString("de-DE")} Stz.
+                      {(job.recordsImported ?? 0).toLocaleString(LOCALE_DE)} Stz.
                     </span>
                   </div>
                 );
@@ -1890,19 +1891,19 @@ export default function ScadaImportTab() {
               <div>
                 <p className="text-muted-foreground">Importiert (gesamt)</p>
                 <p className="font-mono font-medium">
-                  {activeImports.reduce((s, j) => s + (j.recordsImported ?? 0), 0).toLocaleString("de-DE")}
+                  {activeImports.reduce((s, j) => s + (j.recordsImported ?? 0), 0).toLocaleString(LOCALE_DE)}
                 </p>
               </div>
               <div>
                 <p className="text-muted-foreground">Übersprungen</p>
                 <p className="font-mono font-medium">
-                  {activeImports.reduce((s, j) => s + (j.recordsSkipped ?? 0), 0).toLocaleString("de-DE")}
+                  {activeImports.reduce((s, j) => s + (j.recordsSkipped ?? 0), 0).toLocaleString(LOCALE_DE)}
                 </p>
               </div>
               <div>
                 <p className="text-muted-foreground">Fehlerhaft</p>
                 <p className="font-mono font-medium text-destructive">
-                  {activeImports.reduce((s, j) => s + (j.recordsFailed ?? 0), 0).toLocaleString("de-DE")}
+                  {activeImports.reduce((s, j) => s + (j.recordsFailed ?? 0), 0).toLocaleString(LOCALE_DE)}
                 </p>
               </div>
             </div>
@@ -1994,7 +1995,7 @@ export default function ScadaImportTab() {
                         {job.filesProcessed}/{job.filesTotal}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {(job.recordsImported ?? 0).toLocaleString("de-DE")}
+                        {(job.recordsImported ?? 0).toLocaleString(LOCALE_DE)}
                       </TableCell>
                       <TableCell>
                         <Badge

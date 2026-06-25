@@ -36,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OcrFieldEditor } from "@/components/inbox/ocr-field-editor";
 import { SplitEditor } from "@/components/inbox/split-editor";
+import { LOCALE_DE } from "@/lib/format";
 
 // ============================================================================
 // Types
@@ -404,7 +405,7 @@ export default function InboxDetailPage() {
                   {invoice.paidAmount && (
                     <span>
                       {t("amount", {
-                        amount: parseFloat(invoice.paidAmount).toLocaleString("de-DE", {
+                        amount: parseFloat(invoice.paidAmount).toLocaleString(LOCALE_DE, {
                           style: "currency",
                           currency: "EUR",
                         }),
@@ -420,7 +421,7 @@ export default function InboxDetailPage() {
               {grossNum !== null && (
                 <div className="text-center py-2">
                   <div className="text-2xl font-bold">
-                    {grossNum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                    {grossNum.toLocaleString(LOCALE_DE, { style: "currency", currency: "EUR" })}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {invoice.invoiceType === "CREDIT_NOTE" ? t("creditNote") : t("gross")}

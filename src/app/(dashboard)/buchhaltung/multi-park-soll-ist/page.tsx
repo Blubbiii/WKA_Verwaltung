@@ -25,6 +25,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { RefreshCw, TrendingDown, TrendingUp, Minus, ExternalLink } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface Row {
   parkId: string;
@@ -52,11 +53,11 @@ interface Result {
 }
 
 const fmtMwh = (n: number): string =>
-  n.toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 const fmtPct = (n: number | null): string => {
   if (n === null) return "–";
-  return `${n.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
+  return `${n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
 };
 
 function TrafficLightBadge({ level }: { level: Row["trafficLight"] }) {

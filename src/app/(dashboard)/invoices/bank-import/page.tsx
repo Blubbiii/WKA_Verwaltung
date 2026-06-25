@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { formatDate } from "@/lib/format";
+import { formatDate, LOCALE_DE } from "@/lib/format";
 import {
   CheckCircle2,
   CircleAlert,
@@ -44,7 +44,7 @@ interface ParseResponse {
 // HELPERS
 // ============================================================================
 
-function formatAmount(amount: number, currency = "EUR", locale = "de-DE"): string {
+function formatAmount(amount: number, currency = "EUR", locale = LOCALE_DE): string {
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
@@ -102,7 +102,7 @@ function MatchBadge({
 export default function BankImportPage() {
   const t = useTranslations("invoices.bankImport");
   const locale = useLocale();
-  const amountLocale = locale === "en" ? "en-US" : "de-DE";
+  const amountLocale = locale === "en" ? "en-US" : LOCALE_DE;
   const [state, setState] = useState<PageState>("idle");
   const [dragOver, setDragOver] = useState(false);
   const [parseResult, setParseResult] = useState<ParseResponse | null>(null);

@@ -20,7 +20,7 @@ import { Worker, Job } from "bullmq";
 import { getRedisConnection } from "../connection";
 import { billingLogger } from "@/lib/logger";
 import { getTenantSettings } from "@/lib/tenant-settings";
-import { formatDate } from "@/lib/format";
+import { formatDate, LOCALE_DE } from "@/lib/format";
 import { MS_PER_DAY } from "@/lib/constants/time";
 
 // =============================================================================
@@ -717,7 +717,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
   const reminderLabel = reminderLabels[data.reminderLevel] || `Mahnstufe ${data.reminderLevel}`;
 
   // 5. Update invoice notes with reminder history
-  const reminderTimestamp = now.toLocaleString("de-DE");
+  const reminderTimestamp = now.toLocaleString(LOCALE_DE);
   const reminderNote = `\n[${reminderTimestamp}] ${reminderLabel} versendet (${daysOverdue} Tage überfällig)${
     lateFee > 0 ? ` - Mahngebühr: ${lateFee.toFixed(2)} EUR` : ""
   }`;

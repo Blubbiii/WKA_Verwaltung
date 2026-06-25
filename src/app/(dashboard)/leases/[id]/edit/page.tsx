@@ -51,6 +51,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PersonEditDialog } from "@/components/leases/PersonEditDialog";
+import { LOCALE_DE } from "@/lib/format";
 
 // Types
 interface PlotArea {
@@ -152,7 +153,7 @@ export default function EditLeasePage({
   const t = useTranslations("leases.edit");
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
-  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+  const intlLocale = locale === "en" ? "en-US" : LOCALE_DE;
 
   // PlotArea type labels (localized)
   const AREA_TYPE_LABELS: Record<string, string> = {

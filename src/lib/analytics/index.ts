@@ -17,6 +17,7 @@ import {
 import { cache as redisCache } from "@/lib/cache";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { logger } from "@/lib/logger";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // REDIS CACHE HELPERS
@@ -334,7 +335,7 @@ async function calculateMonthlyInvoices(tenantId: string): Promise<MonthlyInvoic
     const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const endDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
 
-    const monthName = startDate.toLocaleDateString("de-DE", { month: "short" });
+    const monthName = startDate.toLocaleDateString(LOCALE_DE, { month: "short" });
 
     const [invoiced, paid] = await Promise.all([
       prisma.invoice.aggregate({
@@ -385,7 +386,7 @@ async function calculateCapitalDevelopment(tenantId: string): Promise<CapitalDev
   // Hier simulieren wir einen leichten Trend basierend auf neuen Gesellschaftern
   for (let i = 11; i >= 0; i--) {
     const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthName = startDate.toLocaleDateString("de-DE", { month: "short", year: "2-digit" });
+    const monthName = startDate.toLocaleDateString(LOCALE_DE, { month: "short", year: "2-digit" });
 
     // Zufällige Variation für Demo (in Produktion: echte historische Daten)
     const variance = i > 0 ? 0.98 + Math.random() * 0.04 : 1;

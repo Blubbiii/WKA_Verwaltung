@@ -53,6 +53,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MaintenanceModeTab } from "@/components/admin/maintenance-mode-tab";
+import { LOCALE_DE } from "@/lib/format";
 
 // Types
 interface ServerStatus { status: "online" | "offline" | "degraded"; uptime: number; uptimeFormatted: string; }
@@ -211,7 +212,7 @@ export default function SystemHealthTab() {
               <CardHeader><CardTitle className="flex items-center gap-2"><Database className="h-5 w-5" />Datenbank-Statistiken</CardTitle><CardDescription>Anzahl Datensaetze pro Tabelle</CardDescription></CardHeader>
               <CardContent>
                 {loading ? <div className="space-y-3">{Array.from({ length: 8 }).map((_, i) => (<div key={i} className="flex items-center justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-12" /></div>))}</div> : stats ? (
-                  <div className="space-y-2">{Object.entries(stats.databaseStats).map(([key, value]) => (<div key={key} className="flex items-center justify-between py-1.5 border-b last:border-0"><div className="flex items-center gap-2">{tableIcons[key]}<span className="text-sm">{tableDisplayNames[key] || key}</span></div><Badge variant="secondary" className="font-mono">{value.toLocaleString("de-DE")}</Badge></div>))}</div>
+                  <div className="space-y-2">{Object.entries(stats.databaseStats).map(([key, value]) => (<div key={key} className="flex items-center justify-between py-1.5 border-b last:border-0"><div className="flex items-center gap-2">{tableIcons[key]}<span className="text-sm">{tableDisplayNames[key] || key}</span></div><Badge variant="secondary" className="font-mono">{value.toLocaleString(LOCALE_DE)}</Badge></div>))}</div>
                 ) : null}
               </CardContent>
             </Card>
@@ -221,7 +222,7 @@ export default function SystemHealthTab() {
                 {loading ? <div className="space-y-4"><Skeleton className="h-20 w-full" /><Skeleton className="h-32 w-full" /></div> : stats ? (
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Dokumente gesamt</p><p className="text-2xl font-bold">{stats.storageStats.totalDocuments.toLocaleString("de-DE")}</p></div>
+                      <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Dokumente gesamt</p><p className="text-2xl font-bold">{stats.storageStats.totalDocuments.toLocaleString(LOCALE_DE)}</p></div>
                       <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Speicherplatz</p><p className="text-2xl font-bold">{formatBytes(stats.storageStats.totalFileSizeBytes)}</p></div>
                     </div>
                     <div>

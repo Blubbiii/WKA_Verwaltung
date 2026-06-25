@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { formatDate } from "@/lib/format";
+import { formatDate, LOCALE_DE } from "@/lib/format";
 import {
   Bell,
   CheckCircle2,
@@ -56,7 +56,7 @@ interface OverdueInvoice {
 // HELPERS
 // ============================================================================
 
-function formatAmount(value: string | number, locale = "de-DE"): string {
+function formatAmount(value: string | number, locale = LOCALE_DE): string {
   const n = typeof value === "string" ? parseFloat(value) : value;
   return new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" }).format(n);
 }
@@ -83,7 +83,7 @@ function getOverdueBadgeClass(days: number): string {
 export default function RemindersPage() {
   const t = useTranslations("invoices.reminders");
   const locale = useLocale();
-  const amountLocale = locale === "en" ? "en-US" : "de-DE";
+  const amountLocale = locale === "en" ? "en-US" : LOCALE_DE;
   const [invoices, setInvoices] = useState<OverdueInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());

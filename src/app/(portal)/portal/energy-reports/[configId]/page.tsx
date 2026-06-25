@@ -58,6 +58,7 @@ import type {
   DirectionEfficiency,
   MonthlyRevenuePoint,
 } from "@/types/analytics";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -208,14 +209,14 @@ function getDefaultDates(): { from: string; to: string } {
 }
 
 function formatNumber(value: number, decimals = 1): string {
-  return value.toLocaleString("de-DE", {
+  return value.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
 }
 
 function formatInteger(value: number): string {
-  return value.toLocaleString("de-DE", {
+  return value.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });

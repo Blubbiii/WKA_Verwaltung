@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import type { ParkData } from "./types";
 import { PLOT_AREA_COLORS, PLOT_AREA_LABELS } from "./types";
+import { LOCALE_DE } from "@/lib/format";
 
 // Geodesic area calculation
 function calcPolygonAreaSqm(geometry: GeoJSON.Geometry): number {
@@ -282,7 +283,7 @@ export function GISPlotCreatePanel({
         <div className="bg-muted/50 rounded-md px-3 py-2 space-y-2">
           <div className="text-sm">
             <span className="text-muted-foreground text-xs">{t("calculatedArea")} </span>
-            <span className="font-semibold">{calculatedArea.toLocaleString("de-DE")} m²</span>
+            <span className="font-semibold">{calculatedArea.toLocaleString(LOCALE_DE)} m²</span>
             <span className="text-muted-foreground text-xs ml-2">
               ({(calculatedArea / 10000).toFixed(4)} ha)
             </span>
@@ -409,8 +410,8 @@ export function GISPlotCreatePanel({
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                     <span>{t("assigned")}</span>
                     <span>
-                      {Math.round(totalAssigned).toLocaleString("de-DE")} /{" "}
-                      {effectiveArea.toLocaleString("de-DE")} m²
+                      {Math.round(totalAssigned).toLocaleString(LOCALE_DE)} /{" "}
+                      {effectiveArea.toLocaleString(LOCALE_DE)} m²
                     </span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">

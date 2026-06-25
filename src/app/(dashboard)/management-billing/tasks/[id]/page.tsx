@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { toast } from "sonner";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -89,7 +90,7 @@ const statusColors: Record<TaskStatus, string> = {
 function formatDateTime(dateStr: string | null): string {
   if (!dateStr) return "-";
   try {
-    return new Date(dateStr).toLocaleString("de-DE");
+    return new Date(dateStr).toLocaleString(LOCALE_DE);
   } catch {
     return "-";
   }

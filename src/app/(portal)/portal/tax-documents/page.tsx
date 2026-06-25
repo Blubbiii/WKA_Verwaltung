@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Download, FileText, Receipt } from "lucide-react";
 import { toast } from "sonner";
+import { LOCALE_DE } from "@/lib/format";
 
 interface TaxDoc {
   id: string;
@@ -146,7 +147,7 @@ export default function TaxDocumentsPage() {
                     <p className="text-xs text-muted-foreground">
                       {doc.fund?.name && `${doc.fund.name} · `}
                       Jahr {doc.year} · {formatBytes(doc.fileSize)} ·{" "}
-                      {new Date(doc.createdAt).toLocaleDateString("de-DE")}
+                      {new Date(doc.createdAt).toLocaleDateString(LOCALE_DE)}
                     </p>
                   </div>
                 </div>

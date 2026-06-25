@@ -19,6 +19,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LOCALE_DE } from "@/lib/format";
 
 // Recharts lazy laden (SSR off — recharts braucht window)
 const ResponsiveContainer = dynamic(
@@ -253,7 +254,7 @@ export function ParkComparisonWidget() {
                   formatter={(v: unknown) => {
                     const n = typeof v === "number" ? v : Number(v);
                     return Number.isFinite(n)
-                      ? `${n.toLocaleString("de-DE")} MWh`
+                      ? `${n.toLocaleString(LOCALE_DE)} MWh`
                       : String(v);
                   }}
                   labelFormatter={(m: unknown) => {

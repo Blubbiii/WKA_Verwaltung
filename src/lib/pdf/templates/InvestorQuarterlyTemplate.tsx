@@ -9,6 +9,7 @@
  */
 
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+import { LOCALE_DE } from "@/lib/format";
 
 // ============================================================
 // DATA INTERFACE
@@ -71,7 +72,7 @@ const C = {
 
 function fmtNum(value: number | null | undefined, decimals = 1): string {
   if (value == null) return "–";
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value);
@@ -79,7 +80,7 @@ function fmtNum(value: number | null | undefined, decimals = 1): string {
 
 function fmtCurrency(value: number | null | undefined): string {
   if (value == null) return "–";
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,
@@ -464,7 +465,7 @@ export function InvestorQuarterlyTemplate({ data }: InvestorQuarterlyTemplatePro
             Dieser Bericht wurde automatisch erstellt. — WindparkManager
           </Text>
           <Text style={s.footerText}>
-            {new Date().toLocaleDateString("de-DE")}
+            {new Date().toLocaleDateString(LOCALE_DE)}
           </Text>
         </View>
         <Text

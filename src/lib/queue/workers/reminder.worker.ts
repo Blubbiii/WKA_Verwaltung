@@ -138,7 +138,7 @@ async function processReminderJob(
     log("error", jobId, "Reminder job failed", {
       error: msg,
       attempt: job.attemptsMade + 1,
-      maxAttempts: job.opts.attempts || 2,
+      maxAttempts: job.opts.attempts || 3,
     });
     throw error;
   }

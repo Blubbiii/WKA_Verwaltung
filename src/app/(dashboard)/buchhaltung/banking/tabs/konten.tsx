@@ -27,6 +27,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Plus, RefreshCw, Pencil, Trash2, Landmark } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface BankAccount {
   id: string;
@@ -45,7 +46,7 @@ interface BankAccount {
 function fmt(n: number | null | string): string {
   if (n === null) return "-";
   const num = typeof n === "string" ? parseFloat(n) : n;
-  return num.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return num.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatIban(iban: string): string {

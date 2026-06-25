@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { toast } from "sonner";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -536,7 +537,7 @@ export default function ChecklistDetailPage() {
                     Erstellt am
                   </dt>
                   <dd className="text-sm font-medium">
-                    {new Date(checklist.createdAt).toLocaleDateString("de-DE")}
+                    {new Date(checklist.createdAt).toLocaleDateString(LOCALE_DE)}
                   </dd>
                 </div>
               </dl>

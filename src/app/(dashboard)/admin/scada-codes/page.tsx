@@ -37,6 +37,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { LOCALE_DE } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -79,7 +80,7 @@ const MESSAGE_TYPE_COLORS: Record<string, string> = {
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("de-DE", {
+  return new Date(dateStr).toLocaleDateString(LOCALE_DE, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -306,7 +307,7 @@ export default function ScadaCodesPage() {
                       {group.controllerType}
                     </TableCell>
                     <TableCell className="text-right">
-                      {group.codeCount.toLocaleString("de-DE")}
+                      {group.codeCount.toLocaleString(LOCALE_DE)}
                     </TableCell>
                     <TableCell>{formatDate(group.lastUpdated)}</TableCell>
                     <TableCell className="text-right">
@@ -343,7 +344,7 @@ export default function ScadaCodesPage() {
               <h3 className="text-lg font-semibold">
                 {selectedType}{" "}
                 <span className="text-muted-foreground font-normal text-sm">
-                  ({detailTotal.toLocaleString("de-DE")} Codes)
+                  ({detailTotal.toLocaleString(LOCALE_DE)} Codes)
                 </span>
               </h3>
               <Button

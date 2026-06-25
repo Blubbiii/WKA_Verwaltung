@@ -43,6 +43,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { LOCALE_DE } from "@/lib/format";
 
 type ApprovalAction =
   | "JOURNAL_POST"
@@ -115,7 +116,7 @@ const STATUS_META: Record<
 
 function fmtEur(n: number | null): string {
   if (n === null) return "—";
-  return n.toLocaleString("de-DE", {
+  return n.toLocaleString(LOCALE_DE, {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,
@@ -125,7 +126,7 @@ function fmtEur(n: number | null): string {
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("de-DE", {
+  return new Date(iso).toLocaleString(LOCALE_DE, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

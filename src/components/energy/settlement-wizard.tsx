@@ -49,7 +49,7 @@ import {
 import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import {
   monthNames,
   distributionModeLabels,
@@ -315,14 +315,14 @@ export function SettlementWizard() {
   }
 
   function formatKwh(kwh: number): string {
-    return new Intl.NumberFormat("de-DE", {
+    return new Intl.NumberFormat(LOCALE_DE, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(kwh);
   }
 
   function formatPercent(pct: number): string {
-    return new Intl.NumberFormat("de-DE", {
+    return new Intl.NumberFormat(LOCALE_DE, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(pct);

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import {
   ArrowLeft,
   Calculator,
@@ -58,7 +58,7 @@ import {
 // =============================================================================
 
 function formatKwh(kwh: number): string {
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(kwh);
@@ -66,14 +66,14 @@ function formatKwh(kwh: number): string {
 
 function formatMWh(kwh: number): string {
   const mwh = kwh / 1000;
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(mwh);
 }
 
 function formatPercent(pct: number): string {
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(pct);

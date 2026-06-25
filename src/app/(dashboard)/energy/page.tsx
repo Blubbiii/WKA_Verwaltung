@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { format } from "date-fns/format";
 import { de } from "date-fns/locale/de";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import { useTranslations } from "next-intl";
 import {
   Zap,
@@ -112,14 +112,14 @@ const currentYear = new Date().getFullYear();
 
 function formatMWh(kwh: number): string {
   const mwh = kwh / 1000;
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(mwh);
 }
 
 function formatNumber(value: number): string {
-  return new Intl.NumberFormat("de-DE").format(value);
+  return new Intl.NumberFormat(LOCALE_DE).format(value);
 }
 
 // =============================================================================

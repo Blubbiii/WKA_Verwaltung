@@ -17,6 +17,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Download, RefreshCw, BarChart3 } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface GuvLine {
   position: number;
@@ -50,7 +51,7 @@ interface MultiYearResult {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /**

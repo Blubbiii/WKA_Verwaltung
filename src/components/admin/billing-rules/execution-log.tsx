@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import {
   Table,
   TableBody,
@@ -108,7 +108,7 @@ function formatDuration(ms: number | null): string {
 }
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleString("de-DE", {
+  return new Date(dateString).toLocaleString(LOCALE_DE, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

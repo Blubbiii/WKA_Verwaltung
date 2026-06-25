@@ -8,6 +8,7 @@ import { generateAuditLogPdf, type AuditLogPdfData } from "@/lib/pdf/generators/
 import { Prisma } from "@prisma/client";
 import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
+import { LOCALE_DE } from "@/lib/format";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -74,7 +75,7 @@ const auditLogColumns: ColumnDef[] = [
     transform: (value) => {
       if (!value) return "";
       const date = new Date(value as string);
-      return date.toLocaleString("de-DE", {
+      return date.toLocaleString(LOCALE_DE, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",

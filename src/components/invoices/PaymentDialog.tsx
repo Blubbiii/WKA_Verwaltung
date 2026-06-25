@@ -29,6 +29,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { CreditCard, Info, Loader2 } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 export interface PaymentDialogProps {
   invoiceId: string;
@@ -40,7 +41,7 @@ export interface PaymentDialogProps {
 }
 
 function formatEur(n: number): string {
-  return n.toLocaleString("de-DE", {
+  return n.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

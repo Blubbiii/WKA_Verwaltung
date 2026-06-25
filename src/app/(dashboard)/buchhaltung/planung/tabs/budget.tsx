@@ -24,6 +24,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Download, RefreshCw, TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface BudgetComparisonRow {
   costCenterCode: string;
@@ -54,7 +55,7 @@ interface BudgetSummary {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function fmtPct(n: number | null): string {

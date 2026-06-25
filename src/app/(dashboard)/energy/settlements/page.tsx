@@ -57,7 +57,7 @@ import {
   formatPeriod,
   type EnergySettlementStatus,
 } from "@/hooks/useEnergySettlements";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import { SettlementImportSheet } from "@/components/energy/settlement-import-sheet";
 import {
   SettlementEntryDialog,
@@ -79,7 +79,7 @@ const ITEMS_PER_PAGE = 20;
 
 function formatMWh(kwh: number): string {
   const mwh = kwh / 1000;
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(mwh);

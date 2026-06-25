@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { formatDate } from "@/lib/format";
+import { formatDate, LOCALE_DE } from "@/lib/format";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +52,7 @@ const STATUS_VARIANTS: Record<string, BadgeVariant> = {
 };
 
 function fmt(n: string | number): string {
-  return Number(n).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return Number(n).toLocaleString(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function BankImportContent() {

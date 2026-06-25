@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { LOCALE_DE } from "@/lib/format";
 
 interface PositionTemplate {
   id: string;
@@ -264,7 +265,7 @@ export function PositionTemplateDialog({
                               </Badge>
                               {template.defaultPrice != null && (
                                 <span className="text-xs text-muted-foreground">
-                                  {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(template.defaultPrice)}
+                                  {new Intl.NumberFormat(LOCALE_DE, { style: "currency", currency: "EUR" }).format(template.defaultPrice)}
                                 </span>
                               )}
                             </div>

@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, ShieldAlert, RefreshCw } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface PendingRequest {
   id: string;
@@ -139,7 +140,7 @@ export default function BankUpdateRequestsPage() {
                     <CardTitle className="text-lg">{r.personName}</CardTitle>
                     <p className="text-sm text-muted-foreground">
                       {r.personEmail} · Beantragt von {r.requestedBy || "—"} ·{" "}
-                      {new Date(r.requestedAt).toLocaleString("de-DE")}
+                      {new Date(r.requestedAt).toLocaleString(LOCALE_DE)}
                     </p>
                   </div>
                   <Badge
@@ -215,7 +216,7 @@ export default function BankUpdateRequestsPage() {
                 {r.status !== "PENDING" && r.decidedBy && (
                   <p className="mt-4 text-xs text-muted-foreground">
                     Entschieden von {r.decidedBy} am{" "}
-                    {r.decidedAt ? new Date(r.decidedAt).toLocaleString("de-DE") : ""}
+                    {r.decidedAt ? new Date(r.decidedAt).toLocaleString(LOCALE_DE) : ""}
                   </p>
                 )}
               </CardContent>

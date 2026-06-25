@@ -56,6 +56,7 @@ import {
   STATUS_LABELS,
   DEFAULT_SCAN_PATH_FALLBACK,
 } from "./types";
+import { LOCALE_DE } from "@/lib/format";
 
 interface UnmatchedPlant {
   locationCode: string;
@@ -772,7 +773,7 @@ export default function ScadaMappingsTab() {
                           return (
                             <div className="flex items-center gap-1 text-green-600">
                               <CheckCircle2 className="h-4 w-4" />
-                              <span className="text-xs">{(job.recordsImported ?? 0).toLocaleString("de-DE")}</span>
+                              <span className="text-xs">{(job.recordsImported ?? 0).toLocaleString(LOCALE_DE)}</span>
                             </div>
                           );
                         }
@@ -781,7 +782,7 @@ export default function ScadaMappingsTab() {
                           return (
                             <div className="flex items-center gap-1 text-amber-600">
                               <CheckCircle2 className="h-4 w-4" />
-                              <span className="text-xs">{(job.recordsImported ?? 0).toLocaleString("de-DE")}</span>
+                              <span className="text-xs">{(job.recordsImported ?? 0).toLocaleString(LOCALE_DE)}</span>
                             </div>
                           );
                         }

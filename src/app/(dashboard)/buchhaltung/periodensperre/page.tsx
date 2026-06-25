@@ -47,6 +47,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Lock, Unlock, ShieldAlert, Loader2, Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { LOCALE_DE } from "@/lib/format";
 
 interface PeriodLock {
   id: string;
@@ -83,7 +84,7 @@ function formatPeriod(year: number, month: number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("de-DE", {
+  return new Date(iso).toLocaleString(LOCALE_DE, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

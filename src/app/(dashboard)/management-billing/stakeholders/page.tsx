@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SearchFilter } from "@/components/ui/search-filter";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -75,7 +76,7 @@ const roleBadgeColors: Record<StakeholderRole, string> = {
 // =============================================================================
 
 function formatPercent(value: number): string {
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value) + " %";

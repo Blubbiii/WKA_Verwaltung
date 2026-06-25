@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/dialog";
 import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { EditableCell } from "@/components/ui/editable-cell";
+import { LOCALE_DE } from "@/lib/format";
 
 // ============================================================================
 // Types
@@ -412,7 +413,7 @@ export default function InboxPage() {
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {inv.grossAmount
-                          ? parseFloat(inv.grossAmount).toLocaleString("de-DE", {
+                          ? parseFloat(inv.grossAmount).toLocaleString(LOCALE_DE, {
                               style: "currency",
                               currency: "EUR",
                             })

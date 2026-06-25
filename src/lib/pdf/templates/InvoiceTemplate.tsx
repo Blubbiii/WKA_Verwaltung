@@ -7,6 +7,7 @@ import { ItemsTable, type InvoiceItem } from "./components/ItemsTable";
 import { SettlementAttachment } from "./components/SettlementAttachment";
 import { formatDate, formatPeriod, calculateTotals, formatCurrency } from "../utils/formatters";
 import type { WatermarkProps } from "../utils/watermark";
+import { LOCALE_DE } from "@/lib/format";
 
 const styles = StyleSheet.create({
   metaSection: {
@@ -349,7 +350,7 @@ export function InvoiceTemplate({ invoice, template, letterhead, watermark, comp
             <Text style={styles.skontoLabel}>Skonto</Text>
             <Text style={styles.skontoText}>
               Bei Zahlung bis zum {formatDate(invoice.skontoDeadline)} gewaehren wir {
-                new Intl.NumberFormat("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(invoice.skontoPercent)
+                new Intl.NumberFormat(LOCALE_DE, { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(invoice.skontoPercent)
               }% Skonto.
             </Text>
             <Text style={styles.skontoText}>

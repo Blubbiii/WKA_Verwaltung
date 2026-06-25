@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnalyticsKpiRow } from "./kpi-row";
 import { Zap, Wind, Clock, Gauge } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Monthly Drill-Down View
@@ -51,8 +52,8 @@ interface ProductionsResponse {
   };
 }
 
-const numFmt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
-const dec1Fmt = new Intl.NumberFormat("de-DE", {
+const numFmt = new Intl.NumberFormat(LOCALE_DE, { maximumFractionDigits: 0 });
+const dec1Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });

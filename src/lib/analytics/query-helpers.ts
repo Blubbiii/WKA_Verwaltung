@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import type { AnalyticsTurbineMeta } from "@/types/analytics";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Analytics Query Helpers
@@ -110,7 +111,7 @@ export function monthLabel(month: number): string {
 /**
  * German number formatter (no decimals).
  */
-export const numberFormatter = new Intl.NumberFormat("de-DE", {
+export const numberFormatter = new Intl.NumberFormat(LOCALE_DE, {
   maximumFractionDigits: 0,
 });
 

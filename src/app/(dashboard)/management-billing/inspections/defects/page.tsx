@@ -23,6 +23,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SearchFilter } from "@/components/ui/search-filter";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -98,7 +99,7 @@ function formatDate(dateStr: string | null): string {
 
 function formatCurrency(value: number | null): string {
   if (value === null || value === undefined) return "-";
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     style: "currency",
     currency: "EUR",
   }).format(value);

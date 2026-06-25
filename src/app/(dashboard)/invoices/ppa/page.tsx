@@ -57,6 +57,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { LOCALE_DE } from "@/lib/format";
 
 // ============================================================================
 // Types
@@ -107,7 +108,7 @@ export default function PPAPage() {
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
-  const numberLocale = locale === "en" ? "en-US" : "de-DE";
+  const numberLocale = locale === "en" ? "en-US" : LOCALE_DE;
   const { isFeatureEnabled, loading: flagsLoading } = useFeatureFlags();
   const [ppas, setPpas] = useState<PPA[]>([]);
 

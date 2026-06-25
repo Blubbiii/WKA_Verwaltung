@@ -7,6 +7,7 @@ import {
   PARK_HEALTH_LOOKBACK_DAYS,
   AVAILABILITY_WARNING_THRESHOLD,
 } from "@/lib/config/business-thresholds";
+import { LOCALE_DE } from "@/lib/format";
 
 interface ParkStatus {
   id: string;
@@ -79,7 +80,7 @@ export function ParkHealthPulse() {
         );
         setParks(statusResults.filter(Boolean) as ParkStatus[]);
         setLastUpdated(
-          new Date().toLocaleTimeString("de-DE", {
+          new Date().toLocaleTimeString(LOCALE_DE, {
             hour: "2-digit",
             minute: "2-digit",
           })

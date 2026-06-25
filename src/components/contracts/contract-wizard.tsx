@@ -54,6 +54,7 @@ import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { LOCALE_DE } from "@/lib/format";
 
 // ==========================================
 // Types
@@ -1153,7 +1154,7 @@ export function ContractWizard() {
                         Jährlicher Wert
                       </p>
                       <p className="font-medium">
-                        {formData.annualValue.toLocaleString("de-DE", {
+                        {formData.annualValue.toLocaleString(LOCALE_DE, {
                           style: "currency",
                           currency: "EUR",
                         })}

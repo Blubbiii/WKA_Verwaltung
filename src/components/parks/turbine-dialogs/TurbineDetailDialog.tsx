@@ -57,6 +57,7 @@ import {
   eventStatusColors,
   formatCapacity,
 } from "./types";
+import { LOCALE_DE } from "@/lib/format";
 
 interface TurbineDetailDialogProps {
   turbine: Turbine | null;
@@ -284,7 +285,7 @@ export function TurbineDetailDialog({
                       <p className="text-sm text-muted-foreground">{t("minimumRent")}</p>
                       <p className="font-medium">
                         {turbineDetail.minimumRent != null
-                          ? `${Number(turbineDetail.minimumRent).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}`
+                          ? `${Number(turbineDetail.minimumRent).toLocaleString(LOCALE_DE, { style: "currency", currency: "EUR" })}`
                           : t("parkDefault")}
                       </p>
                     </div>
@@ -292,7 +293,7 @@ export function TurbineDetailDialog({
                       <p className="text-sm text-muted-foreground">{t("weaShare")}</p>
                       <p className="font-medium">
                         {turbineDetail.weaSharePercentage != null
-                          ? `${Number(turbineDetail.weaSharePercentage).toLocaleString("de-DE")} %`
+                          ? `${Number(turbineDetail.weaSharePercentage).toLocaleString(LOCALE_DE)} %`
                           : t("parkDefault")}
                       </p>
                     </div>
@@ -300,7 +301,7 @@ export function TurbineDetailDialog({
                       <p className="text-sm text-muted-foreground">{t("poolShare")}</p>
                       <p className="font-medium">
                         {turbineDetail.poolSharePercentage != null
-                          ? `${Number(turbineDetail.poolSharePercentage).toLocaleString("de-DE")} %`
+                          ? `${Number(turbineDetail.poolSharePercentage).toLocaleString(LOCALE_DE)} %`
                           : t("parkDefault")}
                       </p>
                     </div>

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -59,7 +60,7 @@ interface ActionItem {
 // =============================================================================
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 0,

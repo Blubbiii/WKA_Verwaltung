@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { LOCALE_DE } from "@/lib/format";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -166,7 +167,7 @@ function LineRow({ line, isLocked, costCenters, updateLine, removeLine }: LineRo
       ))}
       {/* Jahressumme */}
       <td className="px-2 py-1 text-right text-xs font-medium min-w-[80px]">
-        {annual.toLocaleString("de-DE", { maximumFractionDigits: 0 })}
+        {annual.toLocaleString(LOCALE_DE, { maximumFractionDigits: 0 })}
       </td>
       {/* Delete */}
       {!isLocked && (
@@ -356,7 +357,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
             <CardContent className="pt-4">
               <p className="text-sm text-muted-foreground">{label}</p>
               <p className={`text-xl font-bold mt-1 ${pos && key !== "cost" ? "text-green-600 dark:text-green-400" : key === "net" && !pos ? "text-destructive" : ""}`}>
-                {val.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
+                {val.toLocaleString(LOCALE_DE, { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
               </p>
             </CardContent>
           </Card>

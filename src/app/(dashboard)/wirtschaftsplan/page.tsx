@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LOCALE_DE } from "@/lib/format";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -23,7 +24,7 @@ const fetcher = (url: string) =>
 function useFormatEur() {
   const locale = useLocale();
   return (val: number): string =>
-    new Intl.NumberFormat(locale === "en" ? "en-US" : "de-DE", {
+    new Intl.NumberFormat(locale === "en" ? "en-US" : LOCALE_DE, {
       style: "currency",
       currency: "EUR",
       maximumFractionDigits: 0,

@@ -66,6 +66,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { useDebounce } from "@/hooks/useDebounce";
 import { toast } from "sonner";
+import { LOCALE_DE } from "@/lib/format";
 
 // Types
 interface ArchivedDoc {
@@ -378,7 +379,7 @@ function ArchiveContent() {
             <Archive className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats ? stats.totalDocuments.toLocaleString("de-DE") : "-"}</div>
+            <div className="text-2xl font-bold">{stats ? stats.totalDocuments.toLocaleString(LOCALE_DE) : "-"}</div>
             {stats && stats.documentsByType.length > 0 && (
               <p className="text-xs text-muted-foreground">
                 {stats.documentsByType.map((t) => `${t.count} ${DOCUMENT_TYPE_LABELS[t.type] || t.type}`).join(", ")}

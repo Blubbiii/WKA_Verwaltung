@@ -25,6 +25,7 @@ import type {
   AnnotationData,
 } from "./types";
 import { PLOT_AREA_COLORS, PLOT_AREA_LABELS, LEASE_STATUS_COLORS } from "./types";
+import { LOCALE_DE } from "@/lib/format";
 
 interface GISFeatureInfoProps {
   feature: SelectedFeature | null;
@@ -78,7 +79,7 @@ function getAnnotationTypeLabel(type: string): string {
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
   try {
-    return new Date(dateStr).toLocaleDateString("de-DE", {
+    return new Date(dateStr).toLocaleDateString(LOCALE_DE, {
       day: "2-digit", month: "2-digit", year: "numeric",
     });
   } catch {
@@ -105,7 +106,7 @@ function PlotInfo({ plot }: { plot: GISPlotFeature }) {
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div>
           <p className="text-muted-foreground">Gesamtfläche</p>
-          <p className="font-medium">{totalArea ? `${totalArea.toLocaleString("de-DE")} m²` : "—"}</p>
+          <p className="font-medium">{totalArea ? `${totalArea.toLocaleString(LOCALE_DE)} m²` : "—"}</p>
         </div>
         <div>
           <p className="text-muted-foreground">In Hektar</p>
@@ -198,7 +199,7 @@ function PlotInfo({ plot }: { plot: GISPlotFeature }) {
                       <span className="text-foreground">{PLOT_AREA_LABELS[area.areaType] ?? area.areaType}</span>
                     </div>
                     <span className="text-muted-foreground font-medium">
-                      {area.areaSqm.toLocaleString("de-DE")} m²
+                      {area.areaSqm.toLocaleString(LOCALE_DE)} m²
                     </span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -212,7 +213,7 @@ function PlotInfo({ plot }: { plot: GISPlotFeature }) {
             })}
             {totalArea > 0 && (
               <p className="text-xs text-muted-foreground">
-                Zugeordnet: {totalAssigned.toLocaleString("de-DE")} / {totalArea.toLocaleString("de-DE")} m²
+                Zugeordnet: {totalAssigned.toLocaleString(LOCALE_DE)} / {totalArea.toLocaleString(LOCALE_DE)} m²
               </p>
             )}
           </div>

@@ -24,6 +24,7 @@ import type {
   HeatmapData,
   YearOverYearData,
 } from "@/types/analytics";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -45,9 +46,9 @@ interface PerformanceOverviewProps {
 // Formatters
 // =============================================================================
 
-const numFmt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
-const dec1Fmt = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const dec2Fmt = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const numFmt = new Intl.NumberFormat(LOCALE_DE, { maximumFractionDigits: 0 });
+const dec1Fmt = new Intl.NumberFormat(LOCALE_DE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const dec2Fmt = new Intl.NumberFormat(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function formatMwh(kwh: number): string {
   return dec1Fmt.format(kwh / 1000) + " MWh";

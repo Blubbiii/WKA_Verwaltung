@@ -49,6 +49,7 @@ import {
   Legend,
 } from "recharts";
 import type { DailyOverviewResponse } from "@/types/analytics";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Helpers
@@ -67,7 +68,7 @@ function formatKwh(kwh: number): string {
 }
 
 function formatEur(eur: number): string {
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
@@ -367,7 +368,7 @@ export function DailyOverview() {
                       }}
                       labelFormatter={(v) => {
                         const d = new Date(v);
-                        return d.toLocaleDateString("de-DE");
+                        return d.toLocaleDateString(LOCALE_DE);
                       }}
                     />
                     <Legend
@@ -430,7 +431,7 @@ export function DailyOverview() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(f.startTime).toLocaleString("de-DE")}
+                        {new Date(f.startTime).toLocaleString(LOCALE_DE)}
                       </TableCell>
                       <TableCell>
                         {f.durationHours != null

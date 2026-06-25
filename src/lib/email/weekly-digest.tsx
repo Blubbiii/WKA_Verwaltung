@@ -1,4 +1,5 @@
 import { Html, Head, Body, Container, Section, Text, Heading, Hr, Link } from "@react-email/components";
+import { LOCALE_DE } from "@/lib/format";
 
 interface WeeklyDigestProps {
   userName: string;
@@ -53,7 +54,7 @@ export function WeeklyDigestEmail({
                   <tr>
                     <td style={{ padding: "12px", backgroundColor: "#f9fafb", borderRadius: "8px", textAlign: "center" as const, width: "50%" }}>
                       <Text style={{ fontSize: "24px", fontWeight: "bold", color: "#335E99", margin: 0 }}>
-                        {stats.totalProductionMwh.toLocaleString("de-DE")} MWh
+                        {stats.totalProductionMwh.toLocaleString(LOCALE_DE)} MWh
                       </Text>
                       <Text style={{ fontSize: "12px", color: "#888", margin: "4px 0 0" }}>Produktion</Text>
                     </td>

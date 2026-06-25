@@ -26,6 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Activity, Clock, Layers } from "lucide-react";
 import { AnalyticsKpiRow } from "./kpi-row";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -83,12 +84,12 @@ const getStateColor = (code: string) => STATE_COLORS[code] || "#6b7280";
 // Formatters
 // =============================================================================
 
-const numFmt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
-const dec1Fmt = new Intl.NumberFormat("de-DE", {
+const numFmt = new Intl.NumberFormat(LOCALE_DE, { maximumFractionDigits: 0 });
+const dec1Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
-const dec2Fmt = new Intl.NumberFormat("de-DE", {
+const dec2Fmt = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });

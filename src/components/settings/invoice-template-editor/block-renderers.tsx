@@ -6,6 +6,7 @@
 import type { TemplateBlock, BlockStyle } from "@/lib/invoice-templates/template-types";
 import { SAMPLE_INVOICE_DATA } from "@/lib/invoice-templates/default-template";
 import { cn } from "@/lib/utils";
+import { LOCALE_DE } from "@/lib/format";
 
 const sample = SAMPLE_INVOICE_DATA;
 
@@ -139,19 +140,19 @@ function PositionsTableBlock({ block }: { block: TemplateBlock }) {
               <td className="py-1 pr-2">{pos.description}</td>
               {config.showQuantity && (
                 <td className="text-right py-1 pr-2">
-                  {pos.quantity.toLocaleString("de-DE")}
+                  {pos.quantity.toLocaleString(LOCALE_DE)}
                 </td>
               )}
               {config.showUnit && <td className="py-1 pr-2">{pos.unit}</td>}
               {config.showUnitPrice && (
                 <td className="text-right py-1 pr-2">
-                  {pos.unitPrice.toLocaleString("de-DE", { minimumFractionDigits: 4 })} EUR
+                  {pos.unitPrice.toLocaleString(LOCALE_DE, { minimumFractionDigits: 4 })} EUR
                 </td>
               )}
               {config.showTaxRate && <td className="text-right py-1 pr-2">{pos.taxRate}%</td>}
               {config.showNetAmount && (
                 <td className="text-right py-1">
-                  {pos.netAmount.toLocaleString("de-DE", { minimumFractionDigits: 2 })} EUR
+                  {pos.netAmount.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2 })} EUR
                 </td>
               )}
             </tr>
@@ -168,7 +169,7 @@ function SubtotalBlock({ block }: { block: TemplateBlock }) {
       <div className="flex gap-8 text-[10px]">
         <span className="text-muted-foreground">Nettobetrag:</span>
         <span className="font-medium w-28 text-right">
-          {sample.netTotal.toLocaleString("de-DE", { minimumFractionDigits: 2 })} EUR
+          {sample.netTotal.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2 })} EUR
         </span>
       </div>
     </div>
@@ -181,7 +182,7 @@ function TaxSummaryBlock({ block }: { block: TemplateBlock }) {
       <div className="flex gap-8 text-[10px]">
         <span className="text-muted-foreground">MwSt. {sample.taxRate}%:</span>
         <span className="font-medium w-28 text-right">
-          {sample.taxAmount.toLocaleString("de-DE", { minimumFractionDigits: 2 })} EUR
+          {sample.taxAmount.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2 })} EUR
         </span>
       </div>
     </div>
@@ -200,7 +201,7 @@ function TotalBlock({ block }: { block: TemplateBlock }) {
       <div className="flex gap-8 text-xs">
         <span className="font-bold">Gesamtbetrag:</span>
         <span className="font-bold w-28 text-right">
-          {sample.grossTotal.toLocaleString("de-DE", { minimumFractionDigits: 2 })} EUR
+          {sample.grossTotal.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2 })} EUR
         </span>
       </div>
     </div>

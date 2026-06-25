@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import { de } from "date-fns/locale";
 import {
   ArrowLeft,
@@ -1651,7 +1651,7 @@ export default function FundDetailsPage({
                         </TableCell>
                         <TableCell className="text-right">
                           {op.turbine.ratedPowerKw != null
-                            ? Number(op.turbine.ratedPowerKw).toLocaleString("de-DE")
+                            ? Number(op.turbine.ratedPowerKw).toLocaleString(LOCALE_DE)
                             : "-"}
                         </TableCell>
                         <TableCell className="text-right">

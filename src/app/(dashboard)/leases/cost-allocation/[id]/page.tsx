@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import {
   type ParkCostAllocationStatus,
   type ParkCostAllocationResponse,
@@ -61,7 +61,7 @@ const ALLOCATION_STATUS_COLORS: Record<ParkCostAllocationStatus, string> = {
 
 function makeFormatPercent(locale: string) {
   return (pct: number): string =>
-    new Intl.NumberFormat(locale === "en" ? "en-US" : "de-DE", {
+    new Intl.NumberFormat(locale === "en" ? "en-US" : LOCALE_DE, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(pct);

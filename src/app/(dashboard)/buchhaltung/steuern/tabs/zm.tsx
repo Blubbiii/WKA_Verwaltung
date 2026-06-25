@@ -24,6 +24,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { RefreshCw, Download } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface ZmLine {
   countryCode: string;
@@ -44,7 +45,7 @@ interface ZmResult {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 const COUNTRY_NAMES: Record<string, string> = {

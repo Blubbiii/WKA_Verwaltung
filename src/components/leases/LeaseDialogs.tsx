@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { format, differenceInDays } from "date-fns";
 import { de } from "date-fns/locale";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import {
   MapPin,
   Calendar,
@@ -645,10 +645,10 @@ function LeaseDetailDialog({
                                     <TableCell className="text-right font-mono">
                                       {area.areaType === "KABEL"
                                         ? area.lengthM
-                                          ? `${Number(area.lengthM).toLocaleString("de-DE")} m`
+                                          ? `${Number(area.lengthM).toLocaleString(LOCALE_DE)} m`
                                           : "-"
                                         : area.areaSqm
-                                          ? `${Number(area.areaSqm).toLocaleString("de-DE")} m²`
+                                          ? `${Number(area.areaSqm).toLocaleString(LOCALE_DE)} m²`
                                           : "-"}
                                     </TableCell>
                                     <TableCell>

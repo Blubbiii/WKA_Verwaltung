@@ -8,7 +8,7 @@
 // Standard placeholder definitions
 // =============================================================================
 
-import { formatDate } from "@/lib/format";
+import { formatDate, LOCALE_DE } from "@/lib/format";
 
 export interface PlaceholderDefinition {
   key: string;
@@ -75,7 +75,7 @@ export function resolveShareholderPlaceholders(
 
   // Format ownership percentage
   const ownershipPct = shareholder.ownershipPercentage
-    ? Number(shareholder.ownershipPercentage).toLocaleString("de-DE", {
+    ? Number(shareholder.ownershipPercentage).toLocaleString(LOCALE_DE, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }) + "%"
@@ -83,7 +83,7 @@ export function resolveShareholderPlaceholders(
 
   // Format capital contribution
   const capital = shareholder.capitalContribution
-    ? Number(shareholder.capitalContribution).toLocaleString("de-DE", {
+    ? Number(shareholder.capitalContribution).toLocaleString(LOCALE_DE, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }) + " EUR"

@@ -62,6 +62,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BACKUP_RETENTION_DAYS } from "@/lib/config/business-thresholds";
+import { LOCALE_DE } from "@/lib/format";
 
 // Types
 interface Backup {
@@ -243,7 +244,7 @@ export default function BackupTab() {
                 {loading ? <div className="space-y-4"><Skeleton className="h-20 w-full" /><Skeleton className="h-8 w-full" /></div> : data?.storageStats ? (
                   <div className="space-y-6">
                     <div className="space-y-2"><div className="flex items-center justify-between text-sm"><span>Speicherplatz verwendet</span><span className="font-medium">{formatBytes(data.storageStats.totalUsedBytes)} / {formatBytes(data.storageStats.totalCapacityBytes)}</span></div><Progress value={storageUsagePercent} className="h-3" /><p className="text-xs text-muted-foreground text-right">{storageUsagePercent}% belegt</p></div>
-                    <div className="grid grid-cols-2 gap-4"><div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Dokumente gesamt</p><p className="text-2xl font-bold">{data.storageStats.documentCount.toLocaleString("de-DE")}</p></div><div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Durchschnittliche Größe</p><p className="text-2xl font-bold">{formatBytes(data.storageStats.averageFileSizeBytes)}</p></div></div>
+                    <div className="grid grid-cols-2 gap-4"><div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Dokumente gesamt</p><p className="text-2xl font-bold">{data.storageStats.documentCount.toLocaleString(LOCALE_DE)}</p></div><div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Durchschnittliche Größe</p><p className="text-2xl font-bold">{formatBytes(data.storageStats.averageFileSizeBytes)}</p></div></div>
                   </div>
                 ) : <div className="text-center py-8 text-muted-foreground"><HardDrive className="h-12 w-12 mx-auto mb-4 opacity-50" /><p>Keine Daten verfügbar</p></div>}
               </CardContent>
@@ -252,7 +253,7 @@ export default function BackupTab() {
               <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Speicher nach Kategorie</CardTitle><CardDescription>Verteilung der Dokumente</CardDescription></CardHeader>
               <CardContent>
                 {loading ? <div className="space-y-3">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div> : data?.storageByCategory && data.storageByCategory.length > 0 ? (
-                  <Table><TableHeader><TableRow><TableHead>Kategorie</TableHead><TableHead className="text-right">Anzahl</TableHead><TableHead className="text-right">Größe</TableHead></TableRow></TableHeader><TableBody>{data.storageByCategory.map((category) => (<TableRow key={category.category}><TableCell>{category.categoryDisplay}</TableCell><TableCell className="text-right">{category.count.toLocaleString("de-DE")}</TableCell><TableCell className="text-right">{formatBytes(category.sizeBytes)}</TableCell></TableRow>))}</TableBody></Table>
+                  <Table><TableHeader><TableRow><TableHead>Kategorie</TableHead><TableHead className="text-right">Anzahl</TableHead><TableHead className="text-right">Größe</TableHead></TableRow></TableHeader><TableBody>{data.storageByCategory.map((category) => (<TableRow key={category.category}><TableCell>{category.categoryDisplay}</TableCell><TableCell className="text-right">{category.count.toLocaleString(LOCALE_DE)}</TableCell><TableCell className="text-right">{formatBytes(category.sizeBytes)}</TableCell></TableRow>))}</TableBody></Table>
                 ) : <div className="text-center py-8 text-muted-foreground"><FileText className="h-12 w-12 mx-auto mb-4 opacity-50" /><p>Keine Kategorien vorhanden</p></div>}
               </CardContent>
             </Card>

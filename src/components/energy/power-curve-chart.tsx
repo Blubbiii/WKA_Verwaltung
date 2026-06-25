@@ -11,6 +11,7 @@ import {
   ComposedChart,
   ZAxis,
 } from "recharts";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -36,11 +37,11 @@ interface PowerCurveChartProps {
 // Formatters
 // =============================================================================
 
-const numberFormatter = new Intl.NumberFormat("de-DE", {
+const numberFormatter = new Intl.NumberFormat(LOCALE_DE, {
   maximumFractionDigits: 1,
 });
 
-const powerFormatter = new Intl.NumberFormat("de-DE", {
+const powerFormatter = new Intl.NumberFormat(LOCALE_DE, {
   maximumFractionDigits: 0,
 });
 

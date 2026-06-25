@@ -17,6 +17,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Download, RefreshCw } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface BwaLine {
   label: string;
@@ -35,7 +36,7 @@ interface BwaResult {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /** Redesign 2026-06 R-7: Klammer-Notation für negative Beträge (Buchhaltung). */

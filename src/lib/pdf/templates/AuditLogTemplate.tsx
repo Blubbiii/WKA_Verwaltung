@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
 import { formatDate } from "../utils/formatters";
+import { LOCALE_DE } from "@/lib/format";
 
 const styles = StyleSheet.create({
   page: {
@@ -270,12 +271,12 @@ interface AuditLogTemplateProps {
 function formatDateTime(dateStr: string): { date: string; time: string } {
   const d = new Date(dateStr);
   return {
-    date: d.toLocaleDateString("de-DE", {
+    date: d.toLocaleDateString(LOCALE_DE, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     }),
-    time: d.toLocaleTimeString("de-DE", {
+    time: d.toLocaleTimeString(LOCALE_DE, {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
@@ -414,7 +415,7 @@ export function AuditLogTemplate({ data }: AuditLogTemplateProps) {
                   <Text>Mandant: {data.tenantName}</Text>
                   <Text>
                     Erstellt am: {formatDate(generatedDate)} um{" "}
-                    {generatedDate.toLocaleTimeString("de-DE", {
+                    {generatedDate.toLocaleTimeString(LOCALE_DE, {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}

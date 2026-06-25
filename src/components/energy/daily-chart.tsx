@@ -12,6 +12,7 @@ import {
   Line,
   ComposedChart,
 } from "recharts";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -39,11 +40,11 @@ interface DailyChartProps {
 // Formatters
 // =============================================================================
 
-const numberFormatter = new Intl.NumberFormat("de-DE", {
+const numberFormatter = new Intl.NumberFormat(LOCALE_DE, {
   maximumFractionDigits: 0,
 });
 
-const decimalFormatter = new Intl.NumberFormat("de-DE", {
+const decimalFormatter = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });

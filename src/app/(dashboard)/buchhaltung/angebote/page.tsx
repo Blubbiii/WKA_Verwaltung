@@ -44,6 +44,7 @@ import {
   Trash2,
   Clock,
 } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface QuoteItem {
   id: string;
@@ -96,11 +97,11 @@ const STATUS_KEYS = ["DRAFT", "SENT", "ACCEPTED", "INVOICED", "EXPIRED", "CANCEL
 
 function fmt(n: number | string): string {
   const num = typeof n === "string" ? parseFloat(n) : n;
-  return num.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return num.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function fmtDate(d: string): string {
-  return new Date(d).toLocaleDateString("de-DE");
+  return new Date(d).toLocaleDateString(LOCALE_DE);
 }
 
 interface NewItemRow {

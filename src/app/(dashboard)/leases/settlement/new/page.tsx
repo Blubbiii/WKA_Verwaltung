@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { formatDate } from "@/lib/format";
+import { formatDate, LOCALE_DE } from "@/lib/format";
 import {
   ArrowLeft,
   ArrowRight,
@@ -211,7 +211,7 @@ export default function NewLeaseSettlementPage() {
   const t = useTranslations("leases.settlementNew");
   const tStatus = useTranslations("billing.settlementStatus");
   const locale = useLocale();
-  const intlLocale = locale === "en" ? "en-US" : "de-DE";
+  const intlLocale = locale === "en" ? "en-US" : LOCALE_DE;
 
   const STEPS = [
     { id: "park", title: t("steps.parkTitle"), description: t("steps.parkDescription") },

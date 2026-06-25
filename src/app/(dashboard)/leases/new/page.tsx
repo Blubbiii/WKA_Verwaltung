@@ -51,6 +51,7 @@ import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { LOCALE_DE } from "@/lib/format";
 
 // Types
 interface Person {
@@ -1553,7 +1554,7 @@ export default function NewLeaseWizardPage() {
                     <p className="text-xs text-muted-foreground">{t("review.waitingMoneyLabel")}</p>
                     <p className="font-medium">
                       {parseFloat(contractData.waitingMoneyAmount || "0").toLocaleString(
-                        locale === "en" ? "en-US" : "de-DE",
+                        locale === "en" ? "en-US" : LOCALE_DE,
                         {
                           style: "currency",
                           currency: "EUR",

@@ -26,6 +26,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -63,7 +64,7 @@ interface MonitoringData {
 // =============================================================================
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("de-DE", {
+  return new Date(iso).toLocaleTimeString(LOCALE_DE, {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -156,7 +157,7 @@ export function MonitoringDashboard() {
       {/* Status Bar */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          {lastUpdate && t("updated", { time: lastUpdate.toLocaleTimeString("de-DE") })}
+          {lastUpdate && t("updated", { time: lastUpdate.toLocaleTimeString(LOCALE_DE) })}
           {error && <span className="text-destructive ml-2">({error})</span>}
         </span>
         <Button

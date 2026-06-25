@@ -17,7 +17,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import type { ApprovalAction } from "@prisma/client";
 
 export interface ApprovalDiffChange {
@@ -213,7 +213,7 @@ async function diffJournalReverse(_approvalId: string, tenantId: string, entityI
   return {
     title: `Storno: ${entry.description}`,
     changes,
-    summary: `Generalumkehr der Buchung vom ${entry.entryDate.toLocaleDateString("de-DE")}. Original-Buchung bleibt erhalten, eine neue Buchung mit invertierten Vorzeichen wird erzeugt.`,
+    summary: `Generalumkehr der Buchung vom ${entry.entryDate.toLocaleDateString(LOCALE_DE)}. Original-Buchung bleibt erhalten, eine neue Buchung mit invertierten Vorzeichen wird erzeugt.`,
   };
 }
 
@@ -253,7 +253,7 @@ async function diffJournalPost(_approvalId: string, tenantId: string, entityId: 
   return {
     title: `Buchung: ${entry.description}`,
     changes,
-    summary: `Buchungsdatum ${entry.entryDate.toLocaleDateString("de-DE")} — nach Festschreibung nur noch via Generalumkehr änderbar.`,
+    summary: `Buchungsdatum ${entry.entryDate.toLocaleDateString(LOCALE_DE)} — nach Festschreibung nur noch via Generalumkehr änderbar.`,
   };
 }
 

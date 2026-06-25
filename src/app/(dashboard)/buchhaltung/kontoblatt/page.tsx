@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { Printer, RefreshCw, FileText } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { LOCALE_DE } from "@/lib/format";
 
 interface KontoblattLine {
   reference: string | null;
@@ -54,7 +55,7 @@ interface KontoblattResult {
 
 function formatEur(n: number, suppressZero = true): string {
   if (suppressZero && n === 0) return "—";
-  return n.toLocaleString("de-DE", {
+  return n.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

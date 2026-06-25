@@ -32,6 +32,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Info, RefreshCw, RotateCcw } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { LOCALE_DE } from "@/lib/format";
 
 interface StornoEntry {
   id: string;
@@ -49,7 +50,7 @@ interface StornoEntry {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString("de-DE", {
+  return new Date(iso).toLocaleString(LOCALE_DE, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

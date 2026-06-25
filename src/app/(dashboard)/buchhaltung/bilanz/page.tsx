@@ -27,6 +27,7 @@ import {
   Scale,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { LOCALE_DE } from "@/lib/format";
 
 interface BilanzLine {
   accountNumber: string;
@@ -54,7 +55,7 @@ interface BilanzResult {
 }
 
 function formatEur(n: number): string {
-  return n.toLocaleString("de-DE", {
+  return n.toLocaleString(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });

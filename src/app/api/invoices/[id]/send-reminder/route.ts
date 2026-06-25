@@ -8,7 +8,7 @@ import { sendEmailSync } from "@/lib/email/sender";
 import { renderEmail, getBaseTemplateProps } from "@/lib/email/renderer";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { dispatchWebhook } from "@/lib/webhooks";
-import { formatDate } from "@/lib/format";
+import { formatDate, LOCALE_DE } from "@/lib/format";
 import { apiError } from "@/lib/api-errors";
 
 // ============================================================================
@@ -137,7 +137,7 @@ export async function POST(
     const watermarkText = WATERMARK_TEXTS[reminderLevel];
 
     // Format amounts
-    const formattedAmount = new Intl.NumberFormat("de-DE", {
+    const formattedAmount = new Intl.NumberFormat(LOCALE_DE, {
       style: "currency",
       currency: "EUR",
     }).format(Number(invoice.grossAmount));

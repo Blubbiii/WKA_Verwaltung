@@ -8,7 +8,7 @@
 import { useState, useEffect, useCallback, useRef, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatCurrency, formatDateTime } from "@/lib/format";
+import { formatCurrency, formatDateTime, LOCALE_DE } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -87,7 +87,7 @@ function ParameterDisplay({ parameters }: { parameters: Record<string, unknown>;
   const renderValue = (key: string, value: unknown): string => {
     if (value === null || value === undefined) return "-";
     if (typeof value === "boolean") return value ? "Yes" : "No";
-    if (typeof value === "number") return value.toLocaleString("de-DE");
+    if (typeof value === "number") return value.toLocaleString(LOCALE_DE);
     if (Array.isArray(value)) return JSON.stringify(value);
     return String(value);
   };

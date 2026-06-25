@@ -38,6 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useParks } from "@/hooks/useParks";
 import { monthNames } from "@/hooks/useEnergySettlements";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -128,7 +129,7 @@ const fetcher = async (url: string) => {
 // =============================================================================
 
 function formatKwh(kwh: number): string {
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(LOCALE_DE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(kwh);

@@ -26,6 +26,7 @@ import { SearchFilter } from "@/components/ui/search-filter";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCards } from "@/components/ui/stats-cards";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -86,7 +87,7 @@ const priorityColors: Record<number, string> = {
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "-";
   try {
-    return new Date(dateStr).toLocaleDateString("de-DE");
+    return new Date(dateStr).toLocaleDateString(LOCALE_DE);
   } catch {
     return "-";
   }

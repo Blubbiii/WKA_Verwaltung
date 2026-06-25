@@ -55,6 +55,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -990,7 +991,7 @@ export default function ScadaAnomaliesPage() {
                       {Object.entries(selectedAnomaly.details).map(([key, value]) => (
                         <div key={key} className="flex justify-between">
                           <span className="text-muted-foreground">{key}:</span>
-                          <span className="font-mono">{typeof value === "number" ? value.toLocaleString("de-DE") : String(value)}</span>
+                          <span className="font-mono">{typeof value === "number" ? value.toLocaleString(LOCALE_DE) : String(value)}</span>
                         </div>
                       ))}
                     </div>

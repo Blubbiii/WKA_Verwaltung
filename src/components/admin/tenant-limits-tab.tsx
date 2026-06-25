@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Gauge, RefreshCw, Save } from "lucide-react";
+import { LOCALE_DE } from "@/lib/format";
 
 interface TenantLimits {
   maxUsers: number;
@@ -69,11 +70,11 @@ function UsageCell({
     <div className="space-y-1 min-w-[120px]">
       <div className="flex items-center justify-between text-sm">
         <span>
-          {current.toLocaleString("de-DE")}
+          {current.toLocaleString(LOCALE_DE)}
           {unit ? ` ${unit}` : ""}
         </span>
         <span className="text-muted-foreground">
-          / {max.toLocaleString("de-DE")}
+          / {max.toLocaleString(LOCALE_DE)}
           {unit ? ` ${unit}` : ""}
         </span>
       </div>

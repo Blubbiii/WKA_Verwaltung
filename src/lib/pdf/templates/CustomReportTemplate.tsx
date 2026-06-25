@@ -15,7 +15,7 @@ import {
   Rect as SvgRect,
 } from "@react-pdf/renderer";
 import { formatNumber, formatDate } from "../utils/formatters";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import { PdfPowerCurve } from "../charts/PdfPowerCurve";
 import { PdfWindDistribution } from "../charts/PdfWindDistribution";
 import { PageNumber } from "./components/Footer";
@@ -1291,7 +1291,7 @@ function WindDistributionPage({ data }: { data: CustomReportData }) {
               {bin.windSpeedBin} – {bin.windSpeedBin + 1} m/s
             </Text>
             <Text style={[s.tCellRight, { width: "30%" }]}>
-              {bin.count.toLocaleString("de-DE")}
+              {bin.count.toLocaleString(LOCALE_DE)}
             </Text>
             <Text style={[s.tCellRight, { width: "20%", fontWeight: "bold" }]}>
               {formatNumber(bin.percentage, 1)} %
@@ -1338,7 +1338,7 @@ function EnvironmentalDataPage({ data }: { data: CustomReportData }) {
         </View>
         <View style={s.summaryItem}>
           <Text style={s.summaryLabel}>Messpunkte</Text>
-          <Text style={s.summaryValue}>{totalCount.toLocaleString("de-DE")}</Text>
+          <Text style={s.summaryValue}>{totalCount.toLocaleString(LOCALE_DE)}</Text>
         </View>
       </View>
 
@@ -1363,7 +1363,7 @@ function EnvironmentalDataPage({ data }: { data: CustomReportData }) {
                 {formatNumber(entry.avgPowerKw, 0)}
               </Text>
               <Text style={[s.tCellRight, { width: "15%" }]}>
-                {entry.count.toLocaleString("de-DE")}
+                {entry.count.toLocaleString(LOCALE_DE)}
               </Text>
               <Text style={[s.tCellRight, { width: "15%" }]}>
                 {formatNumber(pct, 1)} %

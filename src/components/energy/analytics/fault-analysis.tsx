@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { AnalyticsKpiRow } from "./kpi-row";
 import type { FaultParetoItem, WarningTrendPoint } from "@/types/analytics";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -82,9 +83,9 @@ interface StateEvent {
 // Formatters
 // =============================================================================
 
-const numFmt = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
-const dec1Fmt = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const dec2Fmt = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const numFmt = new Intl.NumberFormat(LOCALE_DE, { maximumFractionDigits: 0 });
+const dec1Fmt = new Intl.NumberFormat(LOCALE_DE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const dec2Fmt = new Intl.NumberFormat(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // =============================================================================
 // Tooltips
@@ -594,7 +595,7 @@ export function FaultAnalysis({
                     {events.map((event) => (
                       <TableRow key={event.id}>
                         <TableCell className="font-mono text-xs">
-                          {new Date(event.timestamp).toLocaleString("de-DE", {
+                          {new Date(event.timestamp).toLocaleString(LOCALE_DE, {
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",

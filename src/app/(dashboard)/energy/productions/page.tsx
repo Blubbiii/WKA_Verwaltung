@@ -46,6 +46,7 @@ import {
   ProductionEntryDialog,
   type ProductionEditData,
 } from "@/components/energy/production-entry-dialog";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -124,7 +125,7 @@ const statusBadgeColors: Record<string, string> = {
 // FORMATTERS
 // =============================================================================
 
-const numberFormatter = new Intl.NumberFormat("de-DE", {
+const numberFormatter = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -663,12 +664,12 @@ export default function ProductionDataPage() {
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {row.operatingHours != null
-                          ? new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Number(row.operatingHours))
+                          ? new Intl.NumberFormat(LOCALE_DE, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Number(row.operatingHours))
                           : "-"}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {row.availabilityPct != null
-                          ? new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Number(row.availabilityPct)) + " %"
+                          ? new Intl.NumberFormat(LOCALE_DE, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Number(row.availabilityPct)) + " %"
                           : "-"}
                       </TableCell>
                       <TableCell>

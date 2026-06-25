@@ -10,6 +10,7 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
+import { LOCALE_DE } from "@/lib/format";
 
 // =============================================================================
 // Types
@@ -62,7 +63,7 @@ const SPEED_RANGE_LABELS: Record<string, string> = {
 
 const SPEED_RANGE_ORDER = ["0-3", "3-6", "6-9", "9-12", "12-15", "15+"];
 
-const numberFormatter = new Intl.NumberFormat("de-DE", {
+const numberFormatter = new Intl.NumberFormat(LOCALE_DE, {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
@@ -188,7 +189,7 @@ export function WindRoseChart({ data, meta }: WindRoseChartProps) {
           <span>
             Messwerte:{" "}
             <span className="font-medium text-foreground">
-              {new Intl.NumberFormat("de-DE").format(meta.totalMeasurements)}
+              {new Intl.NumberFormat(LOCALE_DE).format(meta.totalMeasurements)}
             </span>
           </span>
         </div>
