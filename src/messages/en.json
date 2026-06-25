@@ -368,26 +368,9 @@
       "recentlyVisited": "Recently Visited",
       "budgetVariance": "Budget Variance",
       "wirtschaftsplanPL": "Budget P&L",
-      "todayFocus": "Today's focus",
       "notFound": "Widget \"{widgetId}\" not found",
       "loadError": "Failed to load",
-      "loadErrorDetail": "Could not load focus items.",
-      "remove": "Remove",
-      "focus": {
-        "header": "What's on for today",
-        "approvalsLabel": "{count, plural, one {# approval pending} other {# approvals pending}}",
-        "approvalsCta": "Review now",
-        "dunningLabel": "{count, plural, one {# overdue invoice} other {# overdue invoices}}",
-        "dunningCta": "Start dunning run",
-        "inboxLabel": "{count, plural, one {# new document in inbox} other {# new documents in inbox}}",
-        "inboxCta": "Review inbox",
-        "contractsLabel": "{count, plural, one {# contract expires soon} other {# contracts expire soon}}",
-        "contractsCta": "View contracts",
-        "criticalDotLabel": "Critical — expires in under 24 hours",
-        "emptyTitle": "Everything's done for today",
-        "emptySubtitle": "Nice. No open items.",
-        "unauthorizedHint": "No permission to view focus items."
-      }
+      "remove": "Remove"
     },
     "editTitle": "Customize dashboard",
     "editDescription": "Add, remove and arrange widgets",
@@ -531,7 +514,23 @@
       "noDeliveries": "No deliveries available",
       "errorLabel": "Error",
       "allWebhooks": "All webhooks",
-      "timeAgoNow": "just now"
+      "timeAgoNow": "just now",
+      "focus": {
+        "header": "What's on for today",
+        "approvalsLabel": "{count, plural, one {# approval pending} other {# approvals pending}}",
+        "approvalsCta": "Review now",
+        "dunningLabel": "{count, plural, one {# overdue invoice} other {# overdue invoices}}",
+        "dunningCta": "Start dunning run",
+        "inboxLabel": "{count, plural, one {# new document in inbox} other {# new documents in inbox}}",
+        "inboxCta": "Review inbox",
+        "contractsLabel": "{count, plural, one {# contract expires soon} other {# contracts expire soon}}",
+        "contractsCta": "View contracts",
+        "criticalDotLabel": "Critical — expires in under 24 hours",
+        "emptyTitle": "Everything's done for today",
+        "emptySubtitle": "Nice. No open items.",
+        "unauthorizedHint": "No permission to view focus items."
+      },
+      "todayFocus": "Today's focus"
     },
     "parkHealth": {
       "statusDisturbance": "Fault",
@@ -6450,6 +6449,60 @@
       "type": {
         "INSURANCE": "Insurance",
         "SERVICE_PROVIDER": "Service provider"
+      }
+    },
+    "optList": {
+      "title": "Optimierungsmaßnahmen",
+      "description": "Verbesserungsmaßnahmen für Windparks planen und verfolgen",
+      "createLabel": "Neue Maßnahme",
+      "searchPlaceholder": "Titel, Kategorie oder Park suchen...",
+      "filter": {
+        "allStatus": "Alle Status",
+        "allCategories": "Alle Kategorien"
+      },
+      "errorLoading": "Fehler beim Laden der Maßnahmen. Bitte versuchen Sie es erneut.",
+      "empty": {
+        "none": {
+          "title": "Keine Maßnahmen",
+          "description": "Erstellen Sie die erste Optimierungsmaßnahme, um Verbesserungen zu planen."
+        },
+        "noResults": {
+          "title": "Keine Ergebnisse",
+          "description": "Passen Sie Ihre Suchkriterien an, um Ergebnisse zu finden."
+        },
+        "action": "Maßnahme erstellen"
+      },
+      "table": {
+        "title": "Titel",
+        "category": "Kategorie",
+        "priority": "Priorität",
+        "status": "Status",
+        "park": "Park",
+        "estimatedCost": "Gesch. Kosten",
+        "actualCost": "Tats. Kosten",
+        "dueDate": "Fällig am",
+        "actions": "Aktionen"
+      },
+      "actionShowDetails": "Details anzeigen",
+      "status": {
+        "OPEN": "Offen",
+        "IN_PROGRESS": "In Bearbeitung",
+        "COMPLETED": "Abgeschlossen",
+        "CANCELLED": "Abgebrochen",
+        "ON_HOLD": "Pausiert"
+      },
+      "priority": {
+        "LOW": "Niedrig",
+        "MEDIUM": "Mittel",
+        "HIGH": "Hoch",
+        "CRITICAL": "Kritisch"
+      },
+      "category": {
+        "yield": "Ertragssteigerung",
+        "cost": "Kostensenkung",
+        "availability": "Verfügbarkeit",
+        "safety": "Sicherheit",
+        "other": "Sonstiges"
       }
     }
   },

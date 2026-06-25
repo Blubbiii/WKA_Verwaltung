@@ -368,7 +368,6 @@
       "recentlyVisited": "Zuletzt besucht",
       "budgetVariance": "Budgetabweichung",
       "wirtschaftsplanPL": "Wirtschaftsplan GuV",
-      "todayFocus": "Heute zu erledigen",
       "notFound": "Widget \"{widgetId}\" nicht gefunden",
       "loadError": "Fehler beim Laden",
       "remove": "Entfernen"
@@ -530,7 +529,8 @@
         "emptyTitle": "Heute ist alles erledigt",
         "emptySubtitle": "Schön! Keine offenen Punkte.",
         "unauthorizedHint": "Keine Berechtigung für die anstehenden Aktionen."
-      }
+      },
+      "todayFocus": "Heute zu erledigen"
     },
     "parkHealth": {
       "statusDisturbance": "Störung",
@@ -6449,6 +6449,60 @@
       "type": {
         "INSURANCE": "Versicherung",
         "SERVICE_PROVIDER": "Dienstleister"
+      }
+    },
+    "optList": {
+      "title": "Optimierungsmaßnahmen",
+      "description": "Verbesserungsmaßnahmen für Windparks planen und verfolgen",
+      "createLabel": "Neue Maßnahme",
+      "searchPlaceholder": "Titel, Kategorie oder Park suchen...",
+      "filter": {
+        "allStatus": "Alle Status",
+        "allCategories": "Alle Kategorien"
+      },
+      "errorLoading": "Fehler beim Laden der Maßnahmen. Bitte versuchen Sie es erneut.",
+      "empty": {
+        "none": {
+          "title": "Keine Maßnahmen",
+          "description": "Erstellen Sie die erste Optimierungsmaßnahme, um Verbesserungen zu planen."
+        },
+        "noResults": {
+          "title": "Keine Ergebnisse",
+          "description": "Passen Sie Ihre Suchkriterien an, um Ergebnisse zu finden."
+        },
+        "action": "Maßnahme erstellen"
+      },
+      "table": {
+        "title": "Titel",
+        "category": "Kategorie",
+        "priority": "Priorität",
+        "status": "Status",
+        "park": "Park",
+        "estimatedCost": "Gesch. Kosten",
+        "actualCost": "Tats. Kosten",
+        "dueDate": "Fällig am",
+        "actions": "Aktionen"
+      },
+      "actionShowDetails": "Details anzeigen",
+      "status": {
+        "OPEN": "Offen",
+        "IN_PROGRESS": "In Bearbeitung",
+        "COMPLETED": "Abgeschlossen",
+        "CANCELLED": "Abgebrochen",
+        "ON_HOLD": "Pausiert"
+      },
+      "priority": {
+        "LOW": "Niedrig",
+        "MEDIUM": "Mittel",
+        "HIGH": "Hoch",
+        "CRITICAL": "Kritisch"
+      },
+      "category": {
+        "yield": "Ertragssteigerung",
+        "cost": "Kostensenkung",
+        "availability": "Verfügbarkeit",
+        "safety": "Sicherheit",
+        "other": "Sonstiges"
       }
     }
   },
