@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { SafeHtml } from "@/components/ui/safe-html";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
   GENERAL: { label: "Allgemein", color: "bg-gray-100 text-gray-800" },
@@ -87,7 +88,7 @@ export default function NewsDetailPage({
         if (response.ok) {
           const data = await response.json();
           setNews(data);
-        } else if (response.status === 404) {
+        } else if (response.status === HTTP_STATUS.NOT_FOUND) {
           router.push("/news");
         }
       } catch {

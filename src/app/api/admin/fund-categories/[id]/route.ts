@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
@@ -151,8 +152,7 @@ export async function PATCH(
     }
 
     // Update-Daten vorbereiten (nur gesetzte Felder)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = {};
+    const updateData: Prisma.FundCategoryUpdateInput = {};
 
     if (validatedData.name !== undefined) {
       updateData.name = validatedData.name;

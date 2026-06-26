@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface Plot {
   id: string;
@@ -142,7 +143,7 @@ export default function LeaseDetailPage({
       try {
         const response = await fetch(`/api/leases/${resolvedParams.id}`);
         if (!response.ok) {
-          if (response.status === 404) {
+          if (response.status === HTTP_STATUS.NOT_FOUND) {
             toast.error(t("notFound"));
             router.push("/leases");
             return;

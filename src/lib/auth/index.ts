@@ -1,4 +1,5 @@
 import NextAuth from "next-auth";
+import type { OIDCConfig } from "next-auth/providers";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -58,17 +59,16 @@ interface AuthentikProfile {
   preferred_username?: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ssoProviders: any[] = process.env.AUTHENTIK_ISSUER
+const ssoProviders: OIDCConfig<AuthentikProfile>[] = process.env.AUTHENTIK_ISSUER
   ? [
       {
         id: "authentik",
         name: process.env.AUTHENTIK_DISPLAY_NAME || "SSO Login",
-        type: "oidc" as const,
+        type: "oidc",
         issuer: process.env.AUTHENTIK_ISSUER,
         clientId: process.env.AUTHENTIK_CLIENT_ID!,
         clientSecret: process.env.AUTHENTIK_CLIENT_SECRET!,
-        checks: ["pkce", "state"] as const,
+        checks: ["pkce", "state"],
         profile(profile: AuthentikProfile) {
           // Map Authentik profile to a minimal Auth.js User shape.
           // Full tenant/role resolution happens in the signIn callback.

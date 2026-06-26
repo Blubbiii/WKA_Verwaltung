@@ -1,10 +1,11 @@
 import { logger } from "@/lib/logger";
+import { EXTERNAL_APIS } from "@/lib/config/external-apis";
 
 // SMARD (Bundesnetzagentur) API for German Day-Ahead electricity prices
 // Documentation: https://smard.api.bund.dev/
 // Free, no registration required
 
-const SMARD_BASE_URL = "https://www.smard.de/app/chart_data";
+const SMARD_BASE_URL = EXTERNAL_APIS.SMARD_BASE;
 
 // Filter ID 4169001 = Day-Ahead Preise Deutschland
 const PRICE_FILTER = "4169001";

@@ -36,6 +36,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 const NEWS_CATEGORIES = [
   { value: "GENERAL", label: "Allgemein", description: "Allgemeine Neuigkeiten" },
@@ -114,7 +115,7 @@ export default function EditNewsPage({
               ? new Date(data.expiresAt).toISOString().slice(0, 16)
               : "",
           });
-        } else if (response.status === 404) {
+        } else if (response.status === HTTP_STATUS.NOT_FOUND) {
           router.push("/news");
         }
       } catch {

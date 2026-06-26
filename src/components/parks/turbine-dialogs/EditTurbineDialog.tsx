@@ -237,7 +237,7 @@ export function EditTurbineDialog({
         onChange(v === "__none__" ? "" : v);
       }}
     >
-      <SelectTrigger><SelectValue placeholder="Gesellschaft waehlen" /></SelectTrigger>
+      <SelectTrigger><SelectValue placeholder="Gesellschaft wählen" /></SelectTrigger>
       <SelectContent>
         <SelectItem value="__none__">-- Nicht zugeordnet --</SelectItem>
         {funds.map((fund) => (

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { MIME_TYPES } from "@/lib/config/mime-types";
 import {
   Upload,
   FileText,
@@ -242,7 +243,7 @@ export function ProxyDocumentUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept="application/pdf"
+          accept={MIME_TYPES.PDF}
           className="hidden"
           onChange={handleFileSelect}
           disabled={isUploading}
@@ -351,7 +352,7 @@ export function ProxyDocumentUpload({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="application/pdf"
+                accept={MIME_TYPES.PDF}
                 className="hidden"
                 onChange={handleFileSelect}
                 disabled={isUploading}
@@ -374,7 +375,7 @@ export function ProxyDocumentUpload({
             <input
               ref={fileInputRef}
               type="file"
-              accept="application/pdf"
+              accept={MIME_TYPES.PDF}
               className="hidden"
               onChange={handleFileSelect}
               disabled={isUploading}

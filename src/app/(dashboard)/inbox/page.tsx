@@ -49,6 +49,7 @@ import {
 import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { EditableCell } from "@/components/ui/editable-cell";
 import { LOCALE_DE } from "@/lib/format";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 // ============================================================================
 // Types
@@ -202,12 +203,12 @@ export default function InboxPage() {
         }
 
         if (!res.ok) {
-          if (res.status === 422 && data?.code === "VAT_DEDUCTION_FAILED") {
+          if (res.status === HTTP_STATUS.UNPROCESSABLE_ENTITY && data?.code === "VAT_DEDUCTION_FAILED") {
             const missing = Array.isArray(data?.details?.missing)
               ? data.details.missing.join(", ")
               : "";
             toast.error(`§14 UStG fehlende Pflichtangaben: ${missing}`);
-          } else if (res.status === 409) {
+          } else if (res.status === HTTP_STATUS.CONFLICT) {
             toast.error(data.message ?? "Status erlaubt keine Freigabe");
           } else {
             toast.error(data.message ?? "Freigabe fehlgeschlagen");
@@ -255,20 +256,21 @@ export default function InboxPage() {
         }
       />
 
-      {/* KPI chips */}
+      {/* KPI chips — Audit-U-1: Design-Tokens statt hardcoded Tailwind-Farben.
+       * text-warning/info/success skalieren mit Dark/Light + brand-konsistent. */}
       <div className="flex flex-wrap gap-3">
         <div className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm">
-          <AlertCircle className="h-4 w-4 text-orange-500" />
+          <AlertCircle className="h-4 w-4 text-warning" />
           <span className="font-medium">{open}</span>
           <span className="text-muted-foreground">{t("kpi.open")}</span>
         </div>
         <div className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm">
-          <Eye className="h-4 w-4 text-blue-500" />
+          <Eye className="h-4 w-4 text-info" />
           <span className="font-medium">{approved}</span>
           <span className="text-muted-foreground">{t("kpi.approved")}</span>
         </div>
         <div className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm">
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
+          <CheckCircle2 className="h-4 w-4 text-success" />
           <span className="font-medium">{paid}</span>
           <span className="text-muted-foreground">{t("kpi.paid")}</span>
         </div>

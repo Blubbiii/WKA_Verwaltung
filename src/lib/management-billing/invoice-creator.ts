@@ -8,6 +8,7 @@
 import { prisma } from "@/lib/prisma";
 import { getClientFundDetails } from "./cross-tenant-access";
 import { apiLogger as logger } from "@/lib/logger";
+import { getTenantSettings } from "@/lib/tenant-settings";
 
 export interface CreateInvoiceResult {
   invoiceId: string;
@@ -142,22 +143,22 @@ export async function createInvoiceFromBilling(
   }
 
   // 6. Create the invoice in the provider tenant
+  // Audit-K-1 (2026-06-26): paymentTermDays kommt jetzt aus den TenantSettings
+  // des stakeholder-Tenants (Default 30, nicht 14 wie der bisherige Hartz-Fallback).
+  // Der bisherige `?? 14` schlug zu, sobald das raw-JSON-Feld nicht direkt im
+  // tenant.settings root lag — was bei der neuen Settings-Struktur (settings.tenantSettings)
+  // jedes Mal passierte. Tenants mit 30-Tage-Frist bekamen daraufhin 14-Tage-Rechnungen.
+  const stakeholderSettings = await getTenantSettings(
+    billing.stakeholder.stakeholderTenant.id,
+  );
+  const paymentTermDays = stakeholderSettings.paymentTermDays;
   const invoice = await prisma.invoice.create({
     data: {
       tenantId: providerTenantId,
       invoiceType: "INVOICE",
       invoiceNumber,
       invoiceDate: new Date(),
-      dueDate: new Date(
-        Date.now() +
-          ((
-            billing.stakeholder.stakeholderTenant.settings as Record<
-              string,
-              unknown
-            >
-          )?.paymentTermDays as number ?? 14) *
-            86400000
-      ),
+      dueDate: new Date(Date.now() + paymentTermDays * 86400000),
       recipientType: "fund",
       recipientName,
       recipientAddress,

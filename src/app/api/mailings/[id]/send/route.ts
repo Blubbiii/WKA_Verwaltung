@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
@@ -232,8 +233,7 @@ async function getShareholdersWithDeliveryInfo(
   fundIds?: string[],
   parkIds?: string[],
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const baseWhere: any = {
+  const baseWhere: Prisma.ShareholderWhereInput = {
     fund: { tenantId },
     status: "ACTIVE",
     // Include shareholders with email OR with address (for post delivery)
@@ -252,7 +252,7 @@ async function getShareholdersWithDeliveryInfo(
     case "BY_PARK":
       if (parkIds && parkIds.length > 0) {
         baseWhere.fund = {
-          ...baseWhere.fund,
+          ...(baseWhere.fund as Prisma.FundWhereInput),
           fundParks: { some: { parkId: { in: parkIds } } },
         };
       }

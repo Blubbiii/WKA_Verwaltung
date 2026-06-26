@@ -6,6 +6,8 @@
  * from the nearest DWD weather station to a given coordinate.
  */
 
+import { EXTERNAL_APIS } from "@/lib/config/external-apis";
+
 interface DwdStation {
   id: string;        // Station ID (e.g., "00044")
   name: string;      // Station name
@@ -30,7 +32,7 @@ interface DwdStationResponse {
   period: { from: string; to: string };
 }
 
-const DWD_BASE_URL = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate";
+const DWD_BASE_URL = `${EXTERNAL_APIS.DWD_BASE}/observations_germany/climate`;
 
 /**
  * Haversine distance between two points in km

@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 import {
   Wind,
   Loader2,
@@ -131,7 +132,7 @@ function ResetPasswordForm() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
 
-        if (response.status === 400 && errorData.code === "INVALID_TOKEN") {
+        if (response.status === HTTP_STATUS.BAD_REQUEST && errorData.code === "INVALID_TOKEN") {
           setError("Der Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen. Bitte fordern Sie einen neuen Link an.");
           return;
         }

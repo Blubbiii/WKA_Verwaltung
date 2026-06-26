@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Upload, X, FileText, FileImage, File } from "lucide-react";
 import type { DocumentsData, DocumentFile } from "../onboarding-types";
 import { toast } from "sonner";
+import { MIME_TYPES } from "@/lib/config/mime-types";
 
 interface StepDocumentsProps {
   data: DocumentsData;
@@ -31,13 +32,13 @@ const DOCUMENT_SLOTS = [
   },
 ];
 
-const ALLOWED_TYPES = [
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+const ALLOWED_TYPES: readonly string[] = [
+  MIME_TYPES.PDF,
+  MIME_TYPES.JPEG,
+  MIME_TYPES.PNG,
+  MIME_TYPES.WEBP,
+  MIME_TYPES.WORD_DOC,
+  MIME_TYPES.WORD_DOCX,
 ];
 
 const MAX_SIZE_MB = 20;

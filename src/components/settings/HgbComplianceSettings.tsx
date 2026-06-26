@@ -142,7 +142,7 @@ export function HgbComplianceSettings() {
       toast.success("HGB-Compliance-Einstellungen gespeichert");
       setHasChanges(false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
+      toast.error(e instanceof Error ? e.message : "HGB-Einstellungen konnten nicht gespeichert werden");
     } finally {
       setIsSaving(false);
     }

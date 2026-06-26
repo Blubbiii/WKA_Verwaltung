@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import { executeSettlementCalculation } from "@/lib/lease-revenue/calculator";
+import type { SettlementCalculationResult } from "@/types/billing";
 import { getIntervalDivisor } from "@/types/billing";
 import { apiError } from "@/lib/api-errors";
 
@@ -97,8 +98,13 @@ export async function POST(
 // Transform internal calculation result to wizard-compatible format
 // =============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function buildWizardResponse(settlementId: string, settlement: any, calc: any) {
+type ExecResult = Awaited<ReturnType<typeof executeSettlementCalculation>>;
+async function buildWizardResponse(
+  settlementId: string,
+  settlement: ExecResult["settlement"],
+  calc: SettlementCalculationResult
+) {
+  void settlement; // currently unused; reserved for future enrichment
   // Load the full settlement with items and related data for display names
   const full = await prisma.leaseRevenueSettlement.findUnique({
     where: { id: settlementId },

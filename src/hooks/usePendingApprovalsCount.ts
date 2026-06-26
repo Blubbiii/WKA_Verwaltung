@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 const POLL_INTERVAL_MS = 60_000;
 
@@ -24,7 +25,7 @@ export function usePendingApprovalsCount(): number {
         const res = await fetch("/api/approvals/pending", { cache: "no-store" });
         // M-1 Fix: Bei 401 (nicht eingeloggt) oder 403 (keine Berechtigung) → Polling stoppen,
         // sonst Endlos-Request-Loop in der Browser-Konsole.
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === HTTP_STATUS.UNAUTHORIZED || res.status === HTTP_STATUS.FORBIDDEN) {
           cancelled = true;
           if (timer) {
             clearTimeout(timer);

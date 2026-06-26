@@ -172,7 +172,7 @@ const fetcher = async (url: string) => {
     const error = await res
       .json()
       .catch(() => ({ error: "Unknown error" }));
-    throw new Error(error.error || "Failed to load");
+    throw new Error(error.error || "Daten konnten nicht geladen werden");
   }
   return res.json();
 };

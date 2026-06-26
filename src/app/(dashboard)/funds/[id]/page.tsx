@@ -116,6 +116,7 @@ import {
 } from "@/components/funds";
 import { DocumentPreviewDialog } from "@/components/documents";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface Shareholder {
   id: string;
@@ -405,7 +406,7 @@ export default function FundDetailsPage({
       setLoading(true);
       const response = await fetch(`/api/funds/${id}`);
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === HTTP_STATUS.NOT_FOUND) {
           setError(t("detail.errorNotFound"));
         } else {
           throw new Error(t("detail.errorLoadGeneric"));

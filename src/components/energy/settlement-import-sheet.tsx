@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/table'
 import { Stepper } from '@/components/ui/stepper'
 import { UPLOAD_LIMITS } from '@/lib/config/upload-limits'
+import { HTTP_STATUS } from '@/lib/config/http-status'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -644,7 +645,7 @@ export function SettlementImportSheet({
           body: JSON.stringify(body),
         })
 
-        if (res.ok || res.status === 201) {
+        if (res.ok || res.status === HTTP_STATUS.CREATED) {
           imported++
           results.push({
             row: i + 1,
@@ -653,7 +654,7 @@ export function SettlementImportSheet({
             year,
             month,
           })
-        } else if (res.status === 409) {
+        } else if (res.status === HTTP_STATUS.CONFLICT) {
           skipped++
           const errBody = await res.json().catch(() => ({ error: 'Duplikat' }))
           results.push({

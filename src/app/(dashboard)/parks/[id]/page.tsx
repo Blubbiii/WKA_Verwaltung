@@ -86,6 +86,7 @@ import type { MapAnnotationData } from "@/components/maps/MapAnnotationLayer";
 import { TurbineDialogs, NetworkTopology } from "@/components/parks";
 import { DocumentPreviewDialog } from "@/components/documents";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface Turbine {
   id: string;
@@ -389,7 +390,7 @@ export default function ParkDetailsPage({
       setLoading(true);
       const response = await fetch(`/api/parks/${id}`);
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === HTTP_STATUS.NOT_FOUND) {
           setError("Park nicht gefunden");
         } else {
           throw new Error("Fehler beim Laden");

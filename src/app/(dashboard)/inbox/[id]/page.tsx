@@ -37,6 +37,7 @@ import { Label } from "@/components/ui/label";
 import { OcrFieldEditor } from "@/components/inbox/ocr-field-editor";
 import { SplitEditor } from "@/components/inbox/split-editor";
 import { LOCALE_DE } from "@/lib/format";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 // ============================================================================
 // Types
@@ -200,7 +201,7 @@ export default function InboxDetailPage() {
       const res = await fetch(`/api/inbox/${id}`);
       if (res.ok) {
         setInvoice(await res.json());
-      } else if (res.status === 404) {
+      } else if (res.status === HTTP_STATUS.NOT_FOUND) {
         router.push("/inbox");
       }
     } catch {

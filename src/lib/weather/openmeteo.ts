@@ -10,6 +10,7 @@
  */
 
 import { logger } from "@/lib/logger";
+import { EXTERNAL_APIS } from "@/lib/config/external-apis";
 import {
   CurrentWeather,
   DailyForecast,
@@ -23,8 +24,8 @@ import {
 // Constants
 // =============================================================================
 
-const FORECAST_API = "https://api.open-meteo.com/v1/forecast";
-const ARCHIVE_API  = "https://archive-api.open-meteo.com/v1/archive";
+const FORECAST_API = EXTERNAL_APIS.OPENMETEO_FORECAST;
+const ARCHIVE_API  = EXTERNAL_APIS.OPENMETEO_ARCHIVE;
 
 // Map WMO weather codes to OWM-style icon codes for UI backward compatibility
 const WMO_TO_ICON: Record<number, string> = {

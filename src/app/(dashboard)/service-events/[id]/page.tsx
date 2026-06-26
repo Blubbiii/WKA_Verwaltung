@@ -59,6 +59,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface Document {
   id: string;
@@ -139,7 +140,7 @@ export default function ServiceEventDetailPage({
       setLoading(true);
       const response = await fetch(`/api/service-events/${id}`);
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === HTTP_STATUS.NOT_FOUND) {
           setError(t("notFound"));
         } else {
           throw new Error(t("loadErrorGeneric"));

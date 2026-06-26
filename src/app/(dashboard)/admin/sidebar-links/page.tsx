@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,16 +109,28 @@ export default function SidebarLinksPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
 
-  const load = async () => {
+  // Audit-K-2 (2026-06-26): load via useCallback + cleanup-Flag im useEffect.
+  // Vorher: `useEffect(() => { load(); }, [])` mit non-memoized load() — bei
+  // jedem Render wurde load neu erzeugt und State-Updates nach Unmount waren
+  // möglich. Pattern angeglichen an Roles-Page (R-10).
+  const load = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await fetch("/api/admin/sidebar-links");
+      const res = await fetch("/api/admin/sidebar-links", { signal });
+      if (signal?.aborted) return;
       if (res.ok) setLinks(await res.json());
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      throw err;
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const ac = new AbortController();
+    load(ac.signal);
+    return () => ac.abort();
+  }, [load]);
 
   const openCreate = () => {
     setEditingLink(null);

@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -158,7 +159,7 @@ export default function BillingDetailPage({
         `/api/management-billing/billings/${id}`
       );
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === HTTP_STATUS.NOT_FOUND) {
           toast.error("Abrechnung nicht gefunden");
           router.push("/management-billing/billings");
           return;

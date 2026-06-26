@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 // =============================================================================
 // TYPES
@@ -283,7 +284,7 @@ export function useDashboardConfig(): UseDashboardConfigResult {
           createdAt: apiConfig.createdAt || new Date().toISOString(),
           updatedAt: apiConfig.updatedAt || new Date().toISOString(),
         });
-      } else if (response.status === 404) {
+      } else if (response.status === HTTP_STATUS.NOT_FOUND) {
         // No config exists yet, use default
         setConfig({
           id: "default",

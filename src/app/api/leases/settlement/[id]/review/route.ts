@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -41,8 +42,7 @@ export async function POST(
       return apiError("NOT_FOUND", undefined, { message: "Abrechnung nicht gefunden" });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let updateData: any = {};
+    let updateData: Prisma.LeaseRevenueSettlementUncheckedUpdateInput = {};
 
     switch (action) {
       case "submit": {

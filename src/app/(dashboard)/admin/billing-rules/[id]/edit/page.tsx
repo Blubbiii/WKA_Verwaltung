@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RuleForm } from "@/components/admin/billing-rules";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface Fund {
   id: string;
@@ -61,7 +62,7 @@ export default function EditBillingRulePage({
         ]);
 
         if (!ruleRes.ok) {
-          if (ruleRes.status === 404) {
+          if (ruleRes.status === HTTP_STATUS.NOT_FOUND) {
             toast.error(t("notFound"));
             router.push("/admin/billing-rules");
             return;

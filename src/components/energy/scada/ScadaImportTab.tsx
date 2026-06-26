@@ -75,6 +75,7 @@ import {
   formatDateTime,
 } from "./types";
 import { LOCALE_DE } from "@/lib/format";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 const SCADA_EXTENSIONS = [
   ".wsd", ".uid",
@@ -911,7 +912,7 @@ export default function ScadaImportTab() {
 
         if (!res.ok) {
           const _err = await res.json().catch(() => ({}));
-          if (res.status === 409) {
+          if (res.status === HTTP_STATUS.CONFLICT) {
             startedCount++;
           } else {
             failedToStart++;

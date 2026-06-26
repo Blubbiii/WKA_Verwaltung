@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SidebarCounts } from "@/lib/sidebar-counts";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 // =============================================================================
 // TYPES
@@ -90,7 +91,7 @@ export function TodayFocusWidget({ className }: TodayFocusWidgetProps) {
 
       // Counts (primär — wenn 401 → User nicht berechtigt, Widget bleibt leise)
       if (countsRes.status === "fulfilled") {
-        if (countsRes.value.status === 401) {
+        if (countsRes.value.status === HTTP_STATUS.UNAUTHORIZED) {
           setUnauthorized(true);
         } else if (countsRes.value.ok) {
           const data = (await countsRes.value.json()) as SidebarCounts;

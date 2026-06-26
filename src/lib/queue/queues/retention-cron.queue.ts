@@ -13,6 +13,7 @@ import { Queue } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
+import { CRON_SCHEDULES } from "@/lib/config/cron-schedules";
 
 export interface RetentionCronJobData {
   /** Optional Tenant-Scope für Tests / Ad-Hoc-Run. Standard: alle. */
@@ -35,7 +36,7 @@ export const RETENTION_CRON_QUEUE_NAME = "retention-cron";
 const REPEATABLE_JOB_ID = "retention-cron-daily";
 
 /** Cron-Pattern: täglich 03:00 nachts */
-const CRON_PATTERN = "0 3 * * *";
+const CRON_PATTERN = CRON_SCHEDULES.RETENTION;
 
 const defaultJobOptions = getJobOptions("background");
 

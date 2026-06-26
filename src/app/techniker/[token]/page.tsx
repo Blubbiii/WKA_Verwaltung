@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 import {
   Card,
   CardContent,
@@ -70,7 +71,7 @@ export default function TechnikerPage({
       if (!res.ok) {
         setState("error");
         setError(
-          res.status === 404
+          res.status === HTTP_STATUS.NOT_FOUND
             ? "Dieser QR-Code ist nicht gültig oder wurde deaktiviert."
             : "Ein Fehler ist aufgetreten."
         );
@@ -133,7 +134,7 @@ export default function TechnikerPage({
       if (!res.ok) {
         setError(data.error ?? "Fehler beim Einchecken");
         // If already checked in (409), use the existing session
-        if (res.status === 409 && data.session) {
+        if (res.status === HTTP_STATUS.CONFLICT && data.session) {
           setSession({ ...data.session, technicianName: name, companyName: company });
           setState("checked-in");
         }

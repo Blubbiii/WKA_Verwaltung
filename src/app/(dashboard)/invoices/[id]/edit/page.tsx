@@ -62,6 +62,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { RecipientSearchDialog, type RecipientSelection, PositionTemplateDialog, type PositionTemplateSelection } from "@/components/invoices";
 import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices/skonto";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface InvoiceItem {
   id: string;
@@ -178,7 +179,7 @@ export default function EditInvoicePage({
       try {
         const response = await fetch(`/api/invoices/${id}`);
         if (!response.ok) {
-          if (response.status === 404) {
+          if (response.status === HTTP_STATUS.NOT_FOUND) {
             toast.error(t("loadErrorNotFound"));
             router.push("/invoices");
             return;

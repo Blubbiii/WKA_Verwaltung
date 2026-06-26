@@ -9,6 +9,7 @@
 
 import nodemailer from 'nodemailer';
 import type { Transporter, SentMessageInfo } from 'nodemailer';
+import { EXTERNAL_APIS } from '@/lib/config/external-apis';
 import {
   EmailProviderType,
   EmailSendResult,
@@ -20,6 +21,19 @@ import {
 import { EMAIL_CONFIG } from '@/lib/config/email-config';
 import { decryptConfig, isEncrypted } from './encryption';
 import { emailLogger as logger } from "@/lib/logger";
+
+// Minimal structural type for the dynamically-imported @aws-sdk/client-ses module.
+// The package is an optional peer dep — we cannot import its real types here.
+interface AwsSesModule {
+  SESClient: new (config: {
+    region: string;
+    credentials: { accessKeyId: string; secretAccessKey: string };
+  }) => {
+    send(command: unknown): Promise<{ MessageId?: string }>;
+  };
+  SendEmailCommand: new (input: unknown) => unknown;
+  GetAccountSendingEnabledCommand: new (input: unknown) => unknown;
+}
 
 // =============================================================================
 // Provider Interface
@@ -210,7 +224,7 @@ export class SendGridProvider implements EmailProvider {
       const controller = new AbortController();
       const timeoutMs = EMAIL_CONFIG.sendgridTimeout;
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      const response = await fetch(EXTERNAL_APIS.SENDGRID_MAIL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
@@ -251,7 +265,9 @@ export class SendGridProvider implements EmailProvider {
       // and make a simple API call
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), EMAIL_CONFIG.smtpConnectionTimeout);
-      const response = await fetch('https://api.sendgrid.com/v3/scopes', {
+      // Derive scopes endpoint from configurable SendGrid base (replace /mail/send)
+      const sendgridScopesUrl = EXTERNAL_APIS.SENDGRID_MAIL.replace(/\/mail\/send$/, '/scopes');
+      const response = await fetch(sendgridScopesUrl, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
@@ -296,10 +312,9 @@ export class SesProvider implements EmailProvider {
       // Dynamic import to avoid bundling AWS SDK if not used
       // Using a string variable to prevent TypeScript from analyzing the import
       const moduleName = '@aws-sdk/client-ses';
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let awsSes: any;
+      let awsSes: AwsSesModule;
       try {
-        awsSes = await import(/* webpackIgnore: true */ moduleName);
+        awsSes = (await import(/* webpackIgnore: true */ moduleName)) as AwsSesModule;
       } catch {
         return {
           success: false,
@@ -368,10 +383,9 @@ export class SesProvider implements EmailProvider {
     try {
       // Dynamic import to avoid bundling AWS SDK if not used
       const moduleName = '@aws-sdk/client-ses';
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let awsSes: any;
+      let awsSes: AwsSesModule;
       try {
-        awsSes = await import(/* webpackIgnore: true */ moduleName);
+        awsSes = (await import(/* webpackIgnore: true */ moduleName)) as AwsSesModule;
       } catch {
         return false;
       }

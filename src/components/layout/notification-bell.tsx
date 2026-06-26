@@ -135,7 +135,7 @@ export function NotificationBell() {
       const res = await fetch("/api/notifications/mark-all-read", {
         method: "POST",
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) throw new Error("Benachrichtigungen konnten nicht geladen werden");
     } catch {
       // Revert on error
       setNotifications(prevNotifications);

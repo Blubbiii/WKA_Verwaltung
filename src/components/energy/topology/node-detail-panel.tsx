@@ -20,6 +20,14 @@ interface NodeDetailPanelProps {
 // COMPONENT
 // =============================================================================
 
+const TURBINE_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Aktiv",
+  INACTIVE: "Inaktiv",
+  MAINTENANCE: "Wartung",
+  FAULT: "Störung",
+  UNKNOWN: "Unbekannt",
+};
+
 export function NodeDetailPanel({ node, onClose }: NodeDetailPanelProps) {
   if (!node) return null;
 
@@ -105,7 +113,7 @@ export function NodeDetailPanel({ node, onClose }: NodeDetailPanelProps) {
           <div>
             <p className="text-xs text-muted-foreground mb-0.5">Anlagen-Status</p>
             <Badge variant={node.turbine.status === "ACTIVE" ? "default" : "secondary"}>
-              {node.turbine.status === "ACTIVE" ? "Aktiv" : node.turbine.status}
+              {TURBINE_STATUS_LABELS[node.turbine.status] ?? "Unbekannt"}
             </Badge>
           </div>
         </div>

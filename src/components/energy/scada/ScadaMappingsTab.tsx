@@ -57,6 +57,7 @@ import {
   DEFAULT_SCAN_PATH_FALLBACK,
 } from "./types";
 import { LOCALE_DE } from "@/lib/format";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface UnmatchedPlant {
   locationCode: string;
@@ -458,7 +459,7 @@ export default function ScadaMappingsTab() {
               started++;
             } else {
               const _err = await res.json().catch(() => ({}));
-              if (res.status === 409) {
+              if (res.status === HTTP_STATUS.CONFLICT) {
                 // Import already running - not an error
                 started++;
               } else {

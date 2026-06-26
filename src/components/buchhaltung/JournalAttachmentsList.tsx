@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { ACCEPT } from "@/lib/config/mime-types";
 import {
   Card,
   CardContent,
@@ -213,7 +214,7 @@ export function JournalAttachmentsList({
               <Input
                 ref={fileInputRef}
                 type="file"
-                accept="application/pdf,image/jpeg,image/png,image/tiff,image/webp"
+                accept={ACCEPT.PDF_AND_IMAGES}
                 onChange={handleUpload}
                 disabled={isUploading}
               />

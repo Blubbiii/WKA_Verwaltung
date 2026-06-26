@@ -37,6 +37,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface Fund {
   id: string;
@@ -130,7 +131,7 @@ export default function EditFundPage({
       setIsFetching(true);
       const response = await fetch(`/api/funds/${id}`);
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === HTTP_STATUS.NOT_FOUND) {
           setError(t("form.notFound"));
         } else {
           throw new Error(t("form.loadErrorGeneric"));

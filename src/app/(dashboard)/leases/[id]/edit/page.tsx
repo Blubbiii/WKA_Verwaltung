@@ -52,6 +52,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PersonEditDialog } from "@/components/leases/PersonEditDialog";
 import { LOCALE_DE } from "@/lib/format";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 // Types
 interface PlotArea {
@@ -227,7 +228,7 @@ export default function EditLeasePage({
         // Fetch lease
         const leaseRes = await fetch(`/api/leases/${resolvedParams.id}`);
         if (!leaseRes.ok) {
-          if (leaseRes.status === 404) {
+          if (leaseRes.status === HTTP_STATUS.NOT_FOUND) {
             toast.error(t("notFoundError"));
             router.push("/leases");
             return;

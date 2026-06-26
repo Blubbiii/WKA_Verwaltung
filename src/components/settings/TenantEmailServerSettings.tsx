@@ -125,7 +125,7 @@ export function TenantEmailServerSettings() {
       setIsLoading(true);
       setIsError(false);
       const response = await fetch("/api/admin/tenant-email");
-      if (!response.ok) throw new Error("Failed to load");
+      if (!response.ok) throw new Error("Konfiguration konnte nicht geladen werden");
       const result: TenantEmailConfig = await response.json();
       setData(result);
       setUseCustom(result.isCustom);

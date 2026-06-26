@@ -10,6 +10,7 @@ import { Queue, JobsOptions } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
+import { CRON_SCHEDULES } from "@/lib/config/cron-schedules";
 
 /**
  * Reminder job data structure
@@ -120,7 +121,7 @@ export const scheduleDailyReminderCheck = async () => {
 
   const job = await queue.add("check-reminders", jobData, {
     repeat: {
-      pattern: "0 8 * * *", // Every day at 08:00
+      pattern: CRON_SCHEDULES.REMINDER, // Every day at 08:00 (default)
     },
     jobId: "reminder-daily-all",
   });

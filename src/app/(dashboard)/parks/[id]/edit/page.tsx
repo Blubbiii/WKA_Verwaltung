@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ParkForm } from "@/components/parks/park-form";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface Park {
   id: string;
@@ -43,7 +44,7 @@ export default function EditParkPage({
       try {
         const response = await fetch(`/api/parks/${id}`);
         if (!response.ok) {
-          if (response.status === 404) {
+          if (response.status === HTTP_STATUS.NOT_FOUND) {
             setError(t("parkNotFound"));
           } else {
             throw new Error(t("loadError"));

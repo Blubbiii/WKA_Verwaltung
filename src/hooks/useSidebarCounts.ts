@@ -17,6 +17,7 @@ import {
   EMPTY_SIDEBAR_COUNTS,
   type SidebarCounts,
 } from "@/lib/sidebar-counts";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 const POLL_INTERVAL_MS = 60_000;
 
@@ -30,7 +31,7 @@ export function useSidebarCounts(): SidebarCounts {
     async function load() {
       try {
         const res = await fetch("/api/sidebar/counts", { cache: "no-store" });
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === HTTP_STATUS.UNAUTHORIZED || res.status === HTTP_STATUS.FORBIDDEN) {
           // Session weg oder fehlende Permission auf den Endpoint — stop polling.
           cancelled = true;
           if (timer) {

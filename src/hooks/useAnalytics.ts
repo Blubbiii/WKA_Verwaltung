@@ -55,8 +55,11 @@ export function useAnalytics(): UseAnalyticsResult {
 
       // Nach Cache-Clear neu laden
       await fetchAnalytics();
-    } catch {
-      // Cache clear failed silently - refetch will retry
+    } catch (err) {
+      // Audit-K-3 (2026-06-26): Silent-fail belassen (refetch versucht es ohnehin
+      // erneut beim nächsten User-Trigger), aber jetzt mit Logging — sonst sind
+      // Cache-Clear-Fehler im Production-Log unsichtbar und nicht debuggbar.
+      console.warn("[useAnalytics] Cache-Clear fehlgeschlagen:", err);
     }
   }, [fetchAnalytics]);
 

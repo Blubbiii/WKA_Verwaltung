@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface Stakeholder {
   id: string;
@@ -115,7 +116,7 @@ export default function EditStakeholderPage({
           `/api/management-billing/stakeholders/${id}`
         );
         if (!response.ok) {
-          if (response.status === 404) {
+          if (response.status === HTTP_STATUS.NOT_FOUND) {
             toast.error("BF-Vertrag nicht gefunden");
             router.push("/management-billing");
             return;

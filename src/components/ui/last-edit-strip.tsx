@@ -26,6 +26,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface AuditEntry {
   id: string;
@@ -77,7 +78,7 @@ export function LastEditStrip({
       try {
         const url = `/api/audit/by-entity?entityType=${encodeURIComponent(entityType)}&entityId=${encodeURIComponent(entityId)}&limit=10`;
         const res = await fetch(url, { cache: "no-store" });
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === HTTP_STATUS.UNAUTHORIZED || res.status === HTTP_STATUS.FORBIDDEN) {
           if (!cancelled) setUnauthorized(true);
           return;
         }

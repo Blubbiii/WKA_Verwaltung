@@ -60,6 +60,7 @@ import {
   isDerivedLabel,
 } from "@/lib/crm/label-constants";
 import { EditableCell } from "@/components/ui/editable-cell";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 // ============================================================================
 // Types
@@ -397,7 +398,7 @@ export default function CrmContactsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (res.status === 409) {
+      if (res.status === HTTP_STATUS.CONFLICT) {
         const err = await res.json();
         setDedupMatch(err.existing as ExistingMatch);
         return;

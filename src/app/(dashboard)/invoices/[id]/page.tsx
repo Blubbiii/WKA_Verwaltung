@@ -86,6 +86,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { InvoicePreviewDialog, PartialCancelDialog, CorrectionDialog, SettlementDetailsCard } from "@/components/invoices";
 import { INVOICE_STATUS, getStatusBadge } from "@/lib/status-config";
 import { getSkontoStatus, getSkontoStatusLabel, getSkontoStatusBadgeClass } from "@/lib/invoices/skonto";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface InvoiceItem {
   id: string;
@@ -276,7 +277,7 @@ export default function InvoiceDetailPage({
       setLoading(true);
       const response = await fetch(`/api/invoices/${id}`);
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === HTTP_STATUS.NOT_FOUND) {
           router.push("/invoices");
           return;
         }

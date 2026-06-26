@@ -287,7 +287,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Status waehlen" />
+                          <SelectValue placeholder="Status wählen" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

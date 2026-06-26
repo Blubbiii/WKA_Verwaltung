@@ -43,6 +43,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { HTTP_STATUS } from "@/lib/config/http-status";
 
 // Types
 interface BillingRuleDetail {
@@ -164,7 +165,7 @@ export default function BillingRuleDetailPage({
     try {
       const response = await fetch(`/api/admin/billing-rules/${id}`, { signal: ac.signal });
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === HTTP_STATUS.NOT_FOUND) {
           toast.error(t("notFound"));
           router.push("/admin/billing-rules");
           return;
