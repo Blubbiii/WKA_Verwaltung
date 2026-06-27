@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/VS_Code/Verwaltung/src/messages/de.json','utf8'\\)\\);console.log\\('de.json OK'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/VS_Code/Verwaltung/src/messages/en.json','utf8'\\)\\);console.log\\('en.json OK'\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/VS_Code/Verwaltung/src/messages/de-personal.json','utf8'\\)\\);console.log\\('de-personal.json OK'\\)\")",
+      "Bash(echo \"exit=$?\")",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('src/messages/de.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('src/messages/en.json','utf8'\\)\\);JSON.parse\\(require\\('fs'\\).readFileSync\\('src/messages/de-personal.json','utf8'\\)\\);console.log\\('ok'\\)\")",
+      "Bash(echo \"EXIT $?\")",
+      "Bash(echo \"tsc exit=$?\")"
+    ]
+  }
+}

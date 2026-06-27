@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import {
   RefreshCw,
   AlertTriangle,
@@ -52,6 +53,7 @@ import { formatCurrency, LOCALE_DE } from "@/lib/format";
 // =============================================================================
 
 export function AnalyticsDashboard() {
+  const t = useTranslations("admin.analyticsDashboard");
   const analytics = useAnalytics();
   const energy = useEnergyDashboard();
 
@@ -67,7 +69,7 @@ export function AnalyticsDashboard() {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
         <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-        Lade Analytics-Daten...
+        {t("loading")}
       </div>
     );
   }
@@ -78,7 +80,7 @@ export function AnalyticsDashboard() {
         <AlertTriangle className="h-8 w-8 text-destructive" />
         <p>{analytics.error || energy.error}</p>
         <Button variant="outline" size="sm" onClick={handleRefresh}>
-          Erneut versuchen
+          {t("retry")}
         </Button>
       </div>
     );
@@ -93,7 +95,7 @@ export function AnalyticsDashboard() {
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
           {analytics.data?.generatedAt &&
-            `Stand: ${new Date(analytics.data.generatedAt).toLocaleString(LOCALE_DE)}`}
+            t("statusUpdated", { date: new Date(analytics.data.generatedAt).toLocaleString(LOCALE_DE) })}
         </span>
         <div className="flex gap-2">
           <Button
@@ -102,7 +104,7 @@ export function AnalyticsDashboard() {
             onClick={() => analytics.clearCache()}
             className="h-7 text-xs"
           >
-            Cache leeren
+            {t("clearCache")}
           </Button>
           <Button
             variant="ghost"
@@ -111,7 +113,7 @@ export function AnalyticsDashboard() {
             className="h-7 text-xs"
           >
             <RefreshCw className="h-3 w-3 mr-1" />
-            Aktualisieren
+            {t("refresh")}
           </Button>
         </div>
       </div>
@@ -120,38 +122,38 @@ export function AnalyticsDashboard() {
       {kpis && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
-            title="Windparks"
+            title={t("kpiParks")}
             value={`${kpis.activeParks} / ${kpis.totalParks}`}
             icon={Building2}
-            description={`${kpis.totalCapacityMW} MW Gesamtleistung`}
+            description={t("kpiParksDesc", { mw: kpis.totalCapacityMW })}
             accentColor="text-cyan-600 dark:text-cyan-400"
             iconColor="text-cyan-500/70 dark:text-cyan-400/60"
           />
           <KPICard
-            title="Turbinen"
+            title={t("kpiTurbines")}
             value={kpis.totalTurbines}
             icon={Wind}
-            description={`${kpis.turbinesInMaintenance} in Wartung`}
+            description={t("kpiTurbinesDesc", { count: kpis.turbinesInMaintenance })}
             accentColor="text-slate-600 dark:text-slate-400"
             iconColor="text-slate-500/70 dark:text-slate-400/60"
             isAlert={kpis.turbinesInMaintenance > 0}
           />
           <KPICard
-            title="Kapazität"
+            title={t("kpiCapacity")}
             value={`${kpis.totalCapacityMW} MW`}
             icon={Gauge}
-            description={`Ø ${kpis.averageTurbineAge.toFixed(1)} Jahre Alter`}
+            description={t("kpiCapacityDesc", { years: kpis.averageTurbineAge.toFixed(1) })}
             accentColor="text-emerald-600 dark:text-emerald-400"
             iconColor="text-emerald-500/70 dark:text-emerald-400/60"
           />
           <KPICard
-            title="Verträge"
+            title={t("kpiContracts")}
             value={kpis.activeContractsCount}
             icon={ScrollText}
             description={
               kpis.expiringContractsCount > 0
-                ? `${kpis.expiringContractsCount} laufen bald aus`
-                : "Keine auslaufend"
+                ? t("kpiContractsExpiring", { count: kpis.expiringContractsCount })
+                : t("kpiContractsNone")
             }
             accentColor="text-orange-600 dark:text-orange-400"
             iconColor="text-orange-500/70 dark:text-orange-400/60"
@@ -164,7 +166,7 @@ export function AnalyticsDashboard() {
       {kpis && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KPICard
-            title="Offene Rechnungen"
+            title={t("kpiOpenInvoices")}
             value={kpis.openInvoicesCount}
             icon={Receipt}
             description={formatCurrency(parseFloat(kpis.openInvoicesAmount))}
@@ -173,7 +175,7 @@ export function AnalyticsDashboard() {
             isAlert={kpis.openInvoicesCount > 0}
           />
           <KPICard
-            title="Bezahlt (Monat)"
+            title={t("kpiPaidMonth")}
             value={formatCurrency(parseFloat(kpis.paidThisMonth))}
             icon={CreditCard}
             trend={kpis.trends.revenue}
@@ -181,22 +183,22 @@ export function AnalyticsDashboard() {
             iconColor="text-green-500/70 dark:text-green-400/60"
           />
           <KPICard
-            title="Dokumente"
+            title={t("kpiDocuments")}
             value={kpis.totalDocuments}
             icon={FileText}
-            description={`${kpis.documentsThisMonth} diesen Monat`}
+            description={t("kpiDocumentsDesc", { count: kpis.documentsThisMonth })}
             trend={kpis.trends.documents}
             accentColor="text-pink-600 dark:text-pink-400"
             iconColor="text-pink-500/70 dark:text-pink-400/60"
           />
           <KPICard
-            title="Abstimmungen"
+            title={t("kpiVotes")}
             value={kpis.activeVotes}
             icon={Vote}
             description={
               kpis.pendingVotersCount > 0
-                ? `${kpis.pendingVotersCount} ausstehende Stimmen`
-                : "Keine offenen"
+                ? t("kpiVotesPending", { count: kpis.pendingVotersCount })
+                : t("kpiVotesNone")
             }
             accentColor="text-indigo-600 dark:text-indigo-400"
             iconColor="text-indigo-500/70 dark:text-indigo-400/60"

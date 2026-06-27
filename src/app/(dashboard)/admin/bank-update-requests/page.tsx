@@ -5,6 +5,7 @@
  * Listet pending PendingBankUpdate-Einträge mit Approve/Reject-Aktion.
  */
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ interface PendingRequest {
 }
 
 export default function BankUpdateRequestsPage() {
+  const t = useTranslations("admin.bankUpdateRequests");
   const [requests, setRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"PENDING" | "ALL">("PENDING");
@@ -41,28 +43,25 @@ export default function BankUpdateRequestsPage() {
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/bank-update-requests?status=${filter}`);
-      if (!res.ok) throw new Error("Fehler beim Laden");
+      if (!res.ok) throw new Error(t("errors.loadFailed"));
       const json = await res.json();
       setRequests(json.data || []);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler beim Laden");
+      toast.error(err instanceof Error ? err.message : t("errors.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, t]);
 
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
 
   async function decide(id: string, action: "APPROVE" | "REJECT") {
-    if (
-      action === "APPROVE" &&
-      !confirm("Bankdaten-Änderung wirklich freigeben? Die neuen Daten werden sofort übernommen.")
-    ) {
+    if (action === "APPROVE" && !confirm(t("confirmApprove"))) {
       return;
     }
-    if (action === "REJECT" && !confirm("Anfrage ablehnen?")) return;
+    if (action === "REJECT" && !confirm(t("confirmReject"))) return;
 
     setBusy(id);
     try {
@@ -73,12 +72,12 @@ export default function BankUpdateRequestsPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Fehler bei der Entscheidung");
+        throw new Error(err.message || t("errors.decisionFailed"));
       }
-      toast.success(action === "APPROVE" ? "Freigegeben" : "Abgelehnt");
+      toast.success(t(action === "APPROVE" ? "toasts.approved" : "toasts.rejected"));
       await fetchRequests();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unbekannter Fehler");
+      toast.error(err instanceof Error ? err.message : t("errors.unknown"));
     } finally {
       setBusy(null);
     }
@@ -90,11 +89,9 @@ export default function BankUpdateRequestsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <ShieldAlert className="h-7 w-7 text-amber-500" />
-            Bankdaten-Änderungen
+            {t("title")}
           </h1>
-          <p className="text-muted-foreground">
-            Prüfung & Freigabe von Bankdaten-Änderungen aus dem Anleger-Portal (Betrugsschutz).
-          </p>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -102,16 +99,16 @@ export default function BankUpdateRequestsPage() {
             size="sm"
             onClick={() => setFilter("PENDING")}
           >
-            Offen
+            {t("filterPending")}
           </Button>
           <Button
             variant={filter === "ALL" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter("ALL")}
           >
-            Alle
+            {t("filterAll")}
           </Button>
-          <Button variant="ghost" size="icon" onClick={fetchRequests} aria-label="Neu laden">
+          <Button variant="ghost" size="icon" onClick={fetchRequests} aria-label={t("reload")}>
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -125,9 +122,7 @@ export default function BankUpdateRequestsPage() {
       ) : requests.length === 0 ? (
         <Alert>
           <AlertDescription>
-            {filter === "PENDING"
-              ? "Keine offenen Anfragen."
-              : "Keine Anfragen vorhanden."}
+            {filter === "PENDING" ? t("emptyPending") : t("emptyAll")}
           </AlertDescription>
         </Alert>
       ) : (
@@ -139,7 +134,7 @@ export default function BankUpdateRequestsPage() {
                   <div>
                     <CardTitle className="text-lg">{r.personName}</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      {r.personEmail} · Beantragt von {r.requestedBy || "—"} ·{" "}
+                      {r.personEmail} · {t("requestedBy", { name: r.requestedBy || "—" })} ·{" "}
                       {new Date(r.requestedAt).toLocaleString(LOCALE_DE)}
                     </p>
                   </div>
@@ -153,10 +148,10 @@ export default function BankUpdateRequestsPage() {
                     }
                   >
                     {r.status === "PENDING"
-                      ? "Offen"
+                      ? t("statusPending")
                       : r.status === "APPROVED"
-                        ? "Freigegeben"
-                        : "Abgelehnt"}
+                        ? t("statusApproved")
+                        : t("statusRejected")}
                   </Badge>
                 </div>
               </CardHeader>
@@ -164,30 +159,30 @@ export default function BankUpdateRequestsPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-md border bg-muted/30 p-3">
                     <p className="text-xs font-medium text-muted-foreground mb-2">
-                      Aktuell hinterlegt
+                      {t("currentData")}
                     </p>
                     <p className="text-sm">
-                      <strong>Bank:</strong> {r.currentBankName || "—"}
+                      <strong>{t("bank")}:</strong> {r.currentBankName || "—"}
                     </p>
                     <p className="text-sm font-mono">
-                      <strong>IBAN:</strong> {r.currentIban || "—"}
+                      <strong>{t("iban")}:</strong> {r.currentIban || "—"}
                     </p>
                     <p className="text-sm font-mono">
-                      <strong>BIC:</strong> {r.currentBic || "—"}
+                      <strong>{t("bic")}:</strong> {r.currentBic || "—"}
                     </p>
                   </div>
                   <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3">
                     <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-2">
-                      Neue Daten (beantragt)
+                      {t("newData")}
                     </p>
                     <p className="text-sm">
-                      <strong>Bank:</strong> {r.requestedBankName || "—"}
+                      <strong>{t("bank")}:</strong> {r.requestedBankName || "—"}
                     </p>
                     <p className="text-sm font-mono">
-                      <strong>IBAN:</strong> {r.requestedIban || "—"}
+                      <strong>{t("iban")}:</strong> {r.requestedIban || "—"}
                     </p>
                     <p className="text-sm font-mono">
-                      <strong>BIC:</strong> {r.requestedBic || "—"}
+                      <strong>{t("bic")}:</strong> {r.requestedBic || "—"}
                     </p>
                   </div>
                 </div>
@@ -201,7 +196,7 @@ export default function BankUpdateRequestsPage() {
                       disabled={busy === r.id}
                     >
                       <XCircle className="mr-2 h-4 w-4" />
-                      Ablehnen
+                      {t("reject")}
                     </Button>
                     <Button
                       size="sm"
@@ -209,14 +204,16 @@ export default function BankUpdateRequestsPage() {
                       disabled={busy === r.id}
                     >
                       <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Freigeben
+                      {t("approve")}
                     </Button>
                   </div>
                 )}
                 {r.status !== "PENDING" && r.decidedBy && (
                   <p className="mt-4 text-xs text-muted-foreground">
-                    Entschieden von {r.decidedBy} am{" "}
-                    {r.decidedAt ? new Date(r.decidedAt).toLocaleString(LOCALE_DE) : ""}
+                    {t("decidedBy", {
+                      name: r.decidedBy,
+                      date: r.decidedAt ? new Date(r.decidedAt).toLocaleString(LOCALE_DE) : "",
+                    })}
                   </p>
                 )}
               </CardContent>

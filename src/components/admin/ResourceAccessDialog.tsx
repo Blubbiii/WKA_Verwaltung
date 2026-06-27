@@ -306,7 +306,7 @@ export function ResourceAccessDialog({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Fehler beim Speichern");
+        throw new Error(data.error || t("errors.saveFailed"));
       }
 
       toast({
@@ -357,7 +357,7 @@ export function ResourceAccessDialog({
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Fehler beim Löschen");
+        throw new Error(data.error || t("errors.deleteFailed"));
       }
 
       toast({
@@ -408,12 +408,10 @@ export function ResourceAccessDialog({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              {mode === "manage" ? "Ressourcen-Zugriff verwalten" : "Ressourcen-Zugriff gewaehren"}
+              {mode === "manage" ? t("manageTitle") : t("grantTitle")}
             </DialogTitle>
             <DialogDescription>
-              {mode === "manage"
-                ? "Verwalten Sie direkte Zugriffsrechte auf einzelne Ressourcen."
-                : "Gewaehren Sie einem Benutzer direkten Zugriff auf eine Ressource."}
+              {mode === "manage" ? t("manageDescription") : t("grantDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -422,13 +420,13 @@ export function ResourceAccessDialog({
             {/* User Selection */}
             {!preSelectedUserId && (
               <div className="space-y-2">
-                <Label htmlFor="user">Benutzer *</Label>
+                <Label htmlFor="user">{t("labelUser")}</Label>
                 {loadingUsers ? (
                   <Skeleton className="h-10 w-full" />
                 ) : (
                   <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                     <SelectTrigger id="user">
-                      <SelectValue placeholder="Benutzer auswaehlen..." />
+                      <SelectValue placeholder={t("userPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {users.map((user) => (
@@ -451,10 +449,10 @@ export function ResourceAccessDialog({
             {/* Resource Type Selection */}
             {!preSelectedResourceType && (
               <div className="space-y-2">
-                <Label htmlFor="resourceType">Ressourcen-Typ *</Label>
+                <Label htmlFor="resourceType">{t("labelResourceType")}</Label>
                 <Select value={selectedResourceType} onValueChange={setSelectedResourceType}>
                   <SelectTrigger id="resourceType">
-                    <SelectValue placeholder="Typ auswaehlen..." />
+                    <SelectValue placeholder={t("resourceTypePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {RESOURCE_TYPES.map((type) => (
@@ -470,13 +468,13 @@ export function ResourceAccessDialog({
             {/* Resource Selection */}
             {!preSelectedResourceId && selectedResourceType && (
               <div className="space-y-2">
-                <Label htmlFor="resource">Ressource *</Label>
+                <Label htmlFor="resource">{t("labelResource")}</Label>
                 {loadingResources ? (
                   <Skeleton className="h-10 w-full" />
                 ) : (
                   <Select value={selectedResourceId} onValueChange={setSelectedResourceId}>
                     <SelectTrigger id="resource">
-                      <SelectValue placeholder="Ressource auswaehlen..." />
+                      <SelectValue placeholder={t("resourcePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {resources.map((resource) => (
@@ -492,7 +490,7 @@ export function ResourceAccessDialog({
 
             {/* Access Level Selection */}
             <div className="space-y-2">
-              <Label htmlFor="accessLevel">Zugriffslevel *</Label>
+              <Label htmlFor="accessLevel">{t("labelAccessLevel")}</Label>
               <Select value={selectedAccessLevel} onValueChange={setSelectedAccessLevel}>
                 <SelectTrigger id="accessLevel">
                   <SelectValue />
@@ -516,7 +514,7 @@ export function ResourceAccessDialog({
             <div className="space-y-2">
               <Label htmlFor="expiresAt" className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                Ablaufdatum (optional)
+                {t("labelExpiresAt")}
               </Label>
               <input
                 type="datetime-local"
@@ -525,17 +523,15 @@ export function ResourceAccessDialog({
                 onChange={(e) => setExpiresAt(e.target.value)}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
-              <p className="text-xs text-muted-foreground">
-                Leer lassen für unbegrenzten Zugriff
-              </p>
+              <p className="text-xs text-muted-foreground">{t("expiresHelp")}</p>
             </div>
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notiz (optional)</Label>
+              <Label htmlFor="notes">{t("labelNotes")}</Label>
               <Textarea
                 id="notes"
-                placeholder="Grund für Zugriff..."
+                placeholder={t("notesPlaceholder")}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
@@ -554,14 +550,14 @@ export function ResourceAccessDialog({
               className="w-full"
             >
               <Plus className="h-4 w-4 mr-2" />
-              {submitting ? "Wird gespeichert..." : "Zugriff gewaehren"}
+              {submitting ? t("submitGranting") : t("submitGrant")}
             </Button>
           </div>
 
           {/* Access List (manage mode) */}
           {mode === "manage" && (
             <div className="border-t pt-4">
-              <h3 className="font-medium mb-3">Bestehende Zugriffsrechte</h3>
+              <h3 className="font-medium mb-3">{t("existingHeading")}</h3>
               {loadingAccess ? (
                 <div className="space-y-2">
                   <Skeleton className="h-10 w-full" />
@@ -569,17 +565,17 @@ export function ResourceAccessDialog({
                 </div>
               ) : accessList.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-4">
-                  Keine Zugriffsrechte vorhanden
+                  {t("existingEmpty")}
                 </p>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {!preSelectedUserId && <TableHead>Benutzer</TableHead>}
-                      {!preSelectedResourceType && <TableHead>Typ</TableHead>}
-                      <TableHead>Ressource</TableHead>
-                      <TableHead>Level</TableHead>
-                      <TableHead>Ablauf</TableHead>
+                      {!preSelectedUserId && <TableHead>{t("colUser")}</TableHead>}
+                      {!preSelectedResourceType && <TableHead>{t("colType")}</TableHead>}
+                      <TableHead>{t("colResource")}</TableHead>
+                      <TableHead>{t("colLevel")}</TableHead>
+                      <TableHead>{t("colExpires")}</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -622,7 +618,7 @@ export function ResourceAccessDialog({
                             variant="ghost"
                             size="icon"
                             onClick={() => setDeleteTarget(entry)}
-                            title="Zugriff entziehen"
+                            title={t("revokeAction")}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -637,7 +633,7 @@ export function ResourceAccessDialog({
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Schliessen
+              {t("close")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -647,19 +643,18 @@ export function ResourceAccessDialog({
       <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Zugriff entziehen?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Möchten Sie den Zugriff auf &quot;{deleteTarget?.resourceName}&quot; wirklich
-              entziehen? Diese Aktion kann nicht rueckgaengig gemacht werden.
+              {t("deleteDescription", { name: deleteTarget?.resourceName ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel>{t("deleteCancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteTarget && handleDelete(deleteTarget)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Zugriff entziehen
+              {t("revokeAction")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

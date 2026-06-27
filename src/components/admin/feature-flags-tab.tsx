@@ -88,49 +88,49 @@ interface TenantWithFlags {
 }
 
 // =============================================================================
-// Labels
+// Keys (labels resolved via i18n inside component)
 // =============================================================================
 
-const FLAG_LABELS: Record<keyof FeatureFlags, string> = {
-  votingEnabled: "Abstimmungen",
-  portalEnabled: "Portal",
-  weatherEnabled: "Wetter",
-  energyEnabled: "Energie",
-  billingEnabled: "Billing",
-  documentsEnabled: "Dokumente",
-  reportsEnabled: "Berichte",
-};
+const FLAG_KEYS = [
+  "votingEnabled",
+  "portalEnabled",
+  "weatherEnabled",
+  "energyEnabled",
+  "billingEnabled",
+  "documentsEnabled",
+  "reportsEnabled",
+] as const satisfies readonly (keyof FeatureFlags)[];
 
-const MODULE_LABELS: Record<keyof ModuleFlags, string> = {
-  "management-billing": "Betriebsführung",
-  "paperless": "Paperless",
-  "communication": "Kommunikation",
-  "crm": "CRM",
-  "gis": "GIS-Karte",
-  "inbox": "Inbox",
-  "wirtschaftsplan": "Wirtschaftsplan",
-  "accounting": "Buchhaltung",
-  "marketData": "Marktwert-Vergleich",
-};
+const MODULE_KEYS = [
+  "management-billing",
+  "paperless",
+  "communication",
+  "crm",
+  "gis",
+  "inbox",
+  "wirtschaftsplan",
+  "accounting",
+  "marketData",
+] as const satisfies readonly (keyof ModuleFlags)[];
 
-const ACCOUNTING_SUB_LABELS: Record<keyof AccountingSubFlags, string> = {
-  "accounting.reports": "Reports (SuSa, BWA, EÜR, GuV)",
-  "accounting.bank": "Bankimport & Abgleich",
-  "accounting.dunning": "Mahnwesen",
-  "accounting.sepa": "SEPA-Export",
-  "accounting.ustva": "UStVA & ZM",
-  "accounting.assets": "Anlagen & AfA",
-  "accounting.cashbook": "Kassenbuch",
-  "accounting.datev": "DATEV-Export",
-  "accounting.yearend": "Jahresabschluss",
-  "accounting.costcenter": "Kostenstellen",
-  "accounting.budget": "Budget Soll/Ist",
-  "accounting.quotes": "Angebote",
-  "accounting.liquidity": "Liquiditätsplanung",
-  "accounting.ocr": "OCR-Belegerfassung",
-  "accounting.multibanking": "Multibanking",
-  "accounting.zm": "Zusammenfassende Meldung (ZM)",
-};
+const ACCOUNTING_SUB_KEYS = [
+  "accounting.reports",
+  "accounting.bank",
+  "accounting.dunning",
+  "accounting.sepa",
+  "accounting.ustva",
+  "accounting.assets",
+  "accounting.cashbook",
+  "accounting.datev",
+  "accounting.yearend",
+  "accounting.costcenter",
+  "accounting.budget",
+  "accounting.quotes",
+  "accounting.liquidity",
+  "accounting.ocr",
+  "accounting.multibanking",
+  "accounting.zm",
+] as const satisfies readonly (keyof AccountingSubFlags)[];
 
 const _DEFAULT_ACCOUNTING_SUB: AccountingSubFlags = {
   "accounting.reports": true,
@@ -219,7 +219,7 @@ export function FeatureFlagsTab() {
 
       toast.success(
         t("featureToggled", {
-          label: FLAG_LABELS[flagKey],
+          label: t(`flag.${flagKey}`),
           tenant: tenant.name,
           state: newValue ? t("stateActivated") : t("stateDeactivated"),
         })
@@ -278,7 +278,7 @@ export function FeatureFlagsTab() {
 
       toast.success(
         t("featureToggled", {
-          label: MODULE_LABELS[moduleKey],
+          label: t(`module.${moduleKey}`),
           tenant: tenant.name,
           state: newValue ? t("stateActivated") : t("stateDeactivated"),
         })
@@ -338,7 +338,7 @@ export function FeatureFlagsTab() {
 
       toast.success(
         t("featureToggled", {
-          label: ACCOUNTING_SUB_LABELS[subKey],
+          label: t(`accounting.${subKey}`),
           tenant: tenant.name,
           state: newValue ? t("stateActivated") : t("stateDeactivated"),
         })
@@ -359,9 +359,9 @@ export function FeatureFlagsTab() {
     }
   };
 
-  const featureKeys = Object.keys(FLAG_LABELS) as Array<keyof FeatureFlags>;
-  const moduleKeys = Object.keys(MODULE_LABELS) as Array<keyof ModuleFlags>;
-  const accountingSubKeys = Object.keys(ACCOUNTING_SUB_LABELS) as Array<keyof AccountingSubFlags>;
+  const featureKeys = FLAG_KEYS;
+  const moduleKeys = MODULE_KEYS;
+  const accountingSubKeys = ACCOUNTING_SUB_KEYS;
 
   return (
     <div className="space-y-6">
@@ -408,18 +408,18 @@ export function FeatureFlagsTab() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="min-w-[180px]">{t("tenant")}</TableHead>
-                    {Object.values(FLAG_LABELS).map((label) => (
-                      <TableHead key={label} className="text-center min-w-[90px]">
-                        {label}
+                    {featureKeys.map((flagKey) => (
+                      <TableHead key={flagKey} className="text-center min-w-[90px]">
+                        {t(`flag.${flagKey}`)}
                       </TableHead>
                     ))}
                     {/* Separator + Module flags */}
                     <TableHead className="w-[1px] px-0">
                       <div className="h-full border-l-2 border-border mx-auto" />
                     </TableHead>
-                    {Object.values(MODULE_LABELS).map((label) => (
-                      <TableHead key={label} className="text-center min-w-[90px]">
-                        <span className="text-primary font-semibold">{label}</span>
+                    {moduleKeys.map((moduleKey) => (
+                      <TableHead key={moduleKey} className="text-center min-w-[90px]">
+                        <span className="text-primary font-semibold">{t(`module.${moduleKey}`)}</span>
                       </TableHead>
                     ))}
                   </TableRow>
@@ -445,7 +445,7 @@ export function FeatureFlagsTab() {
                             disabled={
                               updating === `${tenant.id}-${flagKey}`
                             }
-                            aria-label={`${FLAG_LABELS[flagKey]} für ${tenant.name}`}
+                            aria-label={`${t(`flag.${flagKey}`)} für ${tenant.name}`}
                           />
                         </TableCell>
                       ))}
@@ -464,7 +464,7 @@ export function FeatureFlagsTab() {
                             disabled={
                               updating === `${tenant.id}-mod-${moduleKey}`
                             }
-                            aria-label={`${MODULE_LABELS[moduleKey]} für ${tenant.name}`}
+                            aria-label={`${t(`module.${moduleKey}`)} für ${tenant.name}`}
                           />
                         </TableCell>
                       ))}
@@ -528,7 +528,7 @@ export function FeatureFlagsTab() {
                             className="flex items-center justify-between gap-3 p-2 rounded-md border bg-card"
                           >
                             <span className="text-sm">
-                              {ACCOUNTING_SUB_LABELS[subKey]}
+                              {t(`accounting.${subKey}`)}
                             </span>
                             <Switch
                               checked={tenant.accountingSub[subKey]}
@@ -538,7 +538,7 @@ export function FeatureFlagsTab() {
                               disabled={
                                 updating === `${tenant.id}-sub-${subKey}`
                               }
-                              aria-label={`${ACCOUNTING_SUB_LABELS[subKey]} für ${tenant.name}`}
+                              aria-label={`${t(`accounting.${subKey}`)} für ${tenant.name}`}
                             />
                           </div>
                         ))}

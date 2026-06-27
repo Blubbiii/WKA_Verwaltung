@@ -7479,7 +7479,38 @@
       "passwordReset": "Password reset",
       "passwordResetError": "Failed to reset password",
       "impersonating": "Logged in as {firstName} {lastName}",
-      "impersonateError": "Impersonation failed"
+      "impersonateError": "Impersonation failed",
+      "validation": {
+        "invalidEmail": "Invalid email address",
+        "firstNameRequired": "First name is required",
+        "lastNameRequired": "Last name is required",
+        "tenantRequired": "Tenant is required",
+        "passwordMinLength": "At least 8 characters"
+      },
+      "modules": {
+        "parks": "Wind farms",
+        "turbines": "Turbines",
+        "users": "Users",
+        "roles": "Roles",
+        "documents": "Documents",
+        "reports": "Reports",
+        "settings": "Settings",
+        "admin": "Administration",
+        "contracts": "Contracts",
+        "invoices": "Invoices",
+        "shareholders": "Shareholders",
+        "votes": "Voting"
+      },
+      "actions": {
+        "read": "Read",
+        "create": "Create",
+        "update": "Update",
+        "delete": "Delete",
+        "manage": "Manage",
+        "assign": "Assign",
+        "export": "Export",
+        "import": "Import"
+      }
     },
     "marketingSettingsUI": {
       "loadError": "Failed to load marketing configuration",
@@ -7550,7 +7581,11 @@
       "deleted": "Role deleted",
       "deleteError": "Failed to delete",
       "exported": "Matrix exported as {format}",
-      "exportError": "Export failed"
+      "exportError": "Export failed",
+      "validation": {
+        "nameRequired": "Name is required",
+        "invalidColorCode": "Invalid color code"
+      }
     },
     "featureFlagsUI": {
       "title": "Feature flags",
@@ -7567,7 +7602,45 @@
       "stateDeactivated": "disabled",
       "accountingSubTitle": "Accounting — sub-modules",
       "accountingSubDescription": "Enable or disable individual accounting areas per tenant. Only visible for tenants with accounting enabled.",
-      "activeCount": "{active} / {total} active"
+      "activeCount": "{active} / {total} active",
+      "flag": {
+        "votingEnabled": "Voting",
+        "portalEnabled": "Portal",
+        "weatherEnabled": "Weather",
+        "energyEnabled": "Energy",
+        "billingEnabled": "Billing",
+        "documentsEnabled": "Documents",
+        "reportsEnabled": "Reports"
+      },
+      "module": {
+        "management-billing": "Operations management",
+        "paperless": "Paperless",
+        "communication": "Communication",
+        "crm": "CRM",
+        "gis": "GIS map",
+        "inbox": "Inbox",
+        "wirtschaftsplan": "Business plan",
+        "accounting": "Accounting",
+        "marketData": "Market value comparison"
+      },
+      "accounting": {
+        "accounting.reports": "Reports (trial balance, BWA, EUR, P&L)",
+        "accounting.bank": "Bank import & reconciliation",
+        "accounting.dunning": "Dunning",
+        "accounting.sepa": "SEPA export",
+        "accounting.ustva": "VAT return & EC sales list",
+        "accounting.assets": "Assets & depreciation",
+        "accounting.cashbook": "Cash book",
+        "accounting.datev": "DATEV export",
+        "accounting.yearend": "Year-end close",
+        "accounting.costcenter": "Cost centers",
+        "accounting.budget": "Budget vs. actual",
+        "accounting.quotes": "Quotes",
+        "accounting.liquidity": "Liquidity planning",
+        "accounting.ocr": "OCR document capture",
+        "accounting.multibanking": "Multibanking",
+        "accounting.zm": "Recapitulative statement (EC sales list)"
+      }
     },
     "tenantLimitsUI": {
       "title": "Tenant limits",
@@ -7590,7 +7663,79 @@
       "loadError": "Failed to load maintenance mode",
       "enabled": "Maintenance mode enabled",
       "disabled": "Maintenance mode disabled",
-      "saveError": "Failed to save"
+      "saveError": "Failed to save",
+      "defaultMessage": "The system is in maintenance mode. Please try again later.",
+      "cardTitle": "Maintenance mode",
+      "cardDescription": "Enable maintenance mode and configure the banner message. While maintenance mode is active, all users see a maintenance banner.",
+      "toggleLabel": "Enable maintenance mode",
+      "toggleActiveDesc": "Maintenance mode is active. All users see the maintenance banner.",
+      "toggleInactiveDesc": "Maintenance mode is disabled.",
+      "warningTitle": "Attention: Maintenance mode is active",
+      "warningBody": "All users see a maintenance banner. Make sure to disable the mode after maintenance is finished.",
+      "messageLabel": "Maintenance banner text",
+      "messagePlaceholder": "Enter the text to display in the maintenance banner...",
+      "messageHelp": "This text is shown in the maintenance banner at the top of the page. Maximum 500 characters.",
+      "saving": "Saving...",
+      "save": "Save",
+      "previewTitle": "Preview",
+      "previewDescription": "This is how the maintenance banner looks to users",
+      "previewInactive": "Maintenance mode is disabled. No banner visible.",
+      "previewPageContent": "(Page content)"
+    },
+    "bankUpdateRequests": {
+      "title": "Bank data changes",
+      "subtitle": "Review & approval of bank data changes from the investor portal (fraud protection).",
+      "filterPending": "Open",
+      "filterAll": "All",
+      "reload": "Reload",
+      "emptyPending": "No open requests.",
+      "emptyAll": "No requests available.",
+      "requestedBy": "Requested by {name}",
+      "statusPending": "Open",
+      "statusApproved": "Approved",
+      "statusRejected": "Rejected",
+      "currentData": "Currently stored",
+      "newData": "New data (requested)",
+      "bank": "Bank",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "reject": "Reject",
+      "approve": "Approve",
+      "decidedBy": "Decided by {name} on {date}",
+      "confirmApprove": "Really approve the bank data change? The new data will be applied immediately.",
+      "confirmReject": "Reject request?",
+      "errors": {
+        "loadFailed": "Failed to load",
+        "decisionFailed": "Failed to record decision",
+        "unknown": "Unknown error"
+      },
+      "toasts": {
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
+    },
+    "analyticsDashboard": {
+      "loading": "Loading analytics data...",
+      "retry": "Try again",
+      "statusUpdated": "As of: {date}",
+      "clearCache": "Clear cache",
+      "refresh": "Refresh",
+      "kpiParks": "Wind farms",
+      "kpiParksDesc": "{mw} MW total capacity",
+      "kpiTurbines": "Turbines",
+      "kpiTurbinesDesc": "{count} in maintenance",
+      "kpiCapacity": "Capacity",
+      "kpiCapacityDesc": "Avg {years} years old",
+      "kpiContracts": "Contracts",
+      "kpiContractsExpiring": "{count} expiring soon",
+      "kpiContractsNone": "None expiring",
+      "kpiOpenInvoices": "Open invoices",
+      "kpiPaidMonth": "Paid (month)",
+      "kpiDocuments": "Documents",
+      "kpiDocumentsDesc": "{count} this month",
+      "kpiVotes": "Votes",
+      "kpiVotesPending": "{count} pending votes",
+      "kpiVotesNone": "None open"
     },
     "systemConfigUI": {
       "emailSaved": "Email configuration saved",
@@ -7621,7 +7766,60 @@
     "billingRulesUI": {
       "created": "Rule created",
       "updated": "Rule updated",
-      "saveError": "Failed to save rule"
+      "saveError": "Failed to save rule",
+      "validation": {
+        "nameRequired": "Name is required"
+      },
+      "ruleType": {
+        "LEASE_PAYMENT": {
+          "label": "Lease payment",
+          "description": "Automatic lease payments to lessors based on lease contracts"
+        },
+        "DISTRIBUTION": {
+          "label": "Distribution",
+          "description": "Distributions to shareholders based on ownership shares"
+        },
+        "MANAGEMENT_FEE": {
+          "label": "Management fee",
+          "description": "Management fees (fixed or percentage)"
+        },
+        "CUSTOM": {
+          "label": "Custom",
+          "description": "Custom invoices with freely definable line items"
+        }
+      },
+      "frequency": {
+        "MONTHLY": "Monthly",
+        "QUARTERLY": "Quarterly",
+        "SEMI_ANNUAL": "Semi-annual",
+        "ANNUAL": "Annual",
+        "CUSTOM_CRON": "Custom (Cron)"
+      },
+      "form": {
+        "basicInfo": "Basic settings",
+        "basicInfoDescription": "Name and description of the billing rule",
+        "nameLabel": "Name *",
+        "namePlaceholder": "e.g. Monthly lease payments WP North",
+        "ruleTypeLabel": "Rule type *",
+        "ruleTypePlaceholder": "Select rule type",
+        "ruleTypeLockedHint": "Rule type cannot be changed after creation",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Optional description...",
+        "schedulingTitle": "Scheduling",
+        "schedulingDescription": "When should the rule run?",
+        "frequencyLabel": "Frequency *",
+        "frequencyPlaceholder": "Select frequency",
+        "dayOfMonthLabel": "Day of month (1-28)",
+        "dayOfMonthHint": "Runs on day {day} of the month",
+        "cronLabel": "Cron expression *",
+        "cronHint": "Format: minute hour day month weekday",
+        "isActiveLabel": "Rule is active",
+        "parametersTitle": "Parameters",
+        "parametersDescription": "Specific settings for {ruleType}",
+        "cancel": "Cancel",
+        "save": "Save",
+        "create": "Create"
+      }
     },
     "settingsUI": {
       "businessThresholds": {
@@ -7753,7 +7951,11 @@
       "levelWrite": "Write",
       "levelWriteDesc": "View and edit",
       "levelAdmin": "Admin",
-      "levelAdminDesc": "Full access"
+      "levelAdminDesc": "Full access",
+      "errors": {
+        "saveFailed": "Failed to save",
+        "deleteFailed": "Failed to delete"
+      }
     },
     "monitoringDashboard": {
       "loading": "Loading monitoring data...",

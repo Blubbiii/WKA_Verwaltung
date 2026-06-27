@@ -5,7 +5,7 @@
  * Formular für Erstellung/Bearbeitung von Billing Rules
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -51,42 +51,24 @@ interface Park {
   name: string;
 }
 
-// Validation Schema
-const formSchema = z.object({
-  name: z.string().min(1, "Name ist erforderlich").max(200),
-  description: z.string().max(1000).optional(),
-  ruleType: z.enum(["LEASE_PAYMENT", "DISTRIBUTION", "MANAGEMENT_FEE", "CUSTOM"]),
-  frequency: z.enum(["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "CUSTOM_CRON"]),
-  cronPattern: z.string().optional(),
-  dayOfMonth: z.number().int().min(1).max(28).optional(),
-  isActive: z.boolean().default(true),
-  parameters: z.record(z.string(), z.unknown()),
-});
+// Validation Schema factory
+const createFormSchema = (t: (key: string) => string) =>
+  z.object({
+    name: z.string().min(1, t("validation.nameRequired")).max(200),
+    description: z.string().max(1000).optional(),
+    ruleType: z.enum(["LEASE_PAYMENT", "DISTRIBUTION", "MANAGEMENT_FEE", "CUSTOM"]),
+    frequency: z.enum(["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "CUSTOM_CRON"]),
+    cronPattern: z.string().optional(),
+    dayOfMonth: z.number().int().min(1).max(28).optional(),
+    isActive: z.boolean().default(true),
+    parameters: z.record(z.string(), z.unknown()),
+  });
 
-type FormData = z.infer<typeof formSchema>;
+type FormData = z.infer<ReturnType<typeof createFormSchema>>;
 
-// Labels
-const RULE_TYPE_LABELS: Record<RuleType, string> = {
-  LEASE_PAYMENT: "Pachtzahlung",
-  DISTRIBUTION: "Ausschuettung",
-  MANAGEMENT_FEE: "Verwaltungsgebühr",
-  CUSTOM: "Benutzerdefiniert",
-};
-
-const RULE_TYPE_DESCRIPTIONS: Record<RuleType, string> = {
-  LEASE_PAYMENT: "Automatische Pachtzahlungen an Verpächter basierend auf Pachtverträgen",
-  DISTRIBUTION: "Ausschuettungen an Gesellschafter basierend auf Beteiligungsanteilen",
-  MANAGEMENT_FEE: "Verwaltungsgebühren (fix oder prozentual)",
-  CUSTOM: "Benutzerdefinierte Rechnungen mit frei definierbaren Positionen",
-};
-
-const FREQUENCY_LABELS: Record<Frequency, string> = {
-  MONTHLY: "Monatlich",
-  QUARTERLY: "Vierteljährlich",
-  SEMI_ANNUAL: "Halbjährlich",
-  ANNUAL: "Jährlich",
-  CUSTOM_CRON: "Benutzerdefiniert (Cron)",
-};
+// Static keys for rule types and frequencies (labels resolved via i18n in component)
+const RULE_TYPE_KEYS = ["LEASE_PAYMENT", "DISTRIBUTION", "MANAGEMENT_FEE", "CUSTOM"] as const satisfies readonly RuleType[];
+const FREQUENCY_KEYS = ["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL", "CUSTOM_CRON"] as const satisfies readonly Frequency[];
 
 interface RuleFormProps {
   initialData?: {
@@ -110,6 +92,8 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!initialData?.id;
+
+  const formSchema = useMemo(() => createFormSchema(t), [t]);
 
   const {
     register,
@@ -188,16 +172,16 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
       {/* Basis-Informationen */}
       <Card>
         <CardHeader>
-          <CardTitle>Grundeinstellungen</CardTitle>
-          <CardDescription>Name und Beschreibung der Abrechnungsregel</CardDescription>
+          <CardTitle>{t("form.basicInfo")}</CardTitle>
+          <CardDescription>{t("form.basicInfoDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{t("form.nameLabel")}</Label>
               <Input
                 id="name"
-                placeholder="z.B. Monatliche Pachtzahlungen WP Nord"
+                placeholder={t("form.namePlaceholder")}
                 {...register("name")}
               />
               {errors.name && (
@@ -206,7 +190,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ruleType">Regeltyp *</Label>
+              <Label htmlFor="ruleType">{t("form.ruleTypeLabel")}</Label>
               <Controller
                 name="ruleType"
                 control={control}
@@ -217,12 +201,12 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
                     disabled={isEditing}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Regeltyp waehlen" />
+                      <SelectValue placeholder={t("form.ruleTypePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(RULE_TYPE_LABELS).map(([value, label]) => (
+                      {RULE_TYPE_KEYS.map((value) => (
                         <SelectItem key={value} value={value}>
-                          {label}
+                          {t(`ruleType.${value}.label`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -231,24 +215,24 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
               />
               {isEditing && (
                 <p className="text-xs text-muted-foreground">
-                  Regeltyp kann nach Erstellung nicht geändert werden
+                  {t("form.ruleTypeLockedHint")}
                 </p>
               )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Beschreibung</Label>
+            <Label htmlFor="description">{t("form.descriptionLabel")}</Label>
             <Textarea
               id="description"
-              placeholder="Optionale Beschreibung..."
+              placeholder={t("form.descriptionPlaceholder")}
               {...register("description")}
             />
           </div>
 
           <Alert>
             <Info className="h-4 w-4" />
-            <AlertDescription>{RULE_TYPE_DESCRIPTIONS[ruleType]}</AlertDescription>
+            <AlertDescription>{t(`ruleType.${ruleType}.description`)}</AlertDescription>
           </Alert>
         </CardContent>
       </Card>
@@ -258,26 +242,26 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Zeitplanung
+            {t("form.schedulingTitle")}
           </CardTitle>
-          <CardDescription>Wann soll die Regel ausgeführt werden?</CardDescription>
+          <CardDescription>{t("form.schedulingDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="frequency">Frequenz *</Label>
+              <Label htmlFor="frequency">{t("form.frequencyLabel")}</Label>
               <Controller
                 name="frequency"
                 control={control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Frequenz waehlen" />
+                      <SelectValue placeholder={t("form.frequencyPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(FREQUENCY_LABELS).map(([value, label]) => (
+                      {FREQUENCY_KEYS.map((value) => (
                         <SelectItem key={value} value={value}>
-                          {label}
+                          {t(`frequency.${value}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -288,7 +272,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
 
             {frequency !== "CUSTOM_CRON" && (
               <div className="space-y-2">
-                <Label htmlFor="dayOfMonth">Tag im Monat (1-28)</Label>
+                <Label htmlFor="dayOfMonth">{t("form.dayOfMonthLabel")}</Label>
                 <Input
                   id="dayOfMonth"
                   type="number"
@@ -297,21 +281,21 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
                   {...register("dayOfMonth", { valueAsNumber: true })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Ausführung am {watch("dayOfMonth") || 1}. des Monats
+                  {t("form.dayOfMonthHint", { day: watch("dayOfMonth") || 1 })}
                 </p>
               </div>
             )}
 
             {frequency === "CUSTOM_CRON" && (
               <div className="space-y-2">
-                <Label htmlFor="cronPattern">Cron-Expression *</Label>
+                <Label htmlFor="cronPattern">{t("form.cronLabel")}</Label>
                 <Input
                   id="cronPattern"
                   placeholder="0 0 1 * *"
                   {...register("cronPattern")}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Format: Minute Stunde Tag Monat Wochentag
+                  {t("form.cronHint")}
                 </p>
               </div>
             )}
@@ -329,7 +313,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
                 />
               )}
             />
-            <Label htmlFor="isActive">Regel ist aktiv</Label>
+            <Label htmlFor="isActive">{t("form.isActiveLabel")}</Label>
           </div>
         </CardContent>
       </Card>
@@ -339,10 +323,10 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Parameter
+            {t("form.parametersTitle")}
           </CardTitle>
           <CardDescription>
-            Spezifische Einstellungen für {RULE_TYPE_LABELS[ruleType]}
+            {t("form.parametersDescription", { ruleType: t(`ruleType.${ruleType}.label`) })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -665,12 +649,12 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
           onClick={() => router.back()}
           disabled={isSubmitting}
         >
-          Abbrechen
+          {t("form.cancel")}
         </Button>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Save className="mr-2 h-4 w-4" />
-          {isEditing ? "Speichern" : "Erstellen"}
+          {isEditing ? t("form.save") : t("form.create")}
         </Button>
       </div>
     </form>

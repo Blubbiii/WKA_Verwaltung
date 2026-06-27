@@ -7479,7 +7479,38 @@
       "passwordReset": "Passwort zurückgesetzt",
       "passwordResetError": "Fehler beim Zurücksetzen des Passworts",
       "impersonating": "Angemeldet als {firstName} {lastName}",
-      "impersonateError": "Impersonifizierung fehlgeschlagen"
+      "impersonateError": "Impersonifizierung fehlgeschlagen",
+      "validation": {
+        "invalidEmail": "Ungültige E-Mail-Adresse",
+        "firstNameRequired": "Vorname ist erforderlich",
+        "lastNameRequired": "Nachname ist erforderlich",
+        "tenantRequired": "Mandant ist erforderlich",
+        "passwordMinLength": "Mindestens 8 Zeichen"
+      },
+      "modules": {
+        "parks": "Windparks",
+        "turbines": "WEAs",
+        "users": "Benutzer",
+        "roles": "Rollen",
+        "documents": "Dokumente",
+        "reports": "Berichte",
+        "settings": "Einstellungen",
+        "admin": "Administration",
+        "contracts": "Verträge",
+        "invoices": "Rechnungen",
+        "shareholders": "Gesellschafter",
+        "votes": "Abstimmungen"
+      },
+      "actions": {
+        "read": "Lesen",
+        "create": "Erstellen",
+        "update": "Bearbeiten",
+        "delete": "Löschen",
+        "manage": "Verwalten",
+        "assign": "Zuweisen",
+        "export": "Exportieren",
+        "import": "Importieren"
+      }
     },
     "marketingSettingsUI": {
       "loadError": "Fehler beim Laden der Marketing-Konfiguration",
@@ -7550,7 +7581,11 @@
       "deleted": "Rolle gelöscht",
       "deleteError": "Fehler beim Löschen",
       "exported": "Matrix als {format} exportiert",
-      "exportError": "Export fehlgeschlagen"
+      "exportError": "Export fehlgeschlagen",
+      "validation": {
+        "nameRequired": "Name ist erforderlich",
+        "invalidColorCode": "Ungültiger Farbcode"
+      }
     },
     "featureFlagsUI": {
       "title": "Feature-Flags",
@@ -7567,7 +7602,45 @@
       "stateDeactivated": "deaktiviert",
       "accountingSubTitle": "Buchhaltung — Sub-Module",
       "accountingSubDescription": "Einzelne Buchhaltungsbereiche pro Mandant aktivieren oder deaktivieren. Nur sichtbar für Mandanten mit aktivierter Buchhaltung.",
-      "activeCount": "{active} / {total} aktiv"
+      "activeCount": "{active} / {total} aktiv",
+      "flag": {
+        "votingEnabled": "Abstimmungen",
+        "portalEnabled": "Portal",
+        "weatherEnabled": "Wetter",
+        "energyEnabled": "Energie",
+        "billingEnabled": "Billing",
+        "documentsEnabled": "Dokumente",
+        "reportsEnabled": "Berichte"
+      },
+      "module": {
+        "management-billing": "Betriebsführung",
+        "paperless": "Paperless",
+        "communication": "Kommunikation",
+        "crm": "CRM",
+        "gis": "GIS-Karte",
+        "inbox": "Inbox",
+        "wirtschaftsplan": "Wirtschaftsplan",
+        "accounting": "Buchhaltung",
+        "marketData": "Marktwert-Vergleich"
+      },
+      "accounting": {
+        "accounting.reports": "Reports (SuSa, BWA, EÜR, GuV)",
+        "accounting.bank": "Bankimport & Abgleich",
+        "accounting.dunning": "Mahnwesen",
+        "accounting.sepa": "SEPA-Export",
+        "accounting.ustva": "UStVA & ZM",
+        "accounting.assets": "Anlagen & AfA",
+        "accounting.cashbook": "Kassenbuch",
+        "accounting.datev": "DATEV-Export",
+        "accounting.yearend": "Jahresabschluss",
+        "accounting.costcenter": "Kostenstellen",
+        "accounting.budget": "Budget Soll/Ist",
+        "accounting.quotes": "Angebote",
+        "accounting.liquidity": "Liquiditätsplanung",
+        "accounting.ocr": "OCR-Belegerfassung",
+        "accounting.multibanking": "Multibanking",
+        "accounting.zm": "Zusammenfassende Meldung (ZM)"
+      }
     },
     "tenantLimitsUI": {
       "title": "Mandanten-Limits",
@@ -7590,7 +7663,79 @@
       "loadError": "Fehler beim Laden des Wartungsmodus",
       "enabled": "Wartungsmodus aktiviert",
       "disabled": "Wartungsmodus deaktiviert",
-      "saveError": "Fehler beim Speichern"
+      "saveError": "Fehler beim Speichern",
+      "defaultMessage": "Das System befindet sich im Wartungsmodus. Bitte versuchen Sie es später erneut.",
+      "cardTitle": "Wartungsmodus",
+      "cardDescription": "Wartungsmodus aktivieren und Bannernachricht konfigurieren. Im Wartungsmodus sehen alle Benutzer ein Wartungsbanner.",
+      "toggleLabel": "Wartungsmodus aktivieren",
+      "toggleActiveDesc": "Der Wartungsmodus ist aktiv. Alle Benutzer sehen das Wartungsbanner.",
+      "toggleInactiveDesc": "Der Wartungsmodus ist deaktiviert.",
+      "warningTitle": "Achtung: Wartungsmodus ist aktiv",
+      "warningBody": "Alle Benutzer sehen ein Wartungsbanner. Stellen Sie sicher, dass Sie den Modus nach Abschluss der Wartung deaktivieren.",
+      "messageLabel": "Wartungsbanner-Text",
+      "messagePlaceholder": "Geben Sie den Text ein, der im Wartungsbanner angezeigt wird...",
+      "messageHelp": "Dieser Text wird im Wartungsbanner am oberen Seitenrand angezeigt. Maximal 500 Zeichen.",
+      "saving": "Wird gespeichert...",
+      "save": "Speichern",
+      "previewTitle": "Vorschau",
+      "previewDescription": "So sieht das Wartungsbanner für die Benutzer aus",
+      "previewInactive": "Wartungsmodus ist deaktiviert. Kein Banner sichtbar.",
+      "previewPageContent": "(Seiteninhalt)"
+    },
+    "bankUpdateRequests": {
+      "title": "Bankdaten-Änderungen",
+      "subtitle": "Prüfung & Freigabe von Bankdaten-Änderungen aus dem Anleger-Portal (Betrugsschutz).",
+      "filterPending": "Offen",
+      "filterAll": "Alle",
+      "reload": "Neu laden",
+      "emptyPending": "Keine offenen Anfragen.",
+      "emptyAll": "Keine Anfragen vorhanden.",
+      "requestedBy": "Beantragt von {name}",
+      "statusPending": "Offen",
+      "statusApproved": "Freigegeben",
+      "statusRejected": "Abgelehnt",
+      "currentData": "Aktuell hinterlegt",
+      "newData": "Neue Daten (beantragt)",
+      "bank": "Bank",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "reject": "Ablehnen",
+      "approve": "Freigeben",
+      "decidedBy": "Entschieden von {name} am {date}",
+      "confirmApprove": "Bankdaten-Änderung wirklich freigeben? Die neuen Daten werden sofort übernommen.",
+      "confirmReject": "Anfrage ablehnen?",
+      "errors": {
+        "loadFailed": "Fehler beim Laden",
+        "decisionFailed": "Fehler bei der Entscheidung",
+        "unknown": "Unbekannter Fehler"
+      },
+      "toasts": {
+        "approved": "Freigegeben",
+        "rejected": "Abgelehnt"
+      }
+    },
+    "analyticsDashboard": {
+      "loading": "Lade Analytics-Daten...",
+      "retry": "Erneut versuchen",
+      "statusUpdated": "Stand: {date}",
+      "clearCache": "Cache leeren",
+      "refresh": "Aktualisieren",
+      "kpiParks": "Windparks",
+      "kpiParksDesc": "{mw} MW Gesamtleistung",
+      "kpiTurbines": "Turbinen",
+      "kpiTurbinesDesc": "{count} in Wartung",
+      "kpiCapacity": "Kapazität",
+      "kpiCapacityDesc": "Ø {years} Jahre Alter",
+      "kpiContracts": "Verträge",
+      "kpiContractsExpiring": "{count} laufen bald aus",
+      "kpiContractsNone": "Keine auslaufend",
+      "kpiOpenInvoices": "Offene Rechnungen",
+      "kpiPaidMonth": "Bezahlt (Monat)",
+      "kpiDocuments": "Dokumente",
+      "kpiDocumentsDesc": "{count} diesen Monat",
+      "kpiVotes": "Abstimmungen",
+      "kpiVotesPending": "{count} ausstehende Stimmen",
+      "kpiVotesNone": "Keine offenen"
     },
     "systemConfigUI": {
       "emailSaved": "E-Mail-Konfiguration gespeichert",
@@ -7621,7 +7766,60 @@
     "billingRulesUI": {
       "created": "Regel erstellt",
       "updated": "Regel aktualisiert",
-      "saveError": "Fehler beim Speichern der Regel"
+      "saveError": "Fehler beim Speichern der Regel",
+      "validation": {
+        "nameRequired": "Name ist erforderlich"
+      },
+      "ruleType": {
+        "LEASE_PAYMENT": {
+          "label": "Pachtzahlung",
+          "description": "Automatische Pachtzahlungen an Verpächter basierend auf Pachtverträgen"
+        },
+        "DISTRIBUTION": {
+          "label": "Ausschüttung",
+          "description": "Ausschüttungen an Gesellschafter basierend auf Beteiligungsanteilen"
+        },
+        "MANAGEMENT_FEE": {
+          "label": "Verwaltungsgebühr",
+          "description": "Verwaltungsgebühren (fix oder prozentual)"
+        },
+        "CUSTOM": {
+          "label": "Benutzerdefiniert",
+          "description": "Benutzerdefinierte Rechnungen mit frei definierbaren Positionen"
+        }
+      },
+      "frequency": {
+        "MONTHLY": "Monatlich",
+        "QUARTERLY": "Vierteljährlich",
+        "SEMI_ANNUAL": "Halbjährlich",
+        "ANNUAL": "Jährlich",
+        "CUSTOM_CRON": "Benutzerdefiniert (Cron)"
+      },
+      "form": {
+        "basicInfo": "Grundeinstellungen",
+        "basicInfoDescription": "Name und Beschreibung der Abrechnungsregel",
+        "nameLabel": "Name *",
+        "namePlaceholder": "z.B. Monatliche Pachtzahlungen WP Nord",
+        "ruleTypeLabel": "Regeltyp *",
+        "ruleTypePlaceholder": "Regeltyp wählen",
+        "ruleTypeLockedHint": "Regeltyp kann nach Erstellung nicht geändert werden",
+        "descriptionLabel": "Beschreibung",
+        "descriptionPlaceholder": "Optionale Beschreibung...",
+        "schedulingTitle": "Zeitplanung",
+        "schedulingDescription": "Wann soll die Regel ausgeführt werden?",
+        "frequencyLabel": "Frequenz *",
+        "frequencyPlaceholder": "Frequenz wählen",
+        "dayOfMonthLabel": "Tag im Monat (1-28)",
+        "dayOfMonthHint": "Ausführung am {day}. des Monats",
+        "cronLabel": "Cron-Expression *",
+        "cronHint": "Format: Minute Stunde Tag Monat Wochentag",
+        "isActiveLabel": "Regel ist aktiv",
+        "parametersTitle": "Parameter",
+        "parametersDescription": "Spezifische Einstellungen für {ruleType}",
+        "cancel": "Abbrechen",
+        "save": "Speichern",
+        "create": "Erstellen"
+      }
     },
     "settingsUI": {
       "businessThresholds": {
@@ -7753,7 +7951,11 @@
       "levelWrite": "Schreiben",
       "levelWriteDesc": "Ansehen und bearbeiten",
       "levelAdmin": "Admin",
-      "levelAdminDesc": "Voller Zugriff"
+      "levelAdminDesc": "Voller Zugriff",
+      "errors": {
+        "saveFailed": "Fehler beim Speichern",
+        "deleteFailed": "Fehler beim Löschen"
+      }
     },
     "monitoringDashboard": {
       "loading": "Lade Monitoring-Daten...",

@@ -22,11 +22,9 @@ interface MaintenanceStatus {
   message: string;
 }
 
-const DEFAULT_MESSAGE =
-  "Das System befindet sich im Wartungsmodus. Bitte versuchen Sie es später erneut.";
-
 export function MaintenanceModeTab() {
   const t = useTranslations("admin.maintenanceModeUI");
+  const DEFAULT_MESSAGE = t("defaultMessage");
   const [status, setStatus] = useState<MaintenanceStatus>({
     active: false,
     message: DEFAULT_MESSAGE,
@@ -122,24 +120,17 @@ export function MaintenanceModeTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
-            Wartungsmodus
+            {t("cardTitle")}
           </CardTitle>
-          <CardDescription>
-            Wartungsmodus aktivieren und Bannernachricht konfigurieren. Im
-            Wartungsmodus sehen alle Benutzer ein Wartungsbanner.
-          </CardDescription>
+          <CardDescription>{t("cardDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Toggle */}
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
-              <Label className="text-base font-medium">
-                Wartungsmodus aktivieren
-              </Label>
+              <Label className="text-base font-medium">{t("toggleLabel")}</Label>
               <p className="text-sm text-muted-foreground">
-                {status.active
-                  ? "Der Wartungsmodus ist aktiv. Alle Benutzer sehen das Wartungsbanner."
-                  : "Der Wartungsmodus ist deaktiviert."}
+                {status.active ? t("toggleActiveDesc") : t("toggleInactiveDesc")}
               </p>
             </div>
             <Switch
@@ -154,11 +145,10 @@ export function MaintenanceModeTab() {
               <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                  Achtung: Wartungsmodus ist aktiv
+                  {t("warningTitle")}
                 </p>
                 <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                  Alle Benutzer sehen ein Wartungsbanner. Stellen Sie sicher,
-                  dass Sie den Modus nach Abschluss der Wartung deaktivieren.
+                  {t("warningBody")}
                 </p>
               </div>
             </div>
@@ -166,18 +156,15 @@ export function MaintenanceModeTab() {
 
           {/* Message */}
           <div className="space-y-2">
-            <Label htmlFor="maintenance-message">Wartungsbanner-Text</Label>
+            <Label htmlFor="maintenance-message">{t("messageLabel")}</Label>
             <Textarea
               id="maintenance-message"
               value={status.message}
               onChange={(e) => updateStatus({ message: e.target.value })}
-              placeholder="Geben Sie den Text ein, der im Wartungsbanner angezeigt wird..."
+              placeholder={t("messagePlaceholder")}
               rows={3}
             />
-            <p className="text-xs text-muted-foreground">
-              Dieser Text wird im Wartungsbanner am oberen Seitenrand angezeigt.
-              Maximal 500 Zeichen.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("messageHelp")}</p>
           </div>
 
           {/* Save Button */}
@@ -187,7 +174,7 @@ export function MaintenanceModeTab() {
               disabled={!hasChanges || saving}
             >
               <Save className="mr-2 h-4 w-4" />
-              {saving ? "Wird gespeichert..." : "Speichern"}
+              {saving ? t("saving") : t("save")}
             </Button>
           </div>
         </CardContent>
@@ -198,11 +185,9 @@ export function MaintenanceModeTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5" />
-            Vorschau
+            {t("previewTitle")}
           </CardTitle>
-          <CardDescription>
-            So sieht das Wartungsbanner für die Benutzer aus
-          </CardDescription>
+          <CardDescription>{t("previewDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border overflow-hidden">
@@ -212,11 +197,11 @@ export function MaintenanceModeTab() {
               </div>
             ) : (
               <div className="px-4 py-6 text-center text-muted-foreground text-sm">
-                Wartungsmodus ist deaktiviert. Kein Banner sichtbar.
+                {t("previewInactive")}
               </div>
             )}
             <div className="bg-muted/30 px-4 py-8 text-center text-muted-foreground text-xs">
-              (Seiteninhalt)
+              {t("previewPageContent")}
             </div>
           </div>
         </CardContent>

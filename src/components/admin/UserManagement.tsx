@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { useTranslations } from "next-intl";
@@ -161,44 +161,46 @@ interface TenantOption {
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
-const userFormSchema = z.object({
-  email: z.string().email("Ungültige E-Mail-Adresse"),
-  firstName: z.string().min(1, "Vorname ist erforderlich"),
-  lastName: z.string().min(1, "Nachname ist erforderlich"),
-  tenantId: z.string().min(1, "Mandant ist erforderlich"),
-  password: z.string().min(8, "Mindestens 8 Zeichen").or(z.literal("")).optional(),
-  status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
-});
+const createUserFormSchema = (t: (key: string) => string) =>
+  z.object({
+    email: z.string().email(t("validation.invalidEmail")),
+    firstName: z.string().min(1, t("validation.firstNameRequired")),
+    lastName: z.string().min(1, t("validation.lastNameRequired")),
+    tenantId: z.string().min(1, t("validation.tenantRequired")),
+    password: z.string().min(8, t("validation.passwordMinLength")).or(z.literal("")).optional(),
+    status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
+  });
 
-type UserFormValues = z.infer<typeof userFormSchema>;
+type UserFormValues = z.infer<ReturnType<typeof createUserFormSchema>>;
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const moduleLabels: Record<string, string> = {
-  parks: "Windparks",
-  turbines: "WEAs",
-  users: "Benutzer",
-  roles: "Rollen",
-  documents: "Dokumente",
-  reports: "Berichte",
-  settings: "Einstellungen",
-  admin: "Administration",
-  contracts: "Verträge",
-  invoices: "Rechnungen",
-  shareholders: "Gesellschafter",
-  votes: "Abstimmungen",
-};
+// Known module/action keys (labels resolved via i18n in component)
+const KNOWN_MODULE_KEYS = [
+  "parks",
+  "turbines",
+  "users",
+  "roles",
+  "documents",
+  "reports",
+  "settings",
+  "admin",
+  "contracts",
+  "invoices",
+  "shareholders",
+  "votes",
+] as const;
 
-const actionLabels: Record<string, string> = {
-  read: "Lesen",
-  create: "Erstellen",
-  update: "Bearbeiten",
-  delete: "Löschen",
-  manage: "Verwalten",
-  assign: "Zuweisen",
-  export: "Exportieren",
-  import: "Importieren",
-};
+const KNOWN_ACTION_KEYS = [
+  "read",
+  "create",
+  "update",
+  "delete",
+  "manage",
+  "assign",
+  "export",
+  "import",
+] as const;
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -246,6 +248,29 @@ export function UserManagement() {
   const [availableFunds, setAvailableFunds] = useState<FundOption[]>([]);
 
   // Form
+  const userFormSchema = useMemo(() => createUserFormSchema(tr), [tr]);
+
+  // Helper: resolve module/action key to localized label, fallback to capitalized key
+  const getModuleLabel = useCallback(
+    (key: string): string => {
+      if ((KNOWN_MODULE_KEYS as readonly string[]).includes(key)) {
+        return tr(`modules.${key}`);
+      }
+      return key.charAt(0).toUpperCase() + key.slice(1);
+    },
+    [tr]
+  );
+
+  const getActionLabel = useCallback(
+    (key: string): string => {
+      if ((KNOWN_ACTION_KEYS as readonly string[]).includes(key)) {
+        return tr(`actions.${key}`);
+      }
+      return key;
+    },
+    [tr]
+  );
+
   const userForm = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema) as Resolver<UserFormValues>,
     defaultValues: {
@@ -718,8 +743,8 @@ export function UserManagement() {
         permissions: permissions.sort((a, b) => a.action.localeCompare(b.action)),
       }))
       .sort((a, b) => {
-        const labelA = moduleLabels[a.module] || a.module;
-        const labelB = moduleLabels[b.module] || b.module;
+        const labelA = getModuleLabel(a.module);
+        const labelB = getModuleLabel(b.module);
         return labelA.localeCompare(labelB);
       });
   };
@@ -1387,9 +1412,7 @@ export function UserManagement() {
                     {getGroupedPermissions().map((group) => (
                       <div key={group.module} className="space-y-2">
                         <h5 className="text-sm font-medium text-muted-foreground">
-                          {moduleLabels[group.module] ||
-                            group.module.charAt(0).toUpperCase() +
-                              group.module.slice(1)}
+                          {getModuleLabel(group.module)}
                         </h5>
                         <div className="flex flex-wrap gap-1">
                           {group.permissions.map((permission) => (
@@ -1401,8 +1424,7 @@ export function UserManagement() {
                                 permission.description || permission.name
                               }
                             >
-                              {actionLabels[permission.action] ||
-                                permission.action}
+                              {getActionLabel(permission.action)}
                             </Badge>
                           ))}
                         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -77,15 +77,16 @@ import { PermissionMatrix } from "@/components/admin/PermissionMatrix";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
-// Schema
-const roleFormSchema = z.object({
-  name: z.string().min(1, "Name ist erforderlich"),
-  description: z.string().optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Ungültiger Farbcode").optional(),
-  permissions: z.array(z.string()).default([]),
-});
+// Schema factory - takes translator so messages stay localized
+const createRoleFormSchema = (t: (key: string) => string) =>
+  z.object({
+    name: z.string().min(1, t("validation.nameRequired")),
+    description: z.string().optional(),
+    color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, t("validation.invalidColorCode")).optional(),
+    permissions: z.array(z.string()).default([]),
+  });
 
-type RoleFormValues = z.infer<typeof roleFormSchema>;
+type RoleFormValues = z.infer<ReturnType<typeof createRoleFormSchema>>;
 
 interface Role {
   id: string;
@@ -147,6 +148,8 @@ export function RoleManagement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  const roleFormSchema = useMemo(() => createRoleFormSchema(t), [t]);
 
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleFormSchema) as Resolver<RoleFormValues>,
