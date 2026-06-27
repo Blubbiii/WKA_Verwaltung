@@ -125,6 +125,51 @@
       "deleteError": "Failed to delete filter"
     }
   },
+  "statusLabels": {
+    "common": {
+      "unknown": "Unknown"
+    },
+    "invoice": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "paid": "Paid",
+      "partiallyPaid": "Partially paid",
+      "cancelled": "Cancelled",
+      "writtenOff": "Written off"
+    },
+    "incomingInvoice": {
+      "inbox": "Inbox",
+      "ocrProcessing": "OCR processing",
+      "review": "Pending review",
+      "approved": "Approved",
+      "paid": "Paid",
+      "cancelled": "Cancelled"
+    },
+    "contract": {
+      "draft": "Draft",
+      "active": "Active",
+      "terminated": "Terminated",
+      "expired": "Expired"
+    },
+    "approval": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "expired": "Expired"
+    },
+    "turbine": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "maintenance": "Maintenance",
+      "fault": "Fault",
+      "planned": "Planned"
+    },
+    "vote": {
+      "draft": "Draft",
+      "active": "Running",
+      "closed": "Closed"
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "windparks": "Wind Farms",
@@ -9811,5 +9856,13 @@
     "cfi": "CFI (Investing)",
     "cff": "CFF (Financing)",
     "validationDifference": "Plausibility difference: {amount} €"
+  },
+  "layout": {
+    "healthIndicator": {
+      "ok": "All systems normal",
+      "degraded": "Degraded",
+      "down": "Down",
+      "lastChecked": "Checked {time}"
+    }
   }
 }

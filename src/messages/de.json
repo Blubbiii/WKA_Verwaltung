@@ -125,6 +125,51 @@
       "deleteError": "Filter konnte nicht gelöscht werden"
     }
   },
+  "statusLabels": {
+    "common": {
+      "unknown": "Unbekannt"
+    },
+    "invoice": {
+      "draft": "Entwurf",
+      "sent": "Versendet",
+      "paid": "Bezahlt",
+      "partiallyPaid": "Teilbezahlt",
+      "cancelled": "Storniert",
+      "writtenOff": "Abgeschrieben"
+    },
+    "incomingInvoice": {
+      "inbox": "Eingang",
+      "ocrProcessing": "OCR läuft",
+      "review": "Zur Prüfung",
+      "approved": "Freigegeben",
+      "paid": "Bezahlt",
+      "cancelled": "Storniert"
+    },
+    "contract": {
+      "draft": "Entwurf",
+      "active": "Aktiv",
+      "terminated": "Beendet",
+      "expired": "Abgelaufen"
+    },
+    "approval": {
+      "pending": "Wartet auf Freigabe",
+      "approved": "Freigegeben",
+      "rejected": "Abgelehnt",
+      "expired": "Abgelaufen"
+    },
+    "turbine": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "maintenance": "Wartung",
+      "fault": "Störung",
+      "planned": "Geplant"
+    },
+    "vote": {
+      "draft": "Entwurf",
+      "active": "Laufend",
+      "closed": "Abgeschlossen"
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "windparks": "Windparks",
@@ -9811,5 +9856,13 @@
     "cfi": "CFI (Investitionen)",
     "cff": "CFF (Finanzierung)",
     "validationDifference": "Plausibilitäts-Differenz: {amount} €"
+  },
+  "layout": {
+    "healthIndicator": {
+      "ok": "Alle Systeme grün",
+      "degraded": "Eingeschränkt",
+      "down": "Störung",
+      "lastChecked": "Geprüft {time}"
+    }
   }
 }

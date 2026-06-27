@@ -23,6 +23,7 @@ import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { TenantSwitcher } from "@/components/layout/tenant-switcher";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { HealthIndicator } from "@/components/layout/health-indicator";
 import { TourTriggerMenuItem } from "@/components/onboarding/tour-trigger-button";
 
 interface ImpersonationData {
@@ -218,6 +219,9 @@ export function Header() {
           >
             <Keyboard className="h-5 w-5" />
           </Button>
+
+          {/* Idee B: System-Health-Indicator (kleiner Dot) — links der Glocke */}
+          <HealthIndicator />
 
           {/* Notifications */}
           <NotificationBell />

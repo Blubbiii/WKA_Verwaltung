@@ -48,6 +48,8 @@ import {
 } from "@/components/ui/dialog";
 import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { EditableCell } from "@/components/ui/editable-cell";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { INCOMING_INVOICE_STATUS } from "@/lib/status-labels";
 import { LOCALE_DE } from "@/lib/format";
 import { HTTP_STATUS } from "@/lib/config/http-status";
 
@@ -80,14 +82,9 @@ interface IncomingInvoice {
 // Helpers
 // ============================================================================
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  INBOX: "secondary",
-  OCR_PROCESSING: "secondary",
-  REVIEW: "outline",
-  APPROVED: "default",
-  PAID: "default",
-  CANCELLED: "destructive",
-};
+// STATUS_VARIANT-Map durch zentrales INCOMING_INVOICE_STATUS aus
+// @/lib/status-labels + <StatusBadge> ersetzt — siehe Idee A aus
+// docs/audit-2026-06-26-full.md.
 
 // ============================================================================
 // Upload Dialog
@@ -349,11 +346,6 @@ export default function InboxPage() {
               </TableHeader>
               <TableBody>
                 {invoices.map((inv) => {
-                  const variant = STATUS_VARIANT[inv.status] ?? "secondary";
-                  const statusLabel = (() => {
-                    try { return t(`status.${inv.status}` as "status.INBOX"); }
-                    catch { return inv.status; }
-                  })();
                   // Inline-Edit nur in Prä-Freigabe-Stati (siehe PUT-Guard in API-Route)
                   const isEditable = inv.status === "INBOX" || inv.status === "REVIEW";
                   return (
@@ -422,7 +414,7 @@ export default function InboxPage() {
                           : "—"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={variant}>{statusLabel}</Badge>
+                        <StatusBadge status={inv.status} mapping={INCOMING_INVOICE_STATUS} />
                       </TableCell>
                       <TableCell className="max-w-[200px]" onClick={(e) => e.stopPropagation()}>
                         <EditableCell
